@@ -19,8 +19,11 @@ export class ClientService {
     }
 
     // Validate phone if provided
-    if (data.phone && data.phone.trim().length < 9) {
-      throw new Error('Phone number must be at least 9 digits');
+    if (data.phone) {
+      const phoneDigits = data.phone.replace(/\D/g, ''); // Remove all non-digits
+      if (phoneDigits.length < 9) {
+        throw new Error('Phone number must contain at least 9 digits');
+      }
     }
 
     // Check if client with same email exists
@@ -113,6 +116,14 @@ export class ClientService {
     // Validate email if provided
     if (data.email && !this.isValidEmail(data.email)) {
       throw new Error('Invalid email format');
+    }
+
+    // Validate phone if provided
+    if (data.phone) {
+      const phoneDigits = data.phone.replace(/\D/g, '');
+      if (phoneDigits.length < 9) {
+        throw new Error('Phone number must contain at least 9 digits');
+      }
     }
 
     // Check email uniqueness if email is being changed
