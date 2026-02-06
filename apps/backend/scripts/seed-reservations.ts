@@ -44,6 +44,11 @@ async function main() {
     return new Date(`1970-01-01T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00.000Z`);
   };
   
+  // Helper to calculate price
+  const calculatePrice = (guests: number, pricePerPerson: any): number => {
+    return guests * parseFloat(pricePerPerson.toString());
+  };
+  
   // Reservation 1: Wedding in Sala Bankietowa
   const salaBankietowa = halls.find(h => h.name === 'Sala Bankietowa');
   const wesele = eventTypes.find(e => e.name === 'Wesele');
@@ -59,7 +64,7 @@ async function main() {
           startTime: createTime(16, 0),
           endTime: createTime(23, 59),
           guests: 130,
-          totalPrice: 130 * parseFloat(salaBankietowa.pricePerPerson),
+          totalPrice: calculatePrice(130, salaBankietowa.pricePerPerson),
           status: 'CONFIRMED',
           depositAmount: 10000,
           depositDueDate: new Date('2026-06-20'),
@@ -86,7 +91,7 @@ async function main() {
           startTime: createTime(13, 0),
           endTime: createTime(19, 0),
           guests: 70,
-          totalPrice: 70 * parseFloat(salaZlota.pricePerPerson),
+          totalPrice: calculatePrice(70, salaZlota.pricePerPerson),
           status: 'CONFIRMED',
           depositAmount: 5000,
           depositDueDate: new Date('2026-04-10'),
@@ -113,7 +118,7 @@ async function main() {
           startTime: createTime(18, 0),
           endTime: createTime(22, 0),
           guests: 35,
-          totalPrice: 35 * parseFloat(salaKrysztalowa.pricePerPerson),
+          totalPrice: calculatePrice(35, salaKrysztalowa.pricePerPerson),
           status: 'PENDING',
           depositAmount: 2000,
           depositDueDate: new Date('2026-02-15'),
@@ -139,7 +144,7 @@ async function main() {
           startTime: createTime(9, 0),
           endTime: createTime(17, 0),
           guests: 100,
-          totalPrice: 100 * parseFloat(salaBankietowa.pricePerPerson),
+          totalPrice: calculatePrice(100, salaBankietowa.pricePerPerson),
           status: 'PENDING',
           notes: 'Konferencja biznesowa, projektor, nagłośnienie, lunch, coffee breaks'
         }
@@ -162,7 +167,7 @@ async function main() {
           startTime: createTime(17, 0),
           endTime: createTime(23, 0),
           guests: 60,
-          totalPrice: 60 * parseFloat(salaZlota.pricePerPerson),
+          totalPrice: calculatePrice(60, salaZlota.pricePerPerson),
           status: 'CONFIRMED',
           depositAmount: 4000,
           depositDueDate: new Date('2026-07-12'),
