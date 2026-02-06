@@ -86,14 +86,26 @@ model Reservation {
   eventTypeId     String   @db.Uuid
   createdById     String   @db.Uuid
 
-  date            String   @db.VarChar(10)
-  startTime       String   @db.VarChar(5)
-  endTime         String   @db.VarChar(5)
+  // Legacy fields (kept for backwards compatibility)
+  date            String?  @db.VarChar(10)
+  startTime       String?  @db.VarChar(5)
+  endTime         String?  @db.VarChar(5)
+  
+  // New DateTime fields for start and end
+  startDateTime   DateTime?
+  endDateTime     DateTime?
+  
   guests          Int      @db.SmallInt
-
   totalPrice      Decimal  @db.Decimal(10, 2)
   status          String   @default("PENDING") @db.VarChar(20)
   notes           String?  @db.Text
+
+  // Custom event type (when EventType = "Inne")
+  customEventType String?  @db.VarChar(100)
+  
+  // Anniversary details (when EventType = "Rocznica")
+  anniversaryYear     Int?     @db.SmallInt
+  anniversaryOccasion String?  @db.VarChar(100)
 
   attachments     String[] @db.Text
   archivedAt      DateTime?
@@ -110,6 +122,7 @@ model Reservation {
   deposits        Deposit[]
 
   @@index([date])
+  @@index([startDateTime])
   @@index([hallId])
   @@index([clientId])
   @@index([status])
