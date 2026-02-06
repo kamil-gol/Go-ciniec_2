@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  firstName String   @db.VarChar(100)
+  lastName  String   @db.VarChar(100)
+  role      String   @default("EMPLOYEE") @db.VarChar(20)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdReservations  Reservation[]          @relation("CreatedBy")
+  createdHistories     ReservationHistory[]   @relation("ChangedBy")
+  activityLogs         ActivityLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Hall {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String   @unique @db.VarChar(255)
+  capacity        Int      @db.SmallInt
+  pricePerPerson  Decimal  @db.Decimal(10, 2)
+  description     String?  @db.Text
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reservations    Reservation[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model EventType {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  createdAt   DateTime @default(now())
+
+  reservations Reservation[]
+
+  @@index([name])
+}
+
+model Client {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName String   @db.VarChar(100)
+  lastName  String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  address   String?  @db.Text
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations Reservation[]
+
+  @@index([email])
+  @@index([firstName, lastName])
+}
+
+model Reservation {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hallId          String   @db.Uuid
+  clientId        String   @db.Uuid
+  eventTypeId     String   @db.Uuid
+  createdBy       String   @db.Uuid
+
+  date            DateTime @db.Date
+  startTime       DateTime @db.Time
+  endTime         DateTime @db.Time
+  guests          Int      @db.SmallInt
+
+  totalPrice      Decimal  @db.Decimal(10, 2)
+  status          String   @default("PENDING") @db.VarChar(20)
+  notes           String?  @db.Text
+
+  depositAmount   Decimal? @db.Decimal(10, 2)
+  depositDueDate  DateTime? @db.Date
+  depositPaid     Boolean  @default(false)
+
+  attachments     String[] @db.Text
+  archivedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  hall            Hall     @relation(fields: [hallId], references: [id], onDelete: Restrict)
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  eventType       EventType @relation(fields: [eventTypeId], references: [id])
+  createdByUser   User     @relation("CreatedBy", fields: [createdBy], references: [id])
+
+  history         ReservationHistory[]
+  deposit         Deposit?
+
+  @@index([date])
+  @@index([hallId])
+  @@index([clientId])
+  @@index([status])
+  @@index([createdBy])
+}
+
+model ReservationHistory {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId   String   @db.Uuid
+  changedBy       String   @db.Uuid
+
+  changeType      String   @db.VarChar(20)
+  fieldName       String?  @db.VarChar(100)
+  oldValue        String?  @db.Text
+  newValue        String?  @db.Text
+  reason          String?  @db.Text
+
+  createdAt       DateTime @default(now())
+
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  changedByUser   User @relation("ChangedBy", fields: [changedBy], references: [id])
+
+  @@index([reservationId])
+  @@index([changedBy])
+  @@index([createdAt])
+}
+
+model Deposit {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId   String   @unique @db.Uuid
+
+  amount          Decimal  @db.Decimal(10, 2)
+  dueDate         DateTime @db.Date
+  paid            Boolean  @default(false)
+  paidDate        DateTime?
+  paymentMethod   String?  @db.VarChar(50)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([dueDate])
+  @@index([paid])
+}
+
+model ActivityLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?  @db.Uuid
+
+  action          String   @db.VarChar(100)
+  entityType      String?  @db.VarChar(50)
+  entityId        String?  @db.VarChar(100)
+  details         Json?
+
+  ipAddress       String?  @db.Inet
+  userAgent       String?  @db.Text
+
+  createdAt       DateTime @default(now())
+
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
