@@ -104,24 +104,21 @@ export class ReservationService {
         hallId: data.hallId,
         clientId: data.clientId,
         eventTypeId: data.eventTypeId,
-        createdBy: userId,
-        date: new Date(data.date),
-        startTime: new Date(`1970-01-01T${data.startTime}:00Z`),
-        endTime: new Date(`1970-01-01T${data.endTime}:00Z`),
+        createdById: userId,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
         guests: data.guests,
         totalPrice: totalPrice,
         status: ReservationStatus.PENDING,
         notes: data.notes || null,
-        depositAmount: data.depositAmount || null,
-        depositDueDate: data.depositDueDate ? new Date(data.depositDueDate) : null,
-        depositPaid: false,
         attachments: []
       },
       include: {
         hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
-        createdByUser: { select: { id: true, email: true } }
+        createdBy: { select: { id: true, email: true } }
       }
     });
 
@@ -164,10 +161,10 @@ export class ReservationService {
     if (filters?.dateFrom || filters?.dateTo) {
       where.date = {};
       if (filters.dateFrom) {
-        where.date.gte = new Date(filters.dateFrom);
+        where.date.gte = filters.dateFrom;
       }
       if (filters.dateTo) {
-        where.date.lte = new Date(filters.dateTo);
+        where.date.lte = filters.dateTo;
       }
     }
 
@@ -188,7 +185,7 @@ export class ReservationService {
         hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
-        createdByUser: { select: { id: true, email: true } }
+        createdBy: { select: { id: true, email: true } }
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
     });
@@ -206,7 +203,7 @@ export class ReservationService {
         hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
-        createdByUser: { select: { id: true, email: true } }
+        createdBy: { select: { id: true, email: true } }
       }
     });
 
@@ -252,21 +249,21 @@ export class ReservationService {
         throw new Error('Reservation date must be in the future');
       }
 
-      updateData.date = newDate;
+      updateData.date = data.date;
     }
 
     // Update times if provided
     if (data.startTime) {
-      updateData.startTime = new Date(`1970-01-01T${data.startTime}:00Z`);
+      updateData.startTime = data.startTime;
     }
 
     if (data.endTime) {
-      updateData.endTime = new Date(`1970-01-01T${data.endTime}:00Z`);
+      updateData.endTime = data.endTime;
     }
 
     // Validate time range if both are being updated or one is being updated
-    const finalStartTime = data.startTime || existingReservation.startTime.toISOString().substring(11, 16);
-    const finalEndTime = data.endTime || existingReservation.endTime.toISOString().substring(11, 16);
+    const finalStartTime = data.startTime || existingReservation.startTime;
+    const finalEndTime = data.endTime || existingReservation.endTime;
 
     if (finalStartTime >= finalEndTime) {
       throw new Error('End time must be after start time');
@@ -274,7 +271,7 @@ export class ReservationService {
 
     // Check for overlaps if date or times changed
     if (data.date || data.startTime || data.endTime) {
-      const checkDate = data.date || existingReservation.date.toISOString().split('T')[0];
+      const checkDate = data.date || existingReservation.date;
       const hasOverlap = await this.checkOverlap(
         existingReservation.hallId,
         checkDate,
@@ -310,9 +307,6 @@ export class ReservationService {
 
     // Update other fields
     if (data.notes !== undefined) updateData.notes = data.notes || null;
-    if (data.depositAmount !== undefined) updateData.depositAmount = data.depositAmount || null;
-    if (data.depositDueDate !== undefined) updateData.depositDueDate = data.depositDueDate ? new Date(data.depositDueDate) : null;
-    if (data.depositPaid !== undefined) updateData.depositPaid = data.depositPaid;
 
     // Track changes for history
     const changes: Array<{field: string, oldValue: any, newValue: any}> = [];
@@ -328,7 +322,7 @@ export class ReservationService {
         hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
-        createdByUser: { select: { id: true, email: true } }
+        createdBy: { select: { id: true, email: true } }
       }
     });
 
@@ -370,7 +364,7 @@ export class ReservationService {
         hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
-        createdByUser: { select: { id: true, email: true } }
+        createdBy: { select: { id: true, email: true } }
       }
     });
 
@@ -440,7 +434,7 @@ export class ReservationService {
   ): Promise<boolean> {
     const where: any = {
       hallId,
-      date: new Date(date),
+      date: date,
       status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
       archivedAt: null
     };
@@ -455,20 +449,20 @@ export class ReservationService {
         OR: [
           {
             AND: [
-              { startTime: { lte: new Date(`1970-01-01T${startTime}:00Z`) } },
-              { endTime: { gt: new Date(`1970-01-01T${startTime}:00Z`) } }
+              { startTime: { lte: startTime } },
+              { endTime: { gt: startTime } }
             ]
           },
           {
             AND: [
-              { startTime: { lt: new Date(`1970-01-01T${endTime}:00Z`) } },
-              { endTime: { gte: new Date(`1970-01-01T${endTime}:00Z`) } }
+              { startTime: { lt: endTime } },
+              { endTime: { gte: endTime } }
             ]
           },
           {
             AND: [
-              { startTime: { gte: new Date(`1970-01-01T${startTime}:00Z`) } },
-              { endTime: { lte: new Date(`1970-01-01T${endTime}:00Z`) } }
+              { startTime: { gte: startTime } },
+              { endTime: { lte: endTime } }
             ]
           }
         ]
@@ -509,7 +503,7 @@ export class ReservationService {
     await prisma.reservationHistory.create({
       data: {
         reservationId,
-        changedBy: userId,
+        changedByUserId: userId,
         changeType,
         fieldName,
         oldValue,
