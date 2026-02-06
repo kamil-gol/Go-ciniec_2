@@ -10,7 +10,11 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🗑️  Clearing existing reservations...');
+  console.log('🗑️  Clearing existing data...');
+  
+  // Delete deposits first (foreign key constraint)
+  await prisma.deposit.deleteMany({});
+  console.log('✅ Deleted deposits');
   
   // Delete all existing reservations
   const deleted = await prisma.reservation.deleteMany({});
@@ -39,11 +43,6 @@ async function main() {
   
   const reservations = [];
   
-  // Helper to create time
-  const createTime = (hours, minutes = 0) => {
-    return new Date(`1970-01-01T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00.000Z`);
-  };
-  
   // Helper to calculate price
   const calculatePrice = (guests, pricePerPerson) => {
     return guests * parseFloat(pricePerPerson.toString());
@@ -53,130 +52,164 @@ async function main() {
   const salaBankietowa = halls.find(h => h.name === 'Sala Bankietowa');
   const wesele = eventTypes.find(e => e.name === 'Wesele');
   if (salaBankietowa && wesele && clients[0]) {
-    reservations.push(
-      await prisma.reservation.create({
-        data: {
-          hallId: salaBankietowa.id,
-          clientId: clients[0].id,
-          eventTypeId: wesele.id,
-          createdById: adminUser.id,
-          date: new Date('2026-07-20'),
-          startTime: createTime(16, 0),
-          endTime: createTime(23, 59),
-          guests: 130,
-          totalPrice: calculatePrice(130, salaBankietowa.pricePerPerson),
-          status: 'CONFIRMED',
-          depositAmount: 10000,
-          depositDueDate: new Date('2026-06-20'),
-          depositPaid: true,
-          notes: 'Wesele z orkiestrą, menu premium, tort weselny, dekoracja kwiatowa'
-        }
-      })
-    );
-    console.log('✓ Created: Wedding reservation (CONFIRMED)');
+    const reservation = await prisma.reservation.create({
+      data: {
+        hallId: salaBankietowa.id,
+        clientId: clients[0].id,
+        eventTypeId: wesele.id,
+        createdById: adminUser.id,
+        date: '2026-07-20',
+        startTime: '16:00',
+        endTime: '23:59',
+        guests: 130,
+        totalPrice: calculatePrice(130, salaBankietowa.pricePerPerson),
+        status: 'CONFIRMED',
+        notes: 'Wesele z orkiestrą, menu premium, tort weselny, dekoracja kwiatowa'
+      }
+    });
+    
+    // Create deposit
+    await prisma.deposit.create({
+      data: {
+        reservationId: reservation.id,
+        amount: 10000,
+        dueDate: '2026-06-20',
+        paid: true,
+        paidAt: new Date('2026-06-15'),
+        paymentMethod: 'transfer'
+      }
+    });
+    
+    reservations.push(reservation);
+    console.log('✓ Created: Wedding reservation (CONFIRMED) with deposit');
   }
   
   // Reservation 2: First Communion in Sala Złota
   const salaZlota = halls.find(h => h.name === 'Sala Złota');
   const komunia = eventTypes.find(e => e.name === 'Komunia');
   if (salaZlota && komunia && clients[1]) {
-    reservations.push(
-      await prisma.reservation.create({
-        data: {
-          hallId: salaZlota.id,
-          clientId: clients[1].id,
-          eventTypeId: komunia.id,
-          createdById: adminUser.id,
-          date: new Date('2026-05-10'),
-          startTime: createTime(13, 0),
-          endTime: createTime(19, 0),
-          guests: 70,
-          totalPrice: calculatePrice(70, salaZlota.pricePerPerson),
-          status: 'CONFIRMED',
-          depositAmount: 5000,
-          depositDueDate: new Date('2026-04-10'),
-          depositPaid: true,
-          notes: 'Menu dla dzieci, animacje, dekoracja biało-złota, tort komunijny'
-        }
-      })
-    );
-    console.log('✓ Created: First Communion reservation (CONFIRMED)');
+    const reservation = await prisma.reservation.create({
+      data: {
+        hallId: salaZlota.id,
+        clientId: clients[1].id,
+        eventTypeId: komunia.id,
+        createdById: adminUser.id,
+        date: '2026-05-10',
+        startTime: '13:00',
+        endTime: '19:00',
+        guests: 70,
+        totalPrice: calculatePrice(70, salaZlota.pricePerPerson),
+        status: 'CONFIRMED',
+        notes: 'Menu dla dzieci, animacje, dekoracja biało-złota, tort komunijny'
+      }
+    });
+    
+    // Create deposit
+    await prisma.deposit.create({
+      data: {
+        reservationId: reservation.id,
+        amount: 5000,
+        dueDate: '2026-04-10',
+        paid: true,
+        paidAt: new Date('2026-04-05'),
+        paymentMethod: 'cash'
+      }
+    });
+    
+    reservations.push(reservation);
+    console.log('✓ Created: First Communion reservation (CONFIRMED) with deposit');
   }
   
   // Reservation 3: Birthday Party in Sala Krysztalowa
   const salaKrysztalowa = halls.find(h => h.name === 'Sala Krysztalowa');
   const urodziny = eventTypes.find(e => e.name === 'Urodziny');
   if (salaKrysztalowa && urodziny && clients[0]) {
-    reservations.push(
-      await prisma.reservation.create({
-        data: {
-          hallId: salaKrysztalowa.id,
-          clientId: clients[0].id,
-          eventTypeId: urodziny.id,
-          createdById: adminUser.id,
-          date: new Date('2026-03-15'),
-          startTime: createTime(18, 0),
-          endTime: createTime(22, 0),
-          guests: 35,
-          totalPrice: calculatePrice(35, salaKrysztalowa.pricePerPerson),
-          status: 'PENDING',
-          depositAmount: 2000,
-          depositDueDate: new Date('2026-02-15'),
-          depositPaid: false,
-          notes: '50. urodziny, tort urodzinowy, DJ, menu premium'
-        }
-      })
-    );
-    console.log('✓ Created: Birthday Party reservation (PENDING)');
+    const reservation = await prisma.reservation.create({
+      data: {
+        hallId: salaKrysztalowa.id,
+        clientId: clients[0].id,
+        eventTypeId: urodziny.id,
+        createdById: adminUser.id,
+        date: '2026-03-15',
+        startTime: '18:00',
+        endTime: '22:00',
+        guests: 35,
+        totalPrice: calculatePrice(35, salaKrysztalowa.pricePerPerson),
+        status: 'PENDING',
+        notes: '50. urodziny, tort urodzinowy, DJ, menu premium'
+      }
+    });
+    
+    // Create unpaid deposit
+    await prisma.deposit.create({
+      data: {
+        reservationId: reservation.id,
+        amount: 2000,
+        dueDate: '2026-02-15',
+        paid: false
+      }
+    });
+    
+    reservations.push(reservation);
+    console.log('✓ Created: Birthday Party reservation (PENDING) with unpaid deposit');
   }
   
   // Reservation 4: Conference in Sala Bankietowa
   const konferencja = eventTypes.find(e => e.name === 'Konferencja');
   if (salaBankietowa && konferencja && clients[1]) {
-    reservations.push(
-      await prisma.reservation.create({
-        data: {
-          hallId: salaBankietowa.id,
-          clientId: clients[1].id,
-          eventTypeId: konferencja.id,
-          createdById: adminUser.id,
-          date: new Date('2026-09-05'),
-          startTime: createTime(9, 0),
-          endTime: createTime(17, 0),
-          guests: 100,
-          totalPrice: calculatePrice(100, salaBankietowa.pricePerPerson),
-          status: 'PENDING',
-          notes: 'Konferencja biznesowa, projektor, nagłośnienie, lunch, coffee breaks'
-        }
-      })
-    );
-    console.log('✓ Created: Conference reservation (PENDING)');
+    const reservation = await prisma.reservation.create({
+      data: {
+        hallId: salaBankietowa.id,
+        clientId: clients[1].id,
+        eventTypeId: konferencja.id,
+        createdById: adminUser.id,
+        date: '2026-09-05',
+        startTime: '09:00',
+        endTime: '17:00',
+        guests: 100,
+        totalPrice: calculatePrice(100, salaBankietowa.pricePerPerson),
+        status: 'PENDING',
+        notes: 'Konferencja biznesowa, projektor, nagłośnienie, lunch, coffee breaks'
+      }
+    });
+    
+    reservations.push(reservation);
+    console.log('✓ Created: Conference reservation (PENDING) - no deposit');
   }
   
   // Reservation 5: Anniversary in Sala Złota
   const rocznica = eventTypes.find(e => e.name === 'Rocznica');
   if (salaZlota && rocznica && clients[0]) {
-    reservations.push(
-      await prisma.reservation.create({
-        data: {
-          hallId: salaZlota.id,
-          clientId: clients[0].id,
-          eventTypeId: rocznica.id,
-          createdById: adminUser.id,
-          date: new Date('2026-08-12'),
-          startTime: createTime(17, 0),
-          endTime: createTime(23, 0),
-          guests: 60,
-          totalPrice: calculatePrice(60, salaZlota.pricePerPerson),
-          status: 'CONFIRMED',
-          depositAmount: 4000,
-          depositDueDate: new Date('2026-07-12'),
-          depositPaid: true,
-          notes: '25. rocznica ślubu, menu eleganckie, dekoracje złote, live music'
-        }
-      })
-    );
-    console.log('✓ Created: Anniversary reservation (CONFIRMED)');
+    const reservation = await prisma.reservation.create({
+      data: {
+        hallId: salaZlota.id,
+        clientId: clients[0].id,
+        eventTypeId: rocznica.id,
+        createdById: adminUser.id,
+        date: '2026-08-12',
+        startTime: '17:00',
+        endTime: '23:00',
+        guests: 60,
+        totalPrice: calculatePrice(60, salaZlota.pricePerPerson),
+        status: 'CONFIRMED',
+        notes: '25. rocznica ślubu, menu eleganckie, dekoracje złote, live music'
+      }
+    });
+    
+    // Create deposit
+    await prisma.deposit.create({
+      data: {
+        reservationId: reservation.id,
+        amount: 4000,
+        dueDate: '2026-07-12',
+        paid: true,
+        paidAt: new Date('2026-07-10'),
+        paymentMethod: 'card'
+      }
+    });
+    
+    reservations.push(reservation);
+    console.log('✓ Created: Anniversary reservation (CONFIRMED) with deposit');
   }
   
   console.log('\n✅ Successfully generated reservations!');
@@ -185,9 +218,10 @@ async function main() {
   console.log(`   Confirmed: ${reservations.filter(r => r.status === 'CONFIRMED').length}`);
   console.log(`   Pending: ${reservations.filter(r => r.status === 'PENDING').length}`);
   console.log('\n💡 Reservations include:');
-  console.log('   - Realistic dates and times');
+  console.log('   - Correct date/time string formats');
   console.log('   - Proper pricing calculations');
-  console.log('   - Deposit information');
+  console.log('   - Separate Deposit records');
+  console.log('   - Realistic payment statuses');
   console.log('   - Detailed notes');
 }
 
