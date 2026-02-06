@@ -68,8 +68,8 @@ async function main() {
     }),
     prisma.eventType.create({
       data: {
-        name: 'Konferencja',
-        description: 'Wydarzenie biznesowe',
+        name: 'Rocznica',
+        description: 'Rocznica ślubu lub innego wydarzenia',
         color: '#f59e0b',
         isActive: true,
       },
@@ -204,7 +204,7 @@ async function main() {
 
   console.log('Created clients')
 
-  // Create reservations
+  // Create reservations with new DateTime fields
   const today = new Date()
   const nextWeek = new Date(today)
   nextWeek.setDate(today.getDate() + 7)
@@ -216,9 +216,8 @@ async function main() {
       hallId: halls[0].id,
       clientId: clients[0].id,
       eventTypeId: eventTypes[0].id,
-      date: nextMonth.toISOString().split('T')[0],
-      startTime: '18:00',
-      endTime: '03:00',
+      startDateTime: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), nextMonth.getDate(), 18, 0),
+      endDateTime: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), nextMonth.getDate() + 1, 3, 0),
       guests: 120,
       totalPrice: 14400,
       status: 'CONFIRMED',
@@ -227,7 +226,6 @@ async function main() {
     },
   })
 
-  // Add deposit for reservation 1
   await prisma.deposit.create({
     data: {
       reservationId: reservation1.id,
@@ -238,7 +236,6 @@ async function main() {
     },
   })
 
-  // Add history for reservation 1
   await prisma.reservationHistory.create({
     data: {
       reservationId: reservation1.id,
@@ -263,9 +260,8 @@ async function main() {
       hallId: halls[1].id,
       clientId: clients[1].id,
       eventTypeId: eventTypes[1].id,
-      date: nextWeek.toISOString().split('T')[0],
-      startTime: '16:00',
-      endTime: '22:00',
+      startDateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 16, 0),
+      endDateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 22, 0),
       guests: 60,
       totalPrice: 6000,
       status: 'PENDING',
@@ -291,14 +287,16 @@ async function main() {
     },
   })
 
+  const twoWeeksLater = new Date(today)
+  twoWeeksLater.setDate(today.getDate() + 14)
+
   const reservation3 = await prisma.reservation.create({
     data: {
       hallId: halls[2].id,
       clientId: clients[2].id,
       eventTypeId: eventTypes[2].id,
-      date: new Date(today.setDate(today.getDate() + 14)).toISOString().split('T')[0],
-      startTime: '14:00',
-      endTime: '20:00',
+      startDateTime: new Date(twoWeeksLater.getFullYear(), twoWeeksLater.getMonth(), twoWeeksLater.getDate(), 14, 0),
+      endDateTime: new Date(twoWeeksLater.getFullYear(), twoWeeksLater.getMonth(), twoWeeksLater.getDate(), 20, 0),
       guests: 40,
       totalPrice: 3600,
       status: 'CONFIRMED',
@@ -321,7 +319,7 @@ async function main() {
   console.log('\nTest accounts:')
   console.log('Admin: admin@gosciniecrodzinny.pl / admin123')
   console.log('\nCreated:')
-  console.log(`- ${eventTypes.length} event types`)
+  console.log(`- ${eventTypes.length} event types (Wesele, Urodziny, Komunia, Chrzciny, Rocznica, Inne)`)
   console.log(`- ${halls.length} halls`)
   console.log(`- ${clients.length} clients`)
   console.log(`- 3 reservations with deposits and history`)
