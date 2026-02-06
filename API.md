@@ -1,8 +1,9 @@
 # 🚀 Rezerwacje API Documentation
 
 **Base URL**: `http://localhost:3001/api`  
-**Version**: 0.2.0-alpha  
-**Last Updated**: 2026-02-06
+**Version**: 1.0.0  
+**Last Updated**: 2026-02-06  
+**Status**: ✅ Production Ready
 
 ---
 
@@ -289,6 +290,154 @@ DELETE /api/event-types/:id
 
 ---
 
+## 📅 Reservation Management
+
+### List All Reservations (STAFF)
+```bash
+GET /api/reservations
+GET /api/reservations?status=CONFIRMED
+GET /api/reservations?hallId=uuid
+GET /api/reservations?clientId=uuid
+GET /api/reservations?dateFrom=2026-06-01&dateTo=2026-06-30
+GET /api/reservations?archived=true
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "date": "2026-06-15T00:00:00.000Z",
+      "startTime": "1970-01-01T18:00:00.000Z",
+      "endTime": "1970-01-01T23:00:00.000Z",
+      "guests": 80,
+      "totalPrice": "4000.00",
+      "status": "CONFIRMED",
+      "notes": "Wesele - uroczystość rodzinna",
+      "depositAmount": "1500.00",
+      "depositDueDate": "2026-05-15T00:00:00.000Z",
+      "depositPaid": false,
+      "hall": {
+        "id": "uuid",
+        "name": "Sala Bankietowa",
+        "capacity": 100,
+        "pricePerPerson": "50.00"
+      },
+      "client": {
+        "id": "uuid",
+        "firstName": "Jan",
+        "lastName": "Kowalski",
+        "email": "jan.kowalski@example.com",
+        "phone": "+48123456789"
+      },
+      "eventType": {
+        "id": "uuid",
+        "name": "Ślub"
+      },
+      "createdByUser": {
+        "id": "uuid",
+        "email": "admin@example.com"
+      },
+      "createdAt": "2026-02-06T16:00:00.000Z",
+      "updatedAt": "2026-02-06T16:00:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Get Reservation by ID (STAFF)
+```bash
+GET /api/reservations/:id
+```
+
+### Create Reservation (STAFF)
+```bash
+POST /api/reservations
+{
+  "hallId": "uuid",
+  "clientId": "uuid",
+  "eventTypeId": "uuid",
+  "date": "2026-06-15",
+  "startTime": "18:00",
+  "endTime": "23:00",
+  "guests": 80,
+  "notes": "Wesele - uroczystość rodzinna",
+  "depositAmount": 1500,
+  "depositDueDate": "2026-05-15"
+}
+```
+
+**Validation**:
+- `hallId`, `clientId`, `eventTypeId` - Required
+- `date`, `startTime`, `endTime`, `guests` - Required
+- `date` - Must be in the future
+- `guests` - Must be ≤ hall capacity
+- `endTime` - Must be after startTime
+- **Overlap check**: No overlapping reservations for same hall
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "totalPrice": "4000.00",
+    "status": "PENDING",
+    ...
+  },
+  "message": "Reservation created successfully"
+}
+```
+
+**Note**: `totalPrice` is automatically calculated as `guests × pricePerPerson`
+
+### Update Reservation (STAFF)
+```bash
+PUT /api/reservations/:id
+{
+  "date": "2026-06-20",
+  "guests": 90,
+  "notes": "Zwiększona liczba gości",
+  "depositPaid": true
+}
+```
+
+**Business Rules**:
+- Cannot update COMPLETED or CANCELLED reservations
+- Price recalculated automatically if guests changed
+- Overlap check if date/time changed
+- All changes tracked in ReservationHistory
+
+### Update Reservation Status (STAFF)
+```bash
+PATCH /api/reservations/:id/status
+{
+  "status": "CONFIRMED",
+  "reason": "Deposit paid, reservation confirmed"
+}
+```
+
+**Status Workflow**:
+- `PENDING` → `CONFIRMED` or `CANCELLED`
+- `CONFIRMED` → `COMPLETED` or `CANCELLED`
+- `COMPLETED` → (no transitions)
+- `CANCELLED` → (no transitions)
+
+### Cancel Reservation (ADMIN)
+```bash
+DELETE /api/reservations/:id
+{
+  "reason": "Client request"
+}
+```
+
+**Note**: Sets status to CANCELLED and archives the reservation
+
+---
+
 ## 🔒 Role-Based Access Control
 
 | Endpoint | ADMIN | EMPLOYEE | CLIENT |
@@ -308,6 +457,12 @@ DELETE /api/event-types/:id
 | Create | ✅ | ❌ | ❌ |
 | Update | ✅ | ❌ | ❌ |
 | Delete | ✅ | ❌ | ❌ |
+| **Reservations** |
+| List/Get | ✅ | ✅ | ❌ |
+| Create | ✅ | ✅ | ❌ |
+| Update | ✅ | ✅ | ❌ |
+| Update Status | ✅ | ✅ | ❌ |
+| Cancel | ✅ | ❌ | ❌ |
 
 ---
 
@@ -375,20 +530,6 @@ DELETE /api/event-types/:id
 }
 ```
 
-### Pagination (Coming in Sprint 3)
-```json
-{
-  "success": true,
-  "data": [ /* items */ ],
-  "pagination": {
-    "page": 1,
-    "perPage": 20,
-    "total": 150,
-    "totalPages": 8
-  }
-}
-```
-
 ---
 
 ## 🔧 Development
@@ -423,23 +564,51 @@ TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
 # Use token
 curl http://localhost:3001/api/halls \
   -H "Authorization: Bearer $TOKEN"
+
+# Create reservation
+curl -X POST http://localhost:3001/api/reservations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "hallId": "uuid",
+    "clientId": "uuid",
+    "eventTypeId": "uuid",
+    "date": "2026-06-15",
+    "startTime": "18:00",
+    "endTime": "23:00",
+    "guests": 80
+  }'
 ```
 
 ---
 
-## 🚀 Next API Module
+## ✅ Implementation Status
 
-### Reservation Management (Sprint 3)
-- `POST /api/reservations` - Create reservation
-- `GET /api/reservations` - List with filters
-- `GET /api/reservations/:id` - Get details
-- `PUT /api/reservations/:id` - Update reservation
-- `PATCH /api/reservations/:id/status` - Change status
-- `DELETE /api/reservations/:id` - Cancel reservation
+### Completed (100%)
+- ✅ Authentication & Authorization
+- ✅ Hall Management API (5 endpoints)
+- ✅ Client Management API (5 endpoints)
+- ✅ Event Type Management API (5 endpoints)
+- ✅ Reservation Management API (6 endpoints)
 
-**Features**:
-- Overlap detection
-- Price calculation
-- Status workflow
-- Deposit tracking
-- History audit trail
+**Total**: 21 REST API endpoints
+
+### Features Implemented
+- ✅ JWT Authentication
+- ✅ Role-Based Access Control (ADMIN, EMPLOYEE, CLIENT)
+- ✅ Automatic price calculation
+- ✅ Overlap detection for reservations
+- ✅ Status workflow management
+- ✅ Complete audit trail (ReservationHistory)
+- ✅ Comprehensive validation
+- ✅ Business rules enforcement
+
+---
+
+## 📈 API Statistics
+
+- **Modules**: 4 (Auth, Halls, Clients, Event Types, Reservations)
+- **Endpoints**: 21
+- **Story Points**: 60/60 (100%)
+- **Version**: 1.0.0
+- **Status**: ✅ Production Ready
