@@ -17,9 +17,13 @@ class ApiClient {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('auth_token')
+        // Try both 'token' and 'auth_token' for backwards compatibility
+        const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
+          console.log('API Request with token:', config.url)
+        } else {
+          console.warn('No token found for API request:', config.url)
         }
         return config
       },
@@ -28,12 +32,18 @@ class ApiClient {
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('API Response:', response.config.url, response.status, response.data)
+        return response
+      },
       (error: AxiosError) => {
+        console.error('API Error:', error.config?.url, error.response?.status, error.response?.data)
+        
         if (error.response) {
-          const message = (error.response.data as any)?.message || 'Wystąpił błąd'
+          const message = (error.response.data as any)?.error || (error.response.data as any)?.message || 'Wystąpił błąd'
           
           if (error.response.status === 401) {
+            localStorage.removeItem('token')
             localStorage.removeItem('auth_token')
             window.location.href = '/login'
             toast.error('Sesja wygasła. Zaloguj się ponownie.')
