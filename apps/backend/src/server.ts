@@ -4,6 +4,10 @@ import cors from 'cors';
 import logger from '@utils/logger';
 import { errorHandler } from '@middlewares/errorHandler';
 import authRoutes from '@/routes/auth.routes';
+import hallRoutes from '@/routes/hall.routes';
+import clientRoutes from '@/routes/client.routes';
+import eventTypeRoutes from '@/routes/eventType.routes';
+import reservationRoutes from '@/routes/reservation.routes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +52,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
  * API Routes
  */
 app.use('/api/auth', authRoutes);
+app.use('/api/halls', hallRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/event-types', eventTypeRoutes);
+app.use('/api/reservations', reservationRoutes);
 
 /**
  * 404 Handler
