@@ -19,13 +19,15 @@ import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel 
 import { ReservationStatus } from '@/types'
 import { Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ReservationDetailsModal } from './reservation-details-modal'
+import { toast } from 'sonner'
+import { apiClient } from '@/lib/api-client'
 
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | ''>('')
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
 
-  const { data, isLoading, error } = useReservations({
+  const { data, isLoading, error, mutate } = useReservations({
     page,
     pageSize: 20,
     status: statusFilter || undefined,
@@ -38,6 +40,56 @@ export function ReservationsList() {
     { value: 'COMPLETED', label: 'Zakończone' },
     { value: 'CANCELLED', label: 'Anulowane' },
   ]
+
+  const handleEdit = (reservationId: string) => {
+    toast.info('Funkcja edycji w budowie')
+    // TODO: Implement edit functionality
+  }
+
+  const handleGeneratePDF = async (reservationId: string) => {
+    try {
+      toast.info('Generowanie PDF...')
+      // TODO: Implement PDF generation
+      toast.success('PDF wygenerowany pomyślnie')
+    } catch (error) {
+      toast.error('Błąd podczas generowania PDF')
+    }
+  }
+
+  const handleArchive = async (reservationId: string) => {
+    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) {
+      return
+    }
+
+    try {
+      await apiClient.patch(`/reservations/${reservationId}`, {
+        archivedAt: new Date().toISOString()
+      })
+      toast.success('Rezerwacja zarchiwizowana')
+      mutate() // Refresh list
+    } catch (error) {
+      toast.error('Błąd podczas archiwizacji')
+    }
+  }
+
+  const handleDelete = async (reservationId: string, status: string) => {
+    if (status === 'CONFIRMED') {
+      toast.error('Nie można usunąć potwierdzonej rezerwacji. Anuluj ją najpierw.')
+      return
+    }
+
+    if (!confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')) {
+      return
+    }
+
+    try {
+      await apiClient.delete(`/reservations/${reservationId}`)
+      toast.success('Rezerwacja anulowana')
+      mutate() // Refresh list
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Błąd podczas anulowania rezerwacji')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -132,19 +184,42 @@ export function ReservationsList() {
                         size="sm"
                         variant="ghost"
                         onClick={() => setSelectedReservationId(reservation.id)}
+                        title="Zobacz szczegóły"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleEdit(reservation.id)}
+                        title="Edytuj rezerwację"
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleGeneratePDF(reservation.id)}
+                        title="Generuj PDF"
+                      >
                         <FileText className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleArchive(reservation.id)}
+                        title="Archiwizuj"
+                        disabled={reservation.status === 'CANCELLED'}
+                      >
                         <Archive className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleDelete(reservation.id, reservation.status)}
+                        title="Anuluj rezerwację"
+                        disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
+                      >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>
