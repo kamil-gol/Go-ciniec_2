@@ -40,27 +40,49 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
   const onSubmit = async (data: ClientFormData) => {
     setLoading(true)
     try {
-      console.log('Sending client data:', data)
-      const response = await apiClient.post('/clients', data)
-      console.log('Response:', response.data)
-      const newClient = response.data.data || response.data
+      console.log('=== CREATING CLIENT ====')
+      console.log('Data to send:', data)
       
-      toast.success('Klient dodany pomyślnie!')
-      reset()
-      onSuccess(newClient)
-      onClose()
+      const response = await apiClient.post('/clients', data)
+      
+      console.log('Raw response:', response)
+      console.log('Response data:', response.data)
+      console.log('Response status:', response.status)
+      
+      // Backend returns {success: true, data: {...}, message: "..."}
+      if (response.data.success) {
+        const newClient = response.data.data
+        console.log('New client created:', newClient)
+        
+        toast.success('Klient dodany pomyślnie!')
+        reset()
+        onSuccess(newClient)
+        onClose()
+      } else {
+        throw new Error(response.data.error || 'Nieznany błąd')
+      }
     } catch (error: any) {
-      console.error('Error creating client:', error)
-      console.error('Error response:', error.response?.data)
-      toast.error(error.response?.data?.error || error.response?.data?.message || 'Błąd podczas dodawania klienta')
+      console.error('=== ERROR CREATING CLIENT ===')
+      console.error('Error object:', error)
+      console.error('Error response:', error.response)
+      console.error('Error response data:', error.response?.data)
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Błąd podczas dodawania klienta'
+      
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
   const handleClose = () => {
-    reset()
-    onClose()
+    if (!loading) {
+      reset()
+      onClose()
+    }
   }
 
   return (
@@ -76,12 +98,14 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
               label="Imię"
               placeholder="Jan"
               error={errors.firstName?.message}
+              disabled={loading}
               {...register('firstName')}
             />
             <Input
               label="Nazwisko"
               placeholder="Kowalski"
               error={errors.lastName?.message}
+              disabled={loading}
               {...register('lastName')}
             />
           </div>
@@ -91,6 +115,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
             label="Email"
             placeholder="jan.kowalski@example.com"
             error={errors.email?.message}
+            disabled={loading}
             {...register('email')}
           />
 
@@ -99,6 +124,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
             label="Telefon"
             placeholder="+48 123 456 789"
             error={errors.phone?.message}
+            disabled={loading}
             {...register('phone')}
           />
 
@@ -112,7 +138,11 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
             >
               Anuluj
             </Button>
-            <Button type="submit" disabled={loading} className="flex-1 sm:flex-none">
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="flex-1 sm:flex-none"
+            >
               {loading ? 'Dodawanie...' : 'Dodaj klienta'}
             </Button>
           </DialogFooter>
