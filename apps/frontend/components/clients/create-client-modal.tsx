@@ -63,73 +63,74 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px] max-w-[90vw]">
         <DialogHeader>
           <DialogTitle>Dodaj nowego klienta</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-6 pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-secondary-500" />
-                <Input
-                  label="Imię"
-                  placeholder="Jan"
-                  error={errors.firstName?.message}
-                  {...register('firstName')}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-secondary-500" />
-                <Input
-                  label="Nazwisko"
-                  placeholder="Kowalski"
-                  error={errors.lastName?.message}
-                  {...register('lastName')}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-secondary-500" />
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
+                <User className="inline w-4 h-4 mr-1" />
+                Imię
+              </label>
               <Input
-                type="email"
-                label="Email"
-                placeholder="jan.kowalski@example.com"
-                error={errors.email?.message}
-                {...register('email')}
+                placeholder="Jan"
+                error={errors.firstName?.message}
+                {...register('firstName')}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
+                <User className="inline w-4 h-4 mr-1" />
+                Nazwisko
+              </label>
+              <Input
+                placeholder="Kowalski"
+                error={errors.lastName?.message}
+                {...register('lastName')}
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-secondary-500" />
-              <Input
-                type="tel"
-                label="Telefon"
-                placeholder="+48 123 456 789"
-                error={errors.phone?.message}
-                {...register('phone')}
-              />
-            </div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1">
+              <Mail className="inline w-4 h-4 mr-1" />
+              Email
+            </label>
+            <Input
+              type="email"
+              placeholder="jan.kowalski@example.com"
+              error={errors.email?.message}
+              {...register('email')}
+            />
           </div>
 
-          <DialogFooter className="gap-2">
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1">
+              <Phone className="inline w-4 h-4 mr-1" />
+              Telefon
+            </label>
+            <Input
+              type="tel"
+              placeholder="+48 123 456 789"
+              error={errors.phone?.message}
+              {...register('phone')}
+            />
+          </div>
+
+          <DialogFooter className="flex gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
               disabled={loading}
+              className="flex-1 sm:flex-none"
             >
               Anuluj
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="flex-1 sm:flex-none">
               {loading ? 'Dodawanie...' : 'Dodaj klienta'}
             </Button>
           </DialogFooter>
