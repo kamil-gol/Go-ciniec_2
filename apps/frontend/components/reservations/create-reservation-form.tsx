@@ -14,8 +14,9 @@ import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { calculateTotalPrice, formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, UserPlus } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
+import { CreateClientModal } from '@/components/clients/create-client-modal'
 
 const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
@@ -41,9 +42,10 @@ interface CreateReservationFormProps {
 export function CreateReservationForm({ onSuccess, onCancel }: CreateReservationFormProps) {
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false)
   
   const { data: halls } = useHalls()
-  const { data: clientsData } = useClients()
+  const { data: clientsData, mutate: mutateClients } = useClients()
   const { data: eventTypes } = useEventTypes()
   const createReservation = useCreateReservation()
 
@@ -67,7 +69,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   useEffect(() => {
     const { hallId, guests } = watchedFields
     if (hallId && guests) {
-      const selectedHall = halls?.find((h) => h.id === hallId)
+      const selectedHall = halls?.data?.find((h) => h.id === hallId) || halls?.find((h) => h.id === hallId)
       if (selectedHall) {
         const price = calculateTotalPrice(guests, selectedHall.pricePerPerson)
         setCalculatedPrice(price)
@@ -78,12 +80,19 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   // Update capacity when hall changes
   useEffect(() => {
     if (watchedFields.hallId) {
-      const selectedHall = halls?.find((h) => h.id === watchedFields.hallId)
+      const selectedHall = halls?.data?.find((h) => h.id === watchedFields.hallId) || halls?.find((h) => h.id === watchedFields.hallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
       }
     }
   }, [watchedFields.hallId, halls])
+
+  const handleClientCreated = (newClient: any) => {
+    // Refresh clients list
+    mutateClients()
+    // Set the new client as selected
+    setValue('clientId', newClient.id)
+  }
 
   const onSubmit = async (data: ReservationFormData) => {
     const input: CreateReservationInput = {
@@ -112,20 +121,24 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
   }
 
-  const hallOptions = halls?.map((hall) => ({
+  const hallsArray = halls?.data || halls || []
+  const clientsArray = clientsData?.data || []
+  const eventTypesArray = eventTypes?.data || eventTypes || []
+
+  const hallOptions = hallsArray.map((hall) => ({
     value: hall.id,
     label: `${hall.name} (max ${hall.capacity} osób)`,
-  })) || [{ value: '', label: 'Wybierz salę...' }]
+  }))
 
-  const clientOptions = clientsData?.data?.map((client) => ({
+  const clientOptions = clientsArray.map((client) => ({
     value: client.id,
     label: `${client.firstName} ${client.lastName}`,
-  })) || [{ value: '', label: 'Wybierz klienta...' }]
+  }))
 
-  const eventTypeOptions = eventTypes?.map((type) => ({
+  const eventTypeOptions = eventTypesArray.map((type) => ({
     value: type.id,
     label: type.name,
-  })) || [{ value: '', label: 'Wybierz typ wydarzenia...' }]
+  }))
 
   return (
     <motion.div
@@ -154,13 +167,31 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               )}
             </div>
 
-            {/* Client Selection */}
-            <Select
-              label="Klient"
-              options={clientOptions}
-              error={errors.clientId?.message}
-              {...register('clientId')}
-            />
+            {/* Client Selection with Add Button */}
+            <div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Select
+                    label="Klient"
+                    options={clientOptions}
+                    error={errors.clientId?.message}
+                    {...register('clientId')}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowCreateClientModal(true)}
+                    title="Dodaj nowego klienta"
+                    className="h-10 w-10"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
 
             {/* Event Type */}
             <Select
@@ -311,6 +342,13 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
           </form>
         </CardContent>
       </Card>
+
+      {/* Create Client Modal */}
+      <CreateClientModal
+        open={showCreateClientModal}
+        onClose={() => setShowCreateClientModal(false)}
+        onSuccess={handleClientCreated}
+      />
     </motion.div>
   )
 }
