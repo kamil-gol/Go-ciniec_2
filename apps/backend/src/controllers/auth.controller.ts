@@ -1,11 +1,9 @@
 import { Response } from 'express';
 import { AuthenticatedRequest, ApiResponse } from '@types/index';
-import { AuthService } from '@services/auth.service';
+import { authService } from '@services/auth.service';
 import { AppError, asyncHandler } from '@middlewares/errorHandler';
 import { getPasswordRequirements } from '@utils/password';
 import logger from '@utils/logger';
-
-const authService = new AuthService();
 
 export const authController = {
   /**
@@ -28,7 +26,12 @@ export const authController = {
       throw new AppError(400, 'First and last name must be at least 2 characters');
     }
 
-    const result = await authService.register(email, password, firstName, lastName);
+    const result = await authService.register({
+      email,
+      password,
+      firstName,
+      lastName,
+    });
 
     const response: ApiResponse = {
       success: true,
@@ -68,11 +71,9 @@ export const authController = {
       throw new AppError(401, 'User not authenticated');
     }
 
-    const user = await authService.getUserById(req.user.id);
-
     const response: ApiResponse = {
       success: true,
-      data: { user },
+      data: { user: req.user },
     };
 
     res.json(response);
