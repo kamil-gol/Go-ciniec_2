@@ -155,6 +155,51 @@ async function main() {
         address: 'ul. Leśna 8, 40-003 Katowice',
       },
     }),
+    prisma.client.create({
+      data: {
+        firstName: 'Maria',
+        lastName: 'Wójcik',
+        email: 'maria.wojcik@example.com',
+        phone: '+48 600 111 222',
+        address: 'ul. Parkowa 12, 40-004 Katowice',
+      },
+    }),
+    prisma.client.create({
+      data: {
+        firstName: 'Tomasz',
+        lastName: 'Kamiński',
+        email: 'tomasz.kaminski@example.com',
+        phone: '+48 601 222 333',
+        address: 'ul. Zielona 5, 40-005 Katowice',
+      },
+    }),
+    prisma.client.create({
+      data: {
+        firstName: 'Katarzyna',
+        lastName: 'Lewandowska',
+        email: 'katarzyna.lewandowska@example.com',
+        phone: '+48 602 333 444',
+        address: 'ul. Różana 18, 40-006 Katowice',
+      },
+    }),
+    prisma.client.create({
+      data: {
+        firstName: 'Andrzej',
+        lastName: 'Zieliński',
+        email: 'andrzej.zielinski@example.com',
+        phone: '+48 603 444 555',
+        address: 'ul. Długa 25, 40-007 Katowice',
+      },
+    }),
+    prisma.client.create({
+      data: {
+        firstName: 'Magdalena',
+        lastName: 'Szymańska',
+        email: 'magdalena.szymanska@example.com',
+        phone: '+48 604 555 666',
+        address: 'ul. Krótka 7, 40-008 Katowice',
+      },
+    }),
   ])
 
   console.log('Created clients')
