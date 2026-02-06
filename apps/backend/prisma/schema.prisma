@@ -35,6 +35,8 @@ model Hall {
   capacity        Int      @db.SmallInt
   pricePerPerson  Decimal  @db.Decimal(10, 2)
   description     String?  @db.Text
+  amenities       String[] @db.Text
+  images          String[] @db.Text
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -48,11 +50,16 @@ model Hall {
 model EventType {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  color       String?  @db.VarChar(20)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   reservations Reservation[]
 
   @@index([name])
+  @@index([isActive])
 }
 
 model Client {
@@ -77,20 +84,16 @@ model Reservation {
   hallId          String   @db.Uuid
   clientId        String   @db.Uuid
   eventTypeId     String   @db.Uuid
-  createdBy       String   @db.Uuid
+  createdById     String   @db.Uuid
 
-  date            DateTime @db.Date
-  startTime       DateTime @db.Time
-  endTime         DateTime @db.Time
+  date            String   @db.VarChar(10)
+  startTime       String   @db.VarChar(5)
+  endTime         String   @db.VarChar(5)
   guests          Int      @db.SmallInt
 
   totalPrice      Decimal  @db.Decimal(10, 2)
   status          String   @default("PENDING") @db.VarChar(20)
   notes           String?  @db.Text
-
-  depositAmount   Decimal? @db.Decimal(10, 2)
-  depositDueDate  DateTime? @db.Date
-  depositPaid     Boolean  @default(false)
 
   attachments     String[] @db.Text
   archivedAt      DateTime?
@@ -101,22 +104,22 @@ model Reservation {
   hall            Hall     @relation(fields: [hallId], references: [id], onDelete: Restrict)
   client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   eventType       EventType @relation(fields: [eventTypeId], references: [id])
-  createdByUser   User     @relation("CreatedBy", fields: [createdBy], references: [id])
+  createdBy       User     @relation("CreatedBy", fields: [createdById], references: [id])
 
   history         ReservationHistory[]
-  deposit         Deposit?
+  deposits        Deposit[]
 
   @@index([date])
   @@index([hallId])
   @@index([clientId])
   @@index([status])
-  @@index([createdBy])
+  @@index([createdById])
 }
 
 model ReservationHistory {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   reservationId   String   @db.Uuid
-  changedBy       String   @db.Uuid
+  changedByUserId String   @db.Uuid
 
   changeType      String   @db.VarChar(20)
   fieldName       String?  @db.VarChar(100)
@@ -127,21 +130,21 @@ model ReservationHistory {
   createdAt       DateTime @default(now())
 
   reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-  changedByUser   User @relation("ChangedBy", fields: [changedBy], references: [id])
+  changedByUser   User @relation("ChangedBy", fields: [changedByUserId], references: [id])
 
   @@index([reservationId])
-  @@index([changedBy])
+  @@index([changedByUserId])
   @@index([createdAt])
 }
 
 model Deposit {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  reservationId   String   @unique @db.Uuid
+  reservationId   String   @db.Uuid
 
   amount          Decimal  @db.Decimal(10, 2)
-  dueDate         DateTime @db.Date
+  dueDate         String   @db.VarChar(10)
   paid            Boolean  @default(false)
-  paidDate        DateTime?
+  paidAt          DateTime?
   paymentMethod   String?  @db.VarChar(50)
 
   createdAt       DateTime @default(now())
@@ -149,6 +152,7 @@ model Deposit {
 
   reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
+  @@index([reservationId])
   @@index([dueDate])
   @@index([paid])
 }
