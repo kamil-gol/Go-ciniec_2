@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import { User, Mail, Phone } from 'lucide-react'
 
 const clientSchema = z.object({
   firstName: z.string().min(1, 'Imię jest wymagane'),
@@ -41,7 +40,9 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
   const onSubmit = async (data: ClientFormData) => {
     setLoading(true)
     try {
+      console.log('Sending client data:', data)
       const response = await apiClient.post('/clients', data)
+      console.log('Response:', response.data)
       const newClient = response.data.data || response.data
       
       toast.success('Klient dodany pomyślnie!')
@@ -50,7 +51,8 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
       onClose()
     } catch (error: any) {
       console.error('Error creating client:', error)
-      toast.error(error.response?.data?.error || 'Błąd podczas dodawania klienta')
+      console.error('Error response:', error.response?.data)
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Błąd podczas dodawania klienta')
     } finally {
       setLoading(false)
     }
@@ -70,55 +72,35 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-6 pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">
-                <User className="inline w-4 h-4 mr-1" />
-                Imię
-              </label>
-              <Input
-                placeholder="Jan"
-                error={errors.firstName?.message}
-                {...register('firstName')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">
-                <User className="inline w-4 h-4 mr-1" />
-                Nazwisko
-              </label>
-              <Input
-                placeholder="Kowalski"
-                error={errors.lastName?.message}
-                {...register('lastName')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1">
-              <Mail className="inline w-4 h-4 mr-1" />
-              Email
-            </label>
             <Input
-              type="email"
-              placeholder="jan.kowalski@example.com"
-              error={errors.email?.message}
-              {...register('email')}
+              label="Imię"
+              placeholder="Jan"
+              error={errors.firstName?.message}
+              {...register('firstName')}
+            />
+            <Input
+              label="Nazwisko"
+              placeholder="Kowalski"
+              error={errors.lastName?.message}
+              {...register('lastName')}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1">
-              <Phone className="inline w-4 h-4 mr-1" />
-              Telefon
-            </label>
-            <Input
-              type="tel"
-              placeholder="+48 123 456 789"
-              error={errors.phone?.message}
-              {...register('phone')}
-            />
-          </div>
+          <Input
+            type="email"
+            label="Email"
+            placeholder="jan.kowalski@example.com"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+
+          <Input
+            type="tel"
+            label="Telefon"
+            placeholder="+48 123 456 789"
+            error={errors.phone?.message}
+            {...register('phone')}
+          />
 
           <DialogFooter className="flex gap-2 pt-4">
             <Button
