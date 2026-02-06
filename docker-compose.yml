@@ -59,7 +59,7 @@ services:
     container_name: rezerwacje-web
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://62.171.189.172:3001}
       NEXT_PUBLIC_APP_NAME: 'Rezerwacje Gościniec Rodzinny'
     ports:
       - '${WEB_PORT:-3000}:3000'
