@@ -45,7 +45,6 @@ services:
         condition: service_healthy
     volumes:
       - ./apps/backend:/app
-      - /app/node_modules
       - ./apps/backend/uploads:/app/uploads
       - ./apps/backend/backups:/app/backups
     networks:
@@ -68,7 +67,6 @@ services:
       - backend
     volumes:
       - ./apps/frontend:/app
-      - /app/node_modules
       - /app/.next
     networks:
       - rezerwacje-network
