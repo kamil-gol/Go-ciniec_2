@@ -10,8 +10,30 @@ export interface ClientsFilters {
 export const clientsApi = {
   // Get all clients with filters
   getAll: async (filters: ClientsFilters = {}): Promise<PaginatedResponse<Client>> => {
+    console.log('Fetching clients with filters:', filters)
     const { data } = await apiClient.get('/clients', { params: filters })
-    return data.data || data // Handle both structures
+    console.log('Raw clients response:', data)
+    
+    // Backend returns: { success: true, data: [...], count: 8 }
+    if (data.success && data.data) {
+      const result = {
+        data: data.data,
+        total: data.count || data.data.length,
+        page: filters.page || 1,
+        pageSize: filters.pageSize || data.data.length
+      }
+      console.log('Parsed clients result:', result)
+      return result
+    }
+    
+    // Fallback for direct data array
+    console.warn('Unexpected response format, using fallback')
+    return {
+      data: Array.isArray(data) ? data : [],
+      total: Array.isArray(data) ? data.length : 0,
+      page: 1,
+      pageSize: Array.isArray(data) ? data.length : 0
+    }
   },
 
   // Get single client by ID
