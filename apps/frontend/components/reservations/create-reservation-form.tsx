@@ -125,20 +125,32 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const clientsArray = clientsData?.data || []
   const eventTypesArray = eventTypes?.data || eventTypes || []
 
-  const hallOptions = hallsArray.map((hall) => ({
-    value: hall.id,
-    label: `${hall.name} (max ${hall.capacity} osób)`,
-  }))
+  console.log('Clients data:', clientsData)
+  console.log('Clients array:', clientsArray)
 
-  const clientOptions = clientsArray.map((client) => ({
-    value: client.id,
-    label: `${client.firstName} ${client.lastName}`,
-  }))
+  const hallOptions = [
+    { value: '', label: 'Wybierz salę...' },
+    ...hallsArray.map((hall) => ({
+      value: hall.id,
+      label: `${hall.name} (max ${hall.capacity} osób)`,
+    }))
+  ]
 
-  const eventTypeOptions = eventTypesArray.map((type) => ({
-    value: type.id,
-    label: type.name,
-  }))
+  const clientOptions = [
+    { value: '', label: 'Wybierz klienta...' },
+    ...clientsArray.map((client) => ({
+      value: client.id,
+      label: `${client.firstName} ${client.lastName}`,
+    }))
+  ]
+
+  const eventTypeOptions = [
+    { value: '', label: 'Wybierz typ wydarzenia...' },
+    ...eventTypesArray.map((type) => ({
+      value: type.id,
+      label: type.name,
+    }))
+  ]
 
   return (
     <motion.div
@@ -177,6 +189,11 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                     error={errors.clientId?.message}
                     {...register('clientId')}
                   />
+                  {clientsArray.length === 0 && (
+                    <p className="mt-1 text-sm text-secondary-600">
+                      Brak klientów. Dodaj nowego klienta klikając +
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-end">
                   <Button
