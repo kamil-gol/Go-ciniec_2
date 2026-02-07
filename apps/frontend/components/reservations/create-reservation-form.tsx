@@ -122,11 +122,11 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
   }, [adults, pricePerAdult, setValue, childPriceManuallySet])
 
-  // Auto-set default paid date to now when marking as paid
+  // Auto-set default paid date to today when marking as paid
   useEffect(() => {
     if (depositPaid && !watchedFields.depositPaidAt) {
-      const now = new Date()
-      const dateStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+      const today = new Date()
+      const dateStr = today.toISOString().split('T')[0] // YYYY-MM-DD format
       setValue('depositPaidAt', dateStr)
     }
   }, [depositPaid, watchedFields.depositPaidAt, setValue])
@@ -648,8 +648,8 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                           {...register('depositPaymentMethod')}
                         />
                         <Input
-                          type="datetime-local"
-                          label="Data i czas płatności"
+                          type="date"
+                          label="Data płatności"
                           error={errors.depositPaidAt?.message}
                           {...register('depositPaidAt')}
                         />
