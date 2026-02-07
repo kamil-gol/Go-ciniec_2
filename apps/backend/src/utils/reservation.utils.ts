@@ -6,22 +6,24 @@
 import { CreateReservationDTO, UpdateReservationDTO } from '../types/reservation.types';
 
 /**
- * Calculate total number of guests
+ * Calculate total number of guests (including toddlers)
  */
-export function calculateTotalGuests(adults: number, children: number): number {
-  return adults + children;
+export function calculateTotalGuests(adults: number, children: number, toddlers: number = 0): number {
+  return adults + children + toddlers;
 }
 
 /**
- * Calculate total price based on guests and pricing
+ * Calculate total price based on guests and pricing (including toddlers)
  */
 export function calculateTotalPrice(
   adults: number,
   children: number,
   pricePerAdult: number,
-  pricePerChild: number
+  pricePerChild: number,
+  toddlers: number = 0,
+  pricePerToddler: number = 0
 ): number {
-  return (adults * pricePerAdult) + (children * pricePerChild);
+  return (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler);
 }
 
 /**
@@ -128,7 +130,17 @@ export function detectReservationChanges(
       field: 'children',
       oldValue: oldData.children,
       newValue: newData.children,
-      label: 'Liczba dzieci'
+      label: 'Liczba dzieci (4-12)'
+    });
+  }
+  
+  // Compare toddlers
+  if (newData.toddlers !== undefined && newData.toddlers !== oldData.toddlers) {
+    changes.push({
+      field: 'toddlers',
+      oldValue: oldData.toddlers,
+      newValue: newData.toddlers,
+      label: 'Liczba dzieci (0-3)'
     });
   }
   
@@ -148,7 +160,17 @@ export function detectReservationChanges(
       field: 'pricePerChild',
       oldValue: oldData.pricePerChild,
       newValue: newData.pricePerChild,
-      label: 'Cena za dziecko'
+      label: 'Cena za dziecko (4-12)'
+    });
+  }
+  
+  // Compare pricePerToddler
+  if (newData.pricePerToddler !== undefined && newData.pricePerToddler !== Number(oldData.pricePerToddler)) {
+    changes.push({
+      field: 'pricePerToddler',
+      oldValue: oldData.pricePerToddler,
+      newValue: newData.pricePerToddler,
+      label: 'Cena za dziecko (0-3)'
     });
   }
   
