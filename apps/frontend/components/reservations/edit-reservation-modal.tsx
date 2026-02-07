@@ -16,6 +16,7 @@ import { useEventTypes } from '@/hooks/use-event-types'
 import { calculateTotalPrice, formatCurrency } from '@/lib/utils'
 import { Calendar, Clock, Users, DollarSign, FileText } from 'lucide-react'
 import { ReservationStatus } from '@/types'
+import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
 
 const reservationSchema = z.object({
@@ -48,6 +49,8 @@ export function EditReservationModal({
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
   const [isFormReady, setIsFormReady] = useState(false)
+  const [originalStatus, setOriginalStatus] = useState<ReservationStatus>('PENDING')
+  const [isSaving, setIsSaving] = useState(false)
 
   const { data: reservation, isLoading: loadingReservation } = useReservation(reservationId)
   const { data: halls } = useHalls()
@@ -91,7 +94,6 @@ export function EditReservationModal({
   useEffect(() => {
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
-      console.log('Full reservation object:', reservation)
       
       // Extract date and time from old or new format
       let date = ''
@@ -109,6 +111,9 @@ export function EditReservationModal({
         startTime = reservation.startTime
         endTime = reservation.endTime
       }
+      
+      // Store original status
+      setOriginalStatus(reservation.status || 'PENDING')
       
       // Set form values
       setValue('hallId', reservation.hallId || '')
@@ -151,7 +156,13 @@ export function EditReservationModal({
 
   const onSubmit = async (data: ReservationFormData) => {
     console.log('Submitting form with data:', data)
+    setIsSaving(true)
+    
     try {
+      // Check if status changed
+      const statusChanged = data.status !== originalStatus
+      
+      // Update reservation details (not status)
       await updateReservation.mutateAsync({
         id: reservationId,
         input: {
@@ -166,12 +177,26 @@ export function EditReservationModal({
           reason: 'Edycja rezerwacji',
         },
       })
+      
+      // If status changed, update it separately
+      if (statusChanged) {
+        console.log('Status changed from', originalStatus, 'to', data.status)
+        await reservationsApi.updateStatus(
+          reservationId,
+          data.status,
+          `Zmiana statusu z ${originalStatus} na ${data.status}`
+        )
+      }
+      
       toast.success('Rezerwacja zaktualizowana pomyślnie')
       onSuccess?.()
       onClose() // Close modal after successful save
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update reservation:', error)
-      toast.error('Błąd podczas aktualizacji rezerwacji')
+      const errorMessage = error.response?.data?.error || error.message || 'Błąd podczas aktualizacji rezerwacji'
+      toast.error(errorMessage)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -237,6 +262,11 @@ export function EditReservationModal({
               value={watchedFields.status}
               {...register('status')}
             />
+            {watchedFields.status !== originalStatus && (
+              <p className="mt-1 text-sm text-amber-600">
+                ⚠️ Zmiana statusu: {originalStatus} → {watchedFields.status}
+              </p>
+            )}
           </div>
 
           {/* Hall Selection */}
@@ -363,15 +393,15 @@ export function EditReservationModal({
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={updateReservation.isPending}
+              disabled={isSaving}
             >
               Anuluj
             </Button>
             <Button
               type="submit"
-              disabled={updateReservation.isPending}
+              disabled={isSaving}
             >
-              {updateReservation.isPending ? 'Zapisywanie...' : 'Zapisz Zmiany'}
+              {isSaving ? 'Zapisywanie...' : 'Zapisz Zmiany'}
             </Button>
           </div>
         </form>
