@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Loading } from '@/components/ui/loading'
-import { useReservation, useUpdateReservation } from '@/hooks/use-reservations'
+import { useReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
@@ -18,6 +18,7 @@ import { Calendar, Clock, Users, DollarSign, FileText } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
@@ -52,11 +53,11 @@ export function EditReservationModal({
   const [originalStatus, setOriginalStatus] = useState<ReservationStatus>('PENDING')
   const [isSaving, setIsSaving] = useState(false)
 
+  const queryClient = useQueryClient()
   const { data: reservation, isLoading: loadingReservation } = useReservation(reservationId)
   const { data: halls } = useHalls()
   const { data: clientsData } = useClients()
   const { data: eventTypes } = useEventTypes()
-  const updateReservation = useUpdateReservation()
 
   const {
     register,
@@ -163,19 +164,16 @@ export function EditReservationModal({
       const statusChanged = data.status !== originalStatus
       
       // Update reservation details (not status)
-      await updateReservation.mutateAsync({
-        id: reservationId,
-        input: {
-          hallId: data.hallId,
-          clientId: data.clientId,
-          eventTypeId: data.eventTypeId,
-          date: data.date,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          guests: data.guests,
-          notes: data.notes,
-          reason: 'Edycja rezerwacji',
-        },
+      await reservationsApi.update(reservationId, {
+        hallId: data.hallId,
+        clientId: data.clientId,
+        eventTypeId: data.eventTypeId,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        guests: data.guests,
+        notes: data.notes,
+        reason: 'Edycja rezerwacji',
       })
       
       // If status changed, update it separately
@@ -187,6 +185,10 @@ export function EditReservationModal({
           `Zmiana statusu z ${originalStatus} na ${data.status}`
         )
       }
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] })
       
       toast.success('Rezerwacja zaktualizowana pomyślnie')
       onSuccess?.()
