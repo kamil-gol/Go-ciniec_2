@@ -102,7 +102,8 @@ export function ReservationDetailsModal({
   const duration = calculateDuration(reservation)
   const adults = reservation.adults || 0
   const children = reservation.children || 0
-  const totalGuests = reservation.guests || (adults + children)
+  const toddlers = reservation.toddlers || 0
+  const totalGuests = reservation.guests || (adults + children + toddlers)
 
   return (
     <>
@@ -157,13 +158,14 @@ export function ReservationDetailsModal({
                 </div>
               </div>
 
+              {/* UPDATED: Show three age groups */}
               <div className="flex items-start gap-3">
                 <Users className="w-5 h-5 text-primary-600 mt-0.5" />
                 <div>
                   <p className="text-sm text-secondary-600">Goście</p>
                   <p className="font-medium text-lg">{totalGuests} osób</p>
-                  {(adults > 0 || children > 0) && (
-                    <div className="flex gap-4 mt-2 text-sm text-secondary-600">
+                  {(adults > 0 || children > 0 || toddlers > 0) && (
+                    <div className="space-y-1 mt-2 text-sm text-secondary-600">
                       {adults > 0 && (
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
@@ -172,8 +174,14 @@ export function ReservationDetailsModal({
                       )}
                       {children > 0 && (
                         <div className="flex items-center gap-1">
-                          <Baby className="w-4 h-4" />
-                          <span>{children} dzieci</span>
+                          <Baby className="w-4 h-4 text-blue-600" />
+                          <span>{children} dzieci (4-12)</span>
+                        </div>
+                      )}
+                      {toddlers > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Baby className="w-4 h-4 text-green-600" />
+                          <span>{toddlers} dzieci (0-3)</span>
                         </div>
                       )}
                     </div>
@@ -262,7 +270,7 @@ export function ReservationDetailsModal({
               </div>
             </div>
 
-            {/* Price Breakdown */}
+            {/* Price Breakdown - UPDATED: Three age groups */}
             <div className="border-t pt-4">
               <div className="flex items-start gap-3">
                 <DollarSign className="w-5 h-5 text-primary-600 mt-0.5" />
@@ -270,7 +278,7 @@ export function ReservationDetailsModal({
                   <p className="text-sm text-secondary-600 mb-2">Rozliczenie</p>
                   
                   {/* Price breakdown if available */}
-                  {(reservation.pricePerAdult || reservation.pricePerChild) && (adults > 0 || children > 0) && (
+                  {(reservation.pricePerAdult || reservation.pricePerChild || reservation.pricePerToddler) && (adults > 0 || children > 0 || toddlers > 0) && (
                     <div className="space-y-2 mb-3">
                       {adults > 0 && reservation.pricePerAdult && (
                         <div className="flex justify-between text-sm">
@@ -283,9 +291,17 @@ export function ReservationDetailsModal({
                       {children > 0 && reservation.pricePerChild && (
                         <div className="flex justify-between text-sm">
                           <span className="text-secondary-600">
-                            Dzieci: {children} × {reservation.pricePerChild} zł
+                            Dzieci (4-12): {children} × {reservation.pricePerChild} zł
                           </span>
                           <span className="font-medium">{children * reservation.pricePerChild} zł</span>
+                        </div>
+                      )}
+                      {toddlers > 0 && reservation.pricePerToddler && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-secondary-600">
+                            Dzieci (0-3): {toddlers} × {reservation.pricePerToddler} zł
+                          </span>
+                          <span className="font-medium">{toddlers * reservation.pricePerToddler} zł</span>
                         </div>
                       )}
                       <div className="border-t pt-2"></div>
