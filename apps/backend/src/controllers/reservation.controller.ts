@@ -1,6 +1,6 @@
 /**
  * Reservation Controller
- * Handle HTTP requests for reservation management
+ * Handle HTTP requests for reservation management with advanced features
  */
 
 import { Request, Response } from 'express';
@@ -40,10 +40,26 @@ export class ReservationController {
         return;
       }
 
-      if (!data.date || !data.startTime || !data.endTime || !data.guests) {
+      // Validate either new format (startDateTime/endDateTime) or legacy format (date/startTime/endTime)
+      const hasNewFormat = data.startDateTime && data.endDateTime;
+      const hasLegacyFormat = data.date && data.startTime && data.endTime;
+      
+      if (!hasNewFormat && !hasLegacyFormat) {
         res.status(400).json({
           success: false,
-          error: 'Date, start time, end time, and number of guests are required'
+          error: 'Either startDateTime/endDateTime or date/startTime/endTime are required'
+        });
+        return;
+      }
+
+      // Validate guests: either adults+children or legacy guests field
+      const hasGuestBreakdown = (data.adults !== undefined && data.adults >= 0) || (data.children !== undefined && data.children >= 0);
+      const hasLegacyGuests = data.guests !== undefined && data.guests > 0;
+      
+      if (!hasGuestBreakdown && !hasLegacyGuests) {
+        res.status(400).json({
+          success: false,
+          error: 'Either adults/children counts or total guests count is required'
         });
         return;
       }
@@ -119,6 +135,8 @@ export class ReservationController {
   /**
    * Update reservation
    * PUT /api/reservations/:id
+   * 
+   * Note: Requires 'reason' field (min 10 characters) if making changes to important fields
    */
   async updateReservation(req: Request, res: Response): Promise<void> {
     try {
@@ -130,6 +148,23 @@ export class ReservationController {
         res.status(401).json({
           success: false,
           error: 'User not authenticated'
+        });
+        return;
+      }
+
+      // Validation for important fields that require a reason
+      const hasImportantChanges = 
+        data.startDateTime !== undefined ||
+        data.endDateTime !== undefined ||
+        data.adults !== undefined ||
+        data.children !== undefined ||
+        data.pricePerAdult !== undefined ||
+        data.pricePerChild !== undefined;
+
+      if (hasImportantChanges && (!data.reason || data.reason.length < 10)) {
+        res.status(400).json({
+          success: false,
+          error: 'Reason is required for important changes (minimum 10 characters)'
         });
         return;
       }
