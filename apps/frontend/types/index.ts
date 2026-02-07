@@ -21,6 +21,7 @@ export interface Hall {
   name: string
   capacity: number
   pricePerPerson: number
+  pricePerChild?: number // New field - optional price per child
   description?: string
   isActive: boolean
   createdAt: string
@@ -63,12 +64,31 @@ export interface Reservation {
   client?: Client
   eventTypeId: string
   eventType?: EventType
-  date: string
-  startTime: string
-  endTime: string
-  guests: number
+  customEventType?: string // New field - for "Inne" event type
+  anniversaryYear?: number // New field - for "Rocznica" (which anniversary)
+  anniversaryOccasion?: string // New field - for "Rocznica" (what occasion)
+  
+  // Date and time fields - supporting both old and new format
+  date?: string // Old format - kept for backwards compatibility
+  startTime?: string // Old format - kept for backwards compatibility  
+  endTime?: string // Old format - kept for backwards compatibility
+  startDateTime: string // New field - full datetime for event start
+  endDateTime: string // New field - full datetime for event end
+  
+  // Guest count split
+  adults: number // New field - number of adults
+  children: number // New field - number of children
+  guests: number // Computed field - total guests (adults + children)
+  
+  // Pricing
+  pricePerAdult: number // New field - price per adult
+  pricePerChild: number // New field - price per child  
   totalPrice: number
+  
+  // Status related
   status: ReservationStatus
+  confirmationDeadline?: string // New field - for PENDING status, max 1 day before event
+  
   notes?: string
   createdBy: string
   createdByUser?: User
@@ -131,10 +151,20 @@ export interface CreateReservationInput {
   hallId: string
   clientId: string
   eventTypeId: string
-  date: string
-  startTime: string
-  endTime: string
-  guests: number
+  customEventType?: string // For "Inne" event type
+  anniversaryYear?: number // For "Rocznica"
+  anniversaryOccasion?: string // For "Rocznica"
+  
+  startDateTime: string // Full ISO datetime
+  endDateTime: string // Full ISO datetime
+  
+  adults: number
+  children: number
+  pricePerAdult: number
+  pricePerChild: number
+  
+  confirmationDeadline?: string // For PENDING status
+  
   notes?: string
   deposit?: {
     amount: number
@@ -143,7 +173,7 @@ export interface CreateReservationInput {
 }
 
 export interface UpdateReservationInput extends Partial<CreateReservationInput> {
-  reason: string
+  reason: string // Required, min 10 characters
 }
 
 export interface CancelReservationInput {
