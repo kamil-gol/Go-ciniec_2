@@ -78,6 +78,15 @@ export const reservationsApi = {
     return data.data || data // Handle both structures
   },
 
+  // Update reservation status - Uses separate endpoint with validation
+  updateStatus: async (id: string, status: ReservationStatus, reason?: string): Promise<Reservation> => {
+    const { data } = await apiClient.patch(`/reservations/${id}/status`, {
+      status,
+      reason: reason || 'Status updated'
+    })
+    return data.data || data // Handle both structures
+  },
+
   // Cancel reservation
   cancel: async (id: string, input: CancelReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.delete(`/reservations/${id}`, { data: input })
