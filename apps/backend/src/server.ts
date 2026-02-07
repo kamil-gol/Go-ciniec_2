@@ -8,6 +8,7 @@ import hallRoutes from '@/routes/hall.routes';
 import clientRoutes from '@/routes/client.routes';
 import eventTypeRoutes from '@/routes/eventType.routes';
 import reservationRoutes from '@/routes/reservation.routes';
+import depositRoutes from '@/routes/deposit.routes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -56,6 +57,7 @@ app.use('/api/halls', hallRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/event-types', eventTypeRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/deposits', depositRoutes);
 
 /**
  * 404 Handler
