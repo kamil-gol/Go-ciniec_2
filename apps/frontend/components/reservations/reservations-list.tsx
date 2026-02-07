@@ -16,7 +16,7 @@ import { Loading } from '@/components/ui/loading'
 import { useReservations } from '@/hooks/use-reservations'
 import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
-import { Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight, Users, Baby } from 'lucide-react'
+import { Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight, Users, Baby, Smile } from 'lucide-react'
 import { ReservationDetailsModal } from './reservation-details-modal'
 import { EditReservationModal } from './edit-reservation-modal'
 import { toast } from 'sonner'
@@ -236,7 +236,7 @@ export function ReservationsList() {
                             )}
                             {guestInfo.children > 0 && (
                               <div className="flex items-center gap-1" title="Dzieci 4-12">
-                                <Baby className="w-3 h-3 text-blue-600" />
+                                <Smile className="w-3 h-3 text-blue-600" />
                                 <span>{guestInfo.children}</span>
                               </div>
                             )}
