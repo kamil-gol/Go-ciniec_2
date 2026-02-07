@@ -14,7 +14,7 @@ import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock, Smile } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
@@ -573,7 +573,7 @@ export function EditReservationModal({
             </div>
           )}
 
-          {/* Guest Counts - UPDATED: Three age groups */}
+          {/* Guest Counts - UPDATED: Three age groups with distinct icons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-secondary-500" />
@@ -586,7 +586,7 @@ export function EditReservationModal({
               />
             </div>
             <div className="flex items-center gap-2">
-              <Baby className="w-5 h-5 text-secondary-500" />
+              <Smile className="w-5 h-5 text-blue-600" />
               <Input
                 type="number"
                 label="Liczba dzieci (4-12)"
@@ -597,7 +597,7 @@ export function EditReservationModal({
               />
             </div>
             <div className="flex items-center gap-2">
-              <Baby className="w-5 h-5 text-secondary-500" />
+              <Baby className="w-5 h-5 text-green-600" />
               <Input
                 type="number"
                 label="Liczba dzieci (0-3)"
