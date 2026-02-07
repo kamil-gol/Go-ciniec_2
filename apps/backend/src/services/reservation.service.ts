@@ -1,6 +1,7 @@
 /**
  * Reservation Service
  * Business logic for reservation management with advanced features
+ * UPDATED: Full support for toddlers (0-3 years) age group
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -82,17 +83,19 @@ export class ReservationService {
       throw new Error(customValidation.error);
     }
 
-    // Determine guests: use adults+children if provided, otherwise fall back to guests
+    // Determine guests: use adults+children+toddlers if provided, otherwise fall back to guests
     let adults = data.adults ?? 0;
     let children = data.children ?? 0;
+    let toddlers = data.toddlers ?? 0;
     let guests = data.guests ?? 0;
 
-    if (adults > 0 || children > 0) {
-      guests = calculateTotalGuests(adults, children);
+    if (adults > 0 || children > 0 || toddlers > 0) {
+      guests = calculateTotalGuests(adults, children, toddlers);
     } else if (guests > 0) {
       // Legacy mode: all guests are adults
       adults = guests;
       children = 0;
+      toddlers = 0;
     } else {
       throw new Error('Number of guests must be at least 1');
     }
@@ -105,9 +108,10 @@ export class ReservationService {
     // Determine pricing
     const pricePerAdult = data.pricePerAdult ?? Number(hall.pricePerPerson);
     const pricePerChild = data.pricePerChild ?? (hall.pricePerChild ? Number(hall.pricePerChild) : pricePerAdult);
+    const pricePerToddler = data.pricePerToddler ?? 0; // Default to 0 if not specified
 
     // Calculate total price
-    const totalPrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild);
+    const totalPrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
 
     // Prepare notes with extra hours warning if using new format
     let notes = data.notes || '';
@@ -177,13 +181,15 @@ export class ReservationService {
         eventTypeId: data.eventTypeId,
         createdById: userId,
         
-        // New fields
+        // New fields - with toddlers support
         startDateTime: data.startDateTime ? new Date(data.startDateTime) : null,
         endDateTime: data.endDateTime ? new Date(data.endDateTime) : null,
         adults,
         children,
+        toddlers, // NEW: Store toddlers separately
         pricePerAdult,
         pricePerChild,
+        pricePerToddler, // NEW: Store toddler price separately
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
         customEventType: data.customEventType || null,
         birthdayAge: data.birthdayAge || null,
@@ -406,12 +412,16 @@ export class ReservationService {
     if (data.children !== undefined) {
       updateData.children = data.children;
     }
+    if (data.toddlers !== undefined) {
+      updateData.toddlers = data.toddlers; // NEW: Support toddlers updates
+    }
 
-    // Recalculate guests if adults or children changed
-    if (data.adults !== undefined || data.children !== undefined) {
+    // Recalculate guests if adults, children or toddlers changed
+    if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined) {
       const newAdults = data.adults ?? existingReservation.adults;
       const newChildren = data.children ?? existingReservation.children;
-      updateData.guests = calculateTotalGuests(newAdults, newChildren);
+      const newToddlers = data.toddlers ?? existingReservation.toddlers; // NEW
+      updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
 
       // Validate capacity
       if (updateData.guests > existingReservation.hall.capacity) {
@@ -426,15 +436,28 @@ export class ReservationService {
     if (data.pricePerChild !== undefined) {
       updateData.pricePerChild = data.pricePerChild;
     }
+    if (data.pricePerToddler !== undefined) {
+      updateData.pricePerToddler = data.pricePerToddler; // NEW: Support toddler price updates
+    }
 
     // Recalculate total price if any pricing or guest count changed
-    if (data.adults !== undefined || data.children !== undefined || data.pricePerAdult !== undefined || data.pricePerChild !== undefined) {
+    if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
+        data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
       const finalAdults = data.adults ?? existingReservation.adults;
       const finalChildren = data.children ?? existingReservation.children;
+      const finalToddlers = data.toddlers ?? existingReservation.toddlers; // NEW
       const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
       const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
+      const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler); // NEW
       
-      updateData.totalPrice = calculateTotalPrice(finalAdults, finalChildren, finalPricePerAdult, finalPricePerChild);
+      updateData.totalPrice = calculateTotalPrice(
+        finalAdults, 
+        finalChildren, 
+        finalPricePerAdult, 
+        finalPricePerChild,
+        finalToddlers, // NEW
+        finalPricePerToddler // NEW
+      );
     }
 
     // Update confirmation deadline
