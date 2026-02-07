@@ -40,7 +40,7 @@ export interface Client {
   id: string
   firstName: string
   lastName: string
-  email: string
+  email?: string // Optional email
   phone: string
   address?: string
   notes?: string
@@ -101,13 +101,20 @@ export interface Reservation {
 }
 
 // Deposit types
+export enum DepositStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+}
+
 export interface Deposit {
   id: string
   reservationId: string
   amount: number
   dueDate: string
+  status: DepositStatus // New field - deposit status
   paid: boolean
   paidDate?: string
+  paymentMethod?: string
   createdAt: string
   updatedAt: string
 }
@@ -185,7 +192,7 @@ export interface CancelReservationInput {
 export interface CreateClientInput {
   firstName: string
   lastName: string
-  email: string
+  email?: string // Optional email
   phone: string
   address?: string
   notes?: string
