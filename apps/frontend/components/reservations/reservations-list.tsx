@@ -258,13 +258,13 @@ export function ReservationsList() {
                         {(reservation.pricePerAdult || reservation.pricePerChild || reservation.pricePerToddler) && (
                           <div className="text-xs text-secondary-500 space-y-0.5">
                             {reservation.pricePerAdult && (
-                              <div>{reservation.pricePerAdult} zł/dorosły</div>
+                              <div>{reservation.pricePerAdult} zł</div>
                             )}
                             {reservation.pricePerChild && reservation.pricePerChild !== reservation.pricePerAdult && (
-                              <div>{reservation.pricePerChild} zł/dz 4-12</div>
+                              <div>{reservation.pricePerChild} zł - 4-12</div>
                             )}
                             {reservation.pricePerToddler && reservation.pricePerToddler > 0 && (
-                              <div>{reservation.pricePerToddler} zł/dz 0-3</div>
+                              <div>{reservation.pricePerToddler} zł - 0-3</div>
                             )}
                           </div>
                         )}
