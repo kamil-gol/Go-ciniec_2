@@ -41,6 +41,17 @@ interface EditReservationModalProps {
   onSuccess?: () => void
 }
 
+// Helper function to get Polish status label
+const getPolishStatusLabel = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'PENDING': 'Oczekująca',
+    'CONFIRMED': 'Potwierdzona',
+    'COMPLETED': 'Zakończona',
+    'CANCELLED': 'Anulowana',
+  }
+  return statusMap[status] || status
+}
+
 export function EditReservationModal({
   reservationId,
   open,
@@ -178,11 +189,13 @@ export function EditReservationModal({
       
       // If status changed, update it separately
       if (statusChanged) {
+        const oldStatusLabel = getPolishStatusLabel(originalStatus)
+        const newStatusLabel = getPolishStatusLabel(data.status)
         console.log('Status changed from', originalStatus, 'to', data.status)
         await reservationsApi.updateStatus(
           reservationId,
           data.status,
-          `Zmiana statusu z ${originalStatus} na ${data.status}`
+          `Zmiana statusu z ${oldStatusLabel} na ${newStatusLabel}`
         )
       }
       
@@ -266,7 +279,7 @@ export function EditReservationModal({
             />
             {watchedFields.status !== originalStatus && (
               <p className="mt-1 text-sm text-amber-600">
-                ⚠️ Zmiana statusu: {originalStatus} → {watchedFields.status}
+                ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(watchedFields.status)}
               </p>
             )}
           </div>
