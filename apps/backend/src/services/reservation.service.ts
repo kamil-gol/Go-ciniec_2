@@ -34,6 +34,9 @@ export class ReservationService {
       throw new Error('Hall, client, and event type are required');
     }
 
+    // Validate userId exists
+    await this.validateUserId(userId);
+
     // Require either new startDateTime/endDateTime OR legacy date/startTime/endTime
     const hasNewFormat = data.startDateTime && data.endDateTime;
     const hasLegacyFormat = data.date && data.startTime && data.endTime;
@@ -315,6 +318,9 @@ export class ReservationService {
    * Update reservation
    */
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
+    // Validate userId exists
+    await this.validateUserId(userId);
+
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
       include: { hall: true, eventType: true }
@@ -476,6 +482,9 @@ export class ReservationService {
    * Update reservation status
    */
   async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<ReservationResponse> {
+    // Validate userId exists
+    await this.validateUserId(userId);
+
     const existingReservation = await prisma.reservation.findUnique({
       where: { id }
     });
@@ -516,6 +525,9 @@ export class ReservationService {
    * Cancel reservation (soft delete)
    */
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
+    // Validate userId exists
+    await this.validateUserId(userId);
+
     const existingReservation = await prisma.reservation.findUnique({
       where: { id }
     });
@@ -550,6 +562,19 @@ export class ReservationService {
       ReservationStatus.CANCELLED,
       reason || 'Reservation cancelled'
     );
+  }
+
+  /**
+   * Validate userId exists in database
+   */
+  private async validateUserId(userId: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
   }
 
   /**
