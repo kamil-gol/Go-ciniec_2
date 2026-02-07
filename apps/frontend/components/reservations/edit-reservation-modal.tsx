@@ -199,12 +199,21 @@ export function EditReservationModal({
         )
       }
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['reservations'] })
-      queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] })
+      // Invalidate queries to refresh data automatically
+      await queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      await queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] })
+      
+      // Call onSuccess only if it's a function (safe check)
+      if (typeof onSuccess === 'function') {
+        try {
+          onSuccess()
+        } catch (err) {
+          console.warn('onSuccess callback error:', err)
+          // Don't throw - it's not critical
+        }
+      }
       
       toast.success('Rezerwacja zaktualizowana pomyślnie')
-      onSuccess?.()
       onClose() // Close modal after successful save
     } catch (error: any) {
       console.error('Failed to update reservation:', error)
