@@ -13,8 +13,8 @@ import { useReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
-import { calculateTotalPrice, formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
@@ -24,12 +24,40 @@ const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
   clientId: z.string().min(1, 'Wybierz klienta'),
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
-  date: z.string().min(1, 'Wybierz datę'),
-  startTime: z.string().min(1, 'Wybierz czas rozpoczęcia'),
-  endTime: z.string().min(1, 'Wybierz czas zakończenia'),
-  guests: z.coerce.number().min(1, 'Liczba gości musi być większa od 0'),
+  
+  // New datetime fields
+  startDateTime: z.string().min(1, 'Wybierz datę i czas rozpoczęcia'),
+  endDateTime: z.string().min(1, 'Wybierz datę i czas zakończenia'),
+  
+  // Split guest counts
+  adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci musi być >= 0'),
+  
+  // Pricing
+  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko musi być >= 0'),
+  
+  // Confirmation deadline
+  confirmationDeadline: z.string().optional(),
+  
+  // Custom event fields
+  customEventType: z.string().optional(),
+  anniversaryYear: z.coerce.number().optional(),
+  anniversaryOccasion: z.string().optional(),
+  
   status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
   notes: z.string().optional(),
+  reason: z.string().min(10, 'Powód musi mieć co najmniej 10 znaków'),
+}).refine((data) => data.adults + data.children >= 1, {
+  message: 'Łączna liczba gości musi być >= 1',
+  path: ['adults'],
+}).refine((data) => {
+  const start = new Date(data.startDateTime)
+  const end = new Date(data.endDateTime)
+  return end > start
+}, {
+  message: 'Czas zakończenia musi być po czasie rozpoczęcia',
+  path: ['endDateTime'],
 })
 
 type ReservationFormData = z.infer<typeof reservationSchema>
@@ -59,10 +87,13 @@ export function EditReservationModal({
   onSuccess,
 }: EditReservationModalProps) {
   const [calculatedPrice, setCalculatedPrice] = useState(0)
+  const [totalGuests, setTotalGuests] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
   const [isFormReady, setIsFormReady] = useState(false)
   const [originalStatus, setOriginalStatus] = useState<ReservationStatus>('PENDING')
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
+  const [durationHours, setDurationHours] = useState(0)
 
   const queryClient = useQueryClient()
   const { data: reservation, isLoading: loadingReservation } = useReservation(reservationId)
@@ -79,20 +110,58 @@ export function EditReservationModal({
     formState: { errors },
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
-    defaultValues: {
-      hallId: '',
-      clientId: '',
-      eventTypeId: '',
-      date: '',
-      startTime: '',
-      endTime: '',
-      guests: 0,
-      status: 'PENDING',
-      notes: '',
-    },
   })
 
   const watchedFields = watch()
+  const adults = watch('adults') || 0
+  const children = watch('children') || 0
+  const pricePerAdult = watch('pricePerAdult') || 0
+  const pricePerChild = watch('pricePerChild') || 0
+  const selectedEventTypeId = watch('eventTypeId')
+
+  // Calculate total guests
+  useEffect(() => {
+    const total = adults + children
+    setTotalGuests(total)
+  }, [adults, children])
+
+  // Calculate price
+  useEffect(() => {
+    const price = (adults * pricePerAdult) + (children * pricePerChild)
+    setCalculatedPrice(price)
+  }, [adults, children, pricePerAdult, pricePerChild])
+
+  // Calculate duration
+  useEffect(() => {
+    const { startDateTime, endDateTime } = watchedFields
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime)
+      const end = new Date(endDateTime)
+      const diffMs = end.getTime() - start.getTime()
+      const hours = diffMs / (1000 * 60 * 60)
+      setDurationHours(Math.round(hours * 10) / 10)
+    }
+  }, [watchedFields.startDateTime, watchedFields.endDateTime])
+
+  // Update capacity when hall changes
+  useEffect(() => {
+    if (watchedFields.hallId) {
+      const hallsArray = halls?.data || halls || []
+      const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
+      if (selectedHall) {
+        setSelectedHallCapacity(selectedHall.capacity)
+      }
+    }
+  }, [watchedFields.hallId, halls])
+
+  // Track selected event type name
+  useEffect(() => {
+    if (selectedEventTypeId) {
+      const eventTypesArray = eventTypes?.data || eventTypes || []
+      const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
+      setSelectedEventTypeName(selectedType?.name || '')
+    }
+  }, [selectedEventTypeId, eventTypes])
 
   // Reset form when modal closes
   useEffect(() => {
@@ -107,21 +176,16 @@ export function EditReservationModal({
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
       
-      // Extract date and time from old or new format
-      let date = ''
-      let startTime = ''
-      let endTime = ''
+      // Extract datetime
+      let startDateTime = ''
+      let endDateTime = ''
       
       if (reservation.startDateTime && reservation.endDateTime) {
+        // Convert to local datetime-local format
         const start = new Date(reservation.startDateTime)
         const end = new Date(reservation.endDateTime)
-        date = start.toISOString().split('T')[0]
-        startTime = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
-        endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
-      } else if (reservation.date && reservation.startTime && reservation.endTime) {
-        date = reservation.date
-        startTime = reservation.startTime
-        endTime = reservation.endTime
+        startDateTime = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+        endDateTime = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
       }
       
       // Store original status
@@ -131,40 +195,23 @@ export function EditReservationModal({
       setValue('hallId', reservation.hallId || '')
       setValue('clientId', reservation.clientId || '')
       setValue('eventTypeId', reservation.eventTypeId || '')
-      setValue('date', date)
-      setValue('startTime', startTime)
-      setValue('endTime', endTime)
-      setValue('guests', reservation.guests || 0)
+      setValue('startDateTime', startDateTime)
+      setValue('endDateTime', endDateTime)
+      setValue('adults', reservation.adults || 0)
+      setValue('children', reservation.children || 0)
+      setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
+      setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
+      setValue('confirmationDeadline', reservation.confirmationDeadline ? new Date(new Date(reservation.confirmationDeadline).getTime() - new Date(reservation.confirmationDeadline).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
+      setValue('customEventType', reservation.customEventType || '')
+      setValue('anniversaryYear', reservation.anniversaryYear || undefined)
+      setValue('anniversaryOccasion', reservation.anniversaryOccasion || '')
       setValue('status', reservation.status || 'PENDING')
       setValue('notes', reservation.notes || '')
+      setValue('reason', '') // Empty by default - user must provide
       
       setIsFormReady(true)
     }
   }, [reservation, open, setValue])
-
-  // Calculate price in real-time
-  useEffect(() => {
-    const { hallId, guests } = watchedFields
-    if (hallId && guests) {
-      const hallsArray = halls?.data || halls || []
-      const selectedHall = hallsArray.find((h) => h.id === hallId)
-      if (selectedHall) {
-        const price = calculateTotalPrice(guests, selectedHall.pricePerPerson)
-        setCalculatedPrice(price)
-      }
-    }
-  }, [watchedFields.hallId, watchedFields.guests, halls])
-
-  // Update capacity when hall changes
-  useEffect(() => {
-    if (watchedFields.hallId) {
-      const hallsArray = halls?.data || halls || []
-      const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
-      if (selectedHall) {
-        setSelectedHallCapacity(selectedHall.capacity)
-      }
-    }
-  }, [watchedFields.hallId, halls])
 
   const onSubmit = async (data: ReservationFormData) => {
     console.log('Submitting form with data:', data)
@@ -174,17 +221,20 @@ export function EditReservationModal({
       // Check if status changed
       const statusChanged = data.status !== originalStatus
       
-      // Update reservation details (not status)
+      // Update reservation details
       await reservationsApi.update(reservationId, {
-        hallId: data.hallId,
-        clientId: data.clientId,
-        eventTypeId: data.eventTypeId,
-        date: data.date,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        guests: data.guests,
+        startDateTime: data.startDateTime,
+        endDateTime: data.endDateTime,
+        adults: data.adults,
+        children: data.children,
+        pricePerAdult: data.pricePerAdult,
+        pricePerChild: data.pricePerChild,
+        confirmationDeadline: data.confirmationDeadline,
+        customEventType: data.customEventType,
+        anniversaryYear: data.anniversaryYear,
+        anniversaryOccasion: data.anniversaryOccasion,
         notes: data.notes,
-        reason: 'Edycja rezerwacji',
+        reason: data.reason,
       })
       
       // If status changed, update it separately
@@ -199,22 +249,20 @@ export function EditReservationModal({
         )
       }
       
-      // Invalidate queries to refresh data automatically
+      // Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['reservations'] })
       await queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] })
       
-      // Call onSuccess only if it's a function (safe check)
       if (typeof onSuccess === 'function') {
         try {
           onSuccess()
         } catch (err) {
           console.warn('onSuccess callback error:', err)
-          // Don't throw - it's not critical
         }
       }
       
       toast.success('Rezerwacja zaktualizowana pomyślnie')
-      onClose() // Close modal after successful save
+      onClose()
     } catch (error: any) {
       console.error('Failed to update reservation:', error)
       const errorMessage = error.response?.data?.error || error.message || 'Błąd podczas aktualizacji rezerwacji'
@@ -258,6 +306,9 @@ export function EditReservationModal({
     { value: 'COMPLETED', label: 'Zakończona' },
     { value: 'CANCELLED', label: 'Anulowana' },
   ]
+
+  const isAnniversary = selectedEventTypeName === 'Rocznica'
+  const isCustom = selectedEventTypeName === 'Inne'
 
   if (loadingReservation || !isFormReady) {
     return (
@@ -327,74 +378,161 @@ export function EditReservationModal({
             {...register('eventTypeId')}
           />
 
+          {/* Custom Event Type (for "Inne") */}
+          {isCustom && (
+            <Input
+              label="Typ wydarzenia (własny)"
+              placeholder="np. Spotkanie rodzinne"
+              error={errors.customEventType?.message}
+              {...register('customEventType')}
+            />
+          )}
+
+          {/* Anniversary Fields (for "Rocznica") */}
+          {isAnniversary && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                type="number"
+                label="Która rocznica"
+                placeholder="np. 25"
+                error={errors.anniversaryYear?.message}
+                {...register('anniversaryYear')}
+              />
+              <Input
+                label="Jaka okazja"
+                placeholder="np. Srebrne wesele"
+                error={errors.anniversaryOccasion?.message}
+                {...register('anniversaryOccasion')}
+              />
+            </div>
+          )}
+
           {/* Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-secondary-500" />
               <Input
-                type="date"
-                label="Data"
-                error={errors.date?.message}
-                value={watchedFields.date}
-                {...register('date')}
+                type="datetime-local"
+                label="Data i czas rozpoczęcia"
+                error={errors.startDateTime?.message}
+                {...register('startDateTime')}
               />
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-secondary-500" />
               <Input
-                type="time"
-                label="Od"
-                error={errors.startTime?.message}
-                value={watchedFields.startTime}
-                {...register('startTime')}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-secondary-500" />
-              <Input
-                type="time"
-                label="Do"
-                error={errors.endTime?.message}
-                value={watchedFields.endTime}
-                {...register('endTime')}
+                type="datetime-local"
+                label="Data i czas zakończenia"
+                error={errors.endDateTime?.message}
+                {...register('endDateTime')}
               />
             </div>
           </div>
 
-          {/* Number of Guests */}
-          <div>
+          {/* Duration Info */}
+          {durationHours > 0 && (
+            <div className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > 6 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
+              {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
+              <span className={`text-sm ${durationHours > 6 ? 'text-amber-800' : 'text-blue-800'}`}>
+                Czas trwania: {durationHours}h
+                {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard)`}
+              </span>
+            </div>
+          )}
+
+          {/* Guest Counts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
-                label="Liczba Gości"
-                placeholder="Wprowadź liczbę gości"
-                error={errors.guests?.message}
-                value={watchedFields.guests}
-                {...register('guests')}
+                label="Liczba dorosłych"
+                error={errors.adults?.message}
+                {...register('adults')}
               />
             </div>
-            {watchedFields.guests > selectedHallCapacity && selectedHallCapacity > 0 && (
-              <p className="mt-1 text-sm text-red-600">
-                Liczba gości przekracza pojemność sali!
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              <Baby className="w-5 h-5 text-secondary-500" />
+              <Input
+                type="number"
+                label="Liczba dzieci"
+                error={errors.children?.message}
+                {...register('children')}
+              />
+            </div>
+          </div>
+
+          {/* Total Guests Display */}
+          {totalGuests > 0 && (
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm font-medium text-secondary-700">Łącznie gości:</span>
+              <span className="text-lg font-bold text-secondary-900">{totalGuests}</span>
+            </div>
+          )}
+
+          {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
+            <p className="text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" />
+              Liczba gości przekracza pojemność sali!
+            </p>
+          )}
+
+          {/* Pricing */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary-500" />
+              <Input
+                type="number"
+                label="Cena za dorosłego (PLN)"
+                error={errors.pricePerAdult?.message}
+                {...register('pricePerAdult')}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary-500" />
+              <Input
+                type="number"
+                label="Cena za dziecko (PLN)"
+                error={errors.pricePerChild?.message}
+                {...register('pricePerChild')}
+              />
+            </div>
           </div>
 
           {/* Price Calculator */}
           {calculatedPrice > 0 && (
             <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-primary-600" />
-                  <span className="font-medium text-secondary-900">Nowa szacowana cena:</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm text-secondary-700">
+                  <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
+                  <span className="font-medium">{adults * pricePerAdult} PLN</span>
                 </div>
-                <span className="text-2xl font-bold text-primary-600">
-                  {formatCurrency(calculatedPrice)}
-                </span>
+                <div className="flex items-center justify-between text-sm text-secondary-700">
+                  <span>Dzieci: {children} × {pricePerChild} PLN</span>
+                  <span className="font-medium">{children * pricePerChild} PLN</span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-primary-300">
+                  <span className="font-medium text-secondary-900">Nowa cena:</span>
+                  <span className="text-2xl font-bold text-primary-600">
+                    {formatCurrency(calculatedPrice)}
+                  </span>
+                </div>
               </div>
             </div>
           )}
+
+          {/* Confirmation Deadline */}
+          <div>
+            <Input
+              type="datetime-local"
+              label="Termin potwierdzenia (opcjonalnie)"
+              error={errors.confirmationDeadline?.message}
+              {...register('confirmationDeadline')}
+            />
+            <p className="mt-1 text-xs text-secondary-500">
+              Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
+            </p>
+          </div>
 
           {/* Notes */}
           <div>
@@ -406,9 +544,29 @@ export function EditReservationModal({
               className="mt-1 w-full rounded-md border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               rows={3}
               placeholder="Dodatkowe informacje..."
-              value={watchedFields.notes}
               {...register('notes')}
             />
+          </div>
+
+          {/* REASON FIELD (REQUIRED) */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-amber-900 mb-2">
+                  Powód zmiany (wymagane, min. 10 znaków)
+                </label>
+                <textarea
+                  className="w-full rounded-md border border-amber-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  rows={2}
+                  placeholder="np. Klient zmienił liczbę gości po rozmowie telefonicznej"
+                  {...register('reason')}
+                />
+                {errors.reason && (
+                  <p className="mt-1 text-sm text-red-600">{errors.reason.message}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Form Actions */}
@@ -423,7 +581,7 @@ export function EditReservationModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || (totalGuests > selectedHallCapacity && selectedHallCapacity > 0)}
             >
               {isSaving ? 'Zapisywanie...' : 'Zapisz Zmiany'}
             </Button>
