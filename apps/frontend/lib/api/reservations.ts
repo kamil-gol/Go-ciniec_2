@@ -72,9 +72,9 @@ export const reservationsApi = {
     return data.data || data // Handle both structures
   },
 
-  // Update reservation
+  // Update reservation - Backend uses PUT not PATCH
   update: async (id: string, input: UpdateReservationInput): Promise<Reservation> => {
-    const { data } = await apiClient.patch(`/reservations/${id}`, input)
+    const { data } = await apiClient.put(`/reservations/${id}`, input)
     return data.data || data // Handle both structures
   },
 
