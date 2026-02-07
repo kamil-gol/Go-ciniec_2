@@ -30,13 +30,15 @@ const reservationSchema = z.object({
   endDate: z.string().min(1, 'Wybierz datę zakończenia'),
   endTime: z.string().min(1, 'Wybierz czas zakończenia'),
   
-  // Split guest counts
+  // Split guest counts by age
   adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
-  children: z.coerce.number().min(0, 'Liczba dzieci musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
+  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
   // Pricing
   pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
-  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko musi być >= 0'),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0'),
+  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0'),
   
   // Confirmation deadline
   confirmationDeadline: z.string().optional(),
@@ -56,7 +58,7 @@ const reservationSchema = z.object({
   depositPaid: z.boolean().optional(),
   depositPaymentMethod: z.string().optional(),
   depositPaidAt: z.string().optional(),
-}).refine((data) => data.adults + data.children >= 1, {
+}).refine((data) => data.adults + data.children + data.toddlers >= 1, {
   message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
 }).refine((data) => {
@@ -83,6 +85,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
   const [durationHours, setDurationHours] = useState(0)
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
+  const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
   
   const queryClient = useQueryClient()
   const { data: halls } = useHalls()
@@ -101,6 +104,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     defaultValues: {
       hasDeposit: false,
       depositPaid: false,
+      toddlers: 0,
     },
   })
 
@@ -110,8 +114,10 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
+  const toddlers = Number(watch('toddlers')) || 0
   const pricePerAdult = Number(watch('pricePerAdult')) || 0
   const pricePerChild = Number(watch('pricePerChild')) || 0
+  const pricePerToddler = Number(watch('pricePerToddler')) || 0
   const selectedEventTypeId = watch('eventTypeId')
   const startDate = watch('startDate')
   const startTime = watch('startTime')
@@ -124,6 +130,14 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
   }, [adults, pricePerAdult, setValue, childPriceManuallySet])
 
+  // Auto-set toddler price to 25% of adult price
+  useEffect(() => {
+    if (adults > 0 && pricePerAdult > 0 && !toddlerPriceManuallySet) {
+      const quarterPrice = Math.round(pricePerAdult * 0.25)
+      setValue('pricePerToddler', quarterPrice)
+    }
+  }, [adults, pricePerAdult, setValue, toddlerPriceManuallySet])
+
   // Auto-set default paid date to today when marking as paid
   useEffect(() => {
     if (depositPaid && !watchedFields.depositPaidAt) {
@@ -134,6 +148,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   }, [depositPaid, watchedFields.depositPaidAt, setValue])
 
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
+  const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
 
   // Auto-fill end date/time when start date/time changes (default: +6 hours)
   useEffect(() => {
@@ -151,15 +166,17 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
 
   // Calculate total guests in real-time
   useEffect(() => {
-    const total = Number(adults) + Number(children)
+    const total = Number(adults) + Number(children) + Number(toddlers)
     setTotalGuests(total)
-  }, [adults, children])
+  }, [adults, children, toddlers])
 
   // Calculate price in real-time
   useEffect(() => {
-    const price = (Number(adults) * Number(pricePerAdult)) + (Number(children) * Number(pricePerChild))
+    const price = (Number(adults) * Number(pricePerAdult)) + 
+                  (Number(children) * Number(pricePerChild)) + 
+                  (Number(toddlers) * Number(pricePerToddler))
     setCalculatedPrice(price)
-  }, [adults, children, pricePerAdult, pricePerChild])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler])
 
   // Calculate duration and auto-add extra hours note
   useEffect(() => {
@@ -230,7 +247,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       startDateTime,
       endDateTime,
       adults: data.adults,
-      children: data.children,
+      children: data.children + data.toddlers, // Combine for backend
       pricePerAdult: data.pricePerAdult,
       pricePerChild: data.pricePerChild,
       confirmationDeadline: data.confirmationDeadline,
@@ -486,7 +503,8 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </motion.div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* UPDATED: Three age groups */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-secondary-500" />
                 <Input
@@ -501,10 +519,20 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <Baby className="w-5 h-5 text-secondary-500" />
                 <Input
                   type="number"
-                  label="Liczba dzieci"
+                  label="Liczba dzieci w wieku (4-12)"
                   placeholder=""
                   error={errors.children?.message}
                   {...register('children')}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Baby className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Liczba dzieci (0-3)"
+                  placeholder=""
+                  error={errors.toddlers?.message}
+                  {...register('toddlers')}
                 />
               </div>
             </div>
@@ -523,7 +551,8 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* UPDATED: Three price fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-secondary-500" />
                 <Input
@@ -538,7 +567,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <DollarSign className="w-5 h-5 text-secondary-500" />
                 <Input
                   type="number"
-                  label="Cena za dziecko (PLN)"
+                  label="Cena za dziecko 4-12 (PLN)"
                   placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                   error={errors.pricePerChild?.message}
                   disabled={isChildPriceDisabled}
@@ -547,10 +576,23 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                   })}
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Cena za dziecko 0-3 (PLN)"
+                  placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
+                  error={errors.pricePerToddler?.message}
+                  disabled={isToddlerPriceDisabled}
+                  {...register('pricePerToddler', {
+                    onChange: () => setToddlerPriceManuallySet(true)
+                  })}
+                />
+              </div>
             </div>
-            {isChildPriceDisabled && (
+            {(isChildPriceDisabled || isToddlerPriceDisabled) && (
               <p className="text-xs text-secondary-500 -mt-4">
-                Cena za dziecko będzie dostępna po uzupełnieniu liczby i ceny za dorosłych (domyślnie połowa ceny za dorosłego)
+                Ceny za dzieci będą dostępne po uzupełnieniu liczby i ceny za dorosłych (domyślnie 50% i 25% ceny za dorosłego)
               </p>
             )}
 
@@ -566,8 +608,12 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                     <span className="font-medium">{adults * pricePerAdult} PLN</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-secondary-700">
-                    <span>Dzieci: {children} × {pricePerChild} PLN</span>
+                    <span>Dzieci (4-12): {children} × {pricePerChild} PLN</span>
                     <span className="font-medium">{children * pricePerChild} PLN</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-secondary-700">
+                    <span>Dzieci (0-3): {toddlers} × {pricePerToddler} PLN</span>
+                    <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-primary-300">
                     <span className="font-medium text-secondary-900">Cena całkowita:</span>

@@ -43,11 +43,14 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
       console.log('=== CREATING CLIENT ====')
       console.log('Data to send:', data)
       
-      // Remove empty email if not provided
+      // Remove spaces from phone number and empty email if not provided
       const cleanedData = {
         ...data,
+        phone: data.phone.replace(/\s+/g, ''), // Remove all spaces
         email: data.email && data.email.trim() !== '' ? data.email : undefined
       }
+      
+      console.log('Cleaned data (phone without spaces):', cleanedData)
       
       const response = await apiClient.post('/clients', cleanedData)
       
