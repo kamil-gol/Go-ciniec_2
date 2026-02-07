@@ -183,6 +183,7 @@ export class ReservationService {
         pricePerChild,
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
         customEventType: data.customEventType || null,
+        birthdayAge: data.birthdayAge || null,
         anniversaryYear: data.anniversaryYear || null,
         anniversaryOccasion: data.anniversaryOccasion || null,
         
@@ -423,6 +424,7 @@ export class ReservationService {
 
     // Update custom event fields
     if (data.customEventType !== undefined) updateData.customEventType = data.customEventType || null;
+    if (data.birthdayAge !== undefined) updateData.birthdayAge = data.birthdayAge || null;
     if (data.anniversaryYear !== undefined) updateData.anniversaryYear = data.anniversaryYear || null;
     if (data.anniversaryOccasion !== undefined) updateData.anniversaryOccasion = data.anniversaryOccasion || null;
 
