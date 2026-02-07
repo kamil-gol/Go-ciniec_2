@@ -6,8 +6,8 @@
 export interface CreateClientDTO {
   firstName: string;
   lastName: string;
-  email: string;
-  phone?: string;
+  email?: string; // Optional email
+  phone: string;
   address?: string;
   notes?: string;
 }
@@ -15,22 +15,22 @@ export interface CreateClientDTO {
 export interface UpdateClientDTO {
   firstName?: string;
   lastName?: string;
-  email?: string;
+  email?: string; // Optional email
   phone?: string;
   address?: string;
   notes?: string;
 }
 
 export interface ClientFilters {
-  search?: string; // Search in firstName, lastName, email, phone
+  search?: string;
 }
 
 export interface ClientResponse {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
-  phone: string | null;
+  email: string | null;
+  phone: string;
   address: string | null;
   notes: string | null;
   createdAt: Date;
