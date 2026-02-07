@@ -29,13 +29,15 @@ const reservationSchema = z.object({
   startDateTime: z.string().min(1, 'Wybierz datę i czas rozpoczęcia'),
   endDateTime: z.string().min(1, 'Wybierz datę i czas zakończenia'),
   
-  // Split guest counts
+  // Split guest counts by age
   adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
-  children: z.coerce.number().min(0, 'Liczba dzieci musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
+  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
   // Pricing
   pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
-  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko musi być >= 0'),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0'),
+  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0'),
   
   // Confirmation deadline
   confirmationDeadline: z.string().optional(),
@@ -49,7 +51,7 @@ const reservationSchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
   notes: z.string().optional(),
   reason: z.string().min(10, 'Powód musi mieć co najmniej 10 znaków'),
-}).refine((data) => data.adults + data.children >= 1, {
+}).refine((data) => data.adults + data.children + data.toddlers >= 1, {
   message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
 }).refine((data) => {
@@ -95,6 +97,8 @@ export function EditReservationModal({
   const [isSaving, setIsSaving] = useState(false)
   const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
   const [durationHours, setDurationHours] = useState(0)
+  const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
+  const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
 
   const queryClient = useQueryClient()
   const { data: reservation, isLoading: loadingReservation } = useReservation(reservationId)
@@ -111,16 +115,44 @@ export function EditReservationModal({
     formState: { errors },
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
+    defaultValues: {
+      adults: 0,
+      children: 0,
+      toddlers: 0,
+    },
   })
 
   const watchedFields = watch()
   // Convert to numbers explicitly to prevent string concatenation
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
+  const toddlers = Number(watch('toddlers')) || 0
   const pricePerAdult = Number(watch('pricePerAdult')) || 0
   const pricePerChild = Number(watch('pricePerChild')) || 0
+  const pricePerToddler = Number(watch('pricePerToddler')) || 0
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
+
+  // Disable children fields if adults is 0
+  const isChildrenFieldsDisabled = adults === 0
+  const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
+  const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
+
+  // Auto-set child price to half of adult price
+  useEffect(() => {
+    if (adults > 0 && pricePerAdult > 0 && !childPriceManuallySet && isFormReady) {
+      const halfPrice = Math.round(pricePerAdult / 2)
+      setValue('pricePerChild', halfPrice)
+    }
+  }, [adults, pricePerAdult, setValue, childPriceManuallySet, isFormReady])
+
+  // Auto-set toddler price to 25% of adult price
+  useEffect(() => {
+    if (adults > 0 && pricePerAdult > 0 && !toddlerPriceManuallySet && isFormReady) {
+      const quarterPrice = Math.round(pricePerAdult * 0.25)
+      setValue('pricePerToddler', quarterPrice)
+    }
+  }, [adults, pricePerAdult, setValue, toddlerPriceManuallySet, isFormReady])
 
   // Auto-fill end time when start time changes (default: +6 hours)
   useEffect(() => {
@@ -134,15 +166,17 @@ export function EditReservationModal({
 
   // Calculate total guests in real-time - FIXED: explicitly convert to numbers
   useEffect(() => {
-    const total = Number(adults) + Number(children)
+    const total = Number(adults) + Number(children) + Number(toddlers)
     setTotalGuests(total)
-  }, [adults, children])
+  }, [adults, children, toddlers])
 
   // Calculate price - FIXED: explicitly convert to numbers
   useEffect(() => {
-    const price = (Number(adults) * Number(pricePerAdult)) + (Number(children) * Number(pricePerChild))
+    const price = (Number(adults) * Number(pricePerAdult)) + 
+                  (Number(children) * Number(pricePerChild)) + 
+                  (Number(toddlers) * Number(pricePerToddler))
     setCalculatedPrice(price)
-  }, [adults, children, pricePerAdult, pricePerChild])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler])
 
   // Calculate duration and auto-add extra hours note
   useEffect(() => {
@@ -199,6 +233,8 @@ export function EditReservationModal({
   useEffect(() => {
     if (!open) {
       setIsFormReady(false)
+      setChildPriceManuallySet(false)
+      setToddlerPriceManuallySet(false)
       reset()
     }
   }, [open, reset])
@@ -231,8 +267,14 @@ export function EditReservationModal({
       setValue('endDateTime', endDateTime)
       setValue('adults', reservation.adults || 0)
       setValue('children', reservation.children || 0)
+      setValue('toddlers', 0) // Backend doesn't store this separately yet
       setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
       setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
+      setValue('pricePerToddler', 0) // Backend doesn't store this separately yet
+      
+      // Mark prices as manually set to prevent auto-overwrite
+      setChildPriceManuallySet(true)
+      setToddlerPriceManuallySet(true)
       
       // Confirmation deadline - convert to date only
       if (reservation.confirmationDeadline) {
@@ -267,7 +309,7 @@ export function EditReservationModal({
         startDateTime: data.startDateTime,
         endDateTime: data.endDateTime,
         adults: data.adults,
-        children: data.children,
+        children: data.children + data.toddlers, // Combine for backend
         pricePerAdult: data.pricePerAdult,
         pricePerChild: data.pricePerChild,
         confirmationDeadline: data.confirmationDeadline,
@@ -511,13 +553,14 @@ export function EditReservationModal({
             </div>
           )}
 
-          {/* Guest Counts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Guest Counts - UPDATED: Three age groups */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
                 label="Liczba dorosłych"
+                placeholder="0"
                 error={errors.adults?.message}
                 {...register('adults')}
               />
@@ -526,12 +569,30 @@ export function EditReservationModal({
               <Baby className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
-                label="Liczba dzieci"
+                label="Liczba dzieci (4-12)"
+                placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                 error={errors.children?.message}
+                disabled={isChildrenFieldsDisabled}
                 {...register('children')}
               />
             </div>
+            <div className="flex items-center gap-2">
+              <Baby className="w-5 h-5 text-secondary-500" />
+              <Input
+                type="number"
+                label="Liczba dzieci (0-3)"
+                placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
+                error={errors.toddlers?.message}
+                disabled={isChildrenFieldsDisabled}
+                {...register('toddlers')}
+              />
+            </div>
           </div>
+          {isChildrenFieldsDisabled && (
+            <p className="text-xs text-secondary-500 -mt-4">
+              Pola dzieci będą dostępne po wprowadzeniu liczby dorosłych
+            </p>
+          )}
 
           {/* Total Guests Display - Always visible if > 0 */}
           {totalGuests > 0 && (
@@ -548,13 +609,14 @@ export function EditReservationModal({
             </p>
           )}
 
-          {/* Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Pricing - UPDATED: Three price fields */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
                 label="Cena za dorosłego (PLN)"
+                placeholder="0.00"
                 error={errors.pricePerAdult?.message}
                 {...register('pricePerAdult')}
               />
@@ -563,14 +625,36 @@ export function EditReservationModal({
               <DollarSign className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
-                label="Cena za dziecko (PLN)"
+                label="Cena za dziecko 4-12 (PLN)"
+                placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                 error={errors.pricePerChild?.message}
-                {...register('pricePerChild')}
+                disabled={isChildPriceDisabled}
+                {...register('pricePerChild', {
+                  onChange: () => setChildPriceManuallySet(true)
+                })}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary-500" />
+              <Input
+                type="number"
+                label="Cena za dziecko 0-3 (PLN)"
+                placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
+                error={errors.pricePerToddler?.message}
+                disabled={isToddlerPriceDisabled}
+                {...register('pricePerToddler', {
+                  onChange: () => setToddlerPriceManuallySet(true)
+                })}
               />
             </div>
           </div>
+          {(isChildPriceDisabled || isToddlerPriceDisabled) && (
+            <p className="text-xs text-secondary-500 -mt-4">
+              Ceny za dzieci będą dostępne po uzupełnieniu liczby i ceny za dorosłych (domyślnie 50% i 25% ceny za dorosłego)
+            </p>
+          )}
 
-          {/* Price Calculator */}
+          {/* Price Calculator - UPDATED: Three rows */}
           {calculatedPrice > 0 && (
             <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
               <div className="space-y-2">
@@ -579,8 +663,12 @@ export function EditReservationModal({
                   <span className="font-medium">{adults * pricePerAdult} PLN</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-secondary-700">
-                  <span>Dzieci: {children} × {pricePerChild} PLN</span>
+                  <span>Dzieci (4-12): {children} × {pricePerChild} PLN</span>
                   <span className="font-medium">{children * pricePerChild} PLN</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-secondary-700">
+                  <span>Dzieci (0-3): {toddlers} × {pricePerToddler} PLN</span>
+                  <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-primary-300">
                   <span className="font-medium text-secondary-900">Nowa cena:</span>
