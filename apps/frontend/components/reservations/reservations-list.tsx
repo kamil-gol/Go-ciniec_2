@@ -49,13 +49,19 @@ function getFormattedTimeRange(reservation: any): string {
   return 'N/A'
 }
 
-// Get guest breakdown
-function getGuestBreakdown(reservation: any): { adults: number; children: number; total: number } {
+// Get guest breakdown - UPDATED: Support toddlers
+function getGuestBreakdown(reservation: any): { 
+  adults: number; 
+  children: number; 
+  toddlers: number;
+  total: number 
+} {
   const adults = reservation.adults || 0
   const children = reservation.children || 0
-  const total = reservation.guests || (adults + children)
+  const toddlers = reservation.toddlers || 0
+  const total = reservation.guests || (adults + children + toddlers)
   
-  return { adults, children, total }
+  return { adults, children, toddlers, total }
 }
 
 export function ReservationsList() {
@@ -220,18 +226,24 @@ export function ReservationsList() {
                     <TableCell>
                       <div className="space-y-1">
                         <div className="font-medium">{guestInfo.total}</div>
-                        {(guestInfo.adults > 0 || guestInfo.children > 0) && (
+                        {(guestInfo.adults > 0 || guestInfo.children > 0 || guestInfo.toddlers > 0) && (
                           <div className="flex gap-3 text-xs text-secondary-600">
                             {guestInfo.adults > 0 && (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1" title="Dorośli">
                                 <Users className="w-3 h-3" />
                                 <span>{guestInfo.adults}</span>
                               </div>
                             )}
                             {guestInfo.children > 0 && (
-                              <div className="flex items-center gap-1">
-                                <Baby className="w-3 h-3" />
+                              <div className="flex items-center gap-1" title="Dzieci 4-12">
+                                <Baby className="w-3 h-3 text-blue-600" />
                                 <span>{guestInfo.children}</span>
+                              </div>
+                            )}
+                            {guestInfo.toddlers > 0 && (
+                              <div className="flex items-center gap-1" title="Dzieci 0-3">
+                                <Baby className="w-3 h-3 text-green-600" />
+                                <span>{guestInfo.toddlers}</span>
                               </div>
                             )}
                           </div>
@@ -243,11 +255,16 @@ export function ReservationsList() {
                         <div className="font-medium">
                           {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
                         </div>
-                        {(reservation.pricePerAdult || reservation.pricePerChild) && (
-                          <div className="text-xs text-secondary-500">
-                            {reservation.pricePerAdult && `${reservation.pricePerAdult} zł/os`}
+                        {(reservation.pricePerAdult || reservation.pricePerChild || reservation.pricePerToddler) && (
+                          <div className="text-xs text-secondary-500 space-y-0.5">
+                            {reservation.pricePerAdult && (
+                              <div>{reservation.pricePerAdult} zł/dorosły</div>
+                            )}
                             {reservation.pricePerChild && reservation.pricePerChild !== reservation.pricePerAdult && (
-                              <>, {reservation.pricePerChild} zł/dz</>
+                              <div>{reservation.pricePerChild} zł/dz 4-12</div>
+                            )}
+                            {reservation.pricePerToddler && reservation.pricePerToddler > 0 && (
+                              <div>{reservation.pricePerToddler} zł/dz 0-3</div>
                             )}
                           </div>
                         )}
