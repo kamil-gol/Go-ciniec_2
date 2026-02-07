@@ -104,6 +104,8 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     defaultValues: {
       hasDeposit: false,
       depositPaid: false,
+      adults: 0,
+      children: 0,
       toddlers: 0,
     },
   })
@@ -147,6 +149,8 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
   }, [depositPaid, watchedFields.depositPaidAt, setValue])
 
+  // Disable children fields if adults is 0
+  const isChildrenFieldsDisabled = adults === 0
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
   const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
 
@@ -503,14 +507,14 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </motion.div>
             )}
 
-            {/* UPDATED: Three age groups */}
+            {/* UPDATED: Three age groups with disabled state */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-secondary-500" />
                 <Input
                   type="number"
                   label="Liczba dorosłych"
-                  placeholder=""
+                  placeholder="0"
                   error={errors.adults?.message}
                   {...register('adults')}
                 />
@@ -519,9 +523,10 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <Baby className="w-5 h-5 text-secondary-500" />
                 <Input
                   type="number"
-                  label="Liczba dzieci w wieku (4-12)"
-                  placeholder=""
+                  label="Liczba dzieci (4-12)"
+                  placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                   error={errors.children?.message}
+                  disabled={isChildrenFieldsDisabled}
                   {...register('children')}
                 />
               </div>
@@ -530,12 +535,18 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <Input
                   type="number"
                   label="Liczba dzieci (0-3)"
-                  placeholder=""
+                  placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                   error={errors.toddlers?.message}
+                  disabled={isChildrenFieldsDisabled}
                   {...register('toddlers')}
                 />
               </div>
             </div>
+            {isChildrenFieldsDisabled && (
+              <p className="text-xs text-secondary-500 -mt-4">
+                Pola dzieci będą dostępne po wprowadzeniu liczby dorosłych
+              </p>
+            )}
 
             {totalGuests > 0 && (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
