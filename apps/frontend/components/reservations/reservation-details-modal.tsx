@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loading } from '@/components/ui/loading'
 import { useReservation } from '@/hooks/use-reservations'
 import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Clock, Users, Home, User, FileText, DollarSign } from 'lucide-react'
+import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle } from 'lucide-react'
 import { ReservationHistory } from './reservation-history'
 
 interface ReservationDetailsModalProps {
@@ -41,6 +41,17 @@ function getFormattedTimeRange(reservation: any): string {
   return 'N/A'
 }
 
+// Calculate event duration in hours
+function calculateDuration(reservation: any): number {
+  if (reservation.startDateTime && reservation.endDateTime) {
+    const start = new Date(reservation.startDateTime)
+    const end = new Date(reservation.endDateTime)
+    const diffMs = end.getTime() - start.getTime()
+    return Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10 // Round to 1 decimal
+  }
+  return 0
+}
+
 export function ReservationDetailsModal({
   reservationId,
   open,
@@ -64,9 +75,14 @@ export function ReservationDetailsModal({
     return null
   }
 
+  const duration = calculateDuration(reservation)
+  const adults = reservation.adults || 0
+  const children = reservation.children || 0
+  const totalGuests = reservation.guests || (adults + children)
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl" onClose={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onClose={onClose}>
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Szczegóły Rezerwacji</span>
@@ -92,6 +108,14 @@ export function ReservationDetailsModal({
               <div>
                 <p className="text-sm text-secondary-600">Godziny</p>
                 <p className="font-medium">{getFormattedTimeRange(reservation)}</p>
+                {duration > 0 && (
+                  <p className={`text-sm mt-1 ${
+                    duration > 6 ? 'text-amber-600 font-medium' : 'text-secondary-500'
+                  }`}>
+                    Czas trwania: {duration}h
+                    {duration > 6 && ` (+${duration - 6}h ponad standard)`}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -111,11 +135,45 @@ export function ReservationDetailsModal({
             <div className="flex items-start gap-3">
               <Users className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
-                <p className="text-sm text-secondary-600">Liczba gości</p>
-                <p className="font-medium">{reservation.guests || 0} osób</p>
+                <p className="text-sm text-secondary-600">Goście</p>
+                <p className="font-medium text-lg">{totalGuests} osób</p>
+                {(adults > 0 || children > 0) && (
+                  <div className="flex gap-4 mt-2 text-sm text-secondary-600">
+                    {adults > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        <span>{adults} dorosłych</span>
+                      </div>
+                    )}
+                    {children > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Baby className="w-4 h-4" />
+                        <span>{children} dzieci</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Confirmation Deadline (if PENDING) */}
+          {reservation.status === 'PENDING' && reservation.confirmationDeadline && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Termin potwierdzenia</p>
+                  <p className="text-sm text-amber-700">
+                    {formatDate(reservation.confirmationDeadline)} {new Date(reservation.confirmationDeadline).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Rezerwacja musi zostać potwierdzona przed tym terminem
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Client Info */}
           <div className="border-t pt-4">
@@ -146,25 +204,32 @@ export function ReservationDetailsModal({
           <div className="border-t pt-4">
             <div className="flex items-start gap-3">
               <FileText className="w-5 h-5 text-primary-600 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-secondary-600">Typ wydarzenia</p>
                 <p className="font-medium">{reservation.eventType?.name || 'N/A'}</p>
                 
                 {/* Custom event type for "Inne" */}
                 {reservation.customEventType && (
-                  <p className="text-sm text-secondary-600 mt-1">
-                    Szczegóły: {reservation.customEventType}
-                  </p>
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-sm font-medium text-blue-900">Typ własny:</p>
+                    <p className="text-sm text-blue-700">{reservation.customEventType}</p>
+                  </div>
                 )}
                 
                 {/* Anniversary details */}
-                {reservation.eventType?.name === 'Rocznica' && (
-                  <div className="text-sm text-secondary-600 mt-1 space-y-0.5">
+                {reservation.eventType?.name === 'Rocznica' && (reservation.anniversaryYear || reservation.anniversaryOccasion) && (
+                  <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded space-y-1">
                     {reservation.anniversaryYear && (
-                      <p>Która: {reservation.anniversaryYear} rocznica</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-purple-900">Która rocznica:</p>
+                        <p className="text-sm text-purple-700">{reservation.anniversaryYear}</p>
+                      </div>
                     )}
                     {reservation.anniversaryOccasion && (
-                      <p>Okazja: {reservation.anniversaryOccasion}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-purple-900">Okazja:</p>
+                        <p className="text-sm text-purple-700">{reservation.anniversaryOccasion}</p>
+                      </div>
                     )}
                   </div>
                 )}
@@ -172,15 +237,43 @@ export function ReservationDetailsModal({
             </div>
           </div>
 
-          {/* Price */}
+          {/* Price Breakdown */}
           <div className="border-t pt-4">
             <div className="flex items-start gap-3">
               <DollarSign className="w-5 h-5 text-primary-600 mt-0.5" />
-              <div>
-                <p className="text-sm text-secondary-600">Cena całkowita</p>
-                <p className="text-2xl font-bold text-primary-600">
-                  {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
-                </p>
+              <div className="flex-1">
+                <p className="text-sm text-secondary-600 mb-2">Rozliczenie</p>
+                
+                {/* Price breakdown if available */}
+                {(reservation.pricePerAdult || reservation.pricePerChild) && (adults > 0 || children > 0) && (
+                  <div className="space-y-2 mb-3">
+                    {adults > 0 && reservation.pricePerAdult && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-secondary-600">
+                          Dorosłi: {adults} × {reservation.pricePerAdult} zł
+                        </span>
+                        <span className="font-medium">{adults * reservation.pricePerAdult} zł</span>
+                      </div>
+                    )}
+                    {children > 0 && reservation.pricePerChild && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-secondary-600">
+                          Dzieci: {children} × {reservation.pricePerChild} zł
+                        </span>
+                        <span className="font-medium">{children * reservation.pricePerChild} zł</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2"></div>
+                  </div>
+                )}
+                
+                {/* Total Price */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-secondary-700">Cena całkowita:</span>
+                  <span className="text-2xl font-bold text-primary-600">
+                    {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -214,9 +307,22 @@ export function ReservationDetailsModal({
           {reservation.notes && (
             <div className="border-t pt-4">
               <p className="text-sm font-medium text-secondary-700 mb-2">Notatki</p>
-              <p className="text-sm text-secondary-600 whitespace-pre-wrap">{reservation.notes}</p>
+              <p className="text-sm text-secondary-600 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                {reservation.notes}
+              </p>
             </div>
           )}
+
+          {/* Metadata */}
+          <div className="border-t pt-4 text-xs text-secondary-500 space-y-1">
+            <p>Utworzono: {formatDate(reservation.createdAt)}</p>
+            {reservation.createdByUser && (
+              <p>Przez: {reservation.createdByUser.firstName} {reservation.createdByUser.lastName}</p>
+            )}
+            {reservation.updatedAt !== reservation.createdAt && (
+              <p>Ostatnia aktualizacja: {formatDate(reservation.updatedAt)}</p>
+            )}
+          </div>
 
           {/* History */}
           {reservation.history && reservation.history.length > 0 && (
