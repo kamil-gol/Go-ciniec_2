@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import {
   Table,
   TableBody,
@@ -143,12 +142,7 @@ export function ReservationsList() {
   const totalPages = data?.totalPages || 1
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-4"
-    >
+    <div className="space-y-4">
       {/* Filters */}
       <div className="flex gap-4 items-center">
         <div className="w-64">
@@ -283,7 +277,7 @@ export function ReservationsList() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1)))
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >
               Następna
@@ -311,6 +305,6 @@ export function ReservationsList() {
           onSuccess={handleEditSuccess}
         />
       )}
-    </motion.div>
+    </div>
   )
 }
