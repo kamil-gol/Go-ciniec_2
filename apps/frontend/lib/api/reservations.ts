@@ -24,37 +24,39 @@ export const reservationsApi = {
   // Get all reservations with filters
   getAll: async (filters: ReservationsFilters = {}): Promise<PaginatedResponse<Reservation>> => {
     const { data } = await apiClient.get('/reservations', { params: filters })
-    return data
+    console.log('Raw reservations response:', data)
+    return data.data || data // Handle both structures
   },
 
   // Get single reservation by ID
   getById: async (id: string): Promise<Reservation> => {
     const { data } = await apiClient.get(`/reservations/${id}`)
-    return data
+    console.log('Raw reservation by ID response:', data)
+    return data.data || data // Handle both structures
   },
 
   // Create new reservation
   create: async (input: CreateReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.post('/reservations', input)
-    return data
+    return data.data || data // Handle both structures
   },
 
   // Update reservation
   update: async (id: string, input: UpdateReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.patch(`/reservations/${id}`, input)
-    return data
+    return data.data || data // Handle both structures
   },
 
   // Cancel reservation
   cancel: async (id: string, input: CancelReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.delete(`/reservations/${id}`, { data: input })
-    return data
+    return data.data || data // Handle both structures
   },
 
   // Archive reservation
   archive: async (id: string): Promise<Reservation> => {
     const { data } = await apiClient.post(`/reservations/${id}/archive`)
-    return data
+    return data.data || data // Handle both structures
   },
 
   // Get reservation PDF
