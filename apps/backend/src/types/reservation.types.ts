@@ -36,8 +36,19 @@ export interface CreateReservationDTO {
   anniversaryOccasion?: string; // For "Rocznica"
   
   notes?: string;
+  
+  // Deposit (full structure)
+  deposit?: {
+    amount: number;
+    dueDate: string; // ISO date string
+    paid?: boolean;
+    paymentMethod?: 'CASH' | 'TRANSFER' | 'BLIK';
+    paidAt?: string; // ISO datetime string
+  };
+  
+  // Legacy deposit fields (for backwards compatibility)
   depositAmount?: number;
-  depositDueDate?: string; // ISO date string
+  depositDueDate?: string;
 }
 
 export interface UpdateReservationDTO {
