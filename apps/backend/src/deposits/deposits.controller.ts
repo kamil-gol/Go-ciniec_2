@@ -2,6 +2,11 @@ import { Controller, Patch, Param, Body, UseGuards, HttpCode, HttpStatus } from 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DepositsService } from './deposits.service';
 
+export class MarkDepositPaidDto {
+  paymentMethod: 'CASH' | 'TRANSFER' | 'BLIK';
+  paidAt: string; // ISO date string
+}
+
 @Controller('deposits')
 @UseGuards(JwtAuthGuard)
 export class DepositsController {
@@ -11,9 +16,9 @@ export class DepositsController {
   @HttpCode(HttpStatus.OK)
   async markAsPaid(
     @Param('id') id: string,
-    @Body() body: { paymentMethod?: string },
+    @Body() body: MarkDepositPaidDto,
   ) {
-    return this.depositsService.markAsPaid(id, body.paymentMethod);
+    return this.depositsService.markAsPaid(id, body.paymentMethod, body.paidAt);
   }
 
   @Patch(':id/mark-unpaid')
