@@ -209,6 +209,26 @@ export class ReservationService {
       }
     });
 
+    // Create deposit if specified
+    const depositData = data.deposit || (data.depositAmount && data.depositDueDate ? {
+      amount: data.depositAmount,
+      dueDate: data.depositDueDate
+    } : null);
+
+    if (depositData) {
+      await prisma.deposit.create({
+        data: {
+          reservationId: reservation.id,
+          amount: depositData.amount,
+          dueDate: new Date(depositData.dueDate),
+          paid: depositData.paid || false,
+          status: depositData.paid ? 'PAID' : 'PENDING',
+          paymentMethod: depositData.paymentMethod || null,
+          paidAt: depositData.paidAt ? new Date(depositData.paidAt) : null,
+        }
+      });
+    }
+
     // Create history entry
     await this.createHistoryEntry(
       reservation.id,
