@@ -43,7 +43,7 @@ async function main() {
   // Find specific event types
   const birthdayEvent = eventTypes.find(e => e.name === 'Urodziny') || eventTypes[0]
   const weddingEvent = eventTypes.find(e => e.name === 'Wesele') || eventTypes[0]
-  const anniversaryEvent = eventTypes.find(e => e.name === 'Rocznica') || eventTypes[0]
+  const anniversaryEvent = eventTypes.find(e => e.name === 'Rocznica/Jubileusz') || eventTypes.find(e => e.name === 'Rocznica') || eventTypes[0]
   const otherEvent = eventTypes.find(e => e.name === 'Inne') || eventTypes[0]
   
   // Create 5 clients
