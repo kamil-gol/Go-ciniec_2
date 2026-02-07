@@ -56,7 +56,7 @@ export function ReservationsList() {
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null)
 
-  const { data, isLoading, error, mutate } = useReservations({
+  const { data, isLoading, error, refetch } = useReservations({
     page,
     pageSize: 20,
     status: statusFilter || undefined,
@@ -75,7 +75,7 @@ export function ReservationsList() {
   }
 
   const handleEditSuccess = () => {
-    mutate() // Refresh list
+    refetch() // Use refetch instead of mutate for React Query
   }
 
   const handleGeneratePDF = async (reservationId: string) => {
@@ -98,7 +98,7 @@ export function ReservationsList() {
         archivedAt: new Date().toISOString()
       })
       toast.success('Rezerwacja zarchiwizowana')
-      mutate() // Refresh list
+      refetch() // Use refetch
     } catch (error) {
       toast.error('Błąd podczas archiwizacji')
     }
@@ -117,7 +117,7 @@ export function ReservationsList() {
     try {
       await apiClient.delete(`/reservations/${reservationId}`)
       toast.success('Rezerwacja anulowana')
-      mutate() // Refresh list
+      refetch() // Use refetch
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Błąd podczas anulowania rezerwacji')
     }
@@ -283,7 +283,7 @@ export function ReservationsList() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1)))
               disabled={page === totalPages}
             >
               Następna
