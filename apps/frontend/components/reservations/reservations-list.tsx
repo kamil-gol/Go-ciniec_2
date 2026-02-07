@@ -16,7 +16,7 @@ import { Loading } from '@/components/ui/loading'
 import { useReservations } from '@/hooks/use-reservations'
 import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
-import { Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight, Users, Baby } from 'lucide-react'
 import { ReservationDetailsModal } from './reservation-details-modal'
 import { EditReservationModal } from './edit-reservation-modal'
 import { toast } from 'sonner'
@@ -47,6 +47,15 @@ function getFormattedTimeRange(reservation: any): string {
   }
   
   return 'N/A'
+}
+
+// Get guest breakdown
+function getGuestBreakdown(reservation: any): { adults: number; children: number; total: number } {
+  const adults = reservation.adults || 0
+  const children = reservation.children || 0
+  const total = reservation.guests || (adults + children)
+  
+  return { adults, children, total }
 }
 
 export function ReservationsList() {
@@ -178,81 +187,127 @@ export function ReservationsList() {
                 </TableCell>
               </TableRow>
             ) : (
-              reservations.map((reservation: any) => (
-                <TableRow key={reservation.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{getFormattedDate(reservation)}</div>
-                      <div className="text-sm text-secondary-500">
-                        {getFormattedTimeRange(reservation)}
+              reservations.map((reservation: any) => {
+                const guestInfo = getGuestBreakdown(reservation)
+                
+                return (
+                  <TableRow key={reservation.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{getFormattedDate(reservation)}</div>
+                        <div className="text-sm text-secondary-500">
+                          {getFormattedTimeRange(reservation)}
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{reservation.hall?.name || 'N/A'}</TableCell>
-                  <TableCell>
-                    {reservation.client
-                      ? `${reservation.client.firstName} ${reservation.client.lastName}`
-                      : 'N/A'}
-                  </TableCell>
-                  <TableCell>{reservation.eventType?.name || 'N/A'}</TableCell>
-                  <TableCell>{reservation.guests || 0}</TableCell>
-                  <TableCell className="font-medium">
-                    {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(reservation.status)}>
-                      {getStatusLabel(reservation.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setSelectedReservationId(reservation.id)}
-                        title="Zobacz szczegóły"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleEdit(reservation.id)}
-                        title="Edytuj rezerwację"
-                        disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleGeneratePDF(reservation.id)}
-                        title="Generuj PDF"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleArchive(reservation.id)}
-                        title="Archiwizuj"
-                        disabled={reservation.status === 'CANCELLED'}
-                      >
-                        <Archive className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleDelete(reservation.id, reservation.status)}
-                        title="Anuluj rezerwację"
-                        disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell>{reservation.hall?.name || 'N/A'}</TableCell>
+                    <TableCell>
+                      {reservation.client
+                        ? `${reservation.client.firstName} ${reservation.client.lastName}`
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div>{reservation.eventType?.name || 'N/A'}</div>
+                        {reservation.customEventType && (
+                          <div className="text-xs text-secondary-500">({reservation.customEventType})</div>
+                        )}
+                        {reservation.anniversaryYear && (
+                          <div className="text-xs text-secondary-500">({reservation.anniversaryYear}. rocznica)</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">{guestInfo.total}</div>
+                        {(guestInfo.adults > 0 || guestInfo.children > 0) && (
+                          <div className="flex gap-3 text-xs text-secondary-600">
+                            {guestInfo.adults > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                <span>{guestInfo.adults}</span>
+                              </div>
+                            )}
+                            {guestInfo.children > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Baby className="w-3 h-3" />
+                                <span>{guestInfo.children}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">
+                          {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
+                        </div>
+                        {(reservation.pricePerAdult || reservation.pricePerChild) && (
+                          <div className="text-xs text-secondary-500">
+                            {reservation.pricePerAdult && `${reservation.pricePerAdult} zł/os`}
+                            {reservation.pricePerChild && reservation.pricePerChild !== reservation.pricePerAdult && (
+                              <>, {reservation.pricePerChild} zł/dz</>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(reservation.status)}>
+                        {getStatusLabel(reservation.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedReservationId(reservation.id)}
+                          title="Zobacz szczegóły"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleEdit(reservation.id)}
+                          title="Edytuj rezerwację"
+                          disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleGeneratePDF(reservation.id)}
+                          title="Generuj PDF"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleArchive(reservation.id)}
+                          title="Archiwizuj"
+                          disabled={reservation.status === 'CANCELLED'}
+                        >
+                          <Archive className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleDelete(reservation.id, reservation.status)}
+                          title="Anuluj rezerwację"
+                          disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
