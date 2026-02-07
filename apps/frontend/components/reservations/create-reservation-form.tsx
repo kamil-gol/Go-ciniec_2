@@ -14,7 +14,7 @@ import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby, CheckCircle } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { useQueryClient } from '@tanstack/react-query'
@@ -46,9 +46,14 @@ const reservationSchema = z.object({
   anniversaryOccasion: z.string().optional(),
   
   notes: z.string().optional(),
+  
+  // Deposit fields
   hasDeposit: z.boolean(),
   depositAmount: z.coerce.number().optional(),
   depositDueDate: z.string().optional(),
+  depositPaid: z.boolean().optional(),
+  depositPaymentMethod: z.string().optional(),
+  depositPaidAt: z.string().optional(),
 }).refine((data) => data.adults + data.children >= 1, {
   message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
@@ -93,12 +98,14 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     resolver: zodResolver(reservationSchema),
     defaultValues: {
       hasDeposit: false,
-      // No default values for adults and children
+      depositPaid: false,
     },
   })
 
   const watchedFields = watch()
   const hasDeposit = watch('hasDeposit')
+  const depositPaid = watch('depositPaid')
+  
   // Convert to numbers explicitly to prevent string concatenation
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
@@ -114,6 +121,15 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       setValue('pricePerChild', halfPrice)
     }
   }, [adults, pricePerAdult, setValue, childPriceManuallySet])
+
+  // Auto-set default paid date to now when marking as paid
+  useEffect(() => {
+    if (depositPaid && !watchedFields.depositPaidAt) {
+      const now = new Date()
+      const dateStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+      setValue('depositPaidAt', dateStr)
+    }
+  }, [depositPaid, watchedFields.depositPaidAt, setValue])
 
   // Check if child price field should be disabled
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
@@ -227,6 +243,9 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       input.deposit = {
         amount: data.depositAmount,
         dueDate: data.depositDueDate,
+        paid: data.depositPaid || false,
+        paymentMethod: data.depositPaid ? data.depositPaymentMethod : undefined,
+        paidAt: data.depositPaid ? data.depositPaidAt : undefined,
       }
     }
 
@@ -264,6 +283,13 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       value: type.id,
       label: type.name,
     }))
+  ]
+
+  const paymentMethodOptions = [
+    { value: '', label: 'Wybierz metodę płatności...' },
+    { value: 'CASH', label: 'Gotówka' },
+    { value: 'TRANSFER', label: 'Przelew' },
+    { value: 'BLIK', label: 'BLIK' },
   ]
 
   // Check if event is "Urodziny", "Rocznica" or "Inne"
@@ -556,7 +582,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               />
             </div>
 
-            {/* Deposit */}
+            {/* Deposit - UPDATED: Added status fields */}
             <div className="space-y-4">
               <div className="flex items-center">
                 <input
@@ -565,7 +591,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                   className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                   {...register('hasDeposit')}
                 />
-                <label htmlFor="hasDeposit" className="ml-2 text-sm text-secondary-700">
+                <label htmlFor="hasDeposit" className="ml-2 text-sm font-medium text-secondary-700">
                   Dodaj zaliczkę
                 </label>
               </div>
@@ -575,21 +601,61 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
                 >
-                  <Input
-                    type="number"
-                    label="Kwota zaliczki (PLN)"
-                    placeholder="0.00"
-                    error={errors.depositAmount?.message}
-                    {...register('depositAmount')}
-                  />
-                  <Input
-                    type="date"
-                    label="Termin płatności"
-                    error={errors.depositDueDate?.message}
-                    {...register('depositDueDate')}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      label="Kwota zaliczki (PLN)"
+                      placeholder="0.00"
+                      error={errors.depositAmount?.message}
+                      {...register('depositAmount')}
+                    />
+                    <Input
+                      type="date"
+                      label="Termin płatności"
+                      error={errors.depositDueDate?.message}
+                      {...register('depositDueDate')}
+                    />
+                  </div>
+
+                  {/* Deposit Status */}
+                  <div className="pt-3 border-t border-gray-300">
+                    <div className="flex items-center mb-3">
+                      <input
+                        type="checkbox"
+                        id="depositPaid"
+                        className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                        {...register('depositPaid')}
+                      />
+                      <label htmlFor="depositPaid" className="ml-2 text-sm font-medium text-secondary-700 flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        Zaliczka została już zapłacona
+                      </label>
+                    </div>
+
+                    {depositPaid && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-green-50 p-3 rounded border border-green-200"
+                      >
+                        <Select
+                          label="Sposób płatności"
+                          options={paymentMethodOptions}
+                          error={errors.depositPaymentMethod?.message}
+                          {...register('depositPaymentMethod')}
+                        />
+                        <Input
+                          type="datetime-local"
+                          label="Data i czas płatności"
+                          error={errors.depositPaidAt?.message}
+                          {...register('depositPaidAt')}
+                        />
+                      </motion.div>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </div>
