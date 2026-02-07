@@ -1,8 +1,6 @@
 -- Fix ReservationHistory foreign key constraint
 -- Rename changedBy to changedByUserId to match schema
 
-BEGIN;
-
 -- Drop the old foreign key constraint
 ALTER TABLE "ReservationHistory" DROP CONSTRAINT IF EXISTS "ReservationHistory_changedBy_fkey";
 
@@ -25,5 +23,3 @@ ALTER TABLE "ReservationHistory"
 -- Recreate index with correct column name
 DROP INDEX IF EXISTS "ReservationHistory_changedBy_idx";
 CREATE INDEX IF NOT EXISTS "ReservationHistory_changedByUserId_idx" ON "ReservationHistory"("changedByUserId");
-
-COMMIT;
