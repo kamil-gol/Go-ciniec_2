@@ -31,6 +31,7 @@ export interface CreateReservationDTO {
   
   // Custom event fields
   customEventType?: string; // For "Inne" event type
+  birthdayAge?: number; // For "Urodziny" event type
   anniversaryYear?: number; // For "Rocznica"
   anniversaryOccasion?: string; // For "Rocznica"
   
@@ -63,6 +64,7 @@ export interface UpdateReservationDTO {
   
   // Custom event fields
   customEventType?: string;
+  birthdayAge?: number; // For "Urodziny" event type
   anniversaryYear?: number;
   anniversaryOccasion?: string;
   
@@ -129,6 +131,7 @@ export interface ReservationResponse {
   
   // Custom event fields
   customEventType: string | null;
+  birthdayAge: number | null; // For "Urodziny" event type
   anniversaryYear: number | null;
   anniversaryOccasion: string | null;
   
