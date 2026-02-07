@@ -22,6 +22,33 @@ import { ReservationDetailsModal } from './reservation-details-modal'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 
+// Helper functions for backwards compatibility
+function getFormattedDate(reservation: any): string {
+  if (reservation.startDateTime) {
+    return formatDate(reservation.startDateTime)
+  }
+  if (reservation.date) {
+    return formatDate(reservation.date)
+  }
+  return 'N/A'
+}
+
+function getFormattedTimeRange(reservation: any): string {
+  // New format with DateTime
+  if (reservation.startDateTime && reservation.endDateTime) {
+    const start = new Date(reservation.startDateTime)
+    const end = new Date(reservation.endDateTime)
+    return `${start.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  
+  // Old format with separate time fields
+  if (reservation.startTime && reservation.endTime) {
+    return `${formatTime(reservation.startTime)} - ${formatTime(reservation.endTime)}`
+  }
+  
+  return 'N/A'
+}
+
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | ''>('')
@@ -152,13 +179,13 @@ export function ReservationsList() {
                 </TableCell>
               </TableRow>
             ) : (
-              reservations.map((reservation) => (
+              reservations.map((reservation: any) => (
                 <TableRow key={reservation.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{formatDate(reservation.date)}</div>
+                      <div className="font-medium">{getFormattedDate(reservation)}</div>
                       <div className="text-sm text-secondary-500">
-                        {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
+                        {getFormattedTimeRange(reservation)}
                       </div>
                     </div>
                   </TableCell>
@@ -169,9 +196,9 @@ export function ReservationsList() {
                       : 'N/A'}
                   </TableCell>
                   <TableCell>{reservation.eventType?.name || 'N/A'}</TableCell>
-                  <TableCell>{reservation.guests}</TableCell>
+                  <TableCell>{reservation.guests || 0}</TableCell>
                   <TableCell className="font-medium">
-                    {formatCurrency(reservation.totalPrice)}
+                    {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(reservation.status)}>
