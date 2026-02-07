@@ -19,6 +19,7 @@ import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel 
 import { ReservationStatus } from '@/types'
 import { Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ReservationDetailsModal } from './reservation-details-modal'
+import { EditReservationModal } from './edit-reservation-modal'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 
@@ -53,6 +54,7 @@ export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | ''>('')
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
+  const [editingReservationId, setEditingReservationId] = useState<string | null>(null)
 
   const { data, isLoading, error, mutate } = useReservations({
     page,
@@ -69,8 +71,11 @@ export function ReservationsList() {
   ]
 
   const handleEdit = (reservationId: string) => {
-    toast.info('Funkcja edycji w budowie')
-    // TODO: Implement edit functionality
+    setEditingReservationId(reservationId)
+  }
+
+  const handleEditSuccess = () => {
+    mutate() // Refresh list
   }
 
   const handleGeneratePDF = async (reservationId: string) => {
@@ -220,6 +225,7 @@ export function ReservationsList() {
                         variant="ghost"
                         onClick={() => handleEdit(reservation.id)}
                         title="Edytuj rezerwację"
+                        disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -293,6 +299,16 @@ export function ReservationsList() {
           reservationId={selectedReservationId}
           open={!!selectedReservationId}
           onClose={() => setSelectedReservationId(null)}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingReservationId && (
+        <EditReservationModal
+          reservationId={editingReservationId}
+          open={!!editingReservationId}
+          onClose={() => setEditingReservationId(null)}
+          onSuccess={handleEditSuccess}
         />
       )}
     </motion.div>
