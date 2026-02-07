@@ -1,6 +1,6 @@
 /**
  * Reservation Service
- * Business logic for reservation management
+ * Business logic for reservation management with advanced features
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -12,6 +12,15 @@ import {
   ReservationResponse,
   ReservationStatus
 } from '../types/reservation.types';
+import {
+  calculateTotalGuests,
+  calculateTotalPrice,
+  generateExtraHoursNote,
+  validateConfirmationDeadline,
+  validateCustomEventFields,
+  detectReservationChanges,
+  formatChangesSummary
+} from '../utils/reservation.utils';
 
 const prisma = new PrismaClient();
 
@@ -25,15 +34,15 @@ export class ReservationService {
       throw new Error('Hall, client, and event type are required');
     }
 
-    if (!data.date || !data.startTime || !data.endTime) {
-      throw new Error('Date, start time, and end time are required');
+    // Require either new startDateTime/endDateTime OR legacy date/startTime/endTime
+    const hasNewFormat = data.startDateTime && data.endDateTime;
+    const hasLegacyFormat = data.date && data.startTime && data.endTime;
+    
+    if (!hasNewFormat && !hasLegacyFormat) {
+      throw new Error('Either startDateTime/endDateTime or date/startTime/endTime are required');
     }
 
-    if (!data.guests || data.guests < 1) {
-      throw new Error('Number of guests must be at least 1');
-    }
-
-    // Check if hall exists and get price
+    // Check if hall exists and get prices
     const hall = await prisma.hall.findUnique({
       where: { id: data.hallId }
     });
@@ -44,11 +53,6 @@ export class ReservationService {
 
     if (!hall.isActive) {
       throw new Error('Hall is not active');
-    }
-
-    // Validate capacity
-    if (data.guests > hall.capacity) {
-      throw new Error(`Number of guests (${data.guests}) exceeds hall capacity (${hall.capacity})`);
     }
 
     // Check if client exists
@@ -69,34 +73,98 @@ export class ReservationService {
       throw new Error('Event type not found');
     }
 
-    // Validate date is in the future
-    const reservationDate = new Date(data.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (reservationDate < today) {
-      throw new Error('Reservation date must be in the future');
+    // Validate custom event fields
+    const customValidation = validateCustomEventFields(eventType.name, data);
+    if (!customValidation.valid) {
+      throw new Error(customValidation.error);
     }
 
-    // Validate time range
-    if (data.startTime >= data.endTime) {
-      throw new Error('End time must be after start time');
+    // Determine guests: use adults+children if provided, otherwise fall back to guests
+    let adults = data.adults ?? 0;
+    let children = data.children ?? 0;
+    let guests = data.guests ?? 0;
+
+    if (adults > 0 || children > 0) {
+      guests = calculateTotalGuests(adults, children);
+    } else if (guests > 0) {
+      // Legacy mode: all guests are adults
+      adults = guests;
+      children = 0;
+    } else {
+      throw new Error('Number of guests must be at least 1');
     }
 
-    // Check for overlapping reservations
-    const hasOverlap = await this.checkOverlap(
-      data.hallId,
-      data.date,
-      data.startTime,
-      data.endTime
-    );
-
-    if (hasOverlap) {
-      throw new Error('This time slot is already booked for the selected hall');
+    // Validate capacity
+    if (guests > hall.capacity) {
+      throw new Error(`Number of guests (${guests}) exceeds hall capacity (${hall.capacity})`);
     }
+
+    // Determine pricing
+    const pricePerAdult = data.pricePerAdult ?? Number(hall.pricePerPerson);
+    const pricePerChild = data.pricePerChild ?? (hall.pricePerChild ? Number(hall.pricePerChild) : pricePerAdult);
 
     // Calculate total price
-    const totalPrice = Number(hall.pricePerPerson) * data.guests;
+    const totalPrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild);
+
+    // Prepare notes with extra hours warning if using new format
+    let notes = data.notes || '';
+    if (hasNewFormat && data.startDateTime && data.endDateTime) {
+      const startDT = new Date(data.startDateTime);
+      const endDT = new Date(data.endDateTime);
+      
+      // Validate date is in the future
+      const today = new Date();
+      if (startDT < today) {
+        throw new Error('Reservation date must be in the future');
+      }
+
+      // Validate time range
+      if (startDT >= endDT) {
+        throw new Error('End time must be after start time');
+      }
+
+      const extraHoursNote = generateExtraHoursNote(startDT, endDT);
+      if (extraHoursNote) {
+        notes += extraHoursNote;
+      }
+    }
+
+    // Validate legacy format if used
+    if (hasLegacyFormat && data.date && data.startTime && data.endTime) {
+      const reservationDate = new Date(data.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (reservationDate < today) {
+        throw new Error('Reservation date must be in the future');
+      }
+
+      if (data.startTime >= data.endTime) {
+        throw new Error('End time must be after start time');
+      }
+
+      // Check for overlapping reservations (legacy)
+      const hasOverlap = await this.checkOverlap(
+        data.hallId,
+        data.date,
+        data.startTime,
+        data.endTime
+      );
+
+      if (hasOverlap) {
+        throw new Error('This time slot is already booked for the selected hall');
+      }
+    }
+
+    // Validate confirmation deadline
+    if (data.confirmationDeadline && data.startDateTime) {
+      const deadline = new Date(data.confirmationDeadline);
+      const eventStart = new Date(data.startDateTime);
+      
+      if (!validateConfirmationDeadline(deadline, eventStart)) {
+        throw new Error('Confirmation deadline must be at least 1 day before the event');
+      }
+    }
 
     // Create reservation
     const reservation = await prisma.reservation.create({
@@ -105,17 +173,32 @@ export class ReservationService {
         clientId: data.clientId,
         eventTypeId: data.eventTypeId,
         createdById: userId,
-        date: data.date,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        guests: data.guests,
-        totalPrice: totalPrice,
+        
+        // New fields
+        startDateTime: data.startDateTime ? new Date(data.startDateTime) : null,
+        endDateTime: data.endDateTime ? new Date(data.endDateTime) : null,
+        adults,
+        children,
+        pricePerAdult,
+        pricePerChild,
+        confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
+        customEventType: data.customEventType || null,
+        anniversaryYear: data.anniversaryYear || null,
+        anniversaryOccasion: data.anniversaryOccasion || null,
+        
+        // Legacy fields (for backwards compatibility)
+        date: data.date || null,
+        startTime: data.startTime || null,
+        endTime: data.endTime || null,
+        
+        guests,
+        totalPrice,
         status: ReservationStatus.PENDING,
-        notes: data.notes || null,
+        notes: notes || null,
         attachments: []
       },
       include: {
-        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
+        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
         createdBy: { select: { id: true, email: true } }
@@ -159,13 +242,22 @@ export class ReservationService {
     }
 
     if (filters?.dateFrom || filters?.dateTo) {
-      where.date = {};
-      if (filters.dateFrom) {
-        where.date.gte = filters.dateFrom;
-      }
-      if (filters.dateTo) {
-        where.date.lte = filters.dateTo;
-      }
+      where.OR = [
+        // Check new format
+        {
+          startDateTime: {
+            ...(filters.dateFrom && { gte: new Date(filters.dateFrom) }),
+            ...(filters.dateTo && { lte: new Date(filters.dateTo) })
+          }
+        },
+        // Check legacy format
+        {
+          date: {
+            ...(filters.dateFrom && { gte: filters.dateFrom }),
+            ...(filters.dateTo && { lte: filters.dateTo })
+          }
+        }
+      ];
     }
 
     if (filters?.archived !== undefined) {
@@ -182,12 +274,16 @@ export class ReservationService {
     const reservations = await prisma.reservation.findMany({
       where,
       include: {
-        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
+        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
         createdBy: { select: { id: true, email: true } }
       },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
+      orderBy: [
+        { startDateTime: 'asc' },
+        { date: 'asc' },
+        { startTime: 'asc' }
+      ]
     });
 
     return reservations as any[];
@@ -200,7 +296,7 @@ export class ReservationService {
     const reservation = await prisma.reservation.findUnique({
       where: { id },
       include: {
-        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
+        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
         createdBy: { select: { id: true, email: true } }
@@ -220,7 +316,7 @@ export class ReservationService {
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { hall: true }
+      include: { hall: true, eventType: true }
     });
 
     if (!existingReservation) {
@@ -236,90 +332,121 @@ export class ReservationService {
       throw new Error('Cannot update cancelled reservation');
     }
 
+    // Validate reason if there are changes
+    const detectedChanges = detectReservationChanges(existingReservation, data);
+    if (detectedChanges.length > 0) {
+      if (!data.reason || data.reason.length < 10) {
+        throw new Error('Reason is required for changes (minimum 10 characters)');
+      }
+    }
+
+    // Validate custom event fields if event type is being referenced
+    if (existingReservation.eventType) {
+      const customValidation = validateCustomEventFields(existingReservation.eventType.name, data);
+      if (!customValidation.valid) {
+        throw new Error(customValidation.error);
+      }
+    }
+
     const updateData: any = {};
-    let needsPriceRecalculation = false;
 
-    // Update date if provided
-    if (data.date) {
-      const newDate = new Date(data.date);
+    // Update datetime fields
+    if (data.startDateTime) {
+      const newStart = new Date(data.startDateTime);
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (newDate < today) {
+      if (newStart < today) {
         throw new Error('Reservation date must be in the future');
       }
-
-      updateData.date = data.date;
+      updateData.startDateTime = newStart;
     }
 
-    // Update times if provided
-    if (data.startTime) {
-      updateData.startTime = data.startTime;
+    if (data.endDateTime) {
+      updateData.endDateTime = new Date(data.endDateTime);
     }
 
-    if (data.endTime) {
-      updateData.endTime = data.endTime;
-    }
-
-    // Validate time range if both are being updated or one is being updated
-    const finalStartTime = data.startTime || existingReservation.startTime;
-    const finalEndTime = data.endTime || existingReservation.endTime;
-
-    if (finalStartTime >= finalEndTime) {
+    // Validate time range
+    const finalStart = data.startDateTime ? new Date(data.startDateTime) : existingReservation.startDateTime;
+    const finalEnd = data.endDateTime ? new Date(data.endDateTime) : existingReservation.endDateTime;
+    
+    if (finalStart && finalEnd && finalStart >= finalEnd) {
       throw new Error('End time must be after start time');
     }
 
-    // Check for overlaps if date or times changed
-    if (data.date || data.startTime || data.endTime) {
-      const checkDate = data.date || existingReservation.date;
-      const hasOverlap = await this.checkOverlap(
-        existingReservation.hallId,
-        checkDate,
-        finalStartTime,
-        finalEndTime,
-        id // Exclude current reservation
-      );
+    // Update guest counts
+    if (data.adults !== undefined) {
+      updateData.adults = data.adults;
+    }
+    if (data.children !== undefined) {
+      updateData.children = data.children;
+    }
 
-      if (hasOverlap) {
-        throw new Error('This time slot is already booked for the selected hall');
+    // Recalculate guests if adults or children changed
+    if (data.adults !== undefined || data.children !== undefined) {
+      const newAdults = data.adults ?? existingReservation.adults;
+      const newChildren = data.children ?? existingReservation.children;
+      updateData.guests = calculateTotalGuests(newAdults, newChildren);
+
+      // Validate capacity
+      if (updateData.guests > existingReservation.hall.capacity) {
+        throw new Error(`Number of guests (${updateData.guests}) exceeds hall capacity (${existingReservation.hall.capacity})`);
       }
     }
 
-    // Update guests if provided
-    if (data.guests !== undefined) {
-      if (data.guests < 1) {
-        throw new Error('Number of guests must be at least 1');
-      }
-
-      if (data.guests > existingReservation.hall.capacity) {
-        throw new Error(`Number of guests (${data.guests}) exceeds hall capacity (${existingReservation.hall.capacity})`);
-      }
-
-      updateData.guests = data.guests;
-      needsPriceRecalculation = true;
+    // Update pricing
+    if (data.pricePerAdult !== undefined) {
+      updateData.pricePerAdult = data.pricePerAdult;
+    }
+    if (data.pricePerChild !== undefined) {
+      updateData.pricePerChild = data.pricePerChild;
     }
 
-    // Recalculate price if guests changed
-    if (needsPriceRecalculation) {
-      const newGuests = data.guests || existingReservation.guests;
-      updateData.totalPrice = Number(existingReservation.hall.pricePerPerson) * newGuests;
+    // Recalculate total price if any pricing or guest count changed
+    if (data.adults !== undefined || data.children !== undefined || data.pricePerAdult !== undefined || data.pricePerChild !== undefined) {
+      const finalAdults = data.adults ?? existingReservation.adults;
+      const finalChildren = data.children ?? existingReservation.children;
+      const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
+      const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
+      
+      updateData.totalPrice = calculateTotalPrice(finalAdults, finalChildren, finalPricePerAdult, finalPricePerChild);
     }
 
-    // Update other fields
+    // Update confirmation deadline
+    if (data.confirmationDeadline) {
+      const deadline = new Date(data.confirmationDeadline);
+      const eventStart = finalStart || (data.startDateTime ? new Date(data.startDateTime) : null);
+      
+      if (eventStart && !validateConfirmationDeadline(deadline, eventStart)) {
+        throw new Error('Confirmation deadline must be at least 1 day before the event');
+      }
+      updateData.confirmationDeadline = deadline;
+    }
+
+    // Update custom event fields
+    if (data.customEventType !== undefined) updateData.customEventType = data.customEventType || null;
+    if (data.anniversaryYear !== undefined) updateData.anniversaryYear = data.anniversaryYear || null;
+    if (data.anniversaryOccasion !== undefined) updateData.anniversaryOccasion = data.anniversaryOccasion || null;
+
+    // Update legacy fields
+    if (data.date !== undefined) updateData.date = data.date || null;
+    if (data.startTime !== undefined) updateData.startTime = data.startTime || null;
+    if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
+
+    // Update notes
     if (data.notes !== undefined) updateData.notes = data.notes || null;
 
-    // Track changes for history
-    const changes: Array<{field: string, oldValue: any, newValue: any}> = [];
-    
-    if (data.guests !== undefined && data.guests !== existingReservation.guests) {
-      changes.push({ field: 'guests', oldValue: existingReservation.guests.toString(), newValue: data.guests.toString() });
+    // Add extra hours note if datetime changed
+    if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
+      const extraHoursNote = generateExtraHoursNote(finalStart, finalEnd);
+      if (extraHoursNote) {
+        updateData.notes = (updateData.notes || existingReservation.notes || '') + extraHoursNote;
+      }
     }
 
     const reservation = await prisma.reservation.update({
       where: { id },
       data: updateData,
       include: {
-        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
+        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
         createdBy: { select: { id: true, email: true } }
@@ -327,15 +454,16 @@ export class ReservationService {
     });
 
     // Create history entries for changes
-    for (const change of changes) {
+    if (detectedChanges.length > 0) {
+      const changesSummary = formatChangesSummary(detectedChanges);
       await this.createHistoryEntry(
         id,
         userId,
         'UPDATED',
-        change.field,
-        change.oldValue,
-        change.newValue,
-        'Reservation updated'
+        'multiple',
+        'various',
+        'various',
+        `${data.reason}\n\nChanges:\n${changesSummary}`
       );
     }
 
@@ -361,7 +489,7 @@ export class ReservationService {
       where: { id },
       data: { status: data.status },
       include: {
-        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true } },
+        hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
         createdBy: { select: { id: true, email: true } }
@@ -423,7 +551,7 @@ export class ReservationService {
   }
 
   /**
-   * Check for overlapping reservations
+   * Check for overlapping reservations (legacy format)
    */
   private async checkOverlap(
     hallId: string,
