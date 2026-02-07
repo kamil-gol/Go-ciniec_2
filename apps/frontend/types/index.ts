@@ -65,6 +65,7 @@ export interface Reservation {
   eventTypeId: string
   eventType?: EventType
   customEventType?: string // New field - for "Inne" event type
+  birthdayAge?: number // New field - for "Urodziny" (which birthday)
   anniversaryYear?: number // New field - for "Rocznica" (which anniversary)
   anniversaryOccasion?: string // New field - for "Rocznica" (what occasion)
   
@@ -152,6 +153,7 @@ export interface CreateReservationInput {
   clientId: string
   eventTypeId: string
   customEventType?: string // For "Inne" event type
+  birthdayAge?: number // For "Urodziny"
   anniversaryYear?: number // For "Rocznica"
   anniversaryOccasion?: string // For "Rocznica"
   
