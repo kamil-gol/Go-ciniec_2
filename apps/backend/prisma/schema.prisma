@@ -97,15 +97,17 @@ model Reservation {
   startDateTime   DateTime?
   endDateTime     DateTime?
   
-  // Guest count fields
-  adults          Int      @default(0) @db.SmallInt // New: number of adults
-  children        Int      @default(0) @db.SmallInt // New: number of children
-  guests          Int      @db.SmallInt // Computed: adults + children
+  // Guest count fields - UPDATED: Split into three age groups
+  adults          Int      @default(0) @db.SmallInt // Number of adults
+  children        Int      @default(0) @db.SmallInt // Number of children (4-12)
+  toddlers        Int      @default(0) @db.SmallInt // NEW: Number of toddlers (0-3)
+  guests          Int      @db.SmallInt // Computed: adults + children + toddlers
   
-  // Pricing fields
-  pricePerAdult   Decimal  @default(0) @db.Decimal(10, 2) // New: price per adult
-  pricePerChild   Decimal  @default(0) @db.Decimal(10, 2) // New: price per child
-  totalPrice      Decimal  @db.Decimal(10, 2) // Computed: (adults * pricePerAdult) + (children * pricePerChild)
+  // Pricing fields - UPDATED: Three separate prices
+  pricePerAdult   Decimal  @default(0) @db.Decimal(10, 2) // Price per adult
+  pricePerChild   Decimal  @default(0) @db.Decimal(10, 2) // Price per child (4-12)
+  pricePerToddler Decimal  @default(0) @db.Decimal(10, 2) // NEW: Price per toddler (0-3)
+  totalPrice      Decimal  @db.Decimal(10, 2) // Computed: (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
   
   status          String   @default("PENDING") @db.VarChar(20)
   confirmationDeadline DateTime? // New: for PENDING status, deadline to confirm (max 1 day before event)
