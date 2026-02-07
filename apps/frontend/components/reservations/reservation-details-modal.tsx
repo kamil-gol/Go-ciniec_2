@@ -14,12 +14,41 @@ interface ReservationDetailsModalProps {
   onClose: () => void
 }
 
+// Helper to format date/time from either old or new format
+function getFormattedDate(reservation: any): string {
+  if (reservation.startDateTime) {
+    return formatDate(reservation.startDateTime)
+  }
+  if (reservation.date) {
+    return formatDate(reservation.date)
+  }
+  return 'N/A'
+}
+
+function getFormattedTimeRange(reservation: any): string {
+  // New format with DateTime
+  if (reservation.startDateTime && reservation.endDateTime) {
+    const start = new Date(reservation.startDateTime)
+    const end = new Date(reservation.endDateTime)
+    return `${start.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  
+  // Old format with separate time fields
+  if (reservation.startTime && reservation.endTime) {
+    return `${formatTime(reservation.startTime)} - ${formatTime(reservation.endTime)}`
+  }
+  
+  return 'N/A'
+}
+
 export function ReservationDetailsModal({
   reservationId,
   open,
   onClose,
 }: ReservationDetailsModalProps) {
   const { data: reservation, isLoading } = useReservation(reservationId)
+
+  console.log('Reservation details:', reservation)
 
   if (isLoading) {
     return (
@@ -54,7 +83,7 @@ export function ReservationDetailsModal({
               <Calendar className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-secondary-600">Data</p>
-                <p className="font-medium">{formatDate(reservation.date)}</p>
+                <p className="font-medium">{getFormattedDate(reservation)}</p>
               </div>
             </div>
 
@@ -62,9 +91,7 @@ export function ReservationDetailsModal({
               <Clock className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-secondary-600">Godziny</p>
-                <p className="font-medium">
-                  {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
-                </p>
+                <p className="font-medium">{getFormattedTimeRange(reservation)}</p>
               </div>
             </div>
 
@@ -72,10 +99,12 @@ export function ReservationDetailsModal({
               <Home className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-secondary-600">Sala</p>
-                <p className="font-medium">{reservation.hall?.name}</p>
-                <p className="text-sm text-secondary-500">
-                  Pojemność: {reservation.hall?.capacity} osób
-                </p>
+                <p className="font-medium">{reservation.hall?.name || 'N/A'}</p>
+                {reservation.hall?.capacity && (
+                  <p className="text-sm text-secondary-500">
+                    Pojemność: {reservation.hall.capacity} osób
+                  </p>
+                )}
               </div>
             </div>
 
@@ -83,7 +112,7 @@ export function ReservationDetailsModal({
               <Users className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-secondary-600">Liczba gości</p>
-                <p className="font-medium">{reservation.guests} osób</p>
+                <p className="font-medium">{reservation.guests || 0} osób</p>
               </div>
             </div>
           </div>
@@ -94,14 +123,20 @@ export function ReservationDetailsModal({
               <User className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-secondary-600 mb-1">Klient</p>
-                {reservation.client && (
+                {reservation.client ? (
                   <div className="space-y-1">
                     <p className="font-medium">
                       {reservation.client.firstName} {reservation.client.lastName}
                     </p>
-                    <p className="text-sm text-secondary-600">{reservation.client.email}</p>
-                    <p className="text-sm text-secondary-600">{reservation.client.phone}</p>
+                    {reservation.client.email && (
+                      <p className="text-sm text-secondary-600">{reservation.client.email}</p>
+                    )}
+                    {reservation.client.phone && (
+                      <p className="text-sm text-secondary-600">{reservation.client.phone}</p>
+                    )}
                   </div>
+                ) : (
+                  <p className="text-sm text-secondary-500">Brak danych klienta</p>
                 )}
               </div>
             </div>
@@ -113,7 +148,26 @@ export function ReservationDetailsModal({
               <FileText className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-secondary-600">Typ wydarzenia</p>
-                <p className="font-medium">{reservation.eventType?.name}</p>
+                <p className="font-medium">{reservation.eventType?.name || 'N/A'}</p>
+                
+                {/* Custom event type for "Inne" */}
+                {reservation.customEventType && (
+                  <p className="text-sm text-secondary-600 mt-1">
+                    Szczegóły: {reservation.customEventType}
+                  </p>
+                )}
+                
+                {/* Anniversary details */}
+                {reservation.eventType?.name === 'Rocznica' && (
+                  <div className="text-sm text-secondary-600 mt-1 space-y-0.5">
+                    {reservation.anniversaryYear && (
+                      <p>Która: {reservation.anniversaryYear} rocznica</p>
+                    )}
+                    {reservation.anniversaryOccasion && (
+                      <p>Okazja: {reservation.anniversaryOccasion}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -125,7 +179,7 @@ export function ReservationDetailsModal({
               <div>
                 <p className="text-sm text-secondary-600">Cena całkowita</p>
                 <p className="text-2xl font-bold text-primary-600">
-                  {formatCurrency(reservation.totalPrice)}
+                  {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
                 </p>
               </div>
             </div>
@@ -136,7 +190,7 @@ export function ReservationDetailsModal({
             <div className="border-t pt-4">
               <p className="text-sm font-medium text-secondary-700 mb-2">Zaliczki</p>
               <div className="space-y-2">
-                {reservation.deposits.map((deposit) => (
+                {reservation.deposits.map((deposit: any) => (
                   <div
                     key={deposit.id}
                     className="flex items-center justify-between p-3 bg-secondary-50 rounded-md"
