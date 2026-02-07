@@ -146,13 +146,26 @@ export function EditReservationModal({
     }
   }, [adults, pricePerAdult, setValue, childPriceManuallySet, isFormReady])
 
-  // Auto-set toddler price to 25% of adult price
+  // ✅ IMPROVED: Auto-set toddler price to 25% of adult price when toddlers added
   useEffect(() => {
-    if (adults > 0 && pricePerAdult > 0 && !toddlerPriceManuallySet && isFormReady) {
-      const quarterPrice = Math.round(pricePerAdult * 0.25)
-      setValue('pricePerToddler', quarterPrice)
+    // Auto-calculate only if:
+    // 1. Adults and adult price are set
+    // 2. User hasn't manually edited toddler price
+    // 3. Form is ready
+    // 4. Either: toddler price is 0 OR price hasn't been manually set
+    if (adults > 0 && pricePerAdult > 0 && isFormReady) {
+      // If toddlers > 0 and price is 0, always calculate
+      if (toddlers > 0 && pricePerToddler === 0) {
+        const quarterPrice = Math.round(pricePerAdult * 0.25)
+        setValue('pricePerToddler', quarterPrice)
+      }
+      // If not manually set and toddlers count changes, recalculate
+      else if (!toddlerPriceManuallySet) {
+        const quarterPrice = Math.round(pricePerAdult * 0.25)
+        setValue('pricePerToddler', quarterPrice)
+      }
     }
-  }, [adults, pricePerAdult, setValue, toddlerPriceManuallySet, isFormReady])
+  }, [adults, pricePerAdult, toddlers, pricePerToddler, setValue, toddlerPriceManuallySet, isFormReady])
 
   // Auto-fill end time when start time changes (default: +6 hours)
   useEffect(() => {
@@ -273,9 +286,10 @@ export function EditReservationModal({
       setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
       setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0) // ✅ NOW LOADS FROM BACKEND
       
-      // Mark prices as manually set to prevent auto-overwrite
-      setChildPriceManuallySet(true)
-      setToddlerPriceManuallySet(true)
+      // ✅ IMPROVED: Only mark as manually set if there are actual values
+      // This allows auto-calculation when adding new children/toddlers
+      setChildPriceManuallySet(reservation.pricePerChild > 0)
+      setToddlerPriceManuallySet(reservation.pricePerToddler > 0 && reservation.toddlers > 0)
       
       // Confirmation deadline - convert to date only
       if (reservation.confirmationDeadline) {
