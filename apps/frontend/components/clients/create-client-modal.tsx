@@ -13,7 +13,7 @@ import { apiClient } from '@/lib/api-client'
 const clientSchema = z.object({
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
-  email: z.string().email('Nieprawidłowy adres email'),
+  email: z.string().email('Nieprawidłowy adres email').optional().or(z.literal('')),
   phone: z.string().min(9, 'Numer telefonu powinien mieć co najmniej 9 cyfr'),
 })
 
@@ -43,7 +43,13 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
       console.log('=== CREATING CLIENT ====')
       console.log('Data to send:', data)
       
-      const response = await apiClient.post('/clients', data)
+      // Remove empty email if not provided
+      const cleanedData = {
+        ...data,
+        email: data.email && data.email.trim() !== '' ? data.email : undefined
+      }
+      
+      const response = await apiClient.post('/clients', cleanedData)
       
       console.log('Raw response:', response)
       console.log('Response data:', response.data)
@@ -111,21 +117,21 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
           </div>
 
           <Input
-            type="email"
-            label="Email"
-            placeholder="jan.kowalski@example.com"
-            error={errors.email?.message}
-            disabled={loading}
-            {...register('email')}
-          />
-
-          <Input
             type="tel"
             label="Telefon"
             placeholder="+48 123 456 789"
             error={errors.phone?.message}
             disabled={loading}
             {...register('phone')}
+          />
+
+          <Input
+            type="email"
+            label="Email (opcjonalnie)"
+            placeholder="jan.kowalski@example.com"
+            error={errors.email?.message}
+            disabled={loading}
+            {...register('email')}
           />
 
           <DialogFooter className="flex gap-2 pt-4">
