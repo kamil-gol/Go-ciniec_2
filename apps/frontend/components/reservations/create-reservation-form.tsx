@@ -75,6 +75,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
   const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
   const [durationHours, setDurationHours] = useState(0)
+  const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   
   const queryClient = useQueryClient()
   const { data: halls } = useHalls()
@@ -104,6 +105,17 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const pricePerChild = watch('pricePerChild') || 0
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
+
+  // Auto-set child price to half of adult price
+  useEffect(() => {
+    if (adults > 0 && pricePerAdult > 0 && !childPriceManuallySet) {
+      const halfPrice = Math.round(pricePerAdult / 2)
+      setValue('pricePerChild', halfPrice)
+    }
+  }, [adults, pricePerAdult, setValue, childPriceManuallySet])
+
+  // Check if child price field should be disabled
+  const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
 
   // Auto-fill end time when start time changes (default: +6 hours)
   useEffect(() => {
@@ -169,14 +181,9 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
         if (!watchedFields.pricePerAdult) {
           setValue('pricePerAdult', selectedHall.pricePerPerson)
         }
-        
-        // Auto-fill pricePerChild if not set
-        if (!watchedFields.pricePerChild) {
-          setValue('pricePerChild', selectedHall.pricePerChild || selectedHall.pricePerPerson)
-        }
       }
     }
-  }, [watchedFields.hallId, halls, setValue, watchedFields.pricePerAdult, watchedFields.pricePerChild])
+  }, [watchedFields.hallId, halls, setValue, watchedFields.pricePerAdult])
 
   // Track selected event type name
   useEffect(() => {
@@ -480,12 +487,20 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <Input
                   type="number"
                   label="Cena za dziecko (PLN)"
-                  placeholder="0.00"
+                  placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                   error={errors.pricePerChild?.message}
-                  {...register('pricePerChild')}
+                  disabled={isChildPriceDisabled}
+                  {...register('pricePerChild', {
+                    onChange: () => setChildPriceManuallySet(true)
+                  })}
                 />
               </div>
             </div>
+            {isChildPriceDisabled && (
+              <p className="text-xs text-secondary-500 -mt-4">
+                Cena za dziecko będzie dostępna po uzupełnieniu liczby i ceny za dorosłych (domyślnie połowa ceny za dorosłego)
+              </p>
+            )}
 
             {/* Price Calculator */}
             {calculatedPrice > 0 && (
