@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { authenticate } from '../middlewares/auth.middleware';
+import { authMiddleware } from '../middlewares/auth';
 import { markDepositAsPaid, markDepositAsUnpaid } from '../controllers/deposit.controller';
 
 const router = Router();
 
 // Mark deposit as paid
-router.patch('/:id/mark-paid', authenticate, markDepositAsPaid);
+router.patch('/:id/mark-paid', authMiddleware, markDepositAsPaid);
 
 // Mark deposit as unpaid (revert)
-router.patch('/:id/mark-unpaid', authenticate, markDepositAsUnpaid);
+router.patch('/:id/mark-unpaid', authMiddleware, markDepositAsUnpaid);
 
 export default router;
