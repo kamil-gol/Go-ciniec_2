@@ -86,13 +86,14 @@ async function main() {
 
   console.log('Created event types')
 
-  // Create halls
+  // Create halls with price per child
   const halls = await Promise.all([
     prisma.hall.create({
       data: {
         name: 'Sala Główna',
         capacity: 150,
         pricePerPerson: 120,
+        pricePerChild: 80, // Separate price for children
         description: 'Przestronna sala na duże imprezy',
         amenities: ['Klimatyzacja', 'Nagłośnienie', 'Parkiet taneczny', 'Oświetlenie LED'],
         images: [],
@@ -104,6 +105,7 @@ async function main() {
         name: 'Sala Bankietowa',
         capacity: 100,
         pricePerPerson: 100,
+        pricePerChild: 70, // Separate price for children
         description: 'Elegancka sala na przyjęcia',
         amenities: ['Klimatyzacja', 'Nagłośnienie', 'Taras'],
         images: [],
@@ -115,6 +117,7 @@ async function main() {
         name: 'Sala Kameralna',
         capacity: 50,
         pricePerPerson: 90,
+        pricePerChild: 60, // Separate price for children
         description: 'Kameralna sala na małe imprezy',
         amenities: ['Klimatyzacja', 'Projektor'],
         images: [],
@@ -204,12 +207,19 @@ async function main() {
 
   console.log('Created clients')
 
-  // Create reservations with new DateTime fields
+  // Create reservations with new fields
   const today = new Date()
   const nextWeek = new Date(today)
   nextWeek.setDate(today.getDate() + 7)
   const nextMonth = new Date(today)
   nextMonth.setMonth(today.getMonth() + 1)
+
+  // Reservation 1: Wedding with adults and children
+  const adults1 = 100
+  const children1 = 20
+  const pricePerAdult1 = 120
+  const pricePerChild1 = 80
+  const totalPrice1 = (adults1 * pricePerAdult1) + (children1 * pricePerChild1)
 
   const reservation1 = await prisma.reservation.create({
     data: {
@@ -218,8 +228,12 @@ async function main() {
       eventTypeId: eventTypes[0].id,
       startDateTime: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), nextMonth.getDate(), 18, 0),
       endDateTime: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), nextMonth.getDate() + 1, 3, 0),
-      guests: 120,
-      totalPrice: 14400,
+      adults: adults1,
+      children: children1,
+      guests: adults1 + children1,
+      pricePerAdult: pricePerAdult1,
+      pricePerChild: pricePerChild1,
+      totalPrice: totalPrice1,
       status: 'CONFIRMED',
       notes: 'Menu premium, dekoracje kwiatowe',
       createdById: admin.id,
@@ -255,16 +269,32 @@ async function main() {
     },
   })
 
+  // Reservation 2: Birthday party - PENDING with confirmation deadline
+  const adults2 = 40
+  const children2 = 20
+  const pricePerAdult2 = 100
+  const pricePerChild2 = 70
+  const totalPrice2 = (adults2 * pricePerAdult2) + (children2 * pricePerChild2)
+
+  const eventDate2 = new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 16, 0)
+  const confirmDeadline2 = new Date(eventDate2)
+  confirmDeadline2.setDate(eventDate2.getDate() - 1) // 1 day before event
+
   const reservation2 = await prisma.reservation.create({
     data: {
       hallId: halls[1].id,
       clientId: clients[1].id,
       eventTypeId: eventTypes[1].id,
-      startDateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 16, 0),
+      startDateTime: eventDate2,
       endDateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 22, 0),
-      guests: 60,
-      totalPrice: 6000,
+      adults: adults2,
+      children: children2,
+      guests: adults2 + children2,
+      pricePerAdult: pricePerAdult2,
+      pricePerChild: pricePerChild2,
+      totalPrice: totalPrice2,
       status: 'PENDING',
+      confirmationDeadline: confirmDeadline2,
       notes: 'Urodziny 18-stki, dyskoteka',
       createdById: admin.id,
     },
@@ -287,8 +317,15 @@ async function main() {
     },
   })
 
+  // Reservation 3: Communion - mostly children
   const twoWeeksLater = new Date(today)
   twoWeeksLater.setDate(today.getDate() + 14)
+  
+  const adults3 = 10
+  const children3 = 30
+  const pricePerAdult3 = 90
+  const pricePerChild3 = 60
+  const totalPrice3 = (adults3 * pricePerAdult3) + (children3 * pricePerChild3)
 
   const reservation3 = await prisma.reservation.create({
     data: {
@@ -297,8 +334,12 @@ async function main() {
       eventTypeId: eventTypes[2].id,
       startDateTime: new Date(twoWeeksLater.getFullYear(), twoWeeksLater.getMonth(), twoWeeksLater.getDate(), 14, 0),
       endDateTime: new Date(twoWeeksLater.getFullYear(), twoWeeksLater.getMonth(), twoWeeksLater.getDate(), 20, 0),
-      guests: 40,
-      totalPrice: 3600,
+      adults: adults3,
+      children: children3,
+      guests: adults3 + children3,
+      pricePerAdult: pricePerAdult3,
+      pricePerChild: pricePerChild3,
+      totalPrice: totalPrice3,
       status: 'CONFIRMED',
       notes: 'Komunia święta, menu dla dzieci',
       createdById: admin.id,
@@ -313,6 +354,83 @@ async function main() {
     },
   })
 
+  // Reservation 4: Anniversary (Rocznica) with extra fields
+  const threeWeeksLater = new Date(today)
+  threeWeeksLater.setDate(today.getDate() + 21)
+  
+  const adults4 = 50
+  const children4 = 0
+  const pricePerAdult4 = 120
+  const pricePerChild4 = 0
+  const totalPrice4 = (adults4 * pricePerAdult4) + (children4 * pricePerChild4)
+
+  const reservation4 = await prisma.reservation.create({
+    data: {
+      hallId: halls[0].id,
+      clientId: clients[3].id,
+      eventTypeId: eventTypes[4].id, // Rocznica
+      anniversaryYear: 25, // 25th anniversary
+      anniversaryOccasion: 'ślubu',
+      startDateTime: new Date(threeWeeksLater.getFullYear(), threeWeeksLater.getMonth(), threeWeeksLater.getDate(), 17, 0),
+      endDateTime: new Date(threeWeeksLater.getFullYear(), threeWeeksLater.getMonth(), threeWeeksLater.getDate() + 1, 1, 0),
+      adults: adults4,
+      children: children4,
+      guests: adults4 + children4,
+      pricePerAdult: pricePerAdult4,
+      pricePerChild: pricePerChild4,
+      totalPrice: totalPrice4,
+      status: 'CONFIRMED',
+      notes: 'Srebrne gody, elegancka dekoracja',
+      createdById: admin.id,
+    },
+  })
+
+  await prisma.reservationHistory.create({
+    data: {
+      reservationId: reservation4.id,
+      changeType: 'CREATED',
+      changedByUserId: admin.id,
+    },
+  })
+
+  // Reservation 5: Custom event type (Inne)
+  const fourWeeksLater = new Date(today)
+  fourWeeksLater.setDate(today.getDate() + 28)
+  
+  const adults5 = 30
+  const children5 = 10
+  const pricePerAdult5 = 100
+  const pricePerChild5 = 70
+  const totalPrice5 = (adults5 * pricePerAdult5) + (children5 * pricePerChild5)
+
+  const reservation5 = await prisma.reservation.create({
+    data: {
+      hallId: halls[1].id,
+      clientId: clients[4].id,
+      eventTypeId: eventTypes[5].id, // Inne
+      customEventType: 'Spotkanie rodzinne',
+      startDateTime: new Date(fourWeeksLater.getFullYear(), fourWeeksLater.getMonth(), fourWeeksLater.getDate(), 15, 0),
+      endDateTime: new Date(fourWeeksLater.getFullYear(), fourWeeksLater.getMonth(), fourWeeksLater.getDate(), 21, 0),
+      adults: adults5,
+      children: children5,
+      guests: adults5 + children5,
+      pricePerAdult: pricePerAdult5,
+      pricePerChild: pricePerChild5,
+      totalPrice: totalPrice5,
+      status: 'CONFIRMED',
+      notes: 'Zjazd rodzinny',
+      createdById: admin.id,
+    },
+  })
+
+  await prisma.reservationHistory.create({
+    data: {
+      reservationId: reservation5.id,
+      changeType: 'CREATED',
+      changedByUserId: admin.id,
+    },
+  })
+
   console.log('Created reservations with deposits and history')
 
   console.log('\n✅ Database seeding completed successfully!')
@@ -320,9 +438,14 @@ async function main() {
   console.log('Admin: admin@gosciniecrodzinny.pl / admin123')
   console.log('\nCreated:')
   console.log(`- ${eventTypes.length} event types (Wesele, Urodziny, Komunia, Chrzciny, Rocznica, Inne)`)
-  console.log(`- ${halls.length} halls`)
+  console.log(`- ${halls.length} halls (with separate child pricing)`)
   console.log(`- ${clients.length} clients`)
-  console.log(`- 3 reservations with deposits and history`)
+  console.log(`- 5 reservations showcasing new features:`)
+  console.log('  • Wedding with adults/children split')
+  console.log('  • Birthday with confirmation deadline (PENDING)')
+  console.log('  • Communion with mostly children')
+  console.log('  • 25th Anniversary with anniversary details')
+  console.log('  • Custom event (Family gathering)')
 }
 
 main()
