@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loading } from '@/components/ui/loading'
 import { useReservation } from '@/hooks/use-reservations'
 import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle, CheckCircle } from 'lucide-react'
 import { ReservationHistory } from './reservation-history'
 
 interface ReservationDetailsModalProps {
@@ -250,7 +250,7 @@ export function ReservationDetailsModal({
                     {adults > 0 && reservation.pricePerAdult && (
                       <div className="flex justify-between text-sm">
                         <span className="text-secondary-600">
-                          Dorosłi: {adults} × {reservation.pricePerAdult} zł
+                          Dorośli: {adults} × {reservation.pricePerAdult} zł
                         </span>
                         <span className="font-medium">{adults * reservation.pricePerAdult} zł</span>
                       </div>
@@ -278,27 +278,61 @@ export function ReservationDetailsModal({
             </div>
           </div>
 
-          {/* Deposits */}
+          {/* Deposits - FIXED: Hide dueDate when paid, show paidAt instead */}
           {reservation.deposits && reservation.deposits.length > 0 && (
             <div className="border-t pt-4">
               <p className="text-sm font-medium text-secondary-700 mb-2">Zaliczki</p>
               <div className="space-y-2">
-                {reservation.deposits.map((deposit: any) => (
-                  <div
-                    key={deposit.id}
-                    className="flex items-center justify-between p-3 bg-secondary-50 rounded-md"
-                  >
-                    <div>
-                      <p className="font-medium">{formatCurrency(deposit.amount)}</p>
-                      <p className="text-sm text-secondary-600">
-                        Termin: {formatDate(deposit.dueDate)}
-                      </p>
+                {reservation.deposits.map((deposit: any) => {
+                  const isPaid = deposit.paid || deposit.status === 'PAID'
+                  
+                  return (
+                    <div
+                      key={deposit.id}
+                      className={`p-3 rounded-md border ${
+                        isPaid 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-amber-50 border-amber-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-lg">{formatCurrency(deposit.amount)}</p>
+                            <Badge variant={isPaid ? 'success' : 'warning'}>
+                              {isPaid ? 'Opłacona' : 'Nieopłacona'}
+                            </Badge>
+                          </div>
+                          
+                          {/* Show due date ONLY if not paid */}
+                          {!isPaid && deposit.dueDate && (
+                            <div className="flex items-center gap-1 text-sm text-amber-700">
+                              <AlertCircle className="w-4 h-4" />
+                              <span>Termin płatności: {formatDate(deposit.dueDate)}</span>
+                            </div>
+                          )}
+                          
+                          {/* Show payment details ONLY if paid */}
+                          {isPaid && (
+                            <div className="space-y-1 mt-2">
+                              {deposit.paidAt && (
+                                <div className="flex items-center gap-1 text-sm text-green-700">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Opłacona: {formatDate(deposit.paidAt)}</span>
+                                </div>
+                              )}
+                              {deposit.paymentMethod && (
+                                <p className="text-sm text-green-700">
+                                  Metoda płatności: {deposit.paymentMethod}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <Badge variant={deposit.paid ? 'success' : 'warning'}>
-                      {deposit.paid ? 'Opłacona' : 'Nieopłacona'}
-                    </Badge>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
