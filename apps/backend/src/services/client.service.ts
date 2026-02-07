@@ -13,34 +13,41 @@ export class ClientService {
    * Create a new client
    */
   async createClient(data: CreateClientDTO): Promise<ClientResponse> {
-    // Validate email
-    if (!data.email || !this.isValidEmail(data.email)) {
-      throw new Error('Valid email is required');
+    // Validate email if provided
+    if (data.email && !this.isValidEmail(data.email)) {
+      throw new Error('Invalid email format');
     }
 
-    // Validate phone if provided
-    if (data.phone) {
-      const phoneDigits = data.phone.replace(/\D/g, ''); // Remove all non-digits
-      if (phoneDigits.length < 9) {
-        throw new Error('Phone number must contain at least 9 digits');
-      }
+    // Phone is required
+    if (!data.phone) {
+      throw new Error('Phone number is required');
     }
 
-    // Check if client with same email exists
+    // Validate phone
+    const phoneDigits = data.phone.replace(/\D/g, ''); // Remove all non-digits
+    if (phoneDigits.length < 9) {
+      throw new Error('Phone number must contain at least 9 digits');
+    }
+
+    // Check if client with same phone and name exists (to avoid duplicates)
     const existingClient = await prisma.client.findFirst({
-      where: { email: data.email }
+      where: { 
+        phone: data.phone,
+        firstName: data.firstName,
+        lastName: data.lastName
+      }
     });
 
     if (existingClient) {
-      throw new Error('Client with this email already exists');
+      throw new Error(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} już istnieje`);
     }
 
     const client = await prisma.client.create({
       data: {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
-        email: data.email.trim(),
-        phone: data.phone?.trim() || null,
+        email: data.email?.trim() || null,
+        phone: data.phone.trim(),
         address: data.address?.trim() || null,
         notes: data.notes?.trim() || null
       }
@@ -124,26 +131,29 @@ export class ClientService {
       if (phoneDigits.length < 9) {
         throw new Error('Phone number must contain at least 9 digits');
       }
-    }
 
-    // Check email uniqueness if email is being changed
-    if (data.email && data.email !== existingClient.email) {
-      const clientWithSameEmail = await prisma.client.findFirst({
+      // Check if another client with same phone and name exists
+      const firstName = data.firstName || existingClient.firstName;
+      const lastName = data.lastName || existingClient.lastName;
+      
+      const clientWithSameDetails = await prisma.client.findFirst({
         where: { 
-          email: data.email,
+          phone: data.phone,
+          firstName: firstName,
+          lastName: lastName,
           id: { not: id }
         }
       });
 
-      if (clientWithSameEmail) {
-        throw new Error('Client with this email already exists');
+      if (clientWithSameDetails) {
+        throw new Error(`Klient ${firstName} ${lastName} z numerem ${data.phone} już istnieje`);
       }
     }
 
     const updateData: any = {};
     if (data.firstName) updateData.firstName = data.firstName.trim();
     if (data.lastName) updateData.lastName = data.lastName.trim();
-    if (data.email) updateData.email = data.email.trim();
+    if (data.email !== undefined) updateData.email = data.email?.trim() || null;
     if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
     if (data.address !== undefined) updateData.address = data.address?.trim() || null;
     if (data.notes !== undefined) updateData.notes = data.notes?.trim() || null;
