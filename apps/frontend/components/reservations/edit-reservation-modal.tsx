@@ -14,7 +14,7 @@ import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
@@ -328,7 +328,7 @@ export function EditReservationModal({
     { value: '', label: 'Wybierz klienta...' },
     ...clientsArray.map((client) => ({
       value: client.id,
-      label: `${client.firstName} ${client.lastName}`,
+      label: `${client.firstName} ${client.lastName} ${client.phone ? '(' + client.phone + ')' : ''}`,
     }))
   ]
 
@@ -401,14 +401,26 @@ export function EditReservationModal({
             )}
           </div>
 
-          {/* Client Selection */}
-          <Select
-            label="Klient"
-            options={clientOptions}
-            error={errors.clientId?.message}
-            value={watchedFields.clientId}
-            {...register('clientId')}
-          />
+          {/* Client Selection - DISABLED */}
+          <div>
+            <div className="relative">
+              <Select
+                label="Klient"
+                options={clientOptions}
+                error={errors.clientId?.message}
+                value={watchedFields.clientId}
+                disabled={true}
+                {...register('clientId')}
+              />
+              <div className="absolute right-3 top-9 pointer-events-none">
+                <Lock className="w-4 h-4 text-secondary-400" />
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-secondary-500 flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              Klient nie może być zmieniony po utworzeniu rezerwacji
+            </p>
+          </div>
 
           {/* Event Type */}
           <Select
