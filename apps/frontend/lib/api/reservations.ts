@@ -25,7 +25,38 @@ export const reservationsApi = {
   getAll: async (filters: ReservationsFilters = {}): Promise<PaginatedResponse<Reservation>> => {
     const { data } = await apiClient.get('/reservations', { params: filters })
     console.log('Raw reservations response:', data)
-    return data.data || data // Handle both structures
+    
+    // Backend returns: { success: true, data: [...], count: 8 }
+    // Transform to PaginatedResponse format
+    if (data.success && Array.isArray(data.data)) {
+      const page = filters.page || 1
+      const pageSize = filters.pageSize || 20
+      const total = data.count || data.data.length
+      const totalPages = Math.ceil(total / pageSize)
+      
+      return {
+        data: data.data,
+        total,
+        page,
+        pageSize,
+        totalPages
+      }
+    }
+    
+    // Fallback if response is already in correct format
+    if (data.data && Array.isArray(data.data)) {
+      return data
+    }
+    
+    // Fallback for direct array
+    console.warn('Unexpected reservations response format:', data)
+    return {
+      data: Array.isArray(data) ? data : [],
+      total: Array.isArray(data) ? data.length : 0,
+      page: 1,
+      pageSize: 20,
+      totalPages: 1
+    }
   },
 
   // Get single reservation by ID
