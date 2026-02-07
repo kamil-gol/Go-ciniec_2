@@ -5,7 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 export class DepositsService {
   constructor(private prisma: PrismaService) {}
 
-  async markAsPaid(depositId: string, paymentMethod?: string) {
+  async markAsPaid(
+    depositId: string,
+    paymentMethod: 'CASH' | 'TRANSFER' | 'BLIK',
+    paidAt: string,
+  ) {
     // Check if deposit exists
     const deposit = await this.prisma.deposit.findUnique({
       where: { id: depositId },
@@ -21,8 +25,8 @@ export class DepositsService {
       data: {
         paid: true,
         status: 'PAID',
-        paidAt: new Date(),
-        paymentMethod: paymentMethod || null,
+        paidAt: new Date(paidAt),
+        paymentMethod: paymentMethod,
       },
     });
   }
