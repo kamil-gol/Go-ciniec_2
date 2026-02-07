@@ -114,10 +114,11 @@ export function EditReservationModal({
   })
 
   const watchedFields = watch()
-  const adults = watch('adults') || 0
-  const children = watch('children') || 0
-  const pricePerAdult = watch('pricePerAdult') || 0
-  const pricePerChild = watch('pricePerChild') || 0
+  // Convert to numbers explicitly to prevent string concatenation
+  const adults = Number(watch('adults')) || 0
+  const children = Number(watch('children')) || 0
+  const pricePerAdult = Number(watch('pricePerAdult')) || 0
+  const pricePerChild = Number(watch('pricePerChild')) || 0
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
 
@@ -131,15 +132,15 @@ export function EditReservationModal({
     }
   }, [startDateTime, watchedFields.endDateTime, setValue, isFormReady])
 
-  // Calculate total guests in real-time
+  // Calculate total guests in real-time - FIXED: explicitly convert to numbers
   useEffect(() => {
-    const total = adults + children
+    const total = Number(adults) + Number(children)
     setTotalGuests(total)
   }, [adults, children])
 
-  // Calculate price
+  // Calculate price - FIXED: explicitly convert to numbers
   useEffect(() => {
-    const price = (adults * pricePerAdult) + (children * pricePerChild)
+    const price = (Number(adults) * Number(pricePerAdult)) + (Number(children) * Number(pricePerChild))
     setCalculatedPrice(price)
   }, [adults, children, pricePerAdult, pricePerChild])
 
