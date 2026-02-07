@@ -40,6 +40,7 @@ const reservationSchema = z.object({
   
   // Custom event fields
   customEventType: z.string().optional(),
+  birthdayAge: z.coerce.number().optional(), // For "Urodziny" event type
   anniversaryYear: z.coerce.number().optional(),
   anniversaryOccasion: z.string().optional(),
   
@@ -89,8 +90,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     resolver: zodResolver(reservationSchema),
     defaultValues: {
       hasDeposit: false,
-      adults: 0,
-      children: 0,
+      // No default values for adults and children
     },
   })
 
@@ -101,8 +101,19 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const pricePerAdult = watch('pricePerAdult') || 0
   const pricePerChild = watch('pricePerChild') || 0
   const selectedEventTypeId = watch('eventTypeId')
+  const startDateTime = watch('startDateTime')
 
-  // Calculate total guests
+  // Auto-fill end time when start time changes (default: +6 hours)
+  useEffect(() => {
+    if (startDateTime && !watchedFields.endDateTime) {
+      const start = new Date(startDateTime)
+      const end = new Date(start.getTime() + 6 * 60 * 60 * 1000) // +6 hours
+      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+      setValue('endDateTime', endStr)
+    }
+  }, [startDateTime, watchedFields.endDateTime, setValue])
+
+  // Calculate total guests in real-time
   useEffect(() => {
     const total = adults + children
     setTotalGuests(total)
@@ -114,17 +125,36 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     setCalculatedPrice(price)
   }, [adults, children, pricePerAdult, pricePerChild])
 
-  // Calculate duration
+  // Calculate duration and auto-add extra hours note
   useEffect(() => {
-    const { startDateTime, endDateTime } = watchedFields
+    const { startDateTime, endDateTime, notes } = watchedFields
     if (startDateTime && endDateTime) {
       const start = new Date(startDateTime)
       const end = new Date(endDateTime)
       const diffMs = end.getTime() - start.getTime()
       const hours = diffMs / (1000 * 60 * 60)
-      setDurationHours(Math.round(hours * 10) / 10) // Round to 1 decimal
+      const roundedHours = Math.round(hours * 10) / 10
+      setDurationHours(roundedHours)
+      
+      // Auto-add extra hours info to notes if > 6 hours
+      if (roundedHours > 6) {
+        const extraHours = Math.ceil(roundedHours - 6)
+        const extraCost = extraHours * 500
+        const extraNote = `\n\n⏰ Dodatkowe godziny: ${extraHours}h × 500 PLN = ${extraCost} PLN`
+        
+        // Only add if not already present
+        if (!notes?.includes('⏰ Dodatkowe godziny')) {
+          setValue('notes', (notes || '') + extraNote)
+        }
+      } else {
+        // Remove extra hours note if duration <= 6h
+        if (notes?.includes('⏰ Dodatkowe godziny')) {
+          const cleanedNotes = notes.replace(/\n\n⏰ Dodatkowe godziny:.*/, '')
+          setValue('notes', cleanedNotes)
+        }
+      }
     }
-  }, [watchedFields.startDateTime, watchedFields.endDateTime])
+  }, [watchedFields.startDateTime, watchedFields.endDateTime, watchedFields.notes, setValue])
 
   // Auto-fill prices when hall changes
   useEffect(() => {
@@ -221,7 +251,8 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }))
   ]
 
-  // Check if event is "Rocznica" or "Inne"
+  // Check if event is "Urodziny", "Rocznica" or "Inne"
+  const isBirthday = selectedEventTypeName === 'Urodziny'
   const isAnniversary = selectedEventTypeName === 'Rocznica'
   const isCustom = selectedEventTypeName === 'Inne'
 
@@ -286,6 +317,23 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               {...register('eventTypeId')}
             />
 
+            {/* Birthday Age (for "Urodziny") */}
+            {isBirthday && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <Input
+                  type="number"
+                  label="Które urodziny"
+                  placeholder="np. 18"
+                  error={errors.birthdayAge?.message}
+                  {...register('birthdayAge')}
+                />
+              </motion.div>
+            )}
+
             {/* Custom Event Type (for "Inne") */}
             {isCustom && (
               <motion.div
@@ -344,9 +392,15 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                   label="Data i czas zakończenia"
                   error={errors.endDateTime?.message}
                   {...register('endDateTime')}
+                  disabled={!startDateTime}
                 />
               </div>
             </div>
+            {!startDateTime && (
+              <p className="text-xs text-secondary-500 -mt-4">
+                Najpierw wybierz datę i czas rozpoczęcia
+              </p>
+            )}
 
             {/* Duration Info */}
             {durationHours > 0 && (
@@ -358,7 +412,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
                 <span className={`text-sm ${durationHours > 6 ? 'text-amber-800' : 'text-blue-800'}`}>
                   Czas trwania: {durationHours}h
-                  {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - wymaga dopłaty)`}
+                  {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - ${Math.ceil(durationHours - 6) * 500} PLN dopłaty)`}
                 </span>
               </motion.div>
             )}
@@ -370,7 +424,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <Input
                   type="number"
                   label="Liczba dorosłych"
-                  placeholder="0"
+                  placeholder=""
                   error={errors.adults?.message}
                   {...register('adults')}
                 />
@@ -380,14 +434,14 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 <Input
                   type="number"
                   label="Liczba dzieci"
-                  placeholder="0"
+                  placeholder=""
                   error={errors.children?.message}
                   {...register('children')}
                 />
               </div>
             </div>
 
-            {/* Total Guests Display */}
+            {/* Total Guests Display - Always visible if > 0 */}
             {totalGuests > 0 && (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-secondary-700">Łącznie gości:</span>
@@ -398,7 +452,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
             {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
               <p className="text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
-                Liczba gości przekracza pojemność sali!
+                Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!
               </p>
             )}
 
@@ -452,10 +506,10 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </motion.div>
             )}
 
-            {/* Confirmation Deadline */}
+            {/* Confirmation Deadline - DATE ONLY */}
             <div>
               <Input
-                type="datetime-local"
+                type="date"
                 label="Termin potwierdzenia (opcjonalnie)"
                 error={errors.confirmationDeadline?.message}
                 {...register('confirmationDeadline')}
@@ -529,7 +583,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </Button>
               <Button
                 type="submit"
-                disabled={createReservation.isPending || totalGuests > selectedHallCapacity}
+                disabled={createReservation.isPending || (totalGuests > selectedHallCapacity && selectedHallCapacity > 0)}
               >
                 {createReservation.isPending ? 'Tworzenie...' : 'Utwórz Rezerwację'}
               </Button>
