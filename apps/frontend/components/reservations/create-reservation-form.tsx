@@ -13,8 +13,8 @@ import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
-import { calculateTotalPrice, formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, UserPlus } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 
@@ -22,14 +22,41 @@ const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
   clientId: z.string().min(1, 'Wybierz klienta'),
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
-  date: z.string().min(1, 'Wybierz datę'),
-  startTime: z.string().min(1, 'Wybierz czas rozpoczęcia'),
-  endTime: z.string().min(1, 'Wybierz czas zakończenia'),
-  guests: z.coerce.number().min(1, 'Liczba gości musi być większa od 0'),
+  
+  // New datetime fields
+  startDateTime: z.string().min(1, 'Wybierz datę i czas rozpoczęcia'),
+  endDateTime: z.string().min(1, 'Wybierz datę i czas zakończenia'),
+  
+  // Split guest counts
+  adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci musi być >= 0'),
+  
+  // Pricing
+  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko musi być >= 0'),
+  
+  // Confirmation deadline
+  confirmationDeadline: z.string().optional(),
+  
+  // Custom event fields
+  customEventType: z.string().optional(),
+  anniversaryYear: z.coerce.number().optional(),
+  anniversaryOccasion: z.string().optional(),
+  
   notes: z.string().optional(),
   hasDeposit: z.boolean(),
   depositAmount: z.coerce.number().optional(),
   depositDueDate: z.string().optional(),
+}).refine((data) => data.adults + data.children >= 1, {
+  message: 'Łączna liczba gości musi być >= 1',
+  path: ['adults'],
+}).refine((data) => {
+  const start = new Date(data.startDateTime)
+  const end = new Date(data.endDateTime)
+  return end > start
+}, {
+  message: 'Czas zakończenia musi być po czasie rozpoczęcia',
+  path: ['endDateTime'],
 })
 
 type ReservationFormData = z.infer<typeof reservationSchema>
@@ -41,8 +68,11 @@ interface CreateReservationFormProps {
 
 export function CreateReservationForm({ onSuccess, onCancel }: CreateReservationFormProps) {
   const [calculatedPrice, setCalculatedPrice] = useState(0)
+  const [totalGuests, setTotalGuests] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
+  const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
+  const [durationHours, setDurationHours] = useState(0)
   
   const { data: halls } = useHalls()
   const { data: clientsData, mutate: mutateClients } = useClients()
@@ -59,38 +89,74 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     resolver: zodResolver(reservationSchema),
     defaultValues: {
       hasDeposit: false,
+      adults: 0,
+      children: 0,
     },
   })
 
   const watchedFields = watch()
   const hasDeposit = watch('hasDeposit')
+  const adults = watch('adults') || 0
+  const children = watch('children') || 0
+  const pricePerAdult = watch('pricePerAdult') || 0
+  const pricePerChild = watch('pricePerChild') || 0
+  const selectedEventTypeId = watch('eventTypeId')
+
+  // Calculate total guests
+  useEffect(() => {
+    const total = adults + children
+    setTotalGuests(total)
+  }, [adults, children])
 
   // Calculate price in real-time
   useEffect(() => {
-    const { hallId, guests } = watchedFields
-    if (hallId && guests) {
-      const selectedHall = halls?.data?.find((h) => h.id === hallId) || halls?.find((h) => h.id === hallId)
-      if (selectedHall) {
-        const price = calculateTotalPrice(guests, selectedHall.pricePerPerson)
-        setCalculatedPrice(price)
-      }
-    }
-  }, [watchedFields.hallId, watchedFields.guests, halls])
+    const price = (adults * pricePerAdult) + (children * pricePerChild)
+    setCalculatedPrice(price)
+  }, [adults, children, pricePerAdult, pricePerChild])
 
-  // Update capacity when hall changes
+  // Calculate duration
+  useEffect(() => {
+    const { startDateTime, endDateTime } = watchedFields
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime)
+      const end = new Date(endDateTime)
+      const diffMs = end.getTime() - start.getTime()
+      const hours = diffMs / (1000 * 60 * 60)
+      setDurationHours(Math.round(hours * 10) / 10) // Round to 1 decimal
+    }
+  }, [watchedFields.startDateTime, watchedFields.endDateTime])
+
+  // Auto-fill prices when hall changes
   useEffect(() => {
     if (watchedFields.hallId) {
       const selectedHall = halls?.data?.find((h) => h.id === watchedFields.hallId) || halls?.find((h) => h.id === watchedFields.hallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
+        
+        // Auto-fill pricePerAdult if not set
+        if (!watchedFields.pricePerAdult) {
+          setValue('pricePerAdult', selectedHall.pricePerPerson)
+        }
+        
+        // Auto-fill pricePerChild if not set
+        if (!watchedFields.pricePerChild) {
+          setValue('pricePerChild', selectedHall.pricePerChild || selectedHall.pricePerPerson)
+        }
       }
     }
-  }, [watchedFields.hallId, halls])
+  }, [watchedFields.hallId, halls, setValue, watchedFields.pricePerAdult, watchedFields.pricePerChild])
+
+  // Track selected event type name
+  useEffect(() => {
+    if (selectedEventTypeId) {
+      const eventTypesArray = eventTypes?.data || eventTypes || []
+      const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
+      setSelectedEventTypeName(selectedType?.name || '')
+    }
+  }, [selectedEventTypeId, eventTypes])
 
   const handleClientCreated = (newClient: any) => {
-    // Refresh clients list
     mutateClients()
-    // Set the new client as selected
     setValue('clientId', newClient.id)
   }
 
@@ -99,10 +165,16 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       hallId: data.hallId,
       clientId: data.clientId,
       eventTypeId: data.eventTypeId,
-      date: data.date,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      guests: data.guests,
+      startDateTime: data.startDateTime,
+      endDateTime: data.endDateTime,
+      adults: data.adults,
+      children: data.children,
+      pricePerAdult: data.pricePerAdult,
+      pricePerChild: data.pricePerChild,
+      confirmationDeadline: data.confirmationDeadline,
+      customEventType: data.customEventType,
+      anniversaryYear: data.anniversaryYear,
+      anniversaryOccasion: data.anniversaryOccasion,
       notes: data.notes,
     }
 
@@ -124,9 +196,6 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const hallsArray = halls?.data || halls || []
   const clientsArray = clientsData?.data || []
   const eventTypesArray = eventTypes?.data || eventTypes || []
-
-  console.log('Clients data:', clientsData)
-  console.log('Clients array:', clientsArray)
 
   const hallOptions = [
     { value: '', label: 'Wybierz salę...' },
@@ -151,6 +220,10 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       label: type.name,
     }))
   ]
+
+  // Check if event is "Rocznica" or "Inne"
+  const isAnniversary = selectedEventTypeName === 'Rocznica'
+  const isCustom = selectedEventTypeName === 'Inne'
 
   return (
     <motion.div
@@ -189,11 +262,6 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                     error={errors.clientId?.message}
                     {...register('clientId')}
                   />
-                  {clientsArray.length === 0 && (
-                    <p className="mt-1 text-sm text-secondary-600">
-                      Brak klientów. Dodaj nowego klienta klikając +
-                    </p>
-                  )}
                 </div>
                 <div className="flex items-end">
                   <Button
@@ -218,54 +286,144 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               {...register('eventTypeId')}
             />
 
-            {/* Date and Time */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Custom Event Type (for "Inne") */}
+            {isCustom && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <Input
+                  label="Typ wydarzenia (własny)"
+                  placeholder="np. Spotkanie rodzinne, Impreza firmowa"
+                  error={errors.customEventType?.message}
+                  {...register('customEventType')}
+                />
+              </motion.div>
+            )}
+
+            {/* Anniversary Fields (for "Rocznica") */}
+            {isAnniversary && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                <Input
+                  type="number"
+                  label="Która rocznica"
+                  placeholder="np. 25"
+                  error={errors.anniversaryYear?.message}
+                  {...register('anniversaryYear')}
+                />
+                <Input
+                  label="Jaka okazja"
+                  placeholder="np. Srebrne wesele"
+                  error={errors.anniversaryOccasion?.message}
+                  {...register('anniversaryOccasion')}
+                />
+              </motion.div>
+            )}
+
+            {/* Date and Time - New Format */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-secondary-500" />
                 <Input
-                  type="date"
-                  label="Data"
-                  error={errors.date?.message}
-                  {...register('date')}
+                  type="datetime-local"
+                  label="Data i czas rozpoczęcia"
+                  error={errors.startDateTime?.message}
+                  {...register('startDateTime')}
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-secondary-500" />
                 <Input
-                  type="time"
-                  label="Od"
-                  error={errors.startTime?.message}
-                  {...register('startTime')}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-secondary-500" />
-                <Input
-                  type="time"
-                  label="Do"
-                  error={errors.endTime?.message}
-                  {...register('endTime')}
+                  type="datetime-local"
+                  label="Data i czas zakończenia"
+                  error={errors.endDateTime?.message}
+                  {...register('endDateTime')}
                 />
               </div>
             </div>
 
-            {/* Number of Guests */}
-            <div>
+            {/* Duration Info */}
+            {durationHours > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > 6 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}
+              >
+                {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
+                <span className={`text-sm ${durationHours > 6 ? 'text-amber-800' : 'text-blue-800'}`}>
+                  Czas trwania: {durationHours}h
+                  {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - wymaga dopłaty)`}
+                </span>
+              </motion.div>
+            )}
+
+            {/* Guest Counts - Split by Adults and Children */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-secondary-500" />
                 <Input
                   type="number"
-                  label="Liczba Gości"
-                  placeholder="Wprowadź liczbę gości"
-                  error={errors.guests?.message}
-                  {...register('guests')}
+                  label="Liczba dorosłych"
+                  placeholder="0"
+                  error={errors.adults?.message}
+                  {...register('adults')}
                 />
               </div>
-              {watchedFields.guests > selectedHallCapacity && selectedHallCapacity > 0 && (
-                <p className="mt-1 text-sm text-red-600">
-                  Liczba gości przekracza pojemność sali!
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                <Baby className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Liczba dzieci"
+                  placeholder="0"
+                  error={errors.children?.message}
+                  {...register('children')}
+                />
+              </div>
+            </div>
+
+            {/* Total Guests Display */}
+            {totalGuests > 0 && (
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-secondary-700">Łącznie gości:</span>
+                <span className="text-lg font-bold text-secondary-900">{totalGuests}</span>
+              </div>
+            )}
+
+            {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                Liczba gości przekracza pojemność sali!
+              </p>
+            )}
+
+            {/* Pricing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Cena za dorosłego (PLN)"
+                  placeholder="0.00"
+                  error={errors.pricePerAdult?.message}
+                  {...register('pricePerAdult')}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Cena za dziecko (PLN)"
+                  placeholder="0.00"
+                  error={errors.pricePerChild?.message}
+                  {...register('pricePerChild')}
+                />
+              </div>
             </div>
 
             {/* Price Calculator */}
@@ -275,17 +433,37 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 animate={{ opacity: 1, scale: 1 }}
                 className="p-4 bg-primary-50 border border-primary-200 rounded-lg"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-primary-600" />
-                    <span className="font-medium text-secondary-900">Szacowana cena:</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm text-secondary-700">
+                    <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
+                    <span className="font-medium">{adults * pricePerAdult} PLN</span>
                   </div>
-                  <span className="text-2xl font-bold text-primary-600">
-                    {formatCurrency(calculatedPrice)}
-                  </span>
+                  <div className="flex items-center justify-between text-sm text-secondary-700">
+                    <span>Dzieci: {children} × {pricePerChild} PLN</span>
+                    <span className="font-medium">{children * pricePerChild} PLN</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-primary-300">
+                    <span className="font-medium text-secondary-900">Cena całkowita:</span>
+                    <span className="text-2xl font-bold text-primary-600">
+                      {formatCurrency(calculatedPrice)}
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             )}
+
+            {/* Confirmation Deadline */}
+            <div>
+              <Input
+                type="datetime-local"
+                label="Termin potwierdzenia (opcjonalnie)"
+                error={errors.confirmationDeadline?.message}
+                {...register('confirmationDeadline')}
+              />
+              <p className="mt-1 text-xs text-secondary-500">
+                Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
+              </p>
+            </div>
 
             {/* Notes */}
             <div>
@@ -351,7 +529,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </Button>
               <Button
                 type="submit"
-                disabled={createReservation.isPending}
+                disabled={createReservation.isPending || totalGuests > selectedHallCapacity}
               >
                 {createReservation.isPending ? 'Tworzenie...' : 'Utwórz Rezerwację'}
               </Button>
