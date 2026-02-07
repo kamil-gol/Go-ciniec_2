@@ -17,14 +17,16 @@ export interface CreateReservationDTO {
   startTime?: string; // HH:MM format
   endTime?: string; // HH:MM format
   
-  // Guest count (new - split by adults and children)
+  // Guest count (new - split by age groups)
   adults?: number;
-  children?: number;
+  children?: number; // 4-12 years
+  toddlers?: number; // 0-3 years
   guests?: number; // Computed or legacy
   
-  // Pricing (new - separate for adults and children)
+  // Pricing (new - separate for each age group)
   pricePerAdult?: number;
-  pricePerChild?: number;
+  pricePerChild?: number; // 4-12 years
+  pricePerToddler?: number; // 0-3 years
   
   // Confirmation deadline for PENDING status
   confirmationDeadline?: string; // ISO datetime string
@@ -63,12 +65,14 @@ export interface UpdateReservationDTO {
   
   // Guest count
   adults?: number;
-  children?: number;
+  children?: number; // 4-12 years
+  toddlers?: number; // 0-3 years
   guests?: number;
   
   // Pricing
   pricePerAdult?: number;
-  pricePerChild?: number;
+  pricePerChild?: number; // 4-12 years
+  pricePerToddler?: number; // 0-3 years
   
   // Confirmation deadline
   confirmationDeadline?: string;
@@ -128,12 +132,14 @@ export interface ReservationResponse {
   
   // Guest count
   adults: number;
-  children: number;
+  children: number; // 4-12 years
+  toddlers: number; // 0-3 years
   guests: number;
   
   // Pricing
   pricePerAdult: string;
-  pricePerChild: string;
+  pricePerChild: string; // 4-12 years
+  pricePerToddler: string; // 0-3 years
   totalPrice: string;
   
   // Status
