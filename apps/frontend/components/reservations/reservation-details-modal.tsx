@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/loading'
 import { useReservation } from '@/hooks/use-reservations'
 import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle, CheckCircle, Edit } from 'lucide-react'
+import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle, CheckCircle, Edit, Smile } from 'lucide-react'
 import { ReservationHistory } from './reservation-history'
 import { UpdateDepositStatusModal } from '../deposits/update-deposit-status-modal'
 import { useQueryClient } from '@tanstack/react-query'
@@ -158,7 +158,7 @@ export function ReservationDetailsModal({
                 </div>
               </div>
 
-              {/* UPDATED: Show three age groups */}
+              {/* UPDATED: Show three age groups with different icons */}
               <div className="flex items-start gap-3">
                 <Users className="w-5 h-5 text-primary-600 mt-0.5" />
                 <div>
@@ -174,7 +174,7 @@ export function ReservationDetailsModal({
                       )}
                       {children > 0 && (
                         <div className="flex items-center gap-1">
-                          <Baby className="w-4 h-4 text-blue-600" />
+                          <Smile className="w-4 h-4 text-blue-600" />
                           <span>{children} dzieci (4-12)</span>
                         </div>
                       )}
