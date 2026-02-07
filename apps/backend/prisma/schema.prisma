@@ -114,6 +114,9 @@ model Reservation {
   // Custom event type (when EventType = "Inne")
   customEventType String?  @db.VarChar(100)
   
+  // Birthday details (when EventType = "Urodziny")
+  birthdayAge     Int?     @db.SmallInt
+  
   // Anniversary details (when EventType = "Rocznica")
   anniversaryYear     Int?     @db.SmallInt
   anniversaryOccasion String?  @db.VarChar(100)
