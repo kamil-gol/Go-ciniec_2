@@ -34,6 +34,7 @@ model Hall {
   name            String   @unique @db.VarChar(255)
   capacity        Int      @db.SmallInt
   pricePerPerson  Decimal  @db.Decimal(10, 2)
+  pricePerChild   Decimal? @db.Decimal(10, 2) // New: optional separate price for children
   description     String?  @db.Text
   amenities       String[] @db.Text
   images          String[] @db.Text
@@ -86,7 +87,7 @@ model Reservation {
   eventTypeId     String   @db.Uuid
   createdById     String   @db.Uuid
 
-  // Legacy fields (kept for backwards compatibility)
+  // Legacy fields (kept for backwards compatibility during transition)
   date            String?  @db.VarChar(10)
   startTime       String?  @db.VarChar(5)
   endTime         String?  @db.VarChar(5)
@@ -95,9 +96,19 @@ model Reservation {
   startDateTime   DateTime?
   endDateTime     DateTime?
   
-  guests          Int      @db.SmallInt
-  totalPrice      Decimal  @db.Decimal(10, 2)
+  // Guest count fields
+  adults          Int      @default(0) @db.SmallInt // New: number of adults
+  children        Int      @default(0) @db.SmallInt // New: number of children
+  guests          Int      @db.SmallInt // Computed: adults + children
+  
+  // Pricing fields
+  pricePerAdult   Decimal  @default(0) @db.Decimal(10, 2) // New: price per adult
+  pricePerChild   Decimal  @default(0) @db.Decimal(10, 2) // New: price per child
+  totalPrice      Decimal  @db.Decimal(10, 2) // Computed: (adults * pricePerAdult) + (children * pricePerChild)
+  
   status          String   @default("PENDING") @db.VarChar(20)
+  confirmationDeadline DateTime? // New: for PENDING status, deadline to confirm (max 1 day before event)
+  
   notes           String?  @db.Text
 
   // Custom event type (when EventType = "Inne")
@@ -127,6 +138,7 @@ model Reservation {
   @@index([clientId])
   @@index([status])
   @@index([createdById])
+  @@index([confirmationDeadline])
 }
 
 model ReservationHistory {
