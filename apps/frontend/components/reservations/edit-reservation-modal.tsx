@@ -15,6 +15,8 @@ import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { calculateTotalPrice, formatCurrency } from '@/lib/utils'
 import { Calendar, Clock, Users, DollarSign, FileText } from 'lucide-react'
+import { ReservationStatus } from '@/types'
+import { toast } from 'sonner'
 
 const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
@@ -24,6 +26,7 @@ const reservationSchema = z.object({
   startTime: z.string().min(1, 'Wybierz czas rozpoczęcia'),
   endTime: z.string().min(1, 'Wybierz czas zakończenia'),
   guests: z.coerce.number().min(1, 'Liczba gości musi być większa od 0'),
+  status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
   notes: z.string().optional(),
 })
 
@@ -69,26 +72,26 @@ export function EditReservationModal({
       startTime: '',
       endTime: '',
       guests: 0,
+      status: 'PENDING',
       notes: '',
     },
   })
 
   const watchedFields = watch()
 
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      setIsFormReady(false)
+      reset()
+    }
+  }, [open, reset])
+
   // Load reservation data into form
   useEffect(() => {
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
       console.log('Full reservation object:', reservation)
-      console.log('hallId:', reservation.hallId)
-      console.log('clientId:', reservation.clientId)
-      console.log('eventTypeId:', reservation.eventTypeId)
-      console.log('startDateTime:', reservation.startDateTime)
-      console.log('endDateTime:', reservation.endDateTime)
-      console.log('date:', reservation.date)
-      console.log('startTime:', reservation.startTime)
-      console.log('endTime:', reservation.endTime)
-      console.log('guests:', reservation.guests)
       
       // Extract date and time from old or new format
       let date = ''
@@ -101,39 +104,24 @@ export function EditReservationModal({
         date = start.toISOString().split('T')[0]
         startTime = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
         endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
-        console.log('Extracted from DateTime - date:', date, 'startTime:', startTime, 'endTime:', endTime)
       } else if (reservation.date && reservation.startTime && reservation.endTime) {
         date = reservation.date
         startTime = reservation.startTime
         endTime = reservation.endTime
-        console.log('Using old format - date:', date, 'startTime:', startTime, 'endTime:', endTime)
       }
       
-      const formData = {
-        hallId: reservation.hallId || '',
-        clientId: reservation.clientId || '',
-        eventTypeId: reservation.eventTypeId || '',
-        date,
-        startTime,
-        endTime,
-        guests: reservation.guests || 0,
-        notes: reservation.notes || '',
-      }
-      
-      console.log('Form data to set:', formData)
-      
-      // Use setValue for each field individually
-      setValue('hallId', formData.hallId)
-      setValue('clientId', formData.clientId)
-      setValue('eventTypeId', formData.eventTypeId)
-      setValue('date', formData.date)
-      setValue('startTime', formData.startTime)
-      setValue('endTime', formData.endTime)
-      setValue('guests', formData.guests)
-      setValue('notes', formData.notes)
+      // Set form values
+      setValue('hallId', reservation.hallId || '')
+      setValue('clientId', reservation.clientId || '')
+      setValue('eventTypeId', reservation.eventTypeId || '')
+      setValue('date', date)
+      setValue('startTime', startTime)
+      setValue('endTime', endTime)
+      setValue('guests', reservation.guests || 0)
+      setValue('status', reservation.status || 'PENDING')
+      setValue('notes', reservation.notes || '')
       
       setIsFormReady(true)
-      console.log('Form values set successfully')
     }
   }, [reservation, open, setValue])
 
@@ -178,10 +166,12 @@ export function EditReservationModal({
           reason: 'Edycja rezerwacji',
         },
       })
+      toast.success('Rezerwacja zaktualizowana pomyślnie')
       onSuccess?.()
-      onClose()
+      onClose() // Close modal after successful save
     } catch (error) {
       console.error('Failed to update reservation:', error)
+      toast.error('Błąd podczas aktualizacji rezerwacji')
     }
   }
 
@@ -213,6 +203,13 @@ export function EditReservationModal({
     }))
   ]
 
+  const statusOptions = [
+    { value: 'PENDING', label: 'Oczekująca' },
+    { value: 'CONFIRMED', label: 'Potwierdzona' },
+    { value: 'COMPLETED', label: 'Zakończona' },
+    { value: 'CANCELLED', label: 'Anulowana' },
+  ]
+
   if (loadingReservation || !isFormReady) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
@@ -223,8 +220,6 @@ export function EditReservationModal({
     )
   }
 
-  console.log('Current form values:', watchedFields)
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -233,6 +228,17 @@ export function EditReservationModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
+          {/* Status Selection */}
+          <div>
+            <Select
+              label="Status Rezerwacji"
+              options={statusOptions}
+              error={errors.status?.message}
+              value={watchedFields.status}
+              {...register('status')}
+            />
+          </div>
+
           {/* Hall Selection */}
           <div>
             <Select
