@@ -243,6 +243,7 @@ export function EditReservationModal({
   useEffect(() => {
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
+      console.log('Reservation data:', reservation)
       
       // Extract datetime
       let startDateTime = ''
@@ -259,7 +260,7 @@ export function EditReservationModal({
       // Store original status
       setOriginalStatus(reservation.status || 'PENDING')
       
-      // Set form values
+      // Set form values - NOW LOADS TODDLERS FROM BACKEND
       setValue('hallId', reservation.hallId || '')
       setValue('clientId', reservation.clientId || '')
       setValue('eventTypeId', reservation.eventTypeId || '')
@@ -267,10 +268,10 @@ export function EditReservationModal({
       setValue('endDateTime', endDateTime)
       setValue('adults', reservation.adults || 0)
       setValue('children', reservation.children || 0)
-      setValue('toddlers', 0) // Backend doesn't store this separately yet
+      setValue('toddlers', reservation.toddlers || 0) // ✅ NOW LOADS FROM BACKEND
       setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
       setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
-      setValue('pricePerToddler', 0) // Backend doesn't store this separately yet
+      setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0) // ✅ NOW LOADS FROM BACKEND
       
       // Mark prices as manually set to prevent auto-overwrite
       setChildPriceManuallySet(true)
@@ -297,21 +298,24 @@ export function EditReservationModal({
   }, [reservation, open, setValue])
 
   const onSubmit = async (data: ReservationFormData) => {
-    console.log('Submitting form with data:', data)
+    console.log('=== Submitting form ===')
+    console.log('Form data:', data)
     setIsSaving(true)
     
     try {
       // Check if status changed
       const statusChanged = data.status !== originalStatus
       
-      // Update reservation details
+      // Update reservation details - ✅ NOW SENDS TODDLERS SEPARATELY
       await reservationsApi.update(reservationId, {
         startDateTime: data.startDateTime,
         endDateTime: data.endDateTime,
         adults: data.adults,
-        children: data.children + data.toddlers, // Combine for backend
+        children: data.children, // ✅ FIXED: Send children separately
+        toddlers: data.toddlers, // ✅ FIXED: Send toddlers separately
         pricePerAdult: data.pricePerAdult,
         pricePerChild: data.pricePerChild,
+        pricePerToddler: data.pricePerToddler, // ✅ FIXED: Send toddler price
         confirmationDeadline: data.confirmationDeadline,
         customEventType: data.customEventType,
         anniversaryYear: data.anniversaryYear,
@@ -319,6 +323,8 @@ export function EditReservationModal({
         notes: data.notes,
         reason: data.reason,
       })
+      
+      console.log('Reservation updated successfully')
       
       // If status changed, update it separately
       if (statusChanged) {
