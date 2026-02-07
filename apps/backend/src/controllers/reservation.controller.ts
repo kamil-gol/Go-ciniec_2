@@ -1,6 +1,7 @@
 /**
  * Reservation Controller
  * Handle HTTP requests for reservation management with advanced features
+ * UPDATED: Full support for toddlers (0-3 years) age group
  */
 
 import { Request, Response } from 'express';
@@ -52,14 +53,17 @@ export class ReservationController {
         return;
       }
 
-      // Validate guests: either adults+children or legacy guests field
-      const hasGuestBreakdown = (data.adults !== undefined && data.adults >= 0) || (data.children !== undefined && data.children >= 0);
+      // Validate guests: either adults+children+toddlers or legacy guests field
+      const hasGuestBreakdown = 
+        (data.adults !== undefined && data.adults >= 0) || 
+        (data.children !== undefined && data.children >= 0) ||
+        (data.toddlers !== undefined && data.toddlers >= 0); // NEW: Include toddlers
       const hasLegacyGuests = data.guests !== undefined && data.guests > 0;
       
       if (!hasGuestBreakdown && !hasLegacyGuests) {
         res.status(400).json({
           success: false,
-          error: 'Either adults/children counts or total guests count is required'
+          error: 'Either adults/children/toddlers counts or total guests count is required'
         });
         return;
       }
@@ -158,8 +162,10 @@ export class ReservationController {
         data.endDateTime !== undefined ||
         data.adults !== undefined ||
         data.children !== undefined ||
+        data.toddlers !== undefined || // NEW: Include toddlers
         data.pricePerAdult !== undefined ||
-        data.pricePerChild !== undefined;
+        data.pricePerChild !== undefined ||
+        data.pricePerToddler !== undefined; // NEW: Include toddler price
 
       if (hasImportantChanges && (!data.reason || data.reason.length < 10)) {
         res.status(400).json({
