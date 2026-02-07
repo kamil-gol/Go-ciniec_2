@@ -17,6 +17,7 @@ import { formatCurrency } from '@/lib/utils'
 import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
+import { useQueryClient } from '@tanstack/react-query'
 
 const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
@@ -75,8 +76,9 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
   const [durationHours, setDurationHours] = useState(0)
   
+  const queryClient = useQueryClient()
   const { data: halls } = useHalls()
-  const { data: clientsData, mutate: mutateClients } = useClients()
+  const { data: clientsData } = useClients()
   const { data: eventTypes } = useEventTypes()
   const createReservation = useCreateReservation()
 
@@ -185,9 +187,13 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
   }, [selectedEventTypeId, eventTypes])
 
-  const handleClientCreated = (newClient: any) => {
-    mutateClients()
+  const handleClientCreated = async (newClient: any) => {
+    console.log('Client created successfully:', newClient)
+    // Invalidate and refetch clients
+    await queryClient.invalidateQueries({ queryKey: ['clients'] })
+    // Auto-assign newly created client
     setValue('clientId', newClient.id)
+    setShowCreateClientModal(false)
   }
 
   const onSubmit = async (data: ReservationFormData) => {
@@ -203,6 +209,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       pricePerChild: data.pricePerChild,
       confirmationDeadline: data.confirmationDeadline,
       customEventType: data.customEventType,
+      birthdayAge: data.birthdayAge,
       anniversaryYear: data.anniversaryYear,
       anniversaryOccasion: data.anniversaryOccasion,
       notes: data.notes,
@@ -239,7 +246,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     { value: '', label: 'Wybierz klienta...' },
     ...clientsArray.map((client) => ({
       value: client.id,
-      label: `${client.firstName} ${client.lastName}`,
+      label: `${client.firstName} ${client.lastName} ${client.phone ? '(' + client.phone + ')' : ''}`,
     }))
   ]
 
