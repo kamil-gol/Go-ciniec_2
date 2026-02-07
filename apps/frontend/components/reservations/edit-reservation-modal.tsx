@@ -44,6 +44,7 @@ export function EditReservationModal({
 }: EditReservationModalProps) {
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
+  const [isFormReady, setIsFormReady] = useState(false)
 
   const { data: reservation, isLoading: loadingReservation } = useReservation(reservationId)
   const { data: halls } = useHalls()
@@ -60,14 +61,34 @@ export function EditReservationModal({
     formState: { errors },
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
+    defaultValues: {
+      hallId: '',
+      clientId: '',
+      eventTypeId: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      guests: 0,
+      notes: '',
+    },
   })
 
   const watchedFields = watch()
 
   // Load reservation data into form
   useEffect(() => {
-    if (reservation) {
-      console.log('Loading reservation into form:', reservation)
+    if (reservation && open) {
+      console.log('=== Loading reservation into form ===')
+      console.log('Full reservation object:', reservation)
+      console.log('hallId:', reservation.hallId)
+      console.log('clientId:', reservation.clientId)
+      console.log('eventTypeId:', reservation.eventTypeId)
+      console.log('startDateTime:', reservation.startDateTime)
+      console.log('endDateTime:', reservation.endDateTime)
+      console.log('date:', reservation.date)
+      console.log('startTime:', reservation.startTime)
+      console.log('endTime:', reservation.endTime)
+      console.log('guests:', reservation.guests)
       
       // Extract date and time from old or new format
       let date = ''
@@ -78,15 +99,17 @@ export function EditReservationModal({
         const start = new Date(reservation.startDateTime)
         const end = new Date(reservation.endDateTime)
         date = start.toISOString().split('T')[0]
-        startTime = start.toTimeString().slice(0, 5)
-        endTime = end.toTimeString().slice(0, 5)
+        startTime = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
+        endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
+        console.log('Extracted from DateTime - date:', date, 'startTime:', startTime, 'endTime:', endTime)
       } else if (reservation.date && reservation.startTime && reservation.endTime) {
         date = reservation.date
         startTime = reservation.startTime
         endTime = reservation.endTime
+        console.log('Using old format - date:', date, 'startTime:', startTime, 'endTime:', endTime)
       }
       
-      reset({
+      const formData = {
         hallId: reservation.hallId || '',
         clientId: reservation.clientId || '',
         eventTypeId: reservation.eventTypeId || '',
@@ -95,9 +118,24 @@ export function EditReservationModal({
         endTime,
         guests: reservation.guests || 0,
         notes: reservation.notes || '',
-      })
+      }
+      
+      console.log('Form data to set:', formData)
+      
+      // Use setValue for each field individually
+      setValue('hallId', formData.hallId)
+      setValue('clientId', formData.clientId)
+      setValue('eventTypeId', formData.eventTypeId)
+      setValue('date', formData.date)
+      setValue('startTime', formData.startTime)
+      setValue('endTime', formData.endTime)
+      setValue('guests', formData.guests)
+      setValue('notes', formData.notes)
+      
+      setIsFormReady(true)
+      console.log('Form values set successfully')
     }
-  }, [reservation, reset])
+  }, [reservation, open, setValue])
 
   // Calculate price in real-time
   useEffect(() => {
@@ -124,6 +162,7 @@ export function EditReservationModal({
   }, [watchedFields.hallId, halls])
 
   const onSubmit = async (data: ReservationFormData) => {
+    console.log('Submitting form with data:', data)
     try {
       await updateReservation.mutateAsync({
         id: reservationId,
@@ -174,7 +213,7 @@ export function EditReservationModal({
     }))
   ]
 
-  if (loadingReservation) {
+  if (loadingReservation || !isFormReady) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-3xl">
@@ -183,6 +222,8 @@ export function EditReservationModal({
       </Dialog>
     )
   }
+
+  console.log('Current form values:', watchedFields)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -198,6 +239,7 @@ export function EditReservationModal({
               label="Sala"
               options={hallOptions}
               error={errors.hallId?.message}
+              value={watchedFields.hallId}
               {...register('hallId')}
             />
             {selectedHallCapacity > 0 && (
@@ -212,6 +254,7 @@ export function EditReservationModal({
             label="Klient"
             options={clientOptions}
             error={errors.clientId?.message}
+            value={watchedFields.clientId}
             {...register('clientId')}
           />
 
@@ -220,6 +263,7 @@ export function EditReservationModal({
             label="Typ Wydarzenia"
             options={eventTypeOptions}
             error={errors.eventTypeId?.message}
+            value={watchedFields.eventTypeId}
             {...register('eventTypeId')}
           />
 
@@ -231,6 +275,7 @@ export function EditReservationModal({
                 type="date"
                 label="Data"
                 error={errors.date?.message}
+                value={watchedFields.date}
                 {...register('date')}
               />
             </div>
@@ -240,6 +285,7 @@ export function EditReservationModal({
                 type="time"
                 label="Od"
                 error={errors.startTime?.message}
+                value={watchedFields.startTime}
                 {...register('startTime')}
               />
             </div>
@@ -249,6 +295,7 @@ export function EditReservationModal({
                 type="time"
                 label="Do"
                 error={errors.endTime?.message}
+                value={watchedFields.endTime}
                 {...register('endTime')}
               />
             </div>
@@ -263,6 +310,7 @@ export function EditReservationModal({
                 label="Liczba Gości"
                 placeholder="Wprowadź liczbę gości"
                 error={errors.guests?.message}
+                value={watchedFields.guests}
                 {...register('guests')}
               />
             </div>
@@ -298,6 +346,7 @@ export function EditReservationModal({
               className="mt-1 w-full rounded-md border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               rows={3}
               placeholder="Dodatkowe informacje..."
+              value={watchedFields.notes}
               {...register('notes')}
             />
           </div>
