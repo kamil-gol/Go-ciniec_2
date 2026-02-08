@@ -1,15 +1,14 @@
 FROM node:20-slim
 WORKDIR /app
 
-# Install OpenSSL
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL and DejaVu fonts (full UTF-8/Polish support)
+RUN apt-get update && \
+    apt-get install -y openssl fonts-dejavu-core && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
 COPY package*.json ./
 RUN npm install
-
-# Copy fonts for PDF generation
-COPY fonts ./fonts
 
 # Copy source
 COPY . .
