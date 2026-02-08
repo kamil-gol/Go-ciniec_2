@@ -105,6 +105,9 @@ export function ReservationDetailsModal({
   const toddlers = reservation.toddlers || 0
   const totalGuests = reservation.guests || (adults + children + toddlers)
 
+  // ✅ FIXED: Support both "Rocznica" and "Rocznica/Jubileusz" naming variations
+  const isAnniversary = reservation.eventType?.name === 'Rocznica' || reservation.eventType?.name === 'Rocznica/Jubileusz'
+
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
@@ -249,8 +252,8 @@ export function ReservationDetailsModal({
                     </div>
                   )}
                   
-                  {/* Anniversary details */}
-                  {reservation.eventType?.name === 'Rocznica' && (reservation.anniversaryYear || reservation.anniversaryOccasion) && (
+                  {/* Anniversary details - FIXED: Support both name variants */}
+                  {isAnniversary && (reservation.anniversaryYear || reservation.anniversaryOccasion) && (
                     <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded space-y-1">
                       {reservation.anniversaryYear && (
                         <div className="flex items-center gap-2">

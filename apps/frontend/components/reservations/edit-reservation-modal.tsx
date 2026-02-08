@@ -25,26 +25,21 @@ const reservationSchema = z.object({
   clientId: z.string().min(1, 'Wybierz klienta'),
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
   
-  // New datetime fields
   startDateTime: z.string().min(1, 'Wybierz datę i czas rozpoczęcia'),
   endDateTime: z.string().min(1, 'Wybierz datę i czas zakończenia'),
   
-  // Split guest counts by age
   adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
   children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
   toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
-  // Pricing
   pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
   pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0'),
   pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0'),
   
-  // Confirmation deadline
   confirmationDeadline: z.string().optional(),
   
-  // Custom event fields
   customEventType: z.string().optional(),
-  birthdayAge: z.coerce.number().optional(), // For "Urodziny" event type
+  birthdayAge: z.coerce.number().optional(),
   anniversaryYear: z.coerce.number().optional(),
   anniversaryOccasion: z.string().optional(),
   
@@ -72,7 +67,6 @@ interface EditReservationModalProps {
   onSuccess?: () => void
 }
 
-// Helper function to get Polish status label
 const getPolishStatusLabel = (status: string): string => {
   const statusMap: Record<string, string> = {
     'PENDING': 'Oczekująca',
@@ -123,7 +117,6 @@ export function EditReservationModal({
   })
 
   const watchedFields = watch()
-  // Convert to numbers explicitly to prevent string concatenation
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
   const toddlers = Number(watch('toddlers')) || 0
@@ -133,12 +126,10 @@ export function EditReservationModal({
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
 
-  // Disable children fields if adults is 0
   const isChildrenFieldsDisabled = adults === 0
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
   const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
 
-  // Auto-set child price to half of adult price
   useEffect(() => {
     if (adults > 0 && pricePerAdult > 0 && !childPriceManuallySet && isFormReady) {
       const halfPrice = Math.round(pricePerAdult / 2)
@@ -146,20 +137,12 @@ export function EditReservationModal({
     }
   }, [adults, pricePerAdult, setValue, childPriceManuallySet, isFormReady])
 
-  // ✅ IMPROVED: Auto-set toddler price to 25% of adult price when toddlers added
   useEffect(() => {
-    // Auto-calculate only if:
-    // 1. Adults and adult price are set
-    // 2. User hasn't manually edited toddler price
-    // 3. Form is ready
-    // 4. Either: toddler price is 0 OR price hasn't been manually set
     if (adults > 0 && pricePerAdult > 0 && isFormReady) {
-      // If toddlers > 0 and price is 0, always calculate
       if (toddlers > 0 && pricePerToddler === 0) {
         const quarterPrice = Math.round(pricePerAdult * 0.25)
         setValue('pricePerToddler', quarterPrice)
       }
-      // If not manually set and toddlers count changes, recalculate
       else if (!toddlerPriceManuallySet) {
         const quarterPrice = Math.round(pricePerAdult * 0.25)
         setValue('pricePerToddler', quarterPrice)
@@ -167,23 +150,20 @@ export function EditReservationModal({
     }
   }, [adults, pricePerAdult, toddlers, pricePerToddler, setValue, toddlerPriceManuallySet, isFormReady])
 
-  // Auto-fill end time when start time changes (default: +6 hours)
   useEffect(() => {
     if (startDateTime && !watchedFields.endDateTime && isFormReady) {
       const start = new Date(startDateTime)
-      const end = new Date(start.getTime() + 6 * 60 * 60 * 1000) // +6 hours
+      const end = new Date(start.getTime() + 6 * 60 * 60 * 1000)
       const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
       setValue('endDateTime', endStr)
     }
   }, [startDateTime, watchedFields.endDateTime, setValue, isFormReady])
 
-  // Calculate total guests in real-time - FIXED: explicitly convert to numbers
   useEffect(() => {
     const total = Number(adults) + Number(children) + Number(toddlers)
     setTotalGuests(total)
   }, [adults, children, toddlers])
 
-  // Calculate price - FIXED: explicitly convert to numbers
   useEffect(() => {
     const price = (Number(adults) * Number(pricePerAdult)) + 
                   (Number(children) * Number(pricePerChild)) + 
@@ -191,7 +171,6 @@ export function EditReservationModal({
     setCalculatedPrice(price)
   }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler])
 
-  // Calculate duration and auto-add extra hours note
   useEffect(() => {
     const { startDateTime, endDateTime, notes } = watchedFields
     if (startDateTime && endDateTime) {
@@ -202,18 +181,15 @@ export function EditReservationModal({
       const roundedHours = Math.round(hours * 10) / 10
       setDurationHours(roundedHours)
       
-      // Auto-add extra hours info to notes if > 6 hours
       if (roundedHours > 6) {
         const extraHours = Math.ceil(roundedHours - 6)
         const extraCost = extraHours * 500
         const extraNote = `\n\n⏰ Dodatkowe godziny: ${extraHours}h × 500 PLN = ${extraCost} PLN`
         
-        // Only add if not already present
         if (!notes?.includes('⏰ Dodatkowe godziny')) {
           setValue('notes', (notes || '') + extraNote)
         }
       } else {
-        // Remove extra hours note if duration <= 6h
         if (notes?.includes('⏰ Dodatkowe godziny')) {
           const cleanedNotes = notes.replace(/\n\n⏰ Dodatkowe godziny:.*/, '')
           setValue('notes', cleanedNotes)
@@ -222,7 +198,6 @@ export function EditReservationModal({
     }
   }, [watchedFields.startDateTime, watchedFields.endDateTime, watchedFields.notes, setValue])
 
-  // Update capacity when hall changes
   useEffect(() => {
     if (watchedFields.hallId) {
       const hallsArray = halls?.data || halls || []
@@ -233,7 +208,6 @@ export function EditReservationModal({
     }
   }, [watchedFields.hallId, halls])
 
-  // Track selected event type name
   useEffect(() => {
     if (selectedEventTypeId) {
       const eventTypesArray = eventTypes?.data || eventTypes || []
@@ -242,7 +216,6 @@ export function EditReservationModal({
     }
   }, [selectedEventTypeId, eventTypes])
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!open) {
       setIsFormReady(false)
@@ -252,28 +225,23 @@ export function EditReservationModal({
     }
   }, [open, reset])
 
-  // Load reservation data into form
   useEffect(() => {
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
       console.log('Reservation data:', reservation)
       
-      // Extract datetime
       let startDateTime = ''
       let endDateTime = ''
       
       if (reservation.startDateTime && reservation.endDateTime) {
-        // Convert to local datetime-local format
         const start = new Date(reservation.startDateTime)
         const end = new Date(reservation.endDateTime)
         startDateTime = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
         endDateTime = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
       }
       
-      // Store original status
       setOriginalStatus(reservation.status || 'PENDING')
       
-      // Set form values - NOW LOADS TODDLERS FROM BACKEND
       setValue('hallId', reservation.hallId || '')
       setValue('clientId', reservation.clientId || '')
       setValue('eventTypeId', reservation.eventTypeId || '')
@@ -281,17 +249,14 @@ export function EditReservationModal({
       setValue('endDateTime', endDateTime)
       setValue('adults', reservation.adults || 0)
       setValue('children', reservation.children || 0)
-      setValue('toddlers', reservation.toddlers || 0) // ✅ NOW LOADS FROM BACKEND
+      setValue('toddlers', reservation.toddlers || 0)
       setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
       setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
-      setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0) // ✅ NOW LOADS FROM BACKEND
+      setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0)
       
-      // ✅ IMPROVED: Only mark as manually set if there are actual values
-      // This allows auto-calculation when adding new children/toddlers
       setChildPriceManuallySet(reservation.pricePerChild > 0)
       setToddlerPriceManuallySet(reservation.pricePerToddler > 0 && reservation.toddlers > 0)
       
-      // Confirmation deadline - convert to date only
       if (reservation.confirmationDeadline) {
         const deadline = new Date(reservation.confirmationDeadline)
         const dateOnly = deadline.toISOString().split('T')[0]
@@ -301,11 +266,12 @@ export function EditReservationModal({
       }
       
       setValue('customEventType', reservation.customEventType || '')
+      setValue('birthdayAge', reservation.birthdayAge || undefined)
       setValue('anniversaryYear', reservation.anniversaryYear || undefined)
       setValue('anniversaryOccasion', reservation.anniversaryOccasion || '')
       setValue('status', reservation.status || 'PENDING')
       setValue('notes', reservation.notes || '')
-      setValue('reason', '') // Empty by default - user must provide
+      setValue('reason', '')
       
       setIsFormReady(true)
     }
@@ -317,21 +283,20 @@ export function EditReservationModal({
     setIsSaving(true)
     
     try {
-      // Check if status changed
       const statusChanged = data.status !== originalStatus
       
-      // Update reservation details - ✅ NOW SENDS TODDLERS SEPARATELY
       await reservationsApi.update(reservationId, {
         startDateTime: data.startDateTime,
         endDateTime: data.endDateTime,
         adults: data.adults,
-        children: data.children, // ✅ FIXED: Send children separately
-        toddlers: data.toddlers, // ✅ FIXED: Send toddlers separately
+        children: data.children,
+        toddlers: data.toddlers,
         pricePerAdult: data.pricePerAdult,
         pricePerChild: data.pricePerChild,
-        pricePerToddler: data.pricePerToddler, // ✅ FIXED: Send toddler price
+        pricePerToddler: data.pricePerToddler,
         confirmationDeadline: data.confirmationDeadline,
         customEventType: data.customEventType,
+        birthdayAge: data.birthdayAge,
         anniversaryYear: data.anniversaryYear,
         anniversaryOccasion: data.anniversaryOccasion,
         notes: data.notes,
@@ -340,7 +305,6 @@ export function EditReservationModal({
       
       console.log('Reservation updated successfully')
       
-      // If status changed, update it separately
       if (statusChanged) {
         const oldStatusLabel = getPolishStatusLabel(originalStatus)
         const newStatusLabel = getPolishStatusLabel(data.status)
@@ -352,7 +316,6 @@ export function EditReservationModal({
         )
       }
       
-      // Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['reservations'] })
       await queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] })
       
@@ -411,7 +374,7 @@ export function EditReservationModal({
   ]
 
   const isBirthday = selectedEventTypeName === 'Urodziny'
-  const isAnniversary = selectedEventTypeName === 'Rocznica'
+  const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
   const isCustom = selectedEventTypeName === 'Inne'
 
   if (loadingReservation || !isFormReady) {
@@ -432,13 +395,12 @@ export function EditReservationModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
-          {/* Status Selection */}
           <div>
             <Select
               label="Status Rezerwacji"
               options={statusOptions}
               error={errors.status?.message}
-              value={watchedFields.status}
+              value={watch('status')}
               {...register('status')}
             />
             {watchedFields.status !== originalStatus && (
@@ -448,13 +410,12 @@ export function EditReservationModal({
             )}
           </div>
 
-          {/* Hall Selection */}
           <div>
             <Select
               label="Sala"
               options={hallOptions}
               error={errors.hallId?.message}
-              value={watchedFields.hallId}
+              value={watch('hallId')}
               {...register('hallId')}
             />
             {selectedHallCapacity > 0 && (
@@ -464,14 +425,13 @@ export function EditReservationModal({
             )}
           </div>
 
-          {/* Client Selection - DISABLED */}
           <div>
             <div className="relative">
               <Select
                 label="Klient"
                 options={clientOptions}
                 error={errors.clientId?.message}
-                value={watchedFields.clientId}
+                value={watch('clientId')}
                 disabled={true}
                 {...register('clientId')}
               />
@@ -485,16 +445,14 @@ export function EditReservationModal({
             </p>
           </div>
 
-          {/* Event Type */}
           <Select
             label="Typ Wydarzenia"
             options={eventTypeOptions}
             error={errors.eventTypeId?.message}
-            value={watchedFields.eventTypeId}
+            value={watch('eventTypeId')}
             {...register('eventTypeId')}
           />
 
-          {/* Birthday Age (for "Urodziny") */}
           {isBirthday && (
             <Input
               type="number"
@@ -505,7 +463,6 @@ export function EditReservationModal({
             />
           )}
 
-          {/* Custom Event Type (for "Inne") */}
           {isCustom && (
             <Input
               label="Typ wydarzenia (własny)"
@@ -515,7 +472,6 @@ export function EditReservationModal({
             />
           )}
 
-          {/* Anniversary Fields (for "Rocznica") */}
           {isAnniversary && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
@@ -534,7 +490,6 @@ export function EditReservationModal({
             </div>
           )}
 
-          {/* Date and Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-secondary-500" />
@@ -562,7 +517,6 @@ export function EditReservationModal({
             </p>
           )}
 
-          {/* Duration Info */}
           {durationHours > 0 && (
             <div className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > 6 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
               {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
@@ -573,7 +527,6 @@ export function EditReservationModal({
             </div>
           )}
 
-          {/* Guest Counts - UPDATED: Three age groups with distinct icons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-secondary-500" />
@@ -614,7 +567,6 @@ export function EditReservationModal({
             </p>
           )}
 
-          {/* Total Guests Display - Always visible if > 0 */}
           {totalGuests > 0 && (
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-secondary-700">Łącznie gości:</span>
@@ -629,7 +581,6 @@ export function EditReservationModal({
             </p>
           )}
 
-          {/* Pricing - UPDATED: Three price fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-secondary-500" />
@@ -674,7 +625,6 @@ export function EditReservationModal({
             </p>
           )}
 
-          {/* Price Calculator - UPDATED: Three rows */}
           {calculatedPrice > 0 && (
             <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
               <div className="space-y-2">
@@ -700,7 +650,6 @@ export function EditReservationModal({
             </div>
           )}
 
-          {/* Confirmation Deadline - DATE ONLY */}
           <div>
             <Input
               type="date"
@@ -713,7 +662,6 @@ export function EditReservationModal({
             </p>
           </div>
 
-          {/* Notes */}
           <div>
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-secondary-500" />
@@ -727,7 +675,6 @@ export function EditReservationModal({
             />
           </div>
 
-          {/* REASON FIELD (REQUIRED) */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
@@ -748,7 +695,6 @@ export function EditReservationModal({
             </div>
           </div>
 
-          {/* Form Actions */}
           <div className="flex gap-4 justify-end pt-4 border-t">
             <Button
               type="button"

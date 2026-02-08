@@ -8,6 +8,11 @@ import { toast } from 'sonner'
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({
+    email: '',
+    password: ''
+  })
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -16,6 +21,30 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
+    
+    // Clear field errors
+    setFieldErrors({ email: '', password: '' })
+
+    // Validate empty fields
+    let hasErrors = false
+    const newFieldErrors = { email: '', password: '' }
+    
+    if (!formData.email) {
+      newFieldErrors.email = 'Email jest wymagany'
+      hasErrors = true
+    }
+    
+    if (!formData.password) {
+      newFieldErrors.password = 'Hasło jest wymagane'
+      hasErrors = true
+    }
+    
+    if (hasErrors) {
+      setFieldErrors(newFieldErrors)
+      setLoading(false)
+      return
+    }
 
     try {
       const response = await apiClient.post('/auth/login', formData)
@@ -23,11 +52,16 @@ export default function LoginPage() {
       if (response.data.success) {
         localStorage.setItem('auth_token', response.data.data.token)
         toast.success('Zalogowano pomyślnie!')
-        router.push('/reservations')
+        router.push('/dashboard') // Fixed: changed from /reservations to /dashboard
       }
     } catch (error: any) {
       console.error('Login error:', error)
-      toast.error(error.response?.data?.error || 'Błąd logowania')
+      const errorMessage = error.response?.data?.error || 'Niepoprawny email lub hasło'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      
+      // Security: Clear password field after failed login
+      setFormData({ ...formData, password: '' })
     } finally {
       setLoading(false)
     }
@@ -44,7 +78,15 @@ export default function LoginPage() {
             System zarządzania rezerwacjami
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        
+        {/* Error message display */}
+        {error && (
+          <div className="error-message bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -55,12 +97,20 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="admin@gosciniecrodzinny.pl"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value })
+                  setError('') // Clear error on input change
+                  setFieldErrors({ ...fieldErrors, email: '' })
+                }}
               />
+              {fieldErrors.email && (
+                <p className="error mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+              )}
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -71,12 +121,20 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  fieldErrors.password ? 'border-red-500' : 'border-gray-300'
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="********"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, password: e.target.value })
+                  setError('') // Clear error on input change
+                  setFieldErrors({ ...fieldErrors, password: '' })
+                }}
               />
+              {fieldErrors.password && (
+                <p className="error mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+              )}
             </div>
           </div>
 
@@ -92,7 +150,7 @@ export default function LoginPage() {
 
           <div className="text-center text-sm text-gray-600">
             <p>Domyślne konto:</p>
-            <p className="font-mono text-xs mt-1">admin@gosciniecrodzinny.pl / admin123</p>
+            <p className="font-mono text-xs mt-1">admin@gosciniecrodzinny.pl / Admin123!@#</p>
           </div>
         </form>
       </div>

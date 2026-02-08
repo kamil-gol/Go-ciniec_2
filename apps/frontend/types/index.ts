@@ -54,6 +54,7 @@ export enum ReservationStatus {
   CONFIRMED = 'CONFIRMED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
+  RESERVED = 'RESERVED', // New status for queue
 }
 
 export interface Reservation {
@@ -89,6 +90,10 @@ export interface Reservation {
   // Status related
   status: ReservationStatus
   confirmationDeadline?: string // New field - for PENDING status, max 1 day before event
+  
+  // Queue related
+  queuePosition?: number // For RESERVED status
+  reservationQueueDate?: string // For RESERVED status - date user wants to book
   
   notes?: string
   createdBy: string
@@ -137,6 +142,70 @@ export interface ReservationHistory {
   newValue?: string
   reason?: string
   createdAt: string
+}
+
+// Queue types
+export interface QueueItem {
+  id: string
+  position: number
+  queueDate: string
+  guests: number
+  client: {
+    id: string
+    firstName: string
+    lastName: string
+    phone: string
+    email?: string
+  }
+  isManualOrder: boolean
+  notes?: string
+  createdAt: string
+  createdBy: {
+    id: string
+    firstName: string
+    lastName: string
+  }
+}
+
+export interface QueueStats {
+  totalQueued: number
+  queuesByDate: Array<{
+    date: string
+    count: number
+  }>
+  oldestQueueDate: string | null
+  manualOrderCount: number
+}
+
+export interface CreateQueueReservationInput {
+  clientId: string
+  reservationQueueDate: string // Date user wants to book
+  guests: number
+  adults: number
+  children?: number
+  notes?: string
+}
+
+export interface PromoteQueueReservationInput {
+  hallId: string
+  eventTypeId: string
+  customEventType?: string
+  birthdayAge?: number
+  anniversaryYear?: number
+  anniversaryOccasion?: string
+  startDateTime: string
+  endDateTime: string
+  adults: number
+  children: number
+  pricePerAdult: number
+  pricePerChild: number
+  status: 'PENDING' | 'CONFIRMED'
+  confirmationDeadline?: string
+  notes?: string
+  deposit?: {
+    amount: number
+    dueDate: string
+  }
 }
 
 // API Response types
