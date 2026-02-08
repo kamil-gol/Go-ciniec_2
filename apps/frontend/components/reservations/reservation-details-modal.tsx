@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/loading'
 import { useReservation } from '@/hooks/use-reservations'
 import { formatDate, formatTime, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle, CheckCircle, Edit, Smile } from 'lucide-react'
+import { Calendar, Clock, Users, Home, User, FileText, DollarSign, Baby, AlertCircle, CheckCircle, Edit, Smile, FileDown } from 'lucide-react'
 import { ReservationHistory } from './reservation-history'
 import { UpdateDepositStatusModal } from '../deposits/update-deposit-status-modal'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 interface ReservationDetailsModalProps {
   reservationId: string
@@ -75,6 +76,7 @@ export function ReservationDetailsModal({
   const queryClient = useQueryClient()
   const [selectedDeposit, setSelectedDeposit] = useState<any>(null)
   const [showDepositModal, setShowDepositModal] = useState(false)
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
 
   console.log('Reservation details:', reservation)
 
@@ -83,6 +85,58 @@ export function ReservationDetailsModal({
     queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] })
     setShowDepositModal(false)
     setSelectedDeposit(null)
+  }
+
+  const handleDownloadPDF = async () => {
+    try {
+      setIsDownloadingPDF(true)
+      
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error('Brak autoryzacji')
+        return
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/api/reservations/${reservationId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Nie udało się pobrać PDF')
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let filename = `rezerwacja_${reservationId}.pdf`
+      if (contentDisposition) {
+        const matches = /filename="?([^"]+)"?/.exec(contentDisposition)
+        if (matches && matches[1]) {
+          filename = matches[1]
+        }
+      }
+
+      // Download file
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast.success('PDF został pobrany')
+    } catch (error) {
+      console.error('PDF download error:', error)
+      toast.error(error instanceof Error ? error.message : 'Nie udało się pobrać PDF')
+    } finally {
+      setIsDownloadingPDF(false)
+    }
   }
 
   if (isLoading) {
@@ -114,10 +168,22 @@ export function ReservationDetailsModal({
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onClose={onClose}>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>Szczegóły Rezerwacji</span>
-              <Badge className={getStatusColor(reservation.status)}>
-                {getStatusLabel(reservation.status)}
-              </Badge>
+              <div className="flex items-center gap-3">
+                <span>Szczegóły Rezerwacji</span>
+                <Badge className={getStatusColor(reservation.status)}>
+                  {getStatusLabel(reservation.status)}
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPDF}
+                disabled={isDownloadingPDF}
+                className="ml-4"
+              >
+                <FileDown className={`w-4 h-4 mr-2 ${isDownloadingPDF ? 'animate-bounce' : ''}`} />
+                {isDownloadingPDF ? 'Pobieranie...' : 'Pobierz PDF'}
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
