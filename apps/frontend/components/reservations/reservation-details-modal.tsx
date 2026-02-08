@@ -91,7 +91,8 @@ export function ReservationDetailsModal({
     try {
       setIsDownloadingPDF(true)
       
-      const token = localStorage.getItem('token')
+      // Check both possible token keys (same as api-client.ts)
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
       if (!token) {
         toast.error('Brak autoryzacji')
         return
