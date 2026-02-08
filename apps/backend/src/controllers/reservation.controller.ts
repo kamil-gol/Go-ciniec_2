@@ -1,11 +1,12 @@
 /**
  * Reservation Controller
  * Handle HTTP requests for reservation management with advanced features
- * UPDATED: Full support for toddlers (0-3 years) age group
+ * UPDATED: Full support for toddlers (0-3 years) age group + PDF generation
  */
 
 import { Request, Response } from 'express';
 import reservationService from '../services/reservation.service';
+import { pdfService } from '../services/pdf.service';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -132,6 +133,47 @@ export class ReservationController {
       res.status(statusCode).json({
         success: false,
         error: error.message || 'Failed to fetch reservation'
+      });
+    }
+  }
+
+  /**
+   * Download reservation as PDF
+   * GET /api/reservations/:id/pdf
+   */
+  async downloadPDF(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      // Get full reservation data with relations
+      const reservation = await reservationService.getReservationById(id);
+
+      if (!reservation) {
+        res.status(404).json({
+          success: false,
+          error: 'Reservation not found'
+        });
+        return;
+      }
+
+      // Generate PDF
+      const pdfBuffer = await pdfService.generateReservationPDF(reservation);
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="rezerwacja_${id.substring(0, 8)}.pdf"`
+      );
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      // Send PDF
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      const statusCode = error.message === 'Reservation not found' ? 404 : 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message || 'Failed to generate PDF'
       });
     }
   }
