@@ -81,19 +81,36 @@ model Client {
   @@index([firstName, lastName])
 }
 
+enum ReservationStatus {
+  RESERVED    // Lista rezerwowa - minimalny zakres danych
+  PENDING     // Oczekująca - kompletne dane, czeka na potwierdzenie
+  CONFIRMED   // Potwierdzona
+  COMPLETED   // Zakończona
+  CANCELLED   // Anulowana
+}
+
 model Reservation {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hallId          String   @db.Uuid
+  
+  // CORE FIELDS - Required for all statuses
   clientId        String   @db.Uuid
-  eventTypeId     String   @db.Uuid
   createdById     String   @db.Uuid
+  
+  // QUEUE SYSTEM - Only for RESERVED status
+  reservationQueuePosition Int?     @db.SmallInt // Position in queue for given day (1, 2, 3...)
+  reservationQueueDate     DateTime? // The day this reservation is queued for
+  queueOrderManual         Boolean  @default(false) // If true, position was manually set (skip auto-recalculation)
+  
+  // OPTIONAL FIELDS - Required only after promotion from RESERVED
+  hallId          String?  @db.Uuid
+  eventTypeId     String?  @db.Uuid
 
   // Legacy fields (kept for backwards compatibility during transition)
   date            String?  @db.VarChar(10)
   startTime       String?  @db.VarChar(5)
   endTime         String?  @db.VarChar(5)
   
-  // New DateTime fields for start and end
+  // New DateTime fields for start and end - Optional for RESERVED
   startDateTime   DateTime?
   endDateTime     DateTime?
   
@@ -103,13 +120,13 @@ model Reservation {
   toddlers        Int      @default(0) @db.SmallInt // NEW: Number of toddlers (0-3)
   guests          Int      @db.SmallInt // Computed: adults + children + toddlers
   
-  // Pricing fields - UPDATED: Three separate prices
+  // Pricing fields - UPDATED: Three separate prices - Optional for RESERVED
   pricePerAdult   Decimal  @default(0) @db.Decimal(10, 2) // Price per adult
   pricePerChild   Decimal  @default(0) @db.Decimal(10, 2) // Price per child (4-12)
   pricePerToddler Decimal  @default(0) @db.Decimal(10, 2) // NEW: Price per toddler (0-3)
   totalPrice      Decimal  @db.Decimal(10, 2) // Computed: (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
   
-  status          String   @default("PENDING") @db.VarChar(20)
+  status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime? // New: for PENDING status, deadline to confirm (max 1 day before event)
   
   notes           String?  @db.Text
@@ -130,21 +147,24 @@ model Reservation {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  hall            Hall     @relation(fields: [hallId], references: [id], onDelete: Restrict)
-  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  eventType       EventType @relation(fields: [eventTypeId], references: [id])
-  createdBy       User     @relation("CreatedBy", fields: [createdById], references: [id])
+  hall            Hall?     @relation(fields: [hallId], references: [id], onDelete: Restrict)
+  client          Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  eventType       EventType? @relation(fields: [eventTypeId], references: [id])
+  createdBy       User      @relation("CreatedBy", fields: [createdById], references: [id])
 
   history         ReservationHistory[]
   deposits        Deposit[]
 
   @@index([date])
   @@index([startDateTime])
+  @@index([reservationQueueDate])
+  @@index([reservationQueuePosition])
   @@index([hallId])
   @@index([clientId])
   @@index([status])
   @@index([createdById])
   @@index([confirmationDeadline])
+  @@index([queueOrderManual])
 }
 
 model ReservationHistory {

@@ -25,15 +25,29 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="fixed inset-0 bg-black/50"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-50">{children}</div>
+      <div className="relative z-50 w-full flex items-center justify-center">{children}</div>
     </div>
   )
 }
+
+const DialogTrigger = React.forwardRef<
+  HTMLElement,
+  React.HTMLAttributes<HTMLElement> & { asChild?: boolean }
+>(({ children, asChild = false, ...props }, ref) => {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement, {
+      ...props,
+      ref,
+    })
+  }
+  return <div {...props}>{children}</div>
+})
+DialogTrigger.displayName = 'DialogTrigger'
 
 const DialogContent = React.forwardRef<
   HTMLDivElement,
@@ -42,8 +56,9 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4',
-      'max-h-[90vh] overflow-y-auto',
+      'relative bg-white rounded-lg shadow-xl w-full',
+      'max-h-[85vh] overflow-y-auto',
+      'p-6',
       className
     )}
     {...props}
@@ -65,14 +80,14 @@ const DialogHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
+  <div className={cn('flex flex-col space-y-2 mb-6', className)} {...props} />
 )
 
 const DialogTitle = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h2 className={cn('text-lg font-semibold', className)} {...props} />
+  <h2 className={cn('text-xl font-semibold', className)} {...props} />
 )
 
 const DialogDescription = ({
@@ -87,9 +102,9 @@ const DialogFooter = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn('flex items-center justify-end gap-2 p-6 pt-0', className)}
+    className={cn('flex items-center justify-end gap-2 mt-6', className)}
     {...props}
   />
 )
 
-export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter }
+export { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter }

@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState, useEffect, useMemo } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { Select } from '@/components/ui/select' // ✅ Native Select for critical fields
+import { SelectField } from '@/components/form/select-field' // Keep for non-critical fields
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
@@ -73,24 +74,32 @@ const reservationSchema = z.object({
 type ReservationFormData = z.infer<typeof reservationSchema>
 
 interface CreateReservationFormProps {
+  onSubmit?: (data: any) => void | Promise<void>
   onSuccess?: () => void
   onCancel?: () => void
+  initialData?: Partial<ReservationFormData>
+  isPromotingFromQueue?: boolean
 }
 
-export function CreateReservationForm({ onSuccess, onCancel }: CreateReservationFormProps) {
+export function CreateReservationForm({ 
+  onSubmit: onSubmitProp, 
+  onSuccess, 
+  onCancel,
+  initialData,
+  isPromotingFromQueue = false
+}: CreateReservationFormProps) {
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [totalGuests, setTotalGuests] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
-  const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
   const [durationHours, setDurationHours] = useState(0)
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
   
   const queryClient = useQueryClient()
-  const { data: halls } = useHalls()
-  const { data: clientsData } = useClients()
-  const { data: eventTypes } = useEventTypes()
+  const { data: halls, isLoading: hallsLoading, error: hallsError } = useHalls()
+  const { data: clientsData, isLoading: clientsLoading } = useClients()
+  const { data: eventTypes, isLoading: eventTypesLoading, error: eventTypesError } = useEventTypes()
   const createReservation = useCreateReservation()
 
   const {
@@ -98,6 +107,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     handleSubmit,
     watch,
     setValue,
+    control,
     formState: { errors },
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
@@ -107,6 +117,7 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       adults: 0,
       children: 0,
       toddlers: 0,
+      ...initialData,
     },
   })
 
@@ -123,6 +134,21 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const selectedEventTypeId = watch('eventTypeId')
   const startDate = watch('startDate')
   const startTime = watch('startTime')
+
+  // ✅ OPTIMIZED: Calculate selected event type name directly instead of useEffect
+  // This ensures immediate rendering of conditional fields
+  const selectedEventTypeName = useMemo(() => {
+    if (!selectedEventTypeId) return ''
+    const eventTypesArray = eventTypes?.data || eventTypes || []
+    const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
+    return selectedType?.name || ''
+  }, [selectedEventTypeId, eventTypes])
+
+  // ✅ BUGFIX 2026-02-07: Support both "Rocznica" and "Rocznica/Jubileusz" naming variations
+  // Calculate conditions immediately without useEffect delay
+  const isBirthday = selectedEventTypeName === 'Urodziny'
+  const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
+  const isCustom = selectedEventTypeName === 'Inne'
 
   // Auto-set child price to half of adult price
   useEffect(() => {
@@ -224,15 +250,6 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
   }, [watchedFields.hallId, halls, setValue, watchedFields.pricePerAdult])
 
-  // Track selected event type name
-  useEffect(() => {
-    if (selectedEventTypeId) {
-      const eventTypesArray = eventTypes?.data || eventTypes || []
-      const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
-      setSelectedEventTypeName(selectedType?.name || '')
-    }
-  }, [selectedEventTypeId, eventTypes])
-
   const handleClientCreated = async (newClient: any) => {
     await queryClient.invalidateQueries({ queryKey: ['clients'] })
     setValue('clientId', newClient.id)
@@ -244,16 +261,18 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     const startDateTime = `${data.startDate}T${data.startTime}`
     const endDateTime = `${data.endDate}T${data.endTime}`
     
-    const input: CreateReservationInput = {
+    const input: CreateReservationInput | any = {
       hallId: data.hallId,
       clientId: data.clientId,
       eventTypeId: data.eventTypeId,
       startDateTime,
       endDateTime,
       adults: data.adults,
-      children: data.children + data.toddlers, // Combine for backend
+      children: data.children,
+      toddlers: data.toddlers,
       pricePerAdult: data.pricePerAdult,
       pricePerChild: data.pricePerChild,
+      pricePerToddler: data.pricePerToddler,
       confirmationDeadline: data.confirmationDeadline,
       customEventType: data.customEventType,
       birthdayAge: data.birthdayAge,
@@ -273,7 +292,12 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }
 
     try {
-      await createReservation.mutateAsync(input)
+      // If custom onSubmit provided (e.g. from promote modal), use it
+      if (onSubmitProp) {
+        await onSubmitProp(input)
+      } else {
+        await createReservation.mutateAsync(input)
+      }
       onSuccess?.()
     } catch (error) {
       console.error('Failed to create reservation:', error)
@@ -284,6 +308,10 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
   const clientsArray = clientsData?.data || []
   const eventTypesArray = eventTypes?.data || eventTypes || []
 
+  console.log('🏢 Halls array length:', hallsArray.length)
+  console.log('🎉 EventTypes array length:', eventTypesArray.length)
+
+  // ✅ HYBRID APPROACH: Native Select options (includes empty placeholder)
   const hallOptions = [
     { value: '', label: 'Wybierz salę...' },
     ...hallsArray.map((hall) => ({
@@ -308,16 +336,12 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
     }))
   ]
 
+  // SelectField options (no empty value - Radix UI doesn't support it)
   const paymentMethodOptions = [
-    { value: '', label: 'Wybierz metodę płatności...' },
     { value: 'CASH', label: 'Gotówka' },
     { value: 'TRANSFER', label: 'Przelew' },
     { value: 'BLIK', label: 'BLIK' },
   ]
-
-  const isBirthday = selectedEventTypeName === 'Urodziny'
-  const isAnniversary = selectedEventTypeName === 'Rocznica'
-  const isCustom = selectedEventTypeName === 'Inne'
 
   return (
     <motion.div
@@ -326,50 +350,90 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
       transition={{ duration: 0.3 }}
     >
       <Card>
-        <CardHeader>
-          <CardTitle>Nowa Rezerwacja</CardTitle>
-        </CardHeader>
+        {!isPromotingFromQueue && (
+          <CardHeader>
+            <CardTitle>Nowa Rezerwacja</CardTitle>
+          </CardHeader>
+        )}
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <Select
-                label="Sala"
-                options={hallOptions}
-                error={errors.hallId?.message}
-                {...register('hallId')}
-              />
-              {selectedHallCapacity > 0 && (
-                <p className="mt-1 text-sm text-secondary-600">
-                  Maksymalna pojemność: {selectedHallCapacity} osób
-                </p>
-              )}
+          {/* 🔍 DEBUG INFO */}
+          {(hallsLoading || eventTypesLoading) && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800">⏳ Ładowanie danych...</p>
+              {hallsLoading && <p className="text-xs text-blue-600">• Ładowanie sal...</p>}
+              {eventTypesLoading && <p className="text-xs text-blue-600">• Ładowanie typów wydarzeń...</p>}
             </div>
+          )}
+          
+          {(hallsError || eventTypesError) && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+              <p className="text-sm font-medium text-red-800">❌ Błąd ładowania danych</p>
+              {hallsError && <p className="text-xs text-red-600">• Sale: {String(hallsError)}</p>}
+              {eventTypesError && <p className="text-xs text-red-600">• Typy wydarzeń: {String(eventTypesError)}</p>}
+            </div>
+          )}
+
+          {hallsArray.length === 0 && !hallsLoading && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded">
+              <p className="text-sm text-amber-800">⚠️ Brak sal w bazie danych</p>
+            </div>
+          )}
+
+          {eventTypesArray.length === 0 && !eventTypesLoading && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded">
+              <p className="text-sm text-amber-800">⚠️ Brak typów wydarzeń w bazie danych</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* ✅ CRITICAL: Native Select for hallId */}
+            <Select
+              label="Sala"
+              options={hallOptions}
+              error={errors.hallId?.message}
+              {...register('hallId')}
+            />
+            {selectedHallCapacity > 0 && (
+              <p className="-mt-4 text-sm text-secondary-600">
+                Maksymalna pojemność: {selectedHallCapacity} osób
+              </p>
+            )}
 
             <div>
               <div className="flex gap-2">
                 <div className="flex-1">
+                  {/* ✅ CRITICAL: Native Select for clientId */}
                   <Select
                     label="Klient"
                     options={clientOptions}
                     error={errors.clientId?.message}
+                    disabled={isPromotingFromQueue}
                     {...register('clientId')}
                   />
+                  {isPromotingFromQueue && (
+                    <p className="mt-1 text-xs text-blue-600">
+                      Klient przekazany z kolejki rezerwacji
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowCreateClientModal(true)}
-                    title="Dodaj nowego klienta"
-                    className="h-10 w-10"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </Button>
-                </div>
+                {!isPromotingFromQueue && (
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowCreateClientModal(true)}
+                      title="Dodaj nowego klienta"
+                      className="h-10 w-10"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* ✅ CRITICAL: Native Select for eventTypeId (drives conditional logic) */}
             <Select
               label="Typ Wydarzenia"
               options={eventTypeOptions}
@@ -431,7 +495,6 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </motion.div>
             )}
 
-            {/* UPDATED: Separate date and time fields */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -507,7 +570,6 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </motion.div>
             )}
 
-            {/* UPDATED: Three age groups with distinct icons */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-secondary-500" />
@@ -562,7 +624,6 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
               </p>
             )}
 
-            {/* UPDATED: Three price fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-secondary-500" />
@@ -718,11 +779,19 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                         exit={{ opacity: 0, height: 0 }}
                         className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-green-50 p-3 rounded border border-green-200"
                       >
-                        <Select
-                          label="Sposób płatności"
-                          options={paymentMethodOptions}
-                          error={errors.depositPaymentMethod?.message}
-                          {...register('depositPaymentMethod')}
+                        {/* ✨ NON-CRITICAL: Keep SelectField for better UX */}
+                        <Controller
+                          name="depositPaymentMethod"
+                          control={control}
+                          render={({ field }) => (
+                            <SelectField
+                              label="Sposób płatności"
+                              placeholder="Wybierz metodę płatności..."
+                              options={paymentMethodOptions}
+                              error={errors.depositPaymentMethod?.message}
+                              {...field}
+                            />
+                          )}
                         />
                         <Input
                           type="date"
@@ -750,18 +819,20 @@ export function CreateReservationForm({ onSuccess, onCancel }: CreateReservation
                 type="submit"
                 disabled={createReservation.isPending || (totalGuests > selectedHallCapacity && selectedHallCapacity > 0)}
               >
-                {createReservation.isPending ? 'Tworzenie...' : 'Utwórz Rezerwację'}
+                {createReservation.isPending ? 'Tworzenie...' : isPromotingFromQueue ? 'Awansuj do rezerwacji' : 'Utwórz Rezerwację'}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
 
-      <CreateClientModal
-        open={showCreateClientModal}
-        onClose={() => setShowCreateClientModal(false)}
-        onSuccess={handleClientCreated}
-      />
+      {!isPromotingFromQueue && (
+        <CreateClientModal
+          open={showCreateClientModal}
+          onClose={() => setShowCreateClientModal(false)}
+          onSuccess={handleClientCreated}
+        />
+      )}
     </motion.div>
   )
 }
