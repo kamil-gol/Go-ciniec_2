@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 RUN npm install
 
+# Copy fonts for PDF generation
+COPY fonts ./fonts
+
 # Copy source
 COPY . .
 
