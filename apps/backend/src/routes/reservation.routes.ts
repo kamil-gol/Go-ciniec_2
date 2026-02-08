@@ -38,6 +38,15 @@ router.get('/:id', authMiddleware, requireStaff, (req, res) => {
 });
 
 /**
+ * @route   GET /api/reservations/:id/pdf
+ * @desc    Download reservation as PDF
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.get('/:id/pdf', authMiddleware, requireStaff, (req, res) => {
+  reservationController.downloadPDF(req, res);
+});
+
+/**
  * @route   PUT /api/reservations/:id
  * @desc    Update reservation
  * @access  Staff (ADMIN + EMPLOYEE)
