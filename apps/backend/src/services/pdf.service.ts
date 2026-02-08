@@ -1,5 +1,4 @@
 import PDFDocument from 'pdfkit';
-import path from 'path';
 import { Readable } from 'stream';
 
 interface ReservationPDFData {
@@ -55,9 +54,9 @@ interface RestaurantData {
 }
 
 export class PDFService {
-  // FIXED: Use absolute path instead of relative path
-  private readonly FONT_REGULAR = '/app/fonts/Roboto-Regular.ttf';
-  private readonly FONT_BOLD = '/app/fonts/Roboto-Bold.ttf';
+  // Use DejaVu fonts from system (they support Polish characters!)
+  private readonly FONT_REGULAR = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+  private readonly FONT_BOLD = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
 
   private restaurantData: RestaurantData = {
     name: 'Go\u015bciniec Rodzinny',
@@ -68,9 +67,6 @@ export class PDFService {
     nip: '123-456-78-90',
   };
 
-  /**
-   * Generate PDF for reservation
-   */
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
@@ -84,10 +80,10 @@ export class PDFService {
           },
         });
 
-        // Register Roboto fonts for proper UTF-8 support
-        doc.registerFont('Roboto', this.FONT_REGULAR);
-        doc.registerFont('Roboto-Bold', this.FONT_BOLD);
-        doc.font('Roboto');
+        // Register DejaVu fonts for proper UTF-8 support
+        doc.registerFont('DejaVu', this.FONT_REGULAR);
+        doc.registerFont('DejaVu-Bold', this.FONT_BOLD);
+        doc.font('DejaVu');
 
         const chunks: Buffer[] = [];
 
@@ -95,7 +91,6 @@ export class PDFService {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
 
-        // Build PDF content
         this.buildPDFContent(doc, reservation);
 
         doc.end();
@@ -105,36 +100,28 @@ export class PDFService {
     });
   }
 
-  /**
-   * Build PDF content
-   */
   private buildPDFContent(doc: PDFKit.PDFDocument, reservation: ReservationPDFData): void {
-    const pageWidth = doc.page.width - 100; // Account for margins
+    const pageWidth = doc.page.width - 100;
 
-    // HEADER
     this.addHeader(doc);
 
-    // TITLE
     doc.moveDown(2);
-    doc.fontSize(20).font('Roboto-Bold').text('POTWIERDZENIE REZERWACJI SALI', {
+    doc.fontSize(20).font('DejaVu-Bold').text('POTWIERDZENIE REZERWACJI SALI', {
       align: 'center',
     });
 
-    // Reservation ID & Date
     doc.moveDown(0.5);
-    doc.fontSize(10).font('Roboto').fillColor('#666666');
+    doc.fontSize(10).font('DejaVu').fillColor('#666666');
     doc.text(`Numer rezerwacji: ${reservation.id}`, { align: 'center' });
     doc.text(`Data wygenerowania: ${this.formatDate(new Date())}`, { align: 'center' });
 
-    // SEPARATOR
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // CLIENT DATA
     doc.moveDown(1);
-    doc.fillColor('#000000').fontSize(14).font('Roboto-Bold').text('Dane klienta');
+    doc.fillColor('#000000').fontSize(14).font('DejaVu-Bold').text('Dane klienta');
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Roboto');
+    doc.fontSize(11).font('DejaVu');
     doc.text(`Imi\u0119 i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
     if (reservation.client.email) {
       doc.text(`Email: ${reservation.client.email}`);
@@ -144,33 +131,26 @@ export class PDFService {
       doc.text(`Adres: ${reservation.client.address}`);
     }
 
-    // SEPARATOR
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // RESERVATION DETAILS
     doc.moveDown(1);
-    doc.fontSize(14).font('Roboto-Bold').text('Szczeg\u00f3\u0142y rezerwacji');
+    doc.fontSize(14).font('DejaVu-Bold').text('Szczeg\u00f3\u0142y rezerwacji');
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Roboto');
+    doc.fontSize(11).font('DejaVu');
 
-    // Status badge
     this.addStatusBadge(doc, reservation.status);
-
     doc.moveDown(0.5);
 
-    // Hall
     if (reservation.hall) {
       doc.text(`Sala: ${reservation.hall.name}`);
     } else {
       doc.text('Sala: Nie przypisano (lista rezerwowa)');
     }
 
-    // Event Type
     const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie okre\u015blono';
     doc.text(`Typ wydarzenia: ${eventTypeName}`);
 
-    // Date & Time
     if (reservation.startDateTime && reservation.endDateTime) {
       doc.text(`Data: ${this.formatDate(reservation.startDateTime)}`);
       doc.text(`Godzina: ${this.formatTime(reservation.startDateTime)} - ${this.formatTime(reservation.endDateTime)}`);
@@ -179,7 +159,6 @@ export class PDFService {
       doc.text(`Godzina: ${reservation.startTime} - ${reservation.endTime}`);
     }
 
-    // Guests breakdown
     doc.text(`Liczba go\u015bci: ${reservation.guests}`);
     if (reservation.adults > 0) {
       doc.text(`  \u2022 Doro\u015bli: ${reservation.adults} os.`, { indent: 20 });
@@ -191,7 +170,6 @@ export class PDFService {
       doc.text(`  \u2022 Maluchy (0-3 lata): ${reservation.toddlers} os.`, { indent: 20 });
     }
 
-    // Birthday/Anniversary details
     if (reservation.birthdayAge) {
       doc.text(`Wiek jubilata: ${reservation.birthdayAge} lat`);
     }
@@ -202,24 +180,20 @@ export class PDFService {
       }
     }
 
-    // Notes
     if (reservation.notes) {
       doc.moveDown(0.5);
-      doc.font('Roboto-Bold').text('Uwagi:');
-      doc.font('Roboto').text(reservation.notes, { width: pageWidth - 20 });
+      doc.font('DejaVu-Bold').text('Uwagi:');
+      doc.font('DejaVu').text(reservation.notes, { width: pageWidth - 20 });
     }
 
-    // SEPARATOR
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // PRICING
     doc.moveDown(1);
-    doc.fontSize(14).font('Roboto-Bold').text('Kalkulacja koszt\u00f3w');
+    doc.fontSize(14).font('DejaVu-Bold').text('Kalkulacja koszt\u00f3w');
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Roboto');
+    doc.fontSize(11).font('DejaVu');
 
-    // Price breakdown
     if (reservation.adults > 0 && reservation.pricePerAdult > 0) {
       const adultTotal = reservation.adults * Number(reservation.pricePerAdult);
       doc.text(
@@ -240,38 +214,33 @@ export class PDFService {
     }
 
     doc.moveDown(0.5);
-    doc.fontSize(13).font('Roboto-Bold');
+    doc.fontSize(13).font('DejaVu-Bold');
     doc.text(`RAZEM: ${this.formatCurrency(reservation.totalPrice)}`);
 
-    // DEPOSIT INFO
     if (reservation.deposit) {
       doc.moveDown(1);
       this.addSeparator(doc);
       doc.moveDown(1);
-      doc.fontSize(14).font('Roboto-Bold').text('Zaliczka');
+      doc.fontSize(14).font('DejaVu-Bold').text('Zaliczka');
       doc.moveDown(0.5);
-      doc.fontSize(11).font('Roboto');
+      doc.fontSize(11).font('DejaVu');
       doc.text(`Kwota zaliczki: ${this.formatCurrency(reservation.deposit.amount)}`);
       doc.text(`Termin wp\u0142aty: ${reservation.deposit.dueDate}`);
       
       const depositStatus = reservation.deposit.paid ? '\u2713 Op\u0142acona' : '\u2717 Nieop\u0142acona';
-      doc.font('Roboto-Bold').text(`Status: ${depositStatus}`);
+      doc.font('DejaVu-Bold').text(`Status: ${depositStatus}`);
     }
 
-    // FOOTER
     this.addFooter(doc);
   }
 
-  /**
-   * Add header with restaurant info
-   */
   private addHeader(doc: PDFKit.PDFDocument): void {
-    doc.fontSize(18).font('Roboto-Bold').fillColor('#2c3e50').text(this.restaurantData.name, {
+    doc.fontSize(18).font('DejaVu-Bold').fillColor('#2c3e50').text(this.restaurantData.name, {
       align: 'center',
     });
 
     doc.moveDown(0.3);
-    doc.fontSize(9).font('Roboto').fillColor('#7f8c8d');
+    doc.fontSize(9).font('DejaVu').fillColor('#7f8c8d');
     doc.text(this.restaurantData.address, { align: 'center' });
     doc.text(`Tel: ${this.restaurantData.phone} | Email: ${this.restaurantData.email}`, {
       align: 'center',
@@ -284,9 +253,6 @@ export class PDFService {
     }
   }
 
-  /**
-   * Add separator line
-   */
   private addSeparator(doc: PDFKit.PDFDocument): void {
     const y = doc.y;
     doc
@@ -297,9 +263,6 @@ export class PDFService {
       .stroke();
   }
 
-  /**
-   * Add status badge
-   */
   private addStatusBadge(doc: PDFKit.PDFDocument, status: string): void {
     const statusMap: Record<string, { label: string; color: string }> = {
       RESERVED: { label: 'Lista rezerwowa', color: '#3498db' },
@@ -317,7 +280,7 @@ export class PDFService {
       .rect(x, y, 120, 20)
       .fillAndStroke(statusInfo.color, statusInfo.color);
 
-    doc.fillColor('#ffffff').fontSize(10).font('Roboto-Bold');
+    doc.fillColor('#ffffff').fontSize(10).font('DejaVu-Bold');
     doc.text(statusInfo.label.toUpperCase(), x + 10, y + 5, {
       width: 100,
       align: 'center',
@@ -327,13 +290,10 @@ export class PDFService {
     doc.moveDown(1);
   }
 
-  /**
-   * Add footer
-   */
   private addFooter(doc: PDFKit.PDFDocument): void {
     const bottomY = doc.page.height - 100;
 
-    doc.fontSize(8).fillColor('#7f8c8d').font('Roboto');
+    doc.fontSize(8).fillColor('#7f8c8d').font('DejaVu');
     doc.text(
       'Dzi\u0119kujemy za wybranie naszej restauracji. W razie pyta\u0144 prosimy o kontakt.',
       50,
@@ -353,9 +313,6 @@ export class PDFService {
     );
   }
 
-  /**
-   * Format date to Polish format
-   */
   private formatDate(date: Date): string {
     return new Intl.DateTimeFormat('pl-PL', {
       year: 'numeric',
@@ -364,9 +321,6 @@ export class PDFService {
     }).format(date);
   }
 
-  /**
-   * Format time
-   */
   private formatTime(date: Date): string {
     return new Intl.DateTimeFormat('pl-PL', {
       hour: '2-digit',
@@ -374,9 +328,6 @@ export class PDFService {
     }).format(date);
   }
 
-  /**
-   * Format currency to PLN
-   */
   private formatCurrency(amount: number | string): string {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('pl-PL', {
