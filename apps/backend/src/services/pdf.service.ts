@@ -55,12 +55,13 @@ interface RestaurantData {
 }
 
 export class PDFService {
-  private readonly FONT_REGULAR = path.join(__dirname, '../../fonts/Roboto-Regular.ttf');
-  private readonly FONT_BOLD = path.join(__dirname, '../../fonts/Roboto-Bold.ttf');
+  // FIXED: Use absolute path instead of relative path
+  private readonly FONT_REGULAR = '/app/fonts/Roboto-Regular.ttf';
+  private readonly FONT_BOLD = '/app/fonts/Roboto-Bold.ttf';
 
   private restaurantData: RestaurantData = {
-    name: 'Gościniec Rodzinny',
-    address: 'ul. Przykładowa 123, 00-000 Miasto',
+    name: 'Go\u015bciniec Rodzinny',
+    address: 'ul. Przyk\u0142adowa 123, 00-000 Miasto',
     phone: '+48 123 456 789',
     email: 'kontakt@gosciniecdrodizinny.pl',
     website: 'www.gosciniecrodzinny.pl',
@@ -134,7 +135,7 @@ export class PDFService {
     doc.fillColor('#000000').fontSize(14).font('Roboto-Bold').text('Dane klienta');
     doc.moveDown(0.5);
     doc.fontSize(11).font('Roboto');
-    doc.text(`Imię i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
+    doc.text(`Imi\u0119 i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
     if (reservation.client.email) {
       doc.text(`Email: ${reservation.client.email}`);
     }
@@ -149,7 +150,7 @@ export class PDFService {
 
     // RESERVATION DETAILS
     doc.moveDown(1);
-    doc.fontSize(14).font('Roboto-Bold').text('Szczegóły rezerwacji');
+    doc.fontSize(14).font('Roboto-Bold').text('Szczeg\u00f3\u0142y rezerwacji');
     doc.moveDown(0.5);
     doc.fontSize(11).font('Roboto');
 
@@ -166,7 +167,7 @@ export class PDFService {
     }
 
     // Event Type
-    const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie określono';
+    const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie okre\u015blono';
     doc.text(`Typ wydarzenia: ${eventTypeName}`);
 
     // Date & Time
@@ -179,15 +180,15 @@ export class PDFService {
     }
 
     // Guests breakdown
-    doc.text(`Liczba gości: ${reservation.guests}`);
+    doc.text(`Liczba go\u015bci: ${reservation.guests}`);
     if (reservation.adults > 0) {
-      doc.text(`  • Dorośli: ${reservation.adults} os.`, { indent: 20 });
+      doc.text(`  \u2022 Doro\u015bli: ${reservation.adults} os.`, { indent: 20 });
     }
     if (reservation.children > 0) {
-      doc.text(`  • Dzieci (4-12 lat): ${reservation.children} os.`, { indent: 20 });
+      doc.text(`  \u2022 Dzieci (4-12 lat): ${reservation.children} os.`, { indent: 20 });
     }
     if (reservation.toddlers > 0) {
-      doc.text(`  • Maluchy (0-3 lata): ${reservation.toddlers} os.`, { indent: 20 });
+      doc.text(`  \u2022 Maluchy (0-3 lata): ${reservation.toddlers} os.`, { indent: 20 });
     }
 
     // Birthday/Anniversary details
@@ -214,7 +215,7 @@ export class PDFService {
 
     // PRICING
     doc.moveDown(1);
-    doc.fontSize(14).font('Roboto-Bold').text('Kalkulacja kosztów');
+    doc.fontSize(14).font('Roboto-Bold').text('Kalkulacja koszt\u00f3w');
     doc.moveDown(0.5);
     doc.fontSize(11).font('Roboto');
 
@@ -222,19 +223,19 @@ export class PDFService {
     if (reservation.adults > 0 && reservation.pricePerAdult > 0) {
       const adultTotal = reservation.adults * Number(reservation.pricePerAdult);
       doc.text(
-        `Dorośli: ${reservation.adults} os. × ${this.formatCurrency(reservation.pricePerAdult)} = ${this.formatCurrency(adultTotal)}`
+        `Doro\u015bli: ${reservation.adults} os. \u00d7 ${this.formatCurrency(reservation.pricePerAdult)} = ${this.formatCurrency(adultTotal)}`
       );
     }
     if (reservation.children > 0 && reservation.pricePerChild > 0) {
       const childTotal = reservation.children * Number(reservation.pricePerChild);
       doc.text(
-        `Dzieci (4-12 lat): ${reservation.children} os. × ${this.formatCurrency(reservation.pricePerChild)} = ${this.formatCurrency(childTotal)}`
+        `Dzieci (4-12 lat): ${reservation.children} os. \u00d7 ${this.formatCurrency(reservation.pricePerChild)} = ${this.formatCurrency(childTotal)}`
       );
     }
     if (reservation.toddlers > 0 && reservation.pricePerToddler > 0) {
       const toddlerTotal = reservation.toddlers * Number(reservation.pricePerToddler);
       doc.text(
-        `Maluchy (0-3 lata): ${reservation.toddlers} os. × ${this.formatCurrency(reservation.pricePerToddler)} = ${this.formatCurrency(toddlerTotal)}`
+        `Maluchy (0-3 lata): ${reservation.toddlers} os. \u00d7 ${this.formatCurrency(reservation.pricePerToddler)} = ${this.formatCurrency(toddlerTotal)}`
       );
     }
 
@@ -251,9 +252,9 @@ export class PDFService {
       doc.moveDown(0.5);
       doc.fontSize(11).font('Roboto');
       doc.text(`Kwota zaliczki: ${this.formatCurrency(reservation.deposit.amount)}`);
-      doc.text(`Termin wpłaty: ${reservation.deposit.dueDate}`);
+      doc.text(`Termin wp\u0142aty: ${reservation.deposit.dueDate}`);
       
-      const depositStatus = reservation.deposit.paid ? '✓ Opłacona' : '✗ Nieopłacona';
+      const depositStatus = reservation.deposit.paid ? '\u2713 Op\u0142acona' : '\u2717 Nieop\u0142acona';
       doc.font('Roboto-Bold').text(`Status: ${depositStatus}`);
     }
 
@@ -302,9 +303,9 @@ export class PDFService {
   private addStatusBadge(doc: PDFKit.PDFDocument, status: string): void {
     const statusMap: Record<string, { label: string; color: string }> = {
       RESERVED: { label: 'Lista rezerwowa', color: '#3498db' },
-      PENDING: { label: 'Oczekująca', color: '#f39c12' },
+      PENDING: { label: 'Oczekuj\u0105ca', color: '#f39c12' },
       CONFIRMED: { label: 'Potwierdzona', color: '#27ae60' },
-      COMPLETED: { label: 'Zakończona', color: '#95a5a6' },
+      COMPLETED: { label: 'Zako\u0144czona', color: '#95a5a6' },
       CANCELLED: { label: 'Anulowana', color: '#e74c3c' },
     };
 
@@ -334,7 +335,7 @@ export class PDFService {
 
     doc.fontSize(8).fillColor('#7f8c8d').font('Roboto');
     doc.text(
-      'Dziękujemy za wybranie naszej restauracji. W razie pytań prosimy o kontakt.',
+      'Dzi\u0119kujemy za wybranie naszej restauracji. W razie pyta\u0144 prosimy o kontakt.',
       50,
       bottomY,
       {
