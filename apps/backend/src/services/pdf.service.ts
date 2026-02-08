@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import path from 'path';
 import { Readable } from 'stream';
 
 interface ReservationPDFData {
@@ -54,6 +55,9 @@ interface RestaurantData {
 }
 
 export class PDFService {
+  private readonly FONT_REGULAR = path.join(__dirname, '../../fonts/Roboto-Regular.ttf');
+  private readonly FONT_BOLD = path.join(__dirname, '../../fonts/Roboto-Bold.ttf');
+
   private restaurantData: RestaurantData = {
     name: 'Gościniec Rodzinny',
     address: 'ul. Przykładowa 123, 00-000 Miasto',
@@ -78,6 +82,11 @@ export class PDFService {
             Subject: 'Potwierdzenie rezerwacji sali',
           },
         });
+
+        // Register Roboto fonts for proper UTF-8 support
+        doc.registerFont('Roboto', this.FONT_REGULAR);
+        doc.registerFont('Roboto-Bold', this.FONT_BOLD);
+        doc.font('Roboto');
 
         const chunks: Buffer[] = [];
 
@@ -106,13 +115,13 @@ export class PDFService {
 
     // TITLE
     doc.moveDown(2);
-    doc.fontSize(20).font('Helvetica-Bold').text('POTWIERDZENIE REZERWACJI SALI', {
+    doc.fontSize(20).font('Roboto-Bold').text('POTWIERDZENIE REZERWACJI SALI', {
       align: 'center',
     });
 
     // Reservation ID & Date
     doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica').fillColor('#666666');
+    doc.fontSize(10).font('Roboto').fillColor('#666666');
     doc.text(`Numer rezerwacji: ${reservation.id}`, { align: 'center' });
     doc.text(`Data wygenerowania: ${this.formatDate(new Date())}`, { align: 'center' });
 
@@ -122,9 +131,9 @@ export class PDFService {
 
     // CLIENT DATA
     doc.moveDown(1);
-    doc.fillColor('#000000').fontSize(14).font('Helvetica-Bold').text('Dane klienta');
+    doc.fillColor('#000000').fontSize(14).font('Roboto-Bold').text('Dane klienta');
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Helvetica');
+    doc.fontSize(11).font('Roboto');
     doc.text(`Imię i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
     if (reservation.client.email) {
       doc.text(`Email: ${reservation.client.email}`);
@@ -140,9 +149,9 @@ export class PDFService {
 
     // RESERVATION DETAILS
     doc.moveDown(1);
-    doc.fontSize(14).font('Helvetica-Bold').text('Szczegóły rezerwacji');
+    doc.fontSize(14).font('Roboto-Bold').text('Szczegóły rezerwacji');
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Helvetica');
+    doc.fontSize(11).font('Roboto');
 
     // Status badge
     this.addStatusBadge(doc, reservation.status);
@@ -195,8 +204,8 @@ export class PDFService {
     // Notes
     if (reservation.notes) {
       doc.moveDown(0.5);
-      doc.font('Helvetica-Bold').text('Uwagi:');
-      doc.font('Helvetica').text(reservation.notes, { width: pageWidth - 20 });
+      doc.font('Roboto-Bold').text('Uwagi:');
+      doc.font('Roboto').text(reservation.notes, { width: pageWidth - 20 });
     }
 
     // SEPARATOR
@@ -205,9 +214,9 @@ export class PDFService {
 
     // PRICING
     doc.moveDown(1);
-    doc.fontSize(14).font('Helvetica-Bold').text('Kalkulacja kosztów');
+    doc.fontSize(14).font('Roboto-Bold').text('Kalkulacja kosztów');
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Helvetica');
+    doc.fontSize(11).font('Roboto');
 
     // Price breakdown
     if (reservation.adults > 0 && reservation.pricePerAdult > 0) {
@@ -230,7 +239,7 @@ export class PDFService {
     }
 
     doc.moveDown(0.5);
-    doc.fontSize(13).font('Helvetica-Bold');
+    doc.fontSize(13).font('Roboto-Bold');
     doc.text(`RAZEM: ${this.formatCurrency(reservation.totalPrice)}`);
 
     // DEPOSIT INFO
@@ -238,14 +247,14 @@ export class PDFService {
       doc.moveDown(1);
       this.addSeparator(doc);
       doc.moveDown(1);
-      doc.fontSize(14).font('Helvetica-Bold').text('Zaliczka');
+      doc.fontSize(14).font('Roboto-Bold').text('Zaliczka');
       doc.moveDown(0.5);
-      doc.fontSize(11).font('Helvetica');
+      doc.fontSize(11).font('Roboto');
       doc.text(`Kwota zaliczki: ${this.formatCurrency(reservation.deposit.amount)}`);
       doc.text(`Termin wpłaty: ${reservation.deposit.dueDate}`);
       
       const depositStatus = reservation.deposit.paid ? '✓ Opłacona' : '✗ Nieopłacona';
-      doc.font('Helvetica-Bold').text(`Status: ${depositStatus}`);
+      doc.font('Roboto-Bold').text(`Status: ${depositStatus}`);
     }
 
     // FOOTER
@@ -256,12 +265,12 @@ export class PDFService {
    * Add header with restaurant info
    */
   private addHeader(doc: PDFKit.PDFDocument): void {
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#2c3e50').text(this.restaurantData.name, {
+    doc.fontSize(18).font('Roboto-Bold').fillColor('#2c3e50').text(this.restaurantData.name, {
       align: 'center',
     });
 
     doc.moveDown(0.3);
-    doc.fontSize(9).font('Helvetica').fillColor('#7f8c8d');
+    doc.fontSize(9).font('Roboto').fillColor('#7f8c8d');
     doc.text(this.restaurantData.address, { align: 'center' });
     doc.text(`Tel: ${this.restaurantData.phone} | Email: ${this.restaurantData.email}`, {
       align: 'center',
@@ -307,7 +316,7 @@ export class PDFService {
       .rect(x, y, 120, 20)
       .fillAndStroke(statusInfo.color, statusInfo.color);
 
-    doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
+    doc.fillColor('#ffffff').fontSize(10).font('Roboto-Bold');
     doc.text(statusInfo.label.toUpperCase(), x + 10, y + 5, {
       width: 100,
       align: 'center',
@@ -323,7 +332,7 @@ export class PDFService {
   private addFooter(doc: PDFKit.PDFDocument): void {
     const bottomY = doc.page.height - 100;
 
-    doc.fontSize(8).fillColor('#7f8c8d').font('Helvetica');
+    doc.fontSize(8).fillColor('#7f8c8d').font('Roboto');
     doc.text(
       'Dziękujemy za wybranie naszej restauracji. W razie pytań prosimy o kontakt.',
       50,
