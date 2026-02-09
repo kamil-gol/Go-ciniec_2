@@ -118,6 +118,12 @@ export const reservationsApi = {
   },
 }
 
+// Standalone function for legacy compatibility
+export const getReservations = async (filters: ReservationsFilters = {}): Promise<Reservation[]> => {
+  const response = await reservationsApi.getAll(filters)
+  return response.data
+}
+
 // React Query Hooks
 export const RESERVATIONS_QUERY_KEY = 'reservations'
 
