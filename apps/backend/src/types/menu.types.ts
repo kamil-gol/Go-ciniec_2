@@ -1,26 +1,20 @@
 /**
- * Menu System Types
+ * 🍽️ Menu System Types
  * 
- * Complete type definitions for the menu management system.
- * Supports snapshot architecture for price history preservation.
+ * Type definitions for menu management system with snapshot architecture.
+ * Supports dynamic menu templates, packages, options, and immutable snapshots.
  */
 
 import { Decimal } from '@prisma/client/runtime/library';
 
-// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // ENUMS
-// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 
 export enum PriceType {
-  PER_PERSON = 'PER_PERSON',
-  FLAT = 'FLAT',
-  FREE = 'FREE',
-}
-
-export enum MenuEntityType {
-  TEMPLATE = 'TEMPLATE',
-  PACKAGE = 'PACKAGE',
-  OPTION = 'OPTION',
+  PER_PERSON = 'PER_PERSON',  // Price per guest (e.g., Open Bar: 50 zł/person)
+  FLAT = 'FLAT',              // One-time flat fee (e.g., DJ: 2000 zł)
+  FREE = 'FREE'               // Included in package
 }
 
 export enum OptionCategory {
@@ -28,21 +22,27 @@ export enum OptionCategory {
   ALCOHOL = 'Alkohol',
   DECORATIONS = 'Dekoracje',
   PHOTO_VIDEO = 'Foto & Video',
-  CATERING = 'Catering',
   ENTERTAINMENT = 'Rozrywka',
-  OTHER = 'Inne',
+  CATERING = 'Catering',
+  OTHER = 'Inne'
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// CORE MODELS
-// ═══════════════════════════════════════════════════════════════════════
+export enum EntityType {
+  TEMPLATE = 'TEMPLATE',
+  PACKAGE = 'PACKAGE',
+  OPTION = 'OPTION'
+}
+
+// ═══════════════════════════════════════════════════════════
+// MENU TEMPLATE
+// ═══════════════════════════════════════════════════════════
 
 export interface MenuTemplate {
   id: string;
   eventTypeId: string;
   name: string;
   description?: string;
-  variant?: string; // "Zimowe", "Letnie", "Świąteczne"
+  variant?: string;              // "Zimowe", "Letnie", "Świąteczne"
   validFrom: Date;
   validTo?: Date;
   isActive: boolean;
@@ -51,15 +51,40 @@ export interface MenuTemplate {
   thumbnailUrl?: string;
   createdAt: Date;
   updatedAt: Date;
-
+  
   // Relations
-  eventType?: {
-    id: string;
-    name: string;
-    color?: string;
-  };
+  eventType?: any;               // EventType
   packages?: MenuPackage[];
+  priceHistory?: MenuPriceHistory[];
 }
+
+export interface CreateMenuTemplateInput {
+  eventTypeId: string;
+  name: string;
+  description?: string;
+  variant?: string;
+  validFrom: Date | string;
+  validTo?: Date | string;
+  displayOrder?: number;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+}
+
+export interface UpdateMenuTemplateInput {
+  name?: string;
+  description?: string;
+  variant?: string;
+  validFrom?: Date | string;
+  validTo?: Date | string;
+  isActive?: boolean;
+  displayOrder?: number;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MENU PACKAGE
+// ═══════════════════════════════════════════════════════════
 
 export interface MenuPackage {
   id: string;
@@ -67,178 +92,28 @@ export interface MenuPackage {
   name: string;
   description?: string;
   shortDescription?: string;
-  pricePerAdult: Decimal | number;
-  pricePerChild: Decimal | number;
-  pricePerToddler: Decimal | number;
-  color?: string;
-  icon?: string;
-  badgeText?: string;
+  pricePerAdult: Decimal;
+  pricePerChild: Decimal;
+  pricePerToddler: Decimal;
+  color?: string;                // "#FFD700"
+  icon?: string;                 // "star", "crown", "diamond"
+  badgeText?: string;            // "Najpopularniejszy"
   displayOrder: number;
   isPopular: boolean;
   isRecommended: boolean;
-  includedItems: string[];
+  includedItems: string[];       // ["Tort 3-piętrowy", "Kelnerzy"]
   minGuests?: number;
   maxGuests?: number;
   createdAt: Date;
   updatedAt: Date;
-
+  
   // Relations
   menuTemplate?: MenuTemplate;
   packageOptions?: MenuPackageOption[];
+  priceHistory?: MenuPriceHistory[];
 }
 
-export interface MenuOption {
-  id: string;
-  name: string;
-  description?: string;
-  shortDescription?: string;
-  category: string;
-  priceType: PriceType;
-  priceAmount: Decimal | number;
-  allowMultiple: boolean;
-  maxQuantity: number;
-  icon?: string;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-  isActive: boolean;
-  displayOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-
-  // Relations
-  packageOptions?: MenuPackageOption[];
-}
-
-export interface MenuPackageOption {
-  id: string;
-  packageId: string;
-  optionId: string;
-  customPrice?: Decimal | number;
-  isRequired: boolean;
-  isDefault: boolean;
-  isExclusive: boolean;
-  displayOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-
-  // Relations
-  package?: MenuPackage;
-  option?: MenuOption;
-}
-
-export interface ReservationMenuSnapshot {
-  id: string;
-  reservationId: string;
-  menuData: MenuSnapshotData;
-  menuTemplateId?: string;
-  packageId?: string;
-  packagePrice: Decimal | number;
-  optionsPrice: Decimal | number;
-  totalMenuPrice: Decimal | number;
-  adultsCount: number;
-  childrenCount: number;
-  toddlersCount: number;
-  selectedAt: Date;
-  updatedAt: Date;
-}
-
-export interface MenuPriceHistory {
-  id: string;
-  entityType: MenuEntityType;
-  entityId: string;
-  menuTemplateId?: string;
-  packageId?: string;
-  optionId?: string;
-  fieldName: string;
-  oldValue: Decimal | number;
-  newValue: Decimal | number;
-  changeReason?: string;
-  effectiveFrom: Date;
-  createdAt: Date;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// SNAPSHOT DATA (Immutable JSON)
-// ═══════════════════════════════════════════════════════════════════════
-
-export interface MenuSnapshotData {
-  // Template info
-  templateId: string;
-  templateName: string;
-  templateVariant?: string;
-
-  // Package info
-  packageId: string;
-  packageName: string;
-  packageDescription?: string;
-  packageColor?: string;
-  packageIcon?: string;
-  packagePricePerAdult: number;
-  packagePricePerChild: number;
-  packagePricePerToddler: number;
-  includedItems: string[];
-
-  // Selected options
-  selectedOptions: SelectedOptionSnapshot[];
-
-  // Guest breakdown
-  adults: number;
-  children: number;
-  toddlers: number;
-
-  // Calculated prices
-  packageTotal: number;
-  optionsTotal: number;
-  grandTotal: number;
-
-  // Timestamp
-  snapshotVersion: string; // "1.0"
-  selectedAt: string; // ISO string
-}
-
-export interface SelectedOptionSnapshot {
-  optionId: string;
-  optionName: string;
-  category: string;
-  priceType: PriceType;
-  priceAmount: number;
-  quantity: number;
-  totalPrice: number;
-  icon?: string;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// DTOs (Data Transfer Objects)
-// ═══════════════════════════════════════════════════════════════════════
-
-// Menu Template DTOs
-export interface CreateMenuTemplateDTO {
-  eventTypeId: string;
-  name: string;
-  description?: string;
-  variant?: string;
-  validFrom: string | Date;
-  validTo?: string | Date;
-  isActive?: boolean;
-  displayOrder?: number;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-}
-
-export interface UpdateMenuTemplateDTO {
-  name?: string;
-  description?: string;
-  variant?: string;
-  validFrom?: string | Date;
-  validTo?: string | Date;
-  isActive?: boolean;
-  displayOrder?: number;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-}
-
-// Menu Package DTOs
-export interface CreateMenuPackageDTO {
+export interface CreateMenuPackageInput {
   menuTemplateId: string;
   name: string;
   description?: string;
@@ -255,10 +130,9 @@ export interface CreateMenuPackageDTO {
   includedItems?: string[];
   minGuests?: number;
   maxGuests?: number;
-  optionIds?: string[]; // Options to attach
 }
 
-export interface UpdateMenuPackageDTO {
+export interface UpdateMenuPackageInput {
   name?: string;
   description?: string;
   shortDescription?: string;
@@ -276,8 +150,34 @@ export interface UpdateMenuPackageDTO {
   maxGuests?: number;
 }
 
-// Menu Option DTOs
-export interface CreateMenuOptionDTO {
+// ═══════════════════════════════════════════════════════════
+// MENU OPTION
+// ═══════════════════════════════════════════════════════════
+
+export interface MenuOption {
+  id: string;
+  name: string;
+  description?: string;
+  shortDescription?: string;
+  category: string;              // OptionCategory
+  priceType: PriceType;
+  priceAmount: Decimal;
+  allowMultiple: boolean;
+  maxQuantity: number;
+  icon?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // Relations
+  packageOptions?: MenuPackageOption[];
+  priceHistory?: MenuPriceHistory[];
+}
+
+export interface CreateMenuOptionInput {
   name: string;
   description?: string;
   shortDescription?: string;
@@ -289,11 +189,10 @@ export interface CreateMenuOptionDTO {
   icon?: string;
   imageUrl?: string;
   thumbnailUrl?: string;
-  isActive?: boolean;
   displayOrder?: number;
 }
 
-export interface UpdateMenuOptionDTO {
+export interface UpdateMenuOptionInput {
   name?: string;
   description?: string;
   shortDescription?: string;
@@ -309,156 +208,268 @@ export interface UpdateMenuOptionDTO {
   displayOrder?: number;
 }
 
-// Package Options DTOs
-export interface AttachOptionToPackageDTO {
-  optionId: string;
-  customPrice?: number;
-  isRequired?: boolean;
-  isDefault?: boolean;
-  isExclusive?: boolean;
-  displayOrder?: number;
-}
+// ═══════════════════════════════════════════════════════════
+// MENU PACKAGE OPTION (Junction)
+// ═══════════════════════════════════════════════════════════
 
-export interface UpdatePackageOptionDTO {
-  customPrice?: number;
-  isRequired?: boolean;
-  isDefault?: boolean;
-  isExclusive?: boolean;
-  displayOrder?: number;
-}
-
-// Reservation Menu Selection DTOs
-export interface SelectMenuDTO {
+export interface MenuPackageOption {
+  id: string;
   packageId: string;
-  selectedOptions: SelectedOptionDTO[];
-}
-
-export interface SelectedOptionDTO {
   optionId: string;
-  quantity?: number; // Default 1, can be > 1 if allowMultiple
-}
-
-export interface UpdateReservationMenuDTO {
-  packageId?: string;
-  selectedOptions?: SelectedOptionDTO[];
-}
-
-// Reorder DTOs
-export interface ReorderPackagesDTO {
-  packageOrders: Array<{
-    id: string;
-    displayOrder: number;
-  }>;
-}
-
-export interface ReorderOptionsDTO {
-  optionOrders: Array<{
-    id: string;
-    displayOrder: number;
-  }>;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// RESPONSE TYPES
-// ═══════════════════════════════════════════════════════════════════════
-
-export interface MenuTemplateWithPackages extends MenuTemplate {
-  packages: MenuPackageWithOptions[];
-}
-
-export interface MenuPackageWithOptions extends MenuPackage {
-  options: MenuOptionInPackage[];
-}
-
-export interface MenuOptionInPackage extends MenuOption {
-  // From junction table
-  customPrice?: number;
+  customPrice?: Decimal;         // Override default option price
   isRequired: boolean;
   isDefault: boolean;
   isExclusive: boolean;
-  packageOptionDisplayOrder: number;
+  displayOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // Relations
+  package?: MenuPackage;
+  option?: MenuOption;
 }
 
-export interface MenuSelectionResponse {
-  snapshot: ReservationMenuSnapshot;
-  breakdown: PriceBreakdown;
+export interface AddOptionToPackageInput {
+  packageId: string;
+  optionId: string;
+  customPrice?: number;
+  isRequired?: boolean;
+  isDefault?: boolean;
+  isExclusive?: boolean;
+  displayOrder?: number;
 }
 
-export interface PriceBreakdown {
-  package: {
+export interface UpdatePackageOptionInput {
+  customPrice?: number | null;
+  isRequired?: boolean;
+  isDefault?: boolean;
+  isExclusive?: boolean;
+  displayOrder?: number;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESERVATION MENU SNAPSHOT
+// ═══════════════════════════════════════════════════════════
+
+export interface ReservationMenuSnapshot {
+  id: string;
+  reservationId: string;
+  menuData: MenuSnapshotData;    // Full JSON snapshot
+  menuTemplateId?: string;
+  packageId?: string;
+  packagePrice: Decimal;         // Total package cost
+  optionsPrice: Decimal;         // Total options cost
+  totalMenuPrice: Decimal;       // packagePrice + optionsPrice
+  adultsCount: number;
+  childrenCount: number;
+  toddlersCount: number;
+  selectedAt: Date;
+  updatedAt: Date;
+  
+  // Relations
+  reservation?: any;             // Reservation
+}
+
+// Snapshot data structure (immutable JSON)
+export interface MenuSnapshotData {
+  template: {
+    id: string;
     name: string;
-    adults: number;
-    children: number;
-    toddlers: number;
+    description?: string;
+    variant?: string;
+  };
+  package: {
+    id: string;
+    name: string;
+    description?: string;
     pricePerAdult: number;
     pricePerChild: number;
     pricePerToddler: number;
-    subtotal: number;
+    color?: string;
+    icon?: string;
+    badgeText?: string;
+    includedItems: string[];
   };
-  options: Array<{
-    name: string;
-    category: string;
-    priceType: PriceType;
-    quantity: number;
-    pricePerUnit: number;
-    subtotal: number;
-  }>;
-  totals: {
-    packageTotal: number;
-    optionsTotal: number;
-    grandTotal: number;
+  selectedOptions: SelectedOptionSnapshot[];
+  guests: {
+    adults: number;
+    children: number;
+    toddlers: number;
+    total: number;
   };
+  pricing: {
+    packageSubtotal: number;     // pricePerAdult × adults + pricePerChild × children + ...
+    optionsSubtotal: number;     // Sum of all options
+    total: number;               // packageSubtotal + optionsSubtotal
+  };
+  selectedAt: string;            // ISO timestamp
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+export interface SelectedOptionSnapshot {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  priceType: PriceType;
+  priceAmount: number;           // Price at selection time
+  quantity: number;              // 1 for FLAT, guests count for PER_PERSON
+  totalPrice: number;            // priceAmount × quantity
+  icon?: string;
+}
+
+export interface SelectMenuForReservationInput {
+  reservationId: string;
+  packageId: string;
+  selectedOptions?: SelectedOptionInput[];
+}
+
+export interface SelectedOptionInput {
+  optionId: string;
+  quantity?: number;             // Optional, default 1 for FLAT, guests for PER_PERSON
+}
+
+export interface UpdateReservationMenuInput {
+  packageId?: string;
+  selectedOptions?: SelectedOptionInput[];
+}
+
+// ═══════════════════════════════════════════════════════════
+// PRICE HISTORY
+// ═══════════════════════════════════════════════════════════
+
+export interface MenuPriceHistory {
+  id: string;
+  entityType: EntityType;
+  entityId: string;
+  menuTemplateId?: string;
+  packageId?: string;
+  optionId?: string;
+  fieldName: string;             // "pricePerAdult", "priceAmount"
+  oldValue: Decimal;
+  newValue: Decimal;
+  changeReason?: string;
+  effectiveFrom: Date;
+  createdAt: Date;
+  
+  // Relations
+  menuTemplate?: MenuTemplate;
+  package?: MenuPackage;
+  option?: MenuOption;
+}
+
+export interface CreatePriceHistoryInput {
+  entityType: EntityType;
+  entityId: string;
+  menuTemplateId?: string;
+  packageId?: string;
+  optionId?: string;
+  fieldName: string;
+  oldValue: number;
+  newValue: number;
+  changeReason?: string;
+  effectiveFrom?: Date | string;
+}
+
+// ═══════════════════════════════════════════════════════════
 // QUERY FILTERS
-// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 
 export interface MenuTemplateFilters {
   eventTypeId?: string;
   isActive?: boolean;
   variant?: string;
-  date?: Date; // Find templates valid on this date
+  validOn?: Date | string;       // Filter templates valid on specific date
+}
+
+export interface MenuPackageFilters {
+  menuTemplateId?: string;
+  isPopular?: boolean;
+  isRecommended?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface MenuOptionFilters {
   category?: string;
-  isActive?: boolean;
   priceType?: PriceType;
-  allowMultiple?: boolean;
+  isActive?: boolean;
+  search?: string;               // Search in name/description
 }
 
-export interface MenuPriceHistoryFilters {
-  entityType?: MenuEntityType;
-  entityId?: string;
-  startDate?: Date;
-  endDate?: Date;
+// ═══════════════════════════════════════════════════════════
+// RESPONSE TYPES
+// ═══════════════════════════════════════════════════════════
+
+export interface MenuTemplateWithPackages extends MenuTemplate {
+  packages: (MenuPackage & {
+    packageOptions: (MenuPackageOption & {
+      option: MenuOption;
+    })[];
+  })[];
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// VALIDATION HELPERS
-// ═══════════════════════════════════════════════════════════════════════
-
-export const VALID_PRICE_TYPES: PriceType[] = [
-  PriceType.PER_PERSON,
-  PriceType.FLAT,
-  PriceType.FREE,
-];
-
-export const VALID_OPTION_CATEGORIES = [
-  OptionCategory.MUSIC,
-  OptionCategory.ALCOHOL,
-  OptionCategory.DECORATIONS,
-  OptionCategory.PHOTO_VIDEO,
-  OptionCategory.CATERING,
-  OptionCategory.ENTERTAINMENT,
-  OptionCategory.OTHER,
-];
-
-export function isPriceType(value: string): value is PriceType {
-  return VALID_PRICE_TYPES.includes(value as PriceType);
+export interface MenuPackageWithOptions extends MenuPackage {
+  packageOptions: (MenuPackageOption & {
+    option: MenuOption;
+  })[];
 }
 
-export function isOptionCategory(value: string): boolean {
-  return VALID_OPTION_CATEGORIES.some(cat => cat === value);
+export interface MenuSelectionCalculation {
+  packagePrice: number;
+  optionsPrice: number;
+  totalMenuPrice: number;
+  breakdown: {
+    package: {
+      adults: { count: number; price: number; total: number };
+      children: { count: number; price: number; total: number };
+      toddlers: { count: number; price: number; total: number };
+    };
+    options: {
+      id: string;
+      name: string;
+      priceType: PriceType;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }[];
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITY TYPES
+// ═══════════════════════════════════════════════════════════
+
+export interface ReorderInput {
+  id: string;
+  displayOrder: number;
+}
+
+export interface DuplicateMenuTemplateInput {
+  templateId: string;
+  newName: string;
+  validFrom: Date | string;
+  validTo?: Date | string;
+}
+
+export interface BulkOptionAssignmentInput {
+  packageId: string;
+  optionIds: string[];
+  isDefault?: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════════════
+
+export interface MenuValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings?: string[];
+}
+
+export interface PackageValidation {
+  hasOptions: boolean;
+  optionsCount: number;
+  pricesValid: boolean;
+  guestRangeValid: boolean;
 }
