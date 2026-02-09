@@ -141,6 +141,7 @@ export function EditReservationModal({
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
   const currentStatus = watch('status')
+  const selectedHallId = watch('hallId')  // ✨ NEW: Watch hallId for value binding
 
   const isChildrenFieldsDisabled = adults === 0
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
@@ -236,14 +237,14 @@ export function EditReservationModal({
   }, [watchedFields.startDateTime, watchedFields.endDateTime, watchedFields.notes, setValue])
 
   useEffect(() => {
-    if (watchedFields.hallId) {
+    if (selectedHallId) {
       const hallsArray = halls?.data || halls || []
-      const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
+      const selectedHall = hallsArray.find((h) => h.id === selectedHallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
       }
     }
-  }, [watchedFields.hallId, halls])
+  }, [selectedHallId, halls])
 
   useEffect(() => {
     if (!open) {
@@ -488,6 +489,7 @@ export function EditReservationModal({
             label="Status Rezerwacji"
             options={statusOptions}
             error={errors.status?.message}
+            value={currentStatus}  {/* ✨ ADDED: Controlled value */}
             {...register('status')}
           />
           {currentStatus !== originalStatus && (
@@ -500,6 +502,7 @@ export function EditReservationModal({
             label="Sala"
             options={hallOptions}
             error={errors.hallId?.message}
+            value={selectedHallId}  {/* ✨ ADDED: Controlled value */}
             {...register('hallId')}
           />
           {selectedHallCapacity > 0 && (
@@ -512,6 +515,7 @@ export function EditReservationModal({
             label="Typ Wydarzenia"
             options={eventTypeOptions}
             error={errors.eventTypeId?.message}
+            value={selectedEventTypeId}  {/* ✨ ADDED: Controlled value */}
             {...register('eventTypeId')}
           />
 
