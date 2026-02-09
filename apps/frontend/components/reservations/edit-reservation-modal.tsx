@@ -15,7 +15,7 @@ import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock, Smile, User, Mail, Phone, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock, Smile, CheckCircle } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
@@ -23,20 +23,20 @@ import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 
 const reservationSchema = z.object({
-  hallId: z.string().min(1, 'Wybierz sal\u0119'),
+  hallId: z.string().min(1, 'Wybierz salę'),
   clientId: z.string().min(1, 'Wybierz klienta'),
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
   
-  startDateTime: z.string().min(1, 'Wybierz dat\u0119 i czas rozpocz\u0119cia'),
-  endDateTime: z.string().min(1, 'Wybierz dat\u0119 i czas zako\u0144czenia'),
+  startDateTime: z.string().min(1, 'Wybierz datę i czas rozpoczęcia'),
+  endDateTime: z.string().min(1, 'Wybierz datę i czas zakończenia'),
   
-  adults: z.coerce.number().min(0, 'Liczba doros\u0142ych musi by\u0107 >= 0'),
-  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi by\u0107 >= 0'),
-  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi by\u0107 >= 0'),
+  adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
+  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
-  pricePerAdult: z.coerce.number().min(0, 'Cena za doros\u0142ego musi by\u0107 >= 0'),
-  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi by\u0107 >= 0'),
-  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi by\u0107 >= 0'),
+  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0'),
+  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0'),
   
   confirmationDeadline: z.string().optional(),
   
@@ -47,7 +47,7 @@ const reservationSchema = z.object({
   
   status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
   notes: z.string().optional(),
-  reason: z.string().min(10, 'Pow\u00f3d musi mie\u0107 co najmniej 10 znak\u00f3w'),
+  reason: z.string().min(10, 'Powód musi mieć co najmniej 10 znaków'),
   
   // Deposit fields
   hasDeposit: z.boolean(),
@@ -57,14 +57,14 @@ const reservationSchema = z.object({
   depositPaymentMethod: z.string().optional(),
   depositPaidAt: z.string().optional(),
 }).refine((data) => data.adults + data.children + data.toddlers >= 1, {
-  message: '\u0141\u0105czna liczba go\u015bci musi by\u0107 >= 1',
+  message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
 }).refine((data) => {
   const start = new Date(data.startDateTime)
   const end = new Date(data.endDateTime)
   return end > start
 }, {
-  message: 'Czas zako\u0144czenia musi by\u0107 po czasie rozpocz\u0119cia',
+  message: 'Czas zakończenia musi być po czasie rozpoczęcia',
   path: ['endDateTime'],
 })
 
@@ -79,9 +79,9 @@ interface EditReservationModalProps {
 
 const getPolishStatusLabel = (status: string): string => {
   const statusMap: Record<string, string> = {
-    'PENDING': 'Oczekuj\u0105ca',
+    'PENDING': 'Oczekująca',
     'CONFIRMED': 'Potwierdzona',
-    'COMPLETED': 'Zako\u0144czona',
+    'COMPLETED': 'Zakończona',
     'CANCELLED': 'Anulowana',
   }
   return statusMap[status] || status
@@ -208,14 +208,14 @@ export function EditReservationModal({
       if (roundedHours > 6) {
         const extraHours = Math.ceil(roundedHours - 6)
         const extraCost = extraHours * 500
-        const extraNote = `\n\n\u23f0 Dodatkowe godziny: ${extraHours}h \u00d7 500 PLN = ${extraCost} PLN`
+        const extraNote = `\n\n⏰ Dodatkowe godziny: ${extraHours}h × 500 PLN = ${extraCost} PLN`
         
-        if (!notes?.includes('\u23f0 Dodatkowe godziny')) {
+        if (!notes?.includes('⏰ Dodatkowe godziny')) {
           setValue('notes', (notes || '') + extraNote)
         }
       } else {
-        if (notes?.includes('\u23f0 Dodatkowe godziny')) {
-          const cleanedNotes = notes.replace(/\n\n\u23f0 Dodatkowe godziny:.*/, '')
+        if (notes?.includes('⏰ Dodatkowe godziny')) {
+          const cleanedNotes = notes.replace(/\n\n⏰ Dodatkowe godziny:.*/, '')
           setValue('notes', cleanedNotes)
         }
       }
@@ -386,11 +386,11 @@ export function EditReservationModal({
         }
       }
       
-      toast.success('Rezerwacja zaktualizowana pomy\u015blnie')
+      toast.success('Rezerwacja zaktualizowana pomyślnie')
       onClose()
     } catch (error: any) {
       console.error('Failed to update reservation:', error)
-      const errorMessage = error.response?.data?.error || error.message || 'B\u0142\u0105d podczas aktualizacji rezerwacji'
+      const errorMessage = error.response?.data?.error || error.message || 'Błąd podczas aktualizacji rezerwacji'
       toast.error(errorMessage)
     } finally {
       setIsSaving(false)
@@ -402,10 +402,18 @@ export function EditReservationModal({
   const eventTypesArray = eventTypes?.data || eventTypes || []
 
   const hallOptions = [
-    { value: '', label: 'Wybierz sal\u0119...' },
+    { value: '', label: 'Wybierz salę...' },
     ...hallsArray.map((hall) => ({
       value: hall.id,
-      label: `${hall.name} (max ${hall.capacity} os\u00f3b)`,
+      label: `${hall.name} (max ${hall.capacity} osób)`,
+    }))
+  ]
+  
+  const clientOptions = [
+    { value: '', label: 'Wybierz klienta...' },
+    ...clientsArray.map((client) => ({
+      value: client.id,
+      label: `${client.firstName} ${client.lastName} ${client.phone ? '(' + client.phone + ')' : ''}`,
     }))
   ]
 
@@ -418,14 +426,14 @@ export function EditReservationModal({
   ]
 
   const statusOptions = [
-    { value: 'PENDING', label: 'Oczekuj\u0105ca' },
+    { value: 'PENDING', label: 'Oczekująca' },
     { value: 'CONFIRMED', label: 'Potwierdzona' },
-    { value: 'COMPLETED', label: 'Zako\u0144czona' },
+    { value: 'COMPLETED', label: 'Zakończona' },
     { value: 'CANCELLED', label: 'Anulowana' },
   ]
   
   const paymentMethodOptions = [
-    { value: 'CASH', label: 'Got\u00f3wka' },
+    { value: 'CASH', label: 'Gotówka' },
     { value: 'TRANSFER', label: 'Przelew' },
     { value: 'BLIK', label: 'BLIK' },
   ]
@@ -433,9 +441,6 @@ export function EditReservationModal({
   const isBirthday = selectedEventTypeName === 'Urodziny'
   const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
   const isCustom = selectedEventTypeName === 'Inne'
-  
-  // Get client info for display
-  const clientInfo = reservation?.client
 
   if (loadingReservation || !isFormReady) {
     return (
@@ -451,46 +456,10 @@ export function EditReservationModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edytuj Rezerwacj\u0119</DialogTitle>
+          <DialogTitle>Edytuj Rezerwację</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
-          {/* Client Info Display (Read-only) */}
-          {clientInfo && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="rounded-2xl bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800"
-            >
-              <h3 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Informacje o kliencie (tylko do odczytu)
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                  <User className="w-4 h-4" />
-                  <span className="font-medium">{clientInfo.firstName} {clientInfo.lastName}</span>
-                </div>
-                {clientInfo.email && (
-                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                    <Mail className="w-4 h-4" />
-                    <a href={`mailto:${clientInfo.email}`} className="hover:underline">{clientInfo.email}</a>
-                  </div>
-                )}
-                {clientInfo.phone && (
-                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                    <Phone className="w-4 h-4" />
-                    <a href={`tel:${clientInfo.phone}`} className="hover:underline">{clientInfo.phone}</a>
-                  </div>
-                )}
-              </div>
-              <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                <Lock className="w-3 h-3" />
-                Klient nie mo\u017ce by\u0107 zmieniony po utworzeniu rezerwacji
-              </p>
-            </motion.div>
-          )}
-
           <div>
             <Select
               label="Status Rezerwacji"
@@ -501,7 +470,7 @@ export function EditReservationModal({
             />
             {watchedFields.status !== originalStatus && (
               <p className="mt-1 text-sm text-amber-600">
-                \u26a0\ufe0f Zmiana statusu: {getPolishStatusLabel(originalStatus)} \u2192 {getPolishStatusLabel(watchedFields.status)}
+                ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(watchedFields.status)}
               </p>
             )}
           </div>
@@ -516,18 +485,40 @@ export function EditReservationModal({
             />
             {selectedHallCapacity > 0 && (
               <p className="mt-1 text-sm text-secondary-600">
-                Maksymalna pojemno\u015b\u0107: {selectedHallCapacity} os\u00f3b
+                Maksymalna pojemność: {selectedHallCapacity} osób
               </p>
             )}
           </div>
+          
+          <div>
+            <div className="relative">
+              <Select
+                label="Klient"
+                options={clientOptions}
+                error={errors.clientId?.message}
+                value={watch('clientId')}
+                disabled={true}
+                {...register('clientId')}
+              />
+              <div className="absolute right-3 top-9 pointer-events-none">
+                <Lock className="w-4 h-4 text-secondary-400" />
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-secondary-500 flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              Klient nie może być zmieniony po utworzeniu rezerwacji
+            </p>
+          </div>
 
-          <Select
-            label="Typ Wydarzenia"
-            options={eventTypeOptions}
-            error={errors.eventTypeId?.message}
-            value={watch('eventTypeId')}
-            {...register('eventTypeId')}
-          />
+          <div>
+            <Select
+              label="Typ Wydarzenia"
+              options={eventTypeOptions}
+              error={errors.eventTypeId?.message}
+              value={watch('eventTypeId')}
+              {...register('eventTypeId')}
+            />
+          </div>
 
           {isBirthday && (
             <motion.div
@@ -536,7 +527,7 @@ export function EditReservationModal({
             >
               <Input
                 type="number"
-                label="Kt\u00f3re urodziny"
+                label="Które urodziny"
                 placeholder="np. 18"
                 error={errors.birthdayAge?.message}
                 {...register('birthdayAge')}
@@ -550,7 +541,7 @@ export function EditReservationModal({
               animate={{ opacity: 1, height: 'auto' }}
             >
               <Input
-                label="Typ wydarzenia (w\u0142asny)"
+                label="Typ wydarzenia (własny)"
                 placeholder="np. Spotkanie rodzinne"
                 error={errors.customEventType?.message}
                 {...register('customEventType')}
@@ -566,7 +557,7 @@ export function EditReservationModal({
             >
               <Input
                 type="number"
-                label="Kt\u00f3ra rocznica"
+                label="Która rocznica"
                 placeholder="np. 25"
                 error={errors.anniversaryYear?.message}
                 {...register('anniversaryYear')}
@@ -585,7 +576,7 @@ export function EditReservationModal({
               <Calendar className="w-5 h-5 text-secondary-500" />
               <Input
                 type="datetime-local"
-                label="Data i czas rozpocz\u0119cia"
+                label="Data i czas rozpoczęcia"
                 error={errors.startDateTime?.message}
                 {...register('startDateTime')}
               />
@@ -594,7 +585,7 @@ export function EditReservationModal({
               <Clock className="w-5 h-5 text-secondary-500" />
               <Input
                 type="datetime-local"
-                label="Data i czas zako\u0144czenia"
+                label="Data i czas zakończenia"
                 error={errors.endDateTime?.message}
                 {...register('endDateTime')}
                 disabled={!startDateTime}
@@ -603,7 +594,7 @@ export function EditReservationModal({
           </div>
           {!startDateTime && (
             <p className="text-xs text-secondary-500 -mt-4">
-              Najpierw wybierz dat\u0119 i czas rozpocz\u0119cia
+              Najpierw wybierz datę i czas rozpoczęcia
             </p>
           )}
 
@@ -612,7 +603,7 @@ export function EditReservationModal({
               {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
               <span className={`text-sm ${durationHours > 6 ? 'text-amber-800' : 'text-blue-800'}`}>
                 Czas trwania: {durationHours}h
-                {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - ${Math.ceil(durationHours - 6) * 500} PLN dop\u0142aty)`}
+                {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - ${Math.ceil(durationHours - 6) * 500} PLN dopłaty)`}
               </span>
             </div>
           )}
@@ -622,7 +613,7 @@ export function EditReservationModal({
               <Users className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
-                label="Liczba doros\u0142ych"
+                label="Liczba dorosłych"
                 placeholder="0"
                 error={errors.adults?.message}
                 {...register('adults')}
@@ -633,7 +624,7 @@ export function EditReservationModal({
               <Input
                 type="number"
                 label="Liczba dzieci (4-12)"
-                placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowad\u017a liczb\u0119 doros\u0142ych' : '0'}
+                placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                 error={errors.children?.message}
                 disabled={isChildrenFieldsDisabled}
                 {...register('children')}
@@ -644,7 +635,7 @@ export function EditReservationModal({
               <Input
                 type="number"
                 label="Liczba dzieci (0-3)"
-                placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowad\u017a liczb\u0119 doros\u0142ych' : '0'}
+                placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                 error={errors.toddlers?.message}
                 disabled={isChildrenFieldsDisabled}
                 {...register('toddlers')}
@@ -653,13 +644,13 @@ export function EditReservationModal({
           </div>
           {isChildrenFieldsDisabled && (
             <p className="text-xs text-secondary-500 -mt-4">
-              Pola dzieci b\u0119d\u0105 dost\u0119pne po wprowadzeniu liczby doros\u0142ych
+              Pola dzieci będą dostępne po wprowadzeniu liczby dorosłych
             </p>
           )}
 
           {totalGuests > 0 && (
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-secondary-700">\u0141\u0105cznie go\u015bci:</span>
+              <span className="text-sm font-medium text-secondary-700">Łącznie gości:</span>
               <span className="text-lg font-bold text-secondary-900">{totalGuests}</span>
             </div>
           )}
@@ -667,7 +658,7 @@ export function EditReservationModal({
           {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
             <p className="text-sm text-red-600 flex items-center gap-1">
               <AlertCircle className="w-4 h-4" />
-              Liczba go\u015bci ({totalGuests}) przekracza pojemno\u015b\u0107 sali ({selectedHallCapacity})!
+              Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!
             </p>
           )}
 
@@ -676,7 +667,7 @@ export function EditReservationModal({
               <DollarSign className="w-5 h-5 text-secondary-500" />
               <Input
                 type="number"
-                label="Cena za doros\u0142ego (PLN)"
+                label="Cena za dorosłego (PLN)"
                 placeholder="0.00"
                 error={errors.pricePerAdult?.message}
                 {...register('pricePerAdult')}
@@ -687,7 +678,7 @@ export function EditReservationModal({
               <Input
                 type="number"
                 label="Cena za dziecko 4-12 (PLN)"
-                placeholder={isChildPriceDisabled ? 'Najpierw uzupe\u0142nij cen\u0119 za doros\u0142ego' : '0.00'}
+                placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                 error={errors.pricePerChild?.message}
                 disabled={isChildPriceDisabled}
                 {...register('pricePerChild', {
@@ -700,7 +691,7 @@ export function EditReservationModal({
               <Input
                 type="number"
                 label="Cena za dziecko 0-3 (PLN)"
-                placeholder={isToddlerPriceDisabled ? 'Najpierw uzupe\u0142nij cen\u0119 za doros\u0142ego' : '0.00'}
+                placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                 error={errors.pricePerToddler?.message}
                 disabled={isToddlerPriceDisabled}
                 {...register('pricePerToddler', {
@@ -711,7 +702,7 @@ export function EditReservationModal({
           </div>
           {(isChildPriceDisabled || isToddlerPriceDisabled) && (
             <p className="text-xs text-secondary-500 -mt-4">
-              Ceny za dzieci b\u0119d\u0105 dost\u0119pne po uzupe\u0142nieniu liczby i ceny za doros\u0142ych (domy\u015blnie 50% i 25% ceny za doros\u0142ego)
+              Ceny za dzieci będą dostępne po uzupełnieniu liczby i ceny za dorosłych (domyślnie 50% i 25% ceny za dorosłego)
             </p>
           )}
 
@@ -719,15 +710,15 @@ export function EditReservationModal({
             <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-secondary-700">
-                  <span>Doros\u0142i: {adults} \u00d7 {pricePerAdult} PLN</span>
+                  <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
                   <span className="font-medium">{adults * pricePerAdult} PLN</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-secondary-700">
-                  <span>Dzieci (4-12): {children} \u00d7 {pricePerChild} PLN</span>
+                  <span>Dzieci (4-12): {children} × {pricePerChild} PLN</span>
                   <span className="font-medium">{children * pricePerChild} PLN</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-secondary-700">
-                  <span>Dzieci (0-3): {toddlers} \u00d7 {pricePerToddler} PLN</span>
+                  <span>Dzieci (0-3): {toddlers} × {pricePerToddler} PLN</span>
                   <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-primary-300">
@@ -748,7 +739,7 @@ export function EditReservationModal({
               {...register('confirmationDeadline')}
             />
             <p className="mt-1 text-xs text-secondary-500">
-              Musi by\u0107 co najmniej 1 dzie\u0144 przed rozpocz\u0119ciem wydarzenia
+              Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
             </p>
           </div>
 
@@ -762,7 +753,7 @@ export function EditReservationModal({
                 {...register('hasDeposit')}
               />
               <label htmlFor="hasDeposit" className="ml-2 text-sm font-medium text-secondary-700">
-                Zarz\u0105dzaj zaliczk\u0105
+                Zarządzaj zaliczką
               </label>
             </div>
 
@@ -783,7 +774,7 @@ export function EditReservationModal({
                   />
                   <Input
                     type="date"
-                    label="Termin p\u0142atno\u015bci"
+                    label="Termin płatności"
                     error={errors.depositDueDate?.message}
                     {...register('depositDueDate')}
                   />
@@ -799,7 +790,7 @@ export function EditReservationModal({
                     />
                     <label htmlFor="depositPaid" className="ml-2 text-sm font-medium text-secondary-700 flex items-center gap-1">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      Zaliczka zosta\u0142a ju\u017c zap\u0142acona
+                      Zaliczka została już zapłacona
                     </label>
                   </div>
 
@@ -815,8 +806,8 @@ export function EditReservationModal({
                         control={control}
                         render={({ field }) => (
                           <SelectField
-                            label="Spos\u00f3b p\u0142atno\u015bci"
-                            placeholder="Wybierz metod\u0119 p\u0142atno\u015bci..."
+                            label="Sposób płatności"
+                            placeholder="Wybierz metodę płatności..."
                             options={paymentMethodOptions}
                             error={errors.depositPaymentMethod?.message}
                             {...field}
@@ -825,7 +816,7 @@ export function EditReservationModal({
                       />
                       <Input
                         type="date"
-                        label="Data p\u0142atno\u015bci"
+                        label="Data płatności"
                         error={errors.depositPaidAt?.message}
                         {...register('depositPaidAt')}
                       />
@@ -854,12 +845,12 @@ export function EditReservationModal({
               <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
               <div className="flex-1">
                 <label className="block text-sm font-medium text-amber-900 mb-2">
-                  Pow\u00f3d zmiany (wymagane, min. 10 znak\u00f3w)
+                  Powód zmiany (wymagane, min. 10 znaków)
                 </label>
                 <textarea
                   className="w-full rounded-md border border-amber-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                   rows={2}
-                  placeholder="np. Klient zmieni\u0142 liczb\u0119 go\u015bci po rozmowie telefonicznej"
+                  placeholder="np. Klient zmienił liczbę gości po rozmowie telefonicznej"
                   {...register('reason')}
                 />
                 {errors.reason && (
