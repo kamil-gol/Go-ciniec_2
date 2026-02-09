@@ -88,30 +88,39 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                 variant="ghost" 
                 size="icon" 
                 disabled={deleting}
-                className="hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                className="hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-full"
               >
-                <MoreVertical className="h-5 w-5" />
+                <MoreVertical className="h-5 w-5 text-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent 
+              align="end" 
+              className="w-48 bg-white dark:bg-gray-950 border-2 border-purple-200 dark:border-purple-800 shadow-2xl backdrop-blur-sm"
+            >
               <DropdownMenuItem asChild>
-                <Link href={`/dashboard/halls/${hall.id}`} className="cursor-pointer">
-                  <Eye className="mr-2 h-4 w-4" />
+                <Link 
+                  href={`/dashboard/halls/${hall.id}`} 
+                  className="cursor-pointer flex items-center px-3 py-2 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-md"
+                >
+                  <Eye className="mr-3 h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Szczegóły
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={`/dashboard/halls/${hall.id}/edit`} className="cursor-pointer">
-                  <Edit className="mr-2 h-4 w-4" />
+                <Link 
+                  href={`/dashboard/halls/${hall.id}/edit`} 
+                  className="cursor-pointer flex items-center px-3 py-2 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-md"
+                >
+                  <Edit className="mr-3 h-5 w-5 text-purple-600 dark:text-purple-400" />
                   Edytuj
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-destructive cursor-pointer focus:text-destructive"
+                className="cursor-pointer flex items-center px-3 py-2 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 focus:bg-red-50 dark:focus:bg-red-950/50 focus:text-red-700 dark:focus:text-red-300 rounded-md"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-3 h-5 w-5" />
                 {deleting ? 'Usuwanie...' : 'Usuń'}
               </DropdownMenuItem>
             </DropdownMenuContent>
