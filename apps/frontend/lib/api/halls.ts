@@ -1,16 +1,140 @@
-import { apiClient } from '../api-client'
-import { Hall } from '@/types'
+import { apiClient } from './client'
 
-export const hallsApi = {
-  // Get all halls
-  getAll: async (): Promise<Hall[]> => {
-    const { data } = await apiClient.get('/halls')
-    return data.data || data // Handle both {data: [...]} and {success: true, data: [...]}
-  },
+export interface Hall {
+  id: string
+  name: string
+  capacity: number
+  pricePerPerson: number
+  pricePerChild?: number
+  description?: string
+  amenities: string[]
+  images: string[]
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
 
-  // Get single hall by ID
-  getById: async (id: string): Promise<Hall> => {
-    const { data } = await apiClient.get(`/halls/${id}`)
-    return data.data || data // Handle both structures
-  },
+export interface HallsResponse {
+  halls: Hall[]
+  total: number
+}
+
+export interface HallAvailability {
+  date: string
+  isAvailable: boolean
+  reservationId?: string
+  reservationClient?: string
+  reservationStatus?: string
+}
+
+export interface CreateHallInput {
+  name: string
+  capacity: number
+  pricePerPerson: number
+  pricePerChild?: number
+  description?: string
+  amenities?: string[]
+  images?: string[]
+  isActive?: boolean
+}
+
+export interface UpdateHallInput {
+  name?: string
+  capacity?: number
+  pricePerPerson?: number
+  pricePerChild?: number
+  description?: string
+  amenities?: string[]
+  images?: string[]
+  isActive?: boolean
+}
+
+/**
+ * Get all halls with optional filters
+ */
+export async function getHalls(params?: {
+  isActive?: boolean
+  search?: string
+}): Promise<HallsResponse> {
+  const { data } = await apiClient.get('/halls', { params })
+  return data
+}
+
+/**
+ * Get single hall by ID
+ */
+export async function getHallById(id: string): Promise<Hall> {
+  const { data } = await apiClient.get(`/halls/${id}`)
+  return data
+}
+
+/**
+ * Create new hall (Admin only)
+ */
+export async function createHall(hall: CreateHallInput): Promise<Hall> {
+  const { data } = await apiClient.post('/halls', hall)
+  return data
+}
+
+/**
+ * Update existing hall (Admin only)
+ */
+export async function updateHall(id: string, hall: UpdateHallInput): Promise<Hall> {
+  const { data } = await apiClient.put(`/halls/${id}`, hall)
+  return data
+}
+
+/**
+ * Delete hall - soft delete (Admin only)
+ */
+export async function deleteHall(id: string): Promise<void> {
+  await apiClient.delete(`/halls/${id}`)
+}
+
+/**
+ * Get hall availability for a specific month
+ * Returns array of dates with availability status
+ */
+export async function getHallAvailability(
+  hallId: string,
+  year: number,
+  month: number
+): Promise<HallAvailability[]> {
+  const { data } = await apiClient.get('/reservations', {
+    params: {
+      hallId,
+      dateFrom: `${year}-${String(month).padStart(2, '0')}-01`,
+      dateTo: `${year}-${String(month).padStart(2, '0')}-31`,
+    }
+  })
+  
+  // Transform reservations to availability format
+  const availability: HallAvailability[] = []
+  const reservationsMap = new Map()
+  
+  data.data?.forEach((reservation: any) => {
+    if (reservation.startDateTime) {
+      const date = reservation.startDateTime.split('T')[0]
+      reservationsMap.set(date, {
+        reservationId: reservation.id,
+        reservationClient: `${reservation.client?.firstName} ${reservation.client?.lastName}`,
+        reservationStatus: reservation.status,
+      })
+    }
+  })
+  
+  // Generate all days in month
+  const daysInMonth = new Date(year, month, 0).getDate()
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const reservation = reservationsMap.get(date)
+    
+    availability.push({
+      date,
+      isAvailable: !reservation,
+      ...reservation,
+    })
+  }
+  
+  return availability
 }
