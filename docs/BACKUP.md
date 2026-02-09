@@ -73,11 +73,11 @@ Skrypty używają następujących zmiennych (z wartościami domyślnymi):
 
 ```bash
 # Katalogi
-export BACKUP_DIR="/home/kamil/backups/gosciniec"    # Gdzie przechować backupy
+export BACKUP_DIR="/home/kamil/backups/gosciniec"    # Gdzie przechowywać backupy
 export PROJECT_DIR="/home/kamil/rezerwacje"           # Katalog projektu
 
-# Docker
-export DB_CONTAINER="postgres"                        # Nazwa kontenera bazy
+# Docker - ✅ Używaj prawdziwej nazwy kontenera!
+export DB_CONTAINER="rezerwacje-db"                  # Nazwa kontenera bazy (z docker-compose.yml)
 
 # Baza danych
 export POSTGRES_DB="rezerwacje"                       # Nazwa bazy
@@ -88,24 +88,49 @@ export POSTGRES_PASSWORD="postgres"                   # Hasło do bazy
 export RETENTION_DAYS=7                               # Ile dni przechowywać backupy
 ```
 
-### Plik Konfiguracyjny (Opcjonalnie)
+### ⚠️ Ważne: Sprawdzenie Nazwy Kontenera
 
-Możesz utworzyć plik `.env.backup`:
+Zanim uruchomisz backup, sprawdź jak nazywa się kontener bazy danych:
+
+```bash
+# Wyświetl wszystkie uruchomione kontenery
+docker ps --format '{{.Names}}'
+
+# Lub szukaj kontenera bazy
+docker ps --format '{{.Names}}' | grep -E '(db|postgres)'
+```
+
+**Poprawna nazwa w docker-compose.yml:** `rezerwacje-db`
+
+### Plik Konfiguracyjny (Zalecane)
+
+Utwórz plik `.env.backup` (skopiuj z `.env.backup.example`):
+
+```bash
+# Krok 1: Skopiuj przykład
+cp .env.backup.example .env.backup
+
+# Krok 2: Edytuj
+nano .env.backup
+```
+
+**Przykładowa zawartość `.env.backup`:**
 
 ```bash
 # /home/kamil/rezerwacje/.env.backup
 BACKUP_DIR=/home/kamil/backups/gosciniec
 PROJECT_DIR=/home/kamil/rezerwacje
-DB_CONTAINER=postgres
+DB_CONTAINER=rezerwacje-db  # ✅ Prawdziwa nazwa kontenera!
 POSTGRES_DB=rezerwacje
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=twoje_haslo
+POSTGRES_USER=rezerwacje
+POSTGRES_PASSWORD=twoje_haslo  # Takie samo jak w .env głównym
 RETENTION_DAYS=14
 ```
 
-I załadować przed uruchomieniem:
+I załaduj przed uruchomieniem:
 
 ```bash
+cd /home/kamil/rezerwacje
 source .env.backup
 ./scripts/backup.sh
 ```
@@ -118,6 +143,7 @@ source .env.backup
 
 ```bash
 cd /home/kamil/rezerwacje
+source .env.backup  # Załaduj konfigurację
 ./scripts/backup.sh
 ```
 
@@ -132,6 +158,8 @@ cd /home/kamil/rezerwacje
 [2026-02-09 10:00:01] Tworzę strukturę katalogów...
 [2026-02-09 10:00:01] ✓ Katalogi utworzone
 [2026-02-09 10:00:02] Rozpoczynam backup bazy danych...
+[2026-02-09 10:00:02]   - Szukam kontenera: rezerwacje-db
+[2026-02-09 10:00:02]   - Kontener znaleziony: rezerwacje-db
 [2026-02-09 10:00:05] ✓ Backup bazy danych utworzony: db_backup_20260209_100002.sql.gz (2.3M)
 [2026-02-09 10:00:05] Rozpoczynam backup plików aplikacji...
 [2026-02-09 10:00:08] ✓ Backup plików utworzony: files_backup_20260209_100005.tar.gz (15M)
@@ -161,20 +189,20 @@ tail -f /home/kamil/backups/gosciniec/backup.log
 # Edytuj crontab
 crontab -e
 
-# Dodaj linię:
-0 2 * * * cd /home/kamil/rezerwacje && ./scripts/backup.sh >> /home/kamil/backups/gosciniec/cron.log 2>&1
+# Dodaj linię (✅ z source .env.backup!):
+0 2 * * * cd /home/kamil/rezerwacje && source .env.backup && ./scripts/backup.sh >> /home/kamil/backups/gosciniec/cron.log 2>&1
 ```
 
 #### Co 6 godzin
 
 ```bash
-0 */6 * * * cd /home/kamil/rezerwacje && ./scripts/backup.sh >> /home/kamil/backups/gosciniec/cron.log 2>&1
+0 */6 * * * cd /home/kamil/rezerwacje && source .env.backup && ./scripts/backup.sh >> /home/kamil/backups/gosciniec/cron.log 2>&1
 ```
 
 #### Raz w tygodniu (niedziela 3:00)
 
 ```bash
-0 3 * * 0 cd /home/kamil/rezerwacje && ./scripts/backup.sh >> /home/kamil/backups/gosciniec/cron.log 2>&1
+0 3 * * 0 cd /home/kamil/rezerwacje && source .env.backup && ./scripts/backup.sh >> /home/kamil/backups/gosciniec/cron.log 2>&1
 ```
 
 ### Systemd Timer (Alternatywa)
@@ -190,6 +218,7 @@ Description=Gościniec_2 Backup Service
 Type=oneshot
 User=kamil
 WorkingDirectory=/home/kamil/rezerwacje
+EnvironmentFile=/home/kamil/rezerwacje/.env.backup
 ExecStart=/home/kamil/rezerwacje/scripts/backup.sh
 StandardOutput=append:/home/kamil/backups/gosciniec/systemd.log
 StandardError=append:/home/kamil/backups/gosciniec/systemd.log
@@ -324,18 +353,33 @@ sudo apt update
 sudo apt install docker.io docker-compose
 ```
 
-### Problem: "Kontener bazy danych nie jest uruchomiony"
+### Problem: "Kontener bazy danych nie jest uruchomiony" ✅
+
+**To najczęstszy problem!** Błędna nazwa kontenera.
 
 ```bash
-# Sprawdź status
-docker ps
+# Krok 1: Sprawdź dostępne kontenery
+docker ps --format '{{.Names}}'
 
-# Uruchom aplikację
+# Oczekiwany output powinien zawierać:
+rezerwacje-db
+rezerwacje-api
+rezerwacje-web
+rezerwacje-cache
+
+# Krok 2: Sprawdź czy kontener działa
+docker ps | grep rezerwacje-db
+
+# Krok 3: Jeśli kontener nie działa, uruchom
 cd /home/kamil/rezerwacje
 docker-compose up -d
 
-# Sprawdź logi
-docker-compose logs postgres
+# Krok 4: Sprawdź logi
+docker-compose logs rezerwacje-db
+
+# Krok 5: Upewnij się, że .env.backup ma poprawną nazwę:
+grep DB_CONTAINER .env.backup
+# Powinno pokazać: DB_CONTAINER=rezerwacje-db
 ```
 
 ### Problem: "Permission denied"
@@ -448,14 +492,19 @@ curl -X POST -H 'Content-type: application/json' \
 chmod +x scripts/*.sh
 mkdir -p /home/kamil/backups/gosciniec
 
-# 2. Test
+# 2. Konfiguracja
+cp .env.backup.example .env.backup
+nano .env.backup  # Ustaw hasło i sprawdź DB_CONTAINER=rezerwacje-db
+
+# 3. Test
+source .env.backup
 ./scripts/backup.sh
 
-# 3. Automatyzacja
+# 4. Automatyzacja
 crontab -e
-# Dodaj: 0 2 * * * cd /home/kamil/rezerwacje && ./scripts/backup.sh
+# Dodaj: 0 2 * * * cd /home/kamil/rezerwacje && source .env.backup && ./scripts/backup.sh
 
-# 4. Weryfikacja
+# 5. Weryfikacja
 ./scripts/restore.sh --list
 ```
 
@@ -463,8 +512,9 @@ crontab -e
 
 - [ ] Skrypty mają uprawnienia wykonywania
 - [ ] Katalog backupów utworzony
+- [ ] Plik .env.backup utworzony z poprawną nazwą kontenera (`rezerwacje-db`)
 - [ ] Test ręcznego backupu działa
-- [ ] Cron skonfigurowany
+- [ ] Cron skonfigurowany z `source .env.backup`
 - [ ] Test restore działa
 - [ ] Logi są monitorowane
 - [ ] Miejsce na dysku wystarczające
@@ -476,7 +526,13 @@ crontab -e
 W razie problemów sprawdź:
 - Logi: `/home/kamil/backups/gosciniec/backup.log`
 - Status Docker: `docker ps`
+- Nazwę kontenera: `docker ps --format '{{.Names}}'`
 - Miejsce na dysku: `df -h`
 
 **Repository:** https://github.com/kamil-gol/Go-ciniec_2  
 **Issues:** https://github.com/kamil-gol/Go-ciniec_2/issues
+
+---
+
+**Ostatnia aktualizacja:** 09.02.2026 - 12:53 CET  
+**Wersja:** 1.0.1 - Poprawiono nazwę kontenera bazy danych
