@@ -80,22 +80,38 @@ export class ClientService {
   }
 
   /**
-   * Get client by ID
+   * Get client by ID with reservations
    */
   async getClientById(id: string): Promise<ClientResponse> {
     const client = await prisma.client.findUnique({
       where: { id },
       include: {
         reservations: {
-          take: 5,
-          orderBy: { date: 'desc' },
+          take: 10,
+          orderBy: { startDateTime: 'desc' },
           select: {
             id: true,
-            date: true,
+            startDateTime: true,
+            endDateTime: true,
+            guests: true,
+            totalPrice: true,
             status: true,
-            eventType: { select: { name: true } },
-            hall: { select: { name: true } }
+            eventType: { 
+              select: { 
+                id: true,
+                name: true 
+              } 
+            },
+            hall: { 
+              select: { 
+                id: true,
+                name: true 
+              } 
+            }
           }
+        },
+        _count: {
+          select: { reservations: true }
         }
       }
     });
