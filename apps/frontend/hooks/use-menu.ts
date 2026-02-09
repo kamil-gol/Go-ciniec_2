@@ -30,6 +30,7 @@ export const menuKeys = {
   package: (id: string) => [...menuKeys.all, 'package', id] as const,
   options: () => [...menuKeys.all, 'options'] as const,
   option: (id: string) => [...menuKeys.options(), id] as const,
+  eventTypes: () => [...menuKeys.all, 'event-types'] as const,
   reservationMenu: (reservationId: string) => [...menuKeys.all, 'reservation', reservationId] as const,
 };
 
@@ -145,6 +146,29 @@ export function useMenuOption(id: string | undefined) {
     queryFn: () => menuApi.getOption(id!),
     select: (response) => response.data,
     enabled: !!id,
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EVENT TYPES
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get all event types
+ * 
+ * @example
+ * const { data } = useEventTypes();
+ */
+export function useEventTypes() {
+  return useQuery({
+    queryKey: menuKeys.eventTypes(),
+    queryFn: async () => {
+      // Fetch from backend API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/event-types`);
+      if (!response.ok) throw new Error('Failed to fetch event types');
+      return response.json();
+    },
+    select: (response) => response.data || response,
   });
 }
 
