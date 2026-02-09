@@ -1,33 +1,23 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to login page
+    router.push('/login')
+  }, [router])
+
+  // Show loading state while redirecting
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-100">
-      <div className="max-w-4xl mx-auto px-4 text-center">
-        <h1 className="text-5xl font-bold text-secondary-900 mb-4">
-          System Rezerwacji Sal
-        </h1>
-        <h2 className="text-2xl text-secondary-700 mb-8">
-          Gościniec Rodzinny
-        </h2>
-        <p className="text-lg text-secondary-600 mb-12 max-w-2xl mx-auto">
-          Profesjonalny system zarządzania rezerwacjami sal weselnych i okolicznościowych
-          z pełną integracją administracyjną, statystykami i automatyzacją procesów biznesowych.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link href="/login">
-            <Button size="lg" className="text-lg px-8">
-              Zaloguj się
-            </Button>
-          </Link>
-          <Link href="/reservations">
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              Pokaż rezerwacje
-            </Button>
-          </Link>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-neutral-900 dark:to-neutral-800">
+      <div className="text-center">
+        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-violet-600 border-r-transparent" />
+        <p className="mt-4 text-neutral-600 dark:text-neutral-400">Przekierowywanie...</p>
       </div>
-    </main>
+    </div>
   )
 }
