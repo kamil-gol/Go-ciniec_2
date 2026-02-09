@@ -128,6 +128,18 @@ export const getReservationById = async (id: string): Promise<Reservation> => {
   return reservationsApi.getById(id)
 }
 
+export const downloadReservationPDF = async (id: string): Promise<void> => {
+  const blob = await reservationsApi.downloadPdf(id)
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `rezerwacja-${id}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
 // React Query Hooks
 export const RESERVATIONS_QUERY_KEY = 'reservations'
 
