@@ -48,7 +48,6 @@ export class ClientService {
         lastName: data.lastName.trim(),
         email: data.email?.trim() || null,
         phone: data.phone.trim(),
-        address: data.address?.trim() || null,
         notes: data.notes?.trim() || null
       }
     });
@@ -171,7 +170,6 @@ export class ClientService {
     if (data.lastName) updateData.lastName = data.lastName.trim();
     if (data.email !== undefined) updateData.email = data.email?.trim() || null;
     if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
-    if (data.address !== undefined) updateData.address = data.address?.trim() || null;
     if (data.notes !== undefined) updateData.notes = data.notes?.trim() || null;
 
     const client = await prisma.client.update({
