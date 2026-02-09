@@ -54,7 +54,8 @@
     "class-variance-authority": "^0.7.0",
     "react-day-picker": "^8.10.0",
     "cmdk": "^0.2.1",
-    "vaul": "^0.9.0"
+    "vaul": "^0.9.0",
+    "recharts": "^2.10.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
@@ -68,6 +69,7 @@
     "postcss": "^8.4.33",
     "prettier": "^3.2.4",
     "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.3.3",
     "vitest": "^1.2.1",
     "@vitejs/plugin-react": "^4.2.1",
