@@ -89,7 +89,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             </div>
             {!isCollapsed && (
               <span className="text-lg font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                Gościniec_2
+                Gościniec Rodzinny
               </span>
             )}
           </motion.div>
@@ -161,7 +161,9 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                   <Link
                     href={item.href}
                     className={cn(
-                      'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                      'group relative flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200',
+                      // Add padding-left to make space for the indicator
+                      isActive ? 'pl-4 pr-3' : 'pl-3 pr-3',
                       isActive
                         ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-medium'
                         : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:scale-[1.02]'
