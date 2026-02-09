@@ -99,14 +99,15 @@ export default function ClientDetailsPage() {
     }
   }
 
-  // Calculate stats
-  const rawTotalSpent = client?.reservations?.reduce((sum, r) => sum + (r.totalPrice || 0), 0) || 0
+  // Calculate stats - exclude RESERVED status from statistics
+  const confirmedReservations = client?.reservations?.filter(r => r.status !== ReservationStatus.RESERVED) || []
+  const rawTotalSpent = confirmedReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0)
   
   const stats = {
-    totalReservations: client?.reservations?.length || 0,
+    totalReservations: confirmedReservations.length,
     totalSpent: rawTotalSpent / 100, // Convert cents to zloty
-    averageGuests: client?.reservations && client.reservations.length > 0
-      ? Math.round(client.reservations.reduce((sum, r) => sum + (r.guests || 0), 0) / client.reservations.length)
+    averageGuests: confirmedReservations.length > 0
+      ? Math.round(confirmedReservations.reduce((sum, r) => sum + (r.guests || 0), 0) / confirmedReservations.length)
       : 0,
     memberSince: formatDate(client?.createdAt),
   }
