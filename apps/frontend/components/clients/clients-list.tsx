@@ -21,7 +21,7 @@ interface Client {
 
 interface ClientsListProps {
   clients: Client[]
-  searchQuery: string
+  searchQuery?: string
   onUpdate?: () => void
 }
 
@@ -59,7 +59,7 @@ export function ClientsList({ clients, searchQuery, onUpdate }: ClientsListProps
     <div className="grid grid-cols-1 gap-4">
       {filteredClients.map((client) => (
         <Link key={client.id} href={`/dashboard/clients/${client.id}`}>
-          <Card className="group border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+          <Card className="group border bg-card hover:bg-accent/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -69,7 +69,7 @@ export function ClientsList({ clients, searchQuery, onUpdate }: ClientsListProps
                       {client.firstName.charAt(0)}{client.lastName.charAt(0)}
                     </div>
                     {client._count && client._count.reservations > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
                         <span className="text-xs font-bold text-white">{client._count.reservations}</span>
                       </div>
                     )}
@@ -77,7 +77,7 @@ export function ClientsList({ clients, searchQuery, onUpdate }: ClientsListProps
 
                   {/* Info */}
                   <div className="space-y-1">
-                    <h3 className="text-lg font-bold group-hover:text-orange-600 transition-colors">
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                       {client.firstName} {client.lastName}
                     </h3>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export function ClientsList({ clients, searchQuery, onUpdate }: ClientsListProps
                   {/* Reservations Badge */}
                   {client._count && (
                     <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                         {client._count.reservations} {client._count.reservations === 1 ? 'rezerwacja' : 'rezerwacji'}
                       </span>
@@ -108,7 +108,7 @@ export function ClientsList({ clients, searchQuery, onUpdate }: ClientsListProps
                   )}
 
                   {/* Arrow */}
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
             </CardContent>
