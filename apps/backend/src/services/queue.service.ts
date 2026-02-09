@@ -1,7 +1,7 @@
 /**
  * Queue Service
  * Business logic for reservation queue management
- * ✨ UPDATED: Added retry logic for race condition handling (Bug #5)
+ * ✨ UPDATED: Added batch update for atomic drag & drop (Bug #9)
  */
 
 import { PrismaClient, ReservationStatus, Prisma } from '@prisma/client';
@@ -11,6 +11,7 @@ import {
   QueueItemResponse,
   QueueStats,
   AutoCancelResult,
+  BatchUpdatePositionsDTO,
 } from '../types/queue.types';
 
 const prisma = new PrismaClient();
@@ -518,6 +519,95 @@ export class QueueService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Batch update queue positions atomically
+   * ✨ BUG #9 FIX: Atomic transaction for drag & drop
+   * 
+   * This method updates multiple positions in a single transaction,
+   * preventing race conditions when drag & drop changes multiple items.
+   */
+  async batchUpdatePositions(
+    updates: Array<{ id: string; position: number }>
+  ): Promise<{ updatedCount: number }> {
+    // Validate
+    if (!updates || updates.length === 0) {
+      throw new Error('At least one update is required');
+    }
+
+    // Validate each update
+    for (const update of updates) {
+      if (!update.id) {
+        throw new Error('Each update must have a reservation ID');
+      }
+      if (!Number.isInteger(update.position) || update.position < 1) {
+        throw new Error(`Invalid position ${update.position} for reservation ${update.id}`);
+      }
+    }
+
+    // Use transaction to ensure atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // Get all reservations that need updating
+      const reservationIds = updates.map(u => u.id);
+      const reservations = await tx.reservation.findMany({
+        where: {
+          id: { in: reservationIds },
+        },
+        select: {
+          id: true,
+          status: true,
+          reservationQueueDate: true,
+          reservationQueuePosition: true,
+        },
+      });
+
+      // Validate all exist and are RESERVED
+      if (reservations.length !== updates.length) {
+        throw new Error('One or more reservations not found');
+      }
+
+      for (const res of reservations) {
+        if (res.status !== ReservationStatus.RESERVED) {
+          throw new Error(`Reservation ${res.id} is not RESERVED`);
+        }
+        if (!res.reservationQueueDate) {
+          throw new Error(`Reservation ${res.id} has no queue date`);
+        }
+      }
+
+      // Verify all reservations are on the same date
+      const firstDate = reservations[0].reservationQueueDate?.toDateString();
+      for (const res of reservations) {
+        if (res.reservationQueueDate?.toDateString() !== firstDate) {
+          throw new Error('All reservations must be on the same date');
+        }
+      }
+
+      // Verify no duplicate positions in updates
+      const positions = updates.map(u => u.position);
+      const uniquePositions = new Set(positions);
+      if (positions.length !== uniquePositions.size) {
+        throw new Error('Duplicate positions detected in updates');
+      }
+
+      // Update each reservation
+      let updatedCount = 0;
+      for (const update of updates) {
+        await tx.reservation.update({
+          where: { id: update.id },
+          data: {
+            reservationQueuePosition: update.position,
+            queueOrderManual: true, // Mark as manually ordered
+          },
+        });
+        updatedCount++;
+      }
+
+      return { updatedCount };
+    });
+
+    return result;
   }
 
   /**
