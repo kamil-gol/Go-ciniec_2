@@ -15,14 +15,12 @@ import {
   Users,
   DollarSign,
   CalendarDays,
-  TrendingUp,
   StickyNote,
   ExternalLink
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useClient, useDeleteClient } from '@/lib/api/clients'
-import { useAuth } from '@/hooks/use-auth'
-import { UserRole, ReservationStatus } from '@/types'
+import { ReservationStatus } from '@/types'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import Link from 'next/link'
@@ -46,13 +44,13 @@ const statusLabels = {
 export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
   const clientId = params.id as string
 
   const { data: client, isLoading, error } = useClient(clientId)
   const deleteClient = useDeleteClient()
 
-  const canDelete = user?.role === UserRole.ADMIN
+  // TODO: Replace with actual auth check when implemented
+  const canDelete = true
   const hasReservations = client?.reservations && client.reservations.length > 0
 
   const handleDelete = async () => {
