@@ -1,0 +1,605 @@
+{
+  "info": {
+    "name": "Menu System API",
+    "description": "Complete API collection for Menu System with Templates, Packages, Options, and Reservation Menu Selection.\n\n**Base URL:** `http://localhost:3001`\n\n**Authentication:** Admin endpoints require authentication (to be implemented)\n\n**Created:** 2026-02-10\n**Version:** 1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "templateId_wedding",
+      "value": "21067150-841a-4659-9e97-11ce5a4105ac",
+      "type": "string",
+      "description": "Menu Weselne Wiosna 2026"
+    },
+    {
+      "key": "templateId_birthday",
+      "value": "e64e0dfa-82ff-453b-867c-e1cf772ea832",
+      "type": "string",
+      "description": "Menu Urodzinowe 2026"
+    },
+    {
+      "key": "templateId_communion",
+      "value": "15412c8e-ad65-422b-ac7f-659a73f503ae",
+      "type": "string",
+      "description": "Menu Komunijne 2026"
+    },
+    {
+      "key": "packageId_gold",
+      "value": "621db29e-1ec3-4a04-ab64-656c4508b48a",
+      "type": "string",
+      "description": "Pakiet Złoty (Wedding)"
+    },
+    {
+      "key": "packageId_silver",
+      "value": "497c77e1-3f39-491b-8da8-e247d6ca2031",
+      "type": "string",
+      "description": "Pakiet Srebrny (Wedding)"
+    },
+    {
+      "key": "optionId_openBar",
+      "value": "7f11bd1e-f0f4-4e5c-b857-795b2038665d",
+      "type": "string",
+      "description": "Bar Open"
+    },
+    {
+      "key": "eventTypeId_wedding",
+      "value": "1b2f08c1-6c5c-4bb5-8a98-916118ff91b7",
+      "type": "string",
+      "description": "Wesele"
+    },
+    {
+      "key": "eventTypeId_birthday",
+      "value": "1b7bcb24-f159-4f53-b6ae-047d3fea8db2",
+      "type": "string",
+      "description": "Urodziny"
+    },
+    {
+      "key": "reservationId",
+      "value": "YOUR_RESERVATION_ID",
+      "type": "string",
+      "description": "Replace with actual reservation ID"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Health check endpoint to verify API is running"
+      },
+      "response": []
+    },
+    {
+      "name": "Menu Templates",
+      "item": [
+        {
+          "name": "List All Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates"]
+            },
+            "description": "Get all menu templates with packages"
+          },
+          "response": []
+        },
+        {
+          "name": "List Templates by Event Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates?eventTypeId={{eventTypeId_wedding}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates"],
+              "query": [
+                {
+                  "key": "eventTypeId",
+                  "value": "{{eventTypeId_wedding}}"
+                }
+              ]
+            },
+            "description": "Filter templates by event type ID"
+          },
+          "response": []
+        },
+        {
+          "name": "List Active Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates?isActive=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates"],
+              "query": [
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get only active menu templates"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Menu for Event Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates/active/{{eventTypeId_wedding}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates", "active", "{{eventTypeId_wedding}}"]
+            },
+            "description": "Get currently active menu template for specific event type (based on validFrom/validTo dates)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Template",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates/{{templateId_wedding}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates", "{{templateId_wedding}}"]
+            },
+            "description": "Get template by ID with all packages and options"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Template (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventTypeId\": \"{{eventTypeId_wedding}}\",\n  \"name\": \"Menu Letnie 2026\",\n  \"description\": \"Letnie menu weselne z sezonowymi potrawami\",\n  \"variant\": \"Letnie\",\n  \"validFrom\": \"2026-07-01T00:00:00.000Z\",\n  \"validTo\": \"2026-09-30T00:00:00.000Z\",\n  \"isActive\": true,\n  \"displayOrder\": 2,\n  \"imageUrl\": \"/images/menus/summer-2026.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates"]
+            },
+            "description": "Create new menu template (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Template (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Menu Weselne Wiosna 2026 - Updated\",\n  \"description\": \"Zaktualizowany opis\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates/{{templateId_wedding}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates", "{{templateId_wedding}}"]
+            },
+            "description": "Update existing template (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate Template (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Menu Weselne Jesień 2026\",\n  \"variant\": \"Jesienne\",\n  \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n  \"validTo\": \"2026-12-31T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates/{{templateId_wedding}}/duplicate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates", "{{templateId_wedding}}", "duplicate"]
+            },
+            "description": "Duplicate template with all packages and options (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Template (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-templates/{{templateId_wedding}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-templates", "{{templateId_wedding}}"]
+            },
+            "description": "Delete template (Admin only). Cannot delete if used in reservations."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Menu Packages",
+      "item": [
+        {
+          "name": "List Packages by Template",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages/template/{{templateId_wedding}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages", "template", "{{templateId_wedding}}"]
+            },
+            "description": "Get all packages for specific menu template"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Package",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages/{{packageId_gold}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages", "{{packageId_gold}}"]
+            },
+            "description": "Get package by ID with all options"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Package (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"menuTemplateId\": \"{{templateId_wedding}}\",\n  \"name\": \"Pakiet Platynowy\",\n  \"description\": \"Luksusowy pakiet all-inclusive\",\n  \"shortDescription\": \"Premium all-in\",\n  \"pricePerAdult\": 800,\n  \"pricePerChild\": 400,\n  \"pricePerToddler\": 0,\n  \"includedItems\": [\n    \"5-daniowe menu degustacyjne\",\n    \"Open bar premium\",\n    \"Live band\",\n    \"Fotograf + kamerzysta\"\n  ],\n  \"minGuests\": 100,\n  \"maxGuests\": 200,\n  \"color\": \"#E5E4E2\",\n  \"icon\": \"crown\",\n  \"badgeText\": \"EXCLUSIVE\",\n  \"displayOrder\": 4,\n  \"isPopular\": false,\n  \"isRecommended\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages"]
+            },
+            "description": "Create new package (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Package (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerAdult\": 320,\n  \"pricePerChild\": 160,\n  \"changeReason\": \"Sezonowa podwyżka cen\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages/{{packageId_gold}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages", "{{packageId_gold}}"]
+            },
+            "description": "Update package (Admin only). Price changes are logged in history."
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Packages (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageOrders\": [\n    {\n      \"packageId\": \"{{packageId_gold}}\",\n      \"displayOrder\": 1\n    },\n    {\n      \"packageId\": \"{{packageId_silver}}\",\n      \"displayOrder\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages", "reorder"]
+            },
+            "description": "Change display order of packages (drag & drop) (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Options to Package (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"options\": [\n    {\n      \"optionId\": \"{{optionId_openBar}}\",\n      \"isRequired\": false,\n      \"isDefault\": true,\n      \"displayOrder\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages/{{packageId_gold}}/options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages", "{{packageId_gold}}", "options"]
+            },
+            "description": "Assign/update options for package (Admin only). Replaces all existing assignments."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Package (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-packages/{{packageId_gold}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-packages", "{{packageId_gold}}"]
+            },
+            "description": "Delete package (Admin only). Cannot delete if used in reservations."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Menu Options",
+      "item": [
+        {
+          "name": "List All Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options"]
+            },
+            "description": "Get all menu options"
+          },
+          "response": []
+        },
+        {
+          "name": "List Options by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options?category=Alkohol",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Alkohol"
+                }
+              ]
+            },
+            "description": "Filter options by category"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options?search=fotobudka",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "fotobudka"
+                }
+              ]
+            },
+            "description": "Search options by name or description"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Option",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options/{{optionId_openBar}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options", "{{optionId_openBar}}"]
+            },
+            "description": "Get option by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Option (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fontanna czekoladowa\",\n  \"description\": \"Duża fontanna czekoladowa z owocami\",\n  \"shortDescription\": \"Czekoladowa fontanna\",\n  \"category\": \"Dodatki\",\n  \"priceType\": \"FLAT\",\n  \"priceAmount\": 350,\n  \"allowMultiple\": false,\n  \"maxQuantity\": 1,\n  \"icon\": \"cake\",\n  \"displayOrder\": 10,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options"]
+            },
+            "description": "Create new option (Admin only)\n\nPrice types:\n- FLAT: Fixed price\n- PER_PERSON: Price per guest\n- FREE: No charge"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Option (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priceAmount\": 55,\n  \"changeReason\": \"Podwyżka kosztów alkoholu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options/{{optionId_openBar}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options", "{{optionId_openBar}}"]
+            },
+            "description": "Update option (Admin only). Price changes are logged in history."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Option (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu-options/{{optionId_openBar}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menu-options", "{{optionId_openBar}}"]
+            },
+            "description": "Delete option (Admin only). Cannot delete if used in reservations."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reservation Menu Selection",
+      "item": [
+        {
+          "name": "Select Menu for Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageId\": \"{{packageId_gold}}\",\n  \"selectedOptions\": [\n    {\n      \"optionId\": \"{{optionId_openBar}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/select-menu",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reservations", "{{reservationId}}", "select-menu"]
+            },
+            "description": "Select menu package and options for reservation.\n\nCreates immutable snapshot with:\n- Package details and prices\n- Selected options\n- Guest counts\n- Total price breakdown"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reservation Menu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/menu",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reservations", "{{reservationId}}", "menu"]
+            },
+            "description": "Get menu snapshot for reservation with full price breakdown"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Guest Counts",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adultsCount\": 120,\n  \"childrenCount\": 30,\n  \"toddlersCount\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/menu",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reservations", "{{reservationId}}", "menu"]
+            },
+            "description": "Update guest counts for existing menu selection.\n\nRecalculates total price based on new counts."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Menu Selection",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/menu",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reservations", "{{reservationId}}", "menu"]
+            },
+            "description": "Remove menu selection from reservation"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
