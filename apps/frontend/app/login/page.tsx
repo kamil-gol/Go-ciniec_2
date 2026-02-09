@@ -118,9 +118,6 @@ export default function LoginPage() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-8"
         >
-          {/* Decorative gradient overlay */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-t-2xl" />
-
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <LogIn className="h-6 w-6 text-violet-600" />
