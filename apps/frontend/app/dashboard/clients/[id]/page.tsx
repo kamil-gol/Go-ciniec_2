@@ -21,7 +21,7 @@ import {
 import { motion } from 'framer-motion'
 import { useClient, useDeleteClient } from '@/lib/api/clients'
 import { ReservationStatus } from '@/types'
-import { format } from 'date-fns'
+import { format, isValid, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import Link from 'next/link'
 
@@ -39,6 +39,20 @@ const statusLabels = {
   [ReservationStatus.COMPLETED]: 'Zakończone',
   [ReservationStatus.CANCELLED]: 'Anulowane',
   [ReservationStatus.RESERVED]: 'W kolejce',
+}
+
+// Helper to safely format dates
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'Brak daty'
+  
+  try {
+    const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
+    if (!isValid(date)) return 'Nieprawidłowa data'
+    return format(date, 'd MMMM yyyy', { locale: pl })
+  } catch (error) {
+    console.error('Error formatting date:', dateString, error)
+    return 'Błąd daty'
+  }
 }
 
 export default function ClientDetailsPage() {
@@ -76,7 +90,7 @@ export default function ClientDetailsPage() {
     averageGuests: client?.reservations && client.reservations.length > 0
       ? Math.round(client.reservations.reduce((sum, r) => sum + (r.guests || 0), 0) / client.reservations.length)
       : 0,
-    memberSince: client?.createdAt ? format(new Date(client.createdAt), 'd MMMM yyyy', { locale: pl }) : '-',
+    memberSince: formatDate(client?.createdAt),
   }
 
   if (isLoading) {
@@ -324,7 +338,7 @@ export default function ClientDetailsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                            {format(new Date(reservation.startDateTime), 'd MMMM yyyy', { locale: pl })}
+                            {formatDate(reservation.startDateTime)}
                           </p>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[reservation.status]}`}>
                             {statusLabels[reservation.status]}
