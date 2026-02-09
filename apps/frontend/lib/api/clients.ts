@@ -63,6 +63,16 @@ export const clientsApi = {
 }
 
 // ========================================
+// DIRECT API EXPORTS (for non-hook usage)
+// ========================================
+
+export const getClients = (filters?: ClientsFilters) => clientsApi.getAll(filters)
+export const getClientById = (id: string) => clientsApi.getById(id)
+export const createClient = (input: CreateClientInput) => clientsApi.create(input)
+export const updateClient = (id: string, input: Partial<CreateClientInput>) => clientsApi.update(id, input)
+export const deleteClient = (id: string) => clientsApi.delete(id)
+
+// ========================================
 // REACT QUERY HOOKS
 // ========================================
 
