@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 
 const statusConfig = {
   PENDING: {
@@ -290,6 +291,19 @@ export default function ReservationDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Menu Section - NEW! */}
+            {reservation.eventType?.id && eventDate && (
+              <ReservationMenuSection
+                reservationId={reservation.id}
+                eventTypeId={reservation.eventType.id}
+                eventDate={eventDate}
+                adults={reservation.adults || 0}
+                children={reservation.children || 0}
+                toddlers={reservation.toddlers || 0}
+                onMenuUpdated={loadReservation}
+              />
+            )}
 
             {/* Notes */}
             {reservation.notes && (
