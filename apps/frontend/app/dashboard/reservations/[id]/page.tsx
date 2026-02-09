@@ -1,462 +1,413 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import DashboardLayout from '@/components/layout/DashboardLayout'
 import { 
-  ArrowLeft, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  Loader2, 
-  AlertCircle, 
-  Edit, 
-  Users,
-  DollarSign,
-  MapPin,
-  Clock,
-  FileText,
-  CheckCircle,
-  XCircle,
-  PlayCircle,
-  User,
-  Building
+  ArrowLeft, Edit, Trash2, CheckCircle2, XCircle, Clock, 
+  Calendar, Users, DollarSign, Building2, User, Mail, Phone,
+  FileText, Download, Sparkles, MapPin, CreditCard
 } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { useReservation, useUpdateReservationStatus } from '@/lib/api/reservations'
-import { ReservationStatus } from '@/types'
-import { format, isValid, parseISO } from 'date-fns'
-import { pl } from 'date-fns/locale'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { getReservationById, downloadReservationPDF, type Reservation } from '@/lib/api/reservations'
+import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-import { useState } from 'react'
+import { format } from 'date-fns'
+import { pl } from 'date-fns/locale'
 
-const statusColors = {
-  [ReservationStatus.PENDING]: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-  [ReservationStatus.CONFIRMED]: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-  [ReservationStatus.COMPLETED]: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-  [ReservationStatus.CANCELLED]: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-  [ReservationStatus.RESERVED]: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-}
-
-const statusLabels = {
-  [ReservationStatus.PENDING]: 'Oczekuj\u0105ca',
-  [ReservationStatus.CONFIRMED]: 'Potwierdzona',
-  [ReservationStatus.COMPLETED]: 'Zako\u0144czona',
-  [ReservationStatus.CANCELLED]: 'Anulowana',
-  [ReservationStatus.RESERVED]: 'W kolejce',
-}
-
-// Helper to safely format dates
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'Brak daty'
-  
-  try {
-    const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
-    if (!isValid(date)) return 'Nieprawid\u0142owa data'
-    return format(date, 'd MMMM yyyy', { locale: pl })
-  } catch (error) {
-    console.error('Error formatting date:', dateString, error)
-    return 'B\u0142\u0105d daty'
-  }
-}
-
-// Helper to format date with time
-const formatDateTime = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'Brak daty'
-  
-  try {
-    const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
-    if (!isValid(date)) return 'Nieprawid\u0142owa data'
-    return format(date, 'd MMMM yyyy, HH:mm', { locale: pl })
-  } catch (error) {
-    console.error('Error formatting date:', dateString, error)
-    return 'B\u0142\u0105d daty'
-  }
-}
-
-// Helper to format currency (cents to PLN)
-const formatCurrency = (cents: number): string => {
-  const zloty = cents / 100
-  return zloty.toLocaleString('pl-PL', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+const statusConfig = {
+  PENDING: {
+    label: 'Oczekująca',
+    color: 'bg-orange-500',
+    textColor: 'text-orange-600',
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    icon: Clock,
+  },
+  CONFIRMED: {
+    label: 'Potwierdzona',
+    color: 'bg-green-500',
+    textColor: 'text-green-600',
+    bgColor: 'bg-green-50 dark:bg-green-950/30',
+    icon: CheckCircle2,
+  },
+  CANCELLED: {
+    label: 'Anulowana',
+    color: 'bg-red-500',
+    textColor: 'text-red-600',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    icon: XCircle,
+  },
+  COMPLETED: {
+    label: 'Zakończona',
+    color: 'bg-blue-500',
+    textColor: 'text-blue-600',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    icon: CheckCircle2,
+  },
 }
 
 export default function ReservationDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const reservationId = params.id as string
+  const { toast } = useToast()
+  const [reservation, setReservation] = useState<Reservation | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [downloading, setDownloading] = useState(false)
 
-  const { data: reservation, isLoading, error } = useReservation(reservationId)
-  const updateStatus = useUpdateReservationStatus()
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  useEffect(() => {
+    loadReservation()
+  }, [params.id])
 
-  const handleStatusChange = async (newStatus: ReservationStatus) => {
-    const confirmMessages = {
-      [ReservationStatus.CONFIRMED]: 'Czy na pewno chcesz potwierdzi\u0107 t\u0119 rezerwacj\u0119?',
-      [ReservationStatus.CANCELLED]: 'Czy na pewno chcesz anulowa\u0107 t\u0119 rezerwacj\u0119?',
-      [ReservationStatus.COMPLETED]: 'Czy na pewno chcesz oznaczy\u0107 t\u0119 rezerwacj\u0119 jako zako\u0144czon\u0105?',
-      [ReservationStatus.PENDING]: 'Czy na pewno chcesz zmieni\u0107 status na oczekuj\u0105cy?',
-      [ReservationStatus.RESERVED]: 'Czy na pewno chcesz przenie\u015b\u0107 t\u0119 rezerwacj\u0119 do kolejki?',
-    }
-
-    if (!confirm(confirmMessages[newStatus])) return
-
-    setIsUpdatingStatus(true)
+  const loadReservation = async () => {
     try {
-      await updateStatus.mutateAsync({
-        id: reservationId,
-        status: newStatus,
-        reason: `Status zmieniony na: ${statusLabels[newStatus]}`
+      setLoading(true)
+      const data = await getReservationById(params.id as string)
+      setReservation(data)
+    } catch (error: any) {
+      console.error('Error loading reservation:', error)
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się załadować rezerwacji',
+        variant: 'destructive',
       })
-    } catch (error) {
-      console.error('Error updating status:', error)
-      alert('Wyst\u0105pi\u0142 b\u0142\u0105d podczas zmiany statusu')
+      router.push('/dashboard/reservations')
     } finally {
-      setIsUpdatingStatus(false)
+      setLoading(false)
     }
   }
 
-  // Get display date based on status
-  const getDisplayDate = () => {
-    if (!reservation) return 'Brak daty'
-    if (reservation.status === ReservationStatus.RESERVED) {
-      return formatDate(reservation.reservationQueueDate)
+  const handleDownloadPDF = async () => {
+    if (!reservation) return
+    
+    try {
+      setDownloading(true)
+      await downloadReservationPDF(reservation.id)
+      toast({
+        title: 'Sukces',
+        description: 'PDF został pobrany',
+      })
+    } catch (error: any) {
+      console.error('Error downloading PDF:', error)
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się pobrać PDF',
+        variant: 'destructive',
+      })
+    } finally {
+      setDownloading(false)
     }
-    return formatDateTime(reservation.startDateTime)
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 text-primary-500 animate-spin mb-4" />
-          <p className="text-neutral-600 dark:text-neutral-400">
-            \u0141adowanie danych rezerwacji...
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Wczytywanie...</p>
         </div>
-      </DashboardLayout>
+      </div>
     )
   }
 
-  if (error || !reservation) {
-    return (
-      <DashboardLayout>
-        <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 p-8 text-center border border-red-200 dark:border-red-800">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-2">
-            B\u0142\u0105d \u0142adowania rezerwacji
-          </h3>
-          <p className="text-red-700 dark:text-red-300 mb-4">
-            {error instanceof Error ? error.message : 'Rezerwacja nie zosta\u0142a znaleziona'}
-          </p>
-          <button
-            onClick={() => router.push('/dashboard/reservations')}
-            className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-          >
-            Powr\u00f3t do listy rezerwacji
-          </button>
-        </div>
-      </DashboardLayout>
-    )
+  if (!reservation) {
+    return null
   }
+
+  const status = statusConfig[reservation.status as keyof typeof statusConfig]
+  const StatusIcon = status.icon
+  const eventDate = reservation.startDateTime 
+    ? new Date(reservation.startDateTime) 
+    : reservation.date 
+    ? new Date(reservation.date) 
+    : null
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Powr\u00f3t
-          </button>
-
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-                  Rezerwacja #{reservation.id}
-                </h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[reservation.status]}`}>
-                  {statusLabels[reservation.status]}
-                </span>
-              </div>
-              <p className="text-neutral-600 dark:text-neutral-400">
-                {getDisplayDate()}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <Link
-                href={`/dashboard/reservations/${reservationId}/edit`}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              >
-                <Edit className="w-4 h-4" />
-                Edytuj
-              </Link>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Status Actions */}
-        {reservation.status !== ReservationStatus.COMPLETED && reservation.status !== ReservationStatus.CANCELLED && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700"
-          >
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-              Akcje
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              {reservation.status === ReservationStatus.PENDING && (
-                <button
-                  onClick={() => handleStatusChange(ReservationStatus.CONFIRMED)}
-                  disabled={isUpdatingStatus}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Potwierd\u017a
-                </button>
-              )}
-              
-              {reservation.status === ReservationStatus.CONFIRMED && (
-                <button
-                  onClick={() => handleStatusChange(ReservationStatus.COMPLETED)}
-                  disabled={isUpdatingStatus}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Oznacz jako zako\u0144czon\u0105
-                </button>
-              )}
-              
-              {reservation.status === ReservationStatus.RESERVED && (
-                <button
-                  onClick={() => handleStatusChange(ReservationStatus.CONFIRMED)}
-                  disabled={isUpdatingStatus}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50"
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  Potwierd\u017a z kolejki
-                </button>
-              )}
-              
-              <button
-                onClick={() => handleStatusChange(ReservationStatus.CANCELLED)}
-                disabled={isUpdatingStatus}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
-              >
-                <XCircle className="w-4 h-4" />
-                Anuluj rezerwacj\u0119
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Basic Info Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <div className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                Liczba go\u015bci
-              </p>
-            </div>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-              {reservation.guests || 0}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                Ca\u0142kowita cena
-              </p>
-            </div>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(reservation.totalPrice || 0)} z\u0142
-            </p>
-          </div>
-
-          {reservation.hall && (
-            <div className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                  <Building className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Sala
-                </p>
-              </div>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                {reservation.hall.name}
-              </p>
-            </div>
-          )}
-
-          {reservation.eventType && (
-            <div className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
-                  <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Rodzaj wydarzenia
-                </p>
-              </div>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                {reservation.eventType.name}
-              </p>
-            </div>
-          )}
-        </motion.div>
-
-        {/* Client Info */}
-        {reservation.client && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700"
-          >
-            <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Klient
-            </h2>
-            
-            <div className="space-y-3">
-              <Link
-                href={`/dashboard/clients/${reservation.client.id}`}
-                className="block text-lg font-semibold text-primary-600 dark:text-primary-400 hover:underline"
-              >
-                {reservation.client.firstName} {reservation.client.lastName}
-              </Link>
-
-              <div className="space-y-2">
-                {reservation.client.email && (
-                  <a
-                    href={`mailto:${reservation.client.email}`}
-                    className="flex items-center gap-3 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
-                  >
-                    <Mail className="w-4 h-4" />
-                    <span>{reservation.client.email}</span>
-                  </a>
-                )}
-
-                {reservation.client.phone && (
-                  <a
-                    href={`tel:${reservation.client.phone}`}
-                    className="flex items-center gap-3 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
-                  >
-                    <Phone className="w-4 h-4" />
-                    <span>{reservation.client.phone}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Notes */}
-        {reservation.notes && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700"
-          >
-            <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Notatki
-            </h2>
-            <p className="text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">
-              {reservation.notes}
-            </p>
-          </motion.div>
-        )}
-
-        {/* Additional Details */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700"
-        >
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-            Szczeg\u00f3\u0142y
-          </h2>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto py-8 px-4 space-y-8">
+        {/* Premium Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 p-8 text-white shadow-2xl">
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {reservation.startDateTime && reservation.status !== ReservationStatus.RESERVED && (
-              <div>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-1">Data rozpocz\u0119cia</p>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {formatDateTime(reservation.startDateTime)}
-                </p>
-              </div>
-            )}
+          <div className="relative z-10 space-y-6">
+            {/* Back Button */}
+            <Link href="/dashboard/reservations">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Powrót do listy
+              </Button>
+            </Link>
 
-            {reservation.endDateTime && reservation.status !== ReservationStatus.RESERVED && (
-              <div>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-1">Data zako\u0144czenia</p>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {formatDateTime(reservation.endDateTime)}
-                </p>
+            {/* Title Section */}
+            <div className="flex justify-between items-start">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <Calendar className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h1 className="text-4xl font-bold">Rezerwacja #{reservation.id.slice(0, 8)}</h1>
+                    <p className="text-white/90 text-lg mt-1">Szczegóły rezerwacji</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge className={`${status.color} text-white border-0 px-3 py-1`}>
+                    <StatusIcon className="h-3 w-3 mr-1" />
+                    {status.label}
+                  </Badge>
+                  {eventDate && (
+                    <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {format(eventDate, 'dd MMMM yyyy', { locale: pl })}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            )}
 
-            {reservation.status === ReservationStatus.RESERVED && reservation.reservationQueueDate && (
-              <div>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-1">Preferowana data (kolejka)</p>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {formatDate(reservation.reservationQueueDate)}
-                </p>
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button 
+                  size="lg" 
+                  onClick={handleDownloadPDF}
+                  disabled={downloading}
+                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
+                </Button>
               </div>
-            )}
-
-            <div>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-1">Data utworzenia</p>
-              <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                {formatDateTime(reservation.createdAt)}
-              </p>
             </div>
+          </div>
 
-            <div>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-1">Ostatnia aktualizacja</p>
-              <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                {formatDateTime(reservation.updatedAt)}
-              </p>
-            </div>
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+        </div>
 
-            {reservation.duration && (
-              <div>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-1">Czas trwania</p>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {reservation.duration} godzin
-                </p>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Main Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Client Info */}
+            <Card className="border-0 shadow-xl">
+              <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold">Klient</h2>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
+                      <p className="text-lg font-semibold">
+                        {reservation.client?.firstName} {reservation.client?.lastName}
+                      </p>
+                    </div>
+                  </div>
+                  {reservation.client?.email && (
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-lg font-semibold">{reservation.client.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {reservation.client?.phone && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Telefon</p>
+                        <p className="text-lg font-semibold">{reservation.client.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+            </Card>
+
+            {/* Hall Info */}
+            <Card className="border-0 shadow-xl">
+              <CardHeader className="border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+                    <Building2 className="h-5 w-5 text-white" />
+                  </div>
+                  Sala
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Nazwa sali</p>
+                    <p className="text-2xl font-bold">{reservation.hall?.name}</p>
+                  </div>
+                  {reservation.hall?.capacity && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>Pojemność: {reservation.hall.capacity} osób</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Event Details */}
+            <Card className="border-0 shadow-xl">
+              <CardHeader className="border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  Szczegóły wydarzenia
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Typ wydarzenia</p>
+                    <p className="text-lg font-semibold">{reservation.eventType?.name}</p>
+                  </div>
+                  {eventDate && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Data wydarzenia</p>
+                      <p className="text-lg font-semibold">
+                        {format(eventDate, 'EEEE, dd MMMM yyyy', { locale: pl })}
+                      </p>
+                    </div>
+                  )}
+                  {reservation.startDateTime && reservation.endDateTime && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Godziny</p>
+                      <p className="text-lg font-semibold">
+                        {format(new Date(reservation.startDateTime), 'HH:mm')} - {format(new Date(reservation.endDateTime), 'HH:mm')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notes */}
+            {reservation.notes && (
+              <Card className="border-0 shadow-xl">
+                <CardHeader className="border-b">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
+                    Notatki
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <p className="text-muted-foreground leading-relaxed">{reservation.notes}</p>
+                </CardContent>
+              </Card>
             )}
           </div>
-        </motion.div>
+
+          {/* Right Column - Stats & Pricing */}
+          <div className="space-y-6">
+            {/* Guests Breakdown */}
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold">Goście</h2>
+                </div>
+                <div className="space-y-4">
+                  {/* Adults */}
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Dorośli</p>
+                      <p className="text-2xl font-bold">{reservation.adults || 0}</p>
+                    </div>
+                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
+                  </div>
+                  {/* Children */}
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Dzieci</p>
+                      <p className="text-2xl font-bold">{reservation.children || 0}</p>
+                    </div>
+                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                  </div>
+                  {/* Toddlers */}
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Maluchy</p>
+                      <p className="text-2xl font-bold">{reservation.toddlers || 0}</p>
+                    </div>
+                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
+                  </div>
+                  {/* Total */}
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+                    <div>
+                      <p className="text-sm font-semibold">Razem</p>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        {(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)}
+                      </p>
+                    </div>
+                    <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Pricing */}
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                    <DollarSign className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold">Cennik</h2>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Cena za dorosłego</span>
+                    <span className="font-semibold">{reservation.pricePerAdult} zł</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Cena za dziecko</span>
+                    <span className="font-semibold">{reservation.pricePerChild} zł</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Cena za malucha</span>
+                    <span className="font-semibold">{reservation.pricePerToddler} zł</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
+                    <span className="font-bold">Suma całkowita</span>
+                    <span className="text-2xl font-bold">{reservation.totalPrice} zł</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card className="border-0 shadow-xl">
+              <CardHeader className="border-b">
+                <CardTitle className="text-lg">Szybkie akcje</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-2">
+                <Button variant="outline" className="w-full justify-start" size="lg">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edytuj rezerwację
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" size="lg">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Anuluj rezerwację
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }
