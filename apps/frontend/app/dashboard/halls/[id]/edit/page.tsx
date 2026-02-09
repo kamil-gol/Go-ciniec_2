@@ -27,6 +27,7 @@ export default function EditHallPage() {
     capacity: 0,
     pricePerPerson: 0,
     pricePerChild: 0,
+    pricePerToddler: 0,
     description: '',
     isActive: true,
   })
@@ -47,6 +48,7 @@ export default function EditHallPage() {
         capacity: hall.capacity,
         pricePerPerson: Number(hall.pricePerPerson),
         pricePerChild: Number(hall.pricePerChild) || 0,
+        pricePerToddler: Number(hall.pricePerToddler) || 0,
         description: hall.description || '',
         isActive: hall.isActive,
       })
@@ -189,6 +191,22 @@ export default function EditHallPage() {
                 onChange={(e) => setFormData({ ...formData, pricePerChild: parseFloat(e.target.value) || 0 })}
                 placeholder="Opcjonalne"
               />
+              <p className="text-sm text-muted-foreground">Zazwyczaj 70% ceny dorosłego</p>
+            </div>
+
+            {/* Price per Toddler */}
+            <div className="space-y-2">
+              <Label htmlFor="pricePerToddler">Cena za malucha 0-3 lat (zł)</Label>
+              <Input
+                id="pricePerToddler"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.pricePerToddler}
+                onChange={(e) => setFormData({ ...formData, pricePerToddler: parseFloat(e.target.value) || 0 })}
+                placeholder="Opcjonalne - zostaw 0 jeśli gratis"
+              />
+              <p className="text-sm text-muted-foreground">Zwykle 0 zł (gratis dla dzieci 0-3 lat)</p>
             </div>
 
             {/* Description */}
