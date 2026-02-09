@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Calendar, Users, DollarSign, Sparkles, CheckCircle2, Building2, Clock, MapPin } from 'lucide-react'
+import { ArrowLeft, Edit, Calendar, Users, DollarSign, Sparkles, CheckCircle2, Building2, Clock, MapPin, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getHallById, type Hall } from '@/lib/api/halls'
+import { HallReservationsCalendar } from '@/components/halls/hall-reservations-calendar'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
@@ -37,6 +38,11 @@ export default function HallDetailsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCreateReservation = () => {
+    // Navigate to create reservation page with hall pre-selected
+    router.push(`/dashboard/reservations/new?hallId=${params.id}`)
   }
 
   if (loading) {
@@ -236,31 +242,25 @@ export default function HallDetailsPage() {
           )}
         </div>
 
-        {/* Calendar Section */}
-        <Card className="border-0 shadow-xl">
+        {/* Calendar Section - NOW FUNCTIONAL! */}
+        <Card className="border-0 shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <Calendar className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Kalendarz Rezerwacji</h2>
-                  <p className="text-white/90">Zobacz dostępne terminy i zarezerwuj salę</p>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <Calendar className="h-6 w-6" />
               </div>
-              <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
-                <Calendar className="mr-2 h-5 w-5" />
-                Dodaj Rezerwację
-              </Button>
+              <div>
+                <h2 className="text-2xl font-bold">Kalendarz Rezerwacji</h2>
+                <p className="text-white/90">Zobacz dostępne terminy i wielokrotne rezerwacje dziennie</p>
+              </div>
             </div>
           </div>
           <CardContent className="p-8">
-            <div className="text-center py-12 text-muted-foreground">
-              <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Kalendarz rezerwacji - w przygotowaniu</p>
-              <p className="text-sm">Wkrótce będzie możliwe przeglądanie i zarządzanie rezerwacjami</p>
-            </div>
+            <HallReservationsCalendar 
+              hallId={hall.id} 
+              hallName={hall.name}
+              onCreateReservation={handleCreateReservation}
+            />
           </CardContent>
         </Card>
 
