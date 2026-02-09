@@ -47,9 +47,10 @@ function generatePhone(): string {
   return `+48 ${randomInt(500, 799)} ${randomInt(100, 999)} ${randomInt(100, 999)}`
 }
 
-function generateEmail(firstName: string, lastName: string): string {
+function generateEmail(firstName: string, lastName: string, index: number): string {
   const domains = ['gmail.com', 'wp.pl', 'o2.pl', 'interia.pl', 'onet.pl']
-  return `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${randomElement(domains)}`
+  const suffix = String(index).padStart(3, '0') // Unikalny sufiks 001, 002, etc.
+  return `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${suffix}@${randomElement(domains)}`
 }
 
 function formatDate(date: Date): string {
@@ -135,7 +136,7 @@ async function main() {
       data: {
         firstName,
         lastName,
-        email: generateEmail(firstName, lastName),
+        email: generateEmail(firstName, lastName, i + 1), // Unikalny email z indeksem
         phone: generatePhone(),
         notes: Math.random() > 0.7 ? 'Klient stały, preferuje rezerwacje z wyprzedzeniem' : null,
       },
