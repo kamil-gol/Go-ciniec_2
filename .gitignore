@@ -25,6 +25,12 @@ out/
 .env.test.local
 .env.production.local
 
+# Backup system configuration (CONTAINS PASSWORDS!)
+.env.backup
+backups/
+*.sql
+*.sql.gz
+
 # IDE
 .vscode/
 .idea/
