@@ -4,14 +4,30 @@ Reusable React components for Menu System UI.
 
 ## 📦 Components
 
+### Core Components
 1. **MenuCard** - Display menu template
 2. **PackageCard** - Display pricing package
 3. **OptionCard** - Display menu option with quantity selector
 4. **PriceBreakdown** - Display price calculation
 
+### Feature Components
+5. **MenuSelectionFlow** - Multi-step wizard for complete menu selection
+6. **MenuSummary** - Summary view with all selections
+
 ---
 
-## 🚀 Usage
+## 🚀 Quick Start
+
+### View Live Demo
+
+```bash
+# Start frontend
+cd /home/kamil/rezerwacje
+docker compose up frontend
+
+# Visit demo page
+http://localhost:3000/demo/menu
+```
 
 ### Import
 
@@ -20,18 +36,21 @@ import {
   MenuCard, 
   PackageCard, 
   OptionCard, 
-  PriceBreakdown 
+  PriceBreakdown,
+  MenuSelectionFlow,
+  MenuSummary
 } from '@/components/menu';
 ```
 
 ---
 
-## 🎯 MenuCard
+## 🎯 Core Components
+
+### MenuCard
 
 Displays a menu template with event type, validity, and package count.
 
-### Props
-
+**Props:**
 ```typescript
 interface MenuCardProps {
   template: MenuTemplate;        // Menu template data
@@ -40,27 +59,16 @@ interface MenuCardProps {
 }
 ```
 
-### Example
-
+**Example:**
 ```typescript
 import { useMenuTemplates } from '@/hooks/use-menu';
-import { MenuCard, MenuCardSkeleton } from '@/components/menu';
+import { MenuCard } from '@/components/menu';
 
 function MenuList() {
-  const { data: templates, isLoading } = useMenuTemplates({ 
-    isActive: true 
-  });
-
-  if (isLoading) {
-    return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map(i => <MenuCardSkeleton key={i} />)}
-      </div>
-    );
-  }
+  const { data: templates } = useMenuTemplates({ isActive: true });
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-3">
       {templates?.map(template => (
         <MenuCard 
           key={template.id}
@@ -73,25 +81,13 @@ function MenuList() {
 }
 ```
 
-### Features
-
-- ✅ Event type badge with color
-- ✅ Gradient header (customizable with eventType.color)
-- ✅ Validity dates (formatted in Polish)
-- ✅ Package count
-- ✅ Active status badge
-- ✅ Click handler
-- ✅ Framer Motion animations
-- ✅ Dark mode support
-
 ---
 
-## 📦 PackageCard
+### PackageCard
 
 Displays a package with pricing tiers and included items.
 
-### Props
-
+**Props:**
 ```typescript
 interface PackageCardProps {
   package: MenuPackage;           // Package data
@@ -101,51 +97,24 @@ interface PackageCardProps {
 }
 ```
 
-### Example
-
+**Example:**
 ```typescript
-import { useMenuPackages } from '@/hooks/use-menu';
-import { PackageCard } from '@/components/menu';
-import { useState } from 'react';
+const [selectedId, setSelectedId] = useState<string>();
 
-function PackageSelector({ templateId }: { templateId: string }) {
-  const { data: packages } = useMenuPackages(templateId);
-  const [selectedId, setSelectedId] = useState<string>();
-
-  return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {packages?.map(pkg => (
-        <PackageCard
-          key={pkg.id}
-          package={pkg}
-          isSelected={selectedId === pkg.id}
-          onSelect={(p) => setSelectedId(p.id)}
-        />
-      ))}
-    </div>
-  );
-}
+<PackageCard
+  package={pkg}
+  isSelected={selectedId === pkg.id}
+  onSelect={(p) => setSelectedId(p.id)}
+/>
 ```
-
-### Features
-
-- ✅ Adult/Child/Toddler pricing
-- ✅ Polish currency formatting (PLN)
-- ✅ Popular/Recommended badges
-- ✅ Included items checklist
-- ✅ Guest limits display
-- ✅ Selection indicator
-- ✅ Color accent bar
-- ✅ Hover effects
 
 ---
 
-## ⭐ OptionCard
+### OptionCard
 
 Displays a menu option with category, price, and quantity selector.
 
-### Props
-
+**Props:**
 ```typescript
 interface OptionCardProps {
   option: MenuOption;                          // Option data
@@ -155,57 +124,26 @@ interface OptionCardProps {
 }
 ```
 
-### Example
-
+**Example:**
 ```typescript
-import { useMenuOptions } from '@/hooks/use-menu';
-import { OptionCard } from '@/components/menu';
-import { useState } from 'react';
+const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-function OptionsSelector() {
-  const { data: options } = useMenuOptions({ category: 'Alkohol' });
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-
-  const handleQuantityChange = (optionId: string, quantity: number) => {
-    setQuantities(prev => ({
-      ...prev,
-      [optionId]: quantity
-    }));
-  };
-
-  return (
-    <div className="space-y-4">
-      {options?.map(option => (
-        <OptionCard
-          key={option.id}
-          option={option}
-          quantity={quantities[option.id] || 0}
-          onQuantityChange={handleQuantityChange}
-        />
-      ))}
-    </div>
-  );
-}
+<OptionCard
+  option={option}
+  quantity={quantities[option.id] || 0}
+  onQuantityChange={(id, qty) => {
+    setQuantities(prev => ({ ...prev, [id]: qty }));
+  }}
+/>
 ```
-
-### Features
-
-- ✅ Category badge with icon
-- ✅ Price type handling (FLAT/PER_PERSON/FREE)
-- ✅ Quantity selector (+/- buttons)
-- ✅ Max quantity enforcement
-- ✅ Single vs multiple selection
-- ✅ Selection indicator
-- ✅ Animated interactions
 
 ---
 
-## 💰 PriceBreakdown
+### PriceBreakdown
 
 Displays detailed price calculation with collapsible sections.
 
-### Props
-
+**Props:**
 ```typescript
 interface PriceBreakdownProps {
   breakdown: PriceBreakdown;     // Price breakdown data
@@ -214,142 +152,173 @@ interface PriceBreakdownProps {
 }
 ```
 
-### Example
+---
 
+## 🎉 Feature Components
+
+### MenuSelectionFlow
+
+**Multi-step wizard for complete menu selection process.**
+
+**Features:**
+- ✅ 4-step flow: Template → Package → Guests → Options
+- ✅ Progress indicator
+- ✅ State management
+- ✅ Validation
+- ✅ Guest counts input
+- ✅ Complete selection callback
+
+**Props:**
 ```typescript
-import { useReservationMenu } from '@/hooks/use-menu';
-import { PriceBreakdown } from '@/components/menu';
+interface MenuSelectionFlowProps {
+  eventTypeId?: string;           // Filter by event type
+  onComplete?: (selection) => void; // Called when complete
+  className?: string;
+}
 
-function ReservationSummary({ reservationId }: { reservationId: string }) {
-  const { data } = useReservationMenu(reservationId);
+interface Selection {
+  template: MenuTemplate;
+  package: MenuPackage;
+  selectedOptions: SelectedOption[];
+  guestCounts: {
+    adults: number;
+    children: number;
+    toddlers: number;
+  };
+}
+```
 
-  if (!data?.priceBreakdown) return null;
+**Example:**
+```typescript
+import { MenuSelectionFlow } from '@/components/menu';
 
+function ReservationPage() {
   return (
-    <div className="space-y-6">
-      <h2>Podsumowanie</h2>
-      <PriceBreakdown breakdown={data.priceBreakdown} />
-    </div>
+    <MenuSelectionFlow
+      eventTypeId="wedding-123"
+      onComplete={(selection) => {
+        console.log('Selection:', selection);
+        // Save to database
+        // Navigate to next step
+      }}
+    />
   );
 }
 ```
 
-### Features
-
-- ✅ Package cost breakdown (adults/children/toddlers)
-- ✅ Options cost with quantities
-- ✅ Collapsible sections
-- ✅ Total price calculation
-- ✅ VAT info
-- ✅ Animated expand/collapse
-- ✅ Polish currency formatting
-
 ---
 
-## 🎨 Styling
+### MenuSummary
 
-All components use:
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations
-- **Lucide React** for icons
-- **Dark mode** support out of the box
+**Complete summary view of menu selection.**
 
-### Customization
+**Features:**
+- ✅ Template & Package details
+- ✅ Guest counts breakdown
+- ✅ Selected options list
+- ✅ Price breakdown integration
+- ✅ Edit/Confirm actions
+- ✅ Sticky price on scroll
 
+**Props:**
 ```typescript
-// Custom styling
-<MenuCard 
-  template={template}
-  className="shadow-2xl hover:scale-105"
-/>
+interface MenuSummaryProps {
+  template: MenuTemplate;
+  package: MenuPackage;
+  selectedOptions: (MenuOption & { quantity: number })[];
+  guestCounts: {
+    adults: number;
+    children: number;
+    toddlers: number;
+  };
+  priceBreakdown?: PriceBreakdown;
+  onEdit?: () => void;
+  onConfirm?: () => void;
+  className?: string;
+}
+```
 
-// Custom colors (via template.eventType.color)
-template.eventType.color = '#FF6B9D'; // Pink gradient
+**Example:**
+```typescript
+import { MenuSummary } from '@/components/menu';
+
+function ConfirmationPage() {
+  return (
+    <MenuSummary
+      template={selectedTemplate}
+      package={selectedPackage}
+      selectedOptions={optionsWithQuantity}
+      guestCounts={{ adults: 50, children: 10, toddlers: 5 }}
+      priceBreakdown={calculatedPrices}
+      onEdit={() => router.push('/edit')}
+      onConfirm={handleSaveReservation}
+    />
+  );
+}
 ```
 
 ---
 
-## 🔗 Integration with Hooks
+## 🎨 Features Matrix
 
-### Full Example: Menu Selection Page
+| Feature | MenuCard | PackageCard | OptionCard | PriceBreakdown | Flow | Summary |
+|---------|----------|-------------|------------|----------------|------|----------|
+| **Responsive** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Dark Mode** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Animations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Skeleton** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Interactive** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Polish i18n** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Type-safe** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+---
+
+## 💡 Complete Example: Reservation Flow
 
 ```typescript
 'use client';
 
 import { useState } from 'react';
-import { 
-  useMenuTemplates, 
-  useMenuPackages, 
-  useMenuOptions 
-} from '@/hooks/use-menu';
-import { 
-  MenuCard, 
-  PackageCard, 
-  OptionCard, 
-  PriceBreakdown 
-} from '@/components/menu';
+import { MenuSelectionFlow, MenuSummary } from '@/components/menu';
+import { useCalculatePrices } from '@/hooks/use-menu';
 
-export function MenuSelectionPage() {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>();
-  const [selectedPackage, setSelectedPackage] = useState<string>();
-  const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
+export default function ReservationMenuPage() {
+  const [step, setStep] = useState<'selection' | 'summary'>('selection');
+  const [selection, setSelection] = useState<any>();
 
-  const { data: templates } = useMenuTemplates({ isActive: true });
-  const { data: packages } = useMenuPackages(selectedTemplate);
-  const { data: options } = useMenuOptions({ isActive: true });
+  // Calculate prices when selection is complete
+  const { data: priceBreakdown } = useCalculatePrices({
+    templateId: selection?.template.id,
+    packageId: selection?.package.id,
+    selectedOptions: selection?.selectedOptions,
+    guestCounts: selection?.guestCounts,
+  });
+
+  if (step === 'selection') {
+    return (
+      <MenuSelectionFlow
+        onComplete={(data) => {
+          setSelection(data);
+          setStep('summary');
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="space-y-12">
-      {/* Step 1: Select Template */}
-      <section>
-        <h2>Wybierz Menu</h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          {templates?.map(t => (
-            <MenuCard
-              key={t.id}
-              template={t}
-              onSelect={(template) => setSelectedTemplate(template.id)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Step 2: Select Package */}
-      {selectedTemplate && (
-        <section>
-          <h2>Wybierz Pakiet</h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {packages?.map(p => (
-              <PackageCard
-                key={p.id}
-                package={p}
-                isSelected={selectedPackage === p.id}
-                onSelect={(pkg) => setSelectedPackage(pkg.id)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Step 3: Select Options */}
-      {selectedPackage && (
-        <section>
-          <h2>Opcje Dodatkowe</h2>
-          <div className="space-y-4">
-            {options?.map(o => (
-              <OptionCard
-                key={o.id}
-                option={o}
-                quantity={optionQuantities[o.id] || 0}
-                onQuantityChange={(id, qty) => {
-                  setOptionQuantities(prev => ({ ...prev, [id]: qty }));
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
+    <MenuSummary
+      {...selection}
+      priceBreakdown={priceBreakdown}
+      onEdit={() => setStep('selection')}
+      onConfirm={async () => {
+        // Save reservation menu
+        const response = await fetch('/api/reservations/menu', {
+          method: 'POST',
+          body: JSON.stringify(selection),
+        });
+        // Navigate to next step
+      }}
+    />
   );
 }
 ```
@@ -404,17 +373,16 @@ const [selected, setSelected] = useState<string>();
 />
 ```
 
-### 3. Group options by category
+### 3. Validate before submit
 
 ```typescript
-const { data: grouped } = useOptionsGroupedByCategory();
-
-Object.entries(grouped).map(([category, options]) => (
-  <section key={category}>
-    <h3>{category}</h3>
-    {options.map(opt => <OptionCard option={opt} />)}
-  </section>
-));
+const handleComplete = (selection) => {
+  if (!selection.template || !selection.package) {
+    toast.error('Wybierz menu i pakiet');
+    return;
+  }
+  // Proceed...
+};
 ```
 
 ---
@@ -440,14 +408,28 @@ Object.entries(grouped).map(([category, options]) => (
 
 ---
 
+## 🚀 Demo Page
+
+**URL:** `http://localhost:3000/demo/menu`
+
+**Features:**
+- 🎨 Component Gallery - View all components with live data
+- 🔄 Selection Flow - Interactive multi-step wizard
+- 💡 Live Examples - Click and interact
+- 📊 API Integration - Real backend data
+
+---
+
 ## 📚 Related
 
 - [Menu Hooks Documentation](../../hooks/use-menu.ts)
 - [Menu Types](../../types/menu.types.ts)
 - [Menu API Client](../../lib/api/menu-api.ts)
+- [Demo Page](../../app/demo/menu/page.tsx)
 
 ---
 
 **Created:** 2026-02-10  
+**Updated:** 2026-02-10  
 **Status:** ✅ Production Ready  
-**Version:** 1.0.0  
+**Version:** 2.0.0  
