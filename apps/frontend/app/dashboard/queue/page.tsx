@@ -126,10 +126,13 @@ export default function QueuePage() {
     const invalidItem = reorderedItems.find(item => !item.position || item.position < 1)
     if (invalidItem) {
       console.error('BLOCKED: Invalid position detected!', invalidItem)
-      toast.error('Wykryto nieprawidłową pozycję. Odśwież stronę i spróbuj ponownie.')
+      toast.error('Wykryto nieprawiłdową pozycję. Odśwież stronę i spróbuj ponownie.')
       throw new Error('Invalid position in reordered items')
     }
 
+    // ✨ FIX: Store ORIGINAL queues before updating state
+    const originalQueues = [...queues]
+    
     // Update specific date group
     const updatedQueues = queues.map((item) => {
       const updated = reorderedItems.find((ri) => ri.id === item.id)
@@ -142,7 +145,8 @@ export default function QueuePage() {
       console.log('Calling API for', reorderedItems.length, 'items')
       for (let i = 0; i < reorderedItems.length; i++) {
         const item = reorderedItems[i]
-        const originalItem = queues.find((q) => q.id === item.id)
+        // ✨ FIX: Use originalQueues instead of current state
+        const originalItem = originalQueues.find((q) => q.id === item.id)
         
         console.log(`Processing item ${i}:`, {
           id: item.id,
