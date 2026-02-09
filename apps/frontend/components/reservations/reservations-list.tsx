@@ -76,6 +76,7 @@ export function ReservationsList() {
     status: statusFilter || undefined,
   })
 
+  // ✅ FIXED: Exclude RESERVED status from filters (queue reservations are in separate view)
   const statusOptions = [
     { value: '', label: 'Wszystkie statusy' },
     { value: 'PENDING', label: 'Oczekujące' },
@@ -153,7 +154,9 @@ export function ReservationsList() {
     )
   }
 
-  const reservations = data?.data || []
+  // ✅ FIXED: Filter out RESERVED status from the main list
+  const allReservations = data?.data || []
+  const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
   const totalPages = data?.totalPages || 1
 
   return (
