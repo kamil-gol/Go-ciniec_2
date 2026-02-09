@@ -7,8 +7,8 @@ import { z } from 'zod'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select' // ✅ Native Select for critical fields
-import { SelectField } from '@/components/form/select-field' // Keep for non-critical fields
+import { SelectSimple } from '@/components/ui/select-simple'
+import { SelectField } from '@/components/form/select-field'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
@@ -387,7 +387,7 @@ export function CreateReservationForm({
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* ✅ CRITICAL: Native Select for hallId */}
-            <Select
+            <SelectSimple
               label="Sala"
               options={hallOptions}
               error={errors.hallId?.message}
@@ -403,7 +403,7 @@ export function CreateReservationForm({
               <div className="flex gap-2">
                 <div className="flex-1">
                   {/* ✅ CRITICAL: Native Select for clientId */}
-                  <Select
+                  <SelectSimple
                     label="Klient"
                     options={clientOptions}
                     error={errors.clientId?.message}
@@ -434,7 +434,7 @@ export function CreateReservationForm({
             </div>
 
             {/* ✅ CRITICAL: Native Select for eventTypeId (drives conditional logic) */}
-            <Select
+            <SelectSimple
               label="Typ Wydarzenia"
               options={eventTypeOptions}
               error={errors.eventTypeId?.message}
