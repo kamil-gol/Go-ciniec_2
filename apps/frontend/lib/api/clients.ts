@@ -50,9 +50,9 @@ export const clientsApi = {
     return data.data || data // Handle both structures
   },
 
-  // Update client
+  // Update client (backend uses PUT)
   update: async (id: string, input: Partial<CreateClientInput>): Promise<Client> => {
-    const { data } = await apiClient.patch(`/clients/${id}`, input)
+    const { data } = await apiClient.put(`/clients/${id}`, input)
     return data.data || data // Handle both structures
   },
 
@@ -174,7 +174,7 @@ export const useDeleteClient = () => {
 
 // Normalize phone number for duplicate detection
 export const normalizePhone = (phone: string): string => {
-  return phone.replace(/[\s\-()]/g, '')
+  return phone.replace(/[\\s\\-()]/g, '')
 }
 
 // Check if phone number already exists
