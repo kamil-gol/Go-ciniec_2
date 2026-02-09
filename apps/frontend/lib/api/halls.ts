@@ -58,7 +58,13 @@ export const hallsApi = {
     search?: string
   }): Promise<HallsResponse> {
     const { data } = await apiClient.get('/halls', { params })
-    return data
+    
+    // Backend returns: { success: true, data: [...], count: 6 }
+    // Transform to: { halls: [...], total: 6 }
+    return {
+      halls: data.data || [],
+      total: data.count || 0
+    }
   },
 
   /**
@@ -66,7 +72,7 @@ export const hallsApi = {
    */
   async getById(id: string): Promise<Hall> {
     const { data } = await apiClient.get(`/halls/${id}`)
-    return data
+    return data.data || data
   },
 
   /**
@@ -74,7 +80,7 @@ export const hallsApi = {
    */
   async create(hall: CreateHallInput): Promise<Hall> {
     const { data } = await apiClient.post('/halls', hall)
-    return data
+    return data.data || data
   },
 
   /**
@@ -82,7 +88,7 @@ export const hallsApi = {
    */
   async update(id: string, hall: UpdateHallInput): Promise<Hall> {
     const { data } = await apiClient.put(`/halls/${id}`, hall)
-    return data
+    return data.data || data
   },
 
   /**
@@ -113,7 +119,8 @@ export const hallsApi = {
     const availability: HallAvailability[] = []
     const reservationsMap = new Map()
     
-    data.data?.forEach((reservation: any) => {
+    const reservations = data.data || []
+    reservations.forEach((reservation: any) => {
       if (reservation.startDateTime) {
         const date = reservation.startDateTime.split('T')[0]
         reservationsMap.set(date, {
