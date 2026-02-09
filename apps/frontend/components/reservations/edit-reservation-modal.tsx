@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -15,7 +15,7 @@ import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock, Smile, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Smile, CheckCircle, User, Mail, Phone } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
@@ -145,6 +145,18 @@ export function EditReservationModal({
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
   const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
 
+  // Calculate selected event type name using useMemo for immediate rendering
+  const eventTypeName = useMemo(() => {
+    if (!selectedEventTypeId) return ''
+    const eventTypesArray = eventTypes?.data || eventTypes || []
+    const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
+    return selectedType?.name || ''
+  }, [selectedEventTypeId, eventTypes])
+
+  const isBirthday = eventTypeName === 'Urodziny'
+  const isAnniversary = eventTypeName === 'Rocznica' || eventTypeName === 'Rocznica/Jubileusz'
+  const isCustom = eventTypeName === 'Inne'
+
   // Auto-set default paid date to today when marking as paid
   useEffect(() => {
     if (depositPaid && !watchedFields.depositPaidAt) {
@@ -231,14 +243,6 @@ export function EditReservationModal({
       }
     }
   }, [watchedFields.hallId, halls])
-
-  useEffect(() => {
-    if (selectedEventTypeId) {
-      const eventTypesArray = eventTypes?.data || eventTypes || []
-      const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
-      setSelectedEventTypeName(selectedType?.name || '')
-    }
-  }, [selectedEventTypeId, eventTypes])
 
   useEffect(() => {
     if (!open) {
@@ -408,14 +412,6 @@ export function EditReservationModal({
       label: `${hall.name} (max ${hall.capacity} osób)`,
     }))
   ]
-  
-  const clientOptions = [
-    { value: '', label: 'Wybierz klienta...' },
-    ...clientsArray.map((client) => ({
-      value: client.id,
-      label: `${client.firstName} ${client.lastName} ${client.phone ? '(' + client.phone + ')' : ''}`,
-    }))
-  ]
 
   const eventTypeOptions = [
     { value: '', label: 'Wybierz typ wydarzenia...' },
@@ -437,10 +433,9 @@ export function EditReservationModal({
     { value: 'TRANSFER', label: 'Przelew' },
     { value: 'BLIK', label: 'BLIK' },
   ]
-
-  const isBirthday = selectedEventTypeName === 'Urodziny'
-  const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
-  const isCustom = selectedEventTypeName === 'Inne'
+  
+  // Get client info for display
+  const clientInfo = reservation?.client
 
   if (loadingReservation || !isFormReady) {
     return (
@@ -460,6 +455,34 @@ export function EditReservationModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
+          {/* Client Info Display (Read-only) */}
+          {clientInfo && (
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Klient
+              </h3>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                  <User className="w-3.5 h-3.5" />
+                  <span className="font-medium">{clientInfo.firstName} {clientInfo.lastName}</span>
+                </div>
+                {clientInfo.email && (
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <Mail className="w-3.5 h-3.5" />
+                    <a href={`mailto:${clientInfo.email}`} className="hover:underline">{clientInfo.email}</a>
+                  </div>
+                )}
+                {clientInfo.phone && (
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <Phone className="w-3.5 h-3.5" />
+                    <a href={`tel:${clientInfo.phone}`} className="hover:underline">{clientInfo.phone}</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div>
             <Select
               label="Status Rezerwacji"
@@ -488,26 +511,6 @@ export function EditReservationModal({
                 Maksymalna pojemność: {selectedHallCapacity} osób
               </p>
             )}
-          </div>
-          
-          <div>
-            <div className="relative">
-              <Select
-                label="Klient"
-                options={clientOptions}
-                error={errors.clientId?.message}
-                value={watch('clientId')}
-                disabled={true}
-                {...register('clientId')}
-              />
-              <div className="absolute right-3 top-9 pointer-events-none">
-                <Lock className="w-4 h-4 text-secondary-400" />
-              </div>
-            </div>
-            <p className="mt-1 text-xs text-secondary-500 flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              Klient nie może być zmieniony po utworzeniu rezerwacji
-            </p>
           </div>
 
           <div>
