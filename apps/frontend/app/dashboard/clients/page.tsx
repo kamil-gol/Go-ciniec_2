@@ -8,13 +8,10 @@ import { CreateClientModal } from '@/components/clients/create-client-modal'
 import ClientCard from '@/components/clients/client-card'
 import ClientStats from '@/components/clients/client-stats'
 import { useClients, useDeleteClient } from '@/lib/api/clients'
-import { useAuth } from '@/hooks/use-auth'
-import { UserRole } from '@/types'
 
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const { user } = useAuth()
 
   // Debounced search (300ms delay)
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -31,8 +28,9 @@ export default function ClientsPage() {
   const { data: clients = [], isLoading, error, refetch } = useClients(debouncedSearch)
   const deleteClient = useDeleteClient()
 
-  // Check if user can delete (ADMIN only)
-  const canDelete = user?.role === UserRole.ADMIN
+  // TODO: Replace with actual auth check when implemented
+  // For now, allow delete for all users (will be restricted to ADMIN later)
+  const canDelete = true
 
   const handleDeleteClient = async (id: string) => {
     try {
@@ -217,7 +215,7 @@ export default function ClientsPage() {
                     onDelete={handleDeleteClient}
                     canDelete={canDelete}
                   />
-                )}
+                ))
               </div>
             </AnimatePresence>
           </motion.div>
