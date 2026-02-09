@@ -1,4 +1,5 @@
 import { PrismaClient, ReservationStatus } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -82,17 +83,23 @@ async function main() {
   // 0. UŻYTKOWNIK SYSTEMOWY
   // ============================================
   console.log('👤 Tworzenie użytkownika systemowego...')
+  
+  // Generate proper bcrypt hash for password: Admin123!@#
+  const adminPassword = 'Admin123!@#'
+  const hashedPassword = bcrypt.hashSync(adminPassword, 10)
+  
   const systemUser = await prisma.user.create({
     data: {
       email: 'admin@gosciniecrodzinny.pl',
-      password: '$2a$10$8vZw/xjJxYjK7YQm5z5J4OqZ5xZW5nKxXqXqXqXqXqXqXqXqXqXq', // hasło: admin123
+      password: hashedPassword,
       firstName: 'System',
       lastName: 'Administrator',
       role: 'ADMIN',
       isActive: true,
     },
   })
-  console.log(`✅ Utworzono użytkownika: ${systemUser.email}\n`)
+  console.log(`✅ Utworzono użytkownika: ${systemUser.email}`)
+  console.log(`   Hasło: ${adminPassword}\n`)
 
   // ============================================
   // 1. SALE
@@ -331,7 +338,7 @@ async function main() {
   console.log('✅ Seed zakończony pomyślnie!')
   console.log('\n🔑 Dane logowania:')
   console.log('   Email: admin@gosciniecrodzinny.pl')
-  console.log('   Hasło: admin123')
+  console.log('   Hasło: Admin123!@#')
 }
 
 main()
