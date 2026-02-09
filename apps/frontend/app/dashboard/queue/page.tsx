@@ -111,8 +111,13 @@ export default function QueuePage() {
 
   // Handle drag and drop reorder
   const handleReorder = async (reorderedItems: QueueItem[]) => {
+    console.log('=== HANDLE REORDER START ===')
+    console.log('Selected date:', selectedDate)
+    console.log('Reordered items received:', reorderedItems.map(i => ({ id: i.id, position: i.position })))
+
     // ✨ FIX: Prevent reorder in 'all' view (should be disabled anyway but add safety)
     if (selectedDate === 'all') {
+      console.error('BLOCKED: Attempting to reorder in "all" view!')
       toast.error('Zmiana kolejności dostępna tylko w widoku pojedynczej daty')
       throw new Error('Cannot reorder in all dates view')
     }
@@ -120,7 +125,7 @@ export default function QueuePage() {
     // ✨ FIX: Validate that all items have valid positions (> 0)
     const invalidItem = reorderedItems.find(item => !item.position || item.position < 1)
     if (invalidItem) {
-      console.error('Invalid position detected:', invalidItem)
+      console.error('BLOCKED: Invalid position detected!', invalidItem)
       toast.error('Wykryto nieprawidłową pozycję. Odśwież stronę i spróbuj ponownie.')
       throw new Error('Invalid position in reordered items')
     }
@@ -134,25 +139,37 @@ export default function QueuePage() {
 
     try {
       // Call backend to update positions
+      console.log('Calling API for', reorderedItems.length, 'items')
       for (let i = 0; i < reorderedItems.length; i++) {
         const item = reorderedItems[i]
         const originalItem = queues.find((q) => q.id === item.id)
         
+        console.log(`Processing item ${i}:`, {
+          id: item.id,
+          newPosition: item.position,
+          originalPosition: originalItem?.position
+        })
+        
         // ✨ FIX: Additional validation before API call
         if (!item.position || item.position < 1) {
-          console.error('Skipping invalid position for item:', item.id, 'position:', item.position)
+          console.error('SKIPPING: Invalid position for item:', item.id, 'position:', item.position)
           continue
         }
         
         if (originalItem && originalItem.position !== item.position) {
+          console.log(`API CALL: moveToPosition(${item.id}, ${item.position})`)
           await queueApi.moveToPosition(item.id, item.position)
+        } else {
+          console.log(`SKIPPED: No change for item ${item.id}`)
         }
       }
       
+      console.log('=== HANDLE REORDER SUCCESS ===')
       toast.success('Kolejność zaktualizowana')
       await loadData()
     } catch (error) {
-      console.error('Failed to reorder:', error)
+      console.error('=== HANDLE REORDER ERROR ===')
+      console.error(error)
       toast.error('Nie udało się zmienić kolejności')
       throw error
     }
