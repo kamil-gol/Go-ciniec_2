@@ -42,7 +42,6 @@ export interface Client {
   lastName: string
   email?: string // Optional email
   phone: string
-  address?: string
   notes?: string
   createdAt: string
   updatedAt: string
@@ -263,6 +262,5 @@ export interface CreateClientInput {
   lastName: string
   email?: string // Optional email
   phone: string
-  address?: string
   notes?: string
 }
