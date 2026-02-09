@@ -1,61 +1,155 @@
 'use client'
 
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import { Building2, Plus } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { Plus, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
+import { getHalls, type Hall } from '@/lib/api/halls'
+import Link from 'next/link'
+import { HallCard } from '@/components/halls/hall-card'
+import { useToast } from '@/hooks/use-toast'
 
 export default function HallsPage() {
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-primary-500" />
-              Sale
-            </h1>
-            <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-              Zarządzaj salami i ich dostępnością
-            </p>
-          </div>
-          <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 px-6 py-3 text-white shadow-medium hover:shadow-hard transition-all hover:scale-105 active:scale-95">
-            <Plus className="h-5 w-5" />
-            Nowa Sala
-          </button>
-        </motion.div>
+  const { toast } = useToast()
+  const [halls, setHalls] = useState<Hall[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-2xl bg-white dark:bg-neutral-800 p-12 shadow-soft border border-neutral-200 dark:border-neutral-700 text-center"
-        >
-          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-secondary-900/30 mb-6">
-            <Building2 className="h-10 w-10 text-primary-500" />
-          </div>
-          <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
-            Moduł Sal ✨
-          </h3>
-          <p className="text-neutral-600 dark:text-neutral-400 max-w-md mx-auto mb-6">
-            System zarządzania salami w przygotowaniu. Funkcje:
+  useEffect(() => {
+    loadHalls()
+  }, [showInactive])
+
+  const loadHalls = async () => {
+    try {
+      setLoading(true)
+      const data = await getHalls({ 
+        isActive: !showInactive ? true : undefined 
+      })
+      setHalls(data.halls || [])
+    } catch (error: any) {
+      console.error('Error loading halls:', error)
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się załadować sal',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredHalls = halls.filter(hall =>
+    hall.name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Sale</h1>
+          <p className="text-muted-foreground">
+            Zarządzaj salami weselny mi Gosińca
           </p>
-          <ul className="text-left max-w-md mx-auto space-y-2 text-neutral-600 dark:text-neutral-400">
-            <li className="flex items-center gap-2">✅ Lista dostępnych sal</li>
-            <li className="flex items-center gap-2">✅ Pojemność i wyposażenie</li>
-            <li className="flex items-center gap-2">✅ Kalendarz zajętości</li>
-            <li className="flex items-center gap-2">✅ Cennik i pakiety</li>
-          </ul>
-          <div className="mt-8">
-            <span className="inline-flex items-center gap-2 rounded-full bg-secondary-100 dark:bg-secondary-900/30 px-4 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-400">
-              ✨ Nowy moduł - Sprint 3
-            </span>
-          </div>
-        </motion.div>
+        </div>
+        <Link href="/dashboard/halls/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Dodaj Salę
+          </Button>
+        </Link>
       </div>
-    </DashboardLayout>
+
+      {/* Stats Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="p-4">
+          <div className="text-2xl font-bold">{halls.length}</div>
+          <div className="text-sm text-muted-foreground">Wszystkie sale</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-2xl font-bold">
+            {halls.filter(h => h.isActive).length}
+          </div>
+          <div className="text-sm text-muted-foreground">Aktywne</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-2xl font-bold">
+            {halls.reduce((sum, h) => sum + h.capacity, 0)}
+          </div>
+          <div className="text-sm text-muted-foreground">Całkowita pojemność</div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-4 mb-6">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Szukaj sali po nazwie..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <Button
+            variant={showInactive ? 'default' : 'outline'}
+            onClick={() => setShowInactive(!showInactive)}
+          >
+            {showInactive ? 'Wszystkie' : 'Tylko aktywne'}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Halls Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="h-80 animate-pulse">
+              <div className="h-full bg-muted rounded-lg" />
+            </Card>
+          ))}
+        </div>
+      ) : filteredHalls.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="text-muted-foreground mb-4">
+            {search ? (
+              <>
+                <p className="text-lg font-semibold mb-2">Nie znaleziono sal</p>
+                <p>Spróbuj użyć innego wyszukiwania</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-semibold mb-2">Brak sal</p>
+                <p>Dodaj pierwszą salę, aby zacząć</p>
+              </>
+            )}
+          </div>
+          {!search && (
+            <Link href="/dashboard/halls/new">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Dodaj Pierwszą Salę
+              </Button>
+            </Link>
+          )}
+        </Card>
+      ) : (
+        <>
+          <div className="text-sm text-muted-foreground mb-4">
+            Znaleziono {filteredHalls.length} {filteredHalls.length === 1 ? 'salę' : 'sal'}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredHalls.map((hall) => (
+              <HallCard key={hall.id} hall={hall} onUpdate={loadHalls} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
