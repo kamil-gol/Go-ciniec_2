@@ -1,7 +1,7 @@
 /**
  * Queue Service
  * Business logic for reservation queue management
- * ✨ UPDATED: Added retry logic for race condition handling (Bug #5)
+ * ✨ UPDATED: Fixed CHECK constraint with high temp positions (Bug #9)
  */
 
 import { PrismaClient, ReservationStatus, Prisma } from '@prisma/client';
@@ -11,6 +11,7 @@ import {
   QueueItemResponse,
   QueueStats,
   AutoCancelResult,
+  BatchUpdatePositionsDTO,
 } from '../types/queue.types';
 
 const prisma = new PrismaClient();
@@ -521,8 +522,119 @@ export class QueueService {
   }
 
   /**
+   * Batch update queue positions atomically
+   * ✨ BUG #9 FIX: Atomic transaction with high temporary positions
+   * 
+   * This method updates multiple positions in a single transaction,
+   * preventing race conditions and unique constraint conflicts.
+   * 
+   * Strategy: Use HIGH temporary positions (1000+) to avoid conflicts,
+   * then update to final positive positions.
+   */
+  async batchUpdatePositions(
+    updates: Array<{ id: string; position: number }>
+  ): Promise<{ updatedCount: number }> {
+    // Validate
+    if (!updates || updates.length === 0) {
+      throw new Error('At least one update is required');
+    }
+
+    // Validate each update
+    for (const update of updates) {
+      if (!update.id) {
+        throw new Error('Each update must have a reservation ID');
+      }
+      if (!Number.isInteger(update.position) || update.position < 1) {
+        throw new Error(`Invalid position ${update.position} for reservation ${update.id}`);
+      }
+    }
+
+    // Use transaction to ensure atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // Get all reservations that need updating
+      const reservationIds = updates.map(u => u.id);
+      const reservations = await tx.reservation.findMany({
+        where: {
+          id: { in: reservationIds },
+        },
+        select: {
+          id: true,
+          status: true,
+          reservationQueueDate: true,
+          reservationQueuePosition: true,
+        },
+      });
+
+      // Validate all exist and are RESERVED
+      if (reservations.length !== updates.length) {
+        throw new Error('One or more reservations not found');
+      }
+
+      for (const res of reservations) {
+        if (res.status !== ReservationStatus.RESERVED) {
+          throw new Error(`Reservation ${res.id} is not RESERVED`);
+        }
+        if (!res.reservationQueueDate) {
+          throw new Error(`Reservation ${res.id} has no queue date`);
+        }
+      }
+
+      // Verify all reservations are on the same date
+      const firstDate = reservations[0].reservationQueueDate?.toDateString();
+      for (const res of reservations) {
+        if (res.reservationQueueDate?.toDateString() !== firstDate) {
+          throw new Error('All reservations must be on the same date');
+        }
+      }
+
+      // Verify no duplicate positions in updates
+      const positions = updates.map(u => u.position);
+      const uniquePositions = new Set(positions);
+      if (positions.length !== uniquePositions.size) {
+        throw new Error('Duplicate positions detected in updates');
+      }
+
+      // ✨ FIX: Step 1 - Set all to TEMPORARY HIGH positions (1000+)
+      // This avoids unique constraint conflicts and satisfies CHECK constraint (> 0)
+      console.log('Step 1: Setting temporary high positions (1000+)...');
+      const TEMP_OFFSET = 1000; // Start at 1000 to avoid conflicts
+      
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        const tempPosition = TEMP_OFFSET + i; // 1000, 1001, 1002, etc.
+        
+        await tx.reservation.update({
+          where: { id: update.id },
+          data: {
+            reservationQueuePosition: tempPosition,
+          },
+        });
+      }
+
+      // ✨ FIX: Step 2 - Set to FINAL positions
+      console.log('Step 2: Setting final positions...');
+      let updatedCount = 0;
+      for (const update of updates) {
+        await tx.reservation.update({
+          where: { id: update.id },
+          data: {
+            reservationQueuePosition: update.position,
+            queueOrderManual: true, // Mark as manually ordered
+          },
+        });
+        updatedCount++;
+      }
+
+      return { updatedCount };
+    });
+
+    return result;
+  }
+
+  /**
    * Rebuild queue positions for all dates
    * Renumbers all RESERVED reservations per date based on createdAt
+   * ✨ FIX: Don't modify date, just renumber positions
    */
   async rebuildPositions(): Promise<{ updatedCount: number; dateCount: number }> {
     // Get all RESERVED reservations grouped by date
@@ -565,16 +677,14 @@ export class QueueService {
       // Sort by createdAt within each date
       items.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
       
-      // Update each reservation with new position and normalize date to start of day
-      const normalizedDate = new Date(dateKey + 'T00:00:00.000Z');
-      
+      // ✨ FIX: Only update position and queueOrderManual, don't touch date
       for (let i = 0; i < items.length; i++) {
         await prisma.reservation.update({
           where: { id: items[i].id },
           data: {
             reservationQueuePosition: i + 1,
             queueOrderManual: false, // Reset manual flag
-            reservationQueueDate: normalizedDate, // Normalize to start of day
+            // ✨ FIX: Don't update reservationQueueDate - keep existing date as-is
           },
         });
         updatedCount++;
