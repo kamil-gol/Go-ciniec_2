@@ -149,11 +149,11 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                   transition={{ delay: index * 0.05 }}
                   className="relative"
                 >
-                  {/* Active Indicator - moved outside Link for better visibility */}
+                  {/* Active Indicator - positioned outside */}
                   {isActive && (
                     <motion.div
                       layoutId="activeIndicator"
-                      className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-gradient-to-b from-primary-400 to-secondary-400"
+                      className="absolute left-0.5 top-0 h-full w-1 rounded-r-full bg-gradient-to-b from-primary-400 to-secondary-400 z-10"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -162,8 +162,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                     href={item.href}
                     className={cn(
                       'group relative flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200',
-                      // Add padding-left to make space for the indicator
-                      isActive ? 'pl-4 pr-3' : 'pl-3 pr-3',
+                      // Increased padding for active state to prevent overlap
+                      isActive ? 'pl-5 pr-3' : 'pl-3 pr-3',
                       isActive
                         ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-medium'
                         : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:scale-[1.02]'
