@@ -33,8 +33,9 @@ model Hall {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String   @unique @db.VarChar(255)
   capacity        Int      @db.SmallInt
-  pricePerPerson  Decimal  @db.Decimal(10, 2)
-  pricePerChild   Decimal? @db.Decimal(10, 2) // New: optional separate price for children
+  pricePerPerson  Decimal  @db.Decimal(10, 2) // Price per adult
+  pricePerChild   Decimal? @db.Decimal(10, 2) // Price per child (4-12 years)
+  pricePerToddler Decimal? @db.Decimal(10, 2) // Price per toddler (0-3 years)
   description     String?  @db.Text
   amenities       String[] @db.Text
   images          String[] @db.Text
