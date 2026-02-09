@@ -19,6 +19,7 @@ import {
   Search,
   Plus,
   LogOut,
+  UtensilsCrossed,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -35,6 +36,7 @@ const navigation: NavItem[] = [
   { name: 'Rezerwacje', href: '/dashboard/reservations', icon: Calendar }, // MIGRATED
   { name: 'Klienci', href: '/dashboard/clients', icon: Users, isNew: true },
   { name: 'Sale', href: '/dashboard/halls', icon: Building2, isNew: true },
+  { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed, isNew: true },
   { name: 'Kolejka', href: '/dashboard/queue', icon: Clock }, // MIGRATED
   { name: 'Zaliczki', href: '/dashboard/deposits', icon: DollarSign, isNew: true },
   { name: 'Typy Wydarzeń', href: '/dashboard/event-types', icon: Theater, isNew: true },
