@@ -1,609 +1,813 @@
 /**
- * 🍽️ Menu System Seed Data
+ * Menu System Seed Data
  * 
- * Test data for menu templates, packages, and options.
- * Creates comprehensive menu for 3 event types: Wesele, Urodziny, Komunia
+ * Creates test menus for 3 event types:
+ * 1. Wesele (Wedding) - 3 packages, 15 options
+ * 2. Urodziny (Birthday) - 2 packages, 10 options
+ * 3. Komunia (First Communion) - 2 packages, 8 options
  */
 
 import { PrismaClient } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
 const prisma = new PrismaClient();
+
+// Helper to convert number to Prisma Decimal
+const dec = (num: number) => new Decimal(num);
 
 export async function seedMenuSystem() {
   console.log('🍽️  Starting menu system seed...');
 
-  // ═════════════════════════════════════════════════
-  // Get Event Types
-  // ═════════════════════════════════════════════════
+  // Get event types
+  const weddingType = await prisma.eventType.findFirst({ where: { name: 'Wesele' } });
+  const birthdayType = await prisma.eventType.findFirst({ where: { name: 'Urodziny' } });
+  const communionType = await prisma.eventType.findFirst({ where: { name: 'Komunia' } });
 
-  const weseleType = await prisma.eventType.findFirst({ where: { name: 'Wesele' } });
-  const urodzinyType = await prisma.eventType.findFirst({ where: { name: 'Urodziny' } });
-  const komuniaType = await prisma.eventType.findFirst({ where: { name: 'Komunia' } });
-
-  if (!weseleType || !urodzinyType || !komuniaType) {
-    throw new Error('Event types not found. Run base seed first.');
+  if (!weddingType || !birthdayType || !communionType) {
+    console.error('❌ Event types not found! Run base seed first.');
+    return;
   }
 
-  // ═════════════════════════════════════════════════
-  // Create Menu Options (Shared across all menus)
-  // ═════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════
+  // 1. WESELE (WEDDING)
+  // ══════════════════════════════════════════════════
 
-  console.log('  ➡️ Creating menu options...');
+  console.log('💍 Creating Wedding menu...');
 
-  // Music Options
-  const optionDJ = await prisma.menuOption.create({
+  const weddingMenu = await prisma.menuTemplate.create({
     data: {
-      name: 'DJ + Nagłośnienie',
-      description: 'Profesjonalny DJ z pełnym sprzętem nagłaśniającym',
-      shortDescription: 'DJ + sprzęt audio (6h)',
-      category: 'Muzyka',
-      priceType: 'FLAT',
-      priceAmount: 2000,
-      icon: 'music',
-      displayOrder: 1,
-    },
-  });
-
-  const optionBand = await prisma.menuOption.create({
-    data: {
-      name: 'Zespół muzyczny',
-      description: 'Zespół muzyczny na żywo (5 osób)',
-      shortDescription: 'Live band (6h)',
-      category: 'Muzyka',
-      priceType: 'FLAT',
-      priceAmount: 3500,
-      icon: 'guitar',
-      displayOrder: 2,
-    },
-  });
-
-  const optionMC = await prisma.menuOption.create({
-    data: {
-      name: 'Wodzirej',
-      description: 'Profesjonalny wodzirej prowadzący zabawę',
-      shortDescription: 'Animator zabawy (4h)',
-      category: 'Muzyka',
-      priceType: 'FLAT',
-      priceAmount: 1000,
-      icon: 'microphone',
-      displayOrder: 3,
-    },
-  });
-
-  // Alcohol Options
-  const optionOpenBar = await prisma.menuOption.create({
-    data: {
-      name: 'Bar Open',
-      description: 'Nieograniczony alkohol: wódka, whisky, gin, piwo, wino',
-      shortDescription: 'Alkohol bez limitu',
-      category: 'Alkohol',
-      priceType: 'PER_PERSON',
-      priceAmount: 50,
-      icon: 'wine',
-      displayOrder: 1,
-    },
-  });
-
-  const optionTableWine = await prisma.menuOption.create({
-    data: {
-      name: 'Wino stołowe',
-      description: 'Wino czerwone i białe do stołów',
-      shortDescription: 'Wino czerwone/białe',
-      category: 'Alkohol',
-      priceType: 'PER_PERSON',
-      priceAmount: 15,
-      icon: 'grape',
-      displayOrder: 2,
-    },
-  });
-
-  const optionChampagne = await prisma.menuOption.create({
-    data: {
-      name: 'Szampan Premium',
-      description: 'Szampan francuski do toastu',
-      shortDescription: 'Szampan do toastu',
-      category: 'Alkohol',
-      priceType: 'PER_PERSON',
-      priceAmount: 30,
-      icon: 'champagne',
-      displayOrder: 3,
-    },
-  });
-
-  const optionBeer = await prisma.menuOption.create({
-    data: {
-      name: 'Piwo kraftowe',
-      description: 'Wybór piw kraftowych (4 rodzaje)',
-      shortDescription: 'Piwo specjalne',
-      category: 'Alkohol',
-      priceType: 'PER_PERSON',
-      priceAmount: 20,
-      icon: 'beer',
-      displayOrder: 4,
-    },
-  });
-
-  // Photo & Video Options
-  const optionPhotographer = await prisma.menuOption.create({
-    data: {
-      name: 'Fotograf (6h)',
-      description: 'Profesjonalny fotograf przez 6 godzin + 500 zdjęć w wersji cyfrowej',
-      shortDescription: 'Fotograf + 500 zdjęć',
-      category: 'Foto & Video',
-      priceType: 'FLAT',
-      priceAmount: 2500,
-      icon: 'camera',
-      displayOrder: 1,
-    },
-  });
-
-  const optionVideographer = await prisma.menuOption.create({
-    data: {
-      name: 'Filmowanie',
-      description: 'Profesjonalne filmowanie z dronem + montaż 30 min',
-      shortDescription: 'Kamera + dron + montaż',
-      category: 'Foto & Video',
-      priceType: 'FLAT',
-      priceAmount: 3000,
-      icon: 'video',
-      displayOrder: 2,
-    },
-  });
-
-  const optionPhotobooth = await prisma.menuOption.create({
-    data: {
-      name: 'Fotobudka',
-      description: 'Fotobudka z gadgetami i natychmiastowym wydrukiem',
-      shortDescription: 'Fotobudka z wydrukami',
-      category: 'Foto & Video',
-      priceType: 'FLAT',
-      priceAmount: 800,
-      icon: 'polaroid',
-      displayOrder: 3,
-    },
-  });
-
-  // Decorations Options
-  const optionFloralPremium = await prisma.menuOption.create({
-    data: {
-      name: 'Dekoracje kwiatowe Premium',
-      description: 'Kompozycje kwiatowe na stoły + dekoracja sali',
-      shortDescription: 'Kwiaty na stoły + dekoracje',
-      category: 'Dekoracje',
-      priceType: 'FLAT',
-      priceAmount: 1500,
-      icon: 'flower',
-      displayOrder: 1,
-    },
-  });
-
-  const optionLighting = await prisma.menuOption.create({
-    data: {
-      name: 'Oświetlenie LED',
-      description: 'Profesjonalne oświetlenie LED z wibę do muzyki',
-      shortDescription: 'LED party lighting',
-      category: 'Dekoracje',
-      priceType: 'FLAT',
-      priceAmount: 600,
-      icon: 'lightbulb',
-      displayOrder: 2,
-    },
-  });
-
-  const optionBalloons = await prisma.menuOption.create({
-    data: {
-      name: 'Balony z helem',
-      description: '50 balonowych z helem w kolorach na wybrane',
-      shortDescription: '50 balonow + hel',
-      category: 'Dekoracje',
-      priceType: 'FLAT',
-      priceAmount: 300,
-      icon: 'balloon',
-      displayOrder: 3,
-    },
-  });
-
-  // Entertainment Options
-  const optionMagician = await prisma.menuOption.create({
-    data: {
-      name: 'Iluzjonista',
-      description: 'Pokazy magiczne dla dorosłych (1h)',
-      shortDescription: 'Pokazy magiczne (1h)',
-      category: 'Rozrywka',
-      priceType: 'FLAT',
-      priceAmount: 800,
-      icon: 'wand',
-      displayOrder: 1,
-    },
-  });
-
-  const optionAnimator = await prisma.menuOption.create({
-    data: {
-      name: 'Animator dla dzieci',
-      description: 'Animator z zabawami i konkursami dla dzieci (3h)',
-      shortDescription: 'Animator dziecięcy (3h)',
-      category: 'Rozrywka',
-      priceType: 'FLAT',
-      priceAmount: 500,
-      icon: 'smile',
-      displayOrder: 2,
-    },
-  });
-
-  const optionFireshow = await prisma.menuOption.create({
-    data: {
-      name: 'Pokaz ognisty',
-      description: 'Spektakularny pokaz ognia (15 min)',
-      shortDescription: 'Fire show (15 min)',
-      category: 'Rozrywka',
-      priceType: 'FLAT',
-      priceAmount: 1200,
-      icon: 'fire',
-      displayOrder: 3,
-    },
-  });
-
-  console.log(`  ✅ Created ${15} menu options`);
-
-  // ═════════════════════════════════════════════════
-  // 1. WESELE - Menu Template
-  // ═════════════════════════════════════════════════
-
-  console.log('\n  💍 Creating WESELE menu...');
-
-  const weseleMenu = await prisma.menuTemplate.create({
-    data: {
-      eventTypeId: weseleType.id,
+      eventTypeId: weddingType.id,
       name: 'Menu Weselne Wiosna 2026',
-      description: 'Eleganckie menu weselne z tradycyjnymi i nowoczesnymi daniami',
+      description: 'Eleganckie menu weselne z opcjami dopasowanymi do wiosennych uroczystości',
       variant: 'Wiosenne',
       validFrom: new Date('2026-03-01'),
       validTo: new Date('2026-06-30'),
+      isActive: true,
       displayOrder: 1,
+      imageUrl: '/images/menus/wedding-spring-2026.jpg',
     },
   });
 
-  // Package 1: Srebrny
-  const weseleSrebrny = await prisma.menuPackage.create({
+  // Wedding Packages
+  const weddingPackageSilver = await prisma.menuPackage.create({
     data: {
-      menuTemplateId: weseleMenu.id,
+      menuTemplateId: weddingMenu.id,
       name: 'Pakiet Srebrny',
-      description: 'Klasyczny pakiet weselny dla oszczędnych',
-      shortDescription: 'Podstawowe menu z tradycyjnymi daniami',
-      pricePerAdult: 150,
-      pricePerChild: 75,
-      pricePerToddler: 0,
+      description: 'Klasyczny pakiet weselny idealny dla kameralnych uroczystości',
+      shortDescription: 'Elegancja w przystępnej cenie - wszystko czego potrzebujesz',
+      pricePerAdult: dec(200),
+      pricePerChild: dec(100),
+      pricePerToddler: dec(0),
       color: '#C0C0C0',
-      icon: 'award',
+      icon: 'medal',
       displayOrder: 1,
+      isPopular: false,
+      isRecommended: false,
       includedItems: [
-        'Tort 2-piętrowy',
-        'Obrus biały',
-        'Serwis podstawowy',
+        'Tort weselny 2-piętrowy',
+        'Obrus biały + serwetki',
+        'Podstawowy serwis stołowy',
+        'Woda mineralna na stołach',
         'Kelner (1 osoba)',
-        'Bufet zimny',
       ],
       minGuests: 30,
-      maxGuests: 80,
+      maxGuests: 60,
     },
   });
 
-  // Package 2: Złoty (Popular)
-  const weseleZloty = await prisma.menuPackage.create({
+  const weddingPackageGold = await prisma.menuPackage.create({
     data: {
-      menuTemplateId: weseleMenu.id,
+      menuTemplateId: weddingMenu.id,
       name: 'Pakiet Złoty',
-      description: 'Najbardziej popularny pakiet z bogatym menu',
-      shortDescription: 'Rozszerzone menu + dekoracje + obsługa',
-      pricePerAdult: 300,
-      pricePerChild: 150,
-      pricePerToddler: 0,
+      description: 'Najpopularniejszy wybór par młodych - elegancja i styl w jednym',
+      shortDescription: 'Kompleksowa obsługa + dekoracje - żaden szczegół nie zostanie pominięty',
+      pricePerAdult: dec(300),
+      pricePerChild: dec(150),
+      pricePerToddler: dec(0),
       color: '#FFD700',
       icon: 'star',
       badgeText: 'Najpopularniejszy',
       displayOrder: 2,
       isPopular: true,
+      isRecommended: true,
       includedItems: [
-        'Tort 3-piętrowy premium',
-        'Dekoracje stołów',
-        'Serwis premium',
+        'Tort weselny 3-piętrowy',
+        'Obrus premium + serwetki kolorowe',
+        'Serwis stołowy porcelana',
+        'Woda + soki na stołach',
         'Kelnerzy (2 osoby)',
-        'Bufet zimny i gorący',
-        'Mistrz ceremonii',
+        'Dekoracje stołów (kwiaty + świece)',
+        'Podświetlenie LED sali',
+        'Napis LED z imionami',
       ],
       minGuests: 50,
-      maxGuests: 150,
+      maxGuests: 120,
     },
   });
 
-  // Package 3: Diamentowy
-  const weseleDiamentowy = await prisma.menuPackage.create({
+  const weddingPackageDiamond = await prisma.menuPackage.create({
     data: {
-      menuTemplateId: weseleMenu.id,
+      menuTemplateId: weddingMenu.id,
       name: 'Pakiet Diamentowy',
-      description: 'Luksusowy pakiet dla wymagających',
-      shortDescription: 'All-inclusive premium experience',
-      pricePerAdult: 500,
-      pricePerChild: 250,
-      pricePerToddler: 0,
+      description: 'Luksusowy pakiet all-inclusive - spełnienie marzeń każdej pary młodej',
+      shortDescription: 'Premium w każdym detalu - VIP obsługa + dodatki ekskluzywne',
+      pricePerAdult: dec(500),
+      pricePerChild: dec(250),
+      pricePerToddler: dec(50),
       color: '#B9F2FF',
-      icon: 'diamond',
+      icon: 'gem',
       badgeText: 'Premium',
       displayOrder: 3,
-      isRecommended: true,
+      isPopular: false,
+      isRecommended: false,
       includedItems: [
-        'Tort 4-piętrowy ekskluzywny',
-        'Dekoracje kwiatowe premium',
-        'Serwis VIP',
-        'Kelnerzy (3 osoby)',
-        'Bufet gourmet',
-        'Szampan w cenie',
-        'Fotograf (4h)',
-        'Koordinator wesela',
+        'Tort weselny 4-piętrowy z figurkami',
+        'Obrus premium + krzesła z pokrowcami',
+        'Serwis stołowy porcelana premium',
+        'Woda + soki + wino stołowe',
+        'Kelnerzy (3 osoby) + Sommelier',
+        'Dekoracje ekskluzywne (kwiaty premium + świece)',
+        'Fontanna czekoladowa',
+        'Stół z fontanną szampana',
+        'Podświetlenie LED + projekcje',
+        'Napis LED + ścianka z inicjałami',
+        'Koordynator wesela',
       ],
       minGuests: 80,
       maxGuests: 200,
     },
   });
 
-  // Assign options to Srebrny
-  await prisma.menuPackageOption.createMany({
+  // Wedding Options
+  const weddingOptions = await prisma.menuOption.createMany({
     data: [
-      { packageId: weseleSrebrny.id, optionId: optionDJ.id, displayOrder: 1 },
-      { packageId: weseleSrebrny.id, optionId: optionBand.id, displayOrder: 2 },
-      { packageId: weseleSrebrny.id, optionId: optionOpenBar.id, displayOrder: 3 },
-      { packageId: weseleSrebrny.id, optionId: optionTableWine.id, displayOrder: 4, isDefault: true },
-      { packageId: weseleSrebrny.id, optionId: optionPhotographer.id, displayOrder: 5 },
+      // Muzyka
+      {
+        name: 'DJ + Nagłośnienie',
+        description: 'Profesjonalny DJ z własnym sprzętem nagłaśniającym i oświetleniem',
+        shortDescription: 'DJ na całą noc + efekty świetlne',
+        category: 'Muzyka',
+        priceType: 'FLAT',
+        priceAmount: dec(2000),
+        icon: 'music',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Zespół muzyczny na żywo',
+        description: 'Zespół 4-5 osobowy grający na żywo (5 godzin)',
+        shortDescription: 'Live music band - coverband',
+        category: 'Muzyka',
+        priceType: 'FLAT',
+        priceAmount: dec(3500),
+        icon: 'music',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Wodzirej',
+        description: 'Profesjonalny wodzirej prowadzący całą zabawę',
+        shortDescription: 'Animacja + gry + konkursy',
+        category: 'Muzyka',
+        priceType: 'FLAT',
+        priceAmount: dec(1000),
+        icon: 'mic',
+        isActive: true,
+        displayOrder: 3,
+      },
+      
+      // Alkohol
+      {
+        name: 'Bar Open',
+        description: 'Nielimitowany alkohol przez całą noc (wódka, whisky, gin, piwo, wino)',
+        shortDescription: 'Open bar na całą noc',
+        category: 'Alkohol',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(50),
+        icon: 'wine',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Wino stołowe',
+        description: 'Wino białe i czerwone na stołach (0.5L na osobę)',
+        shortDescription: 'Wino białe + czerwone',
+        category: 'Alkohol',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(15),
+        icon: 'wine',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Szampan premium',
+        description: 'Szampan na toast dla wszystkich gości (1 kieliszek/osoba)',
+        shortDescription: 'Toast szampanem',
+        category: 'Alkohol',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(30),
+        icon: 'champagne',
+        isActive: true,
+        displayOrder: 3,
+      },
+      
+      // Foto & Video
+      {
+        name: 'Fotograf (6h)',
+        description: 'Profesjonalny fotograf ślubny (6 godzin + 300 obrobionych zdjęć)',
+        shortDescription: 'Fotografia ślubna 6h',
+        category: 'Foto & Video',
+        priceType: 'FLAT',
+        priceAmount: dec(2500),
+        icon: 'camera',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Filmowanie (cały dzień)',
+        description: 'Profesjonalne filmowanie ślubu i wesela z montażem (10+ godzin)',
+        shortDescription: 'Film ślubny HD',
+        category: 'Foto & Video',
+        priceType: 'FLAT',
+        priceAmount: dec(3000),
+        icon: 'video',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Fotobudka',
+        description: 'Fotobudka z rekwizytami (4 godziny)',
+        shortDescription: 'Fotobudka z drukiem',
+        category: 'Foto & Video',
+        priceType: 'FLAT',
+        priceAmount: dec(800),
+        icon: 'camera',
+        isActive: true,
+        displayOrder: 3,
+      },
+      
+      // Dekoracje
+      {
+        name: 'Balony LED',
+        description: '50 balonów LED z helem do dekoracji sali',
+        shortDescription: 'Balony świecące',
+        category: 'Dekoracje',
+        priceType: 'FLAT',
+        priceAmount: dec(400),
+        icon: 'balloon',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Ścianka kwiatowa 3D',
+        description: 'Ścianka z kwiatów do zdjęć (2m × 2.5m)',
+        shortDescription: 'Fotobudka z kwiatami',
+        category: 'Dekoracje',
+        priceType: 'FLAT',
+        priceAmount: dec(600),
+        icon: 'flower',
+        isActive: true,
+        displayOrder: 2,
+      },
+      
+      // Dodatkowe
+      {
+        name: 'Parking valet',
+        description: 'Obsługa parkingowa dla gości (2 osoby)',
+        shortDescription: 'Valet parking',
+        category: 'Dodatkowe',
+        priceType: 'FLAT',
+        priceAmount: dec(500),
+        icon: 'car',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Midnight snack',
+        description: 'Przekąski o północy (hot dogi, zapiekanki, frytki)',
+        shortDescription: 'Drugie danie o 24:00',
+        category: 'Dodatkowe',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(25),
+        icon: 'pizza',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Tort z fajerwerkami',
+        description: 'Tort z fontannami iskier (cold sparks)',
+        shortDescription: 'Efekt WOW przy torcie',
+        category: 'Dodatkowe',
+        priceType: 'FLAT',
+        priceAmount: dec(300),
+        icon: 'sparkles',
+        isActive: true,
+        displayOrder: 3,
+      },
     ],
   });
 
-  // Assign options to Złoty
-  await prisma.menuPackageOption.createMany({
-    data: [
-      { packageId: weseleZloty.id, optionId: optionDJ.id, displayOrder: 1, isDefault: true },
-      { packageId: weseleZloty.id, optionId: optionBand.id, displayOrder: 2 },
-      { packageId: weseleZloty.id, optionId: optionMC.id, displayOrder: 3 },
-      { packageId: weseleZloty.id, optionId: optionOpenBar.id, displayOrder: 4 },
-      { packageId: weseleZloty.id, optionId: optionTableWine.id, displayOrder: 5, isDefault: true },
-      { packageId: weseleZloty.id, optionId: optionChampagne.id, displayOrder: 6 },
-      { packageId: weseleZloty.id, optionId: optionPhotographer.id, displayOrder: 7 },
-      { packageId: weseleZloty.id, optionId: optionVideographer.id, displayOrder: 8 },
-      { packageId: weseleZloty.id, optionId: optionPhotobooth.id, displayOrder: 9 },
-      { packageId: weseleZloty.id, optionId: optionFloralPremium.id, displayOrder: 10 },
-      { packageId: weseleZloty.id, optionId: optionLighting.id, displayOrder: 11 },
-      { packageId: weseleZloty.id, optionId: optionFireshow.id, displayOrder: 12 },
-    ],
+  // Assign options to wedding packages
+  const weddingOptionsList = await prisma.menuOption.findMany({
+    where: { category: { in: ['Muzyka', 'Alkohol', 'Foto & Video', 'Dekoracje', 'Dodatkowe'] } },
   });
 
-  // Assign options to Diamentowy (all options available)
-  await prisma.menuPackageOption.createMany({
-    data: [
-      { packageId: weseleDiamentowy.id, optionId: optionDJ.id, displayOrder: 1 },
-      { packageId: weseleDiamentowy.id, optionId: optionBand.id, displayOrder: 2, isDefault: true },
-      { packageId: weseleDiamentowy.id, optionId: optionMC.id, displayOrder: 3, isDefault: true },
-      { packageId: weseleDiamentowy.id, optionId: optionOpenBar.id, displayOrder: 4, isDefault: true },
-      { packageId: weseleDiamentowy.id, optionId: optionChampagne.id, displayOrder: 5, customPrice: 25 }, // Discounted
-      { packageId: weseleDiamentowy.id, optionId: optionBeer.id, displayOrder: 6 },
-      { packageId: weseleDiamentowy.id, optionId: optionVideographer.id, displayOrder: 7 },
-      { packageId: weseleDiamentowy.id, optionId: optionPhotobooth.id, displayOrder: 8, isDefault: true },
-      { packageId: weseleDiamentowy.id, optionId: optionLighting.id, displayOrder: 9, customPrice: 0 }, // FREE
-      { packageId: weseleDiamentowy.id, optionId: optionBalloons.id, displayOrder: 10 },
-      { packageId: weseleDiamentowy.id, optionId: optionMagician.id, displayOrder: 11 },
-      { packageId: weseleDiamentowy.id, optionId: optionFireshow.id, displayOrder: 12, isDefault: true },
-    ],
-  });
+  // Silver Package - 8 options
+  const silverOptions = weddingOptionsList.filter(opt => 
+    ['DJ + Nagłośnienie', 'Wodzirej', 'Bar Open', 'Wino stołowe', 
+     'Fotograf (6h)', 'Fotobudka', 'Balony LED', 'Midnight snack'].includes(opt.name)
+  );
+  
+  for (const [index, option] of silverOptions.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: weddingPackageSilver.id,
+        optionId: option.id,
+        displayOrder: index,
+        isRequired: false,
+        isDefault: false,
+      },
+    });
+  }
 
-  console.log(`  ✅ Created WESELE menu with 3 packages`);
+  // Gold Package - 12 options
+  const goldOptions = weddingOptionsList.filter(opt => 
+    !['Parking valet', 'Zespół muzyczny na żywo', 'Szampan premium'].includes(opt.name)
+  );
+  
+  for (const [index, option] of goldOptions.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: weddingPackageGold.id,
+        optionId: option.id,
+        displayOrder: index,
+        isRequired: false,
+        isDefault: option.name === 'DJ + Nagłośnienie', // Pre-selected
+      },
+    });
+  }
 
-  // ═════════════════════════════════════════════════
-  // 2. URODZINY - Menu Template
-  // ═════════════════════════════════════════════════
+  // Diamond Package - All options
+  for (const [index, option] of weddingOptionsList.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: weddingPackageDiamond.id,
+        optionId: option.id,
+        displayOrder: index,
+        isRequired: false,
+        isDefault: ['DJ + Nagłośnienie', 'Bar Open', 'Fotograf (6h)'].includes(option.name),
+      },
+    });
+  }
 
-  console.log('\n  🎂 Creating URODZINY menu...');
+  console.log('✅ Wedding menu created: 3 packages, 15 options');
 
-  const urodzinyMenu = await prisma.menuTemplate.create({
+  // ══════════════════════════════════════════════════
+  // 2. URODZINY (BIRTHDAY)
+  // ══════════════════════════════════════════════════
+
+  console.log('🎂 Creating Birthday menu...');
+
+  const birthdayMenu = await prisma.menuTemplate.create({
     data: {
-      eventTypeId: urodzinyType.id,
+      eventTypeId: birthdayType.id,
       name: 'Menu Urodzinowe 2026',
-      description: 'Menu urodzinowe dla dzieci i dorosłych',
+      description: 'Różnorodne opcje na urodziny dziecięce i dorosłe',
       validFrom: new Date('2026-01-01'),
       validTo: new Date('2026-12-31'),
+      isActive: true,
       displayOrder: 1,
     },
   });
 
-  // Package 1: Dziecięce
-  const urodzinyDzieciece = await prisma.menuPackage.create({
+  // Birthday Packages
+  const birthdayPackageKids = await prisma.menuPackage.create({
     data: {
-      menuTemplateId: urodzinyMenu.id,
-      name: 'Pakiet Dziecięce',
-      description: 'Idealne urodziny dla dzieci z animacjami',
-      shortDescription: 'Menu dla dzieci + animator + zabawy',
-      pricePerAdult: 80,
-      pricePerChild: 60,
-      pricePerToddler: 30,
+      menuTemplateId: birthdayMenu.id,
+      name: 'Pakiet Dziecięcy',
+      description: 'Kolorowa zabawa dla najmłodszych',
+      shortDescription: 'Animator + dekoracje + tort',
+      pricePerAdult: dec(80),
+      pricePerChild: dec(50),
+      pricePerToddler: dec(0),
       color: '#FF69B4',
       icon: 'cake',
       displayOrder: 1,
       isPopular: true,
+      isRecommended: true,
       includedItems: [
-        'Tort urodzinowy',
-        'Dekoracje balonowe',
-        'Serwis jednorazowy kolorowy',
-        'Napoje bezalkoholowe',
-        'Pizza i nuggetsy',
+        'Tort urodzinowy z figurką',
+        'Balony kolorowe (50 szt)',
+        'Dekoracje stołów (motyw bajkowy)',
+        'Soki + woda',
+        'Zastawa jednorazowa kolorowa',
       ],
       minGuests: 10,
       maxGuests: 40,
     },
   });
 
-  // Package 2: Dorosłe
-  const urodzinyDorosle = await prisma.menuPackage.create({
+  const birthdayPackageAdult = await prisma.menuPackage.create({
     data: {
-      menuTemplateId: urodzinyMenu.id,
-      name: 'Pakiet Dorosłe',
+      menuTemplateId: birthdayMenu.id,
+      name: 'Pakiet Dorosły',
       description: 'Eleganckie przyjęcie urodzinowe',
-      shortDescription: 'Menu premium + alkohol + muzyka',
-      pricePerAdult: 120,
-      pricePerChild: 60,
-      pricePerToddler: 0,
-      color: '#8B4513',
-      icon: 'gift',
+      shortDescription: 'DJ + bar + dekoracje',
+      pricePerAdult: dec(120),
+      pricePerChild: dec(60),
+      pricePerToddler: dec(0),
+      color: '#4169E1',
+      icon: 'party',
       displayOrder: 2,
+      isPopular: false,
+      isRecommended: false,
       includedItems: [
-        'Tort premium',
-        'Dekoracje eleganckie',
-        'Serwis porcelanowy',
-        'Bufet zimny',
-        'Grill (letnie miesiące)',
+        'Tort urodzinowy premium',
+        'Dekoracje sali',
+        'Alkohol podstawowy',
+        'Serwis stołowy',
+        'Kelner',
       ],
       minGuests: 20,
       maxGuests: 80,
     },
   });
 
-  // Assign options to Dziecięce
-  await prisma.menuPackageOption.createMany({
+  // Birthday Options
+  const birthdayOptions = await prisma.menuOption.createMany({
     data: [
-      { packageId: urodzinyDzieciece.id, optionId: optionAnimator.id, displayOrder: 1, isDefault: true },
-      { packageId: urodzinyDzieciece.id, optionId: optionMagician.id, displayOrder: 2 },
-      { packageId: urodzinyDzieciece.id, optionId: optionPhotobooth.id, displayOrder: 3 },
-      { packageId: urodzinyDzieciece.id, optionId: optionBalloons.id, displayOrder: 4, isDefault: true },
-      { packageId: urodzinyDzieciece.id, optionId: optionPhotographer.id, displayOrder: 5 },
+      // Animacje
+      {
+        name: 'Animator dla dzieci',
+        description: 'Profesjonalny animator z programem zabaw (3h)',
+        category: 'Animacje',
+        priceType: 'FLAT',
+        priceAmount: dec(400),
+        icon: 'smile',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Malowanie twarzy',
+        description: 'Facepainting dla dzieci',
+        category: 'Animacje',
+        priceType: 'FLAT',
+        priceAmount: dec(200),
+        icon: 'palette',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Bańki mydlane show',
+        description: 'Pokaz baniek mydlanych',
+        category: 'Animacje',
+        priceType: 'FLAT',
+        priceAmount: dec(300),
+        icon: 'bubble',
+        isActive: true,
+        displayOrder: 3,
+      },
+      
+      // Rozrywka
+      {
+        name: 'DJ + Muzyka',
+        description: 'DJ z muzyką dostosowaną do wieku',
+        category: 'Rozrywka',
+        priceType: 'FLAT',
+        priceAmount: dec(1000),
+        icon: 'music',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Karaoke',
+        description: 'Zestaw karaoke z mikrofonami',
+        category: 'Rozrywka',
+        priceType: 'FLAT',
+        priceAmount: dec(300),
+        icon: 'mic',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Konsola do gier',
+        description: 'PlayStation 5 z grami + ekran',
+        category: 'Rozrywka',
+        priceType: 'FLAT',
+        priceAmount: dec(200),
+        icon: 'gamepad',
+        isActive: true,
+        displayOrder: 3,
+      },
+      
+      // Dodatki
+      {
+        name: 'Słodki stół',
+        description: 'Candy bar z cukierkami i słodyczami',
+        category: 'Dodatki',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(15),
+        icon: 'candy',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Fotobudka',
+        description: 'Fotobudka z rekwizytami (3h)',
+        category: 'Dodatki',
+        priceType: 'FLAT',
+        priceAmount: dec(500),
+        icon: 'camera',
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        name: 'Popcorn machine',
+        description: 'Maszyna do popcornu + operator',
+        category: 'Dodatki',
+        priceType: 'FLAT',
+        priceAmount: dec(250),
+        icon: 'popcorn',
+        isActive: true,
+        displayOrder: 3,
+      },
+      {
+        name: 'Dodatkowa godzina',
+        description: 'Przedłużenie imprezy o 1 godzinę',
+        category: 'Dodatki',
+        priceType: 'FLAT',
+        priceAmount: dec(200),
+        icon: 'clock',
+        isActive: true,
+        displayOrder: 4,
+      },
     ],
   });
 
-  // Assign options to Dorosłe
-  await prisma.menuPackageOption.createMany({
-    data: [
-      { packageId: urodzinyDorosle.id, optionId: optionDJ.id, displayOrder: 1 },
-      { packageId: urodzinyDorosle.id, optionId: optionBand.id, displayOrder: 2 },
-      { packageId: urodzinyDorosle.id, optionId: optionOpenBar.id, displayOrder: 3 },
-      { packageId: urodzinyDorosle.id, optionId: optionTableWine.id, displayOrder: 4, isDefault: true },
-      { packageId: urodzinyDorosle.id, optionId: optionBeer.id, displayOrder: 5 },
-      { packageId: urodzinyDorosle.id, optionId: optionPhotographer.id, displayOrder: 6 },
-      { packageId: urodzinyDorosle.id, optionId: optionPhotobooth.id, displayOrder: 7 },
-      { packageId: urodzinyDorosle.id, optionId: optionFloralPremium.id, displayOrder: 8 },
-      { packageId: urodzinyDorosle.id, optionId: optionLighting.id, displayOrder: 9 },
-      { packageId: urodzinyDorosle.id, optionId: optionMagician.id, displayOrder: 10 },
-    ],
+  // Assign options to birthday packages
+  const birthdayOptionsList = await prisma.menuOption.findMany({
+    where: { category: { in: ['Animacje', 'Rozrywka', 'Dodatki'] } },
   });
 
-  console.log(`  ✅ Created URODZINY menu with 2 packages`);
+  // Kids Package - animation focused
+  const kidsOptions = birthdayOptionsList.filter(opt => 
+    ['Animator dla dzieci', 'Malowanie twarzy', 'Bańki mydlane show', 
+     'Słodki stół', 'Fotobudka', 'Popcorn machine', 'Konsola do gier'].includes(opt.name)
+  );
+  
+  for (const [index, option] of kidsOptions.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: birthdayPackageKids.id,
+        optionId: option.id,
+        displayOrder: index,
+        isDefault: option.name === 'Animator dla dzieci',
+      },
+    });
+  }
 
-  // ═════════════════════════════════════════════════
-  // 3. KOMUNIA - Menu Template
-  // ═════════════════════════════════════════════════
+  // Adult Package - entertainment focused
+  const adultOptions = birthdayOptionsList.filter(opt => 
+    ['DJ + Muzyka', 'Karaoke', 'Fotobudka', 'Słodki stół', 'Dodatkowa godzina'].includes(opt.name)
+  );
+  
+  for (const [index, option] of adultOptions.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: birthdayPackageAdult.id,
+        optionId: option.id,
+        displayOrder: index,
+        isDefault: option.name === 'DJ + Muzyka',
+      },
+    });
+  }
 
-  console.log('\n  ⛪ Creating KOMUNIA menu...');
+  console.log('✅ Birthday menu created: 2 packages, 10 options');
 
-  const komuniaMenu = await prisma.menuTemplate.create({
+  // ══════════════════════════════════════════════════
+  // 3. KOMUNIA (FIRST COMMUNION)
+  // ══════════════════════════════════════════════════
+
+  console.log('⛪ Creating Communion menu...');
+
+  const communionMenu = await prisma.menuTemplate.create({
     data: {
-      eventTypeId: komuniaType.id,
-      name: 'Menu Komunijne Wiosna 2026',
-      description: 'Tradycyjne menu komunijne',
+      eventTypeId: communionType.id,
+      name: 'Menu Komunijne 2026',
+      description: 'Uroczyste menu na Pierwszą Komunię Świętą',
       validFrom: new Date('2026-04-01'),
       validTo: new Date('2026-06-30'),
+      isActive: true,
       displayOrder: 1,
     },
   });
 
-  // Package 1: Basic
-  const komuniaBasic = await prisma.menuPackage.create({
+  // Communion Packages
+  const communionPackageBasic = await prisma.menuPackage.create({
     data: {
-      menuTemplateId: komuniaMenu.id,
-      name: 'Pakiet Basic',
-      description: 'Podstawowe menu komunijne',
-      shortDescription: 'Tradycyjne dania + dekoracje',
-      pricePerAdult: 100,
-      pricePerChild: 50,
-      pricePerToddler: 0,
+      menuTemplateId: communionMenu.id,
+      name: 'Pakiet Podstawowy',
+      description: 'Kameralne przyjęcie komunijne',
+      shortDescription: 'Klasyka w przystępnej cenie',
+      pricePerAdult: dec(100),
+      pricePerChild: dec(60),
+      pricePerToddler: dec(0),
       color: '#87CEEB',
-      icon: 'heart',
+      icon: 'cross',
       displayOrder: 1,
+      isPopular: false,
       includedItems: [
         'Tort komunijny',
-        'Dekoracje białe',
-        'Serwis podstawowy',
-        'Bufet zimny',
-        'Napoje',
+        'Dekoracje religijne',
+        'Serwis stołowy',
+        'Soki + woda',
+      ],
+      minGuests: 20,
+      maxGuests: 50,
+    },
+  });
+
+  const communionPackagePremium = await prisma.menuPackage.create({
+    data: {
+      menuTemplateId: communionMenu.id,
+      name: 'Pakiet Premium',
+      description: 'Uroczyste przyjęcie z programem dla dzieci',
+      shortDescription: 'Kompleksowa obsługa + animacje',
+      pricePerAdult: dec(150),
+      pricePerChild: dec(90),
+      pricePerToddler: dec(0),
+      color: '#FFD700',
+      icon: 'star',
+      badgeText: 'Polecany',
+      displayOrder: 2,
+      isPopular: true,
+      isRecommended: true,
+      includedItems: [
+        'Tort komunijny 2-piętrowy',
+        'Dekoracje premium (kwiaty + świece)',
+        'Serwis porcelanowy',
+        'Soki + woda + wino dla dorosłych',
+        'Kelner',
+        'Animator dla dzieci (2h)',
       ],
       minGuests: 30,
       maxGuests: 80,
     },
   });
 
-  // Package 2: Premium
-  const komuniaPremium = await prisma.menuPackage.create({
-    data: {
-      menuTemplateId: komuniaMenu.id,
-      name: 'Pakiet Premium',
-      description: 'Rozszerzone menu z dodatkami',
-      shortDescription: 'Menu rozszerzone + animator + foto',
-      pricePerAdult: 180,
-      pricePerChild: 90,
-      pricePerToddler: 0,
-      color: '#FFD700',
-      icon: 'star',
-      badgeText: 'Polecany',
-      displayOrder: 2,
-      isRecommended: true,
-      includedItems: [
-        'Tort premium 2-piętrowy',
-        'Dekoracje kwiatowe',
-        'Serwis porcelanowy',
-        'Bufet zimny i gorący',
-        'Napoje + wino stołowe',
-        'Animator dla dzieci (2h)',
+  // Communion Options
+  const communionOptions = await prisma.menuOption.createMany({
+    data: [
+      // Animacje
+      {
+        name: 'Animator komunijny',
+        description: 'Animator z programem dla dzieci (3h)',
+        category: 'Animacje',
+        priceType: 'FLAT',
+        priceAmount: dec(400),
+        icon: 'smile',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Malowanie buziek',
+        description: 'Artystyczne malowanie twarzy',
+        category: 'Animacje',
+        priceType: 'FLAT',
+        priceAmount: dec(200),
+        icon: 'palette',
+        isActive: true,
+        displayOrder: 2,
+      },
+      
+      // Rozrywka
+      {
+        name: 'Fotograf komunijny',
+        description: 'Sesja zdjęciowa + reportaż (4h)',
+        category: 'Rozrywka',
+        priceType: 'FLAT',
+        priceAmount: dec(1500),
+        icon: 'camera',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Fotobudka',
+        description: 'Fotobudka z drukiem (3h)',
+        category: 'Rozrywka',
+        priceType: 'FLAT',
+        priceAmount: dec(500),
+        icon: 'camera',
+        isActive: true,
+        displayOrder: 2,
+      },
+      
+      // Dekoracje
+      {
+        name: 'Balony helowe',
+        description: '50 balonów z helem w kolorach komunijnych',
+        category: 'Dekoracje',
+        priceType: 'FLAT',
+        priceAmount: dec(300),
+        icon: 'balloon',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Ścianka komunijna',
+        description: 'Dekoracyjna ścianka do zdjęć',
+        category: 'Dekoracje',
+        priceType: 'FLAT',
+        priceAmount: dec(400),
+        icon: 'frame',
+        isActive: true,
+        displayOrder: 2,
+      },
+      
+      // Dodatki
+      {
+        name: 'Słodki stół',
+        description: 'Candy bar + ciasteczka',
+        category: 'Dodatki',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(12),
+        icon: 'candy',
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        name: 'Upominki dla gości',
+        description: 'Pamiątkowe upominki dla każdego gościa',
+        category: 'Dodatki',
+        priceType: 'PER_PERSON',
+        priceAmount: dec(8),
+        icon: 'gift',
+        isActive: true,
+        displayOrder: 2,
+      },
+    ],
+  });
+
+  // Assign options to communion packages
+  const communionOptionsList = await prisma.menuOption.findMany({
+    where: {
+      OR: [
+        { name: { contains: 'komunijny' } },
+        { name: { contains: 'komunijna' } },
+        { name: { in: ['Malowanie buziek', 'Fotobudka', 'Balony helowe', 
+                       'Ścianka komunijna', 'Słodki stół', 'Upominki dla gości'] } },
       ],
-      minGuests: 40,
-      maxGuests: 120,
     },
   });
 
-  // Assign options to Basic
-  await prisma.menuPackageOption.createMany({
-    data: [
-      { packageId: komuniaBasic.id, optionId: optionDJ.id, displayOrder: 1 },
-      { packageId: komuniaBasic.id, optionId: optionAnimator.id, displayOrder: 2 },
-      { packageId: komuniaBasic.id, optionId: optionTableWine.id, displayOrder: 3 },
-      { packageId: komuniaBasic.id, optionId: optionPhotographer.id, displayOrder: 4 },
-      { packageId: komuniaBasic.id, optionId: optionBalloons.id, displayOrder: 5 },
-    ],
-  });
+  // Basic Package - 4 options
+  const basicOptions = communionOptionsList.filter(opt => 
+    ['Animator komunijny', 'Fotobudka', 'Balony helowe', 'Słodki stół'].includes(opt.name)
+  );
+  
+  for (const [index, option] of basicOptions.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: communionPackageBasic.id,
+        optionId: option.id,
+        displayOrder: index,
+      },
+    });
+  }
 
-  // Assign options to Premium
-  await prisma.menuPackageOption.createMany({
-    data: [
-      { packageId: komuniaPremium.id, optionId: optionDJ.id, displayOrder: 1, isDefault: true },
-      { packageId: komuniaPremium.id, optionId: optionMC.id, displayOrder: 2 },
-      { packageId: komuniaPremium.id, optionId: optionOpenBar.id, displayOrder: 3 },
-      { packageId: komuniaPremium.id, optionId: optionPhotographer.id, displayOrder: 4, isDefault: true },
-      { packageId: komuniaPremium.id, optionId: optionPhotobooth.id, displayOrder: 5 },
-      { packageId: komuniaPremium.id, optionId: optionFloralPremium.id, displayOrder: 6 },
-      { packageId: komuniaPremium.id, optionId: optionLighting.id, displayOrder: 7 },
-      { packageId: komuniaPremium.id, optionId: optionMagician.id, displayOrder: 8 },
-    ],
-  });
+  // Premium Package - all options
+  for (const [index, option] of communionOptionsList.entries()) {
+    await prisma.menuPackageOption.create({
+      data: {
+        packageId: communionPackagePremium.id,
+        optionId: option.id,
+        displayOrder: index,
+        isDefault: option.name === 'Animator komunijny',
+      },
+    });
+  }
 
-  console.log(`  ✅ Created KOMUNIA menu with 2 packages`);
+  console.log('✅ Communion menu created: 2 packages, 8 options');
 
-  console.log('\n✅ Menu system seed completed!');
-  console.log(`\n📊 Summary:`);
-  console.log(`  - 15 Menu Options created`);
-  console.log(`  - 3 Event Types with menus (Wesele, Urodziny, Komunia)`);
-  console.log(`  - 7 Total Packages`);
-  console.log(`  - Wesele: 3 packages (Srebrny, Złoty, Diamentowy)`);
-  console.log(`  - Urodziny: 2 packages (Dziecięce, Dorosłe)`);
-  console.log(`  - Komunia: 2 packages (Basic, Premium)`);
+  // ══════════════════════════════════════════════════
+
+  console.log('\n🎉 Menu system seed completed successfully!');
+  console.log('\n📊 Summary:');
+  console.log('  • Wesele: 3 packages, 15 options');
+  console.log('  • Urodziny: 2 packages, 10 options');
+  console.log('  • Komunia: 2 packages, 8 options');
+  console.log('  • Total: 7 packages, 33 unique options\n');
 }
 
-// Run seed if called directly
+// Run seed if executed directly
 if (require.main === module) {
   seedMenuSystem()
-    .catch((e) => {
-      console.error('❌ Error seeding menu system:', e);
+    .then(() => {
+      console.log('✅ Seed completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seed failed:', error);
       process.exit(1);
     })
     .finally(async () => {
