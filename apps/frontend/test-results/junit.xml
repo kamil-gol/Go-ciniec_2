@@ -1,0 +1,104 @@
+<testsuites id="" name="" tests="45" failures="0" skipped="1" errors="0" time="78.306794">
+<testsuite name="01-auth.spec.ts" timestamp="2026-02-08T01:52:56.757Z" hostname="chromium" tests="14" failures="0" skipped="0" time="75.747" errors="0">
+<testcase name="Autentykacja › should display login page correctly" classname="01-auth.spec.ts" time="6.436">
+</testcase>
+<testcase name="Autentykacja › should login with valid admin credentials" classname="01-auth.spec.ts" time="6.091">
+</testcase>
+<testcase name="Autentykacja › should login with valid employee credentials" classname="01-auth.spec.ts" time="6.884">
+</testcase>
+<testcase name="Autentykacja › should fail login with invalid email" classname="01-auth.spec.ts" time="6.038">
+</testcase>
+<testcase name="Autentykacja › should fail login with invalid password" classname="01-auth.spec.ts" time="4.235">
+</testcase>
+<testcase name="Autentykacja › should fail login with empty credentials" classname="01-auth.spec.ts" time="4.382">
+</testcase>
+<testcase name="Autentykacja › should logout successfully" classname="01-auth.spec.ts" time="4.98">
+</testcase>
+<testcase name="Autentykacja › should redirect to login when accessing protected route without auth" classname="01-auth.spec.ts" time="3.589">
+</testcase>
+<testcase name="Autentykacja › should redirect to login when accessing reservations without auth" classname="01-auth.spec.ts" time="5.756">
+</testcase>
+<testcase name="Autentykacja › should redirect to login when accessing queue without auth" classname="01-auth.spec.ts" time="6.591">
+</testcase>
+<testcase name="Autentykacja › should persist session after page reload" classname="01-auth.spec.ts" time="7.013">
+</testcase>
+<testcase name="Autentykacja › should show user info in menu" classname="01-auth.spec.ts" time="6.661">
+</testcase>
+<testcase name="Autentykacja - Security › should not expose credentials in URL" classname="01-auth.spec.ts" time="2.878">
+</testcase>
+<testcase name="Autentykacja - Security › should clear password field on failed login" classname="01-auth.spec.ts" time="4.213">
+</testcase>
+</testsuite>
+<testsuite name="04-queue-drag-drop.spec.ts" timestamp="2026-02-08T01:52:56.757Z" hostname="chromium" tests="12" failures="0" skipped="1" time="71.146" errors="0">
+<testcase name="Kolejka - Drag &amp; Drop › should display queue page correctly" classname="04-queue-drag-drop.spec.ts" time="6.097">
+</testcase>
+<testcase name="Kolejka - Drag &amp; Drop › should have draggable queue items" classname="04-queue-drag-drop.spec.ts" time="5.876">
+</testcase>
+<testcase name="Kolejka - Drag &amp; Drop › should show position numbers for queue items" classname="04-queue-drag-drop.spec.ts" time="6.468">
+</testcase>
+<testcase name="Kolejka - Basic Drag &amp; Drop › should reorder queue items via drag and drop" classname="04-queue-drag-drop.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Kolejka - Loading States (Bug #6) › should show loading overlay during drag operation" classname="04-queue-drag-drop.spec.ts" time="6.769">
+</testcase>
+<testcase name="Kolejka - Loading States (Bug #6) › should disable drag during loading" classname="04-queue-drag-drop.spec.ts" time="6.236">
+</testcase>
+<testcase name="Kolejka - Race Conditions (Bug #5) 🔥 › should handle concurrent drag operations gracefully" classname="04-queue-drag-drop.spec.ts" time="10.767">
+</testcase>
+<testcase name="Kolejka - Race Conditions (Bug #5) 🔥 › should retry on lock conflict" classname="04-queue-drag-drop.spec.ts" time="5.307">
+</testcase>
+<testcase name="Kolejka - Race Conditions (Bug #5) 🔥 › should maintain consistent positions after concurrent operations" classname="04-queue-drag-drop.spec.ts" time="5.341">
+</testcase>
+<testcase name="Kolejka - Error Handling › should show user-friendly error on failure" classname="04-queue-drag-drop.spec.ts" time="5.366">
+</testcase>
+<testcase name="Kolejka - Error Handling › should allow retry after failed drag operation" classname="04-queue-drag-drop.spec.ts" time="6.576">
+</testcase>
+<testcase name="Kolejka - Performance › drag operation should complete within reasonable time" classname="04-queue-drag-drop.spec.ts" time="6.343">
+</testcase>
+</testsuite>
+<testsuite name="10-bugfix-regression.spec.ts" timestamp="2026-02-08T01:52:56.757Z" hostname="chromium" tests="19" failures="0" skipped="0" time="124.004" errors="0">
+<testcase name="Bug #5 Regression - Race Conditions › should handle concurrent drag operations without crashes" classname="10-bugfix-regression.spec.ts" time="9.599">
+</testcase>
+<testcase name="Bug #5 Regression - Race Conditions › should have row-level locking implemented (FOR UPDATE NOWAIT)" classname="10-bugfix-regression.spec.ts" time="5.73">
+</testcase>
+<testcase name="Bug #5 Regression - Race Conditions › should use retry logic with exponential backoff" classname="10-bugfix-regression.spec.ts" time="5.74">
+</testcase>
+<testcase name="Bug #6 Regression - Loading States › should show loading overlay during drag operation" classname="10-bugfix-regression.spec.ts" time="5.527">
+</testcase>
+<testcase name="Bug #6 Regression - Loading States › should disable drag interactions during loading" classname="10-bugfix-regression.spec.ts" time="6.335">
+</testcase>
+<testcase name="Bug #6 Regression - Loading States › should show visual feedback (opacity, cursor) during loading" classname="10-bugfix-regression.spec.ts" time="6.583">
+</testcase>
+<testcase name="Bug #7 Regression - Auto-Cancel Logic › auto-cancel should NOT cancel today entries" classname="10-bugfix-regression.spec.ts" time="6.368">
+</testcase>
+<testcase name="Bug #7 Regression - Auto-Cancel Logic › auto-cancel SHOULD cancel past date entries" classname="10-bugfix-regression.spec.ts" time="6.623">
+</testcase>
+<testcase name="Bug #7 Regression - Auto-Cancel Logic › auto-cancel cron should be configured for 00:01 daily" classname="10-bugfix-regression.spec.ts" time="3.358">
+</testcase>
+<testcase name="Bug #8 Regression - Position Validation › should validate position range [1, maxPosition]" classname="10-bugfix-regression.spec.ts" time="6.288">
+</testcase>
+<testcase name="Bug #8 Regression - Position Validation › should show user-friendly error messages" classname="10-bugfix-regression.spec.ts" time="6.889">
+</testcase>
+<testcase name="Bug #8 Regression - Position Validation › should validate newPosition is a number" classname="10-bugfix-regression.spec.ts" time="6.164">
+</testcase>
+<testcase name="Bug #9 Regression - Nullable Constraints › RESERVED status should require queue fields" classname="10-bugfix-regression.spec.ts" time="5.492">
+</testcase>
+<testcase name="Bug #9 Regression - Nullable Constraints › PENDING/CONFIRMED status should NOT have queue fields" classname="10-bugfix-regression.spec.ts" time="5.675">
+</testcase>
+<testcase name="Bug #9 Regression - Nullable Constraints › unique constraint for (date, position) should be enforced" classname="10-bugfix-regression.spec.ts" time="4.4">
+</testcase>
+<testcase name="Bug #9 Regression - Nullable Constraints › queue fields should be nullable in schema" classname="10-bugfix-regression.spec.ts" time="4.4">
+</testcase>
+<testcase name="All Bugs - Final Verification › all bugfixes should be deployed and working" classname="10-bugfix-regression.spec.ts" time="10.435">
+</testcase>
+<testcase name="All Bugs - Final Verification › no console errors on critical pages" classname="10-bugfix-regression.spec.ts" time="7.502">
+</testcase>
+<testcase name="All Bugs - Final Verification › system should be stable for production deployment" classname="10-bugfix-regression.spec.ts" time="10.896">
+</testcase>
+</testsuite>
+</testsuites>
