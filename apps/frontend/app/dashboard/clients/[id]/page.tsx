@@ -42,7 +42,7 @@ const statusLabels = {
 
 // Helper to safely format dates
 const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'Brak daty'
+  if (!dateString) return 'Oczekująca'
   
   try {
     const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
@@ -52,6 +52,14 @@ const formatDate = (dateString: string | null | undefined): string => {
     console.error('Error formatting date:', dateString, error)
     return 'Błąd daty'
   }
+}
+
+// Helper to get display date for reservation (uses queue date for RESERVED status)
+const getReservationDisplayDate = (reservation: any): string => {
+  if (reservation.status === ReservationStatus.RESERVED) {
+    return formatDate(reservation.reservationQueueDate)
+  }
+  return formatDate(reservation.startDateTime)
 }
 
 // Helper to format currency (cents to PLN)
@@ -341,7 +349,7 @@ export default function ClientDetailsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                            {formatDate(reservation.startDateTime)}
+                            {getReservationDisplayDate(reservation)}
                           </p>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[reservation.status]}`}>
                             {statusLabels[reservation.status]}
