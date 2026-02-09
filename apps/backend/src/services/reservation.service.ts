@@ -1,7 +1,7 @@
 /**
  * Reservation Service
  * Business logic for reservation management with advanced features
- * UPDATED: Full support for toddlers (0-3 years) age group
+ * UPDATED: Full support for toddlers (0-3 years) age group + DateTime overlap validation
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -128,6 +128,17 @@ export class ReservationService {
       // Validate time range
       if (startDT >= endDT) {
         throw new Error('End time must be after start time');
+      }
+
+      // NEW: Check for overlapping reservations using DateTime
+      const hasOverlap = await this.checkDateTimeOverlap(
+        data.hallId,
+        startDT,
+        endDT
+      );
+
+      if (hasOverlap) {
+        throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
       }
 
       const extraHoursNote = generateExtraHoursNote(startDT, endDT);
@@ -405,6 +416,20 @@ export class ReservationService {
       throw new Error('End time must be after start time');
     }
 
+    // NEW: Check for overlapping reservations when updating time
+    if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
+      const hasOverlap = await this.checkDateTimeOverlap(
+        existingReservation.hallId,
+        finalStart,
+        finalEnd,
+        id // exclude current reservation
+      );
+
+      if (hasOverlap) {
+        throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
+      }
+    }
+
     // Update guest counts
     if (data.adults !== undefined) {
       updateData.adults = data.adults;
@@ -621,7 +646,52 @@ export class ReservationService {
   }
 
   /**
-   * Check for overlapping reservations (legacy format)
+   * NEW: Check for overlapping reservations using startDateTime/endDateTime
+   * Allows multiple reservations per day if times don't overlap
+   * 
+   * Logic: Overlap occurs when:
+   * 1. New start is before existing end AND new end is after existing start
+   * 
+   * Example scenarios:
+   * - Existing: 10:00-14:00, New: 15:00-20:00 → NO OVERLAP ✓
+   * - Existing: 10:00-14:00, New: 12:00-16:00 → OVERLAP ✗
+   * - Existing: 10:00-14:00, New: 14:00-18:00 → NO OVERLAP (exact boundary) ✓
+   */
+  private async checkDateTimeOverlap(
+    hallId: string,
+    startDateTime: Date,
+    endDateTime: Date,
+    excludeId?: string
+  ): Promise<boolean> {
+    const where: any = {
+      hallId,
+      startDateTime: { not: null },
+      endDateTime: { not: null },
+      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+      archivedAt: null
+    };
+
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
+
+    // Check for overlapping time ranges
+    // Overlap condition: (startA < endB) AND (endA > startB)
+    const overlapping = await prisma.reservation.findFirst({
+      where: {
+        ...where,
+        AND: [
+          { startDateTime: { lt: endDateTime } },
+          { endDateTime: { gt: startDateTime } }
+        ]
+      }
+    });
+
+    return !!overlapping;
+  }
+
+  /**
+   * Check for overlapping reservations (legacy format with date/startTime/endTime)
    */
   private async checkOverlap(
     hallId: string,
