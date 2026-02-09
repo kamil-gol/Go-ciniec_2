@@ -4,7 +4,7 @@
 # Skrypt Backup dla Gościniec_2
 # Tworzy backup bazy PostgreSQL + plików aplikacji
 # Author: System Rezerwacji
-# Version: 1.0.0
+# Version: 1.0.1
 ################################################################################
 
 set -e  # Zatrzymaj na błędzie
@@ -18,7 +18,7 @@ LOG_FILE="${BACKUP_DIR}/backup.log"
 
 # Konfiguracja Docker
 DOCKER_COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yml"
-DB_CONTAINER_NAME="${DB_CONTAINER:-postgres}"
+DB_CONTAINER_NAME="${DB_CONTAINER:-rezerwacje-db}"  # ✅ FIXED: Poprawna nazwa kontenera
 
 # Baza danych
 DB_NAME="${POSTGRES_DB:-rezerwacje}"
@@ -68,11 +68,20 @@ backup_database() {
     local backup_file="${BACKUP_DIR}/database/db_backup_${timestamp}.sql.gz"
     
     log "Rozpoczynam backup bazy danych..."
+    log "  - Szukam kontenera: ${DB_CONTAINER_NAME}"
     
     # Sprawdź czy kontener działa
     if ! docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER_NAME}$"; then
+        # Wypisz dostępne kontenery dla debugowania
+        log "Dostępne kontenery:"
+        docker ps --format '{{.Names}}' | while read container; do
+            log "  - ${container}"
+        done
         error "Kontener bazy danych '${DB_CONTAINER_NAME}' nie jest uruchomiony"
     fi
+    
+    log "  - Kontener znaleziony: ${DB_CONTAINER_NAME}"
+    log "  - Wykonuję pg_dump dla bazy: ${DB_NAME}"
     
     # Wykonaj dump bazy
     if docker exec "${DB_CONTAINER_NAME}" pg_dump -U "${DB_USER}" "${DB_NAME}" | gzip > "${backup_file}"; then
