@@ -32,10 +32,10 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Rezerwacje', href: '/dashboard/reservations', icon: Calendar },
+  { name: 'Rezerwacje', href: '/dashboard/reservations', icon: Calendar }, // MIGRATED
   { name: 'Klienci', href: '/dashboard/clients', icon: Users, isNew: true },
   { name: 'Sale', href: '/dashboard/halls', icon: Building2, isNew: true },
-  { name: 'Kolejka', href: '/dashboard/queue', icon: Clock, badge: 3 },
+  { name: 'Kolejka', href: '/dashboard/queue', icon: Clock }, // MIGRATED
   { name: 'Zaliczki', href: '/dashboard/deposits', icon: DollarSign, isNew: true },
   { name: 'Typy Wydarzeń', href: '/dashboard/event-types', icon: Theater, isNew: true },
   { name: 'Raporty', href: '/dashboard/reports', icon: BarChart3, isNew: true },
