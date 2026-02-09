@@ -21,7 +21,6 @@ export default function EditClientPage() {
     lastName: '',
     email: '',
     phone: '',
-    address: '',
     notes: '',
   })
 
@@ -33,7 +32,6 @@ export default function EditClientPage() {
         lastName: client.lastName || '',
         email: client.email || '',
         phone: client.phone || '',
-        address: client.address || '',
         notes: client.notes || '',
       })
     }
@@ -188,21 +186,6 @@ export default function EditClientPage() {
                   placeholder="+48 123 456 789"
                 />
               </div>
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Adres
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="ul. Przykładowa 123, 00-000 Warszawa"
-              />
             </div>
 
             {/* Notes */}
