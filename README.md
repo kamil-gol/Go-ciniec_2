@@ -151,6 +151,7 @@ rezerwacje/
 │   ├── SPRINTS.md           # Plan sprintów & postęp
 │   ├── ARCHITECTURE.md      # Architektura
 │   ├── DEPLOYMENT.md        # Wdrażanie
+│   ├── DARK_MODE_GUIDELINES.md  # 🌙 Wytyczne dark mode ✨ NOWE!
 │   ├── BUGFIX_SESSION_2026-02-07.md  # Sesja naprawcza Bug #1-8
 │   └── BUGFIX_SESSION_2026-02-09.md  # Sesja naprawcza Bug #9 ✨ NOWE!
 │
@@ -165,7 +166,7 @@ rezerwacje/
 ├── CURRENT_STATUS.md        # Aktualny status rozwoju
 ├── BUG5_RACE_CONDITIONS.md  # Szczegóły fix race conditions
 ├── BUG8_POSITION_VALIDATION.md  # Szczegóły fix walidacji
-├── BUG9_BATCH_UPDATE_RACE_CONDITION.md  # ✨ Szczegóły fix batch update NOWE!
+├── BUG9_BATCH_UPDATE_RACE_CONDITION.md  # Szczegóły fix batch update ✨ NOWE!
 ├── BUG9_QUEUE_NULLABLE.md   # Szczegóły fix nullable constraints
 ├── DEPLOYMENT_FIX_BUG7.md   # Instrukcje hotfix Bug #7
 ├── docker-compose.yml       # Konfiguracja Docker
@@ -539,6 +540,7 @@ docker-compose logs -f frontend
 - [🏭 Architektura](./docs/ARCHITECTURE.md)
 - [🚀 Wdrażanie](./docs/DEPLOYMENT.md)
 - [📋 Moduł Kolejki](./docs/QUEUE.md)
+- [🌙 ✨ Dark Mode Guidelines](./docs/DARK_MODE_GUIDELINES.md) - **NOWE!**
 - [🧪 Testy](./docs/testing/)
 - [🔧 Wytyczne dla Kontrybutorów](./CONTRIBUTING.md)
 - [📏 Aktualny Status](./CURRENT_STATUS.md)
@@ -569,6 +571,7 @@ docker-compose logs -f frontend
 - ✅ Core system rezerwacji
 - ✅ Moduł kolejki rezerwacji (99% complete)
 - ✅ **✨ Batch update API z atomicznymi transakcjami** (Bug #9 Fix)
+- ✅ **🌙 Dark Mode Support** - Pełne wsparcie + dokumentacja
 - 🔄 Testy E2E (85% complete)
 - ⏳ Production deployment
 
@@ -615,25 +618,26 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
 
 ## 🔄 Status Projektu
 
-**Wersja:** 0.9.9 (Release Candidate + Bug #9 Batch Update Fix)  
+**Wersja:** 0.9.9 (Release Candidate + Bug #9 Batch Update Fix + Dark Mode)  
 **Status:** 🔄 W aktywnym rozwoju - stabilny  
-**Ostatnia aktualizacja:** 09.02.2026 - 12:45 CET  
+**Ostatnia aktualizacja:** 09.02.2026 - 23:15 CET  
 **Kolejny release:** v1.0.0 (planowany marzec 2026)
 
 ### Postęp Ogólny
 - **Backend:** 94% ✅ (+2% - batch update API)
 - **Frontend:** 84% ✅ (+2% - atomiczne drag & drop)
 - **Testy:** 82% 🔄 (+2% - testy batch operations)
-- **Dokumentacja:** 90% ✅ (+5% - dokumentacja Bug #9)
+- **Dokumentacja:** 92% ✅ (+2% - dark mode guidelines)
 - **Deployment:** 70% 🔄
 
 ### Aktualnie w Rozwoju
 - Moduł kolejki rezerwacji (99% complete)
+- Dark Mode support (100% complete + dokumentacja)
 - Testy jednostkowe (85% complete)
 - Integracja powiadomień email
 - Production deployment preparation
 
-### Ostatnie Zmiany (Branch feature/premium-dashboard)
+### Ostatnie Zmiany
 - ✅ Bug #5: Race conditions - row-level locking + retry logic
 - ✅ Bug #6: Loading states dla drag & drop
 - ✅ Bug #7: Auto-cancel logic (tylko przeszłe daty)
@@ -644,8 +648,13 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
   - Transakcja Prisma z two-phase update
   - Zero race conditions przy drag & drop
   - Pełna dokumentacja w BUGFIX_SESSION_2026-02-09.md
+- ✅ **🌙 Dark Mode Guidelines** - Pełna dokumentacja (09.02.2026)
+  - Semantic tokens patterns
+  - Gradient adaptations
+  - Component examples
+  - Checklist & best practices
 
-**Branch Status:** Stabilny i gotowy do merge po testach manualnych
+**Branch Status:** Stabilny - wszystkie komponenty mają wsparcie dark mode
 
 ---
 
