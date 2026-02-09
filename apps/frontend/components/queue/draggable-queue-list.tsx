@@ -79,13 +79,26 @@ export function DraggableQueueList({
       const oldIndex = localItems.findIndex((item) => item.id === active.id)
       const newIndex = localItems.findIndex((item) => item.id === over.id)
 
+      console.log('=== DRAG & DROP DEBUG ===')
+      console.log('Active ID:', active.id)
+      console.log('Over ID:', over.id)
+      console.log('Old index:', oldIndex)
+      console.log('New index:', newIndex)
+      console.log('Local items before reorder:', localItems.map(i => ({ id: i.id, position: i.position })))
+
       const reorderedItems = arrayMove(localItems, oldIndex, newIndex)
       
       // Update positions
-      const itemsWithNewPositions = reorderedItems.map((item, index) => ({
-        ...item,
-        position: index + 1,
-      }))
+      const itemsWithNewPositions = reorderedItems.map((item, index) => {
+        const newPos = index + 1
+        console.log(`Item ${item.id}: index ${index} -> position ${newPos}`)
+        return {
+          ...item,
+          position: newPos,
+        }
+      })
+
+      console.log('Items with new positions:', itemsWithNewPositions.map(i => ({ id: i.id, position: i.position })))
 
       // ✨ BUG #6 FIX: Optimistic update
       setLocalItems(itemsWithNewPositions)
@@ -97,6 +110,8 @@ export function DraggableQueueList({
         // Success - keep optimistic update
       } catch (error: any) {
         // ✨ BUG #6 FIX: Revert on error with visual feedback
+        console.error('=== REORDER ERROR ===')
+        console.error(error)
         setLocalItems(items)
         setError(error.message || 'Nie udało się zmienić kolejności. Spróbuj ponownie.')
         

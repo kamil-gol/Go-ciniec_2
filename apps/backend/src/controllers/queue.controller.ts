@@ -10,6 +10,7 @@ import {
   PromoteReservationDTO,
   SwapQueuePositionsDTO,
   MoveQueuePositionDTO,
+  BatchUpdatePositionsDTO,
 } from '../types/queue.types';
 
 export class QueueController {
@@ -235,6 +236,67 @@ export class QueueController {
       res.status(statusCode).json({
         success: false,
         error: error.message || 'Failed to move reservation',
+      });
+    }
+  }
+
+  /**
+   * Batch update queue positions atomically
+   * POST /api/queue/batch-update-positions
+   * ✨ NEW: Fix race conditions in drag & drop reordering
+   */
+  async batchUpdatePositions(req: Request, res: Response): Promise<void> {
+    try {
+      const { updates }: BatchUpdatePositionsDTO = req.body;
+
+      // Validate updates array
+      if (!updates || !Array.isArray(updates) || updates.length === 0) {
+        res.status(400).json({
+          success: false,
+          error: 'Updates array is required and must contain at least one item',
+        });
+        return;
+      }
+
+      // Validate each update
+      for (const update of updates) {
+        if (!update.id || typeof update.id !== 'string') {
+          res.status(400).json({
+            success: false,
+            error: 'Each update must have a valid reservation ID',
+          });
+          return;
+        }
+
+        if (!Number.isInteger(update.position) || update.position < 1) {
+          res.status(400).json({
+            success: false,
+            error: 'Each update must have a valid position (integer >= 1)',
+          });
+          return;
+        }
+      }
+
+      // Call service to update positions atomically
+      const result = await queueService.batchUpdatePositions(updates);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: `Zaktualizowano ${result.updatedCount} pozycji w kolejce`,
+      });
+    } catch (error: any) {
+      let statusCode = 400;
+      
+      if (error.message.includes('not found')) {
+        statusCode = 404;
+      } else if (error.message.includes('conflict') || error.message.includes('transaction')) {
+        statusCode = 409; // Conflict
+      }
+
+      res.status(statusCode).json({
+        success: false,
+        error: error.message || 'Failed to batch update positions',
       });
     }
   }

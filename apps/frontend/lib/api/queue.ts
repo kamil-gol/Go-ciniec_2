@@ -17,6 +17,13 @@ export interface MoveQueuePositionInput {
   newPosition: number
 }
 
+export interface BatchUpdatePositionsInput {
+  updates: Array<{
+    id: string
+    position: number
+  }>
+}
+
 export interface UpdateQueueReservationInput {
   clientId?: string
   reservationQueueDate?: string
@@ -76,6 +83,13 @@ export const queueApi = {
   // Move reservation to specific position
   moveToPosition: async (reservationId: string, newPosition: number): Promise<void> => {
     await apiClient.put(`/queue/${reservationId}/position`, { newPosition })
+  },
+
+  // ✨ NEW: Batch update positions atomically (for drag & drop)
+  batchUpdatePositions: async (input: BatchUpdatePositionsInput): Promise<{ updatedCount: number }> => {
+    const { data } = await apiClient.post('/queue/batch-update-positions', input)
+    console.log('Raw queue batchUpdatePositions response:', data)
+    return data.data || data
   },
 
   // Rebuild all queue positions (renumber per date)
