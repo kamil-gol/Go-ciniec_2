@@ -132,7 +132,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
           <AnimatePresence>
             {filteredNav.map((item, index) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              // Fixed: Dashboard should only be active on exact /dashboard path
+              // Other items should be active when path starts with their href
+              const isActive = item.href === '/dashboard'
+                ? pathname === '/dashboard'
+                : pathname.startsWith(item.href)
+              
               const Icon = item.icon
 
               return (
