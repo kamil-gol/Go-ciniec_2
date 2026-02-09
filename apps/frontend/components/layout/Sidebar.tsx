@@ -147,7 +147,17 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ delay: index * 0.05 }}
+                  className="relative"
                 >
+                  {/* Active Indicator - moved outside Link for better visibility */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-gradient-to-b from-primary-400 to-secondary-400"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+
                   <Link
                     href={item.href}
                     className={cn(
@@ -157,15 +167,6 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                         : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:scale-[1.02]'
                     )}
                   >
-                    {/* Active Indicator */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-white"
-                        transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-
                     <Icon className={cn(
                       'h-5 w-5 flex-shrink-0 transition-transform',
                       isActive ? 'scale-110' : 'group-hover:scale-110'
