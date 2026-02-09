@@ -174,7 +174,7 @@ export const useDeleteClient = () => {
 
 // Normalize phone number for duplicate detection
 export const normalizePhone = (phone: string): string => {
-  return phone.replace(/[\\s\\-()]/g, '')
+  return phone.replace(/[\s\-()]/g, '')
 }
 
 // Check if phone number already exists
