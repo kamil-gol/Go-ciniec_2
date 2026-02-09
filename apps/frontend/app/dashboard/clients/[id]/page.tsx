@@ -46,11 +46,11 @@ const formatDate = (dateString: string | null | undefined): string => {
   
   try {
     const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
-    if (!isValid(date)) return 'Nieprwidowa data'
+    if (!isValid(date)) return 'Nieprawidłowa data'
     return format(date, 'd MMMM yyyy', { locale: pl })
   } catch (error) {
     console.error('Error formatting date:', dateString, error)
-    return 'Bd daty'
+    return 'Błąd daty'
   }
 }
 
@@ -77,11 +77,11 @@ export default function ClientDetailsPage() {
 
   const handleDelete = async () => {
     if (hasReservations) {
-      alert('Nie mona usun klienta, ktry ma rezerwacje!')
+      alert('Nie można usunąć klienta, który ma rezerwacje!')
       return
     }
 
-    if (confirm(`Czy na pewno chcesz usun klienta: ${client?.firstName} ${client?.lastName}?`)) {
+    if (confirm(`Czy na pewno chcesz usunąć klienta: ${client?.firstName} ${client?.lastName}?`)) {
       try {
         await deleteClient.mutateAsync(clientId)
         router.push('/dashboard/clients')
@@ -109,7 +109,7 @@ export default function ClientDetailsPage() {
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 text-primary-500 animate-spin mb-4" />
           <p className="text-neutral-600 dark:text-neutral-400">
-            adowanie danych klienta...
+            Ładowanie danych klienta...
           </p>
         </div>
       </DashboardLayout>
@@ -122,16 +122,16 @@ export default function ClientDetailsPage() {
         <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 p-8 text-center border border-red-200 dark:border-red-800">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-2">
-            Bd adowania klienta
+            Błąd ładowania klienta
           </h3>
           <p className="text-red-700 dark:text-red-300 mb-4">
-            {error instanceof Error ? error.message : 'Klient nie zosta znaleziony'}
+            {error instanceof Error ? error.message : 'Klient nie został znaleziony'}
           </p>
           <button
             onClick={() => router.push('/dashboard/clients')}
             className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
           >
-            Powrt do listy klientw
+            Powrót do listy klientów
           </button>
         </div>
       </DashboardLayout>
@@ -151,7 +151,7 @@ export default function ClientDetailsPage() {
             className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
-            Powrt
+            Powrót
           </button>
 
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -182,10 +182,10 @@ export default function ClientDetailsPage() {
                       ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
                       : 'bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30'
                   }`}
-                  title={hasReservations ? 'Nie mona usun klienta z rezerwacjami' : 'Usu klienta'}
+                  title={hasReservations ? 'Nie można usunąć klienta z rezerwacjami' : 'Usuń klienta'}
                 >
                   <Trash2 className="w-4 h-4" />
-                  Usu
+                  Usuń
                 </button>
               )}
             </div>
@@ -219,11 +219,11 @@ export default function ClientDetailsPage() {
                 <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                cznie wydano
+                Łącznie wydano
               </p>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(rawTotalSpent)} z
+              {formatCurrency(rawTotalSpent)} zł
             </p>
           </div>
 
@@ -233,7 +233,7 @@ export default function ClientDetailsPage() {
                 <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                rednio goci
+                Średnio gości
               </p>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -353,14 +353,14 @@ export default function ClientDetailsPage() {
                             <span>{reservation.eventType.name}</span>
                           )}
                           {reservation.hall && (
-                            <span> {reservation.hall.name}</span>
+                            <span>• {reservation.hall.name}</span>
                           )}
                           {reservation.guests > 0 && (
-                            <span> {reservation.guests} osb</span>
+                            <span>• {reservation.guests} osób</span>
                           )}
                           {reservation.totalPrice > 0 && (
                             <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                               {formatCurrency(reservation.totalPrice)} z
+                              • {formatCurrency(reservation.totalPrice)} zł
                             </span>
                           )}
                         </div>
