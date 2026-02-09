@@ -141,7 +141,7 @@ export function EditReservationModal({
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
   const currentStatus = watch('status')
-  const selectedHallId = watch('hallId')  // ✨ NEW: Watch hallId for value binding
+  const selectedHallId = watch('hallId')
 
   const isChildrenFieldsDisabled = adults === 0
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
@@ -489,7 +489,7 @@ export function EditReservationModal({
             label="Status Rezerwacji"
             options={statusOptions}
             error={errors.status?.message}
-            value={currentStatus}  {/* ✨ ADDED: Controlled value */}
+            value={currentStatus}
             {...register('status')}
           />
           {currentStatus !== originalStatus && (
@@ -502,7 +502,7 @@ export function EditReservationModal({
             label="Sala"
             options={hallOptions}
             error={errors.hallId?.message}
-            value={selectedHallId}  {/* ✨ ADDED: Controlled value */}
+            value={selectedHallId}
             {...register('hallId')}
           />
           {selectedHallCapacity > 0 && (
@@ -515,7 +515,7 @@ export function EditReservationModal({
             label="Typ Wydarzenia"
             options={eventTypeOptions}
             error={errors.eventTypeId?.message}
-            value={selectedEventTypeId}  {/* ✨ ADDED: Controlled value */}
+            value={selectedEventTypeId}
             {...register('eventTypeId')}
           />
 
