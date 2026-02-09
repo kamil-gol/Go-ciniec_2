@@ -259,6 +259,7 @@ export function EditReservationModal({
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
       console.log('Reservation data:', reservation)
+      console.log('hallId:', reservation.hallId)
       
       let startDateTime = ''
       let endDateTime = ''
@@ -321,6 +322,7 @@ export function EditReservationModal({
         setValue('hasDeposit', false)
       }
       
+      console.log('hallId after setValue:', reservation.hallId)
       setIsFormReady(true)
     }
   }, [reservation, open, setValue])
@@ -495,7 +497,6 @@ export function EditReservationModal({
             label="Status Rezerwacji"
             options={statusOptions}
             error={errors.status?.message}
-            value={currentStatus}
             {...register('status')}
           />
           {currentStatus !== originalStatus && (
@@ -508,7 +509,6 @@ export function EditReservationModal({
             label="Sala"
             options={hallOptions}
             error={errors.hallId?.message}
-            value={selectedHallId}
             {...register('hallId')}
           />
           {selectedHallCapacity > 0 && (
@@ -521,7 +521,6 @@ export function EditReservationModal({
             label="Typ Wydarzenia"
             options={eventTypeOptions}
             error={errors.eventTypeId?.message}
-            value={selectedEventTypeId}
             {...register('eventTypeId')}
           />
 
