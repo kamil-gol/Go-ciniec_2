@@ -1,5 +1,4 @@
 import { PrismaClient, ReservationStatus } from '@prisma/client'
-import { faker } from '@faker-js/faker/locale/pl'
 
 const prisma = new PrismaClient()
 
@@ -45,12 +44,31 @@ const POLISH_LAST_NAMES = [
   'Jaworski', 'Adamczyk', 'Dudek', 'Stępień', 'Górski', 'Witkowski', 'Walczak'
 ]
 
+const SAMPLE_NOTES = [
+  'Klient prosi o catering wegetariański',
+  'Dekoracja w kolorze różowo-złotym',
+  'Potrzebna przestrzeń na parkiet taneczny',
+  'Goście będą przybywać od godziny 16:00',
+  'Planowana serwacja obiadu na godzinę 18:00',
+  'Tort urodzinowy zostanie dostarczony przez klienta',
+  'Klient zapytał o możliwość przedłużenia do 2:00',
+  'Preferowane menu: kuchnia polska tradycyjna',
+]
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function randomElement<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
 function randomPolishName() {
   const isMale = Math.random() > 0.5
   const firstName = isMale
-    ? POLISH_FIRST_NAMES_MALE[Math.floor(Math.random() * POLISH_FIRST_NAMES_MALE.length)]
-    : POLISH_FIRST_NAMES_FEMALE[Math.floor(Math.random() * POLISH_FIRST_NAMES_FEMALE.length)]
-  const lastName = POLISH_LAST_NAMES[Math.floor(Math.random() * POLISH_LAST_NAMES.length)]
+    ? randomElement(POLISH_FIRST_NAMES_MALE)
+    : randomElement(POLISH_FIRST_NAMES_FEMALE)
+  const lastName = randomElement(POLISH_LAST_NAMES)
   return { firstName, lastName }
 }
 
@@ -66,9 +84,9 @@ function randomPhone() {
                     '730', '731', '732', '733', '734', '735', '736', '737', '738', '739',
                     '780', '781', '782', '783', '784', '785', '786', '787', '788', '789',
                     '880', '881', '882', '883', '884', '885', '886', '887', '888', '889']
-  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
-  const middle = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-  const end = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  const prefix = randomElement(prefixes)
+  const middle = randomInt(100, 999).toString()
+  const end = randomInt(100, 999).toString()
   return `+48 ${prefix} ${middle} ${end}`
 }
 
@@ -155,7 +173,7 @@ async function main() {
         lastName,
         email,
         phone,
-        notes: Math.random() > 0.7 ? faker.lorem.sentence() : undefined,
+        notes: Math.random() > 0.7 ? randomElement(SAMPLE_NOTES) : undefined,
       }
     })
     createdClients.push(client)
@@ -179,9 +197,9 @@ async function main() {
     const queueDate = queueDates[i % queueDates.length]
     const position = Math.floor(i / queueDates.length) + 1
     
-    const adults = faker.number.int({ min: 10, max: 80 })
-    const children = faker.number.int({ min: 0, max: 20 })
-    const toddlers = faker.number.int({ min: 0, max: 5 })
+    const adults = randomInt(10, 80)
+    const children = randomInt(0, 20)
+    const toddlers = randomInt(0, 5)
     const guests = adults + children + toddlers
     
     await prisma.reservation.create({
@@ -200,7 +218,7 @@ async function main() {
         pricePerChild: 0,
         pricePerToddler: 0,
         totalPrice: 0,
-        notes: Math.random() > 0.7 ? faker.lorem.sentence() : undefined,
+        notes: Math.random() > 0.7 ? randomElement(SAMPLE_NOTES) : undefined,
       }
     })
     
@@ -222,15 +240,15 @@ async function main() {
     
     // Random date in next 6 months
     const startDate = new Date(2026, 2, 15) // March 15, 2026
-    startDate.setDate(startDate.getDate() + faker.number.int({ min: 0, max: 180 }))
-    startDate.setHours(faker.number.int({ min: 14, max: 18 }), 0, 0, 0)
+    startDate.setDate(startDate.getDate() + randomInt(0, 180))
+    startDate.setHours(randomInt(14, 18), 0, 0, 0)
     
     const endDate = new Date(startDate)
     endDate.setHours(endDate.getHours() + 6) // 6 hours duration
     
-    const adults = faker.number.int({ min: 20, max: Math.min(100, hall.capacity - 20) })
-    const children = faker.number.int({ min: 5, max: 30 })
-    const toddlers = faker.number.int({ min: 0, max: 10 })
+    const adults = randomInt(20, Math.min(100, hall.capacity - 20))
+    const children = randomInt(5, 30)
+    const toddlers = randomInt(0, 10)
     const guests = adults + children + toddlers
     
     const pricePerAdult = Number(hall.pricePerPerson)
@@ -256,10 +274,10 @@ async function main() {
         pricePerToddler,
         totalPrice,
         confirmationDeadline: status === ReservationStatus.PENDING ? new Date(startDate.getTime() - 86400000) : undefined,
-        birthdayAge: eventType.name === 'Urodziny' ? faker.number.int({ min: 1, max: 90 }) : undefined,
-        anniversaryYear: eventType.name === 'Rocznica/Jubileusz' ? faker.number.int({ min: 1, max: 50 }) : undefined,
+        birthdayAge: eventType.name === 'Urodziny' ? randomInt(1, 90) : undefined,
+        anniversaryYear: eventType.name === 'Rocznica/Jubileusz' ? randomInt(1, 50) : undefined,
         customEventType: eventType.name === 'Inne' ? 'Spotkanie firmowe' : undefined,
-        notes: Math.random() > 0.5 ? faker.lorem.sentences(2) : undefined,
+        notes: Math.random() > 0.5 ? randomElement(SAMPLE_NOTES) : undefined,
       }
     })
     
@@ -278,8 +296,8 @@ async function main() {
           dueDate: dueDate.toISOString().split('T')[0],
           status: isPaid ? 'PAID' : 'PENDING',
           paid: isPaid,
-          paidAt: isPaid ? new Date(dueDate.getTime() - 86400000 * faker.number.int({ min: 1, max: 7 })) : undefined,
-          paymentMethod: isPaid ? ['CASH', 'TRANSFER', 'BLIK'][Math.floor(Math.random() * 3)] : undefined,
+          paidAt: isPaid ? new Date(dueDate.getTime() - 86400000 * randomInt(1, 7)) : undefined,
+          paymentMethod: isPaid ? randomElement(['CASH', 'TRANSFER', 'BLIK']) : undefined,
         }
       })
     }
