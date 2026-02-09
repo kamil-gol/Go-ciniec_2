@@ -38,6 +38,15 @@ router.post('/rebuild-positions', authMiddleware, requireAdmin, (req, res) => {
 });
 
 /**
+ * @route   POST /api/queue/batch-update-positions
+ * @desc    Update multiple queue positions atomically (for drag & drop)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post('/batch-update-positions', authMiddleware, requireStaff, (req, res) => {
+  queueController.batchUpdatePositions(req, res);
+});
+
+/**
  * @route   GET /api/queue/:date
  * @desc    Get queue for specific date (YYYY-MM-DD)
  * @access  Staff (ADMIN + EMPLOYEE)
