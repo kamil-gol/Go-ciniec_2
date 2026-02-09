@@ -151,7 +151,7 @@ export function EditReservationModal({
   const eventTypeName = useMemo(() => {
     if (!selectedEventTypeId) return ''
     const eventTypesArray = eventTypes?.data || eventTypes || []
-    const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
+    const selectedType = Array.isArray(eventTypesArray) ? eventTypesArray.find((t) => t.id === selectedEventTypeId) : null
     return selectedType?.name || ''
   }, [selectedEventTypeId, eventTypes])
 
@@ -239,7 +239,7 @@ export function EditReservationModal({
   useEffect(() => {
     if (selectedHallId) {
       const hallsArray = halls?.data || halls || []
-      const selectedHall = hallsArray.find((h) => h.id === selectedHallId)
+      const selectedHall = Array.isArray(hallsArray) ? hallsArray.find((h) => h.id === selectedHallId) : null
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
       }
@@ -403,13 +403,19 @@ export function EditReservationModal({
     }
   }
 
+  // Safely extract arrays with Array.isArray guards
   const hallsArray = halls?.data || halls || []
+  const safeHallsArray = Array.isArray(hallsArray) ? hallsArray : []
+  
   const clientsArray = clientsData?.data || []
+  const safeClientsArray = Array.isArray(clientsArray) ? clientsArray : []
+  
   const eventTypesArray = eventTypes?.data || eventTypes || []
+  const safeEventTypesArray = Array.isArray(eventTypesArray) ? eventTypesArray : []
 
   const hallOptions = [
     { value: '', label: 'Wybierz salę...' },
-    ...hallsArray.map((hall) => ({
+    ...safeHallsArray.map((hall) => ({
       value: hall.id,
       label: `${hall.name} (max ${hall.capacity} osób)`,
     }))
@@ -417,7 +423,7 @@ export function EditReservationModal({
 
   const eventTypeOptions = [
     { value: '', label: 'Wybierz typ wydarzenia...' },
-    ...eventTypesArray.map((type) => ({
+    ...safeEventTypesArray.map((type) => ({
       value: type.id,
       label: type.name,
     }))
