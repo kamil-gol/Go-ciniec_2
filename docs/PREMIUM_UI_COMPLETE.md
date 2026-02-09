@@ -1,28 +1,89 @@
-# 🌟 Complete Premium UI System - All Modules + Multi-Reservation Calendar + Card-Based Lists + Visibility Fixes
+# 🌟 Complete Premium UI System - All Modules + Multi-Reservation Calendar + Card-Based Lists + Visibility Fixes + Bugfixes
 
 ## Przegląd
 
-Kompletna modernizacja interfejsu użytkownika dla **4 głównych modułów**: Halls, Reservations, Clients i Queue + **kalendarz wielokrotnych rezerwacji** + **card-based list view** + **poprawki widoczności** + backend validation.
+Kompletna modernizacja interfejsu użytkownika dla **4 głównych modułów**: Halls, Reservations, Clients i Queue + **kalendarz wielokrotnych rezerwacji** + **card-based list view** + **poprawki widoczności** + **bugfixy** + backend validation.
 
 **Data utworzenia:** 09.02.2026  
-**Ostatnia aktualizacja:** 09.02.2026 21:31 CET  
-**Wersja:** 4.2.0  
+**Ostatnia aktualizacja:** 09.02.2026 21:38 CET  
+**Wersja:** 4.2.1  
 **Branch:** feature/premium-halls-ui  
-**Status:** ✅ Kompletny + Visibility Fixes ⭐
+**Status:** ✅ Kompletny + Bugfixes ⭐
+
+---
+
+## 🚨 CRITICAL BUGFIX: Select Empty Value Error ⭐ NEW!
+
+### Problem:
+```
+Unhandled Runtime Error
+Error: A <Select.Item /> must have a value prop that is not an empty string.
+This is because the Select value can be set to an empty string to clear 
+the selection and show the placeholder.
+```
+
+### Root Cause:
+**Path:** `components/reservations/reservations-list.tsx`
+
+**PRZED (Błąd):**
+```tsx
+const statusOptions = [
+  { value: '', label: 'Wszystkie statusy' },  // <- EMPTY STRING!
+  { value: 'PENDING', label: 'Oczekujące' },
+  // ...
+]
+
+const [statusFilter, setStatusFilter] = useState<ReservationStatus | ''>('')
+
+<SelectItem value={opt.value}>{opt.label}</SelectItem>
+```
+
+**Problem:**
+- ❌ Select nie akceptuje pustego stringa jako value
+- ❌ Runtime error w Next.js
+- ❌ Aplikacja się crashuje
+
+### Solution:
+**PO (Naprawione):**
+```tsx
+const statusOptions = [
+  { value: 'ALL', label: 'Wszystkie statusy' },  // <- 'ALL' zamiast ''
+  { value: 'PENDING', label: 'Oczekujące' },
+  // ...
+]
+
+const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
+
+const { data, isLoading, error, refetch } = useReservations({
+  page,
+  pageSize: 20,
+  status: statusFilter === 'ALL' ? undefined : statusFilter,  // <- Convert 'ALL' to undefined
+})
+
+<SelectItem value={opt.value}>{opt.label}</SelectItem>
+```
+
+**Zmiany:**
+1. ✅ Zmiana `''` na `'ALL'` w statusOptions
+2. ✅ Zmiana typu: `ReservationStatus | ''` → `ReservationStatus | 'ALL'`
+3. ✅ Initial state: `useState('')` → `useState('ALL')`
+4. ✅ Warunkowa logika: `statusFilter === 'ALL' ? undefined : statusFilter`
+
+**Commit:** [00c4aba](https://github.com/kamil-gol/Go-ciniec_2/commit/00c4aba47196d81afcc85efd45336d27d01be387)
 
 ---
 
 ## 📊 Executive Summary
 
 ### Moduł HALLS: **5/5 stron** + **Kalendarz** + **Visibility Fixes** ✅ ⭐
-1. ✅ Lista sal (`/dashboard/halls`) + **Better toggle button** ⭐ NEW!
+1. ✅ Lista sal (`/dashboard/halls`) + **Better toggle button** ⭐
 2. ✅ Szczegóły sali (`/dashboard/halls/[id]`) + **Kalendarz wielokrotnych rezerwacji** ⭐
 3. ✅ Edycja sali (`/dashboard/halls/[id]/edit`)
 4. ✅ Nowa sala (`/dashboard/halls/new`)
-5. ✅ HallCard component + **Better dropdown menu** ⭐ NEW!
+5. ✅ HallCard component + **Better dropdown menu** ⭐
 
-### Moduł RESERVATIONS: **2/2 strony** ✅ ⭐
-6. ✅ Lista rezerwacji (`/dashboard/reservations`) - **Card-based layout!** ⭐
+### Moduł RESERVATIONS: **2/2 strony** + **Bugfix** ✅ ⭐
+6. ✅ Lista rezerwacji (`/dashboard/reservations`) - **Card-based layout!** + **Select bugfix** ⭐ NEW!
 7. ✅ Szczegóły rezerwacji (`/dashboard/reservations/[id]`)
 
 ### Moduł CLIENTS: **3/3 strony** ✅
@@ -38,18 +99,19 @@ Kompletna modernizacja interfejsu użytkownika dla **4 głównych modułów**: H
 13. ✅ **HallReservationsCalendar Component** - Timeline view ⭐
 
 ### Frontend Components: **3/3** ✅ ⭐
-14. ✅ **ReservationsList Component** - Card-based layout ⭐
+14. ✅ **ReservationsList Component** - Card-based layout + Select bugfix ⭐
 15. ✅ **HallReservationsCalendar Component** - Multi-reservation timeline ⭐
-16. ✅ **HallCard Component** - Improved dropdown visibility ⭐ NEW!
+16. ✅ **HallCard Component** - Improved dropdown visibility ⭐
 
 **Total Pages:** **11/11** ✅  
 **Total Components:** **3 Premium** ⭐  
-**Total Commits:** **22** ⭐ +2  
-**Lines Changed:** **~12,500+**
+**Total Commits:** **23** ⭐ +1  
+**Lines Changed:** **~12,500+**  
+**Bugfixes:** **1 Critical** ⭐ NEW!
 
 ---
 
-## 🔧 NOWA FUNKCJA: Visibility Improvements ⭐ NEW!
+## 🔧 Visibility Improvements
 
 ### Problem:
 - ❌ Menu dropdown (trzy kropki) było prawie niewidoczne przez przezroczystość
@@ -63,35 +125,6 @@ Kompletna modernizacja interfejsu użytkownika dla **4 głównych modułów**: H
 **Path:** `components/halls/hall-card.tsx`  
 **Commit:** [4367a02](https://github.com/kamil-gol/Go-ciniec_2/commit/4367a02d0929c96ea89397060f3fa1c56cb3f357)
 
-**PRZED:**
-```tsx
-<DropdownMenuContent align="end" className="w-48">
-  <DropdownMenuItem>
-    <Eye className="mr-2 h-4 w-4" />
-    Szczegóły
-  </DropdownMenuItem>
-</DropdownMenuContent>
-```
-**Problemy:** 
-- ❌ Przezroczyste tło
-- ❌ Słaby border
-- ❌ Małe ikony (h-4)
-- ❌ Słaby kontrast tekstu
-
-**PO:**
-```tsx
-<DropdownMenuContent 
-  align="end" 
-  className="w-48 bg-white dark:bg-gray-950 border-2 border-purple-200 dark:border-purple-800 shadow-2xl backdrop-blur-sm"
->
-  <DropdownMenuItem>
-    <Link className="flex items-center px-3 py-2 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-md">
-      <Eye className="mr-3 h-5 w-5 text-blue-600 dark:text-blue-400" />
-      Szczegóły
-    </Link>
-  </DropdownMenuItem>
-</DropdownMenuContent>
-```
 **Poprawki:**
 - ✅ **Solidne tło:** `bg-white dark:bg-gray-950`
 - ✅ **Border 2px:** `border-2 border-purple-200`
@@ -109,48 +142,6 @@ Kompletna modernizacja interfejsu użytkownika dla **4 głównych modułów**: H
 **Path:** `app/dashboard/halls/page.tsx`  
 **Commit:** [ec5920c](https://github.com/kamil-gol/Go-ciniec_2/commit/ec5920ca20df5a92c9785c978ec6b52ab1c2ab8c)
 
-**PRZED:**
-```tsx
-<Button
-  size="lg"
-  variant={showInactive ? 'default' : 'outline'}
-  onClick={() => setShowInactive(!showInactive)}
-  className={showInactive ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : ''}
->
-  {showInactive ? '🔍 Wszystkie' : '✨ Tylko aktywne'}
-</Button>
-```
-**Problemy:**
-- ❌ Małe ikony (emoji)
-- ❌ Słaby kontrast w stanie outline
-- ❌ Brak ikon lucide
-- ❌ Za mały tekst
-
-**PO:**
-```tsx
-<Button
-  size="lg"
-  variant="outline"
-  onClick={() => setShowInactive(!showInactive)}
-  className={`h-12 px-6 text-base font-semibold border-2 transition-all ${
-    showInactive
-      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg'
-      : 'bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-purple-300 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-  }`}
->
-  {showInactive ? (
-    <>
-      <EyeOff className="mr-2 h-5 w-5" />
-      Wszystkie Sale
-    </>
-  ) : (
-    <>
-      <Eye className="mr-2 h-5 w-5" />
-      Tylko Aktywne
-    </>
-  )}
-</Button>
-```
 **Poprawki:**
 - ✅ **Ikony Lucide:** `Eye` / `EyeOff` (zamiast emoji)
 - ✅ **Większe ikony:** `h-5 w-5`
@@ -164,154 +155,56 @@ Kompletna modernizacja interfejsu użytkownika dla **4 głównych modułów**: H
 - ✅ **Hover effects:** `hover:bg-purple-50` / `hover:from-purple-700`
 - ✅ **Shadow:** `shadow-lg` (active state)
 
-#### 3. Dropdown Trigger (HallCard) ✅ ⭐
-**PRZED:**
-```tsx
-<DropdownMenuTrigger asChild>
-  <Button variant="ghost" size="icon" className="hover:bg-purple-100">
-    <MoreVertical className="h-5 w-5" />
-  </Button>
-</DropdownMenuTrigger>
-```
-
-**PO:**
-```tsx
-<DropdownMenuTrigger asChild>
-  <Button 
-    variant="ghost" 
-    size="icon" 
-    className="hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-full"
-  >
-    <MoreVertical className="h-5 w-5 text-foreground" />
-  </Button>
-</DropdownMenuTrigger>
-```
-**Poprawki:**
-- ✅ **Rounded:** `rounded-full`
-- ✅ **Dark mode hover:** `dark:hover:bg-purple-900/50`
-- ✅ **Silniejszy kontrast:** `text-foreground`
-
----
-
-## 🎨 Visualization
-
-### Dropdown Menu
-
-**PRZED (Niewidoczne) ❌:**
-```
-┌────────────────────────┐
-│ Szczegóły          │  <- Słaby kontrast
-│ Edytuj             │  <- Małe ikony
-│ Usuń               │  <- Przezroczyste tło
-└────────────────────────┘
-```
-
-**PO (Widoczne) ✅:**
-```
-┌──────────────────────────────┐
-│  👁️  Szczegóły            │  <- Border 2px
-├──────────────────────────────┤  <- Białe tło
-│  ✏️  Edytuj               │  <- Większe ikony
-├──────────────────────────────┤  <- Kolorowe ikony
-│  🗑️  Usuń (czerwone)     │  <- Silny kontrast
-└──────────────────────────────┘  <- Shadow 2xl
-```
-
-### Toggle Button
-
-**PRZED (Niewyraźne) ❌:**
-```
-[ ✨ Tylko aktywne ]  <- Emoji, słaby kontrast
-```
-
-**PO (Wyraźne) ✅:**
-```
-╭────────────────────────────╮
-│  👁️  Tylko Aktywne     │  <- Icon Lucide
-╰────────────────────────────╯  <- Border 2px, białe tło
-
-LUB (gdy aktywny):
-
-╭────────────────────────────╮
-│  🚫  Wszystkie Sale    │  <- Purple gradient
-╰────────────────────────────╯  <- Biały tekst, shadow
-```
-
 ---
 
 ## 🧪 Testing Guide
 
-### Dropdown Menu (HallCard) ⭐ NEW!
-**URL:** [http://localhost:3000/dashboard/halls](http://localhost:3000/dashboard/halls)
+### Select Filter Bugfix ⭐ NEW!
+**URL:** [http://localhost:3000/dashboard/reservations](http://localhost:3000/dashboard/reservations)
 
-**1. Otwieranie menu:**
-- [ ] Kliknij trzy kropki (⋮) na karcie sali
-- [ ] Menu pojawia się z animacją
-- [ ] **Białe/ciemne tło** (nie przezroczyste)
-- [ ] **Border 2px** (purple-200)
-- [ ] **Shadow 2xl** (widoczny cień)
+**1. Otwórz stronę:**
+- [ ] Strona ładuje się bez błędów
+- [ ] Brak "Unhandled Runtime Error"
+- [ ] Select filter widoczny
 
-**2. Opcje menu:**
-- [ ] **Szczegóły:**
-  - [ ] Ikona Eye (👁️) - niebieska (h-5 w-5)
-  - [ ] Tekst "Szczegóły" - czarny/biały (text-base font-medium)
-  - [ ] Hover: fioletowe tło (purple-50)
-  - [ ] Kliknij → navigate to details
+**2. Domyślny stan:**
+- [ ] Select pokazuje "Wszystkie statusy"
+- [ ] Wszystkie rezerwacje widoczne
+- [ ] Brak błędów w konsoli
 
-- [ ] **Edytuj:**
-  - [ ] Ikona Edit (✏️) - fioletowa (h-5 w-5)
-  - [ ] Tekst "Edytuj" - czarny/biały
-  - [ ] Hover: fioletowe tło
-  - [ ] Kliknij → navigate to edit page
+**3. Zmiana filtra:**
+- [ ] Kliknij Select
+- [ ] Lista opcji się rozwija:
+  - Wszystkie statusy (domyślnie wybrane)
+  - Oczekujące
+  - Potwierdzone
+  - Zakończone
+  - Anulowane
+- [ ] Wybierz "Oczekujące"
+- [ ] Lista odświeża się
+- [ ] Pokazują się tylko rezerwacje ze statusem PENDING
+- [ ] Counter aktualizuje się: "Znaleziono X rezerwacji"
 
-- [ ] **Usuń:**
-  - [ ] Ikona Trash2 (🗑️) - czerwona (h-5 w-5)
-  - [ ] Tekst "Usuń" - czerwony
-  - [ ] Hover: czerwone tło (red-50)
-  - [ ] Kliknij → confirm → delete
+**4. Powrót do "Wszystkie":**
+- [ ] Wybierz "Wszystkie statusy"
+- [ ] Lista odświeża się
+- [ ] Pokazują się wszystkie rezerwacje
+- [ ] Brak błędów
 
-**3. Responsywność:**
-- [ ] Desktop: menu w prawym górnym rogu
-- [ ] Mobile: menu widoczne i klikalne
-- [ ] Dark mode: ciemne tło, jasny tekst
-
-### Toggle Button (Halls Page) ⭐ NEW!
-**URL:** [http://localhost:3000/dashboard/halls](http://localhost:3000/dashboard/halls)
-
-**1. Stan nieaktywny (Tylko Aktywne):**
-- [ ] Ikona Eye (👁️) - h-5 w-5
-- [ ] Tekst "Tylko Aktywne" - text-base font-semibold
-- [ ] Tło: białe (dark: gray-950)
-- [ ] Border: 2px purple-300 (dark: purple-700)
-- [ ] Tekst: czarny (dark: biały)
-- [ ] Height: 12 (48px)
-- [ ] Hover: purple-50 (dark: purple-950/30)
-
-**2. Stan aktywny (Wszystkie Sale):**
-- [ ] Ikona EyeOff (🚫) - h-5 w-5
-- [ ] Tekst "Wszystkie Sale" - text-base font-semibold
-- [ ] Tło: gradient purple-600 → indigo-600
-- [ ] Tekst: biały
-- [ ] Shadow: shadow-lg
-- [ ] Hover: gradient purple-700 → indigo-700
-
-**3. Funkcjonalność:**
-- [ ] Kliknij "Tylko Aktywne" → zmienia na "Wszystkie Sale"
-- [ ] Lista sal odświeża się (pokazuje wszystkie)
-- [ ] Kliknij "Wszystkie Sale" → zmienia na "Tylko Aktywne"
-- [ ] Lista sal odświeża się (pokazuje tylko aktywne)
-- [ ] Stats cards aktualizują się
-
-**4. Responsive:**
-- [ ] Desktop: przycisk obok search
-- [ ] Tablet: przycisk pod searchem
-- [ ] Mobile: pełna szerokość
+**5. Wszystkie statusy:**
+- [ ] Przetestuj każdy status:
+  - PENDING (Oczekujące)
+  - CONFIRMED (Potwierdzone)
+  - COMPLETED (Zakończone)
+  - CANCELLED (Anulowane)
+- [ ] Każdy filtr działa poprawnie
+- [ ] Brak crashów
 
 ---
 
 ## 📦 Files Changed
 
-### Frontend - Halls (7 files): ⭐ +2
+### Frontend - Halls (7 files): ⭐
 1. `apps/frontend/app/dashboard/halls/page.tsx` ✅ ⭐ Toggle Button Fixed
 2. `apps/frontend/components/halls/hall-card.tsx` ✅ ⭐ Dropdown Menu Fixed
 3. `apps/frontend/app/dashboard/halls/[id]/page.tsx` ✅
@@ -320,10 +213,10 @@ LUB (gdy aktywny):
 6. `apps/frontend/components/halls/hall-reservations-calendar.tsx` ✅
 7. `apps/frontend/lib/api/reservations.ts` ✅
 
-### Frontend - Reservations (3 files):
+### Frontend - Reservations (3 files): ⭐ +1
 8. `apps/frontend/app/dashboard/reservations/page.tsx` ✅
 9. `apps/frontend/app/dashboard/reservations/[id]/page.tsx` ✅
-10. `apps/frontend/components/reservations/reservations-list.tsx` ✅
+10. `apps/frontend/components/reservations/reservations-list.tsx` ✅ ⭐ Select Bugfix!
 
 ### Frontend - Clients (5 files):
 11. `apps/frontend/app/dashboard/clients/page.tsx` ✅
@@ -357,7 +250,7 @@ LUB (gdy aktywny):
 ✅ Smooth animations and transitions  
 ✅ Dark mode support everywhere  
 ✅ **Card-based layouts** ⭐  
-✅ **Improved visibility** ⭐ NEW!
+✅ **Improved visibility** ⭐
 
 ### User Experience
 ✅ Intuitive navigation with back buttons  
@@ -369,8 +262,8 @@ LUB (gdy aktywny):
 ✅ **Day/Week/Month view modes** ⭐  
 ✅ **Date grouping in lists** ⭐  
 ✅ **Contact info always visible** ⭐  
-✅ **Better dropdown menus** ⭐ NEW!  
-✅ **Better toggle buttons** ⭐ NEW!
+✅ **Better dropdown menus** ⭐  
+✅ **Better toggle buttons** ⭐
 
 ### Developer Experience
 ✅ Reusable component patterns  
@@ -389,14 +282,15 @@ LUB (gdy aktywny):
 ✅ Form validation  
 ✅ Responsive design  
 ✅ Performance optimized  
-✅ **Accessibility improvements** ⭐ NEW!
+✅ **Accessibility improvements** ⭐  
+✅ **Critical bugfixes** ⭐ NEW!
 
 ---
 
 ## 🎉 Final Summary
 
-**Scope:** **4 moduły**, 11 stron, 2 backend features, 3 premium components, visibility fixes ⭐  
-**Status:** ✅ 100% Complete  
+**Scope:** **4 moduły**, 11 stron, 2 backend features, 3 premium components, visibility fixes, bugfixes ⭐  
+**Status:** ✅ 100% Complete + Bugfixed  
 **Quality:** Production-ready  
 **Documentation:** Comprehensive  
 **Testing:** Ready for QA
@@ -410,47 +304,51 @@ LUB (gdy aktywny):
 - 🔘 **60+ gradient buttons** ⭐
 - 📝 **3 smart forms**
 - 🛡️ **2 critical backend features** (multi-reservation + overlap)
-- 👁️ **2 visibility fixes** (dropdown menu + toggle button) ⭐ NEW!
+- 👁️ **2 visibility fixes** (dropdown menu + toggle button) ⭐
+- 🚨 **1 critical bugfix** (Select empty value) ⭐ NEW!
 - 📚 **1 documentation file**
 - 💻 **~12,500 lines of code** ⭐
 
 ---
 
-## 🆕 What's NEW in v4.2?
+## 🆕 What's NEW in v4.2.1?
 
-### 1. Dropdown Menu Visibility ⭐ NEW!
-- **Solid background** (white/gray-950)
-- **Border 2px** (purple-200)
-- **Shadow 2xl** (strong shadow)
-- **Larger icons** (h-5 w-5)
-- **Colored icons** (blue, purple, red)
-- **Larger text** (text-base font-medium)
-- **Strong contrast** (text-gray-900)
-- **Hover effects** (purple-50)
-- **Padding** (px-3 py-2)
+### 1. Critical Bugfix: Select Empty Value ✅ 🚨
+- **Problem:** Select.Item can't have empty string as value
+- **Solution:** Changed `''` to `'ALL'`
+- **Impact:** Fixes crash on reservations list page
+- **Changes:**
+  - statusOptions: `{ value: '', ... }` → `{ value: 'ALL', ... }`
+  - State type: `ReservationStatus | ''` → `ReservationStatus | 'ALL'`
+  - Initial state: `useState('')` → `useState('ALL')`
+  - Logic: `statusFilter === 'ALL' ? undefined : statusFilter`
 
-### 2. Toggle Button Visibility ⭐ NEW!
-- **Lucide icons** (Eye/EyeOff)
-- **Larger icons** (h-5 w-5)
-- **Border 2px** (purple-300/purple-700)
-- **Larger text** (text-base font-semibold)
-- **Fixed height** (h-12 = 48px)
-- **Solid backgrounds**
-  - Inactive: white/gray-950
-  - Active: purple → indigo gradient
-- **Strong contrast** (text-gray-900 / text-white)
-- **Shadow** (shadow-lg when active)
-- **Better hover effects**
+### 2. Previous Features (v4.2.0):
 
-### 3. Dropdown Trigger ⭐ NEW!
-- **Rounded button** (rounded-full)
-- **Dark mode hover** (purple-900/50)
-- **Strong icon color** (text-foreground)
+#### Dropdown Menu Visibility ⭐
+- Solid background (white/gray-950)
+- Border 2px (purple-200)
+- Shadow 2xl
+- Larger icons (h-5)
+- Colored icons (blue, purple, red)
+- Larger text (text-base)
+- Strong contrast
+- Hover effects
+
+#### Toggle Button Visibility ⭐
+- Lucide icons (Eye/EyeOff)
+- Larger icons (h-5)
+- Border 2px
+- Larger text (text-base font-semibold)
+- Fixed height (h-12)
+- Solid backgrounds
+- Strong contrast
+- Shadow effects
 
 ---
 
 **Dokument utworzony:** 09.02.2026  
-**Ostatnia aktualizacja:** 09.02.2026 21:31 CET  
+**Ostatnia aktualizacja:** 09.02.2026 21:38 CET  
 **Autor:** Kamil Gol + AI Assistant  
 **Branch:** feature/premium-halls-ui  
-**Status:** ✅ Kompletny - Visibility Fixed! ⭐
+**Status:** ✅ Kompletny + Bugfixed! ⭐
