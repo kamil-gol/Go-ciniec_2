@@ -259,12 +259,14 @@ async function main() {
   // ============================================
   console.log('⏳ Tworzenie wpisów w kolejce...')
   const futureDate = new Date(now.getFullYear(), now.getMonth() + 3, 1)
-  const queueEndDate = new Date(now.getFullYear(), now.getMonth() + 9, 1)
   
-  // Grupuj po datach (10 różnych dat, po 5 wpisów na datę)
+  // Generuj 10 UNIKALNYCH dat z odstepem 7 dni
   const queueDates = []
   for (let i = 0; i < 10; i++) {
-    queueDates.push(randomDate(futureDate, queueEndDate))
+    const date = new Date(futureDate)
+    date.setDate(date.getDate() + (i * 7)) // Co 7 dni
+    date.setHours(0, 0, 0, 0) // Reset godzin
+    queueDates.push(date)
   }
   
   let queueCount = 0
