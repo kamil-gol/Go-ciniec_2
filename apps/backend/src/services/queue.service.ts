@@ -1,7 +1,7 @@
 /**
  * Queue Service
  * Business logic for reservation queue management
- * ✨ UPDATED: Added batch update for atomic drag & drop (Bug #9)
+ * ✨ UPDATED: Fixed unique constraint conflict in batch update (Bug #9)
  */
 
 import { PrismaClient, ReservationStatus, Prisma } from '@prisma/client';
@@ -523,10 +523,13 @@ export class QueueService {
 
   /**
    * Batch update queue positions atomically
-   * ✨ BUG #9 FIX: Atomic transaction for drag & drop
+   * ✨ BUG #9 FIX: Atomic transaction with temporary negative positions
    * 
    * This method updates multiple positions in a single transaction,
-   * preventing race conditions when drag & drop changes multiple items.
+   * preventing race conditions and unique constraint conflicts.
+   * 
+   * Strategy: Use temporary NEGATIVE positions to avoid conflicts,
+   * then update to final positive positions.
    */
   async batchUpdatePositions(
     updates: Array<{ id: string; position: number }>
@@ -591,7 +594,23 @@ export class QueueService {
         throw new Error('Duplicate positions detected in updates');
       }
 
-      // Update each reservation
+      // ✨ FIX: Step 1 - Set all to TEMPORARY NEGATIVE positions
+      // This avoids unique constraint conflicts
+      console.log('Step 1: Setting temporary negative positions...');
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        const tempPosition = -(i + 1); // -1, -2, -3, etc.
+        
+        await tx.reservation.update({
+          where: { id: update.id },
+          data: {
+            reservationQueuePosition: tempPosition,
+          },
+        });
+      }
+
+      // ✨ FIX: Step 2 - Set to FINAL positions
+      console.log('Step 2: Setting final positions...');
       let updatedCount = 0;
       for (const update of updates) {
         await tx.reservation.update({
@@ -885,7 +904,7 @@ export class QueueService {
    * Auto-cancel expired RESERVED reservations
    */
   async autoCancelExpired(): Promise<AutoCancelResult> {
-    const result = await prisma.$queryRaw<Array<{ cancelled_count: number; cancelled_ids: string[] }>>` 
+    const result = await prisma.$queryRaw<Array<{ cancelled_count: number; cancelled_ids: string[] }>>`
       SELECT * FROM auto_cancel_expired_reserved()
     `;
 
