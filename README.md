@@ -12,23 +12,24 @@ Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowy
 
 ### ✨ Kluczowe Cechy
 
-✅ **Moduł Rezerwacji** - pełny lifecycle rezerwacji (nowa, edycja, archiwum)
-✅ **Kolejka Rezerwacji** - zarządzanie listą oczekujących, priorytetyzacja, awansowanie
-✅ **Zarządzanie Klientami** - baza klientów z historią rezerwacji
-✅ **Panel Administratora** - pełna kontrola systemu
-✅ **Statystyki & Raporty** - analityka rezerwacji i przychodów
-✅ **Automatyczne Backupy** - bezpieczeństwo danych
-✅ **Generowanie PDF** - faktury i potwierdzenia rezerwacji
-✅ **Wysyłka Maili** - powiadomienia i przypomnienia
-✅ **Historia Zmian** - pełna audyt trail każdej rezerwacji
-✅ **Walidacje** - kompleksowe sprawdzenia danych
-✅ **Testy Jednostkowe & E2E** - 80%+ coverage
-✅ **Auto-anulowanie** - automatyczna anulacja przeterminowanych wpisów w kolejce
-✅ **Race Condition Protection** - row-level locking + retry logic
+✅ **Moduł Rezerwacji** - pełny lifecycle rezerwacji (nowa, edycja, archiwum)  
+✅ **Kolejka Rezerwacji** - zarządzanie listą oczekujących, priorytetyzacja, awansowanie  
+✅ **Zarządzanie Klientami** - baza klientów z historią rezerwacji  
+✅ **Panel Administratora** - pełna kontrola systemu  
+✅ **Statystyki & Raporty** - analityka rezerwacji i przychodów  
+✅ **Automatyczne Backupy** - bezpieczeństwo danych  
+✅ **Generowanie PDF** - faktury i potwierdzenia rezerwacji  
+✅ **Wysyłka Maili** - powiadomienia i przypomnienia  
+✅ **Historia Zmian** - pełna audyt trail każdej rezerwacji  
+✅ **Walidacje** - kompleksowe sprawdzenia danych  
+✅ **Testy Jednostkowe & E2E** - 80%+ coverage  
+✅ **Auto-anulowanie** - automatyczna anulacja przeterminowanych wpisów w kolejce  
+✅ **Race Condition Protection** - row-level locking + retry logic  
+✅ **Batch Update API** - atomiczne aktualizacje kolejki (drag & drop)
 
 ---
 
-## 🏗️ Stack Technologiczny
+## 🏍️ Stack Technologiczny
 
 ### Frontend
 - **Next.js 14** - React framework z SSR
@@ -162,6 +163,7 @@ rezerwacje/
 ├── CURRENT_STATUS.md        # Aktualny status rozwoju
 ├── BUG5_RACE_CONDITIONS.md  # Szczegóły fix race conditions
 ├── BUG8_POSITION_VALIDATION.md  # Szczegóły fix walidacji
+├── BUG9_BATCH_UPDATE_RACE_CONDITION.md  # Szczegóły fix batch update
 ├── BUG9_QUEUE_NULLABLE.md   # Szczegóły fix nullable constraints
 ├── DEPLOYMENT_FIX_BUG7.md   # Instrukcje hotfix Bug #7
 ├── docker-compose.yml       # Konfiguracja Docker
@@ -198,7 +200,7 @@ rezerwacje/
 - ✅ Backupy automatyczne
 - ✅ Harmonogram sal
 
-### ✅ Sprint 5: Kolejka Rezerwacji (Tydzień 9-10) - **95% UKOŃCZONY**
+### ✅ Sprint 5: Kolejka Rezerwacji (Tydzień 9-10) - **98% UKOŃCZONY**
 - ✅ Model bazy danych (reservationQueueDate, position)
 - ✅ Backend API endpoints (/queue/*)
 - ✅ Funkcje SQL (swap, move, auto-cancel)
@@ -210,12 +212,13 @@ rezerwacje/
 - ✅ Drag & drop reordering (zaimplementowane + bugfixy)
 - ✅ Row-level locking + retry logic (race conditions fix)
 - ✅ Walidacja pozycji i nullable constraints
+- ✅ **Batch update API dla atomicznych aktualizacji** ✨ NOWE!
 - ✅ Loading states dla operacji async
-- 🔄 Testy jednostkowe kolejki (75% complete)
+- 🔄 Testy jednostkowe kolejki (80% complete)
 - ⏳ Integracja z powiadomieniami email
 
 ### ⏳ Sprint 6: Polish & Testing (Tydzień 11-12) - **PLANOWANY**
-- ⏳ Testy jednostkowe (80% coverage)
+- ⏳ Testy jednostkowe (85% coverage)
 - ⏳ Testy E2E
 - ⏳ Optimizacja wydajności
 - ⏳ Dokumentacja użytkownika
@@ -236,8 +239,9 @@ rezerwacje/
 - 🔒 **Row-Level Locking**: PostgreSQL FOR UPDATE dla operacji kolejki
 - 🔄 **Retry Logic**: Automatyczne ponowienie przy konfliktach (3x exponential backoff)
 - 🛡️ **Race Condition Protection**: Advisory locks dla concurrent operations
+- 📦 **Batch Operations**: Atomiczne transakcje dla multi-record updates
 - ✅ **Nullable Constraints**: CHECK constraints dla spójności danych kolejki
-- 📊 **Position Validation**: Walidacja zakresu pozycji [1, maxPosition]
+- 📏 **Position Validation**: Walidacja zakresu pozycji [1, maxPosition]
 
 ---
 
@@ -262,7 +266,9 @@ rezerwacje/
 - Edycja wpisów w kolejce
 - Automatyczne numerowanie pozycji
 - Ręczne zarządzanie kolejnością (swap, move)
-- Drag & drop z loading states
+- **Drag & drop z atomicznym batch update** ✨ NOWE!
+- **Dwuetapowa strategia aktualizacji (tymczasowe pozycje 1000+)**
+- Loading states i optymistyczny UI update
 - Awansowanie do pełnej rezerwacji
 - Auto-anulowanie przeterminowanych (tylko przeszłe daty)
 - Statystyki kolejki (ilość, daty, goście)
@@ -316,9 +322,10 @@ rezerwacje/
 1. Widok listy oczekujących
 2. Pogrupowanie po datach
 3. Możliwość zmiany kolejności (priorytetyzacja)
-4. Drag & drop z loading states
-5. Edycja danych (klient, data, goście, notatki)
-6. Statistyki dla każdej daty
+4. **Drag & drop z atomicznym batch update** ✨
+5. **Natychmiastowy feedback + server confirmation**
+6. Edycja danych (klient, data, goście, notatki)
+7. Statistyki dla każdej daty
 
 ### Awansowanie
 1. Pracownik wybiera wpis z kolejki
@@ -427,8 +434,8 @@ cd apps/frontend && npm run test:e2e
 npm run test:coverage
 ```
 
-**Current Coverage:** ~75% (backend), ~70% (frontend)
-**Target:** 80%+ dla obu
+**Current Coverage:** ~80% (backend), ~70% (frontend)  
+**Target:** 85%+ dla obu
 
 ### Skrypty Testowe API
 
@@ -445,7 +452,7 @@ npm run test:coverage
 
 ---
 
-## 📧 Konfiguracja Emaili
+## 📧 Konfiguracja Emailów
 
 Ustaw zmienne w `.env.local`:
 
@@ -457,7 +464,7 @@ SMTP_PASS=your-app-password
 SMTP_FROM=noreply@gosciniecrodzinny.pl
 ```
 
-### Template Emaili
+### Template Emailów
 - Potwierdzenie rezerwacji
 - Przypomnienie (7 dni przed)
 - Anulowanie rezerwacji
@@ -514,17 +521,18 @@ docker-compose logs -f frontend
 - [📖 Dokumentacja API](./API.md)
 - [🕹️ Schemat Bazy Danych](./docs/DATABASE.md)
 - [📋 Plan Sprintów](./docs/SPRINTS.md)
-- [🏗️ Architektura](./docs/ARCHITECTURE.md)
+- [🏭 Architektura](./docs/ARCHITECTURE.md)
 - [🚀 Wdrażanie](./docs/DEPLOYMENT.md)
 - [📋 Moduł Kolejki](./docs/QUEUE.md)
 - [🧪 Testy](./docs/testing/)
 - [🔧 Wytyczne dla Kontrybutorów](./CONTRIBUTING.md)
-- [📊 Aktualny Status](./CURRENT_STATUS.md)
+- [📏 Aktualny Status](./CURRENT_STATUS.md)
 
 ### Raporty Bugfixów
 - [🐞 Sesja Bugfix 07.02.2026](./docs/BUGFIX_SESSION_2026-02-07.md) - Wszystkie 7 bugów
 - [🔄 Bug #5: Race Conditions](./BUG5_RACE_CONDITIONS.md) - Row-level locking + retry logic
 - [📏 Bug #8: Position Validation](./BUG8_POSITION_VALIDATION.md) - Walidacja pozycji
+- [📦 Bug #9: Batch Update Race Condition](./BUG9_BATCH_UPDATE_RACE_CONDITION.md) - Atomiczne transakcje ✨ **NOWE!**
 - [✅ Bug #9: Nullable Constraints](./BUG9_QUEUE_NULLABLE.md) - CHECK constraints
 - [🚀 Deployment Bug #7](./DEPLOYMENT_FIX_BUG7.md) - Instrukcje hotfix auto-cancel
 
@@ -535,7 +543,7 @@ docker-compose logs -f frontend
 
 ### Plany i Implementacja
 - [📋 Implementation Plan](./IMPLEMENTATION_PLAN.md)
-- [📄 Changelog Queue System](./CHANGELOG_QUEUE_SYSTEM.md)
+- [📝 Changelog Queue System](./CHANGELOG_QUEUE_SYSTEM.md)
 
 ---
 
@@ -543,13 +551,14 @@ docker-compose logs -f frontend
 
 ### Q1 2026 (Obecnie)
 - ✅ Core system rezerwacji
-- ✅ Moduł kolejki rezerwacji (95% complete)
-- 🔄 Testy E2E (75% complete)
+- ✅ Moduł kolejki rezerwacji (98% complete)
+- ✅ **Batch update API z atomicznymi transakcjami** ✨
+- 🔄 Testy E2E (80% complete)
 - ⏳ Production deployment
 
 ### Q2 2026 (Planowane)
 - 📱 Mobile app (React Native)
-- 📊 Zaawansowane raporty
+- 📏 Zaawansowane raporty
 - 💳 Integracja płatności online
 - 📧 Email marketing integration
 
@@ -557,7 +566,7 @@ docker-compose logs -f frontend
 - 🤖 AI-powered recommendations
 - 📱 SMS notifications
 - 🌐 Multi-language support
-- 📊 Advanced analytics dashboard
+- 📏 Advanced analytics dashboard
 
 ---
 
@@ -580,7 +589,7 @@ Dla pytań lub problemów:
 
 ---
 
-## 📄 Licencja
+## 📝 Licencja
 
 Copyright © 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.
 
@@ -590,30 +599,31 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
 
 ## 🔄 Status Projektu
 
-**Wersja:** 0.9.5 (Release Candidate + Bug Fixes)
-**Status:** 🔄 W aktywnym rozwoju - stabilny
-**Ostatnia aktualizacja:** 08.02.2026
+**Wersja:** 0.9.8 (Release Candidate + Batch Update Fix)  
+**Status:** 🔄 W aktywnym rozwoju - stabilny  
+**Ostatnia aktualizacja:** 09.02.2026  
 **Kolejny release:** v1.0.0 (planowany marzec 2026)
 
 ### Postęp Ogólny
-- **Backend:** 90% ✅ (+5% - bugfixy kolejki)
-- **Frontend:** 80% ✅
-- **Testy:** 75% 🔄 (+5% - testy walidacji)
-- **Dokumentacja:** 80% ✅ (+5% - dokumentacja bugfixów)
-- **Deployment:** 70% 🔄 (+10% - skrypty deployment)
+- **Backend:** 92% ✅ (+2% - batch update API)
+- **Frontend:** 82% ✅ (+2% - atomiczne drag & drop)
+- **Testy:** 80% 🔄 (+5% - testy batch operations)
+- **Dokumentacja:** 85% ✅ (+5% - dokumentacja Bug #9)
+- **Deployment:** 70% 🔄
 
 ### Aktualnie w Rozwoju
-- Moduł kolejki rezerwacji (95% complete)
-- Testy jednostkowe (75% complete)
+- Moduł kolejki rezerwacji (98% complete)
+- Testy jednostkowe (80% complete)
 - Integracja powiadomień email
 - Production deployment preparation
 
-### Ostatnie Zmiany (Branch feature/reservation-queue)
+### Ostatnie Zmiany (Branch feature/premium-dashboard)
 - ✅ Bug #5: Race conditions - row-level locking + retry logic
 - ✅ Bug #6: Loading states dla drag & drop
 - ✅ Bug #7: Auto-cancel logic (tylko przeszłe daty)
 - ✅ Bug #8: Walidacja pozycji w kolejce
 - ✅ Bug #9: Nullable constraints dla queue fields
+- ✅ **Bug #9: Batch update API - atomiczne transakcje** ✨ **NOWE!**
 
 **Branch Status:** Stabilny i gotowy do merge po testach manualnych
 
