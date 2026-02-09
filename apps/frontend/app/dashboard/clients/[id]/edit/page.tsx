@@ -2,15 +2,21 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { ArrowLeft, Save, User, Mail, Phone, FileText, AlertCircle, Sparkles } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
 import { useClient, useUpdateClient } from '@/lib/api/clients'
+import { useToast } from '@/hooks/use-toast'
 import { CreateClientInput } from '@/types'
+import Link from 'next/link'
 
 export default function EditClientPage() {
   const params = useParams()
   const router = useRouter()
+  const { toast } = useToast()
   const clientId = params.id as string
 
   const { data: client, isLoading, error } = useClient(clientId)
@@ -24,7 +30,6 @@ export default function EditClientPage() {
     notes: '',
   })
 
-  // Populate form when client data loads
   useEffect(() => {
     if (client) {
       setFormData({
@@ -40,14 +45,32 @@ export default function EditClientPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!formData.firstName || !formData.lastName || !formData.phone) {
+      toast({
+        title: 'Błąd walidacji',
+        description: 'Wypełnij wszystkie wymagane pola',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       await updateClient.mutateAsync({
         id: clientId,
         data: formData,
       })
+      toast({
+        title: 'Sukces',
+        description: 'Dane klienta zostały zaktualizowane',
+      })
       router.push(`/dashboard/clients/${clientId}`)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating client:', error)
+      toast({
+        title: 'Błąd',
+        description: error.message || 'Nie udało się zaktualizować danych klienta',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -58,181 +81,204 @@ export default function EditClientPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 text-primary-500 animate-spin mb-4" />
-          <p className="text-neutral-600 dark:text-neutral-400">
-            Ładowanie danych klienta...
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Wczytywanie...</p>
         </div>
-      </DashboardLayout>
+      </div>
     )
   }
 
   if (error || !client) {
     return (
-      <DashboardLayout>
-        <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 p-8 text-center border border-red-200 dark:border-red-800">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-2">
-            Błąd ładowania klienta
-          </h3>
-          <p className="text-red-700 dark:text-red-300 mb-4">
-            {error instanceof Error ? error.message : 'Klient nie został znaleziony'}
-          </p>
-          <button
-            onClick={() => router.push('/dashboard/clients')}
-            className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-          >
-            Powrót do listy klientów
-          </button>
-        </div>
-      </DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <Card className="border-0 shadow-xl max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Błąd ładowania</h3>
+            <p className="text-muted-foreground mb-6">
+              {error instanceof Error ? error.message : 'Klient nie został znaleziony'}
+            </p>
+            <Link href="/dashboard/clients">
+              <Button variant="outline" size="lg">Powrót do listy klientów</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Powrót
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto py-8 px-4 max-w-4xl space-y-8">
+        {/* Premium Hero */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-600 via-pink-600 to-rose-600 p-8 text-white shadow-2xl">
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
+          
+          <div className="relative z-10 space-y-4">
+            <Link href={`/dashboard/clients/${clientId}`}>
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Powrót do szczegółów
+              </Button>
+            </Link>
 
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-            Edytuj klienta
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-            {client.firstName} {client.lastName}
-          </p>
-        </motion.div>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <User className="h-8 w-8" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold">Edytuj klienta</h1>
+                <p className="text-white/90 text-lg mt-1">
+                  {client.firstName} {client.lastName}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+        </div>
 
         {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700"
-        >
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Imię <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Jan"
-                />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Personal Info */}
+          <Card className="border-0 shadow-xl">
+            <div className="bg-gradient-to-br from-orange-50 via-pink-50 to-rose-50 dark:from-orange-950/30 dark:via-pink-950/30 dark:to-rose-950/30 p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg shadow-lg">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold">Dane osobowe</h2>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Nazwisko <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* First Name */}
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">
+                    Imię <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="Jan"
+                    required
+                    className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">
+                    Nazwisko <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Kowalski"
+                    required
+                    className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Contact Info */}
+          <Card className="border-0 shadow-xl">
+            <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
+                  <Phone className="h-5 w-5 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold">Dane kontaktowe</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <Input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="jan.kowalski@example.com"
+                    className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Telefon <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+48 123 456 789"
+                    required
+                    className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Notes */}
+          <Card className="border-0 shadow-xl">
+            <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold">Notatki</h2>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Dodatkowe informacje</Label>
+                <Textarea
+                  name="notes"
+                  value={formData.notes}
                   onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Kowalski"
+                  placeholder="Dodatkowe informacje o kliencie..."
+                  rows={6}
+                  className="text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
                 />
               </div>
             </div>
+          </Card>
 
-            {/* Contact Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="jan.kowalski@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Telefon <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="+48 123 456 789"
-                />
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Notatki
-              </label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                placeholder="Dodatkowe informacje o kliencie..."
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="flex-1 px-6 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-              >
+          {/* Actions */}
+          <div className="flex gap-4">
+            <Link href={`/dashboard/clients/${clientId}`} className="flex-1">
+              <Button type="button" variant="outline" size="lg" className="w-full h-14 text-lg">
                 Anuluj
-              </button>
-              <button
-                type="submit"
-                disabled={updateClient.isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white hover:shadow-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {updateClient.isPending ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Zapisywanie...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    Zapisz zmiany
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </motion.div>
+              </Button>
+            </Link>
+            <Button
+              type="submit"
+              disabled={updateClient.isPending}
+              size="lg"
+              className="flex-1 h-14 text-lg bg-gradient-to-r from-orange-600 via-pink-600 to-rose-600 hover:from-orange-700 hover:via-pink-700 hover:to-rose-700 shadow-xl"
+            >
+              <Save className="mr-2 h-5 w-5" />
+              {updateClient.isPending ? 'Zapisywanie...' : 'Zapisz zmiany'}
+            </Button>
+          </div>
+        </form>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }
