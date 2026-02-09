@@ -62,18 +62,18 @@ function getGuestBreakdown(reservation: any): {
 
 export function ReservationsList() {
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<ReservationStatus | ''>('')
+  const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null)
 
   const { data, isLoading, error, refetch } = useReservations({
     page,
     pageSize: 20,
-    status: statusFilter || undefined,
+    status: statusFilter === 'ALL' ? undefined : statusFilter,
   })
 
   const statusOptions = [
-    { value: '', label: 'Wszystkie statusy' },
+    { value: 'ALL', label: 'Wszystkie statusy' },
     { value: 'PENDING', label: 'Oczekujące' },
     { value: 'CONFIRMED', label: 'Potwierdzone' },
     { value: 'COMPLETED', label: 'Zakończone' },
@@ -174,7 +174,7 @@ export function ReservationsList() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | '')}>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
             <SelectTrigger className="h-12 border-2">
               <SelectValue placeholder="Filtruj po statusie" />
             </SelectTrigger>
