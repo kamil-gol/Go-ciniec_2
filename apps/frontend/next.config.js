@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  swcMinify: false, // Disabled due to SWC parser bug with JSX
   output: 'standalone',
   images: {
     domains: ['localhost'],

@@ -69,7 +69,6 @@ model Client {
   lastName  String   @db.VarChar(100)
   email     String?  @db.VarChar(255)
   phone     String   @db.VarChar(20)
-  address   String?  @db.Text
   notes     String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
