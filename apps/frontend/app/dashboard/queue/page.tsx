@@ -109,20 +109,20 @@ export default function QueuePage() {
     }
   }
 
-  // Handle drag and drop reorder
+  // ✨ BUG #9 FIX: Use batch update for atomic operation
   const handleReorder = async (reorderedItems: QueueItem[]) => {
     console.log('=== HANDLE REORDER START ===')
     console.log('Selected date:', selectedDate)
     console.log('Reordered items received:', reorderedItems.map(i => ({ id: i.id, position: i.position })))
 
-    // ✨ FIX: Prevent reorder in 'all' view (should be disabled anyway but add safety)
+    // Prevent reorder in 'all' view
     if (selectedDate === 'all') {
       console.error('BLOCKED: Attempting to reorder in "all" view!')
       toast.error('Zmiana kolejności dostępna tylko w widoku pojedynczej daty')
       throw new Error('Cannot reorder in all dates view')
     }
 
-    // ✨ FIX: Validate that all items have valid positions (> 0)
+    // Validate that all items have valid positions (> 0)
     const invalidItem = reorderedItems.find(item => !item.position || item.position < 1)
     if (invalidItem) {
       console.error('BLOCKED: Invalid position detected!', invalidItem)
@@ -130,10 +130,7 @@ export default function QueuePage() {
       throw new Error('Invalid position in reordered items')
     }
 
-    // ✨ FIX: Store ORIGINAL queues before updating state
-    const originalQueues = [...queues]
-    
-    // Update specific date group
+    // Update local state optimistically
     const updatedQueues = queues.map((item) => {
       const updated = reorderedItems.find((ri) => ri.id === item.id)
       return updated || item
@@ -141,32 +138,14 @@ export default function QueuePage() {
     setQueues(updatedQueues)
 
     try {
-      // Call backend to update positions
-      console.log('Calling API for', reorderedItems.length, 'items')
-      for (let i = 0; i < reorderedItems.length; i++) {
-        const item = reorderedItems[i]
-        // ✨ FIX: Use originalQueues instead of current state
-        const originalItem = originalQueues.find((q) => q.id === item.id)
-        
-        console.log(`Processing item ${i}:`, {
-          id: item.id,
-          newPosition: item.position,
-          originalPosition: originalItem?.position
-        })
-        
-        // ✨ FIX: Additional validation before API call
-        if (!item.position || item.position < 1) {
-          console.error('SKIPPING: Invalid position for item:', item.id, 'position:', item.position)
-          continue
-        }
-        
-        if (originalItem && originalItem.position !== item.position) {
-          console.log(`API CALL: moveToPosition(${item.id}, ${item.position})`)
-          await queueApi.moveToPosition(item.id, item.position)
-        } else {
-          console.log(`SKIPPED: No change for item ${item.id}`)
-        }
-      }
+      // ✨ BUG #9 FIX: Call NEW batch update API (single atomic request)
+      console.log('Calling batchUpdatePositions API with', reorderedItems.length, 'items')
+      const updates = reorderedItems.map(item => ({
+        id: item.id,
+        position: item.position,
+      }))
+      
+      await queueApi.batchUpdatePositions({ updates })
       
       console.log('=== HANDLE REORDER SUCCESS ===')
       toast.success('Kolejność zaktualizowana')
