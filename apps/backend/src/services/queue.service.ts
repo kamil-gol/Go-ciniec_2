@@ -523,6 +523,7 @@ export class QueueService {
   /**
    * Rebuild queue positions for all dates
    * Renumbers all RESERVED reservations per date based on createdAt
+   * ✨ FIX: Don't modify date, just renumber positions
    */
   async rebuildPositions(): Promise<{ updatedCount: number; dateCount: number }> {
     // Get all RESERVED reservations grouped by date
@@ -565,16 +566,14 @@ export class QueueService {
       // Sort by createdAt within each date
       items.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
       
-      // Update each reservation with new position and normalize date to start of day
-      const normalizedDate = new Date(dateKey + 'T00:00:00.000Z');
-      
+      // ✨ FIX: Only update position and queueOrderManual, don't touch date
       for (let i = 0; i < items.length; i++) {
         await prisma.reservation.update({
           where: { id: items[i].id },
           data: {
             reservationQueuePosition: i + 1,
             queueOrderManual: false, // Reset manual flag
-            reservationQueueDate: normalizedDate, // Normalize to start of day
+            // ✨ FIX: Don't update reservationQueueDate - keep existing date as-is
           },
         });
         updatedCount++;
