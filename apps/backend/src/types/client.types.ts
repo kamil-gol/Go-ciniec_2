@@ -8,7 +8,6 @@ export interface CreateClientDTO {
   lastName: string;
   email?: string; // Optional email
   phone: string;
-  address?: string;
   notes?: string;
 }
 
@@ -17,7 +16,6 @@ export interface UpdateClientDTO {
   lastName?: string;
   email?: string; // Optional email
   phone?: string;
-  address?: string;
   notes?: string;
 }
 
@@ -31,7 +29,6 @@ export interface ClientResponse {
   lastName: string;
   email: string | null;
   phone: string;
-  address: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
