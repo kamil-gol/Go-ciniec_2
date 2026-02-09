@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, TrendingUp, Users, Building2, Sparkles } from 'lucide-react'
+import { Plus, Search, TrendingUp, Users, Building2, Sparkles, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -166,13 +166,29 @@ export default function HallsPage() {
                   />
                 </div>
               </div>
+              
+              {/* IMPROVED TOGGLE BUTTON */}
               <Button
                 size="lg"
-                variant={showInactive ? 'default' : 'outline'}
+                variant="outline"
                 onClick={() => setShowInactive(!showInactive)}
-                className={showInactive ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : ''}
+                className={`h-12 px-6 text-base font-semibold border-2 transition-all ${
+                  showInactive
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg'
+                    : 'bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-purple-300 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                }`}
               >
-                {showInactive ? '🔍 Wszystkie' : '✨ Tylko aktywne'}
+                {showInactive ? (
+                  <>
+                    <EyeOff className="mr-2 h-5 w-5" />
+                    Wszystkie Sale
+                  </>
+                ) : (
+                  <>
+                    <Eye className="mr-2 h-5 w-5" />
+                    Tylko Aktywne
+                  </>
+                )}
               </Button>
             </div>
           </div>
