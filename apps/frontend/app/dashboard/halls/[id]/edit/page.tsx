@@ -21,6 +21,7 @@ export default function EditHallPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [autoCalculate, setAutoCalculate] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -38,6 +39,17 @@ export default function EditHallPage() {
   useEffect(() => {
     loadHall()
   }, [hallId])
+
+  // Automatyczne wyliczanie cen dla dzieci i maluchów
+  useEffect(() => {
+    if (autoCalculate && formData.pricePerPerson > 0) {
+      setFormData(prev => ({
+        ...prev,
+        pricePerChild: Math.round(prev.pricePerPerson * 0.5 * 100) / 100,
+        pricePerToddler: Math.round(prev.pricePerPerson * 0.25 * 100) / 100,
+      }))
+    }
+  }, [formData.pricePerPerson, autoCalculate])
 
   const loadHall = async () => {
     try {
@@ -165,6 +177,19 @@ export default function EditHallPage() {
               />
             </div>
 
+            {/* Auto Calculate Toggle */}
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+              <div>
+                <Label htmlFor="autoCalculate" className="text-base">Automatyczne wyliczanie cen</Label>
+                <p className="text-sm text-muted-foreground">Dzieci 50%, maluchy 25% ceny dorosłego</p>
+              </div>
+              <Switch
+                id="autoCalculate"
+                checked={autoCalculate}
+                onCheckedChange={setAutoCalculate}
+              />
+            </div>
+
             {/* Price per Adult */}
             <div className="space-y-2">
               <Label htmlFor="pricePerPerson">Cena za osobę dorosłą (zł) *</Label>
@@ -188,10 +213,18 @@ export default function EditHallPage() {
                 min="0"
                 step="0.01"
                 value={formData.pricePerChild}
-                onChange={(e) => setFormData({ ...formData, pricePerChild: parseFloat(e.target.value) || 0 })}
-                placeholder="Opcjonalne"
+                onChange={(e) => {
+                  setAutoCalculate(false)
+                  setFormData({ ...formData, pricePerChild: parseFloat(e.target.value) || 0 })
+                }}
+                placeholder="Domyślnie 50% ceny dorosłego"
+                disabled={autoCalculate}
               />
-              <p className="text-sm text-muted-foreground">Zazwyczaj 70% ceny dorosłego</p>
+              {autoCalculate && formData.pricePerPerson > 0 && (
+                <p className="text-sm text-green-600">
+                  ✓ Automatycznie: {formData.pricePerChild} zł (50% z {formData.pricePerPerson} zł)
+                </p>
+              )}
             </div>
 
             {/* Price per Toddler */}
@@ -203,10 +236,18 @@ export default function EditHallPage() {
                 min="0"
                 step="0.01"
                 value={formData.pricePerToddler}
-                onChange={(e) => setFormData({ ...formData, pricePerToddler: parseFloat(e.target.value) || 0 })}
-                placeholder="Opcjonalne - zostaw 0 jeśli gratis"
+                onChange={(e) => {
+                  setAutoCalculate(false)
+                  setFormData({ ...formData, pricePerToddler: parseFloat(e.target.value) || 0 })
+                }}
+                placeholder="Domyślnie 25% ceny dorosłego"
+                disabled={autoCalculate}
               />
-              <p className="text-sm text-muted-foreground">Zwykle 0 zł (gratis dla dzieci 0-3 lat)</p>
+              {autoCalculate && formData.pricePerPerson > 0 && (
+                <p className="text-sm text-green-600">
+                  ✓ Automatycznie: {formData.pricePerToddler} zł (25% z {formData.pricePerPerson} zł)
+                </p>
+              )}
             </div>
 
             {/* Description */}
