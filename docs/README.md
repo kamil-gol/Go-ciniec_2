@@ -18,12 +18,42 @@
 - [📋 SPRINTS.md](./SPRINTS.md) - Plan sprintów i harmonogram
 
 ### 3. 📦 Moduły Funkcjonalne
+
+#### 📅 Moduł Rezerwacje (NOWE! ✨)
+- [📁 database/](./database/) - **Dokumentacja bazy danych**
+  - Schemat tabel rezerwacji
+  - Relacje między tabelami
+  - Migracje
+- [📁 api/](./api/) - **Dokumentacja API**
+  - REST endpoints rezerwacji
+  - Przykłady requestów/responses
+  - Kody błędów
+- [📁 user-guide/](./user-guide/) - **Podręcznik użytkownika**
+  - Jak tworzyć rezerwacje
+  - Zarządzanie statusami
+  - FAQ
+- [📁 workflows/](./workflows/) - **Procesy biznesowe**
+  - Cykl życia rezerwacji
+  - Diagramy przepływów
+  - Integracje
+- [📁 deployment/](./deployment/) - **Wdrożenie**
+  - Instrukcje deployment
+  - Konfiguracja środowiska
+  - Troubleshooting
+- [📁 roadmap/](./roadmap/) - **Plany rozwoju**
+  - Znane problemy
+  - Feature requests
+  - Dług techniczny
+
+#### 📋 Moduł Kolejki
 - [📋 QUEUE.md](./QUEUE.md) - **Moduł Kolejki Rezerwacji** (pełna dokumentacja)
   - Architektura systemu kolejki
   - API endpoints (włącznie z batch update)
   - Drag & drop implementation
   - Auto-anulowanie
   - Bugfixy (Bug #9)
+
+#### 📦 Inne Moduły
 - [📊 BACKUP.md](./BACKUP.md) - System backupów
 
 ### 4. 🚀 Deployment & DevOps
@@ -71,8 +101,7 @@
 
 ## 📂 Katalogi
 
-### `/docs`
-Główna dokumentacja projektu:
+### `/docs` - Struktura Główna
 ```
 docs/
 ├── README.md                        # Ten plik - indeks dokumentacji
@@ -86,6 +115,43 @@ docs/
 ├── E2E_TESTING_PLAN.md              # Plan testów E2E
 ├── BUGFIX_SESSION_2026-02-07.md     # Sesja bugfix Bug #1-8
 ├── BUGFIX_SESSION_2026-02-09.md     # Sesja bugfix Bug #9 ✨ NOWE!
+│
+├── database/                        # 🆕 Dokumentacja bazy danych modułu Rezerwacje
+│   ├── README.md
+│   ├── RESERVATIONS_SCHEMA.md       # (do utworzenia)
+│   ├── DEPOSITS_SCHEMA.md           # (do utworzenia)
+│   └── MIGRATIONS.md                # (do utworzenia)
+│
+├── api/                             # 🆕 Dokumentacja API modułu Rezerwacje
+│   ├── README.md
+│   ├── RESERVATIONS_API.md          # (do utworzenia)
+│   ├── DEPOSITS_API.md              # (do utworzenia)
+│   └── QUEUE_API.md                 # (do utworzenia)
+│
+├── user-guide/                      # 🆕 Podręczniki użytkownika
+│   ├── README.md
+│   ├── RESERVATIONS_USER_GUIDE.md   # (do utworzenia)
+│   ├── QUEUE_USER_GUIDE.md          # (do utworzenia)
+│   └── FAQ.md                       # (do utworzenia)
+│
+├── workflows/                       # 🆕 Procesy biznesowe
+│   ├── README.md
+│   ├── RESERVATION_WORKFLOWS.md     # (do utworzenia)
+│   ├── QUEUE_WORKFLOWS.md           # (do utworzenia)
+│   └── STATUS_TRANSITIONS.md        # (do utworzenia)
+│
+├── deployment/                      # 🆕 Dokumentacja wdrożenia
+│   ├── README.md
+│   ├── RESERVATIONS_DEPLOYMENT.md   # (do utworzenia)
+│   ├── ENVIRONMENT_SETUP.md         # (do utworzenia)
+│   └── TROUBLESHOOTING.md           # (do utworzenia)
+│
+├── roadmap/                         # 🆕 Plany rozwoju i TODO
+│   ├── README.md
+│   ├── RESERVATIONS_ROADMAP.md      # (do utworzenia)
+│   ├── KNOWN_ISSUES.md              # (do utworzenia)
+│   └── TECH_DEBT.md                 # (do utworzenia)
+│
 ├── requirements/                    # Wymagania biznesowe
 └── testing/                         # Dokumenty testowe
 ```
@@ -138,6 +204,8 @@ apps/frontend/
 2. **[DATABASE.md](./DATABASE.md)** - Struktura bazy danych
 3. **[QUEUE.md](./QUEUE.md)** - Pełna dokumentacja modułu kolejki
 4. **[API.md](../API.md)** - REST API reference
+5. **[database/](./database/)** - 🆕 Szczegółowa dokumentacja bazy danych rezerwacji
+6. **[api/](./api/)** - 🆕 Szczegółowa dokumentacja API rezerwacji
 
 ### Dla QA & Testerów
 1. **[E2E_TESTING_PLAN.md](./E2E_TESTING_PLAN.md)** - Plan testów end-to-end
@@ -145,15 +213,35 @@ apps/frontend/
 
 ### Dla DevOps
 1. **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Instrukcje deployment
-2. **[BACKUP.md](./BACKUP.md)** - System backupów
+2. **[deployment/](./deployment/)** - 🆕 Szczegółowe instrukcje deployment modułu rezerwacji
+3. **[BACKUP.md](./BACKUP.md)** - System backupów
 
 ### Dla PM & Product Owners
 1. **[SPRINTS.md](./SPRINTS.md)** - Harmonogram i postęp sprintów
 2. **[CURRENT_STATUS.md](../CURRENT_STATUS.md)** - Aktualny status projektu
+3. **[roadmap/](./roadmap/)** - 🆕 Plany rozwoju i znane problemy
+
+### Dla Użytkowników Końcowych
+1. **[user-guide/](./user-guide/)** - 🆕 Podręczniki użytkownika
+2. **[workflows/](./workflows/)** - 🆕 Opisy procesów biznesowych
 
 ---
 
 ## 🔄 Ostatnie Aktualizacje
+
+### 09.02.2026 - Nowa Struktura Dokumentacji Modułu Rezerwacje ✨
+- ✅ Utworzono strukturę katalogów dla dokumentacji modułu Rezerwacje
+- ✅ Dodano README.md w każdym katalogu z opisem zawartości
+- ✅ Katalogi: `database/`, `api/`, `user-guide/`, `workflows/`, `deployment/`, `roadmap/`
+- ✅ Zaktualizowano główny indeks dokumentacji
+
+**Nowe katalogi dokumentacji:**
+- 📁 `docs/database/` - Szczegółowa dokumentacja schematów bazy danych
+- 📁 `docs/api/` - Kompletna dokumentacja REST API dla modułu rezerwacji
+- 📁 `docs/user-guide/` - Podręczniki użytkownika i FAQ
+- 📁 `docs/workflows/` - Diagramy procesów biznesowych
+- 📁 `docs/deployment/` - Instrukcje wdrożenia i konfiguracji
+- 📁 `docs/roadmap/` - Plany rozwoju i znane problemy
 
 ### 09.02.2026 - Bug #9 Batch Update Fix ✨
 - ✅ Dodano [BUGFIX_SESSION_2026-02-09.md](./BUGFIX_SESSION_2026-02-09.md)
@@ -203,11 +291,25 @@ Krótki opis (1-2 zdania).
 
 ---
 
+## 📋 Spis Treści
+- [Sekcja 1](#sekcja-1)
+- [Sekcja 2](#sekcja-2)
+
 ## Sekcja 1
 Treść...
 
 ## Sekcja 2
 Treść...
+
+---
+
+## 🔗 Powiązane Dokumenty
+- [Link do innego dokumentu](./dokument.md)
+
+## 📅 Historia Zmian
+| Data | Wersja | Autor | Zmiany |
+|------|--------|-------|--------|
+| DD.MM.YYYY | 1.0 | Imię | Wersja inicjalna |
 
 ---
 
@@ -224,6 +326,9 @@ Treść...
 - 🐞 - Bug
 - 🚀 - Deployment
 - 📋 - Dokumentacja
+- 🆕 - Nowa funkcjonalność
+- ⚠️ - Uwaga/Ostrzeżenie
+- 💡 - Wskazówka
 
 ### Linki Wewnętrzne
 ```markdown
@@ -243,18 +348,34 @@ Treść...
 - ✅ Podstawowa dokumentacja modułów
 - ✅ Dokumentacja API
 - ✅ Sesje bugfix (Bug #1-9)
-- 🔄 Dokumentacja deployment
-- ⏳ Użytkownika guide
+- ✅ Struktura katalogów dla modułu Rezerwacje
+- 🔄 Szczegółowa dokumentacja API rezerwacji
+- 🔄 Podręcznik użytkownika
+- ⏳ Diagramy procesów biznesowych
 
 ### Q2 2026 (Planowane)
 - ⏳ Video tutorials
 - ⏳ Interactive API explorer
 - ⏳ Changelog automatyczny
 - ⏳ Diagramy architektoniczne (Mermaid)
+- ⏳ Dokumentacja w języku angielskim
+
+---
+
+## 📊 Status Dokumentacji
+
+| Moduł | Dokumentacja | API Docs | User Guide | Tests | Status |
+|-------|--------------|----------|------------|-------|--------|
+| Kolejka | ✅ 100% | ✅ 100% | 🔄 50% | ✅ 90% | **Kompletna** |
+| Rezerwacje | 🔄 40% | 🔄 30% | ⏳ 0% | 🔄 60% | **W trakcie** |
+| Zaliczki | 🔄 30% | 🔄 20% | ⏳ 0% | 🔄 50% | **W trakcie** |
+| Klienci | 🔄 20% | ⏳ 10% | ⏳ 0% | 🔄 40% | **Planowana** |
+| Dashboard | ⏳ 10% | ⏳ 0% | ⏳ 0% | ⏳ 20% | **Planowana** |
 
 ---
 
 **📚 Dokumentacja tworzona z ❤️ dla zespołu Gościniec Rodzinny**
 
-**Ostatnia aktualizacja:** 09.02.2026 - 12:48 CET  
-**Wersja dokumentacji:** 1.2.0
+**Ostatnia aktualizacja:** 09.02.2026 - 16:58 CET  
+**Wersja dokumentacji:** 2.0.0  
+**Główne zmiany:** Utworzono dedykowaną strukturę dokumentacji dla modułu Rezerwacje

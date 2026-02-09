@@ -7,6 +7,7 @@ import {
   PaginatedResponse,
   ReservationStatus,
 } from '@/types'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 export interface ReservationsFilters {
   page?: number
@@ -115,4 +116,92 @@ export const reservationsApi = {
     })
     return data
   },
+}
+
+// React Query Hooks
+export const RESERVATIONS_QUERY_KEY = 'reservations'
+
+// Get all reservations
+export const useReservations = (filters: ReservationsFilters = {}) => {
+  return useQuery({
+    queryKey: [RESERVATIONS_QUERY_KEY, filters],
+    queryFn: () => reservationsApi.getAll(filters),
+  })
+}
+
+// Get single reservation by ID
+export const useReservation = (id: string) => {
+  return useQuery({
+    queryKey: [RESERVATIONS_QUERY_KEY, id],
+    queryFn: () => reservationsApi.getById(id),
+    enabled: !!id,
+  })
+}
+
+// Create reservation
+export const useCreateReservation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CreateReservationInput) => reservationsApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
+    },
+  })
+}
+
+// Update reservation
+export const useUpdateReservation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateReservationInput }) =>
+      reservationsApi.update(id, input),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY, variables.id] })
+    },
+  })
+}
+
+// Update reservation status
+export const useUpdateReservationStatus = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: ReservationStatus; reason?: string }) =>
+      reservationsApi.updateStatus(id, status, reason),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY, variables.id] })
+      // Also invalidate clients query as client stats might have changed
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+  })
+}
+
+// Cancel reservation
+export const useCancelReservation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: CancelReservationInput }) =>
+      reservationsApi.cancel(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+  })
+}
+
+// Archive reservation
+export const useArchiveReservation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => reservationsApi.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
+    },
+  })
 }

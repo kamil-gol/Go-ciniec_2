@@ -1,24 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState, useEffect, useMemo } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { SelectSimple } from '@/components/ui/select-simple'
+import { SelectField } from '@/components/form/select-field'
 import { Loading } from '@/components/ui/loading'
 import { useReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Lock, Smile } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Smile, CheckCircle, User, Mail, Phone } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 
 const reservationSchema = z.object({
   hallId: z.string().min(1, 'Wybierz salę'),
@@ -46,6 +48,14 @@ const reservationSchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
   notes: z.string().optional(),
   reason: z.string().min(10, 'Powód musi mieć co najmniej 10 znaków'),
+  
+  // Deposit fields
+  hasDeposit: z.boolean(),
+  depositAmount: z.coerce.number().optional(),
+  depositDueDate: z.string().optional(),
+  depositPaid: z.boolean().optional(),
+  depositPaymentMethod: z.string().optional(),
+  depositPaidAt: z.string().optional(),
 }).refine((data) => data.adults + data.children + data.toddlers >= 1, {
   message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
@@ -106,6 +116,7 @@ export function EditReservationModal({
     watch,
     setValue,
     reset,
+    control,
     formState: { errors },
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
@@ -113,10 +124,14 @@ export function EditReservationModal({
       adults: 0,
       children: 0,
       toddlers: 0,
+      hasDeposit: false,
+      depositPaid: false,
     },
   })
 
   const watchedFields = watch()
+  const hasDeposit = watch('hasDeposit')
+  const depositPaid = watch('depositPaid')
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
   const toddlers = Number(watch('toddlers')) || 0
@@ -125,10 +140,33 @@ export function EditReservationModal({
   const pricePerToddler = Number(watch('pricePerToddler')) || 0
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
+  const currentStatus = watch('status')
+  const selectedHallId = watch('hallId')
 
   const isChildrenFieldsDisabled = adults === 0
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
   const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
+
+  // Calculate selected event type name using useMemo for immediate rendering
+  const eventTypeName = useMemo(() => {
+    if (!selectedEventTypeId) return ''
+    const eventTypesArray = eventTypes?.data || eventTypes || []
+    const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
+    return selectedType?.name || ''
+  }, [selectedEventTypeId, eventTypes])
+
+  const isBirthday = eventTypeName === 'Urodziny'
+  const isAnniversary = eventTypeName === 'Rocznica' || eventTypeName === 'Rocznica/Jubileusz'
+  const isCustom = eventTypeName === 'Inne'
+
+  // Auto-set default paid date to today when marking as paid
+  useEffect(() => {
+    if (depositPaid && !watchedFields.depositPaidAt) {
+      const today = new Date()
+      const dateStr = today.toISOString().split('T')[0]
+      setValue('depositPaidAt', dateStr)
+    }
+  }, [depositPaid, watchedFields.depositPaidAt, setValue])
 
   useEffect(() => {
     if (adults > 0 && pricePerAdult > 0 && !childPriceManuallySet && isFormReady) {
@@ -199,22 +237,14 @@ export function EditReservationModal({
   }, [watchedFields.startDateTime, watchedFields.endDateTime, watchedFields.notes, setValue])
 
   useEffect(() => {
-    if (watchedFields.hallId) {
+    if (selectedHallId) {
       const hallsArray = halls?.data || halls || []
-      const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
+      const selectedHall = hallsArray.find((h) => h.id === selectedHallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
       }
     }
-  }, [watchedFields.hallId, halls])
-
-  useEffect(() => {
-    if (selectedEventTypeId) {
-      const eventTypesArray = eventTypes?.data || eventTypes || []
-      const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
-      setSelectedEventTypeName(selectedType?.name || '')
-    }
-  }, [selectedEventTypeId, eventTypes])
+  }, [selectedHallId, halls])
 
   useEffect(() => {
     if (!open) {
@@ -273,6 +303,24 @@ export function EditReservationModal({
       setValue('notes', reservation.notes || '')
       setValue('reason', '')
       
+      // Load deposit data
+      if (reservation.deposit) {
+        setValue('hasDeposit', true)
+        setValue('depositAmount', Number(reservation.deposit.amount) || 0)
+        if (reservation.deposit.dueDate) {
+          const dueDate = new Date(reservation.deposit.dueDate)
+          setValue('depositDueDate', dueDate.toISOString().split('T')[0])
+        }
+        setValue('depositPaid', reservation.deposit.paid || false)
+        setValue('depositPaymentMethod', reservation.deposit.paymentMethod || '')
+        if (reservation.deposit.paidAt) {
+          const paidAt = new Date(reservation.deposit.paidAt)
+          setValue('depositPaidAt', paidAt.toISOString().split('T')[0])
+        }
+      } else {
+        setValue('hasDeposit', false)
+      }
+      
       setIsFormReady(true)
     }
   }, [reservation, open, setValue])
@@ -285,7 +333,7 @@ export function EditReservationModal({
     try {
       const statusChanged = data.status !== originalStatus
       
-      await reservationsApi.update(reservationId, {
+      const updateData: any = {
         startDateTime: data.startDateTime,
         endDateTime: data.endDateTime,
         adults: data.adults,
@@ -301,7 +349,24 @@ export function EditReservationModal({
         anniversaryOccasion: data.anniversaryOccasion,
         notes: data.notes,
         reason: data.reason,
-      })
+        eventTypeId: data.eventTypeId,
+      }
+      
+      // Add deposit data
+      if (data.hasDeposit && data.depositAmount && data.depositDueDate) {
+        updateData.deposit = {
+          amount: data.depositAmount,
+          dueDate: data.depositDueDate,
+          paid: data.depositPaid || false,
+          paymentMethod: data.depositPaid ? data.depositPaymentMethod : undefined,
+          paidAt: data.depositPaid ? data.depositPaidAt : undefined,
+        }
+      } else if (!data.hasDeposit) {
+        // Remove deposit if unchecked
+        updateData.deposit = null
+      }
+      
+      await reservationsApi.update(reservationId, updateData)
       
       console.log('Reservation updated successfully')
       
@@ -350,14 +415,6 @@ export function EditReservationModal({
     }))
   ]
 
-  const clientOptions = [
-    { value: '', label: 'Wybierz klienta...' },
-    ...clientsArray.map((client) => ({
-      value: client.id,
-      label: `${client.firstName} ${client.lastName} ${client.phone ? '(' + client.phone + ')' : ''}`,
-    }))
-  ]
-
   const eventTypeOptions = [
     { value: '', label: 'Wybierz typ wydarzenia...' },
     ...eventTypesArray.map((type) => ({
@@ -372,10 +429,15 @@ export function EditReservationModal({
     { value: 'COMPLETED', label: 'Zakończona' },
     { value: 'CANCELLED', label: 'Anulowana' },
   ]
-
-  const isBirthday = selectedEventTypeName === 'Urodziny'
-  const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
-  const isCustom = selectedEventTypeName === 'Inne'
+  
+  const paymentMethodOptions = [
+    { value: 'CASH', label: 'Gotówka' },
+    { value: 'TRANSFER', label: 'Przelew' },
+    { value: 'BLIK', label: 'BLIK' },
+  ]
+  
+  // Get client info for display
+  const clientInfo = reservation?.client
 
   if (loadingReservation || !isFormReady) {
     return (
@@ -395,85 +457,103 @@ export function EditReservationModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
-          <div>
-            <Select
-              label="Status Rezerwacji"
-              options={statusOptions}
-              error={errors.status?.message}
-              value={watch('status')}
-              {...register('status')}
-            />
-            {watchedFields.status !== originalStatus && (
-              <p className="mt-1 text-sm text-amber-600">
-                ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(watchedFields.status)}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <Select
-              label="Sala"
-              options={hallOptions}
-              error={errors.hallId?.message}
-              value={watch('hallId')}
-              {...register('hallId')}
-            />
-            {selectedHallCapacity > 0 && (
-              <p className="mt-1 text-sm text-secondary-600">
-                Maksymalna pojemność: {selectedHallCapacity} osób
-              </p>
-            )}
-          </div>
-
-          <div>
-            <div className="relative">
-              <Select
-                label="Klient"
-                options={clientOptions}
-                error={errors.clientId?.message}
-                value={watch('clientId')}
-                disabled={true}
-                {...register('clientId')}
-              />
-              <div className="absolute right-3 top-9 pointer-events-none">
-                <Lock className="w-4 h-4 text-secondary-400" />
+          {/* Client Info Display (Read-only) */}
+          {clientInfo && (
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Klient
+              </h3>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                  <User className="w-3.5 h-3.5" />
+                  <span className="font-medium">{clientInfo.firstName} {clientInfo.lastName}</span>
+                </div>
+                {clientInfo.email && (
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <Mail className="w-3.5 h-3.5" />
+                    <a href={`mailto:${clientInfo.email}`} className="hover:underline">{clientInfo.email}</a>
+                  </div>
+                )}
+                {clientInfo.phone && (
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <Phone className="w-3.5 h-3.5" />
+                    <a href={`tel:${clientInfo.phone}`} className="hover:underline">{clientInfo.phone}</a>
+                  </div>
+                )}
               </div>
             </div>
-            <p className="mt-1 text-xs text-secondary-500 flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              Klient nie może być zmieniony po utworzeniu rezerwacji
-            </p>
-          </div>
+          )}
 
-          <Select
+          <SelectSimple
+            label="Status Rezerwacji"
+            options={statusOptions}
+            error={errors.status?.message}
+            value={currentStatus}
+            {...register('status')}
+          />
+          {currentStatus !== originalStatus && (
+            <p className="-mt-4 text-sm text-amber-600">
+              ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(currentStatus)}
+            </p>
+          )}
+
+          <SelectSimple
+            label="Sala"
+            options={hallOptions}
+            error={errors.hallId?.message}
+            value={selectedHallId}
+            {...register('hallId')}
+          />
+          {selectedHallCapacity > 0 && (
+            <p className="-mt-4 text-sm text-secondary-600">
+              Maksymalna pojemność: {selectedHallCapacity} osób
+            </p>
+          )}
+
+          <SelectSimple
             label="Typ Wydarzenia"
             options={eventTypeOptions}
             error={errors.eventTypeId?.message}
-            value={watch('eventTypeId')}
+            value={selectedEventTypeId}
             {...register('eventTypeId')}
           />
 
           {isBirthday && (
-            <Input
-              type="number"
-              label="Które urodziny"
-              placeholder="np. 18"
-              error={errors.birthdayAge?.message}
-              {...register('birthdayAge')}
-            />
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+            >
+              <Input
+                type="number"
+                label="Które urodziny"
+                placeholder="np. 18"
+                error={errors.birthdayAge?.message}
+                {...register('birthdayAge')}
+              />
+            </motion.div>
           )}
 
           {isCustom && (
-            <Input
-              label="Typ wydarzenia (własny)"
-              placeholder="np. Spotkanie rodzinne"
-              error={errors.customEventType?.message}
-              {...register('customEventType')}
-            />
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+            >
+              <Input
+                label="Typ wydarzenia (własny)"
+                placeholder="np. Spotkanie rodzinne"
+                error={errors.customEventType?.message}
+                {...register('customEventType')}
+              />
+            </motion.div>
           )}
 
           {isAnniversary && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
               <Input
                 type="number"
                 label="Która rocznica"
@@ -487,7 +567,7 @@ export function EditReservationModal({
                 error={errors.anniversaryOccasion?.message}
                 {...register('anniversaryOccasion')}
               />
-            </div>
+            </motion.div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -660,6 +740,90 @@ export function EditReservationModal({
             <p className="mt-1 text-xs text-secondary-500">
               Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
             </p>
+          </div>
+
+          {/* Deposit Section */}
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="hasDeposit"
+                className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                {...register('hasDeposit')}
+              />
+              <label htmlFor="hasDeposit" className="ml-2 text-sm font-medium text-secondary-700">
+                Zaliczka
+              </label>
+            </div>
+
+            {hasDeposit && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    type="number"
+                    label="Kwota zaliczki (PLN)"
+                    placeholder="0.00"
+                    error={errors.depositAmount?.message}
+                    {...register('depositAmount')}
+                  />
+                  <Input
+                    type="date"
+                    label="Termin płatności"
+                    error={errors.depositDueDate?.message}
+                    {...register('depositDueDate')}
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-gray-300">
+                  <div className="flex items-center mb-3">
+                    <input
+                      type="checkbox"
+                      id="depositPaid"
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                      {...register('depositPaid')}
+                    />
+                    <label htmlFor="depositPaid" className="ml-2 text-sm font-medium text-secondary-700 flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      Zaliczka została już zapłacona
+                    </label>
+                  </div>
+
+                  {depositPaid && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-green-50 p-3 rounded border border-green-200"
+                    >
+                      <Controller
+                        name="depositPaymentMethod"
+                        control={control}
+                        render={({ field }) => (
+                          <SelectField
+                            label="Sposób płatności"
+                            placeholder="Wybierz metodę płatności..."
+                            options={paymentMethodOptions}
+                            error={errors.depositPaymentMethod?.message}
+                            {...field}
+                          />
+                        )}
+                      />
+                      <Input
+                        type="date"
+                        label="Data płatności"
+                        error={errors.depositPaidAt?.message}
+                        {...register('depositPaidAt')}
+                      />
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           <div>
