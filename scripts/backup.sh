@@ -4,7 +4,7 @@
 # Skrypt Backup dla Gościniec_2
 # Tworzy backup bazy PostgreSQL + plików aplikacji
 # Author: System Rezerwacji
-# Version: 1.0.1
+# Version: 1.0.2
 ################################################################################
 
 set -e  # Zatrzymaj na błędzie
@@ -122,7 +122,8 @@ backup_files() {
     done
     
     if [ -n "${tar_items}" ]; then
-        if tar -czf "${backup_file}" ${tar_items} --exclude='node_modules' --exclude='dist' --exclude='.next' --exclude='coverage' 2>> "$LOG_FILE"; then
+        # ✅ FIXED: --exclude musi być PRZED nazwą plików!
+        if tar -czf "${backup_file}" --exclude='node_modules' --exclude='dist' --exclude='.next' --exclude='coverage' ${tar_items} 2>> "$LOG_FILE"; then
             local size=$(du -h "${backup_file}" | cut -f1)
             log "✓ Backup plików utworzony: ${backup_file} (${size})"
             echo "${backup_file}"
