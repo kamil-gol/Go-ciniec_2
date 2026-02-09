@@ -1,240 +1,228 @@
 /**
  * OptionCard Component
  * 
- * Displays a menu option with quantity selector
+ * Displays a menu option card with quantity selector and premium UI
  */
 
 'use client';
 
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { MenuOption } from '@/types/menu.types';
-import { 
-  Plus, 
-  Minus, 
-  Wine, 
-  Music, 
-  Camera, 
-  Sparkles, 
-  Cake,
-  Gift,
-  PartyPopper
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Minus, Plus, Sparkles, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface OptionCardProps {
   option: MenuOption;
-  quantity?: number;
-  onQuantityChange?: (optionId: string, quantity: number) => void;
+  quantity: number;
+  onQuantityChange?: (id: string, quantity: number) => void;
   className?: string;
 }
 
-const CATEGORY_ICONS: Record<string, any> = {
-  'Alkohol': Wine,
-  'Muzyka': Music,
-  'Foto & Video': Camera,
-  'Dekoracje': Sparkles,
-  'Dodatki': Cake,
-  'Dodatkowe': Gift,
-  'Rozrywka': PartyPopper,
-  'Animacje': PartyPopper,
-};
-
-export function OptionCard({ 
-  option, 
-  quantity = 0,
+export function OptionCard({
+  option,
+  quantity,
   onQuantityChange,
-  className 
+  className
 }: OptionCardProps) {
-  const [localQuantity, setLocalQuantity] = useState(quantity);
-
-  const price = typeof option.priceAmount === 'string' 
-    ? parseFloat(option.priceAmount) 
-    : option.priceAmount;
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pl-PL', {
-      style: 'currency',
-      currency: 'PLN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const getPriceLabel = () => {
-    if (option.priceType === 'FREE') {
-      return <span className="text-lg font-bold text-green-600">Gratis</span>;
-    }
-    if (option.priceType === 'FLAT') {
-      return (
-        <div className="text-right">
-          <div className="text-2xl font-bold text-violet-600">{formatPrice(price)}</div>
-          <div className="text-xs text-neutral-500">jednorazowo</div>
-        </div>
-      );
-    }
-    // PER_PERSON
-    return (
-      <div className="text-right">
-        <div className="text-2xl font-bold text-violet-600">{formatPrice(price)}</div>
-        <div className="text-xs text-neutral-500">za osobę</div>
-      </div>
-    );
-  };
+  const isSelected = quantity > 0;
+  const isPricePerPerson = option.priceType === 'PER_PERSON';
 
   const handleIncrement = () => {
-    if (option.maxQuantity && localQuantity >= option.maxQuantity) return;
-    const newQuantity = localQuantity + 1;
-    setLocalQuantity(newQuantity);
-    onQuantityChange?.(option.id, newQuantity);
+    onQuantityChange?.(option.id, quantity + 1);
   };
 
   const handleDecrement = () => {
-    if (localQuantity <= 0) return;
-    const newQuantity = localQuantity - 1;
-    setLocalQuantity(newQuantity);
-    onQuantityChange?.(option.id, newQuantity);
+    if (quantity > 0) {
+      onQuantityChange?.(option.id, quantity - 1);
+    }
   };
-
-  const CategoryIcon = CATEGORY_ICONS[option.category] || Sparkles;
-  const isSelected = localQuantity > 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      layout
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className={cn(
-        'relative overflow-hidden rounded-lg border bg-white p-4',
-        'transition-all duration-200',
-        isSelected
-          ? 'border-violet-500 shadow-md'
-          : 'border-neutral-200 hover:border-neutral-300 hover:shadow-sm',
-        'dark:bg-neutral-900 dark:border-neutral-800',
-        className
-      )}
+      exit={{ opacity: 0, y: -20 }}
     >
-      <div className="flex items-start justify-between gap-4">
-        {/* Left: Icon & Details */}
-        <div className="flex-1">
-          {/* Category Badge */}
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-            <CategoryIcon className="h-3 w-3" />
-            {option.category}
-          </div>
+      <Card
+        className={cn(
+          'relative overflow-hidden border-2 shadow-lg hover:shadow-xl transition-all duration-300 group',
+          isSelected
+            ? 'border-green-500 ring-4 ring-green-500/20'
+            : 'border-transparent hover:border-purple-200',
+          className
+        )}
+      >
+        {/* Gradient Overlay */}
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-rose-500/5 transition-all",
+          isSelected && "from-green-500/10 via-emerald-500/10 to-teal-500/10",
+          "group-hover:from-purple-500/10 group-hover:via-pink-500/10 group-hover:to-rose-500/10"
+        )} />
 
-          {/* Name */}
-          <h4 className="mb-1 font-semibold text-neutral-900 dark:text-white">
-            {option.name}
-          </h4>
-
-          {/* Short Description */}
-          {option.shortDescription && (
-            <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
-              {option.shortDescription}
-            </p>
-          )}
-
-          {/* Description */}
-          {option.description && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-500">
-              {option.description}
-            </p>
-          )}
-
-          {/* Max Quantity Info */}
-          {option.maxQuantity && (
-            <div className="mt-2 text-xs text-neutral-500">
-              Maks. {option.maxQuantity} szt.
+        {/* Glow Effect */}
+        <div className={cn(
+          "absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl transition-all",
+          isSelected ? "bg-green-400/20" : "bg-purple-400/10 group-hover:bg-purple-400/20"
+        )} />
+        
+        <div className="relative z-10 p-5">
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className={cn(
+              "p-3 rounded-2xl shadow-lg transition-all",
+              isSelected
+                ? "bg-gradient-to-br from-green-500 to-emerald-500"
+                : "bg-gradient-to-br from-purple-500 to-pink-500 group-hover:scale-110"
+            )}>
+              <Sparkles className="h-6 w-6 text-white" />
             </div>
-          )}
-        </div>
 
-        {/* Right: Price & Quantity */}
-        <div className="flex flex-col items-end gap-3">
-          {/* Price */}
-          <div>{getPriceLabel()}</div>
+            {/* Content */}
+            <div className="flex-1 space-y-3">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1 flex-1">
+                  <h3 className={cn(
+                    "text-lg font-bold transition-colors",
+                    isSelected && "text-green-600"
+                  )}>
+                    {option.name}
+                  </h3>
+                  {option.category && (
+                    <Badge
+                      className={cn(
+                        "border-0",
+                        isSelected
+                          ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400"
+                          : "bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400"
+                      )}
+                    >
+                      {option.category}
+                    </Badge>
+                  )}
+                </div>
 
-          {/* Quantity Selector */}
-          {option.allowMultiple ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleDecrement}
-                disabled={localQuantity <= 0}
-                className={cn(
-                  'rounded-full p-1.5 transition-colors',
-                  localQuantity > 0
-                    ? 'bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400'
-                    : 'bg-neutral-100 text-neutral-400 cursor-not-allowed dark:bg-neutral-800'
-                )}
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-8 text-center font-semibold text-neutral-900 dark:text-white">
-                {localQuantity}
-              </span>
-              <button
-                onClick={handleIncrement}
-                disabled={option.maxQuantity ? localQuantity >= option.maxQuantity : false}
-                className={cn(
-                  'rounded-full p-1.5 transition-colors',
-                  (!option.maxQuantity || localQuantity < option.maxQuantity)
-                    ? 'bg-violet-600 text-white hover:bg-violet-700'
-                    : 'bg-neutral-100 text-neutral-400 cursor-not-allowed dark:bg-neutral-800'
-                )}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                const newQuantity = localQuantity > 0 ? 0 : 1;
-                setLocalQuantity(newQuantity);
-                onQuantityChange?.(option.id, newQuantity);
-              }}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-                isSelected
-                  ? 'bg-violet-600 text-white hover:bg-violet-700'
-                  : 'bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400'
+                {/* Price Badge */}
+                <div className={cn(
+                  "px-4 py-2 rounded-xl shadow-md",
+                  isSelected
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                    : "bg-gradient-to-r from-purple-500 to-pink-500"
+                )}>
+                  <div className="flex items-center gap-1 text-white">
+                    <DollarSign className="h-4 w-4" />
+                    <span className="text-xl font-bold">{option.priceAmount}</span>
+                    <span className="text-xs opacity-90">zł</span>
+                  </div>
+                  <p className="text-[10px] text-white/80 text-center mt-0.5">
+                    {isPricePerPerson ? 'za osobę' : 'stała'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Description */}
+              {option.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 pr-2">
+                  {option.description}
+                </p>
               )}
-            >
-              {isSelected ? 'Wybrano' : 'Dodaj'}
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Selected Indicator */}
-      {isSelected && (
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          className="absolute bottom-0 left-0 right-0 h-1 bg-violet-500 origin-left"
-        />
-      )}
+              {/* Quantity Controls */}
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDecrement}
+                    disabled={quantity === 0}
+                    className={cn(
+                      "h-10 w-10 p-0 rounded-xl border-2 transition-all",
+                      isSelected
+                        ? "border-green-300 hover:bg-green-50 hover:border-green-400"
+                        : "border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                    )}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={quantity}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      className={cn(
+                        "w-16 h-10 flex items-center justify-center rounded-xl font-bold text-lg shadow-md",
+                        isSelected
+                          ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                          : "bg-white dark:bg-gray-900 border-2"
+                      )}
+                    >
+                      {quantity}
+                    </motion.div>
+                  </AnimatePresence>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleIncrement}
+                    className={cn(
+                      "h-10 w-10 p-0 rounded-xl border-2 transition-all",
+                      isSelected
+                        ? "border-green-300 hover:bg-green-50 hover:border-green-400"
+                        : "border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                    )}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Status Indicator */}
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full shadow-md"
+                    >
+                      ✓ Dodano
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
     </motion.div>
   );
 }
 
-/**
- * OptionCardSkeleton - Loading state
- */
+// Skeleton Loader
 export function OptionCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="mb-2 h-6 w-20 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
-          <div className="mb-1 h-5 w-3/4 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
-          <div className="h-4 w-full animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
-        </div>
-        <div className="flex flex-col items-end gap-3">
-          <div className="h-8 w-20 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
-          <div className="h-9 w-24 animate-pulse rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+    <Card className="border-0 shadow-lg">
+      <div className="p-5">
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-2xl animate-pulse" />
+          <div className="flex-1 space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2 flex-1">
+                <div className="w-3/4 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-1/3 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+              <div className="w-20 h-16 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+            </div>
+            <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="w-1/2 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+          </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
