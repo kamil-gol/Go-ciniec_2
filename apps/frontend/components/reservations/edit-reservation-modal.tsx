@@ -140,6 +140,7 @@ export function EditReservationModal({
   const pricePerToddler = Number(watch('pricePerToddler')) || 0
   const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
+  const currentStatus = watch('status')
 
   const isChildrenFieldsDisabled = adults === 0
   const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
@@ -488,12 +489,11 @@ export function EditReservationModal({
               label="Status Rezerwacji"
               options={statusOptions}
               error={errors.status?.message}
-              value={watch('status')}
               {...register('status')}
             />
-            {watchedFields.status !== originalStatus && (
+            {currentStatus !== originalStatus && (
               <p className="mt-1 text-sm text-amber-600">
-                ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(watchedFields.status)}
+                ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(currentStatus)}
               </p>
             )}
           </div>
@@ -503,7 +503,6 @@ export function EditReservationModal({
               label="Sala"
               options={hallOptions}
               error={errors.hallId?.message}
-              value={watch('hallId')}
               {...register('hallId')}
             />
             {selectedHallCapacity > 0 && (
@@ -518,7 +517,6 @@ export function EditReservationModal({
               label="Typ Wydarzenia"
               options={eventTypeOptions}
               error={errors.eventTypeId?.message}
-              value={watch('eventTypeId')}
               {...register('eventTypeId')}
             />
           </div>
@@ -756,7 +754,7 @@ export function EditReservationModal({
                 {...register('hasDeposit')}
               />
               <label htmlFor="hasDeposit" className="ml-2 text-sm font-medium text-secondary-700">
-                Zarządzaj zaliczką
+                Zaliczka
               </label>
             </div>
 
