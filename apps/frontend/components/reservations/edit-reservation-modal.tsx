@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { SelectSimple } from '@/components/ui/select-simple'
 import { SelectField } from '@/components/form/select-field'
 import { Loading } from '@/components/ui/loading'
 import { useReservation } from '@/hooks/use-reservations'
@@ -484,42 +484,36 @@ export function EditReservationModal({
             </div>
           )}
 
-          <div>
-            <Select
-              label="Status Rezerwacji"
-              options={statusOptions}
-              error={errors.status?.message}
-              {...register('status')}
-            />
-            {currentStatus !== originalStatus && (
-              <p className="mt-1 text-sm text-amber-600">
-                ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(currentStatus)}
-              </p>
-            )}
-          </div>
+          <SelectSimple
+            label="Status Rezerwacji"
+            options={statusOptions}
+            error={errors.status?.message}
+            {...register('status')}
+          />
+          {currentStatus !== originalStatus && (
+            <p className="-mt-4 text-sm text-amber-600">
+              ⚠️ Zmiana statusu: {getPolishStatusLabel(originalStatus)} → {getPolishStatusLabel(currentStatus)}
+            </p>
+          )}
 
-          <div>
-            <Select
-              label="Sala"
-              options={hallOptions}
-              error={errors.hallId?.message}
-              {...register('hallId')}
-            />
-            {selectedHallCapacity > 0 && (
-              <p className="mt-1 text-sm text-secondary-600">
-                Maksymalna pojemność: {selectedHallCapacity} osób
-              </p>
-            )}
-          </div>
+          <SelectSimple
+            label="Sala"
+            options={hallOptions}
+            error={errors.hallId?.message}
+            {...register('hallId')}
+          />
+          {selectedHallCapacity > 0 && (
+            <p className="-mt-4 text-sm text-secondary-600">
+              Maksymalna pojemność: {selectedHallCapacity} osób
+            </p>
+          )}
 
-          <div>
-            <Select
-              label="Typ Wydarzenia"
-              options={eventTypeOptions}
-              error={errors.eventTypeId?.message}
-              {...register('eventTypeId')}
-            />
-          </div>
+          <SelectSimple
+            label="Typ Wydarzenia"
+            options={eventTypeOptions}
+            error={errors.eventTypeId?.message}
+            {...register('eventTypeId')}
+          />
 
           {isBirthday && (
             <motion.div
