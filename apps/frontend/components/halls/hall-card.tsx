@@ -96,16 +96,23 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <Users className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Pojemność: <strong>{hall.capacity} osób</strong></span>
           </div>
-          <div className="flex items-center text-sm">
-            <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Cena: <strong>{hall.pricePerPerson} zł/os.</strong></span>
-          </div>
-          {hall.pricePerChild && (
-            <div className="flex items-center text-sm">
-              <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>Dzieci: <strong>{hall.pricePerChild} zł/os.</strong></span>
+          
+          {/* Cennik - 3 kategorie */}
+          <div className="bg-muted/50 p-3 rounded-lg space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Dorośli:</span>
+              <strong className="text-base">{hall.pricePerPerson} zł/os.</strong>
             </div>
-          )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Dzieci:</span>
+              <strong className="text-base">{hall.pricePerChild || hall.pricePerPerson} zł/os.</strong>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Maluchy (0-3 lat):</span>
+              <strong className="text-base text-green-600">{Number(hall.pricePerToddler) === 0 ? 'Gratis' : `${hall.pricePerToddler} zł/os.`}</strong>
+            </div>
+          </div>
+
           {hall.description && (
             <p className="text-sm text-muted-foreground line-clamp-2">
               {hall.description}
