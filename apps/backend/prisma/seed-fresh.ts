@@ -7,12 +7,66 @@ const prisma = new PrismaClient()
 // KONFIGURACJA - Sale i Typy Wydarzeń
 // ============================================
 const HALLS = [
-  { name: 'Sala Kryształowa', capacity: 80, pricePerPerson: 250, description: 'Elegancka sala z kryształowymi żyrandolami', amenities: ['Klimatyzacja', 'Parkiet'], images: [] },
-  { name: 'Sala Taneczna', capacity: 120, pricePerPerson: 280, description: 'Przestronna sala z parkietem tanecznym', amenities: ['Parkiet', 'Nagłośnienie'], images: [] },
-  { name: 'Sala Złota', capacity: 150, pricePerPerson: 320, description: 'Reprezentacyjna sala ze złotymi zdobieniami', amenities: ['Scena', 'Oświetlenie LED'], images: [] },
-  { name: 'Cały obiekt', capacity: 300, pricePerPerson: 400, description: 'Wynajem całego obiektu na ekskluzywne wydarzenia', amenities: ['Wszystkie sale', 'Ogród', 'Parking'], images: [] },
-  { name: 'Strzecha 1', capacity: 50, pricePerPerson: 200, description: 'Kameralna sala w stylu rustykalnym', amenities: ['Kominek', 'Drewniane wnętrze'], images: [] },
-  { name: 'Strzecha 2', capacity: 60, pricePerPerson: 220, description: 'Druga sala w stylu wiejskim z kominkiem', amenities: ['Kominek', 'Taras'], images: [] },
+  { 
+    name: 'Sala Kryształowa', 
+    capacity: 80, 
+    pricePerPerson: 250, 
+    pricePerChild: 175,  // 70% of adult price
+    pricePerToddler: 0,  // Free for 0-3 years
+    description: 'Elegancka sala z kryształowymi żyrandolami', 
+    amenities: ['Klimatyzacja', 'Parkiet'], 
+    images: [] 
+  },
+  { 
+    name: 'Sala Taneczna', 
+    capacity: 120, 
+    pricePerPerson: 280, 
+    pricePerChild: 196,  // 70%
+    pricePerToddler: 0,
+    description: 'Przestronna sala z parkietem tanecznym', 
+    amenities: ['Parkiet', 'Nagłośnienie'], 
+    images: [] 
+  },
+  { 
+    name: 'Sala Złota', 
+    capacity: 150, 
+    pricePerPerson: 320, 
+    pricePerChild: 224,  // 70%
+    pricePerToddler: 0,
+    description: 'Reprezentacyjna sala ze złotymi zdobieniami', 
+    amenities: ['Scena', 'Oświetlenie LED'], 
+    images: [] 
+  },
+  { 
+    name: 'Cały obiekt', 
+    capacity: 300, 
+    pricePerPerson: 400, 
+    pricePerChild: 280,  // 70%
+    pricePerToddler: 0,
+    description: 'Wynajem całego obiektu na ekskluzywne wydarzenia', 
+    amenities: ['Wszystkie sale', 'Ogród', 'Parking'], 
+    images: [] 
+  },
+  { 
+    name: 'Strzecha 1', 
+    capacity: 50, 
+    pricePerPerson: 200, 
+    pricePerChild: 140,  // 70%
+    pricePerToddler: 0,
+    description: 'Kameralna sala w stylu rustykalnym', 
+    amenities: ['Kominek', 'Drewniane wnętrze'], 
+    images: [] 
+  },
+  { 
+    name: 'Strzecha 2', 
+    capacity: 60, 
+    pricePerPerson: 220, 
+    pricePerChild: 154,  // 70%
+    pricePerToddler: 0,
+    description: 'Druga sala w stylu wiejskim z kominkiem', 
+    amenities: ['Kominek', 'Taras'], 
+    images: [] 
+  },
 ]
 
 const EVENT_TYPES = [
@@ -111,7 +165,7 @@ async function main() {
       data: hallData,
     })
     halls.push(hall)
-    console.log(`   ✓ ${hall.name} (${hall.capacity} osób, ${hall.pricePerPerson} zł/os.)`)
+    console.log(`   ✓ ${hall.name} (${hall.capacity} osób, ${hall.pricePerPerson} zł/dorosły, ${hall.pricePerChild} zł/dziecko 4-12, ${hall.pricePerToddler} zł/dziecko 0-3)`)
   }
   console.log(`✅ Utworzono ${halls.length} sal\n`)
 
@@ -192,8 +246,8 @@ async function main() {
     
     // Ceny (konwersja do Decimal poprzez string)
     const pricePerAdult = Number(hall.pricePerPerson)
-    const pricePerChild = Math.floor(pricePerAdult * 0.7)
-    const pricePerToddler = 0
+    const pricePerChild = Number(hall.pricePerChild || 0)
+    const pricePerToddler = Number(hall.pricePerToddler || 0)
     
     const totalPrice = (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
     
