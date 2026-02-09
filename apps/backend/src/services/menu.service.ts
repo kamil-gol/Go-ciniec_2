@@ -68,8 +68,7 @@ export class MenuService {
           select: {
             id: true,
             name: true,
-            color: true,
-            icon: true
+            color: true
           }
         },
         packages: {
