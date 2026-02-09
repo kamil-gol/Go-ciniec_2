@@ -111,23 +111,38 @@ export default function QueuePage() {
 
   // Handle drag and drop reorder
   const handleReorder = async (reorderedItems: QueueItem[]) => {
-    // Optimistically update UI
+    // ✨ FIX: Prevent reorder in 'all' view (should be disabled anyway but add safety)
     if (selectedDate === 'all') {
-      setQueues(reorderedItems)
-    } else {
-      // Update specific date group
-      const updatedQueues = queues.map((item) => {
-        const updated = reorderedItems.find((ri) => ri.id === item.id)
-        return updated || item
-      })
-      setQueues(updatedQueues)
+      toast.error('Zmiana kolejności dostępna tylko w widoku pojedynczej daty')
+      throw new Error('Cannot reorder in all dates view')
     }
+
+    // ✨ FIX: Validate that all items have valid positions (> 0)
+    const invalidItem = reorderedItems.find(item => !item.position || item.position < 1)
+    if (invalidItem) {
+      console.error('Invalid position detected:', invalidItem)
+      toast.error('Wykryto nieprawidłową pozycję. Odśwież stronę i spróbuj ponownie.')
+      throw new Error('Invalid position in reordered items')
+    }
+
+    // Update specific date group
+    const updatedQueues = queues.map((item) => {
+      const updated = reorderedItems.find((ri) => ri.id === item.id)
+      return updated || item
+    })
+    setQueues(updatedQueues)
 
     try {
       // Call backend to update positions
       for (let i = 0; i < reorderedItems.length; i++) {
         const item = reorderedItems[i]
         const originalItem = queues.find((q) => q.id === item.id)
+        
+        // ✨ FIX: Additional validation before API call
+        if (!item.position || item.position < 1) {
+          console.error('Skipping invalid position for item:', item.id, 'position:', item.position)
+          continue
+        }
         
         if (originalItem && originalItem.position !== item.position) {
           await queueApi.moveToPosition(item.id, item.position)
