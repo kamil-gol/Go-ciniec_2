@@ -215,6 +215,68 @@ export function useSelectMenu() {
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(variables.reservationId),
       });
+      // Also invalidate reservation details
+      queryClient.invalidateQueries({
+        queryKey: ['reservations', variables.reservationId],
+      });
+    },
+  });
+}
+
+/**
+ * Update reservation menu (mutation)
+ * 
+ * @example
+ * const mutation = useUpdateReservationMenu();
+ * mutation.mutate({ reservationId, selection });
+ */
+export function useUpdateReservationMenu() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ 
+      reservationId, 
+      selection 
+    }: { 
+      reservationId: string; 
+      selection: MenuSelectionInput 
+    }) => menuApi.updateMenu(reservationId, selection),
+    
+    onSuccess: (data, variables) => {
+      // Invalidate reservation menu cache
+      queryClient.invalidateQueries({
+        queryKey: menuKeys.reservationMenu(variables.reservationId),
+      });
+      // Also invalidate reservation details
+      queryClient.invalidateQueries({
+        queryKey: ['reservations', variables.reservationId],
+      });
+    },
+  });
+}
+
+/**
+ * Delete reservation menu (mutation)
+ * 
+ * @example
+ * const mutation = useDeleteReservationMenu();
+ * mutation.mutate(reservationId);
+ */
+export function useDeleteReservationMenu() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (reservationId: string) => menuApi.removeMenu(reservationId),
+    
+    onSuccess: (data, reservationId) => {
+      // Invalidate reservation menu cache
+      queryClient.invalidateQueries({
+        queryKey: menuKeys.reservationMenu(reservationId),
+      });
+      // Also invalidate reservation details
+      queryClient.invalidateQueries({
+        queryKey: ['reservations', reservationId],
+      });
     },
   });
 }
