@@ -5,7 +5,8 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { db } from '@/db';
+
+const prisma = new PrismaClient();
 
 export interface CreateAddonGroupInput {
   name: string;
@@ -61,7 +62,7 @@ class AddonGroupService {
       ];
     }
 
-    const groups = await db.addonGroup.findMany({
+    const groups = await prisma.addonGroup.findMany({
       where,
       include: {
         addons: {
@@ -81,7 +82,7 @@ class AddonGroupService {
    * Get single addon group by ID
    */
   async getById(id: string) {
-    const group = await db.addonGroup.findUnique({
+    const group = await prisma.addonGroup.findUnique({
       where: { id },
       include: {
         addons: {
@@ -104,7 +105,7 @@ class AddonGroupService {
    * Create addon group
    */
   async create(data: CreateAddonGroupInput) {
-    const group = await db.addonGroup.create({
+    const group = await prisma.addonGroup.create({
       data: {
         name: data.name,
         description: data.description ?? null,
@@ -132,7 +133,7 @@ class AddonGroupService {
    * Update addon group
    */
   async update(id: string, data: UpdateAddonGroupInput) {
-    const existing = await db.addonGroup.findUnique({
+    const existing = await prisma.addonGroup.findUnique({
       where: { id },
     });
 
@@ -140,7 +141,7 @@ class AddonGroupService {
       throw new Error('Addon group not found');
     }
 
-    const group = await db.addonGroup.update({
+    const group = await prisma.addonGroup.update({
       where: { id },
       data,
       include: {
@@ -160,7 +161,7 @@ class AddonGroupService {
    * Delete addon group
    */
   async delete(id: string) {
-    const group = await db.addonGroup.findUnique({
+    const group = await prisma.addonGroup.findUnique({
       where: { id },
     });
 
@@ -169,7 +170,7 @@ class AddonGroupService {
     }
 
     // Delete will cascade to AddonGroupDish
-    await db.addonGroup.delete({
+    await prisma.addonGroup.delete({
       where: { id },
     });
 
@@ -180,7 +181,7 @@ class AddonGroupService {
    * Assign dishes to addon group
    */
   async assignDishes(groupId: string, input: AssignDishesToGroupInput) {
-    const group = await db.addonGroup.findUnique({
+    const group = await prisma.addonGroup.findUnique({
       where: { id: groupId },
     });
 
@@ -189,14 +190,14 @@ class AddonGroupService {
     }
 
     // Clear existing assignments
-    await db.addonGroupDish.deleteMany({
+    await prisma.addonGroupDish.deleteMany({
       where: { groupId },
     });
 
     // Create new assignments
     const assignments = await Promise.all(
       input.dishes.map((dishData, index) =>
-        db.addonGroupDish.create({
+        prisma.addonGroupDish.create({
           data: {
             groupId,
             dishId: dishData.dishId,
@@ -217,7 +218,7 @@ class AddonGroupService {
    * Remove dish from addon group
    */
   async removeDish(groupId: string, dishId: string) {
-    const assignment = await db.addonGroupDish.findFirst({
+    const assignment = await prisma.addonGroupDish.findFirst({
       where: {
         groupId,
         dishId,
@@ -228,7 +229,7 @@ class AddonGroupService {
       throw new Error('Dish not found in addon group');
     }
 
-    await db.addonGroupDish.delete({
+    await prisma.addonGroupDish.delete({
       where: { id: assignment.id },
     });
 
