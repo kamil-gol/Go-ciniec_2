@@ -6,25 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Edit, Trash2, Loader2, ChefHat } from 'lucide-react'
-import { useDishes, useDeleteDish } from '@/hooks/use-dishes-courses'
+import { useDishes, useDeleteDish } from '@/hooks/use-dishes'
 import { DishDialog } from './DishDialog'
-import { toast } from '@/lib/toast'
-import type { Dish } from '@/types/menu.types'
+import { toast } from 'sonner'
+import { getDishCategoryLabel, getDishCategoryIcon } from '@/lib/constants/dish-categories'
+import type { Dish } from '@/lib/api/dishes-api'
 
 interface DishLibraryManagerProps {
   searchQuery: string
   setSearchQuery?: (query: string) => void
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  'SOUP': 'Zupa',
-  'APPETIZER': 'Przekąska',
-  'MAIN_COURSE': 'Danie główne',
-  'SIDE_DISH': 'Przystawka',
-  'SALAD': 'Sałatka',
-  'DESSERT': 'Deser',
-  'BEVERAGE': 'Napój',
-  'OTHER': 'Inne'
 }
 
 export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryManagerProps) {
@@ -44,13 +34,13 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
   }
 
   const handleDelete = async (id: string, name: string) => {
-    const loadingToast = toast.loading('Usuwam danie...')
+    if (!confirm(`Czy na pewno chcesz usunąć danie "${name}"?`)) return
 
     try {
       await deleteDishMutation.mutateAsync(id)
-      toast.success('Usunięto!', `Danie "${name}" zostało usunięte`)
+      toast.success(`Danie "${name}" zostało usunięte`)
     } catch (error: any) {
-      toast.error('Błąd', error.error || 'Nie udało się usunąć dania')
+      toast.error(error?.error || 'Nie udało się usunąć dania')
     }
   }
 
@@ -124,7 +114,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
                   <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm px-4 py-1 border-0 shadow-md">
-                    {CATEGORY_LABELS[category] || category} ({categoryDishes.length})
+                    {getDishCategoryIcon(category)} {getDishCategoryLabel(category)} ({categoryDishes.length})
                   </Badge>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
                 </div>
@@ -162,14 +152,6 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
                                 {allergen}
                               </Badge>
                             ))}
-                          </div>
-                        )}
-
-                        {dish.priceModifier && dish.priceModifier !== 0 && (
-                          <div className="p-2 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg">
-                            <p className="text-sm font-semibold text-blue-600">
-                              {dish.priceModifier > 0 ? '+' : ''}{dish.priceModifier} zł
-                            </p>
                           </div>
                         )}
 
