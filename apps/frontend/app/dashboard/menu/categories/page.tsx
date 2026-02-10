@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Plus, Edit, Trash2, Loader2, Tags, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useDishCategories, useCreateDishCategory, useUpdateDishCategory, useDeleteDishCategory } from '@/hooks/use-dish-categories'
@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import type { DishCategory } from '@/types'
 
 export default function DishCategoriesPage() {
-  const [createOpen, setCreateOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DishCategory | null>(null)
   
   const { data: categories = [], isLoading } = useDishCategories()
@@ -30,6 +30,19 @@ export default function DishCategoriesPage() {
     displayOrder: 0,
   })
 
+  // Aktualizuj formularz gdy edytujesz kategorię
+  useEffect(() => {
+    if (editingCategory) {
+      setFormData({
+        slug: editingCategory.slug,
+        name: editingCategory.name,
+        icon: editingCategory.icon || '',
+        color: editingCategory.color || 'bg-gray-100 text-gray-700',
+        displayOrder: editingCategory.displayOrder,
+      })
+    }
+  }, [editingCategory])
+
   const resetForm = () => {
     setFormData({
       slug: '',
@@ -43,13 +56,17 @@ export default function DishCategoriesPage() {
 
   const handleEdit = (category: DishCategory) => {
     setEditingCategory(category)
-    setFormData({
-      slug: category.slug,
-      name: category.name,
-      icon: category.icon || '',
-      color: category.color || 'bg-gray-100 text-gray-700',
-      displayOrder: category.displayOrder,
-    })
+    setDialogOpen(true)
+  }
+
+  const handleCreate = () => {
+    resetForm()
+    setDialogOpen(true)
+  }
+
+  const handleClose = () => {
+    setDialogOpen(false)
+    setTimeout(() => resetForm(), 200) // Czekaj na animację zamykania
   }
 
   const handleSubmit = async () => {
@@ -64,8 +81,7 @@ export default function DishCategoriesPage() {
       } else {
         await createMutation.mutateAsync(formData)
       }
-      setCreateOpen(false)
-      resetForm()
+      handleClose()
     } catch (error: any) {
       toast.error(error?.message || 'Wystąpił błąd')
     }
@@ -117,106 +133,107 @@ export default function DishCategoriesPage() {
               </div>
             </div>
             
-            <Dialog open={createOpen || !!editingCategory} onOpenChange={(open) => {
-              if (!open) {
-                setCreateOpen(false)
-                resetForm()
-              } else {
-                setCreateOpen(true)
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button className="bg-white text-purple-600 hover:bg-white/90 shadow-lg">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Dodaj Kategorię
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}
-                  </DialogTitle>
-                </DialogHeader>
-                
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label>Nazwa (polska)</Label>
-                    <Input
-                      placeholder="Zupy"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Slug (unikalny identyfikator)</Label>
-                    <Input
-                      placeholder="SOUP"
-                      value={formData.slug}
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })}
-                    />
-                    <p className="text-xs text-muted-foreground">Używany w kodzie - tylko duże litery, bez spacji</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Ikona (emoji)</Label>
-                    <Input
-                      placeholder="🍜"
-                      value={formData.icon}
-                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Kolor</Label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {colorOptions.map((color) => (
-                        <button
-                          key={color.value}
-                          onClick={() => setFormData({ ...formData, color: color.value })}
-                          className={`px-3 py-2 rounded-lg border-2 ${
-                            formData.color === color.value ? 'border-purple-500' : 'border-transparent'
-                          } ${color.value}`}
-                        >
-                          {color.label.charAt(0)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Kolejność wyświetlania</Label>
-                    <Input
-                      type="number"
-                      value={formData.displayOrder}
-                      onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2 pt-4">
-                    <Button 
-                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
-                      onClick={handleSubmit}
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                    >
-                      {(createMutation.isPending || updateMutation.isPending) && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      {editingCategory ? 'Zapisz zmiany' : 'Dodaj'}
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                      setCreateOpen(false)
-                      resetForm()
-                    }}>
-                      Anuluj
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
+              onClick={handleCreate}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Dodaj Kategorię
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        if (!open) handleClose()
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nazwa (polska)</Label>
+              <Input
+                id="name"
+                placeholder="Zupy"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug (unikalny identyfikator)</Label>
+              <Input
+                id="slug"
+                placeholder="SOUP"
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })}
+                disabled={!!editingCategory}
+              />
+              <p className="text-xs text-muted-foreground">Używany w kodzie - tylko duże litery, bez spacji</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="icon">Ikona (emoji)</Label>
+              <Input
+                id="icon"
+                placeholder="🍜"
+                value={formData.icon}
+                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Kolor</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {colorOptions.map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, color: color.value })}
+                    className={`px-3 py-2 rounded-lg border-2 ${
+                      formData.color === color.value ? 'border-purple-500' : 'border-transparent'
+                    } ${color.value} font-semibold`}
+                  >
+                    {color.label.charAt(0)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="order">Kolejność wyświetlania</Label>
+              <Input
+                id="order"
+                type="number"
+                value={formData.displayOrder}
+                onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button 
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {(createMutation.isPending || updateMutation.isPending) && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                {editingCategory ? 'Zapisz zmiany' : 'Dodaj'}
+              </Button>
+              <Button variant="outline" onClick={handleClose}>
+                Anuluj
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Content */}
       <div className="container mx-auto px-6 py-12">
@@ -236,7 +253,7 @@ export default function DishCategoriesPage() {
               </p>
               <Button 
                 className="bg-gradient-to-r from-purple-500 to-pink-500"
-                onClick={() => setCreateOpen(true)}
+                onClick={handleCreate}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Dodaj kategorię
