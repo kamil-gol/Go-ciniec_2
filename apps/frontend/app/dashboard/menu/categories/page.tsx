@@ -75,6 +75,11 @@ export default function DishCategoriesPage() {
       return
     }
 
+    if (formData.displayOrder < 0) {
+      toast.error('Kolejność nie może być ujemna')
+      return
+    }
+
     try {
       if (editingCategory) {
         await updateMutation.mutateAsync({ id: editingCategory.id, data: formData })
@@ -211,9 +216,14 @@ export default function DishCategoriesPage() {
               <Input
                 id="order"
                 type="number"
+                min="0"
                 value={formData.displayOrder}
-                onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  setFormData({ ...formData, displayOrder: Math.max(0, value) })
+                }}
               />
+              <p className="text-xs text-muted-foreground">Mniejsza liczba = wyższa pozycja na liście</p>
             </div>
             
             <div className="flex gap-2 pt-4">
