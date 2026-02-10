@@ -1,0 +1,2 @@
+// Add this to scripts section in package.json:
+// "seed:dishes": "tsx prisma/seeds/dishes.seed.ts"
