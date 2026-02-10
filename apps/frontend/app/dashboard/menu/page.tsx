@@ -14,8 +14,11 @@ import {
 import { useMenuTemplates, useMenuPackages, useMenuOptions, useEventTypes } from '@/hooks/use-menu'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function MenuManagementPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
 
@@ -32,6 +35,28 @@ export default function MenuManagementPage() {
   const filteredOptions = options.filter(o => 
     o.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const handleEdit = (type: string, id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    toast.info(`Edytuj ${type}: ${name}`, {
+      description: 'Funkcja edycji będzie wkrótce dostępna',
+      duration: 3000,
+    })
+    // TODO: Navigate to edit page or open edit dialog
+    // router.push(`/dashboard/menu/${type}/${id}/edit`)
+  }
+
+  const handleDelete = (type: string, id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm(`Czy na pewno chcesz usunąć: ${name}?`)) {
+      toast.info(`Usunięto ${type}: ${name}`, {
+        description: 'Funkcja usuwania będzie wkrótce dostępna',
+        duration: 3000,
+      })
+      // TODO: Call delete mutation
+      // deleteTemplateMutation.mutate(id)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -81,6 +106,7 @@ export default function MenuManagementPage() {
             <Button 
               size="lg" 
               className="bg-white text-orange-600 hover:bg-white/90 shadow-xl h-14 px-8 text-lg font-semibold"
+              onClick={() => toast.info('Dodaj Nowy', { description: 'Funkcja dodawania będzie wkrótce dostępna' })}
             >
               <Plus className="mr-2 h-6 w-6" />
               Dodaj Nowy
@@ -127,7 +153,11 @@ export default function MenuManagementPage() {
                 className="pl-12 h-12 border-2 rounded-xl shadow-sm focus:shadow-lg transition-shadow"
               />
             </div>
-            <Button variant="outline" className="h-12 px-6 rounded-xl border-2 hover:shadow-lg transition-shadow">
+            <Button 
+              variant="outline" 
+              className="h-12 px-6 rounded-xl border-2 hover:shadow-lg transition-shadow"
+              onClick={() => toast.info('Filtry', { description: 'Funkcja filtrowania będzie wkrótce dostępna' })}
+            >
               <Filter className="mr-2 h-5 w-5" />
               Filtry
             </Button>
@@ -223,11 +253,21 @@ export default function MenuManagementPage() {
                       )}
 
                       <div className="flex gap-2 pt-2">
-                        <Button size="sm" variant="outline" className="flex-1 border-2 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 border-2 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                          onClick={(e) => handleEdit('szablon', template.id, template.name, e)}
+                        >
                           <Edit className="h-4 w-4 mr-1" />
                           Edytuj
                         </Button>
-                        <Button size="sm" variant="outline" className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+                          onClick={(e) => handleDelete('szablon', template.id, template.name, e)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -319,11 +359,21 @@ export default function MenuManagementPage() {
                       )}
 
                       <div className="flex gap-2 pt-2">
-                        <Button size="sm" variant="outline" className="flex-1 border-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 border-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                          onClick={(e) => handleEdit('pakiet', pkg.id, pkg.name, e)}
+                        >
                           <Edit className="h-4 w-4 mr-1" />
                           Edytuj
                         </Button>
-                        <Button size="sm" variant="outline" className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+                          onClick={(e) => handleDelete('pakiet', pkg.id, pkg.name, e)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -391,11 +441,21 @@ export default function MenuManagementPage() {
                       </div>
 
                       <div className="flex gap-2 pt-2">
-                        <Button size="sm" variant="outline" className="flex-1 border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-colors">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-colors"
+                          onClick={(e) => handleEdit('opcję', option.id, option.name, e)}
+                        >
                           <Edit className="h-4 w-4 mr-1" />
                           Edytuj
                         </Button>
-                        <Button size="sm" variant="outline" className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+                          onClick={(e) => handleDelete('opcję', option.id, option.name, e)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
