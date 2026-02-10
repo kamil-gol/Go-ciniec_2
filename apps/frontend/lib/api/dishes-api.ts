@@ -5,33 +5,13 @@
  */
 
 import { apiClient } from './menu-api';
-
-export interface Dish {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  allergens: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Dish, CreateDishInput, UpdateDishInput } from '@/types';
 
 export interface DishFilters {
-  category?: string;
+  categoryId?: string;
   isActive?: boolean;
   search?: string;
 }
-
-export interface CreateDishInput {
-  name: string;
-  description?: string | null;
-  category: string;
-  allergens?: string[];
-  isActive?: boolean;
-}
-
-export interface UpdateDishInput extends Partial<CreateDishInput> {}
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -99,10 +79,13 @@ export const dishesApi = {
   },
 
   /**
-   * Get dishes by category
+   * Get dishes by category ID
    */
-  getDishesByCategory: async (category: string): Promise<ApiResponse<Dish[]>> => {
-    const { data } = await apiClient.get<ApiResponse<Dish[]>>(`/dishes/category/${category}`);
+  getDishesByCategory: async (categoryId: string): Promise<ApiResponse<Dish[]>> => {
+    const { data } = await apiClient.get<ApiResponse<Dish[]>>(`/dishes/category/${categoryId}`);
     return data;
   },
 };
+
+// Re-export types for convenience
+export type { Dish, CreateDishInput, UpdateDishInput };
