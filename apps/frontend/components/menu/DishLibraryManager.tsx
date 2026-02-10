@@ -6,7 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Search, Edit, Trash2, Loader2, ChefHat } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Plus, Search, Edit, Trash2, Loader2, ChefHat, AlertTriangle } from 'lucide-react'
 import { useDishes, useDeleteDish } from '@/hooks/use-dishes'
 import { DishDialog } from './DishDialog'
 import { toast } from 'sonner'
@@ -20,6 +30,7 @@ interface DishLibraryManagerProps {
 export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryManagerProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingDish, setEditingDish] = useState<Dish | null>(null)
+  const [deletingDish, setDeletingDish] = useState<{ id: string; name: string } | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('ALL')
   
   const { data: dishes = [], isLoading } = useDishes()
@@ -69,12 +80,17 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
     setEditingDish(dish)
   }
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Czy na pewno chcesz usunąć danie "${name}"?`)) return
+  const handleDeleteClick = (id: string, name: string) => {
+    setDeletingDish({ id, name })
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingDish) return
 
     try {
-      await deleteDishMutation.mutateAsync(id)
-      toast.success(`Danie "${name}" zostało usunięte`)
+      await deleteDishMutation.mutateAsync(deletingDish.id)
+      toast.success(`Danie "${deletingDish.name}" zostało usunięte`)
+      setDeletingDish(null)
     } catch (error: any) {
       toast.error(error?.error || 'Nie udało się usunąć dania')
     }
@@ -92,6 +108,50 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
         }}
         dish={editingDish}
       />
+
+      {/* Premium Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingDish} onOpenChange={(open) => !open && setDeletingDish(null)}>
+        <AlertDialogContent className="border-0 shadow-2xl max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-4 bg-gradient-to-br from-red-500 to-rose-500 rounded-full shadow-lg">
+                <AlertTriangle className="h-10 w-10 text-white" />
+              </div>
+            </div>
+            <AlertDialogTitle className="text-center text-2xl">
+              Usunąć danie?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-base">
+              Czy na pewno chcesz usunąć danie{' '}
+              <span className="font-semibold text-foreground">"{deletingDish?.name}"</span>?
+              <br />
+              <span className="text-red-600 dark:text-red-400 font-medium">Tej operacji nie można cofnąć.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-6">
+            <AlertDialogCancel className="w-full sm:w-auto h-11 border-2">
+              Anuluj
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteDishMutation.isPending}
+              className="w-full sm:w-auto h-11 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 shadow-lg"
+            >
+              {deleteDishMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Usuwanie...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Usuń danie
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="space-y-6">
         {/* Search and Add Button */}
@@ -247,14 +307,10 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
                         size="sm" 
                         variant="outline" 
                         className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
-                        onClick={() => handleDelete(dish.id, dish.name)}
+                        onClick={() => handleDeleteClick(dish.id, dish.name)}
                         disabled={deleteDishMutation.isPending}
                       >
-                        {deleteDishMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
