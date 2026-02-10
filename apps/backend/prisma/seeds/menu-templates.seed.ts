@@ -12,14 +12,13 @@ export async function seedMenuTemplatesAndPackages() {
   console.log('\n🎯 Creating event types...');
   
   const eventTypes = [
-    { name: 'Wesele', description: 'Uroczystość weselna', color: '#FF1744' },
-    { name: 'Komunia', description: 'Pierwsza Komunia Święta', color: '#FFD700' },
-    { name: 'Chrzest', description: 'Chrzest święty', color: '#4FC3F7' },
-    { name: 'Urodziny', description: 'Przyjęcie urodzinowe', color: '#E040FB' },
-    { name: 'Rocznica', description: 'Rocznica ślubu', color: '#FF6F00' },
-    { name: 'Chrześciny', description: 'Przyjęcie chrześcinowe', color: '#66BB6A' },
-    { name: 'Konferencja', description: 'Wydarzenie biznesowe', color: '#42A5F5' },
-    { name: 'Impreza firmowa', description: 'Impreza integracyjna', color: '#AB47BC' },
+    { name: 'Wesele', description: 'Uroczystość weselna z przyjęciem', color: '#FF69B4' },
+    { name: 'Urodziny', description: 'Przyjęcie urodzinowe', color: '#FFA500' },
+    { name: 'Rocznica/Jubileusz', description: 'Rocznica ślubu lub jubileusz', color: '#FFD700' },
+    { name: 'Komunia', description: 'Pierwsza Komunia Święta', color: '#87CEEB' },
+    { name: 'Chrzest/Roczek', description: 'Chrzest lub pierwsze urodziny dziecka', color: '#98FB98' },
+    { name: 'Stypa', description: 'Stypa pogrzebowa', color: '#696969' },
+    { name: 'Inne', description: 'Inne rodzaje wydarzeń', color: '#9370DB' },
   ];
 
   const createdEventTypes: any[] = [];
@@ -41,9 +40,9 @@ export async function seedMenuTemplatesAndPackages() {
   // Find event types
   const weselleType = createdEventTypes.find(e => e.name === 'Wesele');
   const komuniaType = createdEventTypes.find(e => e.name === 'Komunia');
-  const chrzestType = createdEventTypes.find(e => e.name === 'Chrzest');
+  const chrzestType = createdEventTypes.find(e => e.name === 'Chrzest/Roczek');
   const urodzinyType = createdEventTypes.find(e => e.name === 'Urodziny');
-  const firmowa = createdEventTypes.find(e => e.name === 'Impreza firmowa');
+  const inneType = createdEventTypes.find(e => e.name === 'Inne');
 
   // Clear existing templates
   await prisma.menuPackage.deleteMany({});
@@ -90,7 +89,7 @@ export async function seedMenuTemplatesAndPackages() {
     {
       name: 'Menu Firmowe Business',
       description: 'Menu na eventy firmowe',
-      eventTypeId: firmowa.id,
+      eventTypeId: inneType.id,
       variant: 'Business',
       validFrom: new Date('2026-01-01'),
       validTo: new Date('2026-12-31'),
@@ -231,10 +230,10 @@ export async function seedMenuTemplatesAndPackages() {
     ]
   );
 
-  // Pakiet firmowy
-  const firmowaTemplate = createdTemplates[4];
+  // Pakiet firmowy / Inne
+  const inneTemplate = createdTemplates[4];
   await createPackageWithCategories(
-    firmowaTemplate.id,
+    inneTemplate.id,
     'Pakiet Business',
     'Menu na event biznesowy',
     new Decimal(180),
