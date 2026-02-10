@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useCreateDish, useUpdateDish } from '@/hooks/use-dishes-courses'
+import { toast } from '@/lib/toast'
 import type { Dish } from '@/types/menu.types'
 import { Loader2 } from 'lucide-react'
 
@@ -88,14 +89,14 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
 
       if (dish) {
         await updateMutation.mutateAsync({ id: dish.id, data: payload })
-        alert('✅ Zaktualizowano danie!')
+        toast.success('Sukces!', 'Danie zostało zaktualizowane')
       } else {
         await createMutation.mutateAsync(payload)
-        alert('✅ Utworzono danie!')
+        toast.success('Sukces!', 'Nowe danie zostało utworzone')
       }
       onOpenChange(false)
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nieznany błąd'}`)
+      toast.error('Błąd', error.error || 'Nie udało się zapisać dania')
     }
   }
 
@@ -105,33 +106,35 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{dish ? 'Edytuj Danie' : 'Dodaj Nowe Danie'}</DialogTitle>
+          <DialogTitle className="text-2xl">{dish ? 'Edytuj Danie' : 'Dodaj Nowe Danie'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label>Nazwa dania *</Label>
+            <Label className="text-sm font-semibold">Nazwa dania *</Label>
             <Input
               placeholder="np. Rosoł, Schabowy, Tiramisu"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Opis</Label>
+            <Label className="text-sm font-semibold">Opis</Label>
             <Textarea
               placeholder="Opcjonalny opis dania"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
+              className="resize-none"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Kategoria *</Label>
+            <Label className="text-sm font-semibold">Kategoria *</Label>
             <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-              <SelectTrigger>
+              <SelectTrigger className="h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -145,41 +148,43 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Alergeny (oddzielone przecinkami)</Label>
+            <Label className="text-sm font-semibold">Alergeny (oddzielone przecinkami)</Label>
             <Input
               placeholder="np. gluten, laktoza, orzechy"
               value={formData.allergens}
               onChange={(e) => setFormData({ ...formData, allergens: e.target.value })}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Modyfikator ceny (zł)</Label>
+            <Label className="text-sm font-semibold">Modyfikator ceny (zł)</Label>
             <Input
               type="number"
               step="0.01"
               placeholder="0.00"
               value={formData.priceModifier}
               onChange={(e) => setFormData({ ...formData, priceModifier: e.target.value })}
+              className="h-11"
             />
             <p className="text-sm text-muted-foreground">
               Dodatnia wartość zwiększa cenę, ujemna obniża
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <Label className="text-sm font-semibold">Aktywne danie</Label>
             <Switch
               checked={formData.isActive}
               onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
             />
-            <Label>Aktywne danie</Label>
           </div>
 
           <div className="flex gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
@@ -187,7 +192,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
             </Button>
             <Button
               type="button"
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
+              className="flex-1 h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg"
               onClick={handleSubmit}
               disabled={isPending || !formData.name}
             >
