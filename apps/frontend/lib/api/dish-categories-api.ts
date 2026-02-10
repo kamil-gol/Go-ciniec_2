@@ -4,7 +4,7 @@
  * Type-safe API client for dish categories endpoints
  */
 
-import { apiClient } from './menu-api';
+import { apiClient } from '@/lib/api-client';
 import type { DishCategory, CreateDishCategoryInput, UpdateDishCategoryInput } from '@/types';
 
 export interface ApiResponse<T> {
