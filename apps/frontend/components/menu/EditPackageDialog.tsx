@@ -37,10 +37,10 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
   useEffect(() => {
     if (pkg) {
       setFormData({
-        name: pkg.name,
-        priceAdult: pkg.priceAdult.toString(),
-        priceChild: pkg.priceChild.toString(),
-        priceToddler: pkg.priceToddler.toString(),
+        name: pkg.name || '',
+        priceAdult: pkg.priceAdult?.toString() || '',
+        priceChild: pkg.priceChild?.toString() || '',
+        priceToddler: pkg.priceToddler?.toString() || '',
         includedItems: pkg.includedItems && pkg.includedItems.length > 0 ? pkg.includedItems : [''],
       })
     }
