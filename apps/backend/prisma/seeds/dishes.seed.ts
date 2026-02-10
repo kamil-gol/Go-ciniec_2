@@ -10,33 +10,43 @@ const prisma = new PrismaClient();
 export async function seedDishes() {
   console.log('🍽️  Seeding dishes...');
 
+  // Get categories first
+  const categories = await prisma.dishCategory.findMany();
+  const categoryMap = new Map(categories.map(cat => [cat.slug, cat.id]));
+
+  const getCategoryId = (slug: string): string => {
+    const id = categoryMap.get(slug);
+    if (!id) throw new Error(`Category ${slug} not found. Run category seed first!`);
+    return id;
+  };
+
   const dishes = [
     // ZUPY (Soups)
     {
       name: 'Rosół z makaronem',
       description: 'Tradycyjny polski rosół z makaronem i warzywami',
-      category: 'SOUP',
+      categoryId: getCategoryId('SOUP'),
       allergens: ['gluten', 'celery'],
       isActive: true,
     },
     {
       name: 'Żurek na zakwasie',
       description: 'Kwaśna zupa z kiełbasą, jajkiem i ziemniakami',
-      category: 'SOUP',
+      categoryId: getCategoryId('SOUP'),
       allergens: ['gluten', 'eggs', 'mustard'],
       isActive: true,
     },
     {
       name: 'Barszcz czerwony',
       description: 'Klarowny barszcz z uszkami lub pasztencikami',
-      category: 'SOUP',
+      categoryId: getCategoryId('SOUP'),
       allergens: ['gluten', 'eggs'],
       isActive: true,
     },
     {
       name: 'Pomidorowa z ryżem',
       description: 'Aksamitna zupa pomidorowa z ryżem',
-      category: 'SOUP',
+      categoryId: getCategoryId('SOUP'),
       allergens: ['celery'],
       isActive: true,
     },
@@ -45,42 +55,42 @@ export async function seedDishes() {
     {
       name: 'Schabowy z kapustą i ziemniakami',
       description: 'Panierowany kotlet schabowy, kapusta zasmażana, ziemniaki gotowane',
-      category: 'MAIN_COURSE',
+      categoryId: getCategoryId('MAIN_COURSE'),
       allergens: ['gluten', 'eggs'],
       isActive: true,
     },
     {
       name: 'Pierogi ruskie',
       description: '10 pierogów z serem i ziemniakami',
-      category: 'MAIN_COURSE',
+      categoryId: getCategoryId('MAIN_COURSE'),
       allergens: ['gluten', 'eggs', 'dairy'],
       isActive: true,
     },
     {
       name: 'Gołąbki w sosie pomidorowym',
       description: 'Gołąbki z mięsem mielonym i ryżem w sosie pomidorowym',
-      category: 'MAIN_COURSE',
+      categoryId: getCategoryId('MAIN_COURSE'),
       allergens: ['gluten', 'celery'],
       isActive: true,
     },
     {
       name: 'De volaille z frytkami',
       description: 'Pierś z kurczaka faszerowana masłem ziołowym, frytki, surówka',
-      category: 'MAIN_COURSE',
+      categoryId: getCategoryId('MAIN_COURSE'),
       allergens: ['dairy', 'gluten'],
       isActive: true,
     },
     {
       name: 'Schab pieczony',
       description: 'Pieczony schab w sosie własnym z ziemniakami',
-      category: 'MEAT',
+      categoryId: getCategoryId('MEAT'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Filet z kurczaka w sosie śmietanowym',
       description: 'Filet z kurczaka w sosie śmietanowo-pieczarkowym z ryżem',
-      category: 'MEAT',
+      categoryId: getCategoryId('MEAT'),
       allergens: ['dairy'],
       isActive: true,
     },
@@ -89,42 +99,42 @@ export async function seedDishes() {
     {
       name: 'Ziemniaki gotowane',
       description: 'Młode ziemniaki z masłem i koperkiem',
-      category: 'SIDE_DISH',
+      categoryId: getCategoryId('SIDE_DISH'),
       allergens: ['dairy'],
       isActive: true,
     },
     {
       name: 'Frytki',
       description: 'Chrupiące frytki',
-      category: 'SIDE_DISH',
+      categoryId: getCategoryId('SIDE_DISH'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Kasza gryczana',
       description: 'Kasza gryczana z cebulką',
-      category: 'SIDE_DISH',
+      categoryId: getCategoryId('SIDE_DISH'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Ryż biały',
       description: 'Ryż biały gotowany',
-      category: 'SIDE_DISH',
+      categoryId: getCategoryId('SIDE_DISH'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Surówka z kapusty',
       description: 'Surówka z białej kapusty',
-      category: 'SIDE_DISH',
+      categoryId: getCategoryId('SIDE_DISH'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Mizeria',
       description: 'Surówka z ogórka ze śmietaną',
-      category: 'SIDE_DISH',
+      categoryId: getCategoryId('SIDE_DISH'),
       allergens: ['dairy'],
       isActive: true,
     },
@@ -133,21 +143,21 @@ export async function seedDishes() {
     {
       name: 'Sałatka grecka',
       description: 'Pomidory, ogórek, papryka, cebula, oliwki, ser feta',
-      category: 'SALAD',
+      categoryId: getCategoryId('SALAD'),
       allergens: ['dairy'],
       isActive: true,
     },
     {
       name: 'Sałatka Cezar',
       description: 'Sałata rzymska, kurczak, grzanki, parmezan, sos Cezar',
-      category: 'SALAD',
+      categoryId: getCategoryId('SALAD'),
       allergens: ['gluten', 'dairy', 'eggs', 'fish'],
       isActive: true,
     },
     {
       name: 'Sałatka warzywna',
       description: 'Mix świeżych warzyw z sosem winegret',
-      category: 'SALAD',
+      categoryId: getCategoryId('SALAD'),
       allergens: [],
       isActive: true,
     },
@@ -156,28 +166,28 @@ export async function seedDishes() {
     {
       name: 'Sernik na zimno',
       description: 'Klasyczny sernik na zimno z bitą śmietaną',
-      category: 'DESSERT',
+      categoryId: getCategoryId('DESSERT'),
       allergens: ['gluten', 'dairy', 'eggs'],
       isActive: true,
     },
     {
       name: 'Szarlotka z lodami',
       description: 'Ciepła szarlotka z lodami waniliowymi',
-      category: 'DESSERT',
+      categoryId: getCategoryId('DESSERT'),
       allergens: ['gluten', 'dairy', 'eggs'],
       isActive: true,
     },
     {
       name: 'Tiramisu',
       description: 'Włoski deser kawowy',
-      category: 'DESSERT',
+      categoryId: getCategoryId('DESSERT'),
       allergens: ['gluten', 'dairy', 'eggs'],
       isActive: true,
     },
     {
       name: 'Lody waniliowe',
       description: 'Trzy gałki lodów waniliowych',
-      category: 'DESSERT',
+      categoryId: getCategoryId('DESSERT'),
       allergens: ['dairy'],
       isActive: true,
     },
@@ -186,35 +196,35 @@ export async function seedDishes() {
     {
       name: 'Kawa espresso',
       description: 'Kawa espresso',
-      category: 'DRINK',
+      categoryId: getCategoryId('DRINK'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Kawa latte',
       description: 'Kawa z mlekiem',
-      category: 'DRINK',
+      categoryId: getCategoryId('DRINK'),
       allergens: ['dairy'],
       isActive: true,
     },
     {
       name: 'Herbata czarna',
       description: 'Herbata czarna',
-      category: 'DRINK',
+      categoryId: getCategoryId('DRINK'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Sok pomarańczowy',
       description: 'Świeżo wyciskany sok pomarańczowy',
-      category: 'DRINK',
+      categoryId: getCategoryId('DRINK'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Woda mineralna',
       description: 'Woda mineralna gazowana/niegazowana',
-      category: 'DRINK',
+      categoryId: getCategoryId('DRINK'),
       allergens: [],
       isActive: true,
     },
@@ -223,23 +233,23 @@ export async function seedDishes() {
     {
       name: 'Talerz wędlin',
       description: 'Mix wędlin - szynka, salami, kabanosy',
-      category: 'COLD_CUTS',
+      categoryId: getCategoryId('COLD_CUTS'),
       allergens: [],
       isActive: true,
     },
     {
       name: 'Szynka serówka',
       description: 'Plastry szynki serówki',
-      category: 'COLD_CUTS',
+      categoryId: getCategoryId('COLD_CUTS'),
       allergens: [],
       isActive: true,
     },
 
-    // PRZEKASKI (Snacks)
+    // PRZEKĄSKI (Snacks)
     {
       name: 'Paluchy serowe',
       description: 'Chrupiące paluchy z serem',
-      category: 'SNACK',
+      categoryId: getCategoryId('SNACK'),
       allergens: ['gluten', 'dairy', 'eggs'],
       isActive: true,
     },
