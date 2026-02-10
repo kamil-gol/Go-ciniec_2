@@ -233,7 +233,7 @@ model MenuTemplate {
   description   String?  @db.Text
   variant       String?  @db.VarChar(100)
   
-  validFrom     DateTime
+  validFrom     DateTime?
   validTo       DateTime?
   isActive      Boolean  @default(true)
   
@@ -376,11 +376,6 @@ model Dish {
   
   allergens     String[]      @db.Text
   
-  priceModifier Decimal       @default(0) @db.Decimal(10, 2)
-  
-  imageUrl      String?       @db.Text
-  thumbnailUrl  String?       @db.Text
-  
   isActive      Boolean       @default(true)
   displayOrder  Int           @default(0) @db.SmallInt
   
@@ -399,8 +394,8 @@ model PackageCategorySettings {
   packageId     String        @db.Uuid
   category      DishCategory
   
-  minSelect     Int           @default(1) @db.SmallInt
-  maxSelect     Int           @default(1) @db.SmallInt
+  minSelect     Decimal       @default(1) @db.Decimal(4, 1)
+  maxSelect     Decimal       @default(1) @db.Decimal(4, 1)
   
   isRequired    Boolean       @default(true)
   isEnabled     Boolean       @default(true)
