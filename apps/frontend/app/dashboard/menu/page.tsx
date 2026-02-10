@@ -14,11 +14,8 @@ import {
 import { useMenuTemplates, useMenuPackages, useMenuOptions, useEventTypes } from '@/hooks/use-menu'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 
 export default function MenuManagementPage() {
-  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
 
@@ -38,21 +35,15 @@ export default function MenuManagementPage() {
 
   const handleEdit = (type: string, id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    toast.info(`Edytuj ${type}: ${name}`, {
-      description: 'Funkcja edycji będzie wkrótce dostępna',
-      duration: 3000,
-    })
+    alert(`Edycja: ${name}\n\nFunkcja edycji jest w przygotowaniu.\nID: ${id}`)
     // TODO: Navigate to edit page or open edit dialog
     // router.push(`/dashboard/menu/${type}/${id}/edit`)
   }
 
   const handleDelete = (type: string, id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm(`Czy na pewno chcesz usunąć: ${name}?`)) {
-      toast.info(`Usunięto ${type}: ${name}`, {
-        description: 'Funkcja usuwania będzie wkrótce dostępna',
-        duration: 3000,
-      })
+    if (confirm(`Czy na pewno chcesz usunąć: ${name}?\n\nTa operacja jest nieodwracalna!`)) {
+      alert(`Usuwanie: ${name}\n\nFunkcja usuwania jest w przygotowaniu.\nID: ${id}`)
       // TODO: Call delete mutation
       // deleteTemplateMutation.mutate(id)
     }
@@ -106,7 +97,7 @@ export default function MenuManagementPage() {
             <Button 
               size="lg" 
               className="bg-white text-orange-600 hover:bg-white/90 shadow-xl h-14 px-8 text-lg font-semibold"
-              onClick={() => toast.info('Dodaj Nowy', { description: 'Funkcja dodawania będzie wkrótce dostępna' })}
+              onClick={() => alert('Funkcja dodawania nowych szablonów jest w przygotowaniu.')}
             >
               <Plus className="mr-2 h-6 w-6" />
               Dodaj Nowy
@@ -156,7 +147,7 @@ export default function MenuManagementPage() {
             <Button 
               variant="outline" 
               className="h-12 px-6 rounded-xl border-2 hover:shadow-lg transition-shadow"
-              onClick={() => toast.info('Filtry', { description: 'Funkcja filtrowania będzie wkrótce dostępna' })}
+              onClick={() => alert('Funkcja filtrowania jest w przygotowaniu.')}
             >
               <Filter className="mr-2 h-5 w-5" />
               Filtry
