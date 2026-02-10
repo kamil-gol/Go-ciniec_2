@@ -8,11 +8,23 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Edit, Trash2, Loader2, ChefHat } from 'lucide-react'
 import { useDishes, useDeleteDish } from '@/hooks/use-dishes-courses'
 import { DishDialog } from './DishDialog'
+import { toast } from '@/lib/toast'
 import type { Dish } from '@/types/menu.types'
 
 interface DishLibraryManagerProps {
   searchQuery: string
   setSearchQuery?: (query: string) => void
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  'SOUP': 'Zupa',
+  'APPETIZER': 'Przekąska',
+  'MAIN_COURSE': 'Danie główne',
+  'SIDE_DISH': 'Przystawka',
+  'SALAD': 'Sałatka',
+  'DESSERT': 'Deser',
+  'BEVERAGE': 'Napój',
+  'OTHER': 'Inne'
 }
 
 export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryManagerProps) {
@@ -32,19 +44,18 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Czy na pewno chcesz usunąć danie:\n"${name}"?`)) return
+    const loadingToast = toast.loading('Usuwam danie...')
 
     try {
       await deleteDishMutation.mutateAsync(id)
-      alert(`✅ Usunięto danie: ${name}`)
+      toast.success('Usunięto!', `Danie "${name}" zostało usunięte`)
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nieznany błąd'}`)
+      toast.error('Błąd', error.error || 'Nie udało się usunąć dania')
     }
   }
 
-  // Group dishes by category
   const groupedDishes = filteredDishes.reduce((acc, dish) => {
-    const category = dish.category || 'Inne'
+    const category = dish.category || 'OTHER'
     if (!acc[category]) acc[category] = []
     acc[category].push(dish)
     return acc
@@ -64,7 +75,6 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
       />
 
       <div className="space-y-6">
-        {/* Header Actions */}
         <div className="flex gap-4">
           {setSearchQuery && (
             <div className="relative flex-1">
@@ -78,7 +88,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
             </div>
           )}
           <Button 
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 h-12 px-6"
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 h-12 px-6 shadow-lg"
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -86,7 +96,6 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
           </Button>
         </div>
 
-        {/* Dishes Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -114,8 +123,8 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
               <div key={category} className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
-                  <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm px-4 py-1 border-0">
-                    {category} ({categoryDishes.length})
+                  <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm px-4 py-1 border-0 shadow-md">
+                    {CATEGORY_LABELS[category] || category} ({categoryDishes.length})
                   </Badge>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
                 </div>
