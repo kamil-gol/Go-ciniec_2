@@ -105,6 +105,30 @@ export const menuApi = {
     return data;
   },
 
+  /**
+   * Create new menu template
+   */
+  createTemplate: async (input: any): Promise<ApiResponse<MenuTemplate>> => {
+    const { data } = await api.post<ApiResponse<MenuTemplate>>('/menu-templates', input);
+    return data;
+  },
+
+  /**
+   * Update menu template
+   */
+  updateTemplate: async (id: string, input: any): Promise<ApiResponse<MenuTemplate>> => {
+    const { data } = await api.put<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`, input);
+    return data;
+  },
+
+  /**
+   * Delete menu template
+   */
+  deleteTemplate: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/menu-templates/${id}`);
+    return data;
+  },
+
   // ────────────────────────────────────────
   // MENU PACKAGES
   // ────────────────────────────────────────
@@ -127,6 +151,30 @@ export const menuApi = {
     return data;
   },
 
+  /**
+   * Create new menu package
+   */
+  createPackage: async (input: any): Promise<ApiResponse<MenuPackage>> => {
+    const { data } = await api.post<ApiResponse<MenuPackage>>('/menu-packages', input);
+    return data;
+  },
+
+  /**
+   * Update menu package
+   */
+  updatePackage: async (id: string, input: any): Promise<ApiResponse<MenuPackage>> => {
+    const { data } = await api.put<ApiResponse<MenuPackage>>(`/menu-packages/${id}`, input);
+    return data;
+  },
+
+  /**
+   * Delete menu package
+   */
+  deletePackage: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/menu-packages/${id}`);
+    return data;
+  },
+
   // ────────────────────────────────────────
   // MENU OPTIONS
   // ────────────────────────────────────────
@@ -145,6 +193,30 @@ export const menuApi = {
    */
   getOption: async (id: string): Promise<ApiResponse<MenuOption>> => {
     const { data } = await api.get<ApiResponse<MenuOption>>(`/menu-options/${id}`);
+    return data;
+  },
+
+  /**
+   * Create new menu option
+   */
+  createOption: async (input: any): Promise<ApiResponse<MenuOption>> => {
+    const { data } = await api.post<ApiResponse<MenuOption>>('/menu-options', input);
+    return data;
+  },
+
+  /**
+   * Update menu option
+   */
+  updateOption: async (id: string, input: any): Promise<ApiResponse<MenuOption>> => {
+    const { data } = await api.put<ApiResponse<MenuOption>>(`/menu-options/${id}`, input);
+    return data;
+  },
+
+  /**
+   * Delete menu option
+   */
+  deleteOption: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/menu-options/${id}`);
     return data;
   },
 
