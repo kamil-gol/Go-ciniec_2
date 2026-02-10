@@ -283,7 +283,7 @@ model MenuPackage {
   
   menuTemplate    MenuTemplate @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
   packageOptions  MenuPackageOption[]
-  categorySettings PackageCategorySettings[]
+  categorySettings PackageCategorySettings[] // NEW: Category-based limits
   priceHistory    MenuPriceHistory[]
   
   @@index([menuTemplateId])
@@ -348,25 +348,26 @@ model MenuPackageOption {
 }
 
 // ═══════════════════════════════════════════════════════════
-// 🍽️ DISH LIBRARY & CATEGORY-BASED MENU SYSTEM
+// 🍽️ DISH LIBRARY & CATEGORY-BASED MENU SYSTEM (NEW)
 // ═══════════════════════════════════════════════════════════
 
 enum DishCategory {
-  SOUP
-  MAIN_COURSE
-  MEAT
-  SIDE_DISH
-  SALAD
-  APPETIZER
-  DESSERT
-  DRINK
-  COLD_CUTS
-  SNACK
-  BREAKFAST
-  ADDON
-  OTHER
+  SOUP           // Zupy
+  MAIN_COURSE    // Danie główne
+  MEAT           // Mięso
+  SIDE_DISH      // Dodatki (ziemniaki, ryż, buraki)
+  SALAD          // Sałatki
+  APPETIZER      // Przystawki
+  DESSERT        // Desery
+  DRINK          // Napoje
+  COLD_CUTS      // Zimna płyta
+  SNACK          // Podwieczorek
+  BREAKFAST      // Śniadanie
+  ADDON          // NEW: Dodatki płatne (sosy, przyprawy, etc.)
+  OTHER          // Inne
 }
 
+// Dish - Global library of all dishes
 model Dish {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   
@@ -387,26 +388,30 @@ model Dish {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
-  addonGroups   AddonGroupDish[]
+  addonGroups   AddonGroupDish[] // NEW: For ADDON category dishes
   
   @@index([category])
   @@index([isActive])
   @@index([name])
 }
 
+// NEW: Package Category Settings - Defines which dishes from each category are available
 model PackageCategorySettings {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   packageId     String        @db.Uuid
-  category      DishCategory
+  category      DishCategory  // SOUP, DESSERT, etc.
   
-  minSelect     Int           @default(1) @db.SmallInt
-  maxSelect     Int           @default(1) @db.SmallInt
+  // Selection limits
+  minSelect     Int           @default(1) @db.SmallInt // Guest must select at least X
+  maxSelect     Int           @default(1) @db.SmallInt // Guest can select up to X
   
-  isRequired    Boolean       @default(true)
-  isEnabled     Boolean       @default(true)
+  // Behavior
+  isRequired    Boolean       @default(true)  // Must be selected
+  isEnabled     Boolean       @default(true)   // Show this category in package
   
+  // UI
   displayOrder  Int           @default(0) @db.SmallInt
-  customLabel   String?       @db.VarChar(255)
+  customLabel   String?       @db.VarChar(255) // Custom name (override category name)
   
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -418,18 +423,22 @@ model PackageCategorySettings {
   @@index([category])
 }
 
+// NEW: Addon Group - Groups of paid addons (e.g., "Sosy", "Dodatki premium")
 model AddonGroup {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   
-  name          String   @db.VarChar(255)
+  name          String   @db.VarChar(255) // "Sosy", "Dodatki premium"
   description   String?  @db.Text
   
-  minSelect     Int      @default(0) @db.SmallInt
+  // Selection limits for this group
+  minSelect     Int      @default(0) @db.SmallInt // 0 = optional
   maxSelect     Int      @default(1) @db.SmallInt
   
-  priceType     String   @db.VarChar(20)
+  // Pricing
+  priceType     String   @db.VarChar(20) // "PER_PERSON", "FLAT", "FREE"
   basePrice     Decimal  @default(0) @db.Decimal(10, 2)
   
+  // UI
   icon          String?  @db.VarChar(50)
   displayOrder  Int      @default(0) @db.SmallInt
   
@@ -444,12 +453,15 @@ model AddonGroup {
   @@index([displayOrder])
 }
 
+// Junction: AddonGroup <-> Dish (only ADDON category dishes)
 model AddonGroupDish {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   groupId       String   @db.Uuid
   dishId        String   @db.Uuid
   
+  // Price override for this addon in this group
   customPrice   Decimal? @db.Decimal(10, 2)
+  
   displayOrder  Int      @default(0) @db.SmallInt
   
   createdAt     DateTime @default(now())
@@ -463,6 +475,7 @@ model AddonGroupDish {
   @@index([dishId])
 }
 
+// Reservation Menu Snapshot
 model ReservationMenuSnapshot {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   reservationId   String   @unique @db.Uuid
