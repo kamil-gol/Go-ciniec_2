@@ -26,6 +26,7 @@ import { CreateOptionDialog } from '@/components/menu/CreateOptionDialog'
 import { EditTemplateDialog } from '@/components/menu/EditTemplateDialog'
 import { EditPackageDialog } from '@/components/menu/EditPackageDialog'
 import { EditOptionDialog } from '@/components/menu/EditOptionDialog'
+import { QuickAccessMenu } from '@/components/menu/QuickAccessMenu'
 import type { MenuTemplate, MenuPackage, MenuOption } from '@/types/menu.types'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -227,6 +228,9 @@ export default function MenuManagementPage() {
 
         {/* Main Content */}
         <div className="container mx-auto px-6 py-8">
+          {/* Quick Access Menu */}
+          <QuickAccessMenu />
+
           {/* Tabs */}
           <Tabs defaultValue="templates" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 h-14 bg-white dark:bg-gray-950 border-2 rounded-2xl shadow-lg p-2">
