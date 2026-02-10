@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, Dish } from '@prisma/client';
+import { Prisma, Dish, DishCategory } from '@prisma/client';
+
+export type DishWithCategory = Dish & { category: DishCategory };
 
 export interface DishFilters {
-  category?: string;
+  categoryId?: string;
   isActive?: boolean;
   search?: string;
 }
@@ -11,7 +13,7 @@ export interface DishFilters {
 export interface CreateDishDto {
   name: string;
   description?: string | null;
-  category: string;
+  categoryId: string;
   allergens?: string[];
   isActive?: boolean;
 }
@@ -25,11 +27,11 @@ export class DishesService {
   /**
    * Get all dishes with optional filters
    */
-  async findAll(filters?: DishFilters): Promise<Dish[]> {
+  async findAll(filters?: DishFilters): Promise<DishWithCategory[]> {
     const where: Prisma.DishWhereInput = {};
 
-    if (filters?.category) {
-      where.category = filters.category;
+    if (filters?.categoryId) {
+      where.categoryId = filters.categoryId;
     }
 
     if (filters?.isActive !== undefined) {
@@ -45,8 +47,11 @@ export class DishesService {
 
     return this.prisma.dish.findMany({
       where,
+      include: {
+        category: true,
+      },
       orderBy: [
-        { category: 'asc' },
+        { category: { displayOrder: 'asc' } },
         { name: 'asc' },
       ],
     });
@@ -55,9 +60,12 @@ export class DishesService {
   /**
    * Get single dish by ID
    */
-  async findOne(id: string): Promise<Dish> {
+  async findOne(id: string): Promise<DishWithCategory> {
     const dish = await this.prisma.dish.findUnique({
       where: { id },
+      include: {
+        category: true,
+      },
     });
 
     if (!dish) {
@@ -68,11 +76,14 @@ export class DishesService {
   }
 
   /**
-   * Get dishes by category
+   * Get dishes by category ID
    */
-  async findByCategory(category: string): Promise<Dish[]> {
+  async findByCategory(categoryId: string): Promise<DishWithCategory[]> {
     return this.prisma.dish.findMany({
-      where: { category },
+      where: { categoryId },
+      include: {
+        category: true,
+      },
       orderBy: { name: 'asc' },
     });
   }
@@ -80,7 +91,7 @@ export class DishesService {
   /**
    * Create new dish
    */
-  async create(data: CreateDishDto): Promise<Dish> {
+  async create(data: CreateDishDto): Promise<DishWithCategory> {
     // Check if dish with same name already exists
     const existing = await this.prisma.dish.findFirst({
       where: { name: data.name },
@@ -90,13 +101,25 @@ export class DishesService {
       throw new ConflictException(`Dish with name "${data.name}" already exists`);
     }
 
+    // Verify category exists
+    const category = await this.prisma.dishCategory.findUnique({
+      where: { id: data.categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${data.categoryId} not found`);
+    }
+
     return this.prisma.dish.create({
       data: {
         name: data.name,
         description: data.description,
-        category: data.category,
+        categoryId: data.categoryId,
         allergens: data.allergens || [],
         isActive: data.isActive ?? true,
+      },
+      include: {
+        category: true,
       },
     });
   }
@@ -104,7 +127,7 @@ export class DishesService {
   /**
    * Update existing dish
    */
-  async update(id: string, data: UpdateDishDto): Promise<Dish> {
+  async update(id: string, data: UpdateDishDto): Promise<DishWithCategory> {
     // Check if dish exists
     await this.findOne(id);
 
@@ -122,9 +145,23 @@ export class DishesService {
       }
     }
 
+    // If updating categoryId, verify it exists
+    if (data.categoryId) {
+      const category = await this.prisma.dishCategory.findUnique({
+        where: { id: data.categoryId },
+      });
+
+      if (!category) {
+        throw new NotFoundException(`Category with ID ${data.categoryId} not found`);
+      }
+    }
+
     return this.prisma.dish.update({
       where: { id },
       data,
+      include: {
+        category: true,
+      },
     });
   }
 
@@ -143,17 +180,14 @@ export class DishesService {
   /**
    * Get dish categories with counts
    */
-  async getCategories(): Promise<Array<{ category: string; count: number }>> {
-    const result = await this.prisma.dish.groupBy({
-      by: ['category'],
-      _count: {
-        category: true,
+  async getCategories(): Promise<Array<DishCategory & { _count: { dishes: number } }>> {
+    return this.prisma.dishCategory.findMany({
+      include: {
+        _count: {
+          select: { dishes: true },
+        },
       },
+      orderBy: { displayOrder: 'asc' },
     });
-
-    return result.map(item => ({
-      category: item.category,
-      count: item._count.category,
-    }));
   }
 }
