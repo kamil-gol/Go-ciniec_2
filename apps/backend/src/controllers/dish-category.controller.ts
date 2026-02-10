@@ -231,6 +231,7 @@ class DishCategoryController {
   /**
    * DELETE /api/dish-categories/:id
    * Delete category (protected)
+   * Now with automatic displayOrder reordering!
    */
   async deleteCategory(req: Request, res: Response) {
     try {
@@ -261,9 +262,30 @@ class DishCategoryController {
         });
       }
 
-      await prisma.dishCategory.delete({
-        where: { id },
+      // Delete category and reorder in a transaction
+      await prisma.$transaction(async (tx) => {
+        // Delete the category
+        await tx.dishCategory.delete({
+          where: { id },
+        });
+
+        // Get all remaining categories ordered by displayOrder
+        const remainingCategories = await tx.dishCategory.findMany({
+          orderBy: { displayOrder: 'asc' },
+        });
+
+        // Reindex displayOrder to be sequential (0, 1, 2, ...)
+        const reorderUpdates = remainingCategories.map((cat, index) =>
+          tx.dishCategory.update({
+            where: { id: cat.id },
+            data: { displayOrder: index },
+          })
+        );
+
+        await Promise.all(reorderUpdates);
       });
+
+      logger.info(`[DishCategory] Deleted category: ${category.name} and reordered remaining`);
 
       res.status(200).json({
         success: true,
