@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seeding...');
-  console.log('='.тrepeat(60));
+  console.log('='.repeat(60));
 
   try {
     // 1. Seed dishes (100+)
@@ -22,7 +22,7 @@ async function main() {
     // 3. Summary
     console.log('\n' + '='.repeat(60));
     console.log('🎉 Database seeding completed successfully!');
-    console.log('='.тrepeat(60));
+    console.log('='.repeat(60));
 
     // Print stats
     const stats = await getStats();
