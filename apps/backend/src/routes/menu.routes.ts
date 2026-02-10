@@ -9,15 +9,17 @@ import { menuTemplateController } from '../controllers/menuTemplate.controller';
 import { menuPackageController } from '../controllers/menuPackage.controller';
 import { menuOptionController } from '../controllers/menuOption.controller';
 import { reservationMenuController } from '../controllers/reservationMenu.controller';
+import { dishController } from '../controllers/dish.controller';
+import { menuCourseController } from '../controllers/menuCourse.controller';
 
 // TODO: Import authentication middleware when ready
 // import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // MENU TEMPLATES
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   GET /api/menu-templates
@@ -103,9 +105,9 @@ router.post(
   menuTemplateController.duplicate.bind(menuTemplateController)
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // MENU PACKAGES
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   GET /api/menu-packages/template/:templateId
@@ -191,9 +193,9 @@ router.post(
   menuPackageController.assignOptions.bind(menuPackageController)
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // MENU OPTIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   GET /api/menu-options
@@ -254,9 +256,160 @@ router.delete(
   menuOptionController.delete.bind(menuOptionController)
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// 🍽️ DISH LIBRARY (NEW)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/dishes
+ * @desc    List all dishes in library (with optional filters)
+ * @query   category?: DishCategory, isActive?: boolean, search?: string
+ * @access  Public
+ */
+router.get(
+  '/dishes',
+  dishController.list.bind(dishController)
+);
+
+/**
+ * @route   GET /api/dishes/:id
+ * @desc    Get single dish by ID
+ * @params  id: string
+ * @access  Public
+ */
+router.get(
+  '/dishes/:id',
+  dishController.getById.bind(dishController)
+);
+
+/**
+ * @route   POST /api/dishes
+ * @desc    Create new dish
+ * @body    CreateDishInput
+ * @access  Admin only
+ */
+router.post(
+  '/dishes',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  dishController.create.bind(dishController)
+);
+
+/**
+ * @route   PUT /api/dishes/:id
+ * @desc    Update dish
+ * @params  id: string
+ * @body    UpdateDishInput
+ * @access  Admin only
+ */
+router.put(
+  '/dishes/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  dishController.update.bind(dishController)
+);
+
+/**
+ * @route   DELETE /api/dishes/:id
+ * @desc    Delete dish
+ * @params  id: string
+ * @access  Admin only
+ */
+router.delete(
+  '/dishes/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  dishController.delete.bind(dishController)
+);
+
+// ═══════════════════════════════════════════════════════════════
+// 🍽️ MENU COURSES (NEW)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/menu-courses/package/:packageId
+ * @desc    List all courses for a package
+ * @params  packageId: string
+ * @access  Public
+ */
+router.get(
+  '/menu-courses/package/:packageId',
+  menuCourseController.listByPackage.bind(menuCourseController)
+);
+
+/**
+ * @route   GET /api/menu-courses/:id
+ * @desc    Get single course by ID
+ * @params  id: string
+ * @access  Public
+ */
+router.get(
+  '/menu-courses/:id',
+  menuCourseController.getById.bind(menuCourseController)
+);
+
+/**
+ * @route   POST /api/menu-courses
+ * @desc    Create new course
+ * @body    CreateMenuCourseInput
+ * @access  Admin only
+ */
+router.post(
+  '/menu-courses',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  menuCourseController.create.bind(menuCourseController)
+);
+
+/**
+ * @route   PUT /api/menu-courses/:id
+ * @desc    Update course
+ * @params  id: string
+ * @body    UpdateMenuCourseInput
+ * @access  Admin only
+ */
+router.put(
+  '/menu-courses/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  menuCourseController.update.bind(menuCourseController)
+);
+
+/**
+ * @route   DELETE /api/menu-courses/:id
+ * @desc    Delete course
+ * @params  id: string
+ * @access  Admin only
+ */
+router.delete(
+  '/menu-courses/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  menuCourseController.delete.bind(menuCourseController)
+);
+
+/**
+ * @route   POST /api/menu-courses/:id/dishes
+ * @desc    Assign dishes to course
+ * @params  id: string (course ID)
+ * @body    AssignDishesToCourseInput
+ * @access  Admin only
+ */
+router.post(
+  '/menu-courses/:id/dishes',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  menuCourseController.assignDishes.bind(menuCourseController)
+);
+
+/**
+ * @route   DELETE /api/menu-courses/:courseId/dishes/:dishId
+ * @desc    Remove dish from course
+ * @params  courseId: string, dishId: string
+ * @access  Admin only
+ */
+router.delete(
+  '/menu-courses/:courseId/dishes/:dishId',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  menuCourseController.removeDish.bind(menuCourseController)
+);
+
+// ═══════════════════════════════════════════════════════════════
 // RESERVATION MENU SELECTION (CLIENT-FACING)
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   POST /api/reservations/:id/select-menu
@@ -308,9 +461,9 @@ router.delete(
   reservationMenuController.deleteMenu.bind(reservationMenuController)
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // EXPORT ROUTER
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 export default router;
 
