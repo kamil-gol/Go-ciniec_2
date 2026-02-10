@@ -303,6 +303,7 @@ model MenuPackage {
   
   menuTemplate    MenuTemplate @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
   packageOptions  MenuPackageOption[]
+  courses         MenuCourse[] // NEW: Courses in this package
   priceHistory    MenuPriceHistory[]
   
   @@index([menuTemplateId])
@@ -374,13 +375,123 @@ model MenuPackageOption {
   @@index([optionId])
 }
 
+// ═══════════════════════════════════════════════════════════
+// 🍽️ DISH LIBRARY & MENU COURSES (NEW)
+// ═══════════════════════════════════════════════════════════
+
+// Dish Category Enum
+enum DishCategory {
+  SOUP           // Zupy
+  MAIN_COURSE    // Danie główne
+  MEAT           // Mięso
+  SIDE_DISH      // Dodatki (ziemniaki, ryż, buraki)
+  SALAD          // Sałatki
+  APPETIZER      // Przystawki
+  DESSERT        // Desery
+  DRINK          // Napoje
+  COLD_CUTS      // Zimna płyta
+  SNACK          // Podwieczorek
+  BREAKFAST      // Śniadanie
+  OTHER          // Inne
+}
+
+// Dish - Global library of all dishes
+model Dish {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  
+  name          String        @db.VarChar(255) // "Rosoł z makaronem"
+  description   String?       @db.Text
+  category      DishCategory  // SOUP, MAIN_COURSE, etc.
+  
+  // Allergen info
+  allergens     String[]      @db.Text // ["gluten", "laktoza", "orzechy"]
+  
+  // Price modifier (additional charge for premium dishes)
+  priceModifier Decimal       @default(0) @db.Decimal(10, 2) // +5zł for premium dish
+  
+  // UI
+  imageUrl      String?       @db.Text
+  thumbnailUrl  String?       @db.Text
+  
+  // Availability
+  isActive      Boolean       @default(true)
+  displayOrder  Int           @default(0) @db.SmallInt
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  courseOptions MenuCourseOption[]
+  
+  @@index([category])
+  @@index([isActive])
+  @@index([name])
+}
+
+// Menu Course - A course within a package (e.g., "Soup", "Main Course", "Dessert")
+model MenuCourse {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packageId     String   @db.Uuid
+  
+  name          String   @db.VarChar(255) // "Zupa", "Danie główne", "Deser"
+  description   String?  @db.Text // "Wybierz maksymalnie 2 zupy"
+  
+  // Selection limits
+  minSelect     Int      @default(1) @db.SmallInt // Minimum dishes to select
+  maxSelect     Int      @default(1) @db.SmallInt // Maximum dishes to select
+  
+  // Behavior
+  isRequired    Boolean  @default(true) // Must be selected by client
+  
+  // UI
+  displayOrder  Int      @default(0) @db.SmallInt
+  icon          String?  @db.VarChar(50) // "soup", "meat", "cake"
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  package       MenuPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  options       MenuCourseOption[]
+  
+  @@index([packageId])
+  @@index([displayOrder])
+}
+
+// Menu Course Option - Junction: Course <-> Dish (what dishes are available in this course)
+model MenuCourseOption {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId      String   @db.Uuid
+  dishId        String   @db.Uuid
+  
+  // Price override for this specific course (null = use dish default priceModifier)
+  customPrice   Decimal? @db.Decimal(10, 2)
+  
+  // Behavior
+  isDefault     Boolean  @default(false) // Pre-selected in UI
+  isRecommended Boolean  @default(false) // Show "Polecane" badge
+  
+  displayOrder  Int      @default(0) @db.SmallInt
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  course        MenuCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dish          Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  
+  @@unique([courseId, dishId])
+  @@index([courseId])
+  @@index([dishId])
+}
+
 // Reservation Menu Snapshot - Immutable copy of selected menu
 model ReservationMenuSnapshot {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   reservationId   String   @unique @db.Uuid
   
   // Snapshot data (full JSON for history preservation)
-  menuData        Json     // { template, package, options, prices, etc. }
+  menuData        Json     // { template, package, options, courses, dishes, prices, etc. }
   
   // References (may be null if template/package deleted)
   menuTemplateId  String?  @db.Uuid
