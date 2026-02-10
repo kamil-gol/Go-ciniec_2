@@ -9,8 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useCreateDish, useUpdateDish } from '@/hooks/use-dishes'
+import { useDishCategories } from '@/hooks/use-dish-categories'
 import { toast } from 'sonner'
-import { getAllDishCategories } from '@/lib/constants/dish-categories'
 import type { Dish } from '@/lib/api/dishes-api'
 import { Loader2 } from 'lucide-react'
 
@@ -24,41 +24,47 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: 'MAIN_COURSE',
+    categoryId: '',
     allergens: '',
     isActive: true,
   })
 
   const createMutation = useCreateDish()
   const updateMutation = useUpdateDish()
-  const allCategories = getAllDishCategories()
+  const { data: categories = [] } = useDishCategories()
 
   useEffect(() => {
     if (dish) {
       setFormData({
         name: dish.name,
         description: dish.description || '',
-        category: dish.category || 'MAIN_COURSE',
+        categoryId: dish.categoryId || '',
         allergens: dish.allergens?.join(', ') || '',
         isActive: dish.isActive ?? true,
       })
     } else {
+      // Set first category as default
       setFormData({
         name: '',
         description: '',
-        category: 'MAIN_COURSE',
+        categoryId: categories.length > 0 ? categories[0].id : '',
         allergens: '',
         isActive: true,
       })
     }
-  }, [dish, open])
+  }, [dish, open, categories])
 
   const handleSubmit = async () => {
+    if (!formData.name || !formData.categoryId) {
+      toast.error('Nazwa i kategoria są wymagane')
+      return
+    }
+
     try {
       const payload = {
         name: formData.name,
         description: formData.description || null,
-        category: formData.category,
+        categoryId: formData.categoryId,
         allergens: formData.allergens ? formData.allergens.split(',').map(a => a.trim()) : [],
         isActive: formData.isActive,
       }
@@ -108,18 +114,23 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Kategoria *</Label>
-            <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+            <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
               <SelectTrigger className="h-11">
-                <SelectValue />
+                <SelectValue placeholder="Wybierz kategorię" />
               </SelectTrigger>
               <SelectContent>
-                {allCategories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.icon} {cat.label}
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {categories.length === 0 && (
+              <p className="text-xs text-amber-600">
+                ⚠️ Brak kategorii. Dodaj kategorię w sekcji "Kategorie Dań".
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -160,7 +171,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
               type="button"
               className="flex-1 h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg"
               onClick={handleSubmit}
-              disabled={isPending || !formData.name || !formData.category}
+              disabled={isPending || !formData.name || !formData.categoryId}
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
