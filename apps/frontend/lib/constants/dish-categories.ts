@@ -1,5 +1,9 @@
 /**
  * Dish Categories Constants
+ * 
+ * @deprecated This file is deprecated. Use `useDishCategories()` hook to fetch categories from API.
+ * These constants are kept for backward compatibility only.
+ * 
  * Polish translations and metadata for dish categories
  */
 
@@ -19,6 +23,9 @@ export enum DishCategory {
   OTHER = 'OTHER',
 }
 
+/**
+ * @deprecated Use `useDishCategories()` hook instead
+ */
 export const DISH_CATEGORY_LABELS: Record<DishCategory, string> = {
   [DishCategory.SOUP]: 'Zupy',
   [DishCategory.MAIN_COURSE]: 'Dania główne',
@@ -35,6 +42,9 @@ export const DISH_CATEGORY_LABELS: Record<DishCategory, string> = {
   [DishCategory.OTHER]: 'Inne',
 };
 
+/**
+ * @deprecated Use `useDishCategories()` hook instead
+ */
 export const DISH_CATEGORY_ICONS: Record<DishCategory, string> = {
   [DishCategory.SOUP]: '🍜',
   [DishCategory.MAIN_COURSE]: '🍽️',
@@ -51,6 +61,9 @@ export const DISH_CATEGORY_ICONS: Record<DishCategory, string> = {
   [DishCategory.OTHER]: '📋',
 };
 
+/**
+ * @deprecated Use `useDishCategories()` hook instead
+ */
 export const DISH_CATEGORY_COLORS: Record<DishCategory, string> = {
   [DishCategory.SOUP]: 'bg-orange-100 text-orange-700 border-orange-200',
   [DishCategory.MAIN_COURSE]: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -69,6 +82,7 @@ export const DISH_CATEGORY_COLORS: Record<DishCategory, string> = {
 
 /**
  * Get Polish label for category
+ * @deprecated Categories now come from API with their own names
  */
 export function getDishCategoryLabel(category: string): string {
   return DISH_CATEGORY_LABELS[category as DishCategory] || category;
@@ -76,6 +90,7 @@ export function getDishCategoryLabel(category: string): string {
 
 /**
  * Get icon for category
+ * @deprecated Categories now come from API with their own icons
  */
 export function getDishCategoryIcon(category: string): string {
   return DISH_CATEGORY_ICONS[category as DishCategory] || '📋';
@@ -83,6 +98,7 @@ export function getDishCategoryIcon(category: string): string {
 
 /**
  * Get color classes for category
+ * @deprecated Categories now come from API with their own colors
  */
 export function getDishCategoryColor(category: string): string {
   return DISH_CATEGORY_COLORS[category as DishCategory] || DISH_CATEGORY_COLORS[DishCategory.OTHER];
@@ -90,6 +106,7 @@ export function getDishCategoryColor(category: string): string {
 
 /**
  * Get all categories for select/filter
+ * @deprecated Use `useDishCategories()` hook to fetch categories from API
  */
 export function getAllDishCategories() {
   return Object.values(DishCategory).map(cat => ({
