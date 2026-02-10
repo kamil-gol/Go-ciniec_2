@@ -1,168 +1,283 @@
-/**
- * Menu Option Controller
- * 
- * HTTP handlers for menu option operations
- */
-
 import { Request, Response, NextFunction } from 'express';
-import { menuService } from '../services/menu.service';
-import {
-  createMenuOptionSchema,
-  updateMenuOptionSchema,
-  menuOptionQuerySchema
-} from '../validation/menu.validation';
-import { z } from 'zod';
+import { PrismaClient } from '@prisma/client';
+import logger from '../utils/logger';
 
-export class MenuOptionController {
+const prisma = new PrismaClient();
 
+/**
+ * Menu Option Categories (strict validation)
+ */
+const VALID_CATEGORIES = [
+  'DRINK',
+  'ALCOHOL',
+  'DESSERT',
+  'EXTRA_DISH',
+  'SERVICE',
+  'DECORATION',
+  'ENTERTAINMENT',
+  'OTHER',
+] as const;
+
+/**
+ * Price Types
+ */
+const VALID_PRICE_TYPES = ['PER_PERSON', 'PER_ITEM', 'FLAT'] as const;
+
+class MenuOptionController {
   /**
+   * List all menu options with filtering
    * GET /api/menu-options
-   * List all menu options with optional filters
+   * Query: category?, priceType?, isActive?, search?
    */
-  async list(req: Request, res: Response, next: NextFunction) {
+  async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validate query params
-      const filters = menuOptionQuerySchema.parse(req.query);
+      const { category, priceType, isActive, search } = req.query;
 
-      const options = await menuService.getOptions({
-        category: filters.category,
-        isActive: filters.isActive,
-        search: filters.search
+      const where: any = {};
+
+      if (category) {
+        where.category = category as string;
+      }
+
+      if (priceType) {
+        where.priceType = priceType as string;
+      }
+
+      if (isActive !== undefined) {
+        where.isActive = isActive === 'true';
+      }
+
+      if (search) {
+        where.OR = [
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+        ];
+      }
+
+      const options = await prisma.menuOption.findMany({
+        where,
+        orderBy: [
+          { displayOrder: 'asc' },
+          { name: 'asc' },
+        ],
       });
 
-      return res.status(200).json({
+      logger.info(`[MenuOption] Listed ${options.length} options`, { filters: where });
+
+      res.json({
         success: true,
         data: options,
-        count: options.length
+        count: options.length,
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          details: error.errors
-        });
-      }
+    } catch (error: any) {
+      logger.error('[MenuOption] List error:', error);
       next(error);
     }
   }
 
   /**
+   * Get single menu option by ID
    * GET /api/menu-options/:id
-   * Get single option by ID
    */
-  async getById(req: Request, res: Response, next: NextFunction) {
+  async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
 
-      const option = await menuService.getOptionById(id);
-
-      return res.status(200).json({
-        success: true,
-        data: option
+      const option = await prisma.menuOption.findUnique({
+        where: { id },
       });
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Option not found') {
-        return res.status(404).json({
+
+      if (!option) {
+        res.status(404).json({
           success: false,
-          error: 'Option not found'
+          error: 'Menu option not found',
         });
+        return;
       }
+
+      logger.info(`[MenuOption] Retrieved option: ${option.name}`);
+
+      res.json({
+        success: true,
+        data: option,
+      });
+    } catch (error: any) {
+      logger.error('[MenuOption] GetById error:', error);
       next(error);
     }
   }
 
   /**
+   * Create new menu option
    * POST /api/menu-options
-   * Create new option (ADMIN only)
    */
-  async create(req: Request, res: Response, next: NextFunction) {
+  async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validate request body
-      const data = createMenuOptionSchema.parse(req.body);
+      const {
+        name,
+        description,
+        shortDescription,
+        category,
+        priceType,
+        priceAmount,
+        allowMultiple,
+        maxQuantity,
+        icon,
+        imageUrl,
+        thumbnailUrl,
+        isActive,
+        displayOrder,
+      } = req.body;
 
-      const option = await menuService.createOption(data);
+      // Validation
+      if (!name || !category || !priceType) {
+        res.status(400).json({
+          success: false,
+          error: 'Name, category, and priceType are required',
+        });
+        return;
+      }
 
-      return res.status(201).json({
+      // Validate category
+      if (!VALID_CATEGORIES.includes(category)) {
+        res.status(400).json({
+          success: false,
+          error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`,
+        });
+        return;
+      }
+
+      // Validate priceType
+      if (!VALID_PRICE_TYPES.includes(priceType)) {
+        res.status(400).json({
+          success: false,
+          error: `Invalid priceType. Must be one of: ${VALID_PRICE_TYPES.join(', ')}`,
+        });
+        return;
+      }
+
+      const option = await prisma.menuOption.create({
+        data: {
+          name,
+          description: description || null,
+          shortDescription: shortDescription || null,
+          category,
+          priceType,
+          priceAmount: priceAmount || 0,
+          allowMultiple: allowMultiple || false,
+          maxQuantity: maxQuantity || 1,
+          icon: icon || null,
+          imageUrl: imageUrl || null,
+          thumbnailUrl: thumbnailUrl || null,
+          isActive: isActive !== undefined ? isActive : true,
+          displayOrder: displayOrder || 0,
+        },
+      });
+
+      logger.info(`[MenuOption] Created: ${option.name} (${option.id})`);
+
+      res.status(201).json({
         success: true,
         data: option,
-        message: 'Option created successfully'
+        message: 'Menu option created successfully',
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          details: error.errors
-        });
-      }
+    } catch (error: any) {
+      logger.error('[MenuOption] Create error:', error);
       next(error);
     }
   }
 
   /**
+   * Update menu option
    * PUT /api/menu-options/:id
-   * Update option (ADMIN only)
    */
-  async update(req: Request, res: Response, next: NextFunction) {
+  async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
+      const updateData = req.body;
 
-      // Validate request body
-      const data = updateMenuOptionSchema.parse(req.body);
+      // Check if exists
+      const existing = await prisma.menuOption.findUnique({
+        where: { id },
+      });
 
-      const option = await menuService.updateOption(id, data);
+      if (!existing) {
+        res.status(404).json({
+          success: false,
+          error: 'Menu option not found',
+        });
+        return;
+      }
 
-      return res.status(200).json({
+      // Validate category if provided
+      if (updateData.category && !VALID_CATEGORIES.includes(updateData.category)) {
+        res.status(400).json({
+          success: false,
+          error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`,
+        });
+        return;
+      }
+
+      // Validate priceType if provided
+      if (updateData.priceType && !VALID_PRICE_TYPES.includes(updateData.priceType)) {
+        res.status(400).json({
+          success: false,
+          error: `Invalid priceType. Must be one of: ${VALID_PRICE_TYPES.join(', ')}`,
+        });
+        return;
+      }
+
+      const option = await prisma.menuOption.update({
+        where: { id },
+        data: updateData,
+      });
+
+      logger.info(`[MenuOption] Updated: ${option.name} (${option.id})`);
+
+      res.json({
         success: true,
         data: option,
-        message: 'Option updated successfully'
+        message: 'Menu option updated successfully',
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          details: error.errors
-        });
-      }
-      if (error instanceof Error && error.message === 'Option not found') {
-        return res.status(404).json({
-          success: false,
-          error: 'Option not found'
-        });
-      }
+    } catch (error: any) {
+      logger.error('[MenuOption] Update error:', error);
       next(error);
     }
   }
 
   /**
+   * Delete menu option
    * DELETE /api/menu-options/:id
-   * Delete option (ADMIN only)
    */
-  async delete(req: Request, res: Response, next: NextFunction) {
+  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
 
-      await menuService.deleteOption(id);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Option deleted successfully'
+      // Check if exists
+      const existing = await prisma.menuOption.findUnique({
+        where: { id },
       });
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('Cannot delete')) {
-        return res.status(409).json({
+
+      if (!existing) {
+        res.status(404).json({
           success: false,
-          error: error.message
+          error: 'Menu option not found',
         });
+        return;
       }
-      if (error instanceof Error && error.message === 'Option not found') {
-        return res.status(404).json({
-          success: false,
-          error: 'Option not found'
-        });
-      }
+
+      await prisma.menuOption.delete({
+        where: { id },
+      });
+
+      logger.info(`[MenuOption] Deleted: ${existing.name} (${id})`);
+
+      res.json({
+        success: true,
+        message: 'Menu option deleted successfully',
+      });
+    } catch (error: any) {
+      logger.error('[MenuOption] Delete error:', error);
       next(error);
     }
   }
