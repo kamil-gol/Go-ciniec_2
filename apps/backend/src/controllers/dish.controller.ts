@@ -14,10 +14,10 @@ class DishController {
    */
   async getDishes(req: Request, res: Response) {
     try {
-      const { category, isActive, search } = req.query;
+      const { categoryId, isActive, search } = req.query;
 
       const filters: any = {};
-      if (category) filters.category = category as string;
+      if (categoryId) filters.categoryId = categoryId as string;
       if (isActive !== undefined) filters.isActive = isActive === 'true';
       if (search) filters.search = search as string;
 
@@ -66,13 +66,13 @@ class DishController {
   }
 
   /**
-   * GET /api/dishes/category/:category
-   * Get dishes by category
+   * GET /api/dishes/category/:categoryId
+   * Get dishes by category ID
    */
   async getDishesByCategory(req: Request, res: Response) {
     try {
-      const { category } = req.params;
-      const dishes = await dishService.findByCategory(category);
+      const { categoryId } = req.params;
+      const dishes = await dishService.findByCategory(categoryId);
 
       res.status(200).json({
         success: true,
@@ -93,20 +93,20 @@ class DishController {
    */
   async createDish(req: Request, res: Response) {
     try {
-      const { name, description, category, allergens, isActive } = req.body;
+      const { name, description, categoryId, allergens, isActive } = req.body;
 
       // Validation
-      if (!name || !category) {
+      if (!name || !categoryId) {
         return res.status(400).json({
           success: false,
-          error: 'Name and category are required',
+          error: 'Name and categoryId are required',
         });
       }
 
       const dish = await dishService.create({
         name,
         description,
-        category,
+        categoryId,
         allergens: allergens || [],
         isActive: isActive ?? true,
       });
@@ -126,6 +126,13 @@ class DishController {
         });
       }
 
+      if (error.message?.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to create dish',
@@ -140,12 +147,12 @@ class DishController {
   async updateDish(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, description, category, allergens, isActive } = req.body;
+      const { name, description, categoryId, allergens, isActive } = req.body;
 
       const dish = await dishService.update(id, {
         name,
         description,
-        category,
+        categoryId,
         allergens,
         isActive,
       });
