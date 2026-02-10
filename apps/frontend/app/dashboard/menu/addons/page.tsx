@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface AddonGroup {
   id: string;
   name: string;
@@ -43,7 +45,7 @@ export default function AddonGroupsPage() {
 
   const fetchGroups = async () => {
     try {
-      const res = await fetch('/api/addon-groups');
+      const res = await fetch(`${API_URL}/api/addon-groups`);
       const data = await res.json();
       if (data.success) {
         setGroups(data.data);
@@ -87,8 +89,8 @@ export default function AddonGroupsPage() {
   const handleSave = async () => {
     try {
       const url = editingId === 'new' 
-        ? '/api/addon-groups' 
-        : `/api/addon-groups/${editingId}`;
+        ? `${API_URL}/api/addon-groups` 
+        : `${API_URL}/api/addon-groups/${editingId}`;
       
       const method = editingId === 'new' ? 'POST' : 'PUT';
 
@@ -123,7 +125,7 @@ export default function AddonGroupsPage() {
     if (!confirm('Czy na pewno chcesz usunąć tę grupę dodatków?')) return;
 
     try {
-      const res = await fetch(`/api/addon-groups/${id}`, {
+      const res = await fetch(`${API_URL}/api/addon-groups/${id}`, {
         method: 'DELETE',
       });
 
