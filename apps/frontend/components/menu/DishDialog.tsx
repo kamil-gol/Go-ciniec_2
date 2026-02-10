@@ -33,26 +33,29 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
   const updateMutation = useUpdateDish()
   const { data: categories = [] } = useDishCategories()
 
+  // Initialize form when dialog opens or dish changes
   useEffect(() => {
-    if (dish) {
-      setFormData({
-        name: dish.name,
-        description: dish.description || '',
-        categoryId: dish.categoryId || '',
-        allergens: dish.allergens?.join(', ') || '',
-        isActive: dish.isActive ?? true,
-      })
-    } else {
-      // Set first category as default
-      setFormData({
-        name: '',
-        description: '',
-        categoryId: categories.length > 0 ? categories[0].id : '',
-        allergens: '',
-        isActive: true,
-      })
+    if (open) {
+      if (dish) {
+        setFormData({
+          name: dish.name,
+          description: dish.description || '',
+          categoryId: dish.categoryId || '',
+          allergens: dish.allergens?.join(', ') || '',
+          isActive: dish.isActive ?? true,
+        })
+      } else {
+        // Set first category as default only when creating new dish
+        setFormData({
+          name: '',
+          description: '',
+          categoryId: categories.length > 0 ? categories[0].id : '',
+          allergens: '',
+          isActive: true,
+        })
+      }
     }
-  }, [dish, open, categories])
+  }, [dish, open]) // Removed categories from deps to prevent infinite loop
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.categoryId) {
