@@ -153,9 +153,23 @@ export const menuApi = {
   // ────────────────────────────────────────
 
   /**
-   * Select menu for reservation
+   * Select menu for reservation (initial selection)
    */
   selectMenu: async (
+    reservationId: string,
+    selection: MenuSelectionInput
+  ): Promise<ApiResponse<ReservationMenuResponse>> => {
+    const { data } = await api.post<ApiResponse<ReservationMenuResponse>>(
+      `/reservations/${reservationId}/select-menu`,
+      selection
+    );
+    return data;
+  },
+
+  /**
+   * Update menu selection for reservation
+   */
+  updateMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
