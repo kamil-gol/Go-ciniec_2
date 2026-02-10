@@ -13,27 +13,27 @@ const router = Router();
 /**
  * @route   GET /api/dishes
  * @desc    Get all dishes with optional filters
- * @access  Authenticated (all roles)
+ * @access  Public (no auth required for viewing)
  */
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', (req, res) => {
   dishController.getDishes(req, res);
 });
 
 /**
  * @route   GET /api/dishes/:id
  * @desc    Get dish by ID
- * @access  Authenticated (all roles)
+ * @access  Public (no auth required for viewing)
  */
-router.get('/:id', authMiddleware, (req, res) => {
+router.get('/:id', (req, res) => {
   dishController.getDishById(req, res);
 });
 
 /**
  * @route   GET /api/dishes/category/:category
  * @desc    Get dishes by category
- * @access  Authenticated (all roles)
+ * @access  Public (no auth required for viewing)
  */
-router.get('/category/:category', authMiddleware, (req, res) => {
+router.get('/category/:category', (req, res) => {
   dishController.getDishesByCategory(req, res);
 });
 
