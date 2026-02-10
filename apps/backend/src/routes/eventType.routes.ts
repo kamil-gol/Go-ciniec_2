@@ -22,18 +22,18 @@ router.post('/', authMiddleware, requireAdmin, (req, res) => {
 /**
  * @route   GET /api/event-types
  * @desc    Get all event types
- * @access  Authenticated (all roles)
+ * @access  Public (no auth required)
  */
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', (req, res) => {
   eventTypeController.getEventTypes(req, res);
 });
 
 /**
  * @route   GET /api/event-types/:id
  * @desc    Get event type by ID
- * @access  Authenticated (all roles)
+ * @access  Public (no auth required)
  */
-router.get('/:id', authMiddleware, (req, res) => {
+router.get('/:id', (req, res) => {
   eventTypeController.getEventTypeById(req, res);
 });
 
