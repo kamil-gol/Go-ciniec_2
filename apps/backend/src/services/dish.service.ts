@@ -3,12 +3,14 @@
  * Business logic for dish management
  */
 
-import { PrismaClient, Dish } from '@prisma/client';
+import { PrismaClient, Dish, DishCategory } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export type DishWithCategory = Dish & { category: DishCategory };
+
 export interface DishFilters {
-  category?: string;
+  categoryId?: string;
   isActive?: boolean;
   search?: string;
 }
@@ -16,7 +18,7 @@ export interface DishFilters {
 export interface CreateDishInput {
   name: string;
   description?: string | null;
-  category: string;
+  categoryId: string;
   allergens?: string[];
   isActive?: boolean;
 }
@@ -27,11 +29,11 @@ class DishService {
   /**
    * Get all dishes with optional filters
    */
-  async findAll(filters?: DishFilters): Promise<Dish[]> {
+  async findAll(filters?: DishFilters): Promise<DishWithCategory[]> {
     const where: any = {};
 
-    if (filters?.category) {
-      where.category = filters.category;
+    if (filters?.categoryId) {
+      where.categoryId = filters.categoryId;
     }
 
     if (filters?.isActive !== undefined) {
@@ -47,8 +49,11 @@ class DishService {
 
     return prisma.dish.findMany({
       where,
+      include: {
+        category: true,
+      },
       orderBy: [
-        { category: 'asc' },
+        { category: { displayOrder: 'asc' } },
         { name: 'asc' },
       ],
     });
@@ -57,18 +62,24 @@ class DishService {
   /**
    * Get single dish by ID
    */
-  async findOne(id: string): Promise<Dish | null> {
+  async findOne(id: string): Promise<DishWithCategory | null> {
     return prisma.dish.findUnique({
       where: { id },
+      include: {
+        category: true,
+      },
     });
   }
 
   /**
-   * Get dishes by category
+   * Get dishes by category ID
    */
-  async findByCategory(category: string): Promise<Dish[]> {
+  async findByCategory(categoryId: string): Promise<DishWithCategory[]> {
     return prisma.dish.findMany({
-      where: { category },
+      where: { categoryId },
+      include: {
+        category: true,
+      },
       orderBy: { name: 'asc' },
     });
   }
@@ -76,7 +87,7 @@ class DishService {
   /**
    * Create new dish
    */
-  async create(data: CreateDishInput): Promise<Dish> {
+  async create(data: CreateDishInput): Promise<DishWithCategory> {
     // Check if dish with same name already exists
     const existing = await prisma.dish.findFirst({
       where: { name: data.name },
@@ -86,13 +97,25 @@ class DishService {
       throw new Error(`Dish with name "${data.name}" already exists`);
     }
 
+    // Verify category exists
+    const category = await prisma.dishCategory.findUnique({
+      where: { id: data.categoryId },
+    });
+
+    if (!category) {
+      throw new Error(`Category with ID ${data.categoryId} not found`);
+    }
+
     return prisma.dish.create({
       data: {
         name: data.name,
         description: data.description,
-        category: data.category,
+        categoryId: data.categoryId,
         allergens: data.allergens || [],
         isActive: data.isActive ?? true,
+      },
+      include: {
+        category: true,
       },
     });
   }
@@ -100,7 +123,7 @@ class DishService {
   /**
    * Update existing dish
    */
-  async update(id: string, data: UpdateDishInput): Promise<Dish> {
+  async update(id: string, data: UpdateDishInput): Promise<DishWithCategory> {
     // Check if dish exists
     const existing = await this.findOne(id);
     if (!existing) {
@@ -121,9 +144,23 @@ class DishService {
       }
     }
 
+    // If updating categoryId, verify it exists
+    if (data.categoryId) {
+      const category = await prisma.dishCategory.findUnique({
+        where: { id: data.categoryId },
+      });
+
+      if (!category) {
+        throw new Error(`Category with ID ${data.categoryId} not found`);
+      }
+    }
+
     return prisma.dish.update({
       where: { id },
       data,
+      include: {
+        category: true,
+      },
     });
   }
 
