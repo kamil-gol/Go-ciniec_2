@@ -13,3 +13,11 @@ export { PriceBreakdown, PriceBreakdownSkeleton } from './PriceBreakdown';
 // Feature Components
 export { MenuSelectionFlow } from './MenuSelectionFlow';
 export { MenuSummary } from './MenuSummary';
+
+// Dish Management Components
+export { DishLibraryManager } from './DishLibraryManager';
+export { CreateDishDialog } from './CreateDishDialog';
+
+// Course Management Components
+export { CourseBuilderDialog } from './CourseBuilderDialog';
+export { DishAssignmentDialog } from './DishAssignmentDialog';
