@@ -1,4 +1,10 @@
-import apiClient from './api-client';
+/**
+ * Menu Options API Client
+ * 
+ * Type-safe API client for menu options endpoints
+ */
+
+import { apiClient } from '@/lib/api-client';
 
 export interface MenuOption {
   id: string;
@@ -58,38 +64,48 @@ export interface MenuOptionFilters {
   search?: string;
 }
 
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+function buildQueryParams(params: Record<string, any>): string {
+  const query = new URLSearchParams();
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, String(value));
+    }
+  });
+  
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
 /**
  * Get all menu options with optional filtering
  */
 export async function getMenuOptions(filters?: MenuOptionFilters): Promise<MenuOption[]> {
-  const params = new URLSearchParams();
-  
-  if (filters?.category) params.append('category', filters.category);
-  if (filters?.priceType) params.append('priceType', filters.priceType);
-  if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
-  if (filters?.search) params.append('search', filters.search);
-  
-  const queryString = params.toString();
-  const url = queryString ? `/menu-options?${queryString}` : '/menu-options';
-  
-  const response = await apiClient.get(url);
-  return response.data.data;
+  const query = filters ? buildQueryParams(filters) : '';
+  const { data } = await apiClient.get<ApiResponse<MenuOption[]>>(`/menu-options${query}`);
+  return data.data;
 }
 
 /**
  * Get single menu option by ID
  */
 export async function getMenuOptionById(id: string): Promise<MenuOption> {
-  const response = await apiClient.get(`/menu-options/${id}`);
-  return response.data.data;
+  const { data } = await apiClient.get<ApiResponse<MenuOption>>(`/menu-options/${id}`);
+  return data.data;
 }
 
 /**
  * Create new menu option
  */
-export async function createMenuOption(data: CreateMenuOptionInput): Promise<MenuOption> {
-  const response = await apiClient.post('/menu-options', data);
-  return response.data.data;
+export async function createMenuOption(input: CreateMenuOptionInput): Promise<MenuOption> {
+  const { data } = await apiClient.post<ApiResponse<MenuOption>>('/menu-options', input);
+  return data.data;
 }
 
 /**
@@ -97,10 +113,10 @@ export async function createMenuOption(data: CreateMenuOptionInput): Promise<Men
  */
 export async function updateMenuOption(
   id: string,
-  data: UpdateMenuOptionInput
+  input: UpdateMenuOptionInput
 ): Promise<MenuOption> {
-  const response = await apiClient.put(`/menu-options/${id}`, data);
-  return response.data.data;
+  const { data } = await apiClient.put<ApiResponse<MenuOption>>(`/menu-options/${id}`, input);
+  return data.data;
 }
 
 /**
