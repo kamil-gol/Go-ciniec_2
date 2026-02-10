@@ -6,9 +6,9 @@
 
 import { z } from 'zod';
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // CORE TYPES
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export interface EventType {
   id: string;
@@ -57,6 +57,7 @@ export interface MenuPackage {
   updatedAt?: string;
   menuTemplate?: MenuTemplate;
   packageOptions?: MenuPackageOption[];
+  courses?: MenuCourse[]; // NEW: Courses in this package
 }
 
 export interface MenuOption {
@@ -89,18 +90,101 @@ export interface MenuPackageOption {
   option?: MenuOption;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// 🍽️ DISH LIBRARY & MENU COURSES (NEW)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export enum DishCategory {
+  SOUP = 'SOUP',
+  MAIN_COURSE = 'MAIN_COURSE',
+  MEAT = 'MEAT',
+  SIDE_DISH = 'SIDE_DISH',
+  SALAD = 'SALAD',
+  APPETIZER = 'APPETIZER',
+  DESSERT = 'DESSERT',
+  DRINK = 'DRINK',
+  COLD_CUTS = 'COLD_CUTS',
+  SNACK = 'SNACK',
+  BREAKFAST = 'BREAKFAST',
+  OTHER = 'OTHER',
+}
+
+export const DISH_CATEGORY_LABELS: Record<DishCategory, string> = {
+  [DishCategory.SOUP]: 'Zupy',
+  [DishCategory.MAIN_COURSE]: 'Dania główne',
+  [DishCategory.MEAT]: 'Mięsa',
+  [DishCategory.SIDE_DISH]: 'Dodatki',
+  [DishCategory.SALAD]: 'Sałatki',
+  [DishCategory.APPETIZER]: 'Przystawki',
+  [DishCategory.DESSERT]: 'Desery',
+  [DishCategory.DRINK]: 'Napoje',
+  [DishCategory.COLD_CUTS]: 'Zimna płyta',
+  [DishCategory.SNACK]: 'Podwieczorek',
+  [DishCategory.BREAKFAST]: 'Śniadanie',
+  [DishCategory.OTHER]: 'Inne',
+};
+
+export interface Dish {
+  id: string;
+  name: string;
+  description?: string;
+  category: DishCategory;
+  allergens: string[];
+  priceModifier: string | number;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuCourse {
+  id: string;
+  packageId: string;
+  name: string;
+  description?: string;
+  minSelect: number;
+  maxSelect: number;
+  isRequired: boolean;
+  displayOrder: number;
+  icon?: string;
+  createdAt: string;
+  updatedAt: string;
+  options?: MenuCourseOption[];
+}
+
+export interface MenuCourseOption {
+  id: string;
+  courseId: string;
+  dishId: string;
+  customPrice?: string | number;
+  isDefault: boolean;
+  isRecommended: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  dish?: Dish;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // RESERVATION MENU SELECTION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export interface SelectedOption {
   optionId: string;
   quantity: number;
 }
 
+export interface SelectedDish {
+  courseId: string;
+  dishIds: string[]; // Array because can select multiple dishes per course
+}
+
 export interface MenuSelectionInput {
   packageId: string;
   selectedOptions?: SelectedOption[];
+  selectedDishes?: SelectedDish[]; // NEW: Selected dishes from courses
 }
 
 export interface ReservationMenuSnapshot {
@@ -132,11 +216,20 @@ export interface MenuSnapshotData {
     priceAmount: number;
     quantity: number;
   }[];
+  selectedCourses?: { // NEW: Snapshot of selected dishes
+    courseId: string;
+    courseName: string;
+    dishes: {
+      dishId: string;
+      dishName: string;
+      priceModifier: number;
+    }[];
+  }[];
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // PRICE BREAKDOWN
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export interface PriceBreakdown {
   packageCost: {
@@ -173,9 +266,9 @@ export interface ReservationMenuResponse {
   priceBreakdown: PriceBreakdown;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // API RESPONSE WRAPPERS
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -190,9 +283,9 @@ export interface ApiError {
   details?: any[];
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // FILTERS & QUERIES
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export interface MenuTemplateFilters {
   eventTypeId?: string;
@@ -206,9 +299,15 @@ export interface MenuOptionFilters {
   search?: string;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+export interface DishFilters {
+  category?: DishCategory;
+  isActive?: boolean;
+  search?: string;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // ZOD SCHEMAS FOR VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export const menuSelectionSchema = z.object({
   packageId: z.string().uuid('Wybierz pakiet'),
@@ -216,6 +315,12 @@ export const menuSelectionSchema = z.object({
     z.object({
       optionId: z.string().uuid(),
       quantity: z.number().int().positive().default(1),
+    })
+  ).optional().default([]),
+  selectedDishes: z.array(
+    z.object({
+      courseId: z.string().uuid(),
+      dishIds: z.array(z.string().uuid()),
     })
   ).optional().default([]),
 });
@@ -229,14 +334,15 @@ export const guestCountsSchema = z.object({
 export type MenuSelectionFormData = z.infer<typeof menuSelectionSchema>;
 export type GuestCountsFormData = z.infer<typeof guestCountsSchema>;
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // UI STATE TYPES
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export interface MenuSelectionState {
   selectedTemplate?: MenuTemplate;
   selectedPackage?: MenuPackage;
   selectedOptions: Map<string, number>; // optionId -> quantity
+  selectedDishes: Map<string, string[]>; // courseId -> dishIds
   guestCounts: {
     adults: number;
     children: number;
@@ -260,6 +366,15 @@ export interface MenuCart {
     priceAmount: number;
     quantity: number;
   }[];
+  selectedCourses: {
+    courseId: string;
+    courseName: string;
+    dishes: {
+      id: string;
+      name: string;
+      priceModifier: number;
+    }[];
+  }[];
   guestCounts: {
     adults: number;
     children: number;
@@ -268,9 +383,9 @@ export interface MenuCart {
   totalPrice: number;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // HELPER TYPE GUARDS
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export function isApiError(response: any): response is ApiError {
   return response && response.success === false && 'error' in response;
@@ -280,9 +395,9 @@ export function isApiResponse<T>(response: any): response is ApiResponse<T> {
   return response && response.success === true && 'data' in response;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export const OPTION_CATEGORIES = [
   'Alkohol',
