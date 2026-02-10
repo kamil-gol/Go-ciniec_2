@@ -9,18 +9,20 @@ import {
   TrendingUp, Users, Calendar, ArrowRight, Plus
 } from 'lucide-react'
 import Link from 'next/link'
-import { useMenuTemplates, useMenuPackages, useDishes } from '@/hooks/use-menu'
+import { useMenuTemplates } from '@/hooks/use-menu'
+import { useDishes } from '@/hooks/use-dishes'
 
 export default function MenuDashboardPage() {
   const { data: templates = [] } = useMenuTemplates()
-  const { data: packages = [] } = useMenuPackages()
   const { data: dishes = [] } = useDishes()
 
-  // Statystyki
+  // Statystyki - pakiety z wszystkich szablonów
+  const allPackages = templates.flatMap(t => t.packages || [])
+
   const stats = {
     dishes: dishes.length,
     templates: templates.length,
-    packages: packages.length,
+    packages: allPackages.length,
     activeTemplates: templates.filter(t => t.isActive).length,
   }
 
