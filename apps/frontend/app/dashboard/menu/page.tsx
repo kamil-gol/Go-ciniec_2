@@ -23,6 +23,10 @@ import {
 import { CreateTemplateDialog } from '@/components/menu/CreateTemplateDialog'
 import { CreatePackageDialog } from '@/components/menu/CreatePackageDialog'
 import { CreateOptionDialog } from '@/components/menu/CreateOptionDialog'
+import { EditTemplateDialog } from '@/components/menu/EditTemplateDialog'
+import { EditPackageDialog } from '@/components/menu/EditPackageDialog'
+import { EditOptionDialog } from '@/components/menu/EditOptionDialog'
+import type { MenuTemplate, MenuPackage, MenuOption } from '@/types/menu.types'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 
@@ -30,10 +34,20 @@ export default function MenuManagementPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   
-  // Dialog states
+  // Create Dialog states
   const [createTemplateOpen, setCreateTemplateOpen] = useState(false)
   const [createPackageOpen, setCreatePackageOpen] = useState(false)
   const [createOptionOpen, setCreateOptionOpen] = useState(false)
+
+  // Edit Dialog states
+  const [editTemplateOpen, setEditTemplateOpen] = useState(false)
+  const [editPackageOpen, setEditPackageOpen] = useState(false)
+  const [editOptionOpen, setEditOptionOpen] = useState(false)
+
+  // Edit entity states
+  const [editingTemplate, setEditingTemplate] = useState<MenuTemplate | null>(null)
+  const [editingPackage, setEditingPackage] = useState<MenuPackage | null>(null)
+  const [editingOption, setEditingOption] = useState<MenuOption | null>(null)
 
   const { data: templates = [], isLoading: loadingTemplates } = useMenuTemplates()
   const { data: packages = [], isLoading: loadingPackages } = useMenuPackages(selectedTemplateId)
@@ -56,10 +70,22 @@ export default function MenuManagementPage() {
 
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
 
-  const handleEdit = (type: string, id: string, name: string, e: React.MouseEvent) => {
+  const handleEditTemplate = (template: MenuTemplate, e: React.MouseEvent) => {
     e.stopPropagation()
-    alert(`Edycja: ${name}\n\nFunkcja edycji jest w przygotowaniu.\nID: ${id}`)
-    // TODO: Open edit dialog or navigate to edit page
+    setEditingTemplate(template)
+    setEditTemplateOpen(true)
+  }
+
+  const handleEditPackage = (pkg: MenuPackage, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingPackage(pkg)
+    setEditPackageOpen(true)
+  }
+
+  const handleEditOption = (option: MenuOption, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingOption(option)
+    setEditOptionOpen(true)
   }
 
   const handleDeleteTemplate = async (id: string, name: string, e: React.MouseEvent) => {
@@ -106,7 +132,7 @@ export default function MenuManagementPage() {
 
   return (
     <>
-      {/* Dialogs */}
+      {/* Create Dialogs */}
       <CreateTemplateDialog 
         open={createTemplateOpen} 
         onOpenChange={setCreateTemplateOpen} 
@@ -120,6 +146,23 @@ export default function MenuManagementPage() {
       <CreateOptionDialog 
         open={createOptionOpen} 
         onOpenChange={setCreateOptionOpen} 
+      />
+
+      {/* Edit Dialogs */}
+      <EditTemplateDialog 
+        open={editTemplateOpen} 
+        onOpenChange={setEditTemplateOpen}
+        template={editingTemplate}
+      />
+      <EditPackageDialog 
+        open={editPackageOpen} 
+        onOpenChange={setEditPackageOpen}
+        pkg={editingPackage}
+      />
+      <EditOptionDialog 
+        open={editOptionOpen} 
+        onOpenChange={setEditOptionOpen}
+        option={editingOption}
       />
 
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -323,7 +366,7 @@ export default function MenuManagementPage() {
                             size="sm" 
                             variant="outline" 
                             className="flex-1 border-2 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors"
-                            onClick={(e) => handleEdit('szablon', template.id, template.name, e)}
+                            onClick={(e) => handleEditTemplate(template, e)}
                           >
                             <Edit className="h-4 w-4 mr-1" />
                             Edytuj
@@ -447,7 +490,7 @@ export default function MenuManagementPage() {
                               size="sm" 
                               variant="outline" 
                               className="flex-1 border-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
-                              onClick={(e) => handleEdit('pakiet', pkg.id, pkg.name, e)}
+                              onClick={(e) => handleEditPackage(pkg, e)}
                             >
                               <Edit className="h-4 w-4 mr-1" />
                               Edytuj
@@ -548,7 +591,7 @@ export default function MenuManagementPage() {
                               size="sm" 
                               variant="outline" 
                               className="flex-1 border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-colors"
-                              onClick={(e) => handleEdit('opcję', option.id, option.name, e)}
+                              onClick={(e) => handleEditOption(option, e)}
                             >
                               <Edit className="h-4 w-4 mr-1" />
                               Edytuj
