@@ -10,8 +10,7 @@ import { Plus, Search, Edit, Trash2, Loader2, ChefHat } from 'lucide-react'
 import { useDishes, useDeleteDish } from '@/hooks/use-dishes'
 import { DishDialog } from './DishDialog'
 import { toast } from 'sonner'
-import { getDishCategoryLabel, getDishCategoryIcon, DishCategory } from '@/lib/constants/dish-categories'
-import type { Dish } from '@/lib/api/dishes-api'
+import type { Dish } from '@/types'
 
 interface DishLibraryManagerProps {
   searchQuery: string
@@ -21,7 +20,7 @@ interface DishLibraryManagerProps {
 export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryManagerProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingDish, setEditingDish] = useState<Dish | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('ALL')
   
   const { data: dishes = [], isLoading } = useDishes()
   const deleteDishMutation = useDeleteDish()
@@ -30,24 +29,29 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: dishes.length }
     dishes.forEach(dish => {
-      const cat = dish.category || 'OTHER'
-      counts[cat] = (counts[cat] || 0) + 1
+      const categoryId = dish.category?.id || 'OTHER'
+      counts[categoryId] = (counts[categoryId] || 0) + 1
     })
     return counts
   }, [dishes])
 
   // Get unique categories from dishes
   const availableCategories = useMemo(() => {
-    const cats = new Set(dishes.map(d => d.category))
-    return Array.from(cats).sort()
+    const categoryMap = new Map()
+    dishes.forEach(dish => {
+      if (dish.category && !categoryMap.has(dish.category.id)) {
+        categoryMap.set(dish.category.id, dish.category)
+      }
+    })
+    return Array.from(categoryMap.values()).sort((a, b) => a.displayOrder - b.displayOrder)
   }, [dishes])
 
   const filteredDishes = useMemo(() => {
     let result = dishes
 
     // Filter by category
-    if (selectedCategory !== 'ALL') {
-      result = result.filter(dish => dish.category === selectedCategory)
+    if (selectedCategoryId !== 'ALL') {
+      result = result.filter(dish => dish.category?.id === selectedCategoryId)
     }
 
     // Filter by search
@@ -59,7 +63,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
     }
 
     return result
-  }, [dishes, selectedCategory, searchQuery])
+  }, [dishes, selectedCategoryId, searchQuery])
 
   const handleEdit = (dish: Dish) => {
     setEditingDish(dish)
@@ -121,10 +125,10 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
             </h3>
             <div className="flex flex-wrap gap-2">
               <Button
-                variant={selectedCategory === 'ALL' ? 'default' : 'outline'}
+                variant={selectedCategoryId === 'ALL' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setSelectedCategory('ALL')}
-                className={selectedCategory === 'ALL' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600' : ''}
+                onClick={() => setSelectedCategoryId('ALL')}
+                className={selectedCategoryId === 'ALL' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600' : ''}
               >
                 Wszystkie
                 <Badge variant="secondary" className="ml-2">
@@ -133,15 +137,15 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
               </Button>
               {availableCategories.map((category) => (
                 <Button
-                  key={category}
-                  variant={selectedCategory === category ? 'default' : 'outline'}
+                  key={category.id}
+                  variant={selectedCategoryId === category.id ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setSelectedCategory(category)}
-                  className={selectedCategory === category ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600' : ''}
+                  onClick={() => setSelectedCategoryId(category.id)}
+                  className={selectedCategoryId === category.id ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600' : ''}
                 >
-                  {getDishCategoryIcon(category)} {getDishCategoryLabel(category)}
+                  {category.icon} {category.name}
                   <Badge variant="secondary" className="ml-2">
-                    {categoryCounts[category] || 0}
+                    {categoryCounts[category.id] || 0}
                   </Badge>
                 </Button>
               ))}
@@ -181,8 +185,8 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Wyświetlono <span className="font-semibold text-foreground">{filteredDishes.length}</span> {filteredDishes.length === 1 ? 'danie' : 'dań'}
-                {selectedCategory !== 'ALL' && (
-                  <span> w kategorii <span className="font-semibold text-foreground">{getDishCategoryLabel(selectedCategory)}</span></span>
+                {selectedCategoryId !== 'ALL' && (
+                  <span> w kategorii <span className="font-semibold text-foreground">{availableCategories.find(c => c.id === selectedCategoryId)?.name}</span></span>
                 )}
               </p>
             </div>
@@ -200,7 +204,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
                             <ChefHat className="h-6 w-6 text-white" />
                           </div>
                           <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
-                            {getDishCategoryIcon(dish.category)} {getDishCategoryLabel(dish.category)}
+                            {dish.category?.icon} {dish.category?.name}
                           </Badge>
                         </div>
                         {!dish.isActive && (
