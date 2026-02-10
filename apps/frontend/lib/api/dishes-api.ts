@@ -4,7 +4,7 @@
  * Type-safe API client for dishes endpoints
  */
 
-import { apiClient } from './menu-api';
+import { apiClient } from '@/lib/api-client';
 import type { Dish, CreateDishInput, UpdateDishInput } from '@/types';
 
 export interface DishFilters {
