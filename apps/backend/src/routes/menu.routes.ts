@@ -9,7 +9,6 @@ import { menuTemplateController } from '../controllers/menuTemplate.controller';
 import { menuPackageController } from '../controllers/menuPackage.controller';
 import { menuOptionController } from '../controllers/menuOption.controller';
 import { reservationMenuController } from '../controllers/reservationMenu.controller';
-import { dishController } from '../controllers/dish.controller';
 import { menuCourseController } from '../controllers/menuCourse.controller';
 import { packageCategoryController } from '../controllers/packageCategory.controller';
 import { addonGroupController } from '../controllers/addonGroup.controller';
@@ -423,70 +422,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════════════
-// 🍽️ DISH LIBRARY (NEW)
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * @route   GET /api/dishes
- * @desc    List all dishes in library (with optional filters)
- * @query   category?: DishCategory, isActive?: boolean, search?: string
- * @access  Public
- */
-router.get(
-  '/dishes',
-  dishController.list.bind(dishController)
-);
-
-/**
- * @route   GET /api/dishes/:id
- * @desc    Get single dish by ID
- * @params  id: string
- * @access  Public
- */
-router.get(
-  '/dishes/:id',
-  dishController.getById.bind(dishController)
-);
-
-/**
- * @route   POST /api/dishes
- * @desc    Create new dish
- * @body    CreateDishInput
- * @access  Admin only
- */
-router.post(
-  '/dishes',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  dishController.create.bind(dishController)
-);
-
-/**
- * @route   PUT /api/dishes/:id
- * @desc    Update dish
- * @params  id: string
- * @body    UpdateDishInput
- * @access  Admin only
- */
-router.put(
-  '/dishes/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  dishController.update.bind(dishController)
-);
-
-/**
- * @route   DELETE /api/dishes/:id
- * @desc    Delete dish
- * @params  id: string
- * @access  Admin only
- */
-router.delete(
-  '/dishes/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  dishController.delete.bind(dishController)
-);
-
-// ═══════════════════════════════════════════════════════════════
-// 🍽️ MENU COURSES (NEW)
+// 🍽️ MENU COURSES
 // ═══════════════════════════════════════════════════════════════
 
 /**
@@ -626,6 +562,10 @@ router.delete(
   // authenticate,  // TODO: Uncomment when auth ready
   reservationMenuController.deleteMenu.bind(reservationMenuController)
 );
+
+// ═══════════════════════════════════════════════════════════════
+// NOTE: Dishes routes moved to /routes/dish.routes.ts
+// ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORT ROUTER
