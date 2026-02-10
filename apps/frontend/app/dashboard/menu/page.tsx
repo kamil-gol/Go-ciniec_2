@@ -9,9 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   UtensilsCrossed, Plus, Search, Filter, Edit, Trash2,
   Package, Sparkles, ShoppingCart, Calendar, DollarSign,
-  Users, CheckCircle2, Clock, Palette
+  Users, CheckCircle2, Clock, Palette, Loader2
 } from 'lucide-react'
-import { useMenuTemplates, useMenuPackages, useMenuOptions, useEventTypes } from '@/hooks/use-menu'
+import { 
+  useMenuTemplates, 
+  useMenuPackages, 
+  useMenuOptions, 
+  useEventTypes,
+  useDeleteTemplate,
+  useDeletePackage,
+  useDeleteOption
+} from '@/hooks/use-menu'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 
@@ -23,6 +31,11 @@ export default function MenuManagementPage() {
   const { data: packages = [], isLoading: loadingPackages } = useMenuPackages(selectedTemplateId)
   const { data: options = [], isLoading: loadingOptions } = useMenuOptions()
   const { data: eventTypes = [], isLoading: loadingEventTypes } = useEventTypes()
+
+  // Mutations
+  const deleteTemplateMutation = useDeleteTemplate()
+  const deletePackageMutation = useDeletePackage()
+  const deleteOptionMutation = useDeleteOption()
 
   const filteredTemplates = templates.filter(t => 
     t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,16 +49,48 @@ export default function MenuManagementPage() {
   const handleEdit = (type: string, id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
     alert(`Edycja: ${name}\n\nFunkcja edycji jest w przygotowaniu.\nID: ${id}`)
-    // TODO: Navigate to edit page or open edit dialog
-    // router.push(`/dashboard/menu/${type}/${id}/edit`)
+    // TODO: Open edit dialog or navigate to edit page
   }
 
-  const handleDelete = (type: string, id: string, name: string, e: React.MouseEvent) => {
+  const handleDeleteTemplate = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm(`Czy na pewno chcesz usunąć: ${name}?\n\nTa operacja jest nieodwracalna!`)) {
-      alert(`Usuwanie: ${name}\n\nFunkcja usuwania jest w przygotowaniu.\nID: ${id}`)
-      // TODO: Call delete mutation
-      // deleteTemplateMutation.mutate(id)
+    if (!confirm(`Czy na pewno chcesz usunąć szablon:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) {
+      return
+    }
+
+    try {
+      await deleteTemplateMutation.mutateAsync(id)
+      alert(`✅ Usunięto szablon: ${name}`)
+    } catch (error: any) {
+      alert(`❌ Błąd podczas usuwania:\n${error.error || 'Nieznany błąd'}`)
+    }
+  }
+
+  const handleDeletePackage = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm(`Czy na pewno chcesz usunąć pakiet:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) {
+      return
+    }
+
+    try {
+      await deletePackageMutation.mutateAsync({ id, templateId: selectedTemplateId! })
+      alert(`✅ Usunięto pakiet: ${name}`)
+    } catch (error: any) {
+      alert(`❌ Błąd podczas usuwania:\n${error.error || 'Nieznany błąd'}`)
+    }
+  }
+
+  const handleDeleteOption = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm(`Czy na pewno chcesz usunąć opcję:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) {
+      return
+    }
+
+    try {
+      await deleteOptionMutation.mutateAsync(id)
+      alert(`✅ Usunięto opcję: ${name}`)
+    } catch (error: any) {
+      alert(`❌ Błąd podczas usuwania:\n${error.error || 'Nieznany błąd'}`)
     }
   }
 
@@ -257,9 +302,14 @@ export default function MenuManagementPage() {
                           size="sm" 
                           variant="outline" 
                           className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
-                          onClick={(e) => handleDelete('szablon', template.id, template.name, e)}
+                          onClick={(e) => handleDeleteTemplate(template.id, template.name, e)}
+                          disabled={deleteTemplateMutation.isPending}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deleteTemplateMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </CardContent>
@@ -363,9 +413,14 @@ export default function MenuManagementPage() {
                           size="sm" 
                           variant="outline" 
                           className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
-                          onClick={(e) => handleDelete('pakiet', pkg.id, pkg.name, e)}
+                          onClick={(e) => handleDeletePackage(pkg.id, pkg.name, e)}
+                          disabled={deletePackageMutation.isPending}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletePackageMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </CardContent>
@@ -445,9 +500,14 @@ export default function MenuManagementPage() {
                           size="sm" 
                           variant="outline" 
                           className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
-                          onClick={(e) => handleDelete('opcję', option.id, option.name, e)}
+                          onClick={(e) => handleDeleteOption(option.id, option.name, e)}
+                          disabled={deleteOptionMutation.isPending}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deleteOptionMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </CardContent>
