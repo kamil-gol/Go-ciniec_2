@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Edit, Trash2, Loader2, Tags, ArrowLeft } from 'lucide-react'
+import { Plus, Edit, Trash2, Loader2, Tags, ArrowLeft, Info } from 'lucide-react'
 import Link from 'next/link'
 import { useDishCategories, useCreateDishCategory, useUpdateDishCategory, useDeleteDishCategory } from '@/hooks/use-dish-categories'
 import { toast } from 'sonner'
@@ -21,6 +21,14 @@ export default function DishCategoriesPage() {
   const createMutation = useCreateDishCategory()
   const updateMutation = useUpdateDishCategory()
   const deleteMutation = useDeleteDishCategory()
+
+  // Sortuj kategorie po displayOrder, potem po nazwie
+  const sortedCategories = [...categories].sort((a, b) => {
+    if (a.displayOrder !== b.displayOrder) {
+      return a.displayOrder - b.displayOrder
+    }
+    return a.name.localeCompare(b.name)
+  })
 
   const [formData, setFormData] = useState({
     slug: '',
@@ -60,7 +68,13 @@ export default function DishCategoriesPage() {
   }
 
   const handleCreate = () => {
+    // Ustaw kolejność na najwyższą +1
+    const maxOrder = categories.length > 0 
+      ? Math.max(...categories.map(c => c.displayOrder)) + 1
+      : 0
+    
     resetForm()
+    setFormData(prev => ({ ...prev, displayOrder: maxOrder }))
     setDialogOpen(true)
   }
 
@@ -149,6 +163,19 @@ export default function DishCategoriesPage() {
         </div>
       </div>
 
+      {/* Info banner */}
+      {categories.length > 0 && (
+        <div className="container mx-auto px-6 pt-6">
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-900 dark:text-blue-100">
+              <p className="font-semibold mb-1">Kolejność wyświetlania</p>
+              <p>Kategorie są sortowane po numerze kolejności (niższa = wcześniej). Kilka kategorii może mieć tę samą kolejność - wtedy są sortowane alfabetycznie.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => {
         if (!open) handleClose()
@@ -223,7 +250,9 @@ export default function DishCategoriesPage() {
                   setFormData({ ...formData, displayOrder: Math.max(0, value) })
                 }}
               />
-              <p className="text-xs text-muted-foreground">Mniejsza liczba = wyższa pozycja na liście</p>
+              <p className="text-xs text-muted-foreground">
+                Obecne kolejności: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}
+              </p>
             </div>
             
             <div className="flex gap-2 pt-4">
@@ -272,10 +301,18 @@ export default function DishCategoriesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {categories.map((category) => (
+            {sortedCategories.map((category, index) => (
               <Card key={category.id} className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden group">
                 <div className="relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 group-hover:from-purple-500/20 group-hover:via-pink-500/20 group-hover:to-rose-500/20 transition-all" />
+                  
+                  {/* Pozycja badge */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-purple-600 text-white font-bold">
+                      #{index + 1}
+                    </Badge>
+                  </div>
+                  
                   <CardHeader className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-3xl">{category.icon}</div>
