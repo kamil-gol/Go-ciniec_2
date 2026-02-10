@@ -1,59 +1,54 @@
 /**
- * Dish Library API Client
+ * Dishes API Client
  * 
- * Type-safe API client for dish endpoints
+ * Type-safe API client for dishes endpoints
  */
 
-import axios, { AxiosError } from 'axios';
-import type {
-  Dish,
-  DishFilters,
-  ApiResponse,
-  ApiError,
-} from '@/types/menu.types';
+import { apiClient } from './menu-api';
 
-// ════════════════════════════════════════════════════════════════════════════
-// AXIOS INSTANCE
-// ════════════════════════════════════════════════════════════════════════════
+export interface Dish {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  allergens: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-});
+export interface DishFilters {
+  category?: string;
+  isActive?: boolean;
+  search?: string;
+}
 
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError<ApiError>) => {
-    if (error.response) {
-      return Promise.reject(error.response.data);
-    } else if (error.request) {
-      return Promise.reject({
-        success: false,
-        error: 'Błąd połączenia z serwerem',
-      });
-    } else {
-      return Promise.reject({
-        success: false,
-        error: error.message || 'Nieznany błąd',
-      });
-    }
-  }
-);
+export interface CreateDishInput {
+  name: string;
+  description?: string | null;
+  category: string;
+  allergens?: string[];
+  isActive?: boolean;
+}
 
-// ════════════════════════════════════════════════════════════════════════════
-// HELPER FUNCTIONS
-// ════════════════════════════════════════════════════════════════════════════
+export interface UpdateDishInput extends Partial<CreateDishInput> {}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
 
 function buildQueryParams(params: Record<string, any>): string {
   const query = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      query.append(key, String(value));
+      if (Array.isArray(value)) {
+        value.forEach(v => query.append(key, String(v)));
+      } else {
+        query.append(key, String(value));
+      }
     }
   });
   
@@ -61,41 +56,13 @@ function buildQueryParams(params: Record<string, any>): string {
   return queryString ? `?${queryString}` : '';
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// DISH API
-// ════════════════════════════════════════════════════════════════════════════
-
-export interface CreateDishInput {
-  name: string;
-  description?: string;
-  category: string;
-  allergens?: string[];
-  priceModifier?: number;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-  isActive?: boolean;
-  displayOrder?: number;
-}
-
-export interface UpdateDishInput {
-  name?: string;
-  description?: string;
-  category?: string;
-  allergens?: string[];
-  priceModifier?: number;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-  isActive?: boolean;
-  displayOrder?: number;
-}
-
 export const dishesApi = {
   /**
-   * Get all dishes with optional filters
+   * Get all dishes
    */
   getDishes: async (filters?: DishFilters): Promise<ApiResponse<Dish[]>> => {
     const query = filters ? buildQueryParams(filters) : '';
-    const { data } = await api.get<ApiResponse<Dish[]>>(`/dishes${query}`);
+    const { data } = await apiClient.get<ApiResponse<Dish[]>>(`/dishes${query}`);
     return data;
   },
 
@@ -103,7 +70,7 @@ export const dishesApi = {
    * Get single dish by ID
    */
   getDish: async (id: string): Promise<ApiResponse<Dish>> => {
-    const { data } = await api.get<ApiResponse<Dish>>(`/dishes/${id}`);
+    const { data } = await apiClient.get<ApiResponse<Dish>>(`/dishes/${id}`);
     return data;
   },
 
@@ -111,7 +78,7 @@ export const dishesApi = {
    * Create new dish
    */
   createDish: async (input: CreateDishInput): Promise<ApiResponse<Dish>> => {
-    const { data } = await api.post<ApiResponse<Dish>>('/dishes', input);
+    const { data } = await apiClient.post<ApiResponse<Dish>>('/dishes', input);
     return data;
   },
 
@@ -119,7 +86,7 @@ export const dishesApi = {
    * Update dish
    */
   updateDish: async (id: string, input: UpdateDishInput): Promise<ApiResponse<Dish>> => {
-    const { data } = await api.put<ApiResponse<Dish>>(`/dishes/${id}`, input);
+    const { data } = await apiClient.put<ApiResponse<Dish>>(`/dishes/${id}`, input);
     return data;
   },
 
@@ -127,9 +94,15 @@ export const dishesApi = {
    * Delete dish
    */
   deleteDish: async (id: string): Promise<ApiResponse<{ message: string }>> => {
-    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/dishes/${id}`);
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/dishes/${id}`);
+    return data;
+  },
+
+  /**
+   * Get dishes by category
+   */
+  getDishesByCategory: async (category: string): Promise<ApiResponse<Dish[]>> => {
+    const { data } = await apiClient.get<ApiResponse<Dish[]>>(`/dishes/category/${category}`);
     return data;
   },
 };
-
-export { api as dishesApiClient };
