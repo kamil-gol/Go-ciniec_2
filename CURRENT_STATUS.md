@@ -1,16 +1,17 @@
-# 📍 Status Projektu - 08.02.2026
+# 📍 Status Projektu - 11.02.2026
 
 ## ⚡ Szybki Przegląd
 
-**Branch:** `feature/reservation-queue`  
-**Ostatnia aktualizacja:** 08.02.2026, 00:15 CET  
-**Status:** ✅ Stabilny - Gotowy do merge  
-**Wersja:** 0.9.5 (Release Candidate + Bug Fixes)
+**Branch:** `feature/category-api`  
+**Ostatnia aktualizacja:** 11.02.2026, 00:14 CET  
+**Status:** ✅ Stabilny - W aktywnym rozwoju  
+**Wersja:** 0.9.7 (Menu System + UI/UX Improvements)
 
 ---
 
 ## 📦 Co Działa
 
+### System Rezerwacji & Kolejki
 ✅ **System kolejki rezerwacji** (status RESERVED)  
 ✅ **Drag & drop zmiany kolejności** (z loading states)  
 ✅ **Awansowanie do pełnej rezerwacji**  
@@ -23,55 +24,60 @@
 ✅ **Auto-cancel** (tylko przeszłe daty)  
 ✅ **Walidacja pozycji** w kolejce  
 ✅ **Nullable constraints** dla queue fields  
+✅ **Batch update API** (atomiczne transakcje)
+
+### ✨ System Menu & Dania (NOWE!)
+✅ **Kategorie Dań**
+  - CRUD API (backend)
+  - Model bazy danych (DishCategory)
+  - Frontend UI zarządzania kategoriami
+  - Sortowanie według displayOrder
+  - Ikony emoji + kolory
+  - Slug-based routing
+  - Pełna walidacja
+
+✅ **Biblioteka Dań**
+  - CRUD dań (backend + frontend)
+  - Model bazy danych (Dish)
+  - Przypisanie do kategorii (relacja FK)
+  - Alergeny (array)
+  - Aktywacja/dezaktywacja
+  - Filtrowanie po kategorii
+  - Wyszukiwanie pełnotekstowe
+  - Premium UI/UX z kartami
+
+✅ **Premium UI/UX Components**
+  - Switch component z gradientami
+  - AlertDialog z solidnym tłem
+  - DishDialog (create/edit)
+  - Premium delete confirmation
+  - Loading states
+  - Responsive design
 
 ---
 
-## 🔧 Ostatnie Poprawki (07.02.2026)
+## 🔧 Ostatnie Zmiany (10-11.02.2026)
 
-### Bug #5: Race Conditions ⚠️ KRYTYCZNY
-**Commity:** [`718104b`](https://github.com/kamil-gol/rezerwacje/commit/718104b31ea875d623d2dd0171f2051bc7184f55), [`a256e89`](https://github.com/kamil-gol/rezerwacje/commit/a256e89d5eee863fb0fb5764086fcfb853ff5bd0)  
-**Status:** ✅ Naprawione  
-**Fix:**
-- Row-level locking (SELECT ... FOR UPDATE)
-- Retry logic (3x exponential backoff: 100ms, 200ms, 400ms)
-- Advisory locks dla concurrent operations
-- User-friendly error messages przy konfliktach
+### Menu System Implementation
+**Commity:** [`ca9aa07`](https://github.com/kamil-gol/Go-ciniec_2/commit/ca9aa07693ba7ccffc88254fe5fb6d0d149c9c26), [`b1934d8`](https://github.com/kamil-gol/Go-ciniec_2/commit/b1934d8906bb66b431b348e495abadb13de32274), [`ff14599`](https://github.com/kamil-gol/Go-ciniec_2/commit/ff14599b48aef9be367fd8627506ea14566eea39)  
+**Status:** ✅ Gotowe  
+**Implementacja:**
+- Backend API dla kategorii dań (CRUD)
+- Backend API dla dań (CRUD + filtrowanie)
+- Frontend strona zarządzania kategoriami
+- Frontend strona biblioteki dań
+- Premium UI components
+- Pełna integracja auth
 
-### Bug #6: Brak Loading States dla Drag & Drop
-**Commity:** [`d8ab67f`](https://github.com/kamil-gol/rezerwacje/commit/d8ab67f840478a7b3c3bf3236287314b018181af), [`c6b0d78`](https://github.com/kamil-gol/rezerwacje/commit/c6b0d788c4eacd25eee129d33b80732f6a41e9e2)  
-**Status:** ✅ Naprawione  
-**Fix:**
-- Loading states podczas operacji drag & drop
-- Disabled drag podczas API call
-- Visual feedback (opacity, cursor, spinner)
-- Prop `disabled` dla sortable-queue-item
-
-### Bug #7: Auto-Cancel Anulował Dzisiejsze Rezerwacje ⚠️ KRYTYCZNY
-**Commity:** [`e8426c1`](https://github.com/kamil-gol/rezerwacje/commit/e8426c1cef171ab3947fd055f3041ebc5ac0a4af), [`8437797`](https://github.com/kamil-gol/rezerwacje/commit/8437797690e79ac4602bf7f4e8d3fc32537dd431)  
-**Status:** ✅ Naprawione  
-**Fix:**
-- Zmiana warunku z `<= CURRENT_DATE` na `< CURRENT_DATE`
-- Anuluje tylko PRZESZŁE daty (nie dzisiejsze)
-- Klient może dzwonić w ciągu dnia
-- Deployment script przygotowany
-
-### Bug #8: Brak Walidacji Pozycji w Kolejce
-**Commity:** [`0be0bf5`](https://github.com/kamil-gol/rezerwacje/commit/0be0bf554c15b11daa3fccd102eed58fa071cfa3), [`b81e299`](https://github.com/kamil-gol/rezerwacje/commit/b81e2990dfe1a70f8cfd64adc7bc338110b76a72)  
-**Status:** ✅ Naprawione  
-**Fix:**
-- Walidacja maxPosition (nie można ustawić > liczba rezerwacji)
-- Sprawdzanie zakresu [1, maxPosition]
-- User-friendly error messages
-- Mapowanie Prisma constraint errors
-
-### Bug #9: Nullable Queue Fields bez Constraints ⚠️ KRYTYCZNY
-**Commity:** [`030517f`](https://github.com/kamil-gol/rezerwacje/commit/030517f917d95de2c7b23898d018efd2726f8d12), [`87a1b47`](https://github.com/kamil-gol/rezerwacje/commit/87a1b4742eaf99c228e2e1716aa553d5fa862eff)  
-**Status:** ✅ Naprawione  
-**Fix:**
-- CHECK constraint: status=RESERVED wymaga queue fields
-- CHECK constraint: status!=RESERVED wymaga NULL queue fields
-- Partial unique index dla (reservationQueueDate, position)
-- Wymuszenie spójności na poziomie bazy danych
+### UI/UX Improvements
+**Commity:** [`b5ecea4`](https://github.com/kamil-gol/Go-ciniec_2/commit/b5ecea4bbb8a340f9c3be7fb54bc4af9fc753c93), [`1987b8f`](https://github.com/kamil-gol/Go-ciniec_2/commit/1987b8f3c1f81a41a67a360042e797e0872c87bf), [`e288289`](https://github.com/kamil-gol/Go-ciniec_2/commit/e288289b16cf32ed489d5294db438620c12b9f7d)  
+**Status:** ✅ Gotowe  
+**Poprawki:**
+- Premium Switch component (gradient, shadow, animations)
+- AlertDialog component (Radix UI)
+- Solidne tło dla dialoga (czytelność)
+- Fix infinite loop w DishDialog
+- Fix auth w dishes API
 
 ---
 
@@ -81,11 +87,14 @@
 |----------|------|
 | [docs/README.md](docs/README.md) | **START TUTAJ** - Główny indeks dokumentacji |
 | [docs/QUEUE.md](docs/QUEUE.md) | Pełna dokumentacja systemu kolejki |
-| [docs/BUGFIX_SESSION_2026-02-07.md](docs/BUGFIX_SESSION_2026-02-07.md) | Sesja naprawcza - wszystkie 7 bugów |
+| [apps/backend/README.md](apps/backend/README.md) | Backend API - wszystkie endpointy w tym Menu System |
+| [docs/BUGFIX_SESSION_2026-02-07.md](docs/BUGFIX_SESSION_2026-02-07.md) | Sesja naprawcza - Bug #1-7 |
+| [docs/BUGFIX_SESSION_2026-02-09.md](docs/BUGFIX_SESSION_2026-02-09.md) | Sesja naprawcza - Bug #9 |
 | [BUG5_RACE_CONDITIONS.md](BUG5_RACE_CONDITIONS.md) | Szczegóły fix race conditions |
 | [BUG8_POSITION_VALIDATION.md](BUG8_POSITION_VALIDATION.md) | Szczegóły fix walidacji pozycji |
+| [BUG9_BATCH_UPDATE_RACE_CONDITION.md](BUG9_BATCH_UPDATE_RACE_CONDITION.md) | Szczegóły fix batch update |
 | [BUG9_QUEUE_NULLABLE.md](BUG9_QUEUE_NULLABLE.md) | Szczegóły fix nullable constraints |
-| [DEPLOYMENT_FIX_BUG7.md](DEPLOYMENT_FIX_BUG7.md) | Instrukcje deployment Bug #7 |
+| [DEPLOYMENT_FIX_BUG7.md](DEPLOYMENT_FIX_BUG7.md) | Instrukcje hotfix auto-cancel |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architektura projektu |
 | [docs/DATABASE.md](docs/DATABASE.md) | Struktura bazy danych |
 | [docs/SPRINTS.md](docs/SPRINTS.md) | Plan i postęp sprintów |
@@ -97,23 +106,19 @@
 ### Użyj tego promptu:
 
 ```
-Kontynuuję pracę nad projektem Rezerwacje (repo: kamil-gol/rezerwacje, branch: feature/reservation-queue).
+Kontynuuję pracę nad projektem Rezerwacje (repo: kamil-gol/Go-ciniec_2, branch: feature/category-api).
 
 Przeczytaj dokumentację:
 1. docs/QUEUE.md - system kolejki rezerwacji
-2. docs/BUGFIX_SESSION_2026-02-07.md - ostatnia sesja naprawcza (7 bugów)
-3. docs/ARCHITECTURE.md - architektura projektu
-4. BUG5_RACE_CONDITIONS.md - race conditions fix
-5. BUG9_QUEUE_NULLABLE.md - nullable constraints fix
+2. apps/backend/README.md - API dokumentacja (w tym Menu System)
+3. README.md - główny przegląd projektu
+4. CURRENT_STATUS.md - aktualny status rozwoju
 
-Branch feature/reservation-queue zawiera 7 naprawionych bugów i jest gotowy do merge.
-
-Kluczowe poprawki:
-- Race conditions (row-level locking + retry logic)
-- Auto-cancel (tylko przeszłe daty)
-- Walidacja pozycji w kolejce
-- Nullable constraints dla queue fields
-- Loading states dla drag & drop
+Branch feature/category-api zawiera:
+- System kolejki rezerwacji (99% complete)
+- System menu i kategorii dań (100% complete)
+- Premium UI/UX components
+- Wszystkie bugfixy
 
 Co dalej?
 ```
@@ -129,41 +134,130 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 - ✅ Bug #6: Loading states
 - ✅ Bug #7: Auto-cancel logic
 - ✅ Bug #8: Position validation
-- ✅ Bug #9: Nullable constraints
+- ✅ Bug #9: Nullable constraints + Batch update
+- ✅ Auth issue w dishes API
+- ✅ Infinite loop w DishDialog
+- ✅ Transparentność AlertDialog
 
 ---
 
-## 🔍 Do Przetestowania Przed Merge
+## 📋 TODO - Module Menu
 
-- [ ] Race conditions - concurrent drag & drop przez 2+ adminów
-- [ ] Auto-cancel - weryfikacja anulowania tylko przeszłych dat
-- [ ] Walidacja pozycji - próba ustawienia pozycji poza zakresem
-- [ ] Loading states - visual feedback podczas operacji
-- [ ] Nullable constraints - próba zapisu inconsistent state
-- [ ] Deployment script Bug #7 - test na staging
-- [ ] Pełna regresja formularz rezerwacji
-- [ ] Pełna regresja awansowanie z kolejki
+### 🔄 W Trakcie / Planowane
 
----
+#### 1. **Opcje Menu (Menu Options)** - **WYSOKI PRIORYTET**
+- [ ] Model bazy danych (MenuOption)
+  - Relacja do kategorii (opcjonalna)
+  - Relacja do dania (opcjonalna)
+  - Typ opcji: ADDON, SIDE_DISH, DRINK, EXTRA
+  - Nazwa, opis, cena
+  - isActive
+- [ ] Backend API (/api/menu-options)
+  - CRUD endpoints
+  - Filtrowanie po typie
+  - Grupowanie
+- [ ] Frontend UI
+  - Strona zarządzania opcjami
+  - Przypisywanie do kategorii/dań
+  - Cennik opcji
 
-## 📊 Postęp Ogólny
+#### 2. **Szablony Menu (Menu Templates)** - **WYSOKI PRIORYTET**
+- [ ] Model bazy danych (MenuTemplate)
+  - Nazwa szablonu (np. "Wesele Standard", "Urodziny Premium")
+  - Kategorie + dania
+  - Opcje domyślne
+  - Cena bazowa
+  - Typ eventu (relacja)
+- [ ] Backend API (/api/menu-templates)
+  - CRUD templates
+  - Kopiowanie szablonów
+  - Wersjonowanie
+- [ ] Frontend UI
+  - Builder szablonów (drag & drop?)
+  - Podgląd szablonu
+  - Przypisanie do typu eventu
 
-- **Backend:** 90% ✅ (+5% - bugfixy kolejki)
-- **Frontend:** 80% ✅
-- **Testy:** 75% 🔄 (+5% - testy walidacji)
-- **Dokumentacja:** 80% ✅ (+5% - dokumentacja bugfixów)
-- **Deployment:** 70% 🔄 (+10% - skrypty deployment)
+#### 3. **Pakiety Menu (Menu Packages)** - **ŚREDNI PRIORYTET**
+- [ ] Model bazy danych (MenuPackage)
+  - Nazwa pakietu
+  - Zestaw dań
+  - Cena pakietowa (zniżka)
+  - Ograniczenia (min/max gości)
+- [ ] Backend API (/api/menu-packages)
+  - CRUD pakietów
+  - Kalkulacja cen
+- [ ] Frontend UI
+  - Strona pakietów
+  - Kompozycja pakietów
+
+#### 4. **Integracja z Rezerwacjami** - **KRYTYCZNY**
+- [ ] Rozszerzenie modelu Reservation
+  - menuTemplateId (FK)
+  - selectedDishes (JSON array z ilościami)
+  - selectedOptions (JSON array)
+  - menuPrice (calculated)
+- [ ] Formularz rezerwacji - sekcja Menu
+  - Wybór szablonu menu
+  - Customizacja dań
+  - Dodawanie opcji
+  - Live preview ceny
+- [ ] Backend kalkulacja
+  - Cena menu = base + opcje + custom
+  - Walidacja dostępności dań
+  - Sprawdzanie limitów
+- [ ] PDF Generation
+  - Pełne menu w PDF rezerwacji
+  - Lista dań z ilościami
+  - Alergeny
+  - Suma ceny menu
+
+#### 5. **Zaawansowane Features** - **NISKI PRIORYTET**
+- [ ] Import/Export menu (CSV/JSON)
+- [ ] Historia zmian cen dań
+- [ ] Sezonowość dań (available_from/to dates)
+- [ ] Zdjęcia dań (upload + gallery)
+- [ ] Kalorie i wartości odżywcze
+- [ ] Multi-language menu (PL/EN)
+- [ ] Generowanie kart menu do wydruku
+- [ ] Statystyki popularności dań
 
 ---
 
 ## 🎯 Następne Kroki
 
-1. **Testy manualne** wszystkich bugfixów
-2. **Merge** feature/reservation-queue → main
-3. **Deploy** na staging environment
-4. **Testy użytkowników** finalni
-5. **Production deployment** (jeśli testy OK)
-6. **Sprint 6:** Polish & Testing (80%+ test coverage)
+### Priorytet 1: Opcje Menu
+1. **Backend:** Model + API dla MenuOption
+2. **Frontend:** Strona zarządzania opcjami
+3. **Testy:** Unit testy API
+
+### Priorytet 2: Integracja z Rezerwacjami
+1. **Backend:** Rozszerzenie Reservation model
+2. **Frontend:** Sekcja menu w formularzu rezerwacji
+3. **Kalkulacja:** Auto-pricing z menu
+4. **PDF:** Generowanie menu w PDF
+
+### Priorytet 3: Szablony Menu
+1. **Backend:** Model + API dla MenuTemplate
+2. **Frontend:** Builder szablonów
+3. **Przypisanie:** Template → Event Type
+
+---
+
+## 📊 Postęp Ogólny
+
+- **Backend:** 96% ✅ (Menu System + Categories + Dishes complete)
+- **Frontend:** 88% ✅ (Menu UI complete, brak integracji z rezerwacjami)
+- **Testy:** 78% 🔄 (+3% - podstawowe testy menu)
+- **Dokumentacja:** 94% ✅ (backend README zaktualizowany)
+- **Deployment:** 70% 🔄
+
+### Postęp Modułu Menu:
+- **Kategorie Dań:** 100% ✅
+- **Biblioteka Dań:** 100% ✅
+- **Opcje Menu:** 0% ⏳
+- **Szablony Menu:** 0% ⏳
+- **Pakiety Menu:** 0% ⏳
+- **Integracja z Rezerwacjami:** 0% ⏳
 
 ---
 
@@ -171,8 +265,8 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 
 ```bash
 # Pobranie zmian
-git checkout feature/reservation-queue
-git pull origin feature/reservation-queue
+git checkout feature/category-api
+git pull origin feature/category-api
 
 # Restart (po pull)
 docker compose restart backend frontend
@@ -188,22 +282,27 @@ docker compose logs -f frontend
 # Migracje (jeśli dodano nowe)
 docker compose exec backend npm run prisma:migrate:deploy
 
-# Test auto-cancel
-docker compose exec backend npm run test:queue
+# Instalacja pakietu w kontenerze
+docker compose exec frontend npm install <package-name>
 ```
 
 ---
 
 ## 🚨 Deploy Checklist
 
-- [x] Wszystkie bugfixy commitnięte
+- [x] Backend: Dish Categories API
+- [x] Backend: Dishes API
+- [x] Frontend: Categories management
+- [x] Frontend: Dishes library
+- [x] Premium UI components (Switch, AlertDialog)
+- [x] Auth integration
+- [x] Bugfixy (infinite loop, transparency)
 - [x] Dokumentacja zaktualizowana
-- [x] Deployment scripts przygotowane
-- [ ] Testy manualne przeprowadzone
-- [ ] Staging deployment OK
-- [ ] Production backup wykonany
-- [ ] Gotowy do merge do main
+- [ ] Opcje menu (kolejny milestone)
+- [ ] Integracja z rezerwacjami (kolejny milestone)
+- [ ] Testy jednostkowe menu system
+- [ ] Production deployment
 
 ---
 
-**Status:** Branch `feature/reservation-queue` jest stabilny i gotowy do merge po testach manualnych.
+**Status:** Branch `feature/category-api` zawiera kompletny system kategorii i dań. Gotowy do dalszego rozwoju (opcje + integracja).
