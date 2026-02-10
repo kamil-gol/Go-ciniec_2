@@ -5,16 +5,18 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
-  UtensilsCrossed, ChefHat, Package, Sparkles, FileText,
+  UtensilsCrossed, ChefHat, Package, Sparkles, FileText, Tags,
   TrendingUp, Users, Calendar, ArrowRight, Plus
 } from 'lucide-react'
 import Link from 'next/link'
 import { useMenuTemplates } from '@/hooks/use-menu'
 import { useDishes } from '@/hooks/use-dishes'
+import { useDishCategories } from '@/hooks/use-dish-categories'
 
 export default function MenuDashboardPage() {
   const { data: templates = [] } = useMenuTemplates()
   const { data: dishes = [] } = useDishes()
+  const { data: categories = [] } = useDishCategories()
 
   // Statystyki - pakiety z wszystkich szablonów
   const allPackages = templates.flatMap(t => t.packages || [])
@@ -23,6 +25,7 @@ export default function MenuDashboardPage() {
     dishes: dishes.length,
     templates: templates.length,
     packages: allPackages.length,
+    categories: categories.length,
     activeTemplates: templates.filter(t => t.isActive).length,
   }
 
@@ -126,10 +129,34 @@ export default function MenuDashboardPage() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{stats.dishes} dań</span>
                       <span>•</span>
-                      <span>{Object.keys(dishCategories).length} kategorii</span>
+                      <span>{stats.categories} kategorii</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-emerald-600 font-medium mt-4 group-hover:gap-4 transition-all">
+                    Otwórz <ArrowRight className="h-4 w-4" />
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+          </Link>
+
+          {/* Kategorie Dań */}
+          <Link href="/dashboard/menu/categories">
+            <Card className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden h-full">
+              <div className="relative overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 group-hover:from-purple-500/20 group-hover:via-pink-500/20 group-hover:to-rose-500/20 transition-all" />
+                <CardContent className="p-8 relative h-full flex flex-col">
+                  <div className="flex-1">
+                    <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg w-fit mb-4">
+                      <Tags className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold group-hover:text-purple-600 transition-colors mb-2">Kategorie Dań</h3>
+                    <p className="text-muted-foreground mb-4">Zarządzaj kategoriami dań</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{stats.categories} kategorii</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-purple-600 font-medium mt-4 group-hover:gap-4 transition-all">
                     Otwórz <ArrowRight className="h-4 w-4" />
                   </div>
                 </CardContent>
@@ -180,28 +207,6 @@ export default function MenuDashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-amber-600 font-medium mt-4 group-hover:gap-4 transition-all">
-                    Otwórz <ArrowRight className="h-4 w-4" />
-                  </div>
-                </CardContent>
-              </div>
-            </Card>
-          </Link>
-
-          {/* Opcje Dodatkowe */}
-          <Link href="/dashboard/menu/options">
-            <Card className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden h-full">
-              <div className="relative overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 group-hover:from-purple-500/20 group-hover:via-pink-500/20 group-hover:to-rose-500/20 transition-all" />
-                <CardContent className="p-8 relative h-full flex flex-col">
-                  <div className="flex-1">
-                    <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg w-fit mb-4">
-                      <Sparkles className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold group-hover:text-purple-600 transition-colors mb-2">Opcje Dodatkowe</h3>
-                    <p className="text-muted-foreground mb-4">Dodatkowe usługi i atrakcje</p>
-                    <Badge variant="outline" className="text-xs">Wkrótce</Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-purple-600 font-medium mt-4 group-hover:gap-4 transition-all">
                     Otwórz <ArrowRight className="h-4 w-4" />
                   </div>
                 </CardContent>
