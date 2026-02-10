@@ -13,6 +13,7 @@ import depositRoutes from '@/routes/deposit.routes';
 import queueRoutes from '@/routes/queue.routes';
 import menuRoutes from '@/routes/menu.routes';
 import dishRoutes from '@/routes/dish.routes';
+import dishCategoryRoutes from '@/routes/dish-category.routes';
 import queueService from '@/services/queue.service';
 
 const app: Express = express();
@@ -82,6 +83,12 @@ app.use('/api', menuRoutes);
 app.use('/api/dishes', dishRoutes);
 
 /**
+ * Dish Categories Routes (NEW)
+ * - /api/dish-categories
+ */
+app.use('/api/dish-categories', dishCategoryRoutes);
+
+/**
  * 404 Handler
  */
 app.use((_req: Request, res: Response) => {
@@ -104,7 +111,8 @@ const server = app.listen(PORT, () => {
   logger.info(`📝 API Documentation: http://localhost:${PORT}/api/docs`);
   logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
   logger.info(`🍽️  Menu System: http://localhost:${PORT}/api/menu-templates`);
-  logger.info(`🍲  Dishes: http://localhost:${PORT}/api/dishes\n`);
+  logger.info(`🍲  Dishes: http://localhost:${PORT}/api/dishes`);
+  logger.info(`📂  Categories: http://localhost:${PORT}/api/dish-categories\n`);
   
   // Setup cron job for auto-canceling expired RESERVED reservations
   setupAutoCancelCron();
