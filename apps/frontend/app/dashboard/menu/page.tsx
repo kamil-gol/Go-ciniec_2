@@ -11,7 +11,6 @@ import {
 import Link from 'next/link'
 import { useMenuTemplates } from '@/hooks/use-menu'
 import { useDishes } from '@/hooks/use-dishes'
-import { getDishCategoryLabel } from '@/lib/constants/dish-categories'
 
 export default function MenuDashboardPage() {
   const { data: templates = [] } = useMenuTemplates()
@@ -27,10 +26,10 @@ export default function MenuDashboardPage() {
     activeTemplates: templates.filter(t => t.isActive).length,
   }
 
-  // Kategorie dań z polskimi nazwami
+  // Kategorie dań - używamy nazw z obiektów kategorii
   const dishCategories = dishes.reduce((acc: any, dish: any) => {
-    const polishLabel = getDishCategoryLabel(dish.category)
-    acc[polishLabel] = (acc[polishLabel] || 0) + 1
+    const categoryName = dish.category?.name || 'Inne'
+    acc[categoryName] = (acc[categoryName] || 0) + 1
     return acc
   }, {})
 
