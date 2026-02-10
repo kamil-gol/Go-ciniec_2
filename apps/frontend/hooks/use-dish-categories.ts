@@ -1,66 +1,127 @@
 /**
- * useDishCategories Hook
- * Manages dish categories data fetching and state
+ * Dish Categories React Query Hooks
+ * 
+ * Custom hooks for dish categories data fetching and mutations
  */
 
-import useSWR from 'swr';
-import { DishCategory } from '@/types';
-import { apiClient } from '@/lib/api-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { dishCategoriesApi } from '@/lib/api/dish-categories-api';
+import type { DishCategory, CreateDishCategoryInput, UpdateDishCategoryInput } from '@/types';
+import { toast } from 'sonner';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/dish-categories`;
+// ═══════════════════════════════════════════════════════════════════════════
+// QUERY KEYS
+// ═══════════════════════════════════════════════════════════════════════════
 
-interface UseDishCategoriesReturn {
-  categories: DishCategory[];
-  isLoading: boolean;
-  error: Error | null;
-  mutate: () => void;
-}
-
-/**
- * Fetcher function for SWR
- */
-const fetcher = async (url: string): Promise<DishCategory[]> => {
-  const response = await apiClient.get<{ data: DishCategory[] }>(url);
-  return response.data;
+export const dishCategoriesKeys = {
+  all: ['dish-categories'] as const,
+  lists: () => [...dishCategoriesKeys.all, 'list'] as const,
+  list: (filters?: any) => [...dishCategoriesKeys.lists(), filters] as const,
+  details: () => [...dishCategoriesKeys.all, 'detail'] as const,
+  detail: (id: string) => [...dishCategoriesKeys.details(), id] as const,
 };
 
-/**
- * Hook to fetch all dish categories
- */
-export function useDishCategories(): UseDishCategoriesReturn {
-  const { data, error, mutate, isLoading } = useSWR<DishCategory[]>(
-    API_URL,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  );
+// ═══════════════════════════════════════════════════════════════════════════
+// QUERIES
+// ═══════════════════════════════════════════════════════════════════════════
 
-  return {
-    categories: data || [],
-    isLoading,
-    error: error || null,
-    mutate,
-  };
+/**
+ * Get all dish categories
+ * 
+ * @example
+ * const { data: categories, isLoading } = useDishCategories();
+ */
+export function useDishCategories() {
+  return useQuery({
+    queryKey: dishCategoriesKeys.list(),
+    queryFn: () => dishCategoriesApi.getCategories(),
+    select: (response) => response.data,
+  });
 }
 
 /**
- * Hook to fetch a single dish category by ID
+ * Get single dish category
+ * 
+ * @example
+ * const { data: category } = useDishCategory(categoryId);
  */
-export function useDishCategory(id: string | null): {
-  category: DishCategory | null;
-  isLoading: boolean;
-  error: Error | null;
-} {
-  const { data, error, isLoading } = useSWR<DishCategory>(
-    id ? `${API_URL}/${id}` : null,
-    fetcher
-  );
+export function useDishCategory(id: string | undefined) {
+  return useQuery({
+    queryKey: dishCategoriesKeys.detail(id!),
+    queryFn: () => dishCategoriesApi.getCategory(id!),
+    select: (response) => response.data,
+    enabled: !!id,
+  });
+}
 
-  return {
-    category: data || null,
-    isLoading,
-    error: error || null,
-  };
+// ═══════════════════════════════════════════════════════════════════════════
+// MUTATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Create dish category
+ * 
+ * @example
+ * const mutation = useCreateDishCategory();
+ * mutation.mutate({ slug: 'SOUP', name: 'Zupy', icon: '🍜' });
+ */
+export function useCreateDishCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateDishCategoryInput) => dishCategoriesApi.createCategory(input),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.lists() });
+      toast.success('Kategoria została dodana');
+    },
+    onError: (error: any) => {
+      toast.error(error?.error || 'Nie udało się dodać kategorii');
+    },
+  });
+}
+
+/**
+ * Update dish category
+ * 
+ * @example
+ * const mutation = useUpdateDishCategory();
+ * mutation.mutate({ id: '...', data: {...} });
+ */
+export function useUpdateDishCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateDishCategoryInput }) => 
+      dishCategoriesApi.updateCategory(id, data),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.detail(variables.id) });
+      toast.success('Kategoria została zaktualizowana');
+    },
+    onError: (error: any) => {
+      toast.error(error?.error || 'Nie udało się zaktualizować kategorii');
+    },
+  });
+}
+
+/**
+ * Delete dish category
+ * 
+ * @example
+ * const mutation = useDeleteDishCategory();
+ * mutation.mutate(categoryId);
+ */
+export function useDeleteDishCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => dishCategoriesApi.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.lists() });
+      toast.success('Kategoria została usunięta');
+    },
+    onError: (error: any) => {
+      toast.error(error?.error || 'Nie udało się usunąć kategorii');
+    },
+  });
 }
