@@ -5,7 +5,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { dishesApi, type Dish, type DishFilters, type CreateDishInput, type UpdateDishInput } from '@/lib/api/dishes-api';
+import { dishesApi, type DishFilters } from '@/lib/api/dishes-api';
+import type { Dish, CreateDishInput, UpdateDishInput } from '@/types';
 import { toast } from 'sonner';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -18,7 +19,7 @@ export const dishesKeys = {
   list: (filters?: DishFilters) => [...dishesKeys.lists(), filters] as const,
   details: () => [...dishesKeys.all, 'detail'] as const,
   detail: (id: string) => [...dishesKeys.details(), id] as const,
-  byCategory: (category: string) => [...dishesKeys.all, 'category', category] as const,
+  byCategoryId: (categoryId: string) => [...dishesKeys.all, 'category', categoryId] as const,
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -29,7 +30,7 @@ export const dishesKeys = {
  * Get all dishes
  * 
  * @example
- * const { data: dishes, isLoading } = useDishes({ category: 'SOUP' });
+ * const { data: dishes, isLoading } = useDishes({ categoryId: 'abc-123' });
  */
 export function useDishes(filters?: DishFilters) {
   return useQuery({
@@ -55,17 +56,17 @@ export function useDish(id: string | undefined) {
 }
 
 /**
- * Get dishes by category
+ * Get dishes by category ID
  * 
  * @example
- * const { data: soups } = useDishesByCategory('SOUP');
+ * const { data: soups } = useDishesByCategory(soupCategoryId);
  */
-export function useDishesByCategory(category: string | undefined) {
+export function useDishesByCategory(categoryId: string | undefined) {
   return useQuery({
-    queryKey: dishesKeys.byCategory(category!),
-    queryFn: () => dishesApi.getDishesByCategory(category!),
+    queryKey: dishesKeys.byCategoryId(categoryId!),
+    queryFn: () => dishesApi.getDishesByCategory(categoryId!),
     select: (response) => response.data,
-    enabled: !!category,
+    enabled: !!categoryId,
   });
 }
 
@@ -78,7 +79,7 @@ export function useDishesByCategory(category: string | undefined) {
  * 
  * @example
  * const mutation = useCreateDish();
- * mutation.mutate({ name: 'Rosół', category: 'SOUP', ... });
+ * mutation.mutate({ name: 'Rosół', categoryId: 'abc-123', ... });
  */
 export function useCreateDish() {
   const queryClient = useQueryClient();
@@ -146,10 +147,11 @@ export function useDeleteDish() {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Get dishes grouped by category
+ * Get dishes grouped by category slug
  * 
  * @example
  * const { data: groupedDishes } = useDishesByCategories();
+ * // Returns: { 'SOUP': [...], 'MAIN_COURSE': [...] }
  */
 export function useDishesByCategories() {
   return useQuery({
@@ -158,45 +160,17 @@ export function useDishesByCategories() {
       const response = await dishesApi.getDishes({ isActive: true });
       const dishes = response.data;
 
-      // Group by category
+      // Group by category slug
       const grouped = dishes.reduce((acc, dish) => {
-        const category = dish.category;
-        if (!acc[category]) {
-          acc[category] = [];
+        const categorySlug = dish.category.slug;
+        if (!acc[categorySlug]) {
+          acc[categorySlug] = [];
         }
-        acc[category].push(dish);
+        acc[categorySlug].push(dish);
         return acc;
       }, {} as Record<string, Dish[]>);
 
       return grouped;
-    },
-  });
-}
-
-/**
- * Get dish categories with counts
- * 
- * @example
- * const { data: categories } = useDishCategories();
- */
-export function useDishCategories() {
-  return useQuery({
-    queryKey: [...dishesKeys.all, 'categories'],
-    queryFn: async () => {
-      const response = await dishesApi.getDishes();
-      const dishes = response.data;
-
-      // Count dishes per category
-      const categories = dishes.reduce((acc, dish) => {
-        const category = dish.category;
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      return Object.entries(categories).map(([name, count]) => ({
-        name,
-        count,
-      }));
     },
   });
 }
