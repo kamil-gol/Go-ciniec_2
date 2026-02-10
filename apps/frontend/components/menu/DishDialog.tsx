@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { useCreateDish, useUpdateDish } from '@/hooks/use-dishes-courses'
-import { toast } from '@/lib/toast'
-import type { Dish } from '@/types/menu.types'
+import { useCreateDish, useUpdateDish } from '@/hooks/use-dishes'
+import { toast } from 'sonner'
+import { getAllDishCategories } from '@/lib/constants/dish-categories'
+import type { Dish } from '@/lib/api/dishes-api'
 import { Loader2 } from 'lucide-react'
 
 interface DishDialogProps {
@@ -19,40 +20,18 @@ interface DishDialogProps {
   dish?: Dish | null
 }
 
-const DISH_CATEGORIES = [
-  'SOUP',
-  'APPETIZER', 
-  'MAIN_COURSE',
-  'SIDE_DISH',
-  'SALAD',
-  'DESSERT',
-  'BEVERAGE',
-  'OTHER'
-]
-
-const CATEGORY_LABELS: Record<string, string> = {
-  'SOUP': 'Zupa',
-  'APPETIZER': 'Przekąska',
-  'MAIN_COURSE': 'Danie główne',
-  'SIDE_DISH': 'Przystawka',
-  'SALAD': 'Sałatka',
-  'DESSERT': 'Deser',
-  'BEVERAGE': 'Napój',
-  'OTHER': 'Inne'
-}
-
 export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     category: 'MAIN_COURSE',
     allergens: '',
-    priceModifier: '0',
     isActive: true,
   })
 
   const createMutation = useCreateDish()
   const updateMutation = useUpdateDish()
+  const allCategories = getAllDishCategories()
 
   useEffect(() => {
     if (dish) {
@@ -61,7 +40,6 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
         description: dish.description || '',
         category: dish.category || 'MAIN_COURSE',
         allergens: dish.allergens?.join(', ') || '',
-        priceModifier: String(dish.priceModifier || 0),
         isActive: dish.isActive ?? true,
       })
     } else {
@@ -70,33 +48,30 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
         description: '',
         category: 'MAIN_COURSE',
         allergens: '',
-        priceModifier: '0',
         isActive: true,
       })
     }
-  }, [dish])
+  }, [dish, open])
 
   const handleSubmit = async () => {
     try {
       const payload = {
         name: formData.name,
-        description: formData.description || undefined,
+        description: formData.description || null,
         category: formData.category,
         allergens: formData.allergens ? formData.allergens.split(',').map(a => a.trim()) : [],
-        priceModifier: parseFloat(formData.priceModifier) || 0,
         isActive: formData.isActive,
       }
 
       if (dish) {
         await updateMutation.mutateAsync({ id: dish.id, data: payload })
-        toast.success('Sukces!', 'Danie zostało zaktualizowane')
       } else {
         await createMutation.mutateAsync(payload)
-        toast.success('Sukces!', 'Nowe danie zostało utworzone')
       }
       onOpenChange(false)
     } catch (error: any) {
-      toast.error('Błąd', error.error || 'Nie udało się zapisać dania')
+      // Error handling is done in the mutation hooks
+      console.error('Submit error:', error)
     }
   }
 
@@ -113,7 +88,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Nazwa dania *</Label>
             <Input
-              placeholder="np. Rosoł, Schabowy, Tiramisu"
+              placeholder="np. Rosół, Schabowy, Tiramisu"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="h-11"
@@ -138,9 +113,9 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {DISH_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
+                {allCategories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.icon} {cat.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -155,25 +130,16 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
               onChange={(e) => setFormData({ ...formData, allergens: e.target.value })}
               className="h-11"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Modyfikator ceny (zł)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.priceModifier}
-              onChange={(e) => setFormData({ ...formData, priceModifier: e.target.value })}
-              className="h-11"
-            />
-            <p className="text-sm text-muted-foreground">
-              Dodatnia wartość zwiększa cenę, ujemna obniża
+            <p className="text-xs text-muted-foreground">
+              Przykłady: gluten, dairy, eggs, nuts, shellfish, fish, soy, celery
             </p>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <Label className="text-sm font-semibold">Aktywne danie</Label>
+            <div>
+              <Label className="text-sm font-semibold">Aktywne danie</Label>
+              <p className="text-xs text-muted-foreground mt-1">Nieaktywne dania nie będą wyświetlane w systemie</p>
+            </div>
             <Switch
               checked={formData.isActive}
               onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
@@ -194,7 +160,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
               type="button"
               className="flex-1 h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg"
               onClick={handleSubmit}
-              disabled={isPending || !formData.name}
+              disabled={isPending || !formData.name || !formData.category}
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
