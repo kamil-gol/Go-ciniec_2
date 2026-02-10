@@ -8,12 +8,13 @@
 
 ## 📋 Przegląd Projektu
 
-Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowych z pełną integracją administracyjną, statystykami, automatyzacją procesów biznesowych oraz inteligentnym systemem kolejki rezerwacji.
+Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowych z pełną integracją administracyjną, statystykami, automatyzacją procesów biznesowych, inteligentnym systemem kolejki rezerwacji oraz zarządzaniem menu i kategoriami dań.
 
 ### ✨ Kluczowe Cechy
 
 ✅ **Moduł Rezerwacji** - pełny lifecycle rezerwacji (nowa, edycja, archiwum)  
 ✅ **Kolejka Rezerwacji** - zarządzanie listą oczekujących, priorytetyzacja, awansowanie  
+✅ **✨ System Menu** - kategorie dań, zarządzanie daniami **— NOWE!**  
 ✅ **Zarządzanie Klientami** - baza klientów z historią rezerwacji  
 ✅ **Panel Administratora** - pełna kontrola systemu  
 ✅ **Statystyki & Raporty** - analityka rezerwacji i przychodów  
@@ -29,7 +30,7 @@ Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowy
 
 ---
 
-## 🏍️ Stack Technologiczny
+## 🏐️ Stack Technologiczny
 
 ### Frontend
 - **Next.js 14** - React framework z SSR
@@ -132,10 +133,12 @@ rezerwacje/
 │       │   ├── dashboard/    # Panel główny
 │       │   ├── reservations/ # Moduł rezerwacji
 │       │   ├── queue/        # Moduł kolejki
+│       │   ├── menu/         # ✨ System menu & kategorie dań
 │       │   └── clients/      # Zarządzanie klientami
 │       ├── components/       # React komponenty
 │       │   ├── ui/           # Komponenty UI (buttons, forms, etc.)
 │       │   ├── reservations/ # Komponenty rezerwacji
+│       │   ├── menu/         # ✨ Komponenty menu
 │       │   └── queue/        # Komponenty kolejki (drag & drop)
 │       ├── lib/              # Utilities & API clients
 │       ├── hooks/            # Custom hooks
@@ -185,11 +188,19 @@ rezerwacje/
 - ✅ Autentykacja & autoryzacja
 - ✅ Setup CI/CD
 
-### ✅ Sprint 2: Moduł Rezerwacji (Tydzień 3-4) - **UKOŃCZONY**
+### ✅ Sprint 2: Moduł Rezerwacji (Tydzień 3-4) - **W TRAKCIE**
 - ✅ CRUD rezerwacji
 - ✅ Kalkulator ceny
 - ✅ Walidacje
 - ✅ Interfejs rezerwacji
+- ✨ **System Menu & Kategorie Dań** - **NOWE!**
+  - ✅ Model bazy danych (DishCategory)
+  - ✅ Backend API (CRUD kategorii dań)
+  - ✅ Frontend UI (strona zarządzania kategoriami)
+  - ✅ Integracja z dashboard menu
+  - ✅ Sortowanie i walidacja kolejności
+  - ✅ Kolorowanie i ikony emoji
+  - ✅ Pełna dokumentacja API
 
 ### ✅ Sprint 3: Uzupełnianie Funkcjonalności (Tydzień 5-6) - **UKOŃCZONY**
 - ✅ Zarządzanie klientami
@@ -289,7 +300,24 @@ rezerwacje/
 - Race condition protection
 - Walidacja pozycji
 
-### 3. **Zarządzanie Klientami**
+### 3. **✨ System Menu** - **NOWE!**
+- **Kategorie Dań**
+  - Tworzenie i edycja kategorii (Zupy, Dania główne, Desery, etc.)
+  - Unikalny slug dla każdej kategorii (używany w kodzie)
+  - Ikony emoji dla wizualnej identyfikacji
+  - System kolorów (8 opcji Tailwind CSS)
+  - Kolejność wyświetlania (displayOrder)
+  - Sortowanie kategorii według kolejności
+  - Aktywacja/dezaktywacja kategorii
+  - Walidacja unikalnych slugów
+  - Podgląd karty kategorii z pozycją (#1, #2, #3)
+- **Zarządzanie Daniami** (⏳ w planach)
+  - Przypisanie do kategorii
+  - Nazwa, opis, ceny
+  - Alergeny i składniki
+  - Zdjęcia dan
+
+### 4. **Zarządzanie Klientami**
 - Rejestr klientów z pełnymi danymi
 - Historia wszystkich rezerwacji klienta
 - Notatki o kliencie
@@ -297,7 +325,7 @@ rezerwacje/
 - Wyszukiwanie i filtrowanie
 - Export danych klientów
 
-### 4. **Panel Admina**
+### 5. **Panel Admina**
 - Zarządzanie użytkownikami (CRUD)
 - Konfiguracja sal (pojemność, ceny)
 - Typy eventów (wesele, urodziny, etc.)
@@ -305,7 +333,7 @@ rezerwacje/
 - Logi aktywności użytkowników
 - Przegląd wszystkich rezerwacji
 
-### 5. **Statystyki & Raporty**
+### 6. **Statystyki & Raporty**
 - Przychody miesięczne/roczne
 - Popularność sal (wykres)
 - Typy eventów (rozkład)
@@ -313,7 +341,7 @@ rezerwacje/
 - Liczba rezerwacji w czasie
 - Export raportów do CSV/PDF
 
-### 6. **Backupy & Bezpieczeństwo**
+### 7. **Backupy & Bezpieczeństwo**
 - Automatyczne codzienne backupy bazy
 - Przechowywanie backupów (7/30/365 dni)
 - Możliwość przywrócenia z backupu
@@ -404,6 +432,29 @@ Klient może dzwonić w ciągu dnia bez automatycznego anulowania rezerwacji.
     "Andrzejki",
     "Wigilia firmowa",
     "Inne"
+  ],
+  "dishCategories": [
+    {
+      "slug": "SOUP",
+      "name": "Zupy",
+      "icon": "🍜",
+      "color": "bg-orange-100 text-orange-700",
+      "displayOrder": 1
+    },
+    {
+      "slug": "MAIN_COURSE",
+      "name": "Dania główne",
+      "icon": "🍖",
+      "color": "bg-red-100 text-red-700",
+      "displayOrder": 2
+    },
+    {
+      "slug": "DESSERT",
+      "name": "Desery",
+      "icon": "🍰",
+      "color": "bg-pink-100 text-pink-700",
+      "displayOrder": 3
+    }
   ],
   "users": [
     {
@@ -572,6 +623,7 @@ docker-compose logs -f frontend
 - ✅ Moduł kolejki rezerwacji (99% complete)
 - ✅ **✨ Batch update API z atomicznymi transakcjami** (Bug #9 Fix)
 - ✅ **🌙 Dark Mode Support** - Pełne wsparcie + dokumentacja
+- ✨ **System Menu & Kategorie Dań** - **NOWE!**
 - 🔄 Testy E2E (85% complete)
 - ⏳ Production deployment
 
@@ -580,6 +632,7 @@ docker-compose logs -f frontend
 - 📏 Zaawansowane raporty
 - 💳 Integracja płatności online
 - 📧 Email marketing integration
+- 🍽️ Zarządzanie menu + generowanie dokumentów menu
 
 ### Q3 2026 (Rozważane)
 - 🤖 AI-powered recommendations
@@ -618,20 +671,20 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
 
 ## 🔄 Status Projektu
 
-**Wersja:** 0.9.9 (Release Candidate + Bug #9 Batch Update Fix + Dark Mode)  
+**Wersja:** 0.9.9 (Release Candidate + Bug #9 Batch Update Fix + Dark Mode + Menu System)  
 **Status:** 🔄 W aktywnym rozwoju - stabilny  
-**Ostatnia aktualizacja:** 09.02.2026 - 23:15 CET  
+**Ostatnia aktualizacja:** 10.02.2026 - 23:49 CET  
 **Kolejny release:** v1.0.0 (planowany marzec 2026)
 
 ### Postęp Ogólny
-- **Backend:** 94% ✅ (+2% - batch update API)
-- **Frontend:** 84% ✅ (+2% - atomiczne drag & drop)
-- **Testy:** 82% 🔄 (+2% - testy batch operations)
-- **Dokumentacja:** 92% ✅ (+2% - dark mode guidelines)
+- **Backend:** 96% ✅ (+2% - dish categories API)
+- **Frontend:** 86% ✅ (+2% - UI zarządzania kategoriami)
+- **Testy:** 82% 🔄
+- **Dokumentacja:** 94% ✅ (+2% - dokumentacja menu system)
 - **Deployment:** 70% 🔄
 
 ### Aktualnie w Rozwoju
-- Moduł kolejki rezerwacji (99% complete)
+- System menu & kategorie dań (100% complete)
 - Dark Mode support (100% complete + dokumentacja)
 - Testy jednostkowe (85% complete)
 - Integracja powiadomień email
@@ -653,8 +706,16 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
   - Gradient adaptations
   - Component examples
   - Checklist & best practices
+- ✅ **✨ System Menu & Kategorie Dań** (10.02.2026)
+  - Model DishCategory w bazie danych
+  - CRUD API dla kategorii dań
+  - Frontend UI strona zarządzania kategoriami
+  - Sortowanie według displayOrder
+  - Kolorowanie i ikony emoji
+  - Pełna dokumentacja API
+  - Integracja z dashboard menu
 
-**Branch Status:** Stabilny - wszystkie komponenty mają wsparcie dark mode
+**Branch Status:** feature/category-api - gotowy do review
 
 ---
 
