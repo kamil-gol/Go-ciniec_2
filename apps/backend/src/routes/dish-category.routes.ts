@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import dishCategoryController from '../controllers/dish-category.controller';
-import { authenticateToken } from '../middlewares/auth';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = Router();
 
@@ -19,9 +19,9 @@ router.get('/slug/:slug', dishCategoryController.getCategoryBySlug);
 /**
  * Protected Routes (require authentication)
  */
-router.post('/', authenticateToken, dishCategoryController.createCategory);
-router.put('/:id', authenticateToken, dishCategoryController.updateCategory);
-router.delete('/:id', authenticateToken, dishCategoryController.deleteCategory);
-router.post('/reorder', authenticateToken, dishCategoryController.reorderCategories);
+router.post('/', authMiddleware, dishCategoryController.createCategory);
+router.put('/:id', authMiddleware, dishCategoryController.updateCategory);
+router.delete('/:id', authMiddleware, dishCategoryController.deleteCategory);
+router.post('/reorder', authMiddleware, dishCategoryController.reorderCategories);
 
 export default router;
