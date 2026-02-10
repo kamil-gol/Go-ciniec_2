@@ -163,8 +163,9 @@ export function useEventTypes() {
   return useQuery({
     queryKey: menuKeys.eventTypes(),
     queryFn: async () => {
-      // Fetch from backend API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/event-types`);
+      // Fetch from backend API with fallback URL
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${baseURL}/event-types`);
       if (!response.ok) throw new Error('Failed to fetch event types');
       return response.json();
     },
