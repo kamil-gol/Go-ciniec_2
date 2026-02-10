@@ -35,7 +35,7 @@ export const menuKeys = {
 };
 
 // ════════════════════════════════════════════════════════════════════════════
-// MENU TEMPLATES
+// MENU TEMPLATES - QUERIES
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -83,7 +83,67 @@ export function useActiveMenuTemplate(eventTypeId: string | undefined) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// MENU PACKAGES
+// MENU TEMPLATES - MUTATIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Create menu template
+ * 
+ * @example
+ * const mutation = useCreateTemplate();
+ * mutation.mutate({ name: 'New Template', ... });
+ */
+export function useCreateTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: any) => menuApi.createTemplate(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
+    },
+  });
+}
+
+/**
+ * Update menu template
+ * 
+ * @example
+ * const mutation = useUpdateTemplate();
+ * mutation.mutate({ id: '...', data: {...} });
+ */
+export function useUpdateTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      menuApi.updateTemplate(id, data),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
+      queryClient.invalidateQueries({ queryKey: menuKeys.template(variables.id) });
+    },
+  });
+}
+
+/**
+ * Delete menu template
+ * 
+ * @example
+ * const mutation = useDeleteTemplate();
+ * mutation.mutate(templateId);
+ */
+export function useDeleteTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => menuApi.deleteTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
+    },
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MENU PACKAGES - QUERIES
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -92,7 +152,7 @@ export function useActiveMenuTemplate(eventTypeId: string | undefined) {
  * @example
  * const { data } = useMenuPackages(templateId);
  */
-export function useMenuPackages(templateId: string | undefined) {
+export function useMenuPackages(templateId: string | undefined | null) {
   return useQuery({
     queryKey: menuKeys.packages(templateId!),
     queryFn: () => menuApi.getPackages(templateId!),
@@ -117,7 +177,73 @@ export function useMenuPackage(id: string | undefined) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// MENU OPTIONS
+// MENU PACKAGES - MUTATIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Create menu package
+ * 
+ * @example
+ * const mutation = useCreatePackage();
+ * mutation.mutate({ templateId: '...', name: 'Package', ... });
+ */
+export function useCreatePackage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: any) => menuApi.createPackage(input),
+    onSuccess: (response) => {
+      // Invalidate packages list for this template
+      const templateId = response.data.templateId;
+      queryClient.invalidateQueries({ queryKey: menuKeys.packages(templateId) });
+      queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
+    },
+  });
+}
+
+/**
+ * Update menu package
+ * 
+ * @example
+ * const mutation = useUpdatePackage();
+ * mutation.mutate({ id: '...', data: {...} });
+ */
+export function useUpdatePackage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      menuApi.updatePackage(id, data),
+    onSuccess: (response, variables) => {
+      const templateId = response.data.templateId;
+      queryClient.invalidateQueries({ queryKey: menuKeys.packages(templateId) });
+      queryClient.invalidateQueries({ queryKey: menuKeys.package(variables.id) });
+    },
+  });
+}
+
+/**
+ * Delete menu package
+ * 
+ * @example
+ * const mutation = useDeletePackage();
+ * mutation.mutate({ id: '...', templateId: '...' });
+ */
+export function useDeletePackage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, templateId }: { id: string; templateId: string }) => 
+      menuApi.deletePackage(id),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.packages(variables.templateId) });
+      queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
+    },
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MENU OPTIONS - QUERIES
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -146,6 +272,66 @@ export function useMenuOption(id: string | undefined) {
     queryFn: () => menuApi.getOption(id!),
     select: (response) => response.data,
     enabled: !!id,
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MENU OPTIONS - MUTATIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Create menu option
+ * 
+ * @example
+ * const mutation = useCreateOption();
+ * mutation.mutate({ name: 'DJ', priceAmount: 500, ... });
+ */
+export function useCreateOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: any) => menuApi.createOption(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.options() });
+    },
+  });
+}
+
+/**
+ * Update menu option
+ * 
+ * @example
+ * const mutation = useUpdateOption();
+ * mutation.mutate({ id: '...', data: {...} });
+ */
+export function useUpdateOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      menuApi.updateOption(id, data),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.options() });
+      queryClient.invalidateQueries({ queryKey: menuKeys.option(variables.id) });
+    },
+  });
+}
+
+/**
+ * Delete menu option
+ * 
+ * @example
+ * const mutation = useDeleteOption();
+ * mutation.mutate(optionId);
+ */
+export function useDeleteOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => menuApi.deleteOption(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.options() });
+    },
   });
 }
 
