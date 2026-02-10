@@ -41,46 +41,46 @@ export async function seedDishes() {
       isActive: true,
     },
 
-    // DANIA GŁÓWNE (Main Dishes)
+    // DANIA GŁÓWNE (Main Course)
     {
       name: 'Schabowy z kapustą i ziemniakami',
       description: 'Panierowany kotlet schabowy, kapusta zasmażana, ziemniaki gotowane',
-      category: 'MAIN_DISH',
+      category: 'MAIN_COURSE',
       allergens: ['gluten', 'eggs'],
       isActive: true,
     },
     {
       name: 'Pierogi ruskie',
       description: '10 pierogów z serem i ziemniakami',
-      category: 'MAIN_DISH',
+      category: 'MAIN_COURSE',
       allergens: ['gluten', 'eggs', 'dairy'],
       isActive: true,
     },
     {
       name: 'Gołąbki w sosie pomidorowym',
       description: 'Gołąbki z mięsem mielonym i ryżem w sosie pomidorowym',
-      category: 'MAIN_DISH',
+      category: 'MAIN_COURSE',
       allergens: ['gluten', 'celery'],
       isActive: true,
     },
     {
       name: 'De volaille z frytkami',
       description: 'Pierś z kurczaka faszerowana masłem ziołowym, frytki, surówka',
-      category: 'MAIN_DISH',
+      category: 'MAIN_COURSE',
       allergens: ['dairy', 'gluten'],
       isActive: true,
     },
     {
       name: 'Schab pieczony',
       description: 'Pieczony schab w sosie własnym z ziemniakami',
-      category: 'MAIN_DISH',
+      category: 'MEAT',
       allergens: [],
       isActive: true,
     },
     {
       name: 'Filet z kurczaka w sosie śmietanowym',
       description: 'Filet z kurczaka w sosie śmietanowo-pieczarkowym z ryżem',
-      category: 'MAIN_DISH',
+      category: 'MEAT',
       allergens: ['dairy'],
       isActive: true,
     },
@@ -182,40 +182,65 @@ export async function seedDishes() {
       isActive: true,
     },
 
-    // NAPOJE (Beverages)
+    // NAPOJE (Drinks)
     {
       name: 'Kawa espresso',
       description: 'Kawa espresso',
-      category: 'BEVERAGE',
+      category: 'DRINK',
       allergens: [],
       isActive: true,
     },
     {
       name: 'Kawa latte',
       description: 'Kawa z mlekiem',
-      category: 'BEVERAGE',
+      category: 'DRINK',
       allergens: ['dairy'],
       isActive: true,
     },
     {
       name: 'Herbata czarna',
       description: 'Herbata czarna',
-      category: 'BEVERAGE',
+      category: 'DRINK',
       allergens: [],
       isActive: true,
     },
     {
       name: 'Sok pomarańczowy',
       description: 'Świeżo wyciskany sok pomarańczowy',
-      category: 'BEVERAGE',
+      category: 'DRINK',
       allergens: [],
       isActive: true,
     },
     {
       name: 'Woda mineralna',
       description: 'Woda mineralna gazowana/niegazowana',
-      category: 'BEVERAGE',
+      category: 'DRINK',
       allergens: [],
+      isActive: true,
+    },
+
+    // WĘDLINY (Cold Cuts)
+    {
+      name: 'Talerz wędlin',
+      description: 'Mix wędlin - szynka, salami, kabanosy',
+      category: 'COLD_CUTS',
+      allergens: [],
+      isActive: true,
+    },
+    {
+      name: 'Szynka serówka',
+      description: 'Plastry szynki serówki',
+      category: 'COLD_CUTS',
+      allergens: [],
+      isActive: true,
+    },
+
+    // PRZEKASKI (Snacks)
+    {
+      name: 'Paluchy serowe',
+      description: 'Chrupiące paluchy z serem',
+      category: 'SNACK',
+      allergens: ['gluten', 'dairy', 'eggs'],
       isActive: true,
     },
   ];
