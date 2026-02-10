@@ -140,7 +140,7 @@ export default function DishCategoriesPage() {
                 
                 <div className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>Nazwa</Label>
+                    <Label>Nazwa (polska)</Label>
                     <Input
                       placeholder="Zupy"
                       value={formData.name}
@@ -155,6 +155,7 @@ export default function DishCategoriesPage() {
                       value={formData.slug}
                       onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })}
                     />
+                    <p className="text-xs text-muted-foreground">Używany w kodzie - tylko duże litery, bez spacji</p>
                   </div>
                   
                   <div className="space-y-2">
@@ -260,12 +261,16 @@ export default function DishCategoriesPage() {
                     <CardTitle className="text-xl group-hover:text-purple-600 transition-colors">
                       {category.name}
                     </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Badge variant="outline" className={category.color}>
-                        {category.slug}
+                    <div className="flex flex-col gap-2 text-sm text-muted-foreground mt-2">
+                      <Badge variant="outline" className={`w-fit ${category.color}`}>
+                        {category.name}
                       </Badge>
-                      <span>•</span>
-                      <span>Kolejność: {category.displayOrder}</span>
+                      <div className="text-xs">
+                        Slug: <span className="font-mono text-muted-foreground/70">{category.slug}</span>
+                      </div>
+                      <div className="text-xs">
+                        Kolejność: {category.displayOrder}
+                      </div>
                     </div>
                   </CardHeader>
                 </div>
