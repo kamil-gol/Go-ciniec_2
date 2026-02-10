@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Seed Menu System Script
-# Seeds templates and packages for the menu system
+# Seeds event types, templates and packages for the menu system
 # Run: bash scripts/seed-menu-system.sh
 
 echo "🎉 Starting Menu System Seed..."
@@ -16,8 +16,20 @@ if [ ! -d "node_modules" ]; then
   npm install
 fi
 
+# Seed 0: Event Types
+echo "🔹 Step 1/3: Seeding Event Types (7)..."
+echo ""
+npx ts-node --compiler-options '{"module":"commonjs"}' prisma/seeds/seed-event-types.ts
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Event types seed failed. Aborting."
+  exit 1
+fi
+
 # Seed 1: Menu Templates
-echo "🔹 Step 1/2: Seeding Menu Templates (30)..."
+echo ""
+echo "🔹 Step 2/3: Seeding Menu Templates (30)..."
 echo ""
 npx ts-node --compiler-options '{"module":"commonjs"}' prisma/seeds/seed-menu-templates.ts
 
@@ -28,7 +40,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "🔹 Step 2/2: Seeding Menu Packages (20+)..."
+echo "🔹 Step 3/3: Seeding Menu Packages (20+)..."
 echo ""
 npx ts-node --compiler-options '{"module":"commonjs"}' prisma/seeds/seed-menu-packages.ts
 
