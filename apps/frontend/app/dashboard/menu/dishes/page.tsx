@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ChefHat, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DishLibraryManager } from '@/components/menu/DishLibraryManager'
-import { useDishes } from '@/hooks/use-dishes-courses'
+import { useDishes } from '@/hooks/use-dishes'
 import Link from 'next/link'
 
 export default function DishesPage() {

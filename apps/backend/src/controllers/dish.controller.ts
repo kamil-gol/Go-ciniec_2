@@ -1,49 +1,38 @@
 /**
  * Dish Controller
- * 
- * HTTP handlers for dish library operations
+ * Handles HTTP requests for dish management
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { dishService } from '../services/dish.service';
-import {
-  createDishSchema,
-  updateDishSchema,
-  dishQuerySchema
-} from '../validation/dish.validation';
-import { z } from 'zod';
+import { Request, Response } from 'express';
+import dishService from '../services/dish.service';
+import { logger } from '../utils/logger';
 
-export class DishController {
-
+class DishController {
   /**
    * GET /api/dishes
-   * List all dishes with optional filters
+   * Get all dishes with optional filters
    */
-  async list(req: Request, res: Response, next: NextFunction) {
+  async getDishes(req: Request, res: Response) {
     try {
-      // Validate query params
-      const filters = dishQuerySchema.parse(req.query);
+      const { categoryId, isActive, search } = req.query;
 
-      const dishes = await dishService.list({
-        category: filters.category,
-        isActive: filters.isActive,
-        search: filters.search
-      });
+      const filters: any = {};
+      if (categoryId) filters.categoryId = categoryId as string;
+      if (isActive !== undefined) filters.isActive = isActive === 'true';
+      if (search) filters.search = search as string;
 
-      return res.status(200).json({
+      const dishes = await dishService.findAll(filters);
+
+      res.status(200).json({
         success: true,
         data: dishes,
-        count: dishes.length
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          details: error.errors
-        });
-      }
-      next(error);
+    } catch (error: any) {
+      logger.error('Error getting dishes:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch dishes',
+      });
     }
   }
 
@@ -51,121 +40,181 @@ export class DishController {
    * GET /api/dishes/:id
    * Get single dish by ID
    */
-  async getById(req: Request, res: Response, next: NextFunction) {
+  async getDishById(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const dish = await dishService.findOne(id);
 
-      const dish = await dishService.getById(id);
-
-      return res.status(200).json({
-        success: true,
-        data: dish
-      });
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Dish not found') {
+      if (!dish) {
         return res.status(404).json({
           success: false,
-          error: 'Dish not found'
+          error: 'Dish not found',
         });
       }
-      next(error);
+
+      res.status(200).json({
+        success: true,
+        data: dish,
+      });
+    } catch (error: any) {
+      logger.error('Error getting dish:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch dish',
+      });
+    }
+  }
+
+  /**
+   * GET /api/dishes/category/:categoryId
+   * Get dishes by category ID
+   */
+  async getDishesByCategory(req: Request, res: Response) {
+    try {
+      const { categoryId } = req.params;
+      const dishes = await dishService.findByCategory(categoryId);
+
+      res.status(200).json({
+        success: true,
+        data: dishes,
+      });
+    } catch (error: any) {
+      logger.error('Error getting dishes by category:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch dishes',
+      });
     }
   }
 
   /**
    * POST /api/dishes
-   * Create new dish (ADMIN only)
+   * Create new dish
    */
-  async create(req: Request, res: Response, next: NextFunction) {
+  async createDish(req: Request, res: Response) {
     try {
-      // Validate request body
-      const data = createDishSchema.parse(req.body);
+      const { name, description, categoryId, allergens, isActive } = req.body;
 
-      const dish = await dishService.create(data);
-
-      return res.status(201).json({
-        success: true,
-        data: dish,
-        message: 'Dish created successfully'
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
+      // Validation
+      if (!name || !categoryId) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
-          details: error.errors
+          error: 'Name and categoryId are required',
         });
       }
-      next(error);
+
+      const dish = await dishService.create({
+        name,
+        description,
+        categoryId,
+        allergens: allergens || [],
+        isActive: isActive ?? true,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: dish,
+        message: 'Dish created successfully',
+      });
+    } catch (error: any) {
+      logger.error('Error creating dish:', error);
+      
+      if (error.message?.includes('already exists')) {
+        return res.status(409).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      if (error.message?.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to create dish',
+      });
     }
   }
 
   /**
    * PUT /api/dishes/:id
-   * Update dish (ADMIN only)
+   * Update dish
    */
-  async update(req: Request, res: Response, next: NextFunction) {
+  async updateDish(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const { name, description, categoryId, allergens, isActive } = req.body;
 
-      // Validate request body
-      const data = updateDishSchema.parse(req.body);
+      const dish = await dishService.update(id, {
+        name,
+        description,
+        categoryId,
+        allergens,
+        isActive,
+      });
 
-      const dish = await dishService.update(id, data);
-
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: dish,
-        message: 'Dish updated successfully'
+        message: 'Dish updated successfully',
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          details: error.errors
-        });
-      }
-      if (error instanceof Error && error.message === 'Dish not found') {
+    } catch (error: any) {
+      logger.error('Error updating dish:', error);
+      
+      if (error.message?.includes('not found')) {
         return res.status(404).json({
           success: false,
-          error: 'Dish not found'
+          error: error.message,
         });
       }
-      next(error);
+
+      if (error.message?.includes('already exists')) {
+        return res.status(409).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to update dish',
+      });
     }
   }
 
   /**
    * DELETE /api/dishes/:id
-   * Delete dish (ADMIN only)
+   * Delete dish
    */
-  async delete(req: Request, res: Response, next: NextFunction) {
+  async deleteDish(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      await dishService.remove(id);
 
-      await dishService.delete(id);
-
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
-        message: 'Dish deleted successfully'
+        message: 'Dish deleted successfully',
       });
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('Cannot delete')) {
-        return res.status(409).json({
-          success: false,
-          error: error.message
-        });
-      }
-      if (error instanceof Error && error.message === 'Dish not found') {
+    } catch (error: any) {
+      logger.error('Error deleting dish:', error);
+      
+      if (error.message?.includes('not found')) {
         return res.status(404).json({
           success: false,
-          error: 'Dish not found'
+          error: error.message,
         });
       }
-      next(error);
+
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to delete dish',
+      });
     }
   }
 }
 
-export const dishController = new DishController();
+export default new DishController();

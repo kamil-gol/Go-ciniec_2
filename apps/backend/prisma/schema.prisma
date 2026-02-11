@@ -221,9 +221,9 @@ model ActivityLog {
   @@index([action])
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // 🍽️ MENU SYSTEM
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 model MenuTemplate {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -233,7 +233,7 @@ model MenuTemplate {
   description   String?  @db.Text
   variant       String?  @db.VarChar(100)
   
-  validFrom     DateTime
+  validFrom     DateTime?
   validTo       DateTime?
   isActive      Boolean  @default(true)
   
@@ -347,39 +347,40 @@ model MenuPackageOption {
   @@index([optionId])
 }
 
-// ═══════════════════════════════════════════════════════════
-// 🍽️ DISH LIBRARY & CATEGORY-BASED MENU SYSTEM
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// 🍽️ DISH LIBRARY & DYNAMIC CATEGORY SYSTEM
+// ═══════════════════════════════════════════════════════════════
 
-enum DishCategory {
-  SOUP
-  MAIN_COURSE
-  MEAT
-  SIDE_DISH
-  SALAD
-  APPETIZER
-  DESSERT
-  DRINK
-  COLD_CUTS
-  SNACK
-  BREAKFAST
-  ADDON
-  OTHER
+model DishCategory {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  
+  slug          String   @unique @db.VarChar(50)
+  name          String   @db.VarChar(100)
+  icon          String?  @db.VarChar(20)
+  color         String?  @db.VarChar(50)
+  
+  displayOrder  Int      @default(0) @db.SmallInt
+  isActive      Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  dishes        Dish[]
+  categorySettings PackageCategorySettings[]
+  
+  @@index([slug])
+  @@index([isActive])
+  @@index([displayOrder])
 }
 
 model Dish {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId    String        @db.Uuid
   
   name          String        @db.VarChar(255)
   description   String?       @db.Text
-  category      DishCategory
   
   allergens     String[]      @db.Text
-  
-  priceModifier Decimal       @default(0) @db.Decimal(10, 2)
-  
-  imageUrl      String?       @db.Text
-  thumbnailUrl  String?       @db.Text
   
   isActive      Boolean       @default(true)
   displayOrder  Int           @default(0) @db.SmallInt
@@ -387,9 +388,10 @@ model Dish {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
+  category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   addonGroups   AddonGroupDish[]
   
-  @@index([category])
+  @@index([categoryId])
   @@index([isActive])
   @@index([name])
 }
@@ -397,10 +399,10 @@ model Dish {
 model PackageCategorySettings {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   packageId     String        @db.Uuid
-  category      DishCategory
+  categoryId    String        @db.Uuid
   
-  minSelect     Int           @default(1) @db.SmallInt
-  maxSelect     Int           @default(1) @db.SmallInt
+  minSelect     Decimal       @default(1) @db.Decimal(4, 1)
+  maxSelect     Decimal       @default(1) @db.Decimal(4, 1)
   
   isRequired    Boolean       @default(true)
   isEnabled     Boolean       @default(true)
@@ -412,10 +414,11 @@ model PackageCategorySettings {
   updatedAt     DateTime      @updatedAt
   
   package       MenuPackage   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   
-  @@unique([packageId, category])
+  @@unique([packageId, categoryId])
   @@index([packageId])
-  @@index([category])
+  @@index([categoryId])
 }
 
 model AddonGroup {

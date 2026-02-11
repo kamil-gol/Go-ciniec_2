@@ -9,8 +9,9 @@ import { menuTemplateController } from '../controllers/menuTemplate.controller';
 import { menuPackageController } from '../controllers/menuPackage.controller';
 import { menuOptionController } from '../controllers/menuOption.controller';
 import { reservationMenuController } from '../controllers/reservationMenu.controller';
-import { dishController } from '../controllers/dish.controller';
 import { menuCourseController } from '../controllers/menuCourse.controller';
+import { packageCategoryController } from '../controllers/packageCategory.controller';
+import { addonGroupController } from '../controllers/addonGroup.controller';
 
 // TODO: Import authentication middleware when ready
 // import { authenticate, requireAdmin } from '../middleware/auth';
@@ -194,6 +195,170 @@ router.post(
 );
 
 // ═══════════════════════════════════════════════════════════════
+// 📋 PACKAGE CATEGORY SETTINGS (NEW)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/menu-packages/:packageId/categories
+ * @desc    Get all category settings for a package
+ * @params  packageId: string
+ * @access  Public
+ */
+router.get(
+  '/menu-packages/:packageId/categories',
+  packageCategoryController.getByPackage.bind(packageCategoryController)
+);
+
+/**
+ * @route   PUT /api/menu-packages/:packageId/categories
+ * @desc    Bulk update category settings for a package
+ * @params  packageId: string
+ * @body    BulkUpdateCategorySettingsInput
+ * @access  Admin only
+ */
+router.put(
+  '/menu-packages/:packageId/categories',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  packageCategoryController.bulkUpdate.bind(packageCategoryController)
+);
+
+/**
+ * @route   GET /api/package-category-settings/:id
+ * @desc    Get single category setting
+ * @params  id: string
+ * @access  Public
+ */
+router.get(
+  '/package-category-settings/:id',
+  packageCategoryController.getById.bind(packageCategoryController)
+);
+
+/**
+ * @route   POST /api/package-category-settings
+ * @desc    Create category setting
+ * @body    CreateCategorySettingInput
+ * @access  Admin only
+ */
+router.post(
+  '/package-category-settings',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  packageCategoryController.create.bind(packageCategoryController)
+);
+
+/**
+ * @route   PUT /api/package-category-settings/:id
+ * @desc    Update category setting
+ * @params  id: string
+ * @body    UpdateCategorySettingInput
+ * @access  Admin only
+ */
+router.put(
+  '/package-category-settings/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  packageCategoryController.update.bind(packageCategoryController)
+);
+
+/**
+ * @route   DELETE /api/package-category-settings/:id
+ * @desc    Delete category setting
+ * @params  id: string
+ * @access  Admin only
+ */
+router.delete(
+  '/package-category-settings/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  packageCategoryController.delete.bind(packageCategoryController)
+);
+
+// ═══════════════════════════════════════════════════════════════
+// 🍔 ADDON GROUPS (NEW)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/addon-groups
+ * @desc    List all addon groups (with optional filters)
+ * @query   isActive?: boolean, search?: string
+ * @access  Public
+ */
+router.get(
+  '/addon-groups',
+  addonGroupController.list.bind(addonGroupController)
+);
+
+/**
+ * @route   GET /api/addon-groups/:id
+ * @desc    Get single addon group by ID
+ * @params  id: string
+ * @access  Public
+ */
+router.get(
+  '/addon-groups/:id',
+  addonGroupController.getById.bind(addonGroupController)
+);
+
+/**
+ * @route   POST /api/addon-groups
+ * @desc    Create new addon group
+ * @body    CreateAddonGroupInput
+ * @access  Admin only
+ */
+router.post(
+  '/addon-groups',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  addonGroupController.create.bind(addonGroupController)
+);
+
+/**
+ * @route   PUT /api/addon-groups/:id
+ * @desc    Update addon group
+ * @params  id: string
+ * @body    UpdateAddonGroupInput
+ * @access  Admin only
+ */
+router.put(
+  '/addon-groups/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  addonGroupController.update.bind(addonGroupController)
+);
+
+/**
+ * @route   DELETE /api/addon-groups/:id
+ * @desc    Delete addon group
+ * @params  id: string
+ * @access  Admin only
+ */
+router.delete(
+  '/addon-groups/:id',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  addonGroupController.delete.bind(addonGroupController)
+);
+
+/**
+ * @route   PUT /api/addon-groups/:id/dishes
+ * @desc    Assign dishes to addon group
+ * @params  id: string
+ * @body    AssignDishesToGroupInput
+ * @access  Admin only
+ */
+router.put(
+  '/addon-groups/:id/dishes',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  addonGroupController.assignDishes.bind(addonGroupController)
+);
+
+/**
+ * @route   DELETE /api/addon-groups/:groupId/dishes/:dishId
+ * @desc    Remove dish from addon group
+ * @params  groupId: string, dishId: string
+ * @access  Admin only
+ */
+router.delete(
+  '/addon-groups/:groupId/dishes/:dishId',
+  // requireAdmin,  // TODO: Uncomment when auth ready
+  addonGroupController.removeDish.bind(addonGroupController)
+);
+
+// ═══════════════════════════════════════════════════════════════
 // MENU OPTIONS
 // ═══════════════════════════════════════════════════════════════
 
@@ -257,70 +422,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════════════
-// 🍽️ DISH LIBRARY (NEW)
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * @route   GET /api/dishes
- * @desc    List all dishes in library (with optional filters)
- * @query   category?: DishCategory, isActive?: boolean, search?: string
- * @access  Public
- */
-router.get(
-  '/dishes',
-  dishController.list.bind(dishController)
-);
-
-/**
- * @route   GET /api/dishes/:id
- * @desc    Get single dish by ID
- * @params  id: string
- * @access  Public
- */
-router.get(
-  '/dishes/:id',
-  dishController.getById.bind(dishController)
-);
-
-/**
- * @route   POST /api/dishes
- * @desc    Create new dish
- * @body    CreateDishInput
- * @access  Admin only
- */
-router.post(
-  '/dishes',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  dishController.create.bind(dishController)
-);
-
-/**
- * @route   PUT /api/dishes/:id
- * @desc    Update dish
- * @params  id: string
- * @body    UpdateDishInput
- * @access  Admin only
- */
-router.put(
-  '/dishes/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  dishController.update.bind(dishController)
-);
-
-/**
- * @route   DELETE /api/dishes/:id
- * @desc    Delete dish
- * @params  id: string
- * @access  Admin only
- */
-router.delete(
-  '/dishes/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  dishController.delete.bind(dishController)
-);
-
-// ═══════════════════════════════════════════════════════════════
-// 🍽️ MENU COURSES (NEW)
+// 🍽️ MENU COURSES
 // ═══════════════════════════════════════════════════════════════
 
 /**
@@ -460,6 +562,10 @@ router.delete(
   // authenticate,  // TODO: Uncomment when auth ready
   reservationMenuController.deleteMenu.bind(reservationMenuController)
 );
+
+// ═══════════════════════════════════════════════════════════════
+// NOTE: Dishes routes moved to /routes/dish.routes.ts
+// ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORT ROUTER

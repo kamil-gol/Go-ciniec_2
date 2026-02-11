@@ -1,53 +1,39 @@
 /**
  * Dish Service
- * 
- * Handles all business logic for dish library operations
+ * Business logic for dish management
  */
 
-import { PrismaClient, Prisma, DishCategory } from '@prisma/client';
+import { PrismaClient, Dish, DishCategory } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export interface CreateDishInput {
-  name: string;
-  description?: string;
-  category: DishCategory;
-  allergens?: string[];
-  priceModifier?: number;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-  isActive?: boolean;
-  displayOrder?: number;
-}
-
-export interface UpdateDishInput {
-  name?: string;
-  description?: string;
-  category?: DishCategory;
-  allergens?: string[];
-  priceModifier?: number;
-  imageUrl?: string;
-  thumbnailUrl?: string;
-  isActive?: boolean;
-  displayOrder?: number;
-}
+export type DishWithCategory = Dish & { category: DishCategory };
 
 export interface DishFilters {
-  category?: DishCategory;
+  categoryId?: string;
   isActive?: boolean;
   search?: string;
 }
 
-export class DishService {
-  
-  /**
-   * List all dishes with optional filters
-   */
-  async list(filters?: DishFilters) {
-    const where: Prisma.DishWhereInput = {};
+export interface CreateDishInput {
+  name: string;
+  description?: string | null;
+  categoryId: string;
+  allergens?: string[];
+  isActive?: boolean;
+}
 
-    if (filters?.category) {
-      where.category = filters.category;
+export interface UpdateDishInput extends Partial<CreateDishInput> {}
+
+class DishService {
+  /**
+   * Get all dishes with optional filters
+   */
+  async findAll(filters?: DishFilters): Promise<DishWithCategory[]> {
+    const where: any = {};
+
+    if (filters?.categoryId) {
+      where.categoryId = filters.categoryId;
     }
 
     if (filters?.isActive !== undefined) {
@@ -57,124 +43,141 @@ export class DishService {
     if (filters?.search) {
       where.OR = [
         { name: { contains: filters.search, mode: 'insensitive' } },
-        { description: { contains: filters.search, mode: 'insensitive' } }
+        { description: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
-    return await prisma.dish.findMany({
+    return prisma.dish.findMany({
       where,
+      include: {
+        category: true,
+      },
       orderBy: [
-        { category: 'asc' },
-        { displayOrder: 'asc' },
-        { name: 'asc' }
-      ]
+        { category: { displayOrder: 'asc' } },
+        { name: 'asc' },
+      ],
     });
   }
 
   /**
    * Get single dish by ID
    */
-  async getById(id: string) {
-    const dish = await prisma.dish.findUnique({
-      where: { id }
+  async findOne(id: string): Promise<DishWithCategory | null> {
+    return prisma.dish.findUnique({
+      where: { id },
+      include: {
+        category: true,
+      },
     });
+  }
 
-    if (!dish) {
-      throw new Error('Dish not found');
-    }
-
-    return dish;
+  /**
+   * Get dishes by category ID
+   */
+  async findByCategory(categoryId: string): Promise<DishWithCategory[]> {
+    return prisma.dish.findMany({
+      where: { categoryId },
+      include: {
+        category: true,
+      },
+      orderBy: { name: 'asc' },
+    });
   }
 
   /**
    * Create new dish
    */
-  async create(data: CreateDishInput) {
-    return await prisma.dish.create({
+  async create(data: CreateDishInput): Promise<DishWithCategory> {
+    // Check if dish with same name already exists
+    const existing = await prisma.dish.findFirst({
+      where: { name: data.name },
+    });
+
+    if (existing) {
+      throw new Error(`Dish with name "${data.name}" already exists`);
+    }
+
+    // Verify category exists
+    const category = await prisma.dishCategory.findUnique({
+      where: { id: data.categoryId },
+    });
+
+    if (!category) {
+      throw new Error(`Category with ID ${data.categoryId} not found`);
+    }
+
+    return prisma.dish.create({
       data: {
         name: data.name,
         description: data.description,
-        category: data.category,
-        allergens: data.allergens ?? [],
-        priceModifier: data.priceModifier ?? 0,
-        imageUrl: data.imageUrl,
-        thumbnailUrl: data.thumbnailUrl,
+        categoryId: data.categoryId,
+        allergens: data.allergens || [],
         isActive: data.isActive ?? true,
-        displayOrder: data.displayOrder ?? 0
-      }
+      },
+      include: {
+        category: true,
+      },
     });
   }
 
   /**
-   * Update dish
+   * Update existing dish
    */
-  async update(id: string, data: UpdateDishInput) {
+  async update(id: string, data: UpdateDishInput): Promise<DishWithCategory> {
     // Check if dish exists
-    await this.getById(id);
+    const existing = await this.findOne(id);
+    if (!existing) {
+      throw new Error(`Dish with ID ${id} not found`);
+    }
 
-    return await prisma.dish.update({
-      where: { id },
-      data: {
-        name: data.name,
-        description: data.description,
-        category: data.category,
-        allergens: data.allergens,
-        priceModifier: data.priceModifier,
-        imageUrl: data.imageUrl,
-        thumbnailUrl: data.thumbnailUrl,
-        isActive: data.isActive,
-        displayOrder: data.displayOrder
+    // If updating name, check for conflicts
+    if (data.name) {
+      const nameConflict = await prisma.dish.findFirst({
+        where: {
+          name: data.name,
+          NOT: { id },
+        },
+      });
+
+      if (nameConflict) {
+        throw new Error(`Dish with name "${data.name}" already exists`);
       }
+    }
+
+    // If updating categoryId, verify it exists
+    if (data.categoryId) {
+      const category = await prisma.dishCategory.findUnique({
+        where: { id: data.categoryId },
+      });
+
+      if (!category) {
+        throw new Error(`Category with ID ${data.categoryId} not found`);
+      }
+    }
+
+    return prisma.dish.update({
+      where: { id },
+      data,
+      include: {
+        category: true,
+      },
     });
   }
 
   /**
    * Delete dish
    */
-  async delete(id: string) {
+  async remove(id: string): Promise<void> {
     // Check if dish exists
-    await this.getById(id);
-
-    // Check if dish is used in any courses
-    const usageCount = await prisma.menuCourseOption.count({
-      where: { dishId: id }
-    });
-
-    if (usageCount > 0) {
-      throw new Error(`Cannot delete dish. It is used in ${usageCount} course(s).`);
+    const existing = await this.findOne(id);
+    if (!existing) {
+      throw new Error(`Dish with ID ${id} not found`);
     }
 
-    return await prisma.dish.delete({
-      where: { id }
-    });
-  }
-
-  /**
-   * Get dishes by category
-   */
-  async getByCategory(category: DishCategory) {
-    return await prisma.dish.findMany({
-      where: {
-        category,
-        isActive: true
-      },
-      orderBy: [
-        { displayOrder: 'asc' },
-        { name: 'asc' }
-      ]
-    });
-  }
-
-  /**
-   * Get dishes by IDs (for bulk operations)
-   */
-  async getByIds(ids: string[]) {
-    return await prisma.dish.findMany({
-      where: {
-        id: { in: ids }
-      }
+    await prisma.dish.delete({
+      where: { id },
     });
   }
 }
 
-export const dishService = new DishService();
+export default new DishService();

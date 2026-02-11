@@ -33,9 +33,9 @@ export class ReservationMenuController {
         where: { id: reservationId },
         select: {
           id: true,
-          adultsCount: true,
-          childrenCount: true,
-          toddlersCount: true
+          adults: true,
+          children: true,
+          toddlers: true
         }
       });
 
@@ -60,9 +60,9 @@ export class ReservationMenuController {
         reservationId,
         packageId: data.packageId,
         selectedOptions: data.selectedOptions,
-        adultsCount: reservation.adultsCount,
-        childrenCount: reservation.childrenCount ?? 0,
-        toddlersCount: reservation.toddlersCount ?? 0
+        adultsCount: reservation.adults,
+        childrenCount: reservation.children ?? 0,
+        toddlersCount: reservation.toddlers ?? 0
       });
 
       return res.status(201).json({
