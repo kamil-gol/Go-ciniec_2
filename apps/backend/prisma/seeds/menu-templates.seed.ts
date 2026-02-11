@@ -1,4 +1,4 @@
-import { PrismaClient, DishCategory } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 const prisma = new PrismaClient();
@@ -33,6 +33,11 @@ export async function seedMenuTemplatesAndPackages() {
       console.log(`  ℹ️ ${et.name} (exists)`);
     }
   }
+
+  // Fetch all dish categories
+  const dishCategories = await prisma.dishCategory.findMany();
+  const categoryMap = new Map(dishCategories.map(c => [c.slug, c.id]));
+  console.log(`\n📂 Found ${dishCategories.length} dish categories`);
 
   // 2. CREATE MENU TEMPLATES
   console.log('\n📝 Creating menu templates...');
@@ -117,12 +122,13 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(100),
     new Decimal(50),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 1 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 5 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 1 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 5 },
+    ],
+    categoryMap
   );
 
   await createPackageWithCategories(
@@ -133,14 +139,15 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(130),
     new Decimal(60),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
-      { category: 'APPETIZER' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 3 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(2), maxSelect: new Decimal(4), displayOrder: 4 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(3), displayOrder: 5 },
-      { category: 'COLD_CUTS' as DishCategory, minSelect: new Decimal(0.5), maxSelect: new Decimal(1), displayOrder: 6 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(3), displayOrder: 7 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
+      { categorySlug: 'APPETIZER', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 3 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(2), maxSelect: new Decimal(4), displayOrder: 4 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(1.5), maxSelect: new Decimal(3), displayOrder: 5 },
+      { categorySlug: 'COLD_CUTS', minSelect: new Decimal(0.5), maxSelect: new Decimal(1), displayOrder: 6 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1), maxSelect: new Decimal(3), displayOrder: 7 },
+    ],
+    categoryMap
   );
 
   await createPackageWithCategories(
@@ -151,14 +158,15 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(180),
     new Decimal(80),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
-      { category: 'APPETIZER' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(3), displayOrder: 2 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(3), maxSelect: new Decimal(5), displayOrder: 4 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(2), maxSelect: new Decimal(4), displayOrder: 5 },
-      { category: 'COLD_CUTS' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 6 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(2), maxSelect: new Decimal(4), displayOrder: 7 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
+      { categorySlug: 'APPETIZER', minSelect: new Decimal(1.5), maxSelect: new Decimal(3), displayOrder: 2 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(3), maxSelect: new Decimal(5), displayOrder: 4 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(2), maxSelect: new Decimal(4), displayOrder: 5 },
+      { categorySlug: 'COLD_CUTS', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 6 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(2), maxSelect: new Decimal(4), displayOrder: 7 },
+    ],
+    categoryMap
   );
 
   // Pakiety dla komunii
@@ -171,12 +179,13 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(80),
     new Decimal(40),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 1 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 3 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(0.5), maxSelect: new Decimal(1.5), displayOrder: 4 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(3), displayOrder: 5 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 1 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 3 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(0.5), maxSelect: new Decimal(1.5), displayOrder: 4 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1), maxSelect: new Decimal(3), displayOrder: 5 },
+    ],
+    categoryMap
   );
 
   await createPackageWithCategories(
@@ -187,12 +196,13 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(110),
     new Decimal(55),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 2 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(3.5), displayOrder: 5 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 2 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1.5), maxSelect: new Decimal(3.5), displayOrder: 5 },
+    ],
+    categoryMap
   );
 
   // Pakiet dla chrztu
@@ -205,12 +215,13 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(70),
     new Decimal(35),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(0.5), maxSelect: new Decimal(1), displayOrder: 1 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 2 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 3 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(0.5), maxSelect: new Decimal(1.5), displayOrder: 4 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 5 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(0.5), maxSelect: new Decimal(1), displayOrder: 1 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 2 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 3 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(0.5), maxSelect: new Decimal(1.5), displayOrder: 4 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 5 },
+    ],
+    categoryMap
   );
 
   // Pakiet urodzinowy
@@ -223,11 +234,12 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(90),
     new Decimal(45),
     [
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(3), displayOrder: 2 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 3 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(4), displayOrder: 4 },
-    ]
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 1 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(1.5), maxSelect: new Decimal(3), displayOrder: 2 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 3 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1.5), maxSelect: new Decimal(4), displayOrder: 4 },
+    ],
+    categoryMap
   );
 
   // Pakiet firmowy / Inne
@@ -240,12 +252,13 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(0),
     new Decimal(0),
     [
-      { category: 'SOUP' as DishCategory, minSelect: new Decimal(0.5), maxSelect: new Decimal(1), displayOrder: 1 },
-      { category: 'MAIN_COURSE' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
-      { category: 'SIDE_DISH' as DishCategory, minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 3 },
-      { category: 'SALAD' as DishCategory, minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
-      { category: 'DESSERT' as DishCategory, minSelect: new Decimal(0.5), maxSelect: new Decimal(1.5), displayOrder: 5 },
-    ]
+      { categorySlug: 'SOUP', minSelect: new Decimal(0.5), maxSelect: new Decimal(1), displayOrder: 1 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
+      { categorySlug: 'SIDE_DISH', minSelect: new Decimal(1.5), maxSelect: new Decimal(2.5), displayOrder: 3 },
+      { categorySlug: 'SALAD', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(0.5), maxSelect: new Decimal(1.5), displayOrder: 5 },
+    ],
+    categoryMap
   );
 
   console.log('\n✅ Seed completed!');
@@ -259,11 +272,12 @@ async function createPackageWithCategories(
   priceChild: Decimal,
   priceToddler: Decimal,
   categories: {
-    category: DishCategory;
+    categorySlug: string;
     minSelect: Decimal;
     maxSelect: Decimal;
     displayOrder: number;
-  }[]
+  }[],
+  categoryMap: Map<string, string>
 ) {
   const pkg = await prisma.menuPackage.create({
     data: {
@@ -278,10 +292,17 @@ async function createPackageWithCategories(
   });
 
   for (const cat of categories) {
+    const categoryId = categoryMap.get(cat.categorySlug);
+    
+    if (!categoryId) {
+      console.warn(`⚠️  Category ${cat.categorySlug} not found, skipping`);
+      continue;
+    }
+
     await prisma.packageCategorySettings.create({
       data: {
         packageId: pkg.id,
-        category: cat.category,
+        categoryId: categoryId,
         minSelect: cat.minSelect,
         maxSelect: cat.maxSelect,
         displayOrder: cat.displayOrder,
