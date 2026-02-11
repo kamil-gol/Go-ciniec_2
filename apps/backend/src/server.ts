@@ -29,7 +29,8 @@ const allowedOrigins = [
   'http://localhost:3001',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
-  'http://62.171.189.172:3001',
+  'http://62.171.189.172:3000',  // Production frontend
+  'http://62.171.189.172:3001',  // Production backend
   process.env.CORS_ORIGIN,
 ].filter(Boolean); // Remove undefined values
 
