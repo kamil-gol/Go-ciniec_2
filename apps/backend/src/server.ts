@@ -21,13 +21,41 @@ const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
 /**
+ * CORS Allowed Origins
+ * Add your frontend URLs here
+ */
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://62.171.189.172:3001',
+  process.env.CORS_ORIGIN,
+].filter(Boolean); // Remove undefined values
+
+/**
  * Security Middleware
  */
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 600, // 10 minutes
   })
 );
 
@@ -117,6 +145,7 @@ app.use(errorHandler);
  */
 const server = app.listen(PORT, () => {
   logger.info(`\n🚀 Server running on http://localhost:${PORT}`);
+  logger.info(`📋 Allowed CORS origins: ${allowedOrigins.join(', ')}`);
   logger.info(`📝 API Documentation: http://localhost:${PORT}/api/docs`);
   logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
   logger.info(`🍽️  Menu System: http://localhost:${PORT}/api/menu-templates`);
