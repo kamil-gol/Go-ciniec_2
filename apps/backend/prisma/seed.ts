@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedComprehensiveDishes } from './seeds/menu-comprehensive.seed';
 import { seedMenuTemplatesAndPackages } from './seeds/menu-templates.seed';
+import { seedE2ETestData } from './seeds/e2e-test-data.seed';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +20,12 @@ async function main() {
     await seedMenuTemplatesAndPackages();
     console.log('✅ Seeded templates and packages');
 
-    // 3. Summary
+    // 3. Seed E2E test data (halls, users, clients, reservations)
+    console.log('\n🧪 STEP 3: Seeding E2E test data...');
+    await seedE2ETestData();
+    console.log('✅ Seeded E2E test data');
+
+    // 4. Summary
     console.log('\n' + '='.repeat(60));
     console.log('🎉 Database seeding completed successfully!');
     console.log('='.repeat(60));
@@ -32,6 +38,11 @@ async function main() {
     console.log(`  📝 Menu Templates: ${stats.templates}`);
     console.log(`  📦 Menu Packages: ${stats.packages}`);
     console.log(`  ⚙️ Category Settings: ${stats.categorySettings}`);
+    console.log(`  🏛️ Halls: ${stats.halls}`);
+    console.log(`  👥 Users: ${stats.users}`);
+    console.log(`  👤 Clients: ${stats.clients}`);
+    console.log(`  📅 Reservations: ${stats.reservations}`);
+    console.log(`  💰 Deposits: ${stats.deposits}`);
     console.log('');
 
   } catch (error) {
@@ -41,15 +52,42 @@ async function main() {
 }
 
 async function getStats() {
-  const [dishes, eventTypes, templates, packages, categorySettings] = await Promise.all([
+  const [
+    dishes,
+    eventTypes,
+    templates,
+    packages,
+    categorySettings,
+    halls,
+    users,
+    clients,
+    reservations,
+    deposits,
+  ] = await Promise.all([
     prisma.dish.count(),
     prisma.eventType.count(),
     prisma.menuTemplate.count(),
     prisma.menuPackage.count(),
     prisma.packageCategorySettings.count(),
+    prisma.hall.count(),
+    prisma.user.count(),
+    prisma.client.count(),
+    prisma.reservation.count(),
+    prisma.deposit.count(),
   ]);
 
-  return { dishes, eventTypes, templates, packages, categorySettings };
+  return {
+    dishes,
+    eventTypes,
+    templates,
+    packages,
+    categorySettings,
+    halls,
+    users,
+    clients,
+    reservations,
+    deposits,
+  };
 }
 
 main()
