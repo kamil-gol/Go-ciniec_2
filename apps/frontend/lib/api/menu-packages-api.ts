@@ -115,6 +115,14 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * Get all active packages (for reservation form) 🆕 NEW!
+ */
+export async function getAllActivePackages(): Promise<MenuPackage[]> {
+  const { data } = await apiClient.get<ApiResponse<MenuPackage[]>>('/menu-packages');
+  return data.data;
+}
+
+/**
  * Get all packages for a menu template
  */
 export async function getPackagesByTemplate(templateId: string): Promise<MenuPackage[]> {
