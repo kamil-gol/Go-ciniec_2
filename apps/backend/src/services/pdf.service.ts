@@ -23,6 +23,18 @@ interface MenuData {
   selectedOptions?: any[];
 }
 
+interface MenuSnapshot {
+  id: string;
+  menuData: any; // JSON containing dishSelections
+  packagePrice: number;
+  optionsPrice: number;
+  totalMenuPrice: number;
+  adultsCount: number;
+  childrenCount: number;
+  toddlersCount: number;
+  selectedAt: Date;
+}
+
 interface ReservationPDFData {
   id: string;
   client: {
@@ -63,7 +75,14 @@ interface ReservationPDFData {
     status: string;
     paid: boolean;
   };
+  deposits?: Array<{
+    amount: number;
+    dueDate: Date | string;
+    status: string;
+    paid: boolean;
+  }>;
   menuData?: MenuData;
+  menuSnapshot?: MenuSnapshot;
   createdAt: Date;
 }
 
@@ -294,9 +313,13 @@ export class PDFService {
       doc.font(this.getRegularFont()).text(reservation.notes, { width: pageWidth - 20 });
     }
 
-    // Add menu selection section (NEW!)
-    if (reservation.menuData?.dishSelections && reservation.menuData.dishSelections.length > 0) {
-      this.addMenuSelectionSection(doc, reservation.menuData, pageWidth);
+    // Add menu selection section (UPDATED with prices!)
+    const menuSnapshot = reservation.menuSnapshot;
+    if (menuSnapshot && menuSnapshot.menuData) {
+      this.addMenuSelectionSection(doc, menuSnapshot, pageWidth);
+    } else if (reservation.menuData?.dishSelections && reservation.menuData.dishSelections.length > 0) {
+      // Fallback for old format
+      this.addMenuSelectionSectionLegacy(doc, reservation.menuData, pageWidth);
     }
 
     doc.moveDown(1);
@@ -336,17 +359,26 @@ export class PDFService {
     doc.fontSize(13).font(this.getBoldFont());
     doc.text(`RAZEM: ${this.formatCurrency(reservation.totalPrice)}`);
 
-    if (reservation.deposit) {
+    // Use deposits array if available, otherwise fallback to single deposit
+    const deposit = reservation.deposits && reservation.deposits.length > 0 
+      ? reservation.deposits[0] 
+      : reservation.deposit;
+
+    if (deposit) {
       doc.moveDown(1);
       this.addSeparator(doc);
       doc.moveDown(1);
       doc.fontSize(14).font(this.getBoldFont()).text('Zaliczka');
       doc.moveDown(0.5);
       doc.fontSize(11).font(this.getRegularFont());
-      doc.text(`Kwota zaliczki: ${this.formatCurrency(reservation.deposit.amount)}`);
-      doc.text(`Termin wplaty: ${reservation.deposit.dueDate}`);
+      doc.text(`Kwota zaliczki: ${this.formatCurrency(deposit.amount)}`);
       
-      const depositStatus = reservation.deposit.paid ? 'Oplacona' : 'Nieoplacona';
+      const dueDate = deposit.dueDate instanceof Date 
+        ? this.formatDate(deposit.dueDate) 
+        : deposit.dueDate;
+      doc.text(`Termin wplaty: ${dueDate}`);
+      
+      const depositStatus = deposit.paid ? 'Oplacona' : 'Nieoplacona';
       doc.font(this.getBoldFont()).text(`Status: ${depositStatus}`);
     }
 
@@ -354,9 +386,107 @@ export class PDFService {
   }
 
   /**
-   * Add menu selection section with dishes grouped by category (NEW!)
+   * Add menu selection section with dishes grouped by category + PRICES (NEW!)
    */
   private addMenuSelectionSection(
+    doc: PDFKit.PDFDocument,
+    menuSnapshot: MenuSnapshot,
+    pageWidth: number
+  ): void {
+    doc.moveDown(1);
+    this.addSeparator(doc);
+    doc.moveDown(1);
+
+    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Wybrane Menu');
+    doc.moveDown(0.5);
+
+    // Package name from menuData
+    const packageName = menuSnapshot.menuData?.packageName || menuSnapshot.menuData?.package?.name;
+    if (packageName) {
+      doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
+      doc.text(`Pakiet: ${packageName}`);
+      doc.moveDown(0.3);
+    }
+
+    // Guest counts for menu
+    doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555');
+    const guestParts = [];
+    if (menuSnapshot.adultsCount > 0) {
+      guestParts.push(`${menuSnapshot.adultsCount} doroslych`);
+    }
+    if (menuSnapshot.childrenCount > 0) {
+      guestParts.push(`${menuSnapshot.childrenCount} dzieci`);
+    }
+    if (menuSnapshot.toddlersCount > 0) {
+      guestParts.push(`${menuSnapshot.toddlersCount} maluchow`);
+    }
+    if (guestParts.length > 0) {
+      doc.text(`Liczba osob dla menu: ${guestParts.join(', ')}`);
+      doc.moveDown(0.5);
+    }
+
+    // Dishes grouped by category
+    const dishSelections = menuSnapshot.menuData?.dishSelections || [];
+    if (dishSelections.length === 0) {
+      doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
+      doc.text('Brak wybranych dan');
+    } else {
+      dishSelections.forEach((category: CategorySelection, categoryIndex: number) => {
+        // Category header
+        doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
+        doc.text(`${category.categoryName} (${category.dishes.length})`);
+        doc.moveDown(0.3);
+
+        // Dishes list
+        category.dishes.forEach((dish) => {
+          doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
+          
+          const quantityText = dish.quantity === Math.floor(dish.quantity)
+            ? dish.quantity.toString()
+            : dish.quantity.toFixed(1);
+          
+          doc.text(`  ${quantityText}x ${dish.dishName}`, { indent: 15 });
+
+          // Allergens
+          if (dish.allergens && dish.allergens.length > 0) {
+            const allergenLabels = dish.allergens
+              .map((a) => ALLERGEN_LABELS[a] || a)
+              .join(', ');
+            doc.fontSize(8).fillColor('#e67e22');
+            doc.text(`     Alergeny: ${allergenLabels}`, { indent: 25 });
+            doc.fillColor('#000000');
+          }
+
+          doc.moveDown(0.2);
+        });
+
+        // Add spacing between categories
+        if (categoryIndex < dishSelections.length - 1) {
+          doc.moveDown(0.5);
+        }
+      });
+    }
+
+    // Menu prices
+    doc.moveDown(0.7);
+    doc.fontSize(11).font(this.getRegularFont()).fillColor('#000000');
+    
+    if (menuSnapshot.packagePrice > 0) {
+      doc.text(`Cena pakietu: ${this.formatCurrency(menuSnapshot.packagePrice)}`);
+    }
+    
+    if (menuSnapshot.optionsPrice > 0) {
+      doc.text(`Dodatki: ${this.formatCurrency(menuSnapshot.optionsPrice)}`);
+    }
+    
+    doc.fontSize(12).font(this.getBoldFont());
+    doc.text(`Razem menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`);
+  }
+
+  /**
+   * Legacy menu selection section (fallback for old format)
+   */
+  private addMenuSelectionSectionLegacy(
     doc: PDFKit.PDFDocument,
     menuData: MenuData,
     pageWidth: number
