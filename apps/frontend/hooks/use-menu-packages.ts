@@ -7,6 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAllActivePackages,
+  getPackagesByEventType,
   getPackagesByTemplate,
   getPackageById,
   createPackage,
@@ -30,6 +31,18 @@ export function useAllActivePackages() {
   return useQuery({
     queryKey: [QUERY_KEY, 'all-active'],
     queryFn: () => getAllActivePackages(),
+  });
+}
+
+/**
+ * Get all active packages for a specific event type
+ * Used in reservation form to filter packages by selected event type
+ */
+export function usePackagesByEventType(eventTypeId: string | undefined) {
+  return useQuery({
+    queryKey: [QUERY_KEY, 'by-event-type', eventTypeId],
+    queryFn: () => getPackagesByEventType(eventTypeId!),
+    enabled: !!eventTypeId,
   });
 }
 

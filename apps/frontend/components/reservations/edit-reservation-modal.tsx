@@ -14,8 +14,9 @@ import { useReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
+import { usePackagesByEventType } from '@/hooks/use-menu-packages'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Smile, CheckCircle, User, Mail, Phone } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, AlertCircle, Baby, Smile, CheckCircle, User, Mail, Phone, UtensilsCrossed, Sparkles } from 'lucide-react'
 import { ReservationStatus } from '@/types'
 import { reservationsApi } from '@/lib/api/reservations'
 import { toast } from 'sonner'
@@ -34,9 +35,13 @@ const reservationSchema = z.object({
   children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
   toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
-  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
-  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0'),
-  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0'),
+  // Menu package 🆕
+  useMenuPackage: z.boolean(),
+  menuPackageId: z.string().optional(),
+  
+  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0').optional(),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0').optional(),
+  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0').optional(),
   
   confirmationDeadline: z.string().optional(),
   
@@ -66,6 +71,15 @@ const reservationSchema = z.object({
 }, {
   message: 'Czas zakończenia musi być po czasie rozpoczęcia',
   path: ['endDateTime'],
+}).refine((data) => {
+  // If menu package is NOT used, manual prices are required
+  if (!data.useMenuPackage || !data.menuPackageId) {
+    return data.pricePerAdult && data.pricePerAdult > 0
+  }
+  return true
+}, {
+  message: 'Cena za dorosłego jest wymagana gdy nie wybrano pakietu menu',
+  path: ['pricePerAdult'],
 })
 
 type ReservationFormData = z.infer<typeof reservationSchema>
@@ -99,16 +113,15 @@ export function EditReservationModal({
   const [isFormReady, setIsFormReady] = useState(false)
   const [originalStatus, setOriginalStatus] = useState<ReservationStatus>('PENDING')
   const [isSaving, setIsSaving] = useState(false)
-  const [selectedEventTypeName, setSelectedEventTypeName] = useState('')
   const [durationHours, setDurationHours] = useState(0)
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
 
   const queryClient = useQueryClient()
   const { data: reservation, isLoading: loadingReservation } = useReservation(reservationId)
-  const { data: halls } = useHalls()
+  const { data: hallsData, isLoading: hallsLoading } = useHalls()
   const { data: clientsData } = useClients()
-  const { data: eventTypes } = useEventTypes()
+  const { data: eventTypesData, isLoading: eventTypesLoading } = useEventTypes()
 
   const {
     register,
@@ -126,38 +139,73 @@ export function EditReservationModal({
       toddlers: 0,
       hasDeposit: false,
       depositPaid: false,
+      useMenuPackage: false,
     },
   })
 
   const watchedFields = watch()
   const hasDeposit = watch('hasDeposit')
   const depositPaid = watch('depositPaid')
+  const useMenuPackage = watch('useMenuPackage')
+  const menuPackageId = watch('menuPackageId')
+  const selectedEventTypeId = watch('eventTypeId')
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
   const toddlers = Number(watch('toddlers')) || 0
   const pricePerAdult = Number(watch('pricePerAdult')) || 0
   const pricePerChild = Number(watch('pricePerChild')) || 0
   const pricePerToddler = Number(watch('pricePerToddler')) || 0
-  const selectedEventTypeId = watch('eventTypeId')
   const startDateTime = watch('startDateTime')
   const currentStatus = watch('status')
   const selectedHallId = watch('hallId')
 
-  const isChildrenFieldsDisabled = adults === 0
-  const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
-  const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
+  // ⚡ ZMIANA: Pobieranie pakietów tylko dla wybranego typu wydarzenia
+  const { data: menuPackages, isLoading: menuPackagesLoading } = usePackagesByEventType(selectedEventTypeId)
 
-  // Calculate selected event type name using useMemo for immediate rendering
+  // Get selected menu package
+  const selectedPackage = useMemo(() => {
+    if (!menuPackageId || !menuPackages) return null
+    return menuPackages.find((pkg) => pkg.id === menuPackageId) || null
+  }, [menuPackageId, menuPackages])
+
+  const isChildrenFieldsDisabled = adults === 0
+  const isChildPriceDisabled = useMenuPackage || adults === 0 || pricePerAdult === 0
+  const isToddlerPriceDisabled = useMenuPackage || adults === 0 || pricePerAdult === 0
+
+  // Calculate selected event type name using useMemo
   const eventTypeName = useMemo(() => {
     if (!selectedEventTypeId) return ''
-    const eventTypesArray = eventTypes?.data || eventTypes || []
-    const selectedType = Array.isArray(eventTypesArray) ? eventTypesArray.find((t) => t.id === selectedEventTypeId) : null
+    const eventTypesArray = Array.isArray(eventTypesData) ? eventTypesData : []
+    const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
     return selectedType?.name || ''
-  }, [selectedEventTypeId, eventTypes])
+  }, [selectedEventTypeId, eventTypesData])
 
   const isBirthday = eventTypeName === 'Urodziny'
   const isAnniversary = eventTypeName === 'Rocznica' || eventTypeName === 'Rocznica/Jubileusz'
   const isCustom = eventTypeName === 'Inne'
+
+  // ⚡ ZMIANA: Komunikat gdy brak pakietów dla wybranego typu wydarzenia
+  const hasNoPackagesForEventType = selectedEventTypeId && !menuPackagesLoading && (!menuPackages || menuPackages.length === 0)
+
+  // Auto-set prices from menu package
+  useEffect(() => {
+    if (useMenuPackage && selectedPackage && isFormReady) {
+      setValue('pricePerAdult', parseFloat(selectedPackage.pricePerAdult))
+      setValue('pricePerChild', parseFloat(selectedPackage.pricePerChild))
+      setValue('pricePerToddler', parseFloat(selectedPackage.pricePerToddler))
+    }
+  }, [useMenuPackage, selectedPackage, setValue, isFormReady])
+
+  // ⚡ ZMIANA: Resetuj wybór pakietu gdy zmienia się typ wydarzenia
+  useEffect(() => {
+    if (selectedEventTypeId && menuPackageId && isFormReady) {
+      const isPackageStillValid = menuPackages?.some((pkg) => pkg.id === menuPackageId)
+      if (!isPackageStillValid) {
+        setValue('menuPackageId', '')
+        setValue('useMenuPackage', false)
+      }
+    }
+  }, [selectedEventTypeId, menuPackageId, menuPackages, setValue, isFormReady])
 
   // Auto-set default paid date to today when marking as paid
   useEffect(() => {
@@ -169,24 +217,18 @@ export function EditReservationModal({
   }, [depositPaid, watchedFields.depositPaidAt, setValue])
 
   useEffect(() => {
-    if (adults > 0 && pricePerAdult > 0 && !childPriceManuallySet && isFormReady) {
+    if (!useMenuPackage && adults > 0 && pricePerAdult > 0 && !childPriceManuallySet && isFormReady) {
       const halfPrice = Math.round(pricePerAdult / 2)
       setValue('pricePerChild', halfPrice)
     }
-  }, [adults, pricePerAdult, setValue, childPriceManuallySet, isFormReady])
+  }, [useMenuPackage, adults, pricePerAdult, setValue, childPriceManuallySet, isFormReady])
 
   useEffect(() => {
-    if (adults > 0 && pricePerAdult > 0 && isFormReady) {
-      if (toddlers > 0 && pricePerToddler === 0) {
-        const quarterPrice = Math.round(pricePerAdult * 0.25)
-        setValue('pricePerToddler', quarterPrice)
-      }
-      else if (!toddlerPriceManuallySet) {
-        const quarterPrice = Math.round(pricePerAdult * 0.25)
-        setValue('pricePerToddler', quarterPrice)
-      }
+    if (!useMenuPackage && adults > 0 && pricePerAdult > 0 && !toddlerPriceManuallySet && isFormReady) {
+      const quarterPrice = Math.round(pricePerAdult * 0.25)
+      setValue('pricePerToddler', quarterPrice)
     }
-  }, [adults, pricePerAdult, toddlers, pricePerToddler, setValue, toddlerPriceManuallySet, isFormReady])
+  }, [useMenuPackage, adults, pricePerAdult, setValue, toddlerPriceManuallySet, isFormReady])
 
   useEffect(() => {
     if (startDateTime && !watchedFields.endDateTime && isFormReady) {
@@ -237,14 +279,14 @@ export function EditReservationModal({
   }, [watchedFields.startDateTime, watchedFields.endDateTime, watchedFields.notes, setValue])
 
   useEffect(() => {
-    if (selectedHallId) {
-      const hallsArray = halls?.data || halls || []
-      const selectedHall = Array.isArray(hallsArray) ? hallsArray.find((h) => h.id === selectedHallId) : null
+    if (selectedHallId && hallsData) {
+      const hallsArray = Array.isArray(hallsData?.halls) ? hallsData.halls : (Array.isArray(hallsData) ? hallsData : [])
+      const selectedHall = hallsArray.find((h) => h.id === selectedHallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
       }
     }
-  }, [selectedHallId, halls])
+  }, [selectedHallId, hallsData])
 
   useEffect(() => {
     if (!open) {
@@ -259,7 +301,7 @@ export function EditReservationModal({
     if (reservation && open) {
       console.log('=== Loading reservation into form ===')
       console.log('Reservation data:', reservation)
-      console.log('hallId:', reservation.hallId)
+      console.log('Menu snapshot:', reservation.menuSnapshot)
       
       let startDateTime = ''
       let endDateTime = ''
@@ -273,6 +315,7 @@ export function EditReservationModal({
       
       setOriginalStatus(reservation.status || 'PENDING')
       
+      // Basic fields
       setValue('hallId', reservation.hallId || '')
       setValue('clientId', reservation.clientId || '')
       setValue('eventTypeId', reservation.eventTypeId || '')
@@ -281,9 +324,21 @@ export function EditReservationModal({
       setValue('adults', reservation.adults || 0)
       setValue('children', reservation.children || 0)
       setValue('toddlers', reservation.toddlers || 0)
-      setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
-      setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
-      setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0)
+      
+      // ⚡ ZMIANA: Załaduj menu package z menuSnapshot
+      if (reservation.menuSnapshot && reservation.menuSnapshot.packageId) {
+        setValue('useMenuPackage', true)
+        setValue('menuPackageId', reservation.menuSnapshot.packageId)
+        setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
+        setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
+        setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0)
+      } else {
+        // Manual pricing
+        setValue('useMenuPackage', false)
+        setValue('pricePerAdult', Number(reservation.pricePerAdult) || 0)
+        setValue('pricePerChild', Number(reservation.pricePerChild) || 0)
+        setValue('pricePerToddler', Number(reservation.pricePerToddler) || 0)
+      }
       
       setChildPriceManuallySet(reservation.pricePerChild > 0)
       setToddlerPriceManuallySet(reservation.pricePerToddler > 0 && reservation.toddlers > 0)
@@ -305,24 +360,24 @@ export function EditReservationModal({
       setValue('reason', '')
       
       // Load deposit data
-      if (reservation.deposit) {
+      if (reservation.deposits && reservation.deposits.length > 0) {
+        const deposit = reservation.deposits[0]
         setValue('hasDeposit', true)
-        setValue('depositAmount', Number(reservation.deposit.amount) || 0)
-        if (reservation.deposit.dueDate) {
-          const dueDate = new Date(reservation.deposit.dueDate)
+        setValue('depositAmount', Number(deposit.amount) || 0)
+        if (deposit.dueDate) {
+          const dueDate = new Date(deposit.dueDate)
           setValue('depositDueDate', dueDate.toISOString().split('T')[0])
         }
-        setValue('depositPaid', reservation.deposit.paid || false)
-        setValue('depositPaymentMethod', reservation.deposit.paymentMethod || '')
-        if (reservation.deposit.paidAt) {
-          const paidAt = new Date(reservation.deposit.paidAt)
+        setValue('depositPaid', deposit.paid || false)
+        setValue('depositPaymentMethod', deposit.paymentMethod || '')
+        if (deposit.paidAt) {
+          const paidAt = new Date(deposit.paidAt)
           setValue('depositPaidAt', paidAt.toISOString().split('T')[0])
         }
       } else {
         setValue('hasDeposit', false)
       }
       
-      console.log('hallId after setValue:', reservation.hallId)
       setIsFormReady(true)
     }
   }, [reservation, open, setValue])
@@ -341,9 +396,6 @@ export function EditReservationModal({
         adults: data.adults,
         children: data.children,
         toddlers: data.toddlers,
-        pricePerAdult: data.pricePerAdult,
-        pricePerChild: data.pricePerChild,
-        pricePerToddler: data.pricePerToddler,
         confirmationDeadline: data.confirmationDeadline,
         customEventType: data.customEventType,
         birthdayAge: data.birthdayAge,
@@ -352,6 +404,19 @@ export function EditReservationModal({
         notes: data.notes,
         reason: data.reason,
         eventTypeId: data.eventTypeId,
+      }
+      
+      // ⚡ Menu package integration
+      if (data.useMenuPackage && data.menuPackageId) {
+        updateData.menuPackageId = data.menuPackageId
+        // Prices from package - backend will handle
+      } else {
+        // Manual pricing
+        updateData.pricePerAdult = data.pricePerAdult
+        updateData.pricePerChild = data.pricePerChild
+        updateData.pricePerToddler = data.pricePerToddler
+        // Remove menu package if was previously set
+        updateData.menuPackageId = null
       }
       
       // Add deposit data
@@ -364,7 +429,6 @@ export function EditReservationModal({
           paidAt: data.depositPaid ? data.depositPaidAt : undefined,
         }
       } else if (!data.hasDeposit) {
-        // Remove deposit if unchecked
         updateData.deposit = null
       }
       
@@ -405,19 +469,15 @@ export function EditReservationModal({
     }
   }
 
-  // Safely extract arrays with Array.isArray guards
-  const hallsArray = halls?.data || halls || []
-  const safeHallsArray = Array.isArray(hallsArray) ? hallsArray : []
-  
-  const clientsArray = clientsData?.data || []
-  const safeClientsArray = Array.isArray(clientsArray) ? clientsArray : []
-  
-  const eventTypesArray = eventTypes?.data || eventTypes || []
-  const safeEventTypesArray = Array.isArray(eventTypesArray) ? eventTypesArray : []
+  // Safely extract arrays
+  const hallsArray = Array.isArray(hallsData?.halls) ? hallsData.halls : (Array.isArray(hallsData) ? hallsData : [])
+  const clientsArray = Array.isArray(clientsData) ? clientsData : []
+  const eventTypesArray = Array.isArray(eventTypesData) ? eventTypesData : []
+  const menuPackagesArray = Array.isArray(menuPackages) ? menuPackages : []
 
   const hallOptions = [
     { value: '', label: 'Wybierz salę...' },
-    ...safeHallsArray.map((hall) => ({
+    ...hallsArray.map((hall) => ({
       value: hall.id,
       label: `${hall.name} (max ${hall.capacity} osób)`,
     }))
@@ -425,9 +485,17 @@ export function EditReservationModal({
 
   const eventTypeOptions = [
     { value: '', label: 'Wybierz typ wydarzenia...' },
-    ...safeEventTypesArray.map((type) => ({
+    ...eventTypesArray.map((type) => ({
       value: type.id,
       label: type.name,
+    }))
+  ]
+
+  const menuPackageOptions = [
+    { value: '', label: 'Wybierz pakiet...' },
+    ...menuPackagesArray.map((pkg) => ({
+      value: pkg.id,
+      label: `${pkg.name} - ${formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba`,
     }))
   ]
 
@@ -465,6 +533,12 @@ export function EditReservationModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
+          {(hallsLoading || eventTypesLoading || menuPackagesLoading) && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800">⏳ Ładowanie danych...</p>
+            </div>
+          )}
+
           {/* Client Info Display (Read-only) */}
           {clientInfo && (
             <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
@@ -596,11 +670,6 @@ export function EditReservationModal({
               />
             </div>
           </div>
-          {!startDateTime && (
-            <p className="text-xs text-secondary-500 -mt-4">
-              Najpierw wybierz datę i czas rozpoczęcia
-            </p>
-          )}
 
           {durationHours > 0 && (
             <div className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > 6 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
@@ -646,11 +715,6 @@ export function EditReservationModal({
               />
             </div>
           </div>
-          {isChildrenFieldsDisabled && (
-            <p className="text-xs text-secondary-500 -mt-4">
-              Pola dzieci będą dostępne po wprowadzeniu liczby dorosłych
-            </p>
-          )}
 
           {totalGuests > 0 && (
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -666,48 +730,135 @@ export function EditReservationModal({
             </p>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-secondary-500" />
-              <Input
-                type="number"
-                label="Cena za dorosłego (PLN)"
-                placeholder="0.00"
-                error={errors.pricePerAdult?.message}
-                {...register('pricePerAdult')}
-              />
+          {/* 🍽️ MENU PACKAGE SECTION */}
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UtensilsCrossed className="w-5 h-5 text-primary-600" />
+                <label className="text-sm font-medium text-secondary-700">Pakiet Menu</label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="useMenuPackage"
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                  disabled={!selectedEventTypeId || hasNoPackagesForEventType}
+                  {...register('useMenuPackage')}
+                />
+                <label htmlFor="useMenuPackage" className="ml-2 text-sm text-secondary-700">
+                  Użyj gotowego pakietu
+                </label>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-secondary-500" />
-              <Input
-                type="number"
-                label="Cena za dziecko 4-12 (PLN)"
-                placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
-                error={errors.pricePerChild?.message}
-                disabled={isChildPriceDisabled}
-                {...register('pricePerChild', {
-                  onChange: () => setChildPriceManuallySet(true)
-                })}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-secondary-500" />
-              <Input
-                type="number"
-                label="Cena za dziecko 0-3 (PLN)"
-                placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
-                error={errors.pricePerToddler?.message}
-                disabled={isToddlerPriceDisabled}
-                {...register('pricePerToddler', {
-                  onChange: () => setToddlerPriceManuallySet(true)
-                })}
-              />
-            </div>
+
+            {hasNoPackagesForEventType && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2"
+              >
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <p className="text-sm text-amber-800">
+                  Brak dostępnych pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.
+                </p>
+              </motion.div>
+            )}
+
+            {!selectedEventTypeId && (
+              <p className="text-sm text-secondary-500">
+                Wybierz typ wydarzenia aby zobaczyć dostępne pakiety menu
+              </p>
+            )}
+
+            {useMenuPackage && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4 p-4 bg-primary-50 border border-primary-200 rounded-lg"
+              >
+                <SelectSimple
+                  label="Wybierz pakiet"
+                  options={menuPackageOptions}
+                  error={errors.menuPackageId?.message}
+                  {...register('menuPackageId')}
+                />
+
+                {selectedPackage && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-4 bg-white rounded-lg border border-primary-300"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
+                        {selectedPackage.shortDescription && (
+                          <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>
+                        )}
+                        <div className="grid grid-cols-3 gap-4 mt-3">
+                          <div>
+                            <p className="text-xs text-secondary-500">Dorosły</p>
+                            <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-secondary-500">Dziecko 4-12</p>
+                            <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-secondary-500">Dziecko 0-3</p>
+                            <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
           </div>
-          {(isChildPriceDisabled || isToddlerPriceDisabled) && (
-            <p className="text-xs text-secondary-500 -mt-4">
-              Ceny za dzieci będą dostępne po uzupełnieniu liczby i ceny za dorosłych (domyślnie 50% i 25% ceny za dorosłego)
-            </p>
+
+          {/* Manual Pricing (only if NOT using menu package) */}
+          {!useMenuPackage && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Cena za dorosłego (PLN)"
+                  placeholder="0.00"
+                  error={errors.pricePerAdult?.message}
+                  {...register('pricePerAdult')}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Cena za dziecko 4-12 (PLN)"
+                  placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
+                  error={errors.pricePerChild?.message}
+                  disabled={isChildPriceDisabled}
+                  {...register('pricePerChild', {
+                    onChange: () => setChildPriceManuallySet(true)
+                  })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary-500" />
+                <Input
+                  type="number"
+                  label="Cena za dziecko 0-3 (PLN)"
+                  placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
+                  error={errors.pricePerToddler?.message}
+                  disabled={isToddlerPriceDisabled}
+                  {...register('pricePerToddler', {
+                    onChange: () => setToddlerPriceManuallySet(true)
+                  })}
+                />
+              </div>
+            </div>
           )}
 
           {calculatedPrice > 0 && (
@@ -731,6 +882,12 @@ export function EditReservationModal({
                     {formatCurrency(calculatedPrice)}
                   </span>
                 </div>
+                {useMenuPackage && selectedPackage && (
+                  <p className="text-xs text-primary-700 flex items-center gap-1 pt-2">
+                    <UtensilsCrossed className="w-3 h-3" />
+                    Ceny z pakietu: {selectedPackage.name}
+                  </p>
+                )}
               </div>
             </div>
           )}

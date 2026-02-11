@@ -353,6 +353,63 @@ export class MenuService {
   }
 
   /**
+   * Get all active packages for a specific event type
+   * Used by frontend to show only packages relevant to selected event type
+   */
+  async getPackagesByEventType(eventTypeId: string) {
+    // Get active templates for this event type
+    const templates = await prisma.menuTemplate.findMany({
+      where: {
+        eventTypeId,
+        isActive: true
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (templates.length === 0) {
+      return [];
+    }
+
+    const templateIds = templates.map(t => t.id);
+
+    // Get packages for these templates
+    return await prisma.menuPackage.findMany({
+      where: {
+        menuTemplateId: {
+          in: templateIds
+        }
+      },
+      include: {
+        menuTemplate: {
+          select: {
+            id: true,
+            name: true,
+            eventType: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        packageOptions: {
+          include: {
+            option: true
+          },
+          orderBy: { displayOrder: 'asc' }
+        },
+        categorySettings: true
+      },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { name: 'asc' }
+      ]
+    });
+  }
+
+  /**
    * Get single package by ID
    */
   async getPackageById(id: string) {

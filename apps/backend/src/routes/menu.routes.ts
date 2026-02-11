@@ -122,6 +122,17 @@ router.get(
 );
 
 /**
+ * @route   GET /api/menu-packages/event-type/:eventTypeId
+ * @desc    List all active packages for a specific event type
+ * @params  eventTypeId: string
+ * @access  Public
+ */
+router.get(
+  '/menu-packages/event-type/:eventTypeId',
+  menuPackageController.listByEventType.bind(menuPackageController)
+);
+
+/**
  * @route   GET /api/menu-packages/template/:templateId
  * @desc    List all packages for a menu template
  * @params  templateId: string

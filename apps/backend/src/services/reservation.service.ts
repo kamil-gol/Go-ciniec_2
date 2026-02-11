@@ -27,6 +27,16 @@ import {
 
 const prisma = new PrismaClient();
 
+/**
+ * Sanitize string by removing null bytes
+ */
+function sanitizeString(value: any): string | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  return String(value).replace(/\x00/g, '').trim() || null;
+}
+
 export class ReservationService {
   /**
    * Create a new reservation
@@ -116,9 +126,9 @@ export class ReservationService {
     let optionsPrice = 0;
 
     if (data.menuPackageId) {
-      // ┌───────────────────────────────────────────────────────────
+      // ┌─────────────────────────────────────────────────────────────
       // PATH A: Menu package selected - fetch prices from package
-      // └───────────────────────────────────────────────────────────
+      // └─────────────────────────────────────────────────────────────
       menuPackage = await prisma.menuPackage.findUnique({
         where: { id: data.menuPackageId },
         include: {
@@ -152,16 +162,15 @@ export class ReservationService {
       if (data.selectedOptions && data.selectedOptions.length > 0) {
         selectedOptions = await this.processSelectedOptions(
           data.selectedOptions,
-          menuPackage.packageOptions,
           guests
         );
         optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
       }
 
     } else {
-      // ┌───────────────────────────────────────────────────────────
+      // ┌─────────────────────────────────────────────────────────────
       // PATH B: No package - manual prices REQUIRED
-      // └───────────────────────────────────────────────────────────
+      // └─────────────────────────────────────────────────────────────
       if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
         throw new Error('Price per adult and per child are required when no menu package is selected');
       }
@@ -264,10 +273,10 @@ export class ReservationService {
         pricePerChild,
         pricePerToddler,
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
-        customEventType: data.customEventType || null,
+        customEventType: sanitizeString(data.customEventType),
         birthdayAge: data.birthdayAge || null,
         anniversaryYear: data.anniversaryYear || null,
-        anniversaryOccasion: data.anniversaryOccasion || null,
+        anniversaryOccasion: sanitizeString(data.anniversaryOccasion),
         
         // Legacy fields (for backwards compatibility)
         date: data.date || null,
@@ -277,7 +286,7 @@ export class ReservationService {
         guests,
         totalPrice,
         status: ReservationStatus.PENDING,
-        notes: notes || null,
+        notes: sanitizeString(notes),
         attachments: []
       },
       include: {
@@ -332,7 +341,7 @@ export class ReservationService {
           dueDate: new Date(depositData.dueDate),
           paid: depositData.paid || false,
           status: depositData.paid ? 'PAID' : 'PENDING',
-          paymentMethod: depositData.paymentMethod || null,
+          paymentMethod: sanitizeString(depositData.paymentMethod),
           paidAt: depositData.paidAt ? new Date(depositData.paidAt) : null,
         }
       });
@@ -433,7 +442,6 @@ export class ReservationService {
       if (data.selectedOptions && data.selectedOptions.length > 0) {
         selectedOptions = await this.processSelectedOptions(
           data.selectedOptions,
-          menuPackage.packageOptions,
           guests
         );
         optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
@@ -512,34 +520,39 @@ export class ReservationService {
 
   /**
    * NEW: Process selected options and validate them
+   * UPDATED: Accept any active menu option, not just package-assigned options
    */
   private async processSelectedOptions(
     selections: MenuOptionSelection[],
-    packageOptions: any[],
     totalGuests: number
   ): Promise<any[]> {
     const processed = [];
 
     for (const selection of selections) {
-      // Find option in package
-      const packageOption = packageOptions.find(po => po.optionId === selection.optionId);
-      if (!packageOption) {
-        throw new Error(`Option ${selection.optionId} is not available for this package`);
+      // Fetch option from database
+      const option = await prisma.menuOption.findUnique({
+        where: { id: selection.optionId }
+      });
+
+      if (!option) {
+        throw new Error(`Option ${selection.optionId} not found`);
       }
 
-      const option = packageOption.option;
+      if (!option.isActive) {
+        throw new Error(`Option ${option.name} is not active`);
+      }
 
       // Validate quantity
       const quantity = selection.quantity ?? 1;
       if (option.allowMultiple) {
-        if (quantity > option.maxQuantity) {
+        if (option.maxQuantity && quantity > option.maxQuantity) {
           throw new Error(`Maximum ${option.maxQuantity} of ${option.name} allowed`);
         }
       } else if (quantity > 1) {
         throw new Error(`Option ${option.name} does not allow multiple selections`);
       }
 
-      const price = packageOption.customPrice ? Number(packageOption.customPrice) : Number(option.priceAmount);
+      const price = Number(option.priceAmount);
 
       processed.push({
         optionId: option.id,
@@ -567,7 +580,7 @@ export class ReservationService {
 
       if (option.priceType === 'PER_PERSON') {
         total += price * totalGuests * quantity;
-      } else if (option.priceType === 'FIXED') {
+      } else if (option.priceType === 'FLAT' || option.priceType === 'FREE') {
         total += price * quantity;
       }
     }
@@ -670,6 +683,7 @@ export class ReservationService {
 
   /**
    * Update reservation
+   * ⚡ UPDATED: Added menu package support
    */
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     // Validate userId exists
@@ -677,7 +691,7 @@ export class ReservationService {
 
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { hall: true, eventType: true }
+      include: { hall: true, eventType: true, menuSnapshot: true }
     });
 
     if (!existingReservation) {
@@ -691,6 +705,30 @@ export class ReservationService {
 
     if (existingReservation.status === ReservationStatus.CANCELLED) {
       throw new Error('Cannot update cancelled reservation');
+    }
+
+    // ⚡ NEW: Handle menu package updates
+    if (data.menuPackageId !== undefined) {
+      if (data.menuPackageId === null) {
+        // Remove menu package
+        await this.updateReservationMenu(
+          id,
+          { menuPackageId: null },
+          userId
+        );
+      } else {
+        // Update or add menu package
+        await this.updateReservationMenu(
+          id,
+          {
+            menuPackageId: data.menuPackageId,
+            adultsCount: data.adults ?? existingReservation.adults,
+            childrenCount: data.children ?? existingReservation.children,
+            toddlersCount: data.toddlers ?? existingReservation.toddlers
+          },
+          userId
+        );
+      }
     }
 
     // Validate reason if there are changes
@@ -771,36 +809,42 @@ export class ReservationService {
       }
     }
 
-    // Update pricing
-    if (data.pricePerAdult !== undefined) {
-      updateData.pricePerAdult = data.pricePerAdult;
-    }
-    if (data.pricePerChild !== undefined) {
-      updateData.pricePerChild = data.pricePerChild;
-    }
-    if (data.pricePerToddler !== undefined) {
-      updateData.pricePerToddler = data.pricePerToddler;
-    }
+    // ⚡ UPDATED: Only update pricing if NOT using menu package OR menuPackageId is explicitly null
+    const isUsingMenuPackage = existingReservation.menuSnapshot && data.menuPackageId !== null;
+    
+    if (!isUsingMenuPackage) {
+      // Manual pricing update
+      if (data.pricePerAdult !== undefined) {
+        updateData.pricePerAdult = data.pricePerAdult;
+      }
+      if (data.pricePerChild !== undefined) {
+        updateData.pricePerChild = data.pricePerChild;
+      }
+      if (data.pricePerToddler !== undefined) {
+        updateData.pricePerToddler = data.pricePerToddler;
+      }
 
-    // Recalculate total price if any pricing or guest count changed
-    if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
-        data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-      const finalAdults = data.adults ?? existingReservation.adults;
-      const finalChildren = data.children ?? existingReservation.children;
-      const finalToddlers = data.toddlers ?? existingReservation.toddlers;
-      const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
-      const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
-      const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
-      
-      updateData.totalPrice = calculateTotalPrice(
-        finalAdults, 
-        finalChildren, 
-        finalPricePerAdult, 
-        finalPricePerChild,
-        finalToddlers,
-        finalPricePerToddler
-      );
+      // Recalculate total price if any pricing or guest count changed
+      if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
+          data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
+        const finalAdults = data.adults ?? existingReservation.adults;
+        const finalChildren = data.children ?? existingReservation.children;
+        const finalToddlers = data.toddlers ?? existingReservation.toddlers;
+        const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
+        const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
+        const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
+        
+        updateData.totalPrice = calculateTotalPrice(
+          finalAdults, 
+          finalChildren, 
+          finalPricePerAdult, 
+          finalPricePerChild,
+          finalToddlers,
+          finalPricePerToddler
+        );
+      }
     }
+    // Note: If using menu package, prices are updated by updateReservationMenu
 
     // Update confirmation deadline
     if (data.confirmationDeadline) {
@@ -814,10 +858,10 @@ export class ReservationService {
     }
 
     // Update custom event fields
-    if (data.customEventType !== undefined) updateData.customEventType = data.customEventType || null;
+    if (data.customEventType !== undefined) updateData.customEventType = sanitizeString(data.customEventType);
     if (data.birthdayAge !== undefined) updateData.birthdayAge = data.birthdayAge || null;
     if (data.anniversaryYear !== undefined) updateData.anniversaryYear = data.anniversaryYear || null;
-    if (data.anniversaryOccasion !== undefined) updateData.anniversaryOccasion = data.anniversaryOccasion || null;
+    if (data.anniversaryOccasion !== undefined) updateData.anniversaryOccasion = sanitizeString(data.anniversaryOccasion);
 
     // Update legacy fields
     if (data.date !== undefined) updateData.date = data.date || null;
@@ -825,13 +869,13 @@ export class ReservationService {
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
 
     // Update notes
-    if (data.notes !== undefined) updateData.notes = data.notes || null;
+    if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
 
     // Add extra hours note if datetime changed
     if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
       const extraHoursNote = generateExtraHoursNote(finalStart, finalEnd);
       if (extraHoursNote) {
-        updateData.notes = (updateData.notes || existingReservation.notes || '') + extraHoursNote;
+        updateData.notes = sanitizeString((updateData.notes || existingReservation.notes || '') + extraHoursNote);
       }
     }
 

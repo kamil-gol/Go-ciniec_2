@@ -123,6 +123,17 @@ export async function getAllActivePackages(): Promise<MenuPackage[]> {
 }
 
 /**
+ * Get all active packages for a specific event type
+ * Used in reservation form to filter packages by selected event type
+ */
+export async function getPackagesByEventType(eventTypeId: string): Promise<MenuPackage[]> {
+  const { data } = await apiClient.get<ApiResponse<MenuPackage[]>>(
+    `/menu-packages/event-type/${eventTypeId}`
+  );
+  return data.data;
+}
+
+/**
  * Get all packages for a menu template
  */
 export async function getPackagesByTemplate(templateId: string): Promise<MenuPackage[]> {

@@ -48,6 +48,26 @@ export class MenuPackageController {
   }
 
   /**
+   * GET /api/menu-packages/event-type/:eventTypeId
+   * List all active packages for a specific event type
+   */
+  async listByEventType(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { eventTypeId } = req.params;
+
+      const packages = await menuService.getPackagesByEventType(eventTypeId);
+
+      return res.status(200).json({
+        success: true,
+        data: packages,
+        count: packages.length
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/menu-packages/template/:templateId
    * List all packages for a menu template
    */
