@@ -10,6 +10,7 @@ export { PackageCard, PackageCardSkeleton } from './PackageCard';
 export { OptionCard, OptionCardSkeleton } from './OptionCard';
 export { PriceBreakdown, PriceBreakdownSkeleton } from './PriceBreakdown';
 export { OptionsSelector } from './OptionsSelector';
+export { DishSelector } from './DishSelector';
 
 // Feature Components
 export { MenuSelectionFlow } from './MenuSelectionFlow';
