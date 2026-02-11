@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
+import reservationMenuController from '../controllers/reservation-menu.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 
@@ -63,6 +64,48 @@ router.put('/:id', authMiddleware, requireStaff, (req, res) => {
 router.patch('/:id/status', authMiddleware, requireStaff, (req, res) => {
   reservationController.updateStatus(req, res);
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 🍽️ MENU SELECTION ENDPOINTS (NEW with dishSelections support)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   POST /api/reservations/:id/menu
+ * @desc    Select menu for reservation (supports dishSelections)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post('/:id/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.selectMenu(req, res);
+});
+
+/**
+ * @route   GET /api/reservations/:id/menu
+ * @desc    Get menu selection for reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.get('/:id/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.getMenu(req, res);
+});
+
+/**
+ * @route   PUT /api/reservations/:id/menu
+ * @desc    Update menu selection for reservation (supports dishSelections)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.put('/:id/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.updateMenu(req, res);
+});
+
+/**
+ * @route   DELETE /api/reservations/:id/menu
+ * @desc    Remove menu selection from reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.delete('/:id/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.deleteMenu(req, res);
+});
+
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   DELETE /api/reservations/:id

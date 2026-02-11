@@ -56,7 +56,7 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'relative bg-white rounded-lg shadow-xl w-full',
+      'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full',
       'max-h-[85vh] overflow-y-auto',
       'p-6',
       className
@@ -66,9 +66,10 @@ const DialogContent = React.forwardRef<
     {onClose && (
       <button
         onClick={onClose}
-        className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
+        className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors z-50"
+        aria-label="Zamknij"
       >
-        <X className="h-4 w-4" />
+        <X className="h-5 w-5" />
       </button>
     )}
     {children}

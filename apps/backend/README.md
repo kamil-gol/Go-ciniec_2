@@ -200,7 +200,127 @@ Response 200:
 }
 ```
 
-#### Health Check
+---
+
+### Dish Categories 🍽️
+
+**Authentication Required**: Bearer token in Authorization header
+
+#### Get All Categories
+```http
+GET /api/dish-categories
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "slug": "SOUP",
+      "name": "Zupy",
+      "icon": "🍜",
+      "color": "bg-orange-100 text-orange-700",
+      "displayOrder": 1,
+      "isActive": true,
+      "createdAt": "2026-02-10T22:00:00.000Z",
+      "updatedAt": "2026-02-10T22:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Get Single Category
+```http
+GET /api/dish-categories/:id
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "slug": "SOUP",
+    "name": "Zupy",
+    "icon": "🍜",
+    "color": "bg-orange-100 text-orange-700",
+    "displayOrder": 1,
+    "isActive": true,
+    "createdAt": "2026-02-10T22:00:00.000Z",
+    "updatedAt": "2026-02-10T22:00:00.000Z"
+  }
+}
+```
+
+#### Create Category
+```http
+POST /api/dish-categories
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "slug": "SOUP",
+  "name": "Zupy",
+  "icon": "🍜",
+  "color": "bg-orange-100 text-orange-700",
+  "displayOrder": 1
+}
+
+Response 201:
+{
+  "success": true,
+  "data": { ... },
+  "message": "Dish category created successfully"
+}
+```
+
+**Validation Rules:**
+- `slug`: Required, uppercase, unique, alphanumeric with underscores
+- `name`: Required, 1-50 characters
+- `icon`: Optional, single emoji character
+- `color`: Optional, Tailwind CSS color classes
+- `displayOrder`: Required, integer ≥ 0
+
+#### Update Category
+```http
+PUT /api/dish-categories/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Zupy gorące",
+  "icon": "🥣",
+  "color": "bg-red-100 text-red-700",
+  "displayOrder": 2
+}
+
+Response 200:
+{
+  "success": true,
+  "data": { ... },
+  "message": "Dish category updated successfully"
+}
+```
+
+**Note**: `slug` cannot be changed after creation
+
+#### Delete Category
+```http
+DELETE /api/dish-categories/:id
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "success": true,
+  "message": "Dish category deleted successfully"
+}
+```
+
+**Note**: Cannot delete category if dishes are using it
+
+---
+
+### Health Check
 ```http
 GET /api/health
 
@@ -277,7 +397,7 @@ Common HTTP Status Codes:
 - `401` - Unauthorized (missing/invalid token)
 - `403` - Forbidden (insufficient permissions)
 - `404` - Not Found
-- `409` - Conflict (duplicate email, etc.)
+- `409` - Conflict (duplicate slug, etc.)
 - `500` - Internal Server Error
 
 ---
@@ -474,5 +594,5 @@ PROPRIETARY - Gościniec Rodzinny
 
 ---
 
-**Status**: 🔜 Sprint 1 - Backend Foundation
-**Last Updated**: 06.02.2026
+**Status**: 🔜 Sprint 2 - Menu System & Categories
+**Last Updated**: 10.02.2026

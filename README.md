@@ -8,12 +8,13 @@
 
 ## 📋 Przegląd Projektu
 
-Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowych z pełną integracją administracyjną, statystykami, automatyzacją procesów biznesowych oraz inteligentnym systemem kolejki rezerwacji.
+Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowych z pełną integracją administracyjną, statystykami, automatyzacją procesów biznesowych, inteligentnym systemem kolejki rezerwacji oraz zarządzaniem menu i kategoriami dań.
 
 ### ✨ Kluczowe Cechy
 
 ✅ **Moduł Rezerwacji** - pełny lifecycle rezerwacji (nowa, edycja, archiwum)  
 ✅ **Kolejka Rezerwacji** - zarządzanie listą oczekujących, priorytetyzacja, awansowanie  
+✅ **✨ System Menu** - kategorie dań, zarządzanie daniami **— NOWE!**  
 ✅ **Zarządzanie Klientami** - baza klientów z historią rezerwacji  
 ✅ **Panel Administratora** - pełna kontrola systemu  
 ✅ **Statystyki & Raporty** - analityka rezerwacji i przychodów  
@@ -22,14 +23,14 @@ Kompleksowy system do zarządzania rezerwacjami sal weselnych i okolicznościowy
 ✅ **Wysyłka Maili** - powiadomienia i przypomnienia  
 ✅ **Historia Zmian** - pełna audyt trail każdej rezerwacji  
 ✅ **Walidacje** - kompleksowe sprawdzenia danych  
-✅ **Testy Jednostkowe & E2E** - 80%+ coverage  
+✅ **Testy Jednostkowe & E2E** - 80%+ coverage z pełnymi danymi testowymi  
 ✅ **Auto-anulowanie** - automatyczna anulacja przeterminowanych wpisów w kolejce  
 ✅ **Race Condition Protection** - row-level locking + retry logic  
 ✅ **✨ Batch Update API** - atomiczne aktualizacje kolejki (drag & drop) **— Bug #9 Fix!**
 
 ---
 
-## 🏍️ Stack Technologiczny
+## 🏐️ Stack Technologiczny
 
 ### Frontend
 - **Next.js 14** - React framework z SSR
@@ -95,8 +96,8 @@ docker-compose up -d
 # Migracja bazy danych
 docker-compose exec backend npm run prisma:migrate:dev
 
-# Seeding testowymi danymi
-docker-compose exec backend npm run seed
+# Seeding testowymi danymi (pełne dane E2E)
+docker-compose exec backend npm run db:seed
 
 # Uruchomienie testów
 docker-compose exec backend npm run test
@@ -105,6 +106,26 @@ docker-compose exec frontend npm run test
 # E2E testy
 docker-compose exec frontend npm run test:e2e
 ```
+
+### 🧪 Dane Testowe E2E
+
+Po uruchomieniu `npm run db:seed` otrzymasz:
+
+```
+🏛️  Halls: 6 (Kryształowa, Taneczna, Złota, Cały obiekt, Strzecha 1, Strzecha 2)
+👥 Users: 3 (1 ADMIN + 2 EMPLOYEE)
+👤 Clients: 5 (Marek, Anna, Piotr, Katarzyna, Michał)
+📅 Reservations: 6 (RESERVED, CONFIRMED, COMPLETED)
+💰 Deposits: 5 (wszystkie PAID)
+🍽️ Dishes: 110 (12 kategorii)
+📝 Menu Templates: 5
+📦 Menu Packages: 8
+⚙️ Category Settings: 43
+```
+
+**Test Login:**
+- Email: `admin@gosciniecrodzinny.pl`
+- Hasło: `Admin123!@#`
 
 ---
 
@@ -123,6 +144,11 @@ rezerwacje/
 │   │   │   ├── email/        # Template emaili
 │   │   │   └── tests/        # Unit & integration testy
 │   │   ├── prisma/           # Database schema & migrations
+│   │   │   ├── seeds/        # 🌱 Seedy testowe (E2E data)
+│   │   │   │   ├── dish.seed.ts
+│   │   │   │   ├── menu-templates.seed.ts
+│   │   │   │   └── e2e-test-data.seed.ts  # ✨ NOWE!
+│   │   │   └── seed.ts       # Główny seed orchestrator
 │   │   ├── Dockerfile
 │   │   └── package.json
 │   │
@@ -132,12 +158,17 @@ rezerwacje/
 │       │   ├── dashboard/    # Panel główny
 │       │   ├── reservations/ # Moduł rezerwacji
 │       │   ├── queue/        # Moduł kolejki
+│       │   ├── menu/         # ✨ System menu & kategorie dań
 │       │   └── clients/      # Zarządzanie klientami
 │       ├── components/       # React komponenty
 │       │   ├── ui/           # Komponenty UI (buttons, forms, etc.)
 │       │   ├── reservations/ # Komponenty rezerwacji
+│       │   ├── menu/         # ✨ Komponenty menu
 │       │   └── queue/        # Komponenty kolejki (drag & drop)
 │       ├── lib/              # Utilities & API clients
+│       │   ├── api/          # API clients
+│       │   │   ├── api-client.ts     # ✅ Główny axios instance
+│       │   │   └── menu-api.ts       # ✅ Menu API (fixed token)
 │       ├── hooks/            # Custom hooks
 │       ├── __tests__/        # Unit testy
 │       ├── e2e/              # E2E testy Playwright
@@ -153,7 +184,8 @@ rezerwacje/
 │   ├── DEPLOYMENT.md        # Wdrażanie
 │   ├── DARK_MODE_GUIDELINES.md  # 🌙 Wytyczne dark mode ✨ NOWE!
 │   ├── BUGFIX_SESSION_2026-02-07.md  # Sesja naprawcza Bug #1-8
-│   └── BUGFIX_SESSION_2026-02-09.md  # Sesja naprawcza Bug #9 ✨ NOWE!
+│   ├── BUGFIX_SESSION_2026-02-09.md  # Sesja naprawcza Bug #9 ✨ NOWE!
+│   └── BUGFIX_SESSION_2026-02-11.md  # Sesja naprawcza Bug #10-13 ✨ NOWE!
 │
 ├── scripts/                  # Skrypty pomocnicze
 │   ├── deploy_bug7_fix.sh   # Deploy hotfix
@@ -162,7 +194,7 @@ rezerwacje/
 │   └── test-queue-api.sh    # Test API kolejki
 │
 ├── API.md                   # Dokumentacja REST API
-├── CONTRIBUTING.md          # Wytyczne dla kontrybutorów
+├── CONTRIBUTING.md          # Wytyczne dla kontrybutów
 ├── CURRENT_STATUS.md        # Aktualny status rozwoju
 ├── BUG5_RACE_CONDITIONS.md  # Szczegóły fix race conditions
 ├── BUG8_POSITION_VALIDATION.md  # Szczegóły fix walidacji
@@ -185,11 +217,19 @@ rezerwacje/
 - ✅ Autentykacja & autoryzacja
 - ✅ Setup CI/CD
 
-### ✅ Sprint 2: Moduł Rezerwacji (Tydzień 3-4) - **UKOŃCZONY**
+### ✅ Sprint 2: Moduł Rezerwacji (Tydzień 3-4) - **W TRAKCIE**
 - ✅ CRUD rezerwacji
 - ✅ Kalkulator ceny
 - ✅ Walidacje
 - ✅ Interfejs rezerwacji
+- ✨ **System Menu & Kategorie Dań** - **NOWE!**
+  - ✅ Model bazy danych (DishCategory)
+  - ✅ Backend API (CRUD kategorii dań)
+  - ✅ Frontend UI (strona zarządzania kategoriami)
+  - ✅ Integracja z dashboard menu
+  - ✅ Sortowanie i walidacja kolejności
+  - ✅ Kolorowanie i ikony emoji
+  - ✅ Pełna dokumentacja API
 
 ### ✅ Sprint 3: Uzupełnianie Funkcjonalności (Tydzień 5-6) - **UKOŃCZONY**
 - ✅ Zarządzanie klientami
@@ -223,6 +263,14 @@ rezerwacje/
   - ✅ Integracja z drag & drop
   - ✅ Pełna dokumentacja
 - ✅ Loading states dla operacji async
+- ✅ **✨ Pełne dane testowe E2E** - Bug #10-13 Fix!
+  - ✅ 6 Halls z prawidłowymi cenami
+  - ✅ 3 Users (ADMIN + EMPLOYEE)
+  - ✅ 5 Clients (bez deprecated fields)
+  - ✅ 6 Reservations (różne statusy)
+  - ✅ 5 Deposits (wszystkie paid)
+  - ✅ Naprawiony token localStorage w menu API
+  - ✅ Spójne nazwy pól (adults/children/toddlers)
 - 🔄 Testy jednostkowe kolejki (85% complete)
 - ⏳ Integracja z powiadomieniami email
 
@@ -251,6 +299,7 @@ rezerwacje/
 - 📦 **✨ Batch Operations**: Atomiczne transakcje dla multi-record updates (Bug #9 fix)
 - ✅ **Nullable Constraints**: CHECK constraints dla spójności danych kolejki
 - 📏 **Position Validation**: Walidacja zakresu pozycji [1, maxPosition]
+- 🔑 **✨ Unified Token Management**: Spójne użycie localStorage keys (Bug #13 fix)
 
 ---
 
@@ -289,7 +338,24 @@ rezerwacje/
 - Race condition protection
 - Walidacja pozycji
 
-### 3. **Zarządzanie Klientami**
+### 3. **✨ System Menu** - **NOWE!**
+- **Kategorie Dań**
+  - Tworzenie i edycja kategorii (Zupy, Dania główne, Desery, etc.)
+  - Unikalny slug dla każdej kategorii (używany w kodzie)
+  - Ikony emoji dla wizualnej identyfikacji
+  - System kolorów (8 opcji Tailwind CSS)
+  - Kolejność wyświetlania (displayOrder)
+  - Sortowanie kategorii według kolejności
+  - Aktywacja/dezaktywacja kategorii
+  - Walidacja unikalnych slugów
+  - Podgląd karty kategorii z pozycją (#1, #2, #3)
+- **Zarządzanie Daniami** (⏳ w planach)
+  - Przypisanie do kategorii
+  - Nazwa, opis, ceny
+  - Alergeny i składniki
+  - Zdjęcia dań
+
+### 4. **Zarządzanie Klientami**
 - Rejestr klientów z pełnymi danymi
 - Historia wszystkich rezerwacji klienta
 - Notatki o kliencie
@@ -297,7 +363,7 @@ rezerwacje/
 - Wyszukiwanie i filtrowanie
 - Export danych klientów
 
-### 4. **Panel Admina**
+### 5. **Panel Admina**
 - Zarządzanie użytkownikami (CRUD)
 - Konfiguracja sal (pojemność, ceny)
 - Typy eventów (wesele, urodziny, etc.)
@@ -305,7 +371,7 @@ rezerwacje/
 - Logi aktywności użytkowników
 - Przegląd wszystkich rezerwacji
 
-### 5. **Statystyki & Raporty**
+### 6. **Statystyki & Raporty**
 - Przychody miesięczne/roczne
 - Popularność sal (wykres)
 - Typy eventów (rozkład)
@@ -313,7 +379,7 @@ rezerwacje/
 - Liczba rezerwacji w czasie
 - Export raportów do CSV/PDF
 
-### 6. **Backupy & Bezpieczeństwo**
+### 7. **Backupy & Bezpieczeństwo**
 - Automatyczne codzienne backupy bazy
 - Przechowywanie backupów (7/30/365 dni)
 - Możliwość przywrócenia z backupu
@@ -364,9 +430,9 @@ rezerwacje/
 Klient może dzwonić w ciągu dnia bez automatycznego anulowania rezerwacji.
 
 **Przykład:**
-- Dziś: 09.02.2026
-- Klient w kolejce na 09.02.2026 - ✅ POZOSTAJE (może dzwonić)
-- Klient w kolejce na 08.02.2026 i wcześniej - ❌ ZOSTANIE ANULOWANY o 00:01
+- Dziś: 11.02.2026
+- Klient w kolejce na 11.02.2026 - ✅ POZOSTAJE (może dzwonić)
+- Klient w kolejce na 10.02.2026 i wcześniej - ❌ ZOSTANIE ANULOWANY o 00:01
 
 ---
 
@@ -405,15 +471,40 @@ Klient może dzwonić w ciągu dnia bez automatycznego anulowania rezerwacji.
     "Wigilia firmowa",
     "Inne"
   ],
+  "dishCategories": [
+    {
+      "slug": "SOUP",
+      "name": "Zupy",
+      "icon": "🍜",
+      "color": "bg-orange-100 text-orange-700",
+      "displayOrder": 1
+    },
+    {
+      "slug": "MAIN_COURSE",
+      "name": "Dania główne",
+      "icon": "🍖",
+      "color": "bg-red-100 text-red-700",
+      "displayOrder": 2
+    },
+    {
+      "slug": "DESSERT",
+      "name": "Desery",
+      "icon": "🍰",
+      "color": "bg-pink-100 text-pink-700",
+      "displayOrder": 3
+    }
+  ],
   "users": [
     {
       "email": "admin@gosciniecrodzinny.pl",
+      "password": "Admin123!@#",
       "role": "ADMIN",
       "firstName": "Admin",
       "lastName": "System"
     },
     {
       "email": "pracownik@gosciniecrodzinny.pl",
+      "password": "Pracownik123!",
       "role": "EMPLOYEE",
       "firstName": "Jan",
       "lastName": "Kowalski"
@@ -542,12 +633,13 @@ docker-compose logs -f frontend
 - [📋 Moduł Kolejki](./docs/QUEUE.md)
 - [🌙 ✨ Dark Mode Guidelines](./docs/DARK_MODE_GUIDELINES.md) - **NOWE!**
 - [🧪 Testy](./docs/testing/)
-- [🔧 Wytyczne dla Kontrybutorów](./CONTRIBUTING.md)
+- [🔧 Wytyczne dla Kontrybutów](./CONTRIBUTING.md)
 - [📏 Aktualny Status](./CURRENT_STATUS.md)
 
 ### Raporty Bugfixów
 - [🐞 Sesja Bugfix 07.02.2026](./docs/BUGFIX_SESSION_2026-02-07.md) - Wszystkie 7 bugów (Bug #1-7)
 - [🐞 ✨ Sesja Bugfix 09.02.2026](./docs/BUGFIX_SESSION_2026-02-09.md) - **Bug #9: Batch Update Race Condition** NOWE!
+- [🐞 ✨ Sesja Bugfix 11.02.2026](./docs/BUGFIX_SESSION_2026-02-11.md) - **Bug #10-13: E2E Seed Fixes & Menu API Token** NOWE!
 - [🔄 Bug #5: Race Conditions](./BUG5_RACE_CONDITIONS.md) - Row-level locking + retry logic
 - [📏 Bug #8: Position Validation](./BUG8_POSITION_VALIDATION.md) - Walidacja pozycji
 - [📦 ✨ Bug #9: Batch Update Race Condition](./BUG9_BATCH_UPDATE_RACE_CONDITION.md) - Atomiczne transakcje **NOWE!**
@@ -572,6 +664,8 @@ docker-compose logs -f frontend
 - ✅ Moduł kolejki rezerwacji (99% complete)
 - ✅ **✨ Batch update API z atomicznymi transakcjami** (Bug #9 Fix)
 - ✅ **🌙 Dark Mode Support** - Pełne wsparcie + dokumentacja
+- ✅ **✨ E2E Test Data** - Pełne dane testowe (Bug #10-13 Fix)
+- ✨ **System Menu & Kategorie Dań** - **NOWE!**
 - 🔄 Testy E2E (85% complete)
 - ⏳ Production deployment
 
@@ -580,6 +674,7 @@ docker-compose logs -f frontend
 - 📏 Zaawansowane raporty
 - 💳 Integracja płatności online
 - 📧 Email marketing integration
+- 🍽️ Zarządzanie menu + generowanie dokumentów menu
 
 ### Q3 2026 (Rozważane)
 - 🤖 AI-powered recommendations
@@ -618,21 +713,22 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
 
 ## 🔄 Status Projektu
 
-**Wersja:** 0.9.9 (Release Candidate + Bug #9 Batch Update Fix + Dark Mode)  
+**Wersja:** 0.9.10 (Release Candidate + Bug #10-13 E2E Fixes + Dark Mode + Menu System)  
 **Status:** 🔄 W aktywnym rozwoju - stabilny  
-**Ostatnia aktualizacja:** 09.02.2026 - 23:15 CET  
+**Ostatnia aktualizacja:** 11.02.2026 - 01:59 CET  
 **Kolejny release:** v1.0.0 (planowany marzec 2026)
 
 ### Postęp Ogólny
-- **Backend:** 94% ✅ (+2% - batch update API)
-- **Frontend:** 84% ✅ (+2% - atomiczne drag & drop)
-- **Testy:** 82% 🔄 (+2% - testy batch operations)
-- **Dokumentacja:** 92% ✅ (+2% - dark mode guidelines)
+- **Backend:** 97% ✅ (+1% - E2E seed fixes)
+- **Frontend:** 87% ✅ (+1% - token management fix)
+- **Testy:** 83% 🔄 (+1% - E2E test data)
+- **Dokumentacja:** 95% ✅ (+1% - bugfix session docs)
 - **Deployment:** 70% 🔄
 
 ### Aktualnie w Rozwoju
-- Moduł kolejki rezerwacji (99% complete)
+- System menu & kategorie dań (100% complete)
 - Dark Mode support (100% complete + dokumentacja)
+- E2E test data (100% complete)
 - Testy jednostkowe (85% complete)
 - Integracja powiadomień email
 - Production deployment preparation
@@ -653,8 +749,23 @@ Proprietarne oprogramowanie stworzone na zamówienie dla Gościniec Rodzinny.
   - Gradient adaptations
   - Component examples
   - Checklist & best practices
+- ✅ **✨ System Menu & Kategorie Dań** (10.02.2026)
+  - Model DishCategory w bazie danych
+  - CRUD API dla kategorii dań
+  - Frontend UI strona zarządzania kategoriami
+  - Sortowanie według displayOrder
+  - Kolorowanie i ikony emoji
+  - Pełna dokumentacja API
+  - Integracja z dashboard menu
+- ✅ **✨ Bug #10-13: E2E Seed Fixes & Menu API Token** (11.02.2026)
+  - Naprawione nazwy pól w e2e-test-data.seed.ts (adults/children/toddlers)
+  - Dodane pricePerPerson do Hall seed
+  - Usunięte nieistniejące pole address z Client seed
+  - Naprawiony token localStorage w menu-api.ts
+  - Pełne dane testowe: 6 halls, 3 users, 5 clients, 6 reservations, 5 deposits
+  - Dokumentacja w BUGFIX_SESSION_2026-02-11.md
 
-**Branch Status:** Stabilny - wszystkie komponenty mają wsparcie dark mode
+**Branch Status:** feature/category-api - gotowy do review
 
 ---
 

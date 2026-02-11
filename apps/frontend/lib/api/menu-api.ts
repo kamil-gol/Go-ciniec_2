@@ -17,9 +17,9 @@ import type {
   ApiError,
 } from '@/types/menu.types';
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // AXIOS INSTANCE
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
@@ -28,6 +28,23 @@ const api = axios.create({
   },
   timeout: 10000,
 });
+
+// Request interceptor for adding auth token
+api.interceptors.request.use(
+  (config) => {
+    // Try to get token from localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor for error handling
 api.interceptors.response.use(
@@ -52,9 +69,9 @@ api.interceptors.response.use(
   }
 );
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 function buildQueryParams(params: Record<string, any>): string {
   const query = new URLSearchParams();
@@ -69,9 +86,9 @@ function buildQueryParams(params: Record<string, any>): string {
   return queryString ? `?${queryString}` : '';
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // MENU API
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 export const menuApi = {
   // ────────────────────────────────────────
@@ -152,6 +169,16 @@ export const menuApi = {
   },
 
   /**
+   * Get categories with dishes for a package
+   */
+  getPackageCategories: async (packageId: string): Promise<ApiResponse<any>> => {
+    const { data } = await api.get<ApiResponse<any>>(
+      `/menu-packages/${packageId}/categories`
+    );
+    return data;
+  },
+
+  /**
    * Create new menu package
    */
   createPackage: async (input: any): Promise<ApiResponse<MenuPackage>> => {
@@ -226,13 +253,14 @@ export const menuApi = {
 
   /**
    * Select menu for reservation (initial selection)
+   * Uses POST /reservations/:id/menu
    */
   selectMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
     const { data } = await api.post<ApiResponse<ReservationMenuResponse>>(
-      `/reservations/${reservationId}/select-menu`,
+      `/reservations/${reservationId}/menu`,
       selection
     );
     return data;
@@ -240,13 +268,14 @@ export const menuApi = {
 
   /**
    * Update menu selection for reservation
+   * Uses PUT /reservations/:id/menu
    */
   updateMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
-    const { data } = await api.post<ApiResponse<ReservationMenuResponse>>(
-      `/reservations/${reservationId}/select-menu`,
+    const { data } = await api.put<ApiResponse<ReservationMenuResponse>>(
+      `/reservations/${reservationId}/menu`,
       selection
     );
     return data;
@@ -293,8 +322,8 @@ export const menuApi = {
   },
 };
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // EXPORT AXIOS INSTANCE FOR CUSTOM REQUESTS
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 export { api as apiClient };

@@ -2,6 +2,27 @@ import PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 import * as fs from 'fs';
 
+interface DishSelection {
+  dishId: string;
+  dishName: string;
+  quantity: number;
+  allergens?: string[];
+  description?: string;
+}
+
+interface CategorySelection {
+  categoryId: string;
+  categoryName: string;
+  dishes: DishSelection[];
+}
+
+interface MenuData {
+  packageId?: string;
+  packageName?: string;
+  dishSelections?: CategorySelection[];
+  selectedOptions?: any[];
+}
+
 interface ReservationPDFData {
   id: string;
   client: {
@@ -42,6 +63,7 @@ interface ReservationPDFData {
     status: string;
     paid: boolean;
   };
+  menuData?: MenuData;
   createdAt: Date;
 }
 
@@ -53,6 +75,17 @@ interface RestaurantData {
   website?: string;
   nip?: string;
 }
+
+const ALLERGEN_LABELS: Record<string, string> = {
+  gluten: 'Gluten',
+  lactose: 'Laktoza',
+  eggs: 'Jajka',
+  nuts: 'Orzechy',
+  fish: 'Ryby',
+  soy: 'Soja',
+  shellfish: 'Skorupiaki',
+  peanuts: 'Orzeszki ziemne',
+};
 
 export class PDFService {
   // Try multiple font paths (DejaVu fonts for Polish character support)
@@ -261,6 +294,11 @@ export class PDFService {
       doc.font(this.getRegularFont()).text(reservation.notes, { width: pageWidth - 20 });
     }
 
+    // Add menu selection section (NEW!)
+    if (reservation.menuData?.dishSelections && reservation.menuData.dishSelections.length > 0) {
+      this.addMenuSelectionSection(doc, reservation.menuData, pageWidth);
+    }
+
     doc.moveDown(1);
     this.addSeparator(doc);
 
@@ -269,6 +307,11 @@ export class PDFService {
     doc.fontSize(14).font(this.getBoldFont()).text('Kalkulacja kosztow');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
+
+    if (reservation.menuData?.packageName) {
+      doc.font(this.getBoldFont()).text(`Pakiet: ${reservation.menuData.packageName}`);
+      doc.font(this.getRegularFont()).moveDown(0.3);
+    }
 
     if (reservation.adults > 0 && reservation.pricePerAdult > 0) {
       const adultTotal = reservation.adults * Number(reservation.pricePerAdult);
@@ -308,6 +351,63 @@ export class PDFService {
     }
 
     this.addFooter(doc);
+  }
+
+  /**
+   * Add menu selection section with dishes grouped by category (NEW!)
+   */
+  private addMenuSelectionSection(
+    doc: PDFKit.PDFDocument,
+    menuData: MenuData,
+    pageWidth: number
+  ): void {
+    doc.moveDown(1);
+    this.addSeparator(doc);
+    doc.moveDown(1);
+
+    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Wybrane Dania');
+    doc.moveDown(0.5);
+
+    if (!menuData.dishSelections || menuData.dishSelections.length === 0) {
+      doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
+      doc.text('Brak wybranych dan');
+      return;
+    }
+
+    menuData.dishSelections.forEach((category, categoryIndex) => {
+      // Category header
+      doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
+      doc.text(`${category.categoryName} (${category.dishes.length})`);
+      doc.moveDown(0.3);
+
+      // Dishes list
+      category.dishes.forEach((dish) => {
+        doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
+        
+        const quantityText = dish.quantity === Math.floor(dish.quantity)
+          ? dish.quantity.toString()
+          : dish.quantity.toFixed(1);
+        
+        doc.text(`  ${quantityText}x ${dish.dishName}`, { indent: 15 });
+
+        // Allergens
+        if (dish.allergens && dish.allergens.length > 0) {
+          const allergenLabels = dish.allergens
+            .map((a) => ALLERGEN_LABELS[a] || a)
+            .join(', ');
+          doc.fontSize(8).fillColor('#e67e22');
+          doc.text(`     Alergeny: ${allergenLabels}`, { indent: 25 });
+          doc.fillColor('#000000');
+        }
+
+        doc.moveDown(0.2);
+      });
+
+      // Add spacing between categories
+      if (categoryIndex < menuData.dishSelections!.length - 1) {
+        doc.moveDown(0.5);
+      }
+    });
   }
 
   private addHeader(doc: PDFKit.PDFDocument): void {

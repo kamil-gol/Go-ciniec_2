@@ -12,6 +12,9 @@ import reservationRoutes from '@/routes/reservation.routes';
 import depositRoutes from '@/routes/deposit.routes';
 import queueRoutes from '@/routes/queue.routes';
 import menuRoutes from '@/routes/menu.routes';
+import dishRoutes from '@/routes/dish.routes';
+import dishCategoryRoutes from '@/routes/dish-category.routes';
+import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
 import queueService from '@/services/queue.service';
 
 const app: Express = express();
@@ -65,7 +68,7 @@ app.use('/api/deposits', depositRoutes);
 app.use('/api/queue', queueRoutes);
 
 /**
- * Menu System Routes (NEW)
+ * Menu System Routes
  * Includes:
  * - /api/menu-templates
  * - /api/menu-packages
@@ -73,6 +76,26 @@ app.use('/api/queue', queueRoutes);
  * - /api/reservations/:id/select-menu (menu selection)
  */
 app.use('/api', menuRoutes);
+
+/**
+ * Menu Calculator Routes (NEW)
+ * - /api/menu-calculator/calculate
+ * - /api/menu-calculator/packages/available
+ * - /api/menu-calculator/option/:optionId/calculate
+ */
+app.use('/api/menu-calculator', menuCalculatorRoutes);
+
+/**
+ * Dishes Routes
+ * - /api/dishes
+ */
+app.use('/api/dishes', dishRoutes);
+
+/**
+ * Dish Categories Routes
+ * - /api/dish-categories
+ */
+app.use('/api/dish-categories', dishCategoryRoutes);
 
 /**
  * 404 Handler
@@ -96,7 +119,11 @@ const server = app.listen(PORT, () => {
   logger.info(`\n🚀 Server running on http://localhost:${PORT}`);
   logger.info(`📝 API Documentation: http://localhost:${PORT}/api/docs`);
   logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
-  logger.info(`🍽️  Menu System: http://localhost:${PORT}/api/menu-templates\n`);
+  logger.info(`🍽️  Menu System: http://localhost:${PORT}/api/menu-templates`);
+  logger.info(`🧮  Menu Calculator: http://localhost:${PORT}/api/menu-calculator/calculate`);
+  logger.info(`💾  Menu Assignment: http://localhost:${PORT}/api/reservations/:id/menu`);
+  logger.info(`🍲  Dishes: http://localhost:${PORT}/api/dishes`);
+  logger.info(`📂  Categories: http://localhost:${PORT}/api/dish-categories\n`);
   
   // Setup cron job for auto-canceling expired RESERVED reservations
   setupAutoCancelCron();

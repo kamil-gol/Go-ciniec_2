@@ -13,9 +13,24 @@ import {
   PriceBreakdown as PriceBreakdownType
 } from '@/types/menu.types';
 import { PriceBreakdown } from './PriceBreakdown';
+import { MenuDishesPreview } from './MenuDishesPreview';
 import { Package, Users, Check, Edit, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+interface DishSelection {
+  dishId: string;
+  dishName: string;
+  quantity: number;
+  allergens?: string[];
+  description?: string;
+}
+
+interface CategorySelection {
+  categoryId: string;
+  categoryName: string;
+  dishes: DishSelection[];
+}
 
 interface MenuSummaryProps {
   template: MenuTemplate;
@@ -26,6 +41,7 @@ interface MenuSummaryProps {
     children: number;
     toddlers: number;
   };
+  dishSelections?: CategorySelection[];
   priceBreakdown?: PriceBreakdownType;
   onEdit?: () => void;
   onConfirm?: () => void;
@@ -37,6 +53,7 @@ export function MenuSummary({
   package: pkg,
   selectedOptions,
   guestCounts,
+  dishSelections,
   priceBreakdown,
   onEdit,
   onConfirm,
@@ -155,6 +172,17 @@ export function MenuSummary({
               </div>
             )}
           </motion.div>
+
+          {/* Selected Dishes Preview */}
+          {dishSelections && dishSelections.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <MenuDishesPreview dishSelections={dishSelections} />
+            </motion.div>
+          )}
 
           {/* Guest Counts Card */}
           <motion.div
