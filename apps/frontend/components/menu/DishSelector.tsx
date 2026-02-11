@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/hooks/use-toast'
 import { 
   ChevronLeft, ChevronRight, AlertCircle, Check, 
-  Info, UtensilsCrossed, CheckCircle2
+  Info, UtensilsCrossed, CheckCircle2, Lock
 } from 'lucide-react'
 import { usePackageCategories } from '@/hooks/use-menu'
 
@@ -35,6 +36,7 @@ export function DishSelector({
   onComplete, 
   onBack 
 }: DishSelectorProps) {
+  const { toast } = useToast()
   const { data: categoryData, isLoading } = usePackageCategories(packageId)
   const [selections, setSelections] = useState<Record<string, Record<string, number>>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -86,8 +88,37 @@ export function DishSelector({
 
   const categories = categoryData.categories
 
+  // Calculate total quantity for category
+  const getCategoryTotal = (categoryId: string): number => {
+    const categorySelections = selections[categoryId] || {}
+    return Object.values(categorySelections).reduce((sum, qty) => sum + qty, 0)
+  }
+
+  // Get category settings
+  const getCategorySettings = (categoryId: string) => {
+    return categories.find((cat: any) => cat.categoryId === categoryId)
+  }
+
   // Toggle dish selection
   const toggleDish = (categoryId: string, dishId: string) => {
+    const isCurrentlySelected = !!selections[categoryId]?.[dishId]
+    
+    // If trying to select a new dish, check if we would exceed maxSelect
+    if (!isCurrentlySelected) {
+      const categorySettings = getCategorySettings(categoryId)
+      const currentTotal = getCategoryTotal(categoryId)
+      const newTotal = currentTotal + 1 // Minimum quantity is 1
+      
+      if (newTotal > categorySettings.maxSelect) {
+        toast({
+          title: 'Limit osiągnięty',
+          description: `Możesz wybrać maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}".`,
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     setSelections(prev => {
       const newSelections = { ...prev }
       const categorySelections = { ...newSelections[categoryId] }
@@ -116,6 +147,24 @@ export function DishSelector({
 
   // Update dish quantity
   const updateQuantity = (categoryId: string, dishId: string, quantity: number) => {
+    const categorySettings = getCategorySettings(categoryId)
+    const categorySelections = selections[categoryId] || {}
+    const currentQuantityForDish = categorySelections[dishId] || 0
+    
+    // Calculate what the new total would be
+    const currentTotal = getCategoryTotal(categoryId)
+    const newTotal = currentTotal - currentQuantityForDish + quantity
+    
+    // Check if new total would exceed maxSelect
+    if (newTotal > categorySettings.maxSelect) {
+      toast({
+        title: 'Limit osiągnięty',
+        description: `Suma porcji nie może przekroczyć ${categorySettings.maxSelect} w kategorii "${categorySettings.customLabel || categorySettings.categoryName}".`,
+        variant: 'destructive',
+      })
+      return
+    }
+
     setSelections(prev => ({
       ...prev,
       [categoryId]: {
@@ -123,12 +172,6 @@ export function DishSelector({
         [dishId]: quantity
       }
     }))
-  }
-
-  // Calculate total quantity for category
-  const getCategoryTotal = (categoryId: string): number => {
-    const categorySelections = selections[categoryId] || {}
-    return Object.values(categorySelections).reduce((sum, qty) => sum + qty, 0)
   }
 
   // Validate selections
@@ -191,6 +234,7 @@ export function DishSelector({
           const total = getCategoryTotal(category.categoryId)
           const isValid = total >= category.minSelect && total <= category.maxSelect
           const hasError = errors[category.categoryId]
+          const isAtMaxLimit = total >= category.maxSelect
 
           return (
             <Card key={category.categoryId} className="border-2 shadow-lg">
@@ -228,6 +272,15 @@ export function DishSelector({
                     />
                   </div>
                   
+                  {isAtMaxLimit && (
+                    <Alert className="mt-3 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                      <Info className="h-4 w-4 text-blue-600" />
+                      <AlertDescription className="text-blue-900 dark:text-blue-100">
+                        Osiągnięto maksymalną liczbę pozycji. Odznacz danie aby wybrać inne.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
                   {hasError && (
                     <Alert variant="destructive" className="mt-3">
                       <AlertCircle className="h-4 w-4" />
@@ -241,17 +294,27 @@ export function DishSelector({
                   {category.dishes.map((dish: any) => {
                     const isSelected = !!selections[category.categoryId]?.[dish.id]
                     const quantity = selections[category.categoryId]?.[dish.id] || 1
+                    const isDisabled = !isSelected && isAtMaxLimit
 
                     return (
                       <div
                         key={dish.id}
-                        className={`relative p-5 border-3 rounded-xl transition-all duration-200 cursor-pointer group ${
-                          isSelected 
-                            ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-lg scale-[1.02]' 
-                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-300 hover:shadow-md hover:scale-[1.01]'
+                        className={`relative p-5 border-3 rounded-xl transition-all duration-200 ${
+                          isDisabled
+                            ? 'opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                            : isSelected 
+                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-lg scale-[1.02] cursor-pointer' 
+                              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-300 hover:shadow-md hover:scale-[1.01] cursor-pointer'
                         }`}
-                        onClick={() => toggleDish(category.categoryId, dish.id)}
+                        onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
                       >
+                        {/* Disabled Indicator */}
+                        {isDisabled && (
+                          <div className="absolute top-3 right-3 w-7 h-7 bg-gray-400 rounded-full flex items-center justify-center">
+                            <Lock className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+
                         {/* Selection Indicator */}
                         {isSelected && (
                           <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
@@ -262,9 +325,11 @@ export function DishSelector({
                         <div className="flex items-start gap-4">
                           {/* Custom Checkbox */}
                           <div className={`flex-shrink-0 mt-1 w-7 h-7 rounded-lg border-3 flex items-center justify-center transition-all duration-200 ${
-                            isSelected
-                              ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-md'
-                              : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                            isDisabled
+                              ? 'bg-gray-300 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                              : isSelected
+                                ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-md'
+                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
                           }`}>
                             {isSelected && (
                               <CheckCircle2 className="h-5 w-5 text-white" strokeWidth={3} />
@@ -273,12 +338,18 @@ export function DishSelector({
 
                           <div className="flex-1 min-w-0">
                             <h4 className={`font-bold text-base mb-1 ${
-                              isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'
+                              isDisabled
+                                ? 'text-gray-400 dark:text-gray-600'
+                                : isSelected 
+                                  ? 'text-blue-900 dark:text-blue-100' 
+                                  : 'text-gray-900 dark:text-gray-100'
                             }`}>
                               {dish.name}
                             </h4>
                             {dish.description && (
-                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              <p className={`text-sm mt-1 line-clamp-2 ${
+                                isDisabled ? 'text-gray-400' : 'text-muted-foreground'
+                              }`}>
                                 {dish.description}
                               </p>
                             )}
