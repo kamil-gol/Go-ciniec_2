@@ -47,12 +47,7 @@ export function ReservationMenuSection({
     try {
       await selectMenuMutation.mutateAsync({
         reservationId,
-        selection: {
-          ...selection,
-          adults: adults,
-          children: children,
-          toddlers: toddlers
-        }
+        selection
       })
 
       toast({
