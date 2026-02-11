@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   UtensilsCrossed, Plus, Edit, Trash2, DollarSign, 
-  Users, Check, Package, Sparkles, ShoppingCart
+  Users, Check, Package, Sparkles, ShoppingCart, ChefHat
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
+import { MenuDishesPreview } from '@/components/menu/MenuDishesPreview'
 import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteReservationMenu } from '@/hooks/use-menu'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -237,6 +238,22 @@ export function ReservationMenuSection({
                 </div>
               </div>
             </div>
+
+            {/* Selected Dishes */}
+            {dishSelections && dishSelections.length > 0 && (
+              <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <ChefHat className="h-5 w-5 text-orange-600" />
+                  <h3 className="font-semibold">Wybrane dania</h3>
+                  <Badge variant="secondary" className="ml-auto">
+                    {dishSelections.reduce((sum, cat) => 
+                      sum + cat.dishes.reduce((s, d) => s + d.quantity, 0), 0
+                    )} porcji
+                  </Badge>
+                </div>
+                <MenuDishesPreview dishSelections={dishSelections} />
+              </div>
+            )}
 
             {/* Selected Options */}
             {selectedOptions && selectedOptions.length > 0 && (
