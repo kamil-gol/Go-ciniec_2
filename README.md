@@ -7,8 +7,11 @@
 ### ✅ Gotowe
 
 - **Rezerwacje** - system kolejek i zarządzanie rezerwacjami
+  - Tworzenie i edycja rezerwacji
+  - Podział gości (dorośli, dzieci 4-12, maluchy 0-3)
+  - **PDF Generator** - szczegółowe potwierdzenia z menu i cenami 🆕
 - **Menu Templates** - szablony menu dla różnych typów eventów
-- **Menu Packages** - pakiety z kategoriami dań (NEW!)
+- **Menu Packages** - pakiety z kategoriami dań
   - Wybór kategorii dań dla pakietu
   - Ustawienia min/max wyborów (dziesiętne!)
   - Custom labels dla kategorii
@@ -21,6 +24,22 @@
 - **Clients** - baza klientów
 - **Halls** - zarządzanie salami
 
+### 🆕 PDF Generator Features (NEW!)
+
+**Potwierdzenie rezerwacji zawiera:**
+- ✅ Dane klienta (imię, nazwisko, telefon, email)
+- ✅ Szczegóły rezerwacji (sala, data, godzina, goście)
+- ✅ Status rezerwacji z kolorowymi badgami
+- ✅ **Wybrane menu:**
+  - Nazwa pakietu
+  - Liczba osób (dorośli, dzieci, maluchy)
+  - Wszystkie dania pogrupowane po kategoriach
+  - Alergeny dla każdego dania
+  - **Ceny:** pakiet + dodatki + suma menu
+- ✅ Kalkulacja kosztów (goście x cena = total)
+- ✅ Informacje o zaliczce (kwota, termin, status)
+- ✅ Obsługa polskich znaków (DejaVu fonts)
+
 ### 🔧 Tech Stack
 
 **Backend:**
@@ -28,6 +47,7 @@
 - Prisma ORM
 - PostgreSQL
 - Docker
+- **PDFKit** - generowanie PDF 🆕
 
 **Frontend:**
 - Next.js 14 (App Router)
@@ -36,17 +56,52 @@
 - Tailwind CSS
 - Docker
 
+## 📏 API Endpoints
+
+### Reservations
+```http
+POST   /api/reservations
+GET    /api/reservations
+GET    /api/reservations/:id
+PUT    /api/reservations/:id
+DELETE /api/reservations/:id
+GET    /api/reservations/:id/pdf  🆕 Pobierz PDF
+```
+
+### Menu Packages
+```http
+POST   /api/menu-packages
+GET    /api/menu-packages
+GET    /api/menu-packages/:id
+PUT    /api/menu-packages/:id
+DELETE /api/menu-packages/:id
+
+GET    /api/menu-packages/:packageId/categories
+PUT    /api/menu-packages/:packageId/categories   # Bulk update!
+```
+
+### Other
+```http
+GET    /api/dish-categories
+GET    /api/dishes
+POST   /api/clients
+GET    /api/halls
+```
+
 ## 📚 Dokumentacja
 
-### Menu Packages System
-
-- **[Pełny przewodnik](./docs/MENU_PACKAGES_GUIDE.md)** - kompletna dokumentacja
+### Menu & Reservations
+- **[PDF Enhancement Session](./docs/PDF_ENHANCEMENT_SESSION_2026-02-11.md)** - szczegóły PDF generator 🆕
+- **[Menu Packages Guide](./docs/MENU_PACKAGES_GUIDE.md)** - kompletna dokumentacja
 - **[Quick Start](./docs/MENU_PACKAGES_QUICKSTART.md)** - szybki start (30 sekund)
-
-### Inne
-
 - **[Queue System](./apps/frontend/README_QUEUE.md)** - system kolejek
-- **[Drag & Drop](./apps/frontend/DRAG_AND_DROP_IMPLEMENTATION.md)** - drag & drop
+
+### Development & Deployment
+- **[API Documentation](./docs/API_DOCUMENTATION.md)** - pełna dokumentacja API
+- **[Architecture](./docs/ARCHITECTURE.md)** - architektura systemu
+- **[Database Schema](./docs/DATABASE.md)** - schemat bazy danych
+- **[Docker Commands](./docs/DOCKER_COMMANDS.md)** - komendy Docker
+- **[Deployment](./docs/DEPLOYMENT.md)** - wdrożenie produkcyjne
 
 ## ⚡ Quick Start
 
@@ -58,12 +113,41 @@ cd Go-ciniec_2
 # Start services
 docker compose up -d
 
+# Run database migrations
+docker-compose exec backend npx prisma migrate deploy
+
+# Seed database (optional)
+docker-compose exec backend npm run db:seed
+
 # Access
 Frontend: http://localhost:3000
 Backend:  http://localhost:3001
 ```
 
-## 📁 Struktura projektu
+## 📝 Przykład użycia - PDF Download
+
+```typescript
+// Frontend - pobieranie PDF rezerwacji
+const downloadPDF = async (reservationId: string) => {
+  const response = await fetch(
+    `http://localhost:3001/api/reservations/${reservationId}/pdf`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rezerwacja_${reservationId}.pdf`;
+  a.click();
+};
+```
+
+## 📊 Struktura Projektu
 
 ```
 Go-ciniec_2/
@@ -73,92 +157,31 @@ Go-ciniec_2/
 │   │   │   ├── controllers/
 │   │   │   ├── routes/
 │   │   │   ├── services/
+│   │   │   │   ├── reservation.service.ts
+│   │   │   │   └── pdf.service.ts       🆕 PDF Generator
 │   │   │   └── ...
 │   │   └── prisma/schema.prisma
 │   │
 │   └── frontend/         # Next.js 14
 │       ├── app/
 │       │   └── dashboard/
+│       │       ├── reservations/
 │       │       └── menu/
-│       │           └── packages/    # ⭐ Menu Packages
+│       │           └── packages/
 │       ├── components/
 │       │   └── menu/
-│       │       ├── PackageForm.tsx
-│       │       └── CategorySettingsSection.tsx
 │       ├── lib/
 │       │   └── api/
-│       │       └── menu-packages.ts
 │       └── types/
-│           └── menu.ts
 │
 ├── docs/                # 📚 Dokumentacja
+│   ├── PDF_ENHANCEMENT_SESSION_2026-02-11.md  🆕
 │   ├── MENU_PACKAGES_GUIDE.md
-│   └── MENU_PACKAGES_QUICKSTART.md
+│   ├── API_DOCUMENTATION.md
+│   └── ...
 │
 ├── docker-compose.yml
 └── README.md            # Ten plik
-```
-
-## 🔑 Key Features - Menu Packages
-
-### Backend API
-
-```http
-POST   /api/menu-packages
-GET    /api/menu-packages
-GET    /api/menu-packages/:id
-PUT    /api/menu-packages/:id
-DELETE /api/menu-packages/:id
-
-GET    /api/menu-packages/:packageId/categories
-PUT    /api/menu-packages/:packageId/categories   # Bulk update!
-
-GET    /api/dish-categories
-```
-
-### Frontend Pages
-
-```
-/dashboard/menu/packages              # Lista pakietów
-/dashboard/menu/packages/new          # Nowy pakiet
-/dashboard/menu/packages/[id]         # Edycja pakietu
-```
-
-### Komponenty
-
-- `<PackageForm />` - główny formularz pakietu
-- `<CategorySettingsSection />` - wybór kategorii dań ⭐
-
-## 💡 Przykład użycia
-
-### Tworzenie pakietu z kategoriami
-
-```typescript
-const packageData = {
-  menuTemplateId: 'tpl-123',
-  name: 'Pakiet Standard',
-  pricePerAdult: 150,
-  pricePerChild: 75,
-  categorySettings: [
-    {
-      categoryId: 'cat-soups',
-      minSelect: 1,
-      maxSelect: 2,
-      isRequired: true,
-      isEnabled: true,
-      customLabel: 'Wybierz zupy (1-2)'
-    },
-    {
-      categoryId: 'cat-mains',
-      minSelect: 1.5,  // Dziesiętne!
-      maxSelect: 2,
-      isRequired: true,
-      isEnabled: true
-    }
-  ]
-};
-
-await createPackage(packageData);
 ```
 
 ## 👥 Contributors
@@ -171,4 +194,4 @@ Private project
 
 ---
 
-**Ostatnia aktualizacja:** 11.02.2026 - Dodano Menu Packages z Category Settings
+**Ostatnia aktualizacja:** 11.02.2026, 22:00 CET - Dodano PDF Generator z menu i cenami 🚀
