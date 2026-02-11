@@ -19,6 +19,7 @@ const SelectedOptionSchema = z.object({
 });
 
 const SaveMenuSchema = z.object({
+  templateId: z.string().uuid().optional(), // Frontend sends this, but we don't use it
   packageId: z.string().uuid(),
   adults: z.number().int().min(0),
   children: z.number().int().min(0).default(0),
