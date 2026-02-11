@@ -90,6 +90,10 @@ export function ReservationMenuSection({
     }
   }
 
+  const handleCloseDialog = () => {
+    setShowSelectionDialog(false)
+  }
+
   if (isLoading) {
     return (
       <Card className="border-0 shadow-xl">
@@ -138,7 +142,10 @@ export function ReservationMenuSection({
         </Card>
 
         <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent 
+            className="max-w-4xl max-h-[90vh] overflow-y-auto"
+            onClose={handleCloseDialog}
+          >
             <DialogHeader>
               <DialogTitle>Wybierz menu dla rezerwacji</DialogTitle>
             </DialogHeader>
@@ -347,7 +354,10 @@ export function ReservationMenuSection({
 
       {/* Edit Dialog */}
       <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          onClose={handleCloseDialog}
+        >
           <DialogHeader>
             <DialogTitle>Zmień menu rezerwacji</DialogTitle>
           </DialogHeader>
