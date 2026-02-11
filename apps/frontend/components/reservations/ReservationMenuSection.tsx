@@ -160,9 +160,12 @@ export function ReservationMenuSection({
 
   // Menu is selected - show details
   const { snapshot, priceBreakdown } = menuData
-  const template = snapshot.template
-  const selectedPackage = snapshot.package
-  const selectedOptions = snapshot.selectedOptions || []
+  
+  // Backend returns menuData nested inside snapshot
+  const menuDataNested = snapshot.menuData || {}
+  const template = menuDataNested.template || {}
+  const selectedPackage = menuDataNested.package || {}
+  const selectedOptions = menuDataNested.options || []
 
   return (
     <>
@@ -210,15 +213,15 @@ export function ReservationMenuSection({
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">Dorośli</p>
-                  <p className="font-bold">{selectedPackage.priceAdult} zł</p>
+                  <p className="font-bold">{selectedPackage.pricePerAdult} zł</p>
                 </div>
                 <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">Dzieci</p>
-                  <p className="font-bold">{selectedPackage.priceChild} zł</p>
+                  <p className="font-bold">{selectedPackage.pricePerChild} zł</p>
                 </div>
                 <div className="text-center p-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">Maluchy</p>
-                  <p className="font-bold">{selectedPackage.priceToddler} zł</p>
+                  <p className="font-bold">{selectedPackage.pricePerToddler} zł</p>
                 </div>
               </div>
 
@@ -251,14 +254,14 @@ export function ReservationMenuSection({
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-amber-600" />
                         <div>
-                          <p className="font-medium text-sm">{opt.option.name}</p>
+                          <p className="font-medium text-sm">{opt.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {opt.option.priceType === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
+                            {opt.priceType === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{opt.option.priceAmount} zł</p>
+                        <p className="font-bold">{opt.priceAmount} zł</p>
                         {opt.quantity && (
                           <p className="text-xs text-muted-foreground">× {opt.quantity}</p>
                         )}
@@ -366,7 +369,7 @@ export function ReservationMenuSection({
               templateId: template.id,
               packageId: selectedPackage.id,
               selectedOptions: selectedOptions.map((opt: any) => ({
-                optionId: opt.option.id,
+                optionId: opt.optionId,
                 quantity: opt.quantity
               }))
             }}
