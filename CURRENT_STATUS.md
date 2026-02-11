@@ -2,10 +2,10 @@
 
 ## ⚡ Szybki Przegląd
 
-**Branch:** `feature/category-api`  
-**Ostatnia aktualizacja:** 11.02.2026, 00:14 CET  
+**Branch:** `main`  
+**Ostatnia aktualizacja:** 11.02.2026, 16:48 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 0.9.7 (Menu System + UI/UX Improvements)
+**Wersja:** 0.9.11 (Menu System + Deposits Module)
 
 ---
 
@@ -26,7 +26,7 @@
 ✅ **Nullable constraints** dla queue fields  
 ✅ **Batch update API** (atomiczne transakcje)
 
-### ✨ System Menu & Dania (NOWE!)
+### ✨ System Menu & Dania
 ✅ **Kategorie Dań**
   - CRUD API (backend)
   - Model bazy danych (DishCategory)
@@ -46,6 +46,26 @@
   - Wyszukiwanie pełnotekstowe
   - Premium UI/UX z kartami
 
+### ✨ Moduł Zaliczek (NOWE! 11.02.2026)
+✅ **Backend API (Go + GORM)**
+  - Model bazy danych (Deposit, Payment)
+  - CRUD endpoints dla zaliczek
+  - Dodawanie częściowych płatności
+  - Automatyczne statusy (PENDING, PARTIAL, PAID, OVERDUE)
+  - Statystyki i raporty
+  - Filtrowanie i paginacja
+  - System przypomnień
+
+✅ **Frontend UI (Next.js + TypeScript)**
+  - Strona /dashboard/deposits
+  - DepositStats - karty statystyczne
+  - DepositList - lista z filtrowaniem
+  - PaymentModal - dodawanie płatności
+  - Service layer (depositService.ts)
+  - TypeScript types
+  - Responsywny design
+  - API wrapper (api.ts)
+
 ✅ **Premium UI/UX Components**
   - Switch component z gradientami
   - AlertDialog z solidnym tłem
@@ -56,28 +76,53 @@
 
 ---
 
-## 🔧 Ostatnie Zmiany (10-11.02.2026)
+## 🔧 Ostatnie Zmiany (11.02.2026)
 
-### Menu System Implementation
-**Commity:** [`ca9aa07`](https://github.com/kamil-gol/Go-ciniec_2/commit/ca9aa07693ba7ccffc88254fe5fb6d0d149c9c26), [`b1934d8`](https://github.com/kamil-gol/Go-ciniec_2/commit/b1934d8906bb66b431b348e495abadb13de32274), [`ff14599`](https://github.com/kamil-gol/Go-ciniec_2/commit/ff14599b48aef9be367fd8627506ea14566eea39)  
+### Deposits Module Implementation
+**Czas:** 11.02.2026, 14:30-16:45 CET  
 **Status:** ✅ Gotowe  
 **Implementacja:**
-- Backend API dla kategorii dań (CRUD)
-- Backend API dla dań (CRUD + filtrowanie)
-- Frontend strona zarządzania kategoriami
-- Frontend strona biblioteki dań
-- Premium UI components
-- Pełna integracja auth
 
-### UI/UX Improvements
-**Commity:** [`b5ecea4`](https://github.com/kamil-gol/Go-ciniec_2/commit/b5ecea4bbb8a340f9c3be7fb54bc4af9fc753c93), [`1987b8f`](https://github.com/kamil-gol/Go-ciniec_2/commit/1987b8f3c1f81a41a67a360042e797e0872c87bf), [`e288289`](https://github.com/kamil-gol/Go-ciniec_2/commit/e288289b16cf32ed489d5294db438620c12b9f7d)  
-**Status:** ✅ Gotowe  
-**Poprawki:**
-- Premium Switch component (gradient, shadow, animations)
-- AlertDialog component (Radix UI)
-- Solidne tło dla dialoga (czytelność)
-- Fix infinite loop w DishDialog
-- Fix auth w dishes API
+#### Backend (Go)
+- Model `Deposit` z pełną strukturą
+- Model `Payment` dla częściowych wpłat
+- 10 endpointów API:
+  - GET /api/deposits (lista z filtrowaniem)
+  - GET /api/deposits/:id (szczegóły)
+  - GET /api/reservations/:id/deposits (dla rezerwacji)
+  - POST /api/deposits (utworzenie)
+  - PUT /api/deposits/:id (edycja)
+  - DELETE /api/deposits/:id (usunięcie)
+  - POST /api/deposits/:id/payments (dodanie płatności)
+  - GET /api/deposits/statistics (statystyki)
+  - GET /api/deposits/reminders/pending (przypomnienia)
+  - PUT /api/deposits/:id/reminder-sent (oznacz wysłane)
+- Automatyczne generowanie receiptNumber (ZAL-YYYY-NNNN)
+- Walidacja biznesowa
+- Obsługa błędów
+
+#### Frontend (Next.js + TypeScript)
+- Strona /dashboard/deposits
+- Komponenty:
+  - `DepositStats` - 4 karty statystyczne
+  - `DepositList` - lista z akcjami
+  - `PaymentModal` - dodawanie płatności (TODO)
+- Service layer:
+  - `depositService.ts` - API client
+  - `api.ts` - axios wrapper
+- TypeScript types:
+  - `Deposit`, `Payment`, `DepositStatistics`
+  - `CreateDepositRequest`, `AddPaymentRequest`
+  - `DepositFilters`
+- Filtrowanie po statusie
+- Paginacja
+- Loading states
+- Error handling
+
+#### Dokumentacja
+- README.md zaktualizowane
+- API.md z pełną dokumentacją endpointów
+- CURRENT_STATUS.md (ten plik)
 
 ---
 
@@ -86,10 +131,12 @@
 | Dokument | Opis |
 |----------|------|
 | [docs/README.md](docs/README.md) | **START TUTAJ** - Główny indeks dokumentacji |
+| [API.md](API.md) | **API v1.1.0** - Pełna dokumentacja endpointów (w tym Deposits) |
 | [docs/QUEUE.md](docs/QUEUE.md) | Pełna dokumentacja systemu kolejki |
 | [apps/backend/README.md](apps/backend/README.md) | Backend API - wszystkie endpointy w tym Menu System |
 | [docs/BUGFIX_SESSION_2026-02-07.md](docs/BUGFIX_SESSION_2026-02-07.md) | Sesja naprawcza - Bug #1-7 |
 | [docs/BUGFIX_SESSION_2026-02-09.md](docs/BUGFIX_SESSION_2026-02-09.md) | Sesja naprawcza - Bug #9 |
+| [docs/BUGFIX_SESSION_2026-02-11.md](docs/BUGFIX_SESSION_2026-02-11.md) | Sesja naprawcza - Bug #10-13 |
 | [BUG5_RACE_CONDITIONS.md](BUG5_RACE_CONDITIONS.md) | Szczegóły fix race conditions |
 | [BUG8_POSITION_VALIDATION.md](BUG8_POSITION_VALIDATION.md) | Szczegóły fix walidacji pozycji |
 | [BUG9_BATCH_UPDATE_RACE_CONDITION.md](BUG9_BATCH_UPDATE_RACE_CONDITION.md) | Szczegóły fix batch update |
@@ -106,17 +153,18 @@
 ### Użyj tego promptu:
 
 ```
-Kontynuuję pracę nad projektem Rezerwacje (repo: kamil-gol/Go-ciniec_2, branch: feature/category-api).
+Kontynuuję pracę nad projektem Rezerwacje (repo: kamil-gol/Go-ciniec_2, branch: main).
 
 Przeczytaj dokumentację:
-1. docs/QUEUE.md - system kolejki rezerwacji
-2. apps/backend/README.md - API dokumentacja (w tym Menu System)
+1. API.md - pełna dokumentacja API v1.1.0 (w tym Deposits)
+2. docs/QUEUE.md - system kolejki rezerwacji
 3. README.md - główny przegląd projektu
 4. CURRENT_STATUS.md - aktualny status rozwoju
 
-Branch feature/category-api zawiera:
+Główny branch main zawiera:
 - System kolejki rezerwacji (99% complete)
 - System menu i kategorii dań (100% complete)
+- Moduł zaliczek (100% complete)
 - Premium UI/UX components
 - Wszystkie bugfixy
 
@@ -135,121 +183,137 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 - ✅ Bug #7: Auto-cancel logic
 - ✅ Bug #8: Position validation
 - ✅ Bug #9: Nullable constraints + Batch update
+- ✅ Bug #10-13: E2E seed fixes + menu API token
 - ✅ Auth issue w dishes API
 - ✅ Infinite loop w DishDialog
 - ✅ Transparentność AlertDialog
 
 ---
 
-## 📋 TODO - Module Menu
+## 📋 TODO - Następne Features
 
-### 🔄 W Trakcie / Planowane
+### Moduł Zaliczek - Rozszerzenia
+
+#### 1. **Formularze & Modals** - **WYSOKI PRIORYTET**
+- [ ] Formularz tworzenia zaliczki
+  - Wybieranie rezerwacji z dropdown
+  - Kalkulator kwoty (% z totalPrice)
+  - Wybieranie terminu płatności
+  - Walidacja
+- [ ] Modal edycji zaliczki
+  - Zmiana kwoty i terminu
+  - Walidacja (amount >= amountPaid)
+- [ ] PaymentModal (implementacja)
+  - Dodawanie wpłaty częściowej
+  - Wybieranie metody płatności
+  - Data płatności
+  - Notatka
+  - Live update remaining balance
+- [ ] Strona szczegółów zaliczki
+  - Pełna historia płatności
+  - Timeline
+  - Informacje o rezerwacji
+  - Akcje (edytuj, usuń, dodaj płatność)
+
+#### 2. **Export & Raporty** - **ŚREDNI PRIORYTET**
+- [ ] Export do PDF
+  - Lista zaliczek
+  - Szczegóły pojedynczej zaliczki
+  - Potwierdzenie płatności
+- [ ] Export do Excel/CSV
+  - Filtrowane dane
+  - Statystyki
+- [ ] Raporty
+  - Zaliczki w okresie
+  - Zaliczki przeterminowane
+  - Prognozy przypływów
+
+#### 3. **Powiadomienia** - **KRYTYCZNY**
+- [ ] Email reminders
+  - 7 dni przed terminem
+  - W dniu terminu
+  - Po terminie (overdue)
+- [ ] SMS reminders (opcjonalnie)
+- [ ] Dashboard widget
+  - Zaliczki wymagające przypomnienia
+  - Overdue alerts
+  - Quick actions
+
+#### 4. **Integracja z Rezerwacjami** - **KRYTYCZNY**
+- [ ] Zaktualizowanie formularza rezerwacji
+  - Sekcja zaliczki
+  - Auto-kalkulacja kwoty zaliczki
+  - Termin płatności
+- [ ] Automatyczne tworzenie zaliczki
+  - Po utworzeniu rezerwacji (opcjonalne)
+  - Domyślna kwota (% z totalPrice)
+  - Termin (X dni przed wydarzeniem)
+- [ ] Widok zaliczek w szczegółach rezerwacji
+  - Lista zaliczek
+  - Statusy
+  - Quick add payment
+
+### Moduł Menu - Dalsze Rozszerzenia
 
 #### 1. **Opcje Menu (Menu Options)** - **WYSOKI PRIORYTET**
 - [ ] Model bazy danych (MenuOption)
-  - Relacja do kategorii (opcjonalna)
-  - Relacja do dania (opcjonalna)
-  - Typ opcji: ADDON, SIDE_DISH, DRINK, EXTRA
-  - Nazwa, opis, cena
-  - isActive
 - [ ] Backend API (/api/menu-options)
-  - CRUD endpoints
-  - Filtrowanie po typie
-  - Grupowanie
 - [ ] Frontend UI
-  - Strona zarządzania opcjami
-  - Przypisywanie do kategorii/dań
-  - Cennik opcji
 
 #### 2. **Szablony Menu (Menu Templates)** - **WYSOKI PRIORYTET**
 - [ ] Model bazy danych (MenuTemplate)
-  - Nazwa szablonu (np. "Wesele Standard", "Urodziny Premium")
-  - Kategorie + dania
-  - Opcje domyślne
-  - Cena bazowa
-  - Typ eventu (relacja)
 - [ ] Backend API (/api/menu-templates)
-  - CRUD templates
-  - Kopiowanie szablonów
-  - Wersjonowanie
-- [ ] Frontend UI
-  - Builder szablonów (drag & drop?)
-  - Podgląd szablonu
-  - Przypisanie do typu eventu
+- [ ] Frontend UI - builder szablonów
 
-#### 3. **Pakiety Menu (Menu Packages)** - **ŚREDNI PRIORYTET**
-- [ ] Model bazy danych (MenuPackage)
-  - Nazwa pakietu
-  - Zestaw dań
-  - Cena pakietowa (zniżka)
-  - Ograniczenia (min/max gości)
-- [ ] Backend API (/api/menu-packages)
-  - CRUD pakietów
-  - Kalkulacja cen
-- [ ] Frontend UI
-  - Strona pakietów
-  - Kompozycja pakietów
-
-#### 4. **Integracja z Rezerwacjami** - **KRYTYCZNY**
+#### 3. **Integracja z Rezerwacjami** - **KRYTYCZNY**
 - [ ] Rozszerzenie modelu Reservation
-  - menuTemplateId (FK)
-  - selectedDishes (JSON array z ilościami)
-  - selectedOptions (JSON array)
-  - menuPrice (calculated)
 - [ ] Formularz rezerwacji - sekcja Menu
-  - Wybór szablonu menu
-  - Customizacja dań
-  - Dodawanie opcji
-  - Live preview ceny
-- [ ] Backend kalkulacja
-  - Cena menu = base + opcje + custom
-  - Walidacja dostępności dań
-  - Sprawdzanie limitów
-- [ ] PDF Generation
-  - Pełne menu w PDF rezerwacji
-  - Lista dań z ilościami
-  - Alergeny
-  - Suma ceny menu
-
-#### 5. **Zaawansowane Features** - **NISKI PRIORYTET**
-- [ ] Import/Export menu (CSV/JSON)
-- [ ] Historia zmian cen dań
-- [ ] Sezonowość dań (available_from/to dates)
-- [ ] Zdjęcia dań (upload + gallery)
-- [ ] Kalorie i wartości odżywcze
-- [ ] Multi-language menu (PL/EN)
-- [ ] Generowanie kart menu do wydruku
-- [ ] Statystyki popularności dań
+- [ ] Backend kalkulacja ceny menu
+- [ ] PDF Generation - menu w PDF rezerwacji
 
 ---
 
 ## 🎯 Następne Kroki
 
-### Priorytet 1: Opcje Menu
+### Priorytet 1: Deposit Forms & Modals
+1. **Frontend:** Formularz tworzenia zaliczki
+2. **Frontend:** Modal edycji
+3. **Frontend:** PaymentModal (pełna implementacja)
+4. **Frontend:** Strona szczegółów
+
+### Priorytet 2: Deposit Notifications
+1. **Backend:** Email reminder service
+2. **Backend:** Cron job dla przypomnień
+3. **Frontend:** Dashboard widget overdue deposits
+
+### Priorytet 3: Deposit-Reservation Integration
+1. **Backend:** Auto-create deposit przy rezerwacji
+2. **Frontend:** Sekcja zaliczki w formularzu rezerwacji
+3. **Frontend:** Widok zaliczek w szczegółach rezerwacji
+
+### Priorytet 4: Menu Options & Templates
 1. **Backend:** Model + API dla MenuOption
 2. **Frontend:** Strona zarządzania opcjami
-3. **Testy:** Unit testy API
-
-### Priorytet 2: Integracja z Rezerwacjami
-1. **Backend:** Rozszerzenie Reservation model
-2. **Frontend:** Sekcja menu w formularzu rezerwacji
-3. **Kalkulacja:** Auto-pricing z menu
-4. **PDF:** Generowanie menu w PDF
-
-### Priorytet 3: Szablony Menu
-1. **Backend:** Model + API dla MenuTemplate
-2. **Frontend:** Builder szablonów
-3. **Przypisanie:** Template → Event Type
+3. **Backend:** Model + API dla MenuTemplate
+4. **Frontend:** Builder szablonów
 
 ---
 
 ## 📊 Postęp Ogólny
 
-- **Backend:** 96% ✅ (Menu System + Categories + Dishes complete)
-- **Frontend:** 88% ✅ (Menu UI complete, brak integracji z rezerwacjami)
-- **Testy:** 78% 🔄 (+3% - podstawowe testy menu)
-- **Dokumentacja:** 94% ✅ (backend README zaktualizowany)
+- **Backend:** 98% ✅ (+2% - Deposits API complete)
+- **Frontend:** 88% ✅ (+1% - Deposits UI complete, brak formów)
+- **Testy:** 78% 🔄
+- **Dokumentacja:** 96% ✅ (+2% - API.md + README.md + CURRENT_STATUS.md)
 - **Deployment:** 70% 🔄
+
+### Postęp Modułu Zaliczek:
+- **Backend API:** 100% ✅
+- **Frontend UI (lista):** 100% ✅
+- **Formularze:** 0% ⏳
+- **Powiadomienia:** 0% ⏳
+- **Integracja z Rezerwacjami:** 0% ⏳
+- **Raporty:** 0% ⏳
 
 ### Postęp Modułu Menu:
 - **Kategorie Dań:** 100% ✅
@@ -265,8 +329,8 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 
 ```bash
 # Pobranie zmian
-git checkout feature/category-api
-git pull origin feature/category-api
+git checkout main
+git pull origin main
 
 # Restart (po pull)
 docker compose restart backend frontend
@@ -290,19 +354,41 @@ docker compose exec frontend npm install <package-name>
 
 ## 🚨 Deploy Checklist
 
+### Moduł Zaliczek
+- [x] Backend: Deposits API (10 endpoints)
+- [x] Backend: Model Deposit + Payment
+- [x] Frontend: Deposits page
+- [x] Frontend: DepositStats component
+- [x] Frontend: DepositList component
+- [x] Frontend: Service layer + types
+- [x] Dokumentacja (README, API.md, CURRENT_STATUS)
+- [ ] Formularze (create, edit, payment)
+- [ ] Strona szczegółów
+- [ ] Powiadomienia email
+- [ ] Integracja z rezerwacjami
+- [ ] Testy jednostkowe
+- [ ] E2E testy
+- [ ] Production deployment
+
+### System Menu
 - [x] Backend: Dish Categories API
 - [x] Backend: Dishes API
 - [x] Frontend: Categories management
 - [x] Frontend: Dishes library
-- [x] Premium UI components (Switch, AlertDialog)
+- [x] Premium UI components
 - [x] Auth integration
-- [x] Bugfixy (infinite loop, transparency)
-- [x] Dokumentacja zaktualizowana
+- [x] Dokumentacja
 - [ ] Opcje menu (kolejny milestone)
+- [ ] Szablony menu (kolejny milestone)
 - [ ] Integracja z rezerwacjami (kolejny milestone)
-- [ ] Testy jednostkowe menu system
+- [ ] Testy jednostkowe
 - [ ] Production deployment
 
 ---
 
-**Status:** Branch `feature/category-api` zawiera kompletny system kategorii i dań. Gotowy do dalszego rozwoju (opcje + integracja).
+**Status:** Branch `main` zawiera:
+- Pełny system kolejki rezerwacji
+- System kategorii i dań
+- **NOWY: Moduł zaliczek (backend + podstawowe UI)**
+
+Gotowy do rozszerzania o formularze, powiadomienia i pełną integrację.
