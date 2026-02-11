@@ -1,7 +1,7 @@
 /**
  * Reservation Service
  * Business logic for reservation management with advanced features
- * UPDATED: Full support for toddlers (0-3 years) age group + DateTime overlap validation
+ * UPDATED: Full support for toddlers (0-3 years) age group + DateTime overlap validation + MENU INTEGRATION
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -11,7 +11,9 @@ import {
   UpdateStatusDTO,
   ReservationFilters,
   ReservationResponse,
-  ReservationStatus
+  ReservationStatus,
+  UpdateReservationMenuDTO,
+  MenuOptionSelection
 } from '../types/reservation.types';
 import {
   calculateTotalGuests,
@@ -28,6 +30,7 @@ const prisma = new PrismaClient();
 export class ReservationService {
   /**
    * Create a new reservation
+   * NEW: Integrated menu package selection with automatic pricing
    */
   async createReservation(data: CreateReservationDTO, userId: string): Promise<ReservationResponse> {
     // Validate required fields
@@ -83,35 +86,94 @@ export class ReservationService {
       throw new Error(customValidation.error);
     }
 
-    // Determine guests: use adults+children+toddlers if provided, otherwise fall back to guests
+    // ═══════════════════════════════════════════════════════════════
+    // NEW: Guest count validation - ALWAYS REQUIRED
+    // ═══════════════════════════════════════════════════════════════
     let adults = data.adults ?? 0;
     let children = data.children ?? 0;
     let toddlers = data.toddlers ?? 0;
-    let guests = data.guests ?? 0;
 
-    if (adults > 0 || children > 0 || toddlers > 0) {
-      guests = calculateTotalGuests(adults, children, toddlers);
-    } else if (guests > 0) {
-      // Legacy mode: all guests are adults
-      adults = guests;
-      children = 0;
-      toddlers = 0;
-    } else {
-      throw new Error('Number of guests must be at least 1');
+    // At least one person is required
+    if (adults === 0 && children === 0 && toddlers === 0) {
+      throw new Error('At least one person is required (adults, children, or toddlers)');
     }
+
+    const guests = calculateTotalGuests(adults, children, toddlers);
 
     // Validate capacity
     if (guests > hall.capacity) {
       throw new Error(`Number of guests (${guests}) exceeds hall capacity (${hall.capacity})`);
     }
 
-    // Determine pricing
-    const pricePerAdult = data.pricePerAdult ?? Number(hall.pricePerPerson);
-    const pricePerChild = data.pricePerChild ?? (hall.pricePerChild ? Number(hall.pricePerChild) : pricePerAdult);
-    const pricePerToddler = data.pricePerToddler ?? 0; // Default to 0 if not specified
+    // ═══════════════════════════════════════════════════════════════
+    // NEW: MENU PACKAGE INTEGRATION
+    // ═══════════════════════════════════════════════════════════════
+    let pricePerAdult: number;
+    let pricePerChild: number;
+    let pricePerToddler: number;
+    let menuPackage = null;
+    let selectedOptions: any[] = [];
+    let optionsPrice = 0;
+
+    if (data.menuPackageId) {
+      // ┌───────────────────────────────────────────────────────────
+      // PATH A: Menu package selected - fetch prices from package
+      // └───────────────────────────────────────────────────────────
+      menuPackage = await prisma.menuPackage.findUnique({
+        where: { id: data.menuPackageId },
+        include: {
+          menuTemplate: true,
+          packageOptions: {
+            include: {
+              option: true
+            }
+          }
+        }
+      });
+
+      if (!menuPackage) {
+        throw new Error('Selected menu package not found');
+      }
+
+      // Validate min/max guests for package
+      if (menuPackage.minGuests && guests < menuPackage.minGuests) {
+        throw new Error(`This package requires at least ${menuPackage.minGuests} guests`);
+      }
+      if (menuPackage.maxGuests && guests > menuPackage.maxGuests) {
+        throw new Error(`This package allows maximum ${menuPackage.maxGuests} guests`);
+      }
+
+      // Get prices from package
+      pricePerAdult = Number(menuPackage.pricePerAdult);
+      pricePerChild = Number(menuPackage.pricePerChild);
+      pricePerToddler = Number(menuPackage.pricePerToddler);
+
+      // Handle selected options (if any)
+      if (data.selectedOptions && data.selectedOptions.length > 0) {
+        selectedOptions = await this.processSelectedOptions(
+          data.selectedOptions,
+          menuPackage.packageOptions,
+          guests
+        );
+        optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
+      }
+
+    } else {
+      // ┌───────────────────────────────────────────────────────────
+      // PATH B: No package - manual prices REQUIRED
+      // └───────────────────────────────────────────────────────────
+      if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
+        throw new Error('Price per adult and per child are required when no menu package is selected');
+      }
+
+      pricePerAdult = data.pricePerAdult;
+      pricePerChild = data.pricePerChild;
+      pricePerToddler = data.pricePerToddler ?? 0;
+    }
 
     // Calculate total price
-    const totalPrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
+    const packagePrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
+    const totalPrice = packagePrice + optionsPrice;
 
     // Prepare notes with extra hours warning if using new format
     let notes = data.notes || '';
@@ -130,7 +192,7 @@ export class ReservationService {
         throw new Error('End time must be after start time');
       }
 
-      // NEW: Check for overlapping reservations using DateTime
+      // Check for overlapping reservations using DateTime
       const hasOverlap = await this.checkDateTimeOverlap(
         data.hallId,
         startDT,
@@ -197,10 +259,10 @@ export class ReservationService {
         endDateTime: data.endDateTime ? new Date(data.endDateTime) : null,
         adults,
         children,
-        toddlers, // NEW: Store toddlers separately
+        toddlers,
         pricePerAdult,
         pricePerChild,
-        pricePerToddler, // NEW: Store toddler price separately
+        pricePerToddler,
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
         customEventType: data.customEventType || null,
         birthdayAge: data.birthdayAge || null,
@@ -226,6 +288,34 @@ export class ReservationService {
       }
     });
 
+    // ═══════════════════════════════════════════════════════════════
+    // NEW: Create menu snapshot if package was selected
+    // ═══════════════════════════════════════════════════════════════
+    if (menuPackage) {
+      await prisma.reservationMenuSnapshot.create({
+        data: {
+          reservationId: reservation.id,
+          menuTemplateId: menuPackage.menuTemplateId,
+          packageId: menuPackage.id,
+          menuData: {
+            packageName: menuPackage.name,
+            packageDescription: menuPackage.description,
+            templateName: menuPackage.menuTemplate.name,
+            pricePerAdult: Number(menuPackage.pricePerAdult),
+            pricePerChild: Number(menuPackage.pricePerChild),
+            pricePerToddler: Number(menuPackage.pricePerToddler),
+            selectedOptions: selectedOptions
+          },
+          packagePrice,
+          optionsPrice,
+          totalMenuPrice: totalPrice,
+          adultsCount: adults,
+          childrenCount: children,
+          toddlersCount: toddlers
+        }
+      });
+    }
+
     // Create deposit if specified
     const depositData = data.deposit || (data.depositAmount && data.depositDueDate ? {
       amount: data.depositAmount,
@@ -238,7 +328,7 @@ export class ReservationService {
         data: {
           reservationId: reservation.id,
           amount: depositAmount,
-          remainingAmount: depositAmount, // Initially, remaining = full amount
+          remainingAmount: depositAmount,
           dueDate: new Date(depositData.dueDate),
           paid: depositData.paid || false,
           status: depositData.paid ? 'PAID' : 'PENDING',
@@ -256,10 +346,233 @@ export class ReservationService {
       null,
       null,
       null,
-      'Reservation created'
+      menuPackage ? `Reservation created with menu package: ${menuPackage.name}` : 'Reservation created'
     );
 
     return reservation as any;
+  }
+
+  /**
+   * NEW: Update reservation menu
+   * Allows changing menu package and options after reservation is created
+   */
+  async updateReservationMenu(
+    reservationId: string,
+    data: UpdateReservationMenuDTO,
+    userId: string
+  ): Promise<any> {
+    await this.validateUserId(userId);
+
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { menuSnapshot: true }
+    });
+
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    if (reservation.status === ReservationStatus.COMPLETED || reservation.status === ReservationStatus.CANCELLED) {
+      throw new Error('Cannot update menu for completed or cancelled reservations');
+    }
+
+    // Use provided guest counts or fall back to reservation
+    const adults = data.adultsCount ?? reservation.adults;
+    const children = data.childrenCount ?? reservation.children;
+    const toddlers = data.toddlersCount ?? reservation.toddlers;
+    const guests = calculateTotalGuests(adults, children, toddlers);
+
+    if (data.menuPackageId === null) {
+      // Remove menu snapshot
+      if (reservation.menuSnapshot) {
+        await prisma.reservationMenuSnapshot.delete({
+          where: { id: reservation.menuSnapshot.id }
+        });
+      }
+
+      await this.createHistoryEntry(
+        reservationId,
+        userId,
+        'MENU_REMOVED',
+        'menu',
+        'Menu package',
+        'None',
+        'Menu removed from reservation'
+      );
+
+      return { message: 'Menu removed successfully' };
+    }
+
+    if (data.menuPackageId) {
+      // Fetch new package
+      const menuPackage = await prisma.menuPackage.findUnique({
+        where: { id: data.menuPackageId },
+        include: {
+          menuTemplate: true,
+          packageOptions: {
+            include: { option: true }
+          }
+        }
+      });
+
+      if (!menuPackage) {
+        throw new Error('Menu package not found');
+      }
+
+      // Validate min/max guests
+      if (menuPackage.minGuests && guests < menuPackage.minGuests) {
+        throw new Error(`This package requires at least ${menuPackage.minGuests} guests`);
+      }
+      if (menuPackage.maxGuests && guests > menuPackage.maxGuests) {
+        throw new Error(`This package allows maximum ${menuPackage.maxGuests} guests`);
+      }
+
+      // Process options
+      let selectedOptions: any[] = [];
+      let optionsPrice = 0;
+      if (data.selectedOptions && data.selectedOptions.length > 0) {
+        selectedOptions = await this.processSelectedOptions(
+          data.selectedOptions,
+          menuPackage.packageOptions,
+          guests
+        );
+        optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
+      }
+
+      // Calculate prices
+      const pricePerAdult = Number(menuPackage.pricePerAdult);
+      const pricePerChild = Number(menuPackage.pricePerChild);
+      const pricePerToddler = Number(menuPackage.pricePerToddler);
+      const packagePrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
+      const totalMenuPrice = packagePrice + optionsPrice;
+
+      // Update or create snapshot
+      const snapshotData = {
+        reservationId,
+        menuTemplateId: menuPackage.menuTemplateId,
+        packageId: menuPackage.id,
+        menuData: {
+          packageName: menuPackage.name,
+          packageDescription: menuPackage.description,
+          templateName: menuPackage.menuTemplate.name,
+          pricePerAdult,
+          pricePerChild,
+          pricePerToddler,
+          selectedOptions
+        },
+        packagePrice,
+        optionsPrice,
+        totalMenuPrice,
+        adultsCount: adults,
+        childrenCount: children,
+        toddlersCount: toddlers
+      };
+
+      if (reservation.menuSnapshot) {
+        await prisma.reservationMenuSnapshot.update({
+          where: { id: reservation.menuSnapshot.id },
+          data: snapshotData
+        });
+      } else {
+        await prisma.reservationMenuSnapshot.create({
+          data: snapshotData
+        });
+      }
+
+      // Update reservation prices
+      await prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          pricePerAdult,
+          pricePerChild,
+          pricePerToddler,
+          totalPrice: totalMenuPrice,
+          adults,
+          children,
+          toddlers,
+          guests
+        }
+      });
+
+      await this.createHistoryEntry(
+        reservationId,
+        userId,
+        'MENU_UPDATED',
+        'menu',
+        reservation.menuSnapshot ? 'Previous package' : 'None',
+        menuPackage.name,
+        `Menu updated to: ${menuPackage.name}`
+      );
+
+      return { message: 'Menu updated successfully', totalPrice: totalMenuPrice };
+    }
+
+    throw new Error('Invalid menu update data');
+  }
+
+  /**
+   * NEW: Process selected options and validate them
+   */
+  private async processSelectedOptions(
+    selections: MenuOptionSelection[],
+    packageOptions: any[],
+    totalGuests: number
+  ): Promise<any[]> {
+    const processed = [];
+
+    for (const selection of selections) {
+      // Find option in package
+      const packageOption = packageOptions.find(po => po.optionId === selection.optionId);
+      if (!packageOption) {
+        throw new Error(`Option ${selection.optionId} is not available for this package`);
+      }
+
+      const option = packageOption.option;
+
+      // Validate quantity
+      const quantity = selection.quantity ?? 1;
+      if (option.allowMultiple) {
+        if (quantity > option.maxQuantity) {
+          throw new Error(`Maximum ${option.maxQuantity} of ${option.name} allowed`);
+        }
+      } else if (quantity > 1) {
+        throw new Error(`Option ${option.name} does not allow multiple selections`);
+      }
+
+      const price = packageOption.customPrice ? Number(packageOption.customPrice) : Number(option.priceAmount);
+
+      processed.push({
+        optionId: option.id,
+        name: option.name,
+        description: option.description,
+        category: option.category,
+        priceType: option.priceType,
+        priceAmount: price,
+        quantity
+      });
+    }
+
+    return processed;
+  }
+
+  /**
+   * NEW: Calculate total price for selected options
+   */
+  private calculateOptionsPrice(options: any[], totalGuests: number): number {
+    let total = 0;
+
+    for (const option of options) {
+      const price = option.priceAmount;
+      const quantity = option.quantity ?? 1;
+
+      if (option.priceType === 'PER_PERSON') {
+        total += price * totalGuests * quantity;
+      } else if (option.priceType === 'FIXED') {
+        total += price * quantity;
+      }
+    }
+
+    return total;
   }
 
   /**
@@ -343,8 +656,8 @@ export class ReservationService {
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
         createdBy: { select: { id: true, email: true } },
-        menuSnapshot: true, // NEW: Include menu data for PDF generation
-        deposits: true // NEW: Include deposits for PDF
+        menuSnapshot: true,
+        deposits: true
       }
     });
 
@@ -420,13 +733,13 @@ export class ReservationService {
       throw new Error('End time must be after start time');
     }
 
-    // NEW: Check for overlapping reservations when updating time
+    // Check for overlapping reservations when updating time
     if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
       const hasOverlap = await this.checkDateTimeOverlap(
         existingReservation.hallId,
         finalStart,
         finalEnd,
-        id // exclude current reservation
+        id
       );
 
       if (hasOverlap) {
@@ -442,14 +755,14 @@ export class ReservationService {
       updateData.children = data.children;
     }
     if (data.toddlers !== undefined) {
-      updateData.toddlers = data.toddlers; // NEW: Support toddlers updates
+      updateData.toddlers = data.toddlers;
     }
 
     // Recalculate guests if adults, children or toddlers changed
     if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined) {
       const newAdults = data.adults ?? existingReservation.adults;
       const newChildren = data.children ?? existingReservation.children;
-      const newToddlers = data.toddlers ?? existingReservation.toddlers; // NEW
+      const newToddlers = data.toddlers ?? existingReservation.toddlers;
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
 
       // Validate capacity
@@ -466,7 +779,7 @@ export class ReservationService {
       updateData.pricePerChild = data.pricePerChild;
     }
     if (data.pricePerToddler !== undefined) {
-      updateData.pricePerToddler = data.pricePerToddler; // NEW: Support toddler price updates
+      updateData.pricePerToddler = data.pricePerToddler;
     }
 
     // Recalculate total price if any pricing or guest count changed
@@ -474,18 +787,18 @@ export class ReservationService {
         data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
       const finalAdults = data.adults ?? existingReservation.adults;
       const finalChildren = data.children ?? existingReservation.children;
-      const finalToddlers = data.toddlers ?? existingReservation.toddlers; // NEW
+      const finalToddlers = data.toddlers ?? existingReservation.toddlers;
       const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
       const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
-      const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler); // NEW
+      const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
       
       updateData.totalPrice = calculateTotalPrice(
         finalAdults, 
         finalChildren, 
         finalPricePerAdult, 
         finalPricePerChild,
-        finalToddlers, // NEW
-        finalPricePerToddler // NEW
+        finalToddlers,
+        finalPricePerToddler
       );
     }
 
@@ -554,7 +867,6 @@ export class ReservationService {
    * Update reservation status
    */
   async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<ReservationResponse> {
-    // Validate userId exists
     await this.validateUserId(userId);
 
     const existingReservation = await prisma.reservation.findUnique({
@@ -579,7 +891,6 @@ export class ReservationService {
       }
     });
 
-    // Create history entry
     await this.createHistoryEntry(
       id,
       userId,
@@ -597,7 +908,6 @@ export class ReservationService {
    * Cancel reservation (soft delete)
    */
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
-    // Validate userId exists
     await this.validateUserId(userId);
 
     const existingReservation = await prisma.reservation.findUnique({
@@ -624,7 +934,6 @@ export class ReservationService {
       }
     });
 
-    // Create history entry
     await this.createHistoryEntry(
       id,
       userId,
@@ -650,16 +959,7 @@ export class ReservationService {
   }
 
   /**
-   * NEW: Check for overlapping reservations using startDateTime/endDateTime
-   * Allows multiple reservations per day if times don't overlap
-   * 
-   * Logic: Overlap occurs when:
-   * 1. New start is before existing end AND new end is after existing start
-   * 
-   * Example scenarios:
-   * - Existing: 10:00-14:00, New: 15:00-20:00 → NO OVERLAP ✓
-   * - Existing: 10:00-14:00, New: 12:00-16:00 → OVERLAP ✗
-   * - Existing: 10:00-14:00, New: 14:00-18:00 → NO OVERLAP (exact boundary) ✓
+   * Check for overlapping reservations using startDateTime/endDateTime
    */
   private async checkDateTimeOverlap(
     hallId: string,
@@ -679,8 +979,6 @@ export class ReservationService {
       where.id = { not: excludeId };
     }
 
-    // Check for overlapping time ranges
-    // Overlap condition: (startA < endB) AND (endA > startB)
     const overlapping = await prisma.reservation.findFirst({
       where: {
         ...where,
@@ -695,7 +993,7 @@ export class ReservationService {
   }
 
   /**
-   * Check for overlapping reservations (legacy format with date/startTime/endTime)
+   * Check for overlapping reservations (legacy format)
    */
   private async checkOverlap(
     hallId: string,
