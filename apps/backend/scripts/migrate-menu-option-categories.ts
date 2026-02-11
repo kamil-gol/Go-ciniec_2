@@ -9,7 +9,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { MENU_OPTION_CATEGORIES } from '../src/constants/menuOptionCategories';
+import { MENU_OPTION_CATEGORIES, MenuOptionCategory } from '../src/constants/menuOptionCategories';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +29,8 @@ const POLISH_TO_ENGLISH: Record<string, string> = {
   'Sprzęt': MENU_OPTION_CATEGORIES.EQUIPMENT,
   'Inne': MENU_OPTION_CATEGORIES.OTHER,
 };
+
+const VALID_CATEGORIES = Object.values(MENU_OPTION_CATEGORIES);
 
 async function migrateCategories() {
   console.log('🚀 Starting menu option category migration...\n');
@@ -68,7 +70,7 @@ async function migrateCategories() {
         console.error(`❌ Error updating "${name}":`, error);
         totalErrors++;
       }
-    } else if (Object.values(MENU_OPTION_CATEGORIES).includes(category)) {
+    } else if (VALID_CATEGORIES.includes(category as MenuOptionCategory)) {
       // Already in English - skip
       totalSkipped++;
     } else {
