@@ -14,7 +14,7 @@ interface MenuSummaryProps {
 }
 
 export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryProps) {
-  if (!menuData) {
+  if (!menuData || !menuData.snapshot) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
@@ -25,7 +25,21 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
     )
   }
 
-  const { template, adults, children, toddlers, priceBreakdown, dishSelections } = menuData
+  // Backend returns: { snapshot: { menuData: {...} }, priceBreakdown: {...} }
+  const { snapshot, priceBreakdown } = menuData
+  const menuDataNested = snapshot.menuData || {}
+  
+  const {
+    packageName,
+    packageDescription,
+    adults,
+    children,
+    toddlers,
+    dishSelections,
+    pricePerAdult,
+    pricePerChild,
+    pricePerToddler
+  } = menuDataNested
 
   return (
     <div className="space-y-4">
@@ -44,38 +58,62 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
         <CardContent className="space-y-6">
           {/* Pakiet */}
           <div>
-            <h4 className="font-semibold mb-2">Pakiet: {template?.name || '-'}</h4>
-            <p className="text-sm text-muted-foreground">{template?.description}</p>
+            <h4 className="font-semibold mb-2">Pakiet: {packageName || '-'}</h4>
+            {packageDescription && (
+              <p className="text-sm text-muted-foreground">{packageDescription}</p>
+            )}
+          </div>
+
+          {/* Ceny pakietu */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
+              <Users className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">Dorośli</p>
+              <p className="font-bold">{pricePerAdult} zł</p>
+            </div>
+            <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
+              <Smile className="h-4 w-4 text-blue-600 mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">Dzieci</p>
+              <p className="font-bold">{pricePerChild} zł</p>
+            </div>
+            <div className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
+              <Baby className="h-4 w-4 text-green-600 mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">Maluchy</p>
+              <p className="font-bold">{pricePerToddler} zł</p>
+            </div>
           </div>
 
           {/* Liczba gości */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-xs text-muted-foreground">Dorośli</p>
-                <p className="font-semibold">{adults}</p>
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-3">Liczba gości</h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Dorośli</p>
+                  <p className="font-semibold">{adults}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Smile className="h-4 w-4 text-blue-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Dzieci</p>
-                <p className="font-semibold">{children}</p>
+              <div className="flex items-center gap-2">
+                <Smile className="h-4 w-4 text-blue-600" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Dzieci</p>
+                  <p className="font-semibold">{children}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Baby className="h-4 w-4 text-green-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Maluchy</p>
-                <p className="font-semibold">{toddlers}</p>
+              <div className="flex items-center gap-2">
+                <Baby className="h-4 w-4 text-green-600" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Maluchy</p>
+                  <p className="font-semibold">{toddlers}</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Wybrane dania */}
           {dishSelections && dishSelections.length > 0 && (
-            <div>
+            <div className="border-t pt-4">
               <h4 className="font-semibold mb-3">Wybrane dania</h4>
               <MenuDishesPreview dishSelections={dishSelections} />
             </div>
@@ -86,30 +124,30 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
             <div className="border-t pt-4">
               <h4 className="font-semibold mb-3">Koszt menu</h4>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pakiet</span>
+                <div className="flex justify-between text-muted-foreground font-medium">
+                  <span>Pakiet</span>
                 </div>
-                {adults > 0 && (
+                {priceBreakdown.packageCost.adults.count > 0 && (
                   <div className="flex justify-between">
-                    <span>Dorośli ({adults} × {formatCurrency(priceBreakdown.pricePerAdult)})</span>
-                    <span className="font-medium">{formatCurrency(priceBreakdown.adultsTotal)}</span>
+                    <span>Dorośli ({priceBreakdown.packageCost.adults.count} × {formatCurrency(priceBreakdown.packageCost.adults.priceEach)})</span>
+                    <span className="font-medium">{formatCurrency(priceBreakdown.packageCost.adults.total)}</span>
                   </div>
                 )}
-                {children > 0 && (
+                {priceBreakdown.packageCost.children.count > 0 && (
                   <div className="flex justify-between">
-                    <span>Dzieci ({children} × {formatCurrency(priceBreakdown.pricePerChild)})</span>
-                    <span className="font-medium">{formatCurrency(priceBreakdown.childrenTotal)}</span>
+                    <span>Dzieci ({priceBreakdown.packageCost.children.count} × {formatCurrency(priceBreakdown.packageCost.children.priceEach)})</span>
+                    <span className="font-medium">{formatCurrency(priceBreakdown.packageCost.children.total)}</span>
                   </div>
                 )}
-                {toddlers > 0 && (
+                {priceBreakdown.packageCost.toddlers.count > 0 && (
                   <div className="flex justify-between">
-                    <span>Maluchy ({toddlers} × {formatCurrency(priceBreakdown.pricePerToddler)})</span>
-                    <span className="font-medium">{formatCurrency(priceBreakdown.toddlersTotal)}</span>
+                    <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} × {formatCurrency(priceBreakdown.packageCost.toddlers.priceEach)})</span>
+                    <span className="font-medium">{formatCurrency(priceBreakdown.packageCost.toddlers.total)}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-2 border-t font-semibold">
                   <span>Suma pakietu</span>
-                  <span>{formatCurrency(priceBreakdown.packageTotal)}</span>
+                  <span>{formatCurrency(priceBreakdown.packageCost.subtotal)}</span>
                 </div>
               </div>
             </div>
