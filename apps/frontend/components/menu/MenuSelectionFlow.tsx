@@ -551,6 +551,18 @@ export function MenuSelectionFlow({
                 </p>
               </div>
 
+              {/* Top Confirm Button */}
+              <div className="flex justify-center pb-4 border-b-2">
+                <Button
+                  size="lg"
+                  onClick={handleComplete}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
+                >
+                  <Check className="mr-2 h-6 w-6" />
+                  Zatwierdź wybór
+                </Button>
+              </div>
+
               {/* Use OptionsSelector for better UX */}
               <OptionsSelector
                 options={options || []}
@@ -561,7 +573,8 @@ export function MenuSelectionFlow({
                 }}
               />
 
-              <div className="flex justify-center gap-4 pt-6">
+              {/* Bottom Navigation */}
+              <div className="flex justify-center gap-4 pt-6 border-t-2">
                 <Button
                   variant="outline"
                   size="lg"
@@ -574,7 +587,7 @@ export function MenuSelectionFlow({
                 <Button
                   size="lg"
                   onClick={handleComplete}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg"
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
                 >
                   <Check className="mr-2 h-5 w-5" />
                   Zatwierdź wybór
