@@ -135,13 +135,10 @@ export function CreateReservationForm({
   const startDate = watch('startDate')
   const startTime = watch('startTime')
 
-  // ✅ OPTIMIZED: Calculate selected event type name directly instead of useEffect
-  // This ensures immediate rendering of conditional fields
-  // ✅ FIX 1: Add Array.isArray check
+  // ✅ FIX 1: eventTypes returns EventType[] directly (not wrapped in object)
   const selectedEventTypeName = useMemo(() => {
     if (!selectedEventTypeId) return ''
-    const eventTypesRaw = eventTypes?.data || eventTypes || []
-    const eventTypesArray = Array.isArray(eventTypesRaw) ? eventTypesRaw : []
+    const eventTypesArray = Array.isArray(eventTypes) ? eventTypes : []
     const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
     return selectedType?.name || ''
   }, [selectedEventTypeId, eventTypes])
@@ -238,12 +235,10 @@ export function CreateReservationForm({
     }
   }, [watchedFields.startDate, watchedFields.startTime, watchedFields.endDate, watchedFields.endTime, watchedFields.notes, setValue])
 
-  // Auto-fill prices when hall changes
-  // ✅ FIX 2: Add Array.isArray check
+  // ✅ FIX 2: halls returns { halls: [...], total: 6 } NOT array
   useEffect(() => {
     if (watchedFields.hallId) {
-      const hallsRaw = halls?.data || halls || []
-      const hallsArray = Array.isArray(hallsRaw) ? hallsRaw : []
+      const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
       const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
@@ -309,17 +304,16 @@ export function CreateReservationForm({
     }
   }
 
-  // ✅ FIX 3: Add Array.isArray checks before map()
-  const hallsRaw = halls?.data || halls || []
-  const hallsArray = Array.isArray(hallsRaw) ? hallsRaw : []
-  
-  const clientsRaw = clientsData?.data || []
-  const clientsArray = Array.isArray(clientsRaw) ? clientsRaw : []
-  
-  const eventTypesRaw = eventTypes?.data || eventTypes || []
-  const eventTypesArray = Array.isArray(eventTypesRaw) ? eventTypesRaw : []
+  // ✅ FIX 3: Correct API response structure parsing
+  // halls returns { halls: [...], total: 6 }
+  // clientsData returns Client[] (direct array)
+  // eventTypes returns EventType[] (direct array)
+  const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
+  const clientsArray = Array.isArray(clientsData) ? clientsData : []
+  const eventTypesArray = Array.isArray(eventTypes) ? eventTypes : []
 
   console.log('🏢 Halls array length:', hallsArray.length)
+  console.log('👥 Clients array length:', clientsArray.length)
   console.log('🎉 EventTypes array length:', eventTypesArray.length)
 
   // ✅ HYBRID APPROACH: Native Select options (includes empty placeholder)
