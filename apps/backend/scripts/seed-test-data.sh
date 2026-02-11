@@ -359,6 +359,10 @@ for i in {1..15}; do
   
   PRICE=$((RANDOM % 9001 + 3000))
   
+  # Add time fields
+  START_TIME="15:00"
+  END_TIME="02:00"
+  
   RESERVATION=$(curl -s -X POST http://localhost:3001/api/reservations \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
@@ -368,6 +372,8 @@ for i in {1..15}; do
       \"hallId\": \"$HALL_ID\",
       \"eventTypeId\": \"$EVENT_TYPE_ID\",
       \"date\": \"$RES_DATE\",
+      \"startTime\": \"$START_TIME\",
+      \"endTime\": \"$END_TIME\",
       \"adults\": $ADULTS,
       \"children\": $CHILDREN,
       \"toddlers\": $TODDLERS,
@@ -378,10 +384,10 @@ for i in {1..15}; do
   
   RES_ID=$(echo $RESERVATION | jq -r '.id')
   
-  if [ "$RES_ID" != "null" ]; then
+  if [ "$RES_ID" != "null" ] && [ "$RES_ID" != "" ]; then
     RESERVATION_IDS+=($RES_ID)
     RESERVATION_COUNT=$((RESERVATION_COUNT + 1))
-    echo "  ✅ Reservation #$i: $RES_DATE, ${ADULTS}A+${CHILDREN}C+${TODDLERS}T, ${PRICE} PLN"
+    echo "  ✅ Reservation #$i: $RES_DATE $START_TIME-$END_TIME, ${ADULTS}A+${CHILDREN}C+${TODDLERS}T, ${PRICE} PLN"
   fi
 done
 
@@ -425,7 +431,7 @@ for i in {1..10}; do
   
   QUEUE_ID=$(echo $QUEUE_RES | jq -r '.id')
   
-  if [ "$QUEUE_ID" != "null" ]; then
+  if [ "$QUEUE_ID" != "null" ] && [ "$QUEUE_ID" != "" ]; then
     QUEUE_COUNT=$((QUEUE_COUNT + 1))
     echo "  ✅ Queue #$i: pozycja $i, preferred: $QUEUE_DATE, ${ADULTS}A+${CHILDREN}C+${TODDLERS}T"
   fi
@@ -452,7 +458,7 @@ for RES_ID in "${RESERVATION_IDS[@]}"; do
   fi
   
   DEPOSIT_AMOUNT=$(echo "$TOTAL_PRICE * 0.3" | bc | cut -d'.' -f1)
-  DUE_DATE=$(date -d "$RES_DATE -30 days" +%Y-%m-%d)
+  DUE_DATE=$(date -d "$RES_DATE -30 days" +%Y-%m-%d 2>/dev/null || echo "2026-05-01")
   
   DEPOSIT=$(curl -s -X POST http://localhost:3001/api/deposits \
     -H "Authorization: Bearer $TOKEN" \
@@ -467,7 +473,7 @@ for RES_ID in "${RESERVATION_IDS[@]}"; do
   
   DEPOSIT_ID=$(echo $DEPOSIT | jq -r '.id')
   
-  if [ "$DEPOSIT_ID" != "null" ]; then
+  if [ "$DEPOSIT_ID" != "null" ] && [ "$DEPOSIT_ID" != "" ]; then
     DEPOSIT_COUNT=$((DEPOSIT_COUNT + 1))
     
     RANDOM_ACTION=$((RANDOM % 10))
