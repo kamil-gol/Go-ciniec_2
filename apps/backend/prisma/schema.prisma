@@ -178,26 +178,64 @@ model ReservationHistory {
   @@index([createdAt])
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 💰 DEPOSITS & PAYMENT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
 model Deposit {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   reservationId   String   @db.Uuid
 
   amount          Decimal  @db.Decimal(10, 2)
+  paidAmount      Decimal  @default(0) @db.Decimal(10, 2)
+  remainingAmount Decimal  @db.Decimal(10, 2)
+  
   dueDate         String   @db.VarChar(10)
   status          String   @default("PENDING") @db.VarChar(20)
   paid            Boolean  @default(false)
   paidAt          DateTime?
   paymentMethod   String?  @db.VarChar(50)
+  
+  title           String?  @db.VarChar(255)
+  description     String?  @db.Text
+  
+  reminderSentAt  DateTime?
+  confirmationPdfUrl String? @db.Text
+  
+  receiptNumber   String?  @unique @db.VarChar(50)
+  internalNotes   String?  @db.Text
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  paymentHistory  DepositPayment[]
 
   @@index([reservationId])
   @@index([dueDate])
   @@index([status])
   @@index([paid])
+  @@index([reminderSentAt])
+  @@index([receiptNumber])
+}
+
+model DepositPayment {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  depositId       String   @db.Uuid
+  
+  amount          Decimal  @db.Decimal(10, 2)
+  paymentMethod   String   @db.VarChar(50)
+  paymentDate     DateTime @default(now())
+  
+  notes           String?  @db.Text
+  receiptNumber   String?  @db.VarChar(50)
+  
+  createdAt       DateTime @default(now())
+  
+  deposit         Deposit  @relation(fields: [depositId], references: [id], onDelete: Cascade)
+  
+  @@index([depositId])
+  @@index([paymentDate])
 }
 
 model ActivityLog {
