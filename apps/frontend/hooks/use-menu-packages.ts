@@ -6,6 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  getAllActivePackages,
   getPackagesByTemplate,
   getPackageById,
   createPackage,
@@ -21,6 +22,16 @@ import {
 import { toast } from 'sonner';
 
 const QUERY_KEY = 'menu-packages';
+
+/**
+ * Get all active packages (for reservation form) 🆕 NEW!
+ */
+export function useAllActivePackages() {
+  return useQuery({
+    queryKey: [QUERY_KEY, 'all-active'],
+    queryFn: () => getAllActivePackages(),
+  });
+}
 
 /**
  * Get all packages for a template
