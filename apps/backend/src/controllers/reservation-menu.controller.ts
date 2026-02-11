@@ -313,6 +313,7 @@ export async function saveReservationMenu(req: Request, res: Response) {
     const priceBreakdown = buildPriceBreakdown(menuData);
 
     // Return same structure as GET endpoint
+    // NOTE: ReservationMenuSnapshot has selectedAt, updatedAt (no createdAt)
     res.status(200).json({
       success: true,
       message: 'Menu saved successfully',
@@ -324,8 +325,8 @@ export async function saveReservationMenu(req: Request, res: Response) {
           adultsCount: menuSnapshot.adultsCount,
           childrenCount: menuSnapshot.childrenCount,
           toddlersCount: menuSnapshot.toddlersCount,
-          snapshotDate: menuSnapshot.selectedAt?.toISOString() || new Date().toISOString(),
-          createdAt: menuSnapshot.createdAt.toISOString(),
+          snapshotDate: menuSnapshot.selectedAt.toISOString(),
+          createdAt: menuSnapshot.selectedAt.toISOString(), // Use selectedAt as createdAt
           updatedAt: menuSnapshot.updatedAt.toISOString(),
         },
         priceBreakdown,
@@ -375,8 +376,8 @@ export async function getReservationMenu(req: Request, res: Response) {
           adultsCount: menuSnapshot.adultsCount,
           childrenCount: menuSnapshot.childrenCount,
           toddlersCount: menuSnapshot.toddlersCount,
-          snapshotDate: menuSnapshot.selectedAt?.toISOString() || new Date().toISOString(),
-          createdAt: menuSnapshot.createdAt.toISOString(),
+          snapshotDate: menuSnapshot.selectedAt.toISOString(),
+          createdAt: menuSnapshot.selectedAt.toISOString(), // Use selectedAt as createdAt
           updatedAt: menuSnapshot.updatedAt.toISOString(),
         },
         priceBreakdown,
