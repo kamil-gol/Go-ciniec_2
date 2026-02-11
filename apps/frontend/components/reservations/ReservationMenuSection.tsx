@@ -13,6 +13,7 @@ import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteR
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { formatCurrency } from '@/lib/utils'
 
 interface ReservationMenuSectionProps {
   reservationId: string
@@ -163,9 +164,16 @@ export function ReservationMenuSection({
   
   // Backend returns menuData nested inside snapshot
   const menuDataNested = snapshot.menuData || {}
-  const template = menuDataNested.template || {}
-  const selectedPackage = menuDataNested.package || {}
-  const selectedOptions = menuDataNested.options || []
+  const {
+    packageId,
+    packageName,
+    packageDescription,
+    pricePerAdult,
+    pricePerChild,
+    pricePerToddler,
+    dishSelections,
+    selectedOptions
+  } = menuDataNested
 
   return (
     <>
@@ -178,7 +186,7 @@ export function ReservationMenuSection({
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Menu</h2>
-                <p className="text-sm text-muted-foreground">{template.name} - {template.variant}</p>
+                <p className="text-sm text-muted-foreground">{packageName}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -206,43 +214,32 @@ export function ReservationMenuSection({
             <div className="bg-white dark:bg-black/20 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Package className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold">Pakiet: {selectedPackage.name}</h3>
+                <h3 className="font-semibold">Pakiet: {packageName}</h3>
               </div>
+              
+              {packageDescription && (
+                <p className="text-sm text-muted-foreground mb-3">{packageDescription}</p>
+              )}
               
               {/* Package Prices */}
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">Dorośli</p>
-                  <p className="font-bold">{selectedPackage.pricePerAdult} zł</p>
+                  <p className="font-bold">{pricePerAdult} zł</p>
                 </div>
                 <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">Dzieci</p>
-                  <p className="font-bold">{selectedPackage.pricePerChild} zł</p>
+                  <p className="font-bold">{pricePerChild} zł</p>
                 </div>
                 <div className="text-center p-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">Maluchy</p>
-                  <p className="font-bold">{selectedPackage.pricePerToddler} zł</p>
+                  <p className="font-bold">{pricePerToddler} zł</p>
                 </div>
               </div>
-
-              {/* Included Items */}
-              {selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-muted-foreground">W pakiecie:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedPackage.includedItems.map((item: string, idx: number) => (
-                      <div key={idx} className="flex items-start gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Selected Options */}
-            {selectedOptions.length > 0 && (
+            {selectedOptions && selectedOptions.length > 0 && (
               <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <ShoppingCart className="h-5 w-5 text-amber-600" />
@@ -254,9 +251,9 @@ export function ReservationMenuSection({
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-amber-600" />
                         <div>
-                          <p className="font-medium text-sm">{opt.name}</p>
+                          <p className="font-medium text-sm">{opt.optionName}</p>
                           <p className="text-xs text-muted-foreground">
-                            {opt.priceType === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
+                            {opt.priceUnit === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
                           </p>
                         </div>
                       </div>
@@ -366,9 +363,8 @@ export function ReservationMenuSection({
             children={children}
             toddlers={toddlers}
             initialSelection={{
-              templateId: template.id,
-              packageId: selectedPackage.id,
-              selectedOptions: selectedOptions.map((opt: any) => ({
+              packageId: packageId,
+              selectedOptions: (selectedOptions || []).map((opt: any) => ({
                 optionId: opt.optionId,
                 quantity: opt.quantity
               }))
