@@ -103,9 +103,44 @@ class ReservationMenuController {
         return;
       }
 
+      // Calculate price breakdown for frontend display
+      const snapshot = reservation.menuSnapshot;
+      const priceBreakdown = {
+        packageCost: {
+          adults: {
+            count: snapshot.adultsCount,
+            priceEach: snapshot.menuData.pricePerAdult || 0,
+            total: snapshot.adultsCount * (snapshot.menuData.pricePerAdult || 0)
+          },
+          children: {
+            count: snapshot.childrenCount,
+            priceEach: snapshot.menuData.pricePerChild || 0,
+            total: snapshot.childrenCount * (snapshot.menuData.pricePerChild || 0)
+          },
+          toddlers: {
+            count: snapshot.toddlersCount || 0,
+            priceEach: snapshot.menuData.pricePerToddler || 0,
+            total: (snapshot.toddlersCount || 0) * (snapshot.menuData.pricePerToddler || 0)
+          },
+          subtotal: Number(snapshot.packagePrice)
+        },
+        optionsCost: (snapshot.menuData.selectedOptions || []).map((opt: any) => ({
+          option: opt.optionName,
+          priceType: opt.priceUnit,
+          priceEach: opt.priceAmount,
+          quantity: opt.quantity || 1,
+          total: opt.priceAmount * (opt.quantity || 1)
+        })),
+        optionsSubtotal: Number(snapshot.optionsPrice),
+        totalMenuPrice: Number(snapshot.totalMenuPrice)
+      };
+
       res.status(200).json({
         success: true,
-        data: reservation.menuSnapshot,
+        data: {
+          snapshot,
+          priceBreakdown
+        },
       });
     } catch (error: any) {
       console.error('[ReservationMenu] Error getting menu:', error);
