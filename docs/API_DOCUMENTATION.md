@@ -1,17 +1,23 @@
 # 📚 Menu System API Documentation
 
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Created:** 2026-02-10  
+**Updated:** 2026-02-11 🆕 - Dodano PDF Generation  
 **Status:** ✅ Production Ready  
 
 ---
 
-## 📝 Table of Contents
+## 📏 Table of Contents
 
 1. [Overview](#overview)
 2. [Quick Start](#quick-start)
 3. [Postman Collection](#postman-collection)
 4. [API Reference](#api-reference)
+   - [Menu Templates](#menu-templates)
+   - [Menu Packages](#menu-packages)
+   - [Menu Options](#menu-options)
+   - [Reservation Menu](#reservation-menu-selection)
+   - **[PDF Generation](#pdf-generation)** 🆕
 5. [Architecture](#architecture)
 6. [Data Models](#data-models)
 
@@ -26,6 +32,7 @@ Menu System API provides complete restaurant menu management with:
 - ✅ **Menu Options** - Add-on services (alcohol, entertainment, decorations)
 - ✅ **Immutable Snapshots** - Price protection for reservations
 - ✅ **Price History** - Complete audit trail of price changes
+- ✅ **PDF Generator** - Detailed reservation confirmations 🆕
 
 ### Key Features
 
@@ -35,6 +42,7 @@ Menu System API provides complete restaurant menu management with:
 - **Flexible Options:** Per-person, flat, or free pricing
 - **Event-Specific:** Different menus for different event types
 - **Date-Based Activation:** Seasonal menus with validity periods
+- **PDF Downloads:** Professional reservation confirmations with menu details 🆕
 
 ---
 
@@ -64,6 +72,11 @@ curl http://localhost:3001/api/menu-options | jq
 
 # Wedding packages
 curl 'http://localhost:3001/api/menu-packages/template/21067150-841a-4659-9e97-11ce5a4105ac' | jq
+
+# Download reservation PDF 🆕
+curl -X GET 'http://localhost:3001/api/reservations/{id}/pdf' \
+  -H "Authorization: Bearer {token}" \
+  -o reservation.pdf
 ```
 
 ---
@@ -85,14 +98,14 @@ https://raw.githubusercontent.com/kamil-gol/Go-ciniec_2/main/docs/postman/Menu_S
 4. Click **Import**
 
 **Includes:**
-- 22 ready-to-use requests
+- 23 ready-to-use requests (+1 PDF endpoint 🆕)
 - Pre-filled variables with real IDs
 - Example payloads
 - Testing scenarios
 
 ---
 
-## 📝 API Reference
+## 📏 API Reference
 
 ### Base URL
 
@@ -108,11 +121,12 @@ http://localhost:3001/api
 | **Packages** | 7 | Admin for CUD |
 | **Options** | 5 | Admin for CUD |
 | **Reservations** | 4 | User/Admin |
-| **Total** | **23** | Mixed |
+| **PDF Generation** | 1 🆕 | User/Admin |
+| **Total** | **24** | Mixed |
 
 ---
 
-## 🏛️ Menu Templates
+## 🍛 Menu Templates
 
 ### List Templates
 
@@ -306,6 +320,190 @@ GET /api/reservations/:id/menu
 
 ---
 
+## 📄 PDF Generation 🆕
+
+### Download Reservation PDF
+
+```http
+GET /api/reservations/:id/pdf
+Authorization: Bearer {token}
+```
+
+**Response:**
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="rezerwacja_{id}.pdf"
+Content-Length: {bytes}
+
+[Binary PDF data]
+```
+
+### PDF Contents
+
+Generated PDF includes:
+
+#### 1. Restaurant Header
+- Restaurant name
+- Address, phone, email
+- Website & NIP
+
+#### 2. Reservation Details
+- Reservation ID
+- Generation date
+- Status badge (color-coded)
+
+#### 3. Client Information
+- Full name
+- Phone & email
+- Address (if provided)
+
+#### 4. Event Details
+- Hall name (or "Reserved" status)
+- Event type
+- Date & time
+- Guest breakdown:
+  - Adults (18+)
+  - Children (4-12)
+  - Toddlers (0-3)
+
+#### 5. Selected Menu 🆕
+- **Package name**
+- **Guest counts for menu:**
+  - Number of adults
+  - Number of children
+  - Number of toddlers
+- **Dishes grouped by category:**
+  - Category name (e.g., "Przystawki (3)")
+  - Quantity x Dish name
+  - Allergens (if applicable)
+- **Menu prices:**
+  - Package price: XX,XX zł
+  - Additional options: XX,XX zł
+  - **Total menu: XX,XX zł** (bold)
+
+#### 6. Cost Calculation
+- Price per adult x count
+- Price per child x count
+- Price per toddler x count
+- **TOTAL PRICE** (bold)
+
+#### 7. Deposit Information
+- Amount
+- Due date
+- Status (Paid/Unpaid)
+
+#### 8. Footer
+- Thank you message
+- Auto-generated note
+
+### Example Request
+
+```bash
+# Using curl
+curl -X GET "http://localhost:3001/api/reservations/abc123/pdf" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -o "reservation_abc123.pdf"
+
+# Using JavaScript fetch
+const downloadPDF = async (reservationId, token) => {
+  const response = await fetch(
+    `http://localhost:3001/api/reservations/${reservationId}/pdf`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rezerwacja_${reservationId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+```
+
+### Features
+
+✅ **Polish Character Support** - DejaVu fonts for proper display  
+✅ **Professional Layout** - Clean hierarchy with proper spacing  
+✅ **Color-Coded Status** - Visual badges for reservation status  
+✅ **Complete Menu Details** - All dishes with quantities and allergens  
+✅ **Price Breakdown** - Transparent cost calculation  
+✅ **Allergen Information** - Safety for guests with allergies  
+✅ **Immutable Data** - Uses menuSnapshot (prices won't change)  
+✅ **Backward Compatible** - Works with old reservations without menu  
+
+### Allergen Labels
+
+```typescript
+const ALLERGEN_LABELS = {
+  gluten: 'Gluten',
+  lactose: 'Laktoza',
+  eggs: 'Jajka',
+  nuts: 'Orzechy',
+  fish: 'Ryby',
+  soy: 'Soja',
+  shellfish: 'Skorupiaki',
+  peanuts: 'Orzeszki ziemne'
+};
+```
+
+### Error Responses
+
+```json
+// 404 - Reservation not found
+{
+  "success": false,
+  "error": "Reservation not found"
+}
+
+// 401 - Unauthorized
+{
+  "success": false,
+  "error": "Authentication required"
+}
+
+// 500 - PDF generation error
+{
+  "success": false,
+  "error": "Failed to generate PDF"
+}
+```
+
+### Technical Details
+
+**Library:** PDFKit  
+**Font:** DejaVu Sans (Polish characters)  
+**Page Size:** A4  
+**Margins:** 50px  
+**Encoding:** UTF-8  
+
+**Service Location:**
+```
+apps/backend/src/services/pdf.service.ts
+```
+
+**Controller Location:**
+```
+apps/backend/src/controllers/reservation.controller.ts
+```
+
+**Route:**
+```typescript
+router.get('/reservations/:id/pdf', downloadReservationPDF);
+```
+
+### Documentation
+
+📚 **Full Guide:** [PDF Enhancement Session](./PDF_ENHANCEMENT_SESSION_2026-02-11.md)
+
+---
+
 ## 🏛️ Architecture
 
 ### Stack
@@ -315,6 +513,7 @@ GET /api/reservations/:id/menu
 - **Database:** PostgreSQL 16
 - **ORM:** Prisma
 - **Validation:** Zod
+- **PDF Generation:** PDFKit 🆕
 - **Container:** Docker
 
 ### Project Structure
@@ -325,12 +524,16 @@ apps/backend/src/
 │   ├── menuTemplate.controller.ts
 │   ├── menuPackage.controller.ts
 │   ├── menuOption.controller.ts
+│   ├── reservation.controller.ts      🆕 PDF endpoint
 │   └── reservationMenu.controller.ts
 ├── services/          # Business logic
 │   ├── menu.service.ts (27 methods)
-│   └── reservationMenu.service.ts (5 methods)
+│   ├── reservation.service.ts
+│   ├── reservationMenu.service.ts (5 methods)
+│   └── pdf.service.ts (1 class, 10 methods) 🆕
 ├── routes/            # API routes
-│   └── menu.routes.ts (22 endpoints)
+│   ├── menu.routes.ts (22 endpoints)
+│   └── reservation.routes.ts (+1 PDF endpoint) 🆕
 ├── validation/        # Zod schemas
 │   └── menu.validation.ts (13 schemas)
 └── types/             # TypeScript types
@@ -348,6 +551,7 @@ erDiagram
     Reservation ||--o| ReservationMenuSnapshot : has
     MenuPackage ||--o{ MenuPriceHistory : tracks
     MenuOption ||--o{ MenuPriceHistory : tracks
+    Reservation ||--o{ Deposit : has
 ```
 
 ---
@@ -406,33 +610,37 @@ erDiagram
 }
 ```
 
-### ReservationMenuSnapshot
+### ReservationMenuSnapshot 🆕
 
 ```typescript
 {
   id: string;
   reservationId: string;
-  menuData: Json;            // Immutable snapshot
-  adultsCount: number;
-  childrenCount: number;
-  toddlersCount: number;
-  snapshotDate: Date;
+  menuData: Json;            // Immutable snapshot with dishSelections
+  packagePrice: Decimal;     // 🆕 NEW
+  optionsPrice: Decimal;     // 🆕 NEW
+  totalMenuPrice: Decimal;   // 🆕 NEW
+  adultsCount: number;       // 🆕 NEW
+  childrenCount: number;     // 🆕 NEW
+  toddlersCount: number;     // 🆕 NEW
+  selectedAt: Date;
 }
 ```
 
 ---
 
-## 🔐 Security (TODO)
+## 🔒 Security (TODO)
 
 ### Authentication
 
 - [ ] JWT tokens
 - [ ] Admin vs User roles
 - [ ] Protected CRUD endpoints
+- [ ] PDF download authorization 🆕
 
 ### Current Status
 
-- ⚠️ All endpoints are public
+- ⚠️ Most endpoints are public
 - ⚠️ No authentication required
 - 🔒 To be implemented in Phase 3
 
@@ -445,12 +653,14 @@ erDiagram
 1. Import collection (see above)
 2. Run through test scenarios
 3. Verify responses
+4. Download and verify PDF 🆕
 
 ### Automated Testing (TODO)
 
 - [ ] Jest unit tests
 - [ ] Integration tests
 - [ ] E2E tests with Supertest
+- [ ] PDF generation tests 🆕
 
 ---
 
@@ -476,6 +686,9 @@ docker compose logs backend --tail=100
 
 # Errors only
 docker compose logs backend | grep ERROR
+
+# PDF generation logs 🆕
+docker compose logs backend | grep "PDF Service"
 ```
 
 ---
@@ -489,6 +702,7 @@ All issues from Phase 2 have been resolved:
 - ✅ All endpoints working
 - ✅ Seed data loaded
 - ✅ Type safety complete
+- ✅ PDF generation with menu & prices 🆕
 
 ---
 
@@ -499,12 +713,15 @@ All issues from Phase 2 have been resolved:
 - [ ] Admin panel for menu management
 - [ ] Reservation menu selection UI
 - [ ] Price breakdown visualization
+- [ ] PDF download button in UI 🆕
 
 ### Phase 4 - Enhancement
 - [ ] JWT authentication
 - [ ] Role-based access control
 - [ ] Automated tests
 - [ ] Performance optimization
+- [ ] PDF email attachments 🆕
+- [ ] Multilingual PDFs (EN/PL/DE) 🆕
 
 ---
 
@@ -512,9 +729,11 @@ All issues from Phase 2 have been resolved:
 
 - **Postman Collection:** [Download JSON](./postman/Menu_System_API.postman_collection.json)
 - **Postman Guide:** [README](./postman/README.md)
+- **PDF Documentation:** [PDF Enhancement Session](./PDF_ENHANCEMENT_SESSION_2026-02-11.md) 🆕
 - **Prisma Schema:** [schema.prisma](../prisma/schema.prisma)
 - **TypeScript Types:** [menu.types.ts](../apps/backend/src/types/menu.types.ts)
 - **Validation:** [menu.validation.ts](../apps/backend/src/validation/menu.validation.ts)
+- **PDF Service:** [pdf.service.ts](../apps/backend/src/services/pdf.service.ts) 🆕
 
 ---
 
@@ -524,9 +743,11 @@ All issues from Phase 2 have been resolved:
 1. [Postman Troubleshooting](./postman/README.md#troubleshooting)
 2. Backend logs: `docker compose logs backend`
 3. Database connection: `docker compose ps`
+4. PDF generation logs: `docker compose logs backend | grep "PDF Service"` 🆕
 
 ---
 
-**Last Updated:** 2026-02-10  
+**Last Updated:** 2026-02-11 🆕  
 **Status:** ✅ Production Ready  
-**Version:** 1.0.0  
+**Version:** 1.1.0  
+**New Features:** PDF Generation with Menu & Prices 🚀
