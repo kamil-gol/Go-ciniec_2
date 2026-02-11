@@ -1,7 +1,7 @@
 /**
  * Reservation Controller
  * Handle HTTP requests for reservation management with advanced features
- * UPDATED: Full support for toddlers (0-3 years) age group + PDF generation
+ * UPDATED: Full support for toddlers (0-3 years) age group + PDF generation + MENU INTEGRATION
  */
 
 import { Request, Response } from 'express';
@@ -19,6 +19,11 @@ export class ReservationController {
   /**
    * Create a new reservation
    * POST /api/reservations
+   * 
+   * NEW: Menu integration support
+   * - Guest counts (adults, children, toddlers) are ALWAYS required
+   * - menuPackageId is optional (if provided, prices come from package)
+   * - If no menuPackageId, pricePerAdult and pricePerChild are required
    */
   async createReservation(req: Request, res: Response): Promise<void> {
     try {
@@ -54,17 +59,45 @@ export class ReservationController {
         return;
       }
 
-      // Validate guests: either adults+children+toddlers or legacy guests field
-      const hasGuestBreakdown = 
-        (data.adults !== undefined && data.adults >= 0) || 
-        (data.children !== undefined && data.children >= 0) ||
-        (data.toddlers !== undefined && data.toddlers >= 0); // NEW: Include toddlers
-      const hasLegacyGuests = data.guests !== undefined && data.guests > 0;
-      
-      if (!hasGuestBreakdown && !hasLegacyGuests) {
+      // ═══════════════════════════════════════════════════════════════
+      // NEW: Guest counts are ALWAYS REQUIRED
+      // ═══════════════════════════════════════════════════════════════
+      if (data.adults === undefined || data.children === undefined || data.toddlers === undefined) {
         res.status(400).json({
           success: false,
-          error: 'Either adults/children/toddlers counts or total guests count is required'
+          error: 'Guest counts are required: adults, children, and toddlers (can be 0)'
+        });
+        return;
+      }
+
+      // At least one guest is required
+      if (data.adults === 0 && data.children === 0 && data.toddlers === 0) {
+        res.status(400).json({
+          success: false,
+          error: 'At least one guest is required (adults, children, or toddlers)'
+        });
+        return;
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // NEW: Menu package OR manual prices
+      // ═══════════════════════════════════════════════════════════════
+      if (!data.menuPackageId) {
+        // No package selected - manual prices are REQUIRED
+        if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
+          res.status(400).json({
+            success: false,
+            error: 'When no menu package is selected, pricePerAdult and pricePerChild are required'
+          });
+          return;
+        }
+      }
+
+      // Cannot specify both menuPackageId and manual prices
+      if (data.menuPackageId && (data.pricePerAdult !== undefined || data.pricePerChild !== undefined)) {
+        res.status(400).json({
+          success: false,
+          error: 'Cannot specify both menuPackageId and manual prices. Choose one method.'
         });
         return;
       }
@@ -74,7 +107,9 @@ export class ReservationController {
       res.status(201).json({
         success: true,
         data: reservation,
-        message: 'Reservation created successfully'
+        message: data.menuPackageId 
+          ? 'Reservation created successfully with menu package' 
+          : 'Reservation created successfully'
       });
     } catch (error: any) {
       res.status(400).json({
@@ -204,10 +239,10 @@ export class ReservationController {
         data.endDateTime !== undefined ||
         data.adults !== undefined ||
         data.children !== undefined ||
-        data.toddlers !== undefined || // NEW: Include toddlers
+        data.toddlers !== undefined ||
         data.pricePerAdult !== undefined ||
         data.pricePerChild !== undefined ||
-        data.pricePerToddler !== undefined; // NEW: Include toddler price
+        data.pricePerToddler !== undefined;
 
       if (hasImportantChanges && (!data.reason || data.reason.length < 10)) {
         res.status(400).json({
