@@ -49,9 +49,9 @@ export function ReservationMenuSection({
         reservationId,
         selection: {
           ...selection,
-          adultsCount: adults,
-          childrenCount: children,
-          toddlersCount: toddlers
+          adults: adults,
+          children: children,
+          toddlers: toddlers
         }
       })
 
