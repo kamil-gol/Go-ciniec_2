@@ -140,10 +140,16 @@ export const reorderPackagesSchema = z.object({
 // CATEGORY SETTINGS VALIDATION
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Category Setting Schema
+ * 
+ * SUPPORTS FLOAT VALUES (0.5, 1.5, 2.5, etc) for partial servings
+ * Example: 1.5 portions of salad
+ */
 export const categorySettingSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID'),
-  minSelect: z.number().int().min(0, 'Min selection cannot be negative'),
-  maxSelect: z.number().int().min(1, 'Max selection must be at least 1'),
+  minSelect: z.number().min(0, 'Min selection cannot be negative'),  // ✅ Float allowed
+  maxSelect: z.number().min(0, 'Max selection must be at least 0'),  // ✅ Float allowed
   isRequired: z.boolean().optional().default(true),
   isEnabled: z.boolean().optional().default(true),
   displayOrder: z.number().int().min(0).optional().default(0),
