@@ -84,9 +84,12 @@ export async function saveReservationMenu(req: Request, res: Response) {
   try {
     const { reservationId } = req.params;
 
+    console.log('[saveReservationMenu] Request body:', JSON.stringify(req.body, null, 2));
+
     // Validate request body
     const validation = SaveMenuSchema.safeParse(req.body);
     if (!validation.success) {
+      console.error('[saveReservationMenu] Validation failed:', validation.error.errors);
       return res.status(400).json({ 
         error: 'Validation failed', 
         details: validation.error.errors 
@@ -94,6 +97,8 @@ export async function saveReservationMenu(req: Request, res: Response) {
     }
 
     const dto = validation.data;
+    console.log('[saveReservationMenu] Validated data:', JSON.stringify(dto, null, 2));
+
     const totalGuests = dto.adults + dto.children + dto.toddlers;
 
     if (totalGuests === 0) {
@@ -106,10 +111,12 @@ export async function saveReservationMenu(req: Request, res: Response) {
     });
 
     if (!reservation) {
+      console.error('[saveReservationMenu] Reservation not found:', reservationId);
       return res.status(404).json({ error: 'Reservation not found' });
     }
 
     // Fetch package
+    console.log('[saveReservationMenu] Fetching package:', dto.packageId);
     const menuPackage = await prisma.menuPackage.findUnique({
       where: { id: dto.packageId },
       include: {
@@ -120,8 +127,15 @@ export async function saveReservationMenu(req: Request, res: Response) {
     });
 
     if (!menuPackage) {
+      console.error('[saveReservationMenu] Package not found:', dto.packageId);
       return res.status(404).json({ error: 'Menu package not found' });
     }
+
+    console.log('[saveReservationMenu] Package found:', {
+      id: menuPackage.id,
+      name: menuPackage.name,
+      templateId: menuPackage.menuTemplateId,
+    });
 
     // Calculate package price
     const pricePerAdult = toNumber(menuPackage.pricePerAdult);
@@ -133,12 +147,20 @@ export async function saveReservationMenu(req: Request, res: Response) {
       (pricePerChild * dto.children) +
       (pricePerToddler * dto.toddlers);
 
+    console.log('[saveReservationMenu] Package pricing:', {
+      pricePerAdult,
+      pricePerChild,
+      pricePerToddler,
+      totalPackagePrice: packagePrice,
+    });
+
     // Calculate options price
     let optionsPrice = 0;
     const optionsDetails: any[] = [];
 
     if (dto.selectedOptions.length > 0) {
       const optionIds = dto.selectedOptions.map(opt => opt.optionId);
+      console.log('[saveReservationMenu] Fetching options:', optionIds);
 
       const options = await prisma.menuOption.findMany({
         where: {
@@ -147,14 +169,24 @@ export async function saveReservationMenu(req: Request, res: Response) {
         },
       });
 
+      console.log('[saveReservationMenu] Options found:', options.length);
+
       for (const selectedOption of dto.selectedOptions) {
         const option = options.find(opt => opt.id === selectedOption.optionId);
 
         if (!option) {
+          console.error('[saveReservationMenu] Option not found:', selectedOption.optionId);
           return res.status(400).json({
             error: `Option ${selectedOption.optionId} not found or inactive`,
           });
         }
+
+        console.log('[saveReservationMenu] Processing option:', {
+          id: option.id,
+          name: option.name,
+          priceType: option.priceType,
+          quantity: selectedOption.quantity,
+        });
 
         const basePrice = selectedOption.customPrice ?? toNumber(option.priceAmount);
         let calculatedPrice = 0;
@@ -179,10 +211,17 @@ export async function saveReservationMenu(req: Request, res: Response) {
             break;
 
           case 'FLAT_FEE':
+          case 'FLAT':
           default:
             calculatedPrice = basePrice * selectedOption.quantity;
             break;
         }
+
+        console.log('[saveReservationMenu] Option calculated price:', {
+          optionName: option.name,
+          basePrice,
+          calculatedPrice,
+        });
 
         optionsDetails.push({
           optionId: option.id,
@@ -200,6 +239,12 @@ export async function saveReservationMenu(req: Request, res: Response) {
 
     const totalMenuPrice = packagePrice + optionsPrice;
 
+    console.log('[saveReservationMenu] Final pricing:', {
+      packagePrice,
+      optionsPrice,
+      totalMenuPrice,
+    });
+
     // Build menu data JSON
     const menuData = {
       package: {
@@ -209,7 +254,7 @@ export async function saveReservationMenu(req: Request, res: Response) {
         pricePerAdult,
         pricePerChild,
         pricePerToddler,
-        includedItems: menuPackage.includedItems,
+        includedItems: Array.isArray(menuPackage.includedItems) ? menuPackage.includedItems : [],
       },
       guests: {
         adults: dto.adults,
@@ -228,9 +273,11 @@ export async function saveReservationMenu(req: Request, res: Response) {
         id: menuPackage.menuTemplate.id,
         name: menuPackage.menuTemplate.name,
         variant: menuPackage.menuTemplate.variant,
-        eventType: menuPackage.menuTemplate.eventType.name,
+        eventType: menuPackage.menuTemplate.eventType?.name || 'Unknown',
       },
     };
+
+    console.log('[saveReservationMenu] Upserting menu snapshot...');
 
     // Upsert menu snapshot
     const menuSnapshot = await prisma.reservationMenuSnapshot.upsert({
@@ -260,6 +307,8 @@ export async function saveReservationMenu(req: Request, res: Response) {
       },
     });
 
+    console.log('[saveReservationMenu] Menu snapshot saved:', menuSnapshot.id);
+
     // Build price breakdown
     const priceBreakdown = buildPriceBreakdown(menuData);
 
@@ -282,9 +331,15 @@ export async function saveReservationMenu(req: Request, res: Response) {
         priceBreakdown,
       },
     });
+
+    console.log('[saveReservationMenu] Success!');
   } catch (error: any) {
-    console.error('Error saving reservation menu:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('[saveReservationMenu] Error:', error);
+    console.error('[saveReservationMenu] Stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      details: error.stack,
+    });
   }
 }
 
@@ -328,7 +383,7 @@ export async function getReservationMenu(req: Request, res: Response) {
       },
     });
   } catch (error: any) {
-    console.error('Error getting reservation menu:', error);
+    console.error('[getReservationMenu] Error:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
@@ -359,7 +414,7 @@ export async function deleteReservationMenu(req: Request, res: Response) {
       reservationId,
     });
   } catch (error: any) {
-    console.error('Error deleting reservation menu:', error);
+    console.error('[deleteReservationMenu] Error:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
