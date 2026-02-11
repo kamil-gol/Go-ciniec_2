@@ -27,6 +27,16 @@ import {
 
 const prisma = new PrismaClient();
 
+/**
+ * Sanitize string by removing null bytes
+ */
+function sanitizeString(value: any): string | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  return String(value).replace(/\x00/g, '').trim() || null;
+}
+
 export class ReservationService {
   /**
    * Create a new reservation
@@ -86,9 +96,9 @@ export class ReservationService {
       throw new Error(customValidation.error);
     }
 
-    // ═════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     // NEW: Guest count validation - ALWAYS REQUIRED
-    // ═════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     let adults = data.adults ?? 0;
     let children = data.children ?? 0;
     let toddlers = data.toddlers ?? 0;
@@ -105,9 +115,9 @@ export class ReservationService {
       throw new Error(`Number of guests (${guests}) exceeds hall capacity (${hall.capacity})`);
     }
 
-    // ═════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     // NEW: MENU PACKAGE INTEGRATION
-    // ═════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     let pricePerAdult: number;
     let pricePerChild: number;
     let pricePerToddler: number;
@@ -264,10 +274,10 @@ export class ReservationService {
         pricePerChild,
         pricePerToddler,
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
-        customEventType: data.customEventType || null,
+        customEventType: sanitizeString(data.customEventType),
         birthdayAge: data.birthdayAge || null,
         anniversaryYear: data.anniversaryYear || null,
-        anniversaryOccasion: data.anniversaryOccasion || null,
+        anniversaryOccasion: sanitizeString(data.anniversaryOccasion),
         
         // Legacy fields (for backwards compatibility)
         date: data.date || null,
@@ -277,7 +287,7 @@ export class ReservationService {
         guests,
         totalPrice,
         status: ReservationStatus.PENDING,
-        notes: notes || null,
+        notes: sanitizeString(notes),
         attachments: []
       },
       include: {
@@ -288,9 +298,9 @@ export class ReservationService {
       }
     });
 
-    // ═════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     // NEW: Create menu snapshot if package was selected
-    // ═════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     if (menuPackage) {
       await prisma.reservationMenuSnapshot.create({
         data: {
@@ -332,7 +342,7 @@ export class ReservationService {
           dueDate: new Date(depositData.dueDate),
           paid: depositData.paid || false,
           status: depositData.paid ? 'PAID' : 'PENDING',
-          paymentMethod: depositData.paymentMethod || null,
+          paymentMethod: sanitizeString(depositData.paymentMethod),
           paidAt: depositData.paidAt ? new Date(depositData.paidAt) : null,
         }
       });
@@ -845,10 +855,10 @@ export class ReservationService {
     }
 
     // Update custom event fields
-    if (data.customEventType !== undefined) updateData.customEventType = data.customEventType || null;
+    if (data.customEventType !== undefined) updateData.customEventType = sanitizeString(data.customEventType);
     if (data.birthdayAge !== undefined) updateData.birthdayAge = data.birthdayAge || null;
     if (data.anniversaryYear !== undefined) updateData.anniversaryYear = data.anniversaryYear || null;
-    if (data.anniversaryOccasion !== undefined) updateData.anniversaryOccasion = data.anniversaryOccasion || null;
+    if (data.anniversaryOccasion !== undefined) updateData.anniversaryOccasion = sanitizeString(data.anniversaryOccasion);
 
     // Update legacy fields
     if (data.date !== undefined) updateData.date = data.date || null;
@@ -856,13 +866,13 @@ export class ReservationService {
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
 
     // Update notes
-    if (data.notes !== undefined) updateData.notes = data.notes || null;
+    if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
 
     // Add extra hours note if datetime changed
     if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
       const extraHoursNote = generateExtraHoursNote(finalStart, finalEnd);
       if (extraHoursNote) {
-        updateData.notes = (updateData.notes || existingReservation.notes || '') + extraHoursNote;
+        updateData.notes = sanitizeString((updateData.notes || existingReservation.notes || '') + extraHoursNote);
       }
     }
 
