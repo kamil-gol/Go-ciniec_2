@@ -83,17 +83,17 @@ export function PackageCard({
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-2xl shadow-sm">
               <Users className="h-5 w-5 mx-auto mb-2 text-purple-600" />
               <p className="text-xs text-muted-foreground mb-1">Dorośli</p>
-              <p className="text-xl font-bold">{pkg.priceAdult} zł</p>
+              <p className="text-xl font-bold">{pkg.pricePerAdult} zł</p>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-2xl shadow-sm">
               <Users className="h-5 w-5 mx-auto mb-2 text-blue-600" />
               <p className="text-xs text-muted-foreground mb-1">Dzieci</p>
-              <p className="text-xl font-bold">{pkg.priceChild} zł</p>
+              <p className="text-xl font-bold">{pkg.pricePerChild} zł</p>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-2xl shadow-sm">
               <Users className="h-5 w-5 mx-auto mb-2 text-green-600" />
               <p className="text-xs text-muted-foreground mb-1">Maluchy</p>
-              <p className="text-xl font-bold">{pkg.priceToddler} zł</p>
+              <p className="text-xl font-bold">{pkg.pricePerToddler} zł</p>
             </div>
           </div>
 
