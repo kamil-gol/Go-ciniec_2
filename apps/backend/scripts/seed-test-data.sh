@@ -206,7 +206,7 @@ done
 
 # Hot Appetizers  
 HOT_APP_ID=${CATEGORY_IDS["hot-appetizers"]}
-for dish in "Krewetki w czośnku" "Krokiety" "Mięso po indyjsku" "Sajgonki" "Krewetki panierowane"; do
+for dish in "Krewetki w czosnku" "Krokiety" "Mięso po indyjsku" "Sajgonki" "Krewetki panierowane"; do
   curl -s -X POST http://localhost:3001/api/menu/dishes \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
@@ -394,7 +394,7 @@ done
 echo ""
 
 # ============================================
-# QUEUE RESERVATIONS (bez potwierdzonej daty)
+# QUEUE RESERVATIONS (z preferowaną datą)
 # ============================================
 echo "⏳ Creating Queue Reservations..."
 
@@ -413,6 +413,7 @@ for i in {1..10}; do
   
   QUEUE_DATE=$(date -d "+$((RANDOM % 365 + 30)) days" +%Y-%m-%d)
   
+  # Queue reservations need date + times too
   QUEUE_RES=$(curl -s -X POST http://localhost:3001/api/reservations \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
@@ -421,6 +422,9 @@ for i in {1..10}; do
       \"createdById\": \"$USER_ID\",
       \"hallId\": \"$HALL_ID\",
       \"eventTypeId\": \"$EVENT_TYPE_ID\",
+      \"date\": \"$QUEUE_DATE\",
+      \"startTime\": \"15:00\",
+      \"endTime\": \"23:59\",
       \"reservationQueueDate\": \"$QUEUE_DATE\",
       \"reservationQueuePosition\": $i,
       \"adults\": $ADULTS,
