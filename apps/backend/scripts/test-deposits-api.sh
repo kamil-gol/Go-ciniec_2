@@ -27,15 +27,30 @@ LOGIN_RESPONSE=$(curl -s -X POST "$API_URL/api/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
 
-TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.token')
+# Check if login was successful
+SUCCESS=$(echo $LOGIN_RESPONSE | jq -r '.success')
 
-if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then
+if [ "$SUCCESS" != "true" ]; then
   echo -e "${RED}❌ Login failed!${NC}"
   echo $LOGIN_RESPONSE | jq
   exit 1
 fi
 
+# Extract token from data.token
+TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.data.token')
+
+if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then
+  echo -e "${RED}❌ Token not found in response!${NC}"
+  echo $LOGIN_RESPONSE | jq
+  exit 1
+fi
+
+USER_ROLE=$(echo $LOGIN_RESPONSE | jq -r '.data.user.role')
+USER_EMAIL=$(echo $LOGIN_RESPONSE | jq -r '.data.user.email')
+
 echo -e "${GREEN}✅ Login successful${NC}"
+echo -e "   Email: $USER_EMAIL"
+echo -e "   Role: $USER_ROLE"
 echo -e "   Token: ${TOKEN:0:30}..."
 echo ""
 
