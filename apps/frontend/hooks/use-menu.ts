@@ -382,15 +382,39 @@ export function useEventTypes() {
 /**
  * Get reservation menu with price breakdown
  * 
+ * IMPORTANT: This returns null when menu is not selected (not an error).
+ * Use `isLoading` to distinguish between loading state and "no menu" state.
+ * 
  * @example
- * const { data } = useReservationMenu(reservationId);
+ * const { data, isLoading } = useReservationMenu(reservationId);
+ * if (!isLoading && !data) {
+ *   // Menu not selected - show "Add Menu" button
+ * }
  */
 export function useReservationMenu(reservationId: string | undefined) {
   return useQuery({
     queryKey: menuKeys.reservationMenu(reservationId!),
-    queryFn: () => menuApi.getReservationMenu(reservationId!),
-    select: (response) => response.data,
+    queryFn: async () => {
+      try {
+        const response = await menuApi.getReservationMenu(reservationId!);
+        return response;
+      } catch (error: any) {
+        // If menu is not selected, return null instead of throwing error
+        if (
+          error.response?.status === 404 ||
+          error.response?.data?.error?.includes('Menu not selected') ||
+          error.message?.includes('Menu not selected')
+        ) {
+          console.log('ℹ️ Menu not selected for reservation:', reservationId);
+          return null;
+        }
+        // For other errors, throw them
+        throw error;
+      }
+    },
+    select: (response) => response?.data || null,
     enabled: !!reservationId,
+    retry: false, // Don't retry when menu is not selected
   });
 }
 
