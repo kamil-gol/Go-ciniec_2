@@ -222,12 +222,26 @@ export async function saveReservationMenu(req: Request, res: Response) {
       },
     });
 
+    // Return same structure as GET endpoint for consistency
     res.status(200).json({
+      success: true,
       message: 'Menu saved successfully',
+      hasMenu: true,
       menuSnapshot: {
         id: menuSnapshot.id,
-        ...menuData,
-        savedAt: menuSnapshot.updatedAt,
+        menuData,
+        packageId: menuSnapshot.packageId,
+        packagePrice: toNumber(menuSnapshot.packagePrice),
+        optionsPrice: toNumber(menuSnapshot.optionsPrice),
+        totalMenuPrice: toNumber(menuSnapshot.totalMenuPrice),
+        guests: {
+          adults: menuSnapshot.adultsCount,
+          children: menuSnapshot.childrenCount,
+          toddlers: menuSnapshot.toddlersCount,
+          total: totalGuests,
+        },
+        selectedAt: menuSnapshot.selectedAt,
+        updatedAt: menuSnapshot.updatedAt,
       },
     });
   } catch (error: any) {
