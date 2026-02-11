@@ -67,7 +67,6 @@ services:
       - backend
     volumes:
       - ./apps/frontend:/app
-      - /app/.next
     networks:
       - rezerwacje-network
     command: npm run dev
