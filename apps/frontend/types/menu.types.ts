@@ -176,15 +176,40 @@ export interface SelectedOption {
   quantity: number;
 }
 
+// Legacy format (for backward compatibility)
 export interface SelectedDish {
   courseId: string;
   dishIds: string[]; // Array because can select multiple dishes per course
 }
 
+// NEW: Dish selection with quantity (0.5, 1, 1.5, 2, etc.)
+export interface DishSelection {
+  dishId: string;
+  quantity: number;
+}
+
+// NEW: Category with selected dishes
+export interface CategorySelection {
+  categoryId: string;
+  dishes: DishSelection[];
+}
+
 export interface MenuSelectionInput {
   packageId: string;
+  
+  // NEW: Dish selections grouped by category
+  dishSelections?: CategorySelection[];
+  
+  // Legacy: Course-based dish selection (maintained for backward compatibility)
+  selectedDishes?: SelectedDish[];
+  
+  // Optional additional menu options
   selectedOptions?: SelectedOption[];
-  selectedDishes?: SelectedDish[]; // NEW: Selected dishes from courses
+  
+  // Guest counts (optional - can be updated separately)
+  adults?: number;
+  children?: number;
+  toddlers?: number;
 }
 
 export interface ReservationMenuSnapshot {
@@ -216,13 +241,28 @@ export interface MenuSnapshotData {
     priceAmount: number;
     quantity: number;
   }[];
-  selectedCourses?: { // NEW: Snapshot of selected dishes
+  
+  // Legacy: Course-based selections
+  selectedCourses?: {
     courseId: string;
     courseName: string;
     dishes: {
       dishId: string;
       dishName: string;
       priceModifier: number;
+    }[];
+  }[];
+  
+  // NEW: Category-based dish selections
+  dishSelections?: {
+    categoryId: string;
+    categoryName: string;
+    dishes: {
+      dishId: string;
+      dishName: string;
+      description?: string;
+      quantity: number;
+      allergens?: string[];
     }[];
   }[];
 }
@@ -311,16 +351,32 @@ export interface DishFilters {
 
 export const menuSelectionSchema = z.object({
   packageId: z.string().uuid('Wybierz pakiet'),
-  selectedOptions: z.array(
+  
+  // NEW: Category-based dish selections
+  dishSelections: z.array(
     z.object({
-      optionId: z.string().uuid(),
-      quantity: z.number().int().positive().default(1),
+      categoryId: z.string().uuid(),
+      dishes: z.array(
+        z.object({
+          dishId: z.string().uuid(),
+          quantity: z.number().positive(),
+        })
+      ),
     })
   ).optional().default([]),
+  
+  // Legacy: Course-based dish selections
   selectedDishes: z.array(
     z.object({
       courseId: z.string().uuid(),
       dishIds: z.array(z.string().uuid()),
+    })
+  ).optional().default([]),
+  
+  selectedOptions: z.array(
+    z.object({
+      optionId: z.string().uuid(),
+      quantity: z.number().int().positive().default(1),
     })
   ).optional().default([]),
 });
@@ -343,6 +399,7 @@ export interface MenuSelectionState {
   selectedPackage?: MenuPackage;
   selectedOptions: Map<string, number>; // optionId -> quantity
   selectedDishes: Map<string, string[]>; // courseId -> dishIds
+  dishSelections: Map<string, Map<string, number>>; // NEW: categoryId -> (dishId -> quantity)
   guestCounts: {
     adults: number;
     children: number;
@@ -373,6 +430,15 @@ export interface MenuCart {
       id: string;
       name: string;
       priceModifier: number;
+    }[];
+  }[];
+  dishSelections?: { // NEW
+    categoryId: string;
+    categoryName: string;
+    dishes: {
+      id: string;
+      name: string;
+      quantity: number;
     }[];
   }[];
   guestCounts: {
