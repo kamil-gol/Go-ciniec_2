@@ -169,6 +169,16 @@ export const menuApi = {
   },
 
   /**
+   * Get categories with dishes for a package
+   */
+  getPackageCategories: async (packageId: string): Promise<ApiResponse<any>> => {
+    const { data } = await api.get<ApiResponse<any>>(
+      `/menu-packages/${packageId}/categories`
+    );
+    return data;
+  },
+
+  /**
    * Create new menu package
    */
   createPackage: async (input: any): Promise<ApiResponse<MenuPackage>> => {
