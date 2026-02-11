@@ -30,7 +30,7 @@ const POLISH_TO_ENGLISH: Record<string, string> = {
   'Inne': MENU_OPTION_CATEGORIES.OTHER,
 };
 
-async function migrateCate gories() {
+async function migrateCategories() {
   console.log('🚀 Starting menu option category migration...\n');
 
   let totalUpdated = 0;
@@ -93,7 +93,7 @@ async function migrateCate gories() {
 }
 
 // Run migration
-migrateCate gories()
+migrateCategories()
   .catch((error) => {
     console.error('❌ Migration failed:', error);
     process.exit(1);
