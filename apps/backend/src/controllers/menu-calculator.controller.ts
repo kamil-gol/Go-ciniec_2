@@ -23,8 +23,7 @@ interface CalculatePriceRequest {
   selectedOptions?: SelectedOption[];
 }
 
-//
-=== Utilities ===
+// === Utilities ===
 function toNumber(decimal: Decimal): number {
   return parseFloat(decimal.toString());
 }
