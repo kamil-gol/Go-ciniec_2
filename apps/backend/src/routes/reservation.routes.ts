@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
+import * as reservationMenuController from '../controllers/reservation-menu.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 
@@ -63,6 +64,48 @@ router.put('/:id', authMiddleware, requireStaff, (req, res) => {
 router.patch('/:id/status', authMiddleware, requireStaff, (req, res) => {
   reservationController.updateStatus(req, res);
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 🍽️ MENU SELECTION ENDPOINTS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   POST /api/reservations/:reservationId/menu
+ * @desc    Save menu selection to reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post('/:reservationId/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.saveReservationMenu(req, res);
+});
+
+/**
+ * @route   GET /api/reservations/:reservationId/menu
+ * @desc    Get menu selection for reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.get('/:reservationId/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.getReservationMenu(req, res);
+});
+
+/**
+ * @route   PUT /api/reservations/:reservationId/menu
+ * @desc    Update menu selection for reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.put('/:reservationId/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.updateReservationMenu(req, res);
+});
+
+/**
+ * @route   DELETE /api/reservations/:reservationId/menu
+ * @desc    Remove menu selection from reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.delete('/:reservationId/menu', authMiddleware, requireStaff, (req, res) => {
+  reservationMenuController.deleteReservationMenu(req, res);
+});
+
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   DELETE /api/reservations/:id
