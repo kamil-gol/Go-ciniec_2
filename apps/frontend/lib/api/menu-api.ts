@@ -34,7 +34,7 @@ api.interceptors.request.use(
   (config) => {
     // Try to get token from localStorage (client-side only)
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
