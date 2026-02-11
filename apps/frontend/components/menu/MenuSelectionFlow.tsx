@@ -28,7 +28,7 @@ import {
 } from '@/components/menu';
 import { OptionsSelector } from '@/components/menu/OptionsSelector';
 import { DishSelector } from '@/components/menu/DishSelector';
-import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed } from 'lucide-react';
+import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -178,9 +178,19 @@ export function MenuSelectionFlow({
   };
 
   const handleTemplateSelect = (template: MenuTemplate) => {
-    setSelectedTemplate(template);
-    setSelectedPackage(undefined);
-    setDishSelections([]);
+    // Only reset package and dishes if switching to a DIFFERENT template
+    if (selectedTemplate?.id !== template.id) {
+      setSelectedTemplate(template);
+      setSelectedPackage(undefined);
+      setDishSelections([]);
+      toast({
+        title: 'Menu zmienione',
+        description: 'Wybierz ponownie pakiet i dania dla nowego menu.',
+      });
+    } else {
+      // Same template - just update reference but keep everything
+      setSelectedTemplate(template);
+    }
     setCurrentStep('package');
   };
 
@@ -387,11 +397,12 @@ export function MenuSelectionFlow({
 
               <div className="flex justify-center">
                 <Button
-                  variant="ghost"
+                  variant="outline"
+                  size="lg"
                   onClick={() => setCurrentStep('template')}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <RefreshCw className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
                   Zmień menu
                 </Button>
               </div>
