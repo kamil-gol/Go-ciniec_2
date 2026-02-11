@@ -24,25 +24,46 @@ interface CategorySelection {
 
 interface DishSelectorProps {
   packageId: string
+  initialSelections?: CategorySelection[]
   onComplete: (selections: CategorySelection[]) => void
   onBack: () => void
 }
 
-export function DishSelector({ packageId, onComplete, onBack }: DishSelectorProps) {
+export function DishSelector({ 
+  packageId, 
+  initialSelections,
+  onComplete, 
+  onBack 
+}: DishSelectorProps) {
   const { data: categoryData, isLoading } = usePackageCategories(packageId)
   const [selections, setSelections] = useState<Record<string, Record<string, number>>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Initialize selections state
+  // Initialize selections state from categoryData or initialSelections
   useEffect(() => {
-    if (categoryData?.categories) {
-      const initialSelections: Record<string, Record<string, number>> = {}
+    if (categoryData?.categories && !isInitialized) {
+      const initialSelectionsData: Record<string, Record<string, number>> = {}
+      
       categoryData.categories.forEach((cat: any) => {
-        initialSelections[cat.categoryId] = {}
+        initialSelectionsData[cat.categoryId] = {}
       })
-      setSelections(initialSelections)
+
+      // If we have initialSelections, populate them
+      if (initialSelections) {
+        initialSelections.forEach(catSelection => {
+          const dishes: Record<string, number> = {}
+          catSelection.dishes.forEach(dish => {
+            dishes[dish.dishId] = dish.quantity
+          })
+          initialSelectionsData[catSelection.categoryId] = dishes
+        })
+      }
+      
+      setSelections(initialSelectionsData)
+      setIsInitialized(true)
     }
-  }, [categoryData])
+  }, [categoryData, initialSelections, isInitialized])
 
   if (isLoading) {
     return (
