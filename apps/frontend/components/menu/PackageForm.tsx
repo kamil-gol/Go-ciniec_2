@@ -49,7 +49,7 @@ export default function PackageForm({
     displayOrder: initialData?.displayOrder || 0,
     isPopular: initialData?.isPopular || false,
     isRecommended: initialData?.isRecommended || false,
-    color: initialData?.color || '3b82f6',
+    color: initialData?.color?.replace('#', '') || '3b82f6',
     icon: initialData?.icon || '🎂',
     badgeText: initialData?.badgeText || '',
   });
@@ -155,6 +155,35 @@ export default function PackageForm({
     return true;
   }
 
+  async function saveCategorySettings(packageId: string) {
+    const enabledSettings = categorySettings.filter((cs) => cs.isEnabled);
+    
+    if (enabledSettings.length === 0) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/menu-packages/${packageId}/categories`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ settings: enabledSettings }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to save category settings');
+      }
+
+      console.log('Category settings saved successfully');
+    } catch (error) {
+      console.error('Error saving category settings:', error);
+      throw error;
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -169,39 +198,58 @@ export default function PackageForm({
     );
 
     try {
-      // Clean color (remove # if present)
+      // Clean color (remove # if present) and add it back
       const cleanColor = formData.color.replace('#', '');
+      const colorWithHash = `#${cleanColor}`;
 
-      const packageData: CreatePackageInput | UpdatePackageInput = {
+      // Parse prices to numbers
+      const pricePerAdult = parseFloat(formData.pricePerAdult);
+      const pricePerChild = parseFloat(formData.pricePerChild);
+      const pricePerToddler = parseFloat(formData.pricePerToddler) || 0;
+
+      const packageData: any = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         shortDescription: formData.shortDescription.trim() || null,
-        pricePerAdult: formData.pricePerAdult,
-        pricePerChild: formData.pricePerChild,
-        pricePerToddler: formData.pricePerToddler || '0',
+        pricePerAdult,
+        pricePerChild,
+        pricePerToddler,
         displayOrder: formData.displayOrder,
         isPopular: formData.isPopular,
         isRecommended: formData.isRecommended,
-        color: cleanColor,
+        color: colorWithHash,
         icon: formData.icon || null,
         badgeText: formData.badgeText.trim() || null,
-        menuTemplateId,
-        categorySettings: categorySettings.filter((cs) => cs.isEnabled),
       };
+
+      // Add menuTemplateId only for create
+      if (!initialData) {
+        packageData.menuTemplateId = menuTemplateId;
+      }
 
       console.log('Sending package data:', packageData);
 
+      let createdOrUpdatedPackage;
+
       if (initialData) {
-        // Update
-        await updatePackage(initialData.id, packageData);
+        // Update package
+        createdOrUpdatedPackage = await updatePackage(initialData.id, packageData);
+        
+        // Update category settings
+        await saveCategorySettings(initialData.id);
+        
         toast.success('🎉 Pakiet zaktualizowany!', {
           id: savingToast,
           description: `Pakiet "${formData.name}" został pomyślnie zaktualizowany`,
           duration: 5000,
         });
       } else {
-        // Create
-        await createPackage(packageData as CreatePackageInput);
+        // Create package
+        createdOrUpdatedPackage = await createPackage(packageData as CreatePackageInput);
+        
+        // Save category settings for newly created package
+        await saveCategorySettings(createdOrUpdatedPackage.id);
+        
         toast.success('✨ Pakiet utworzony!', {
           id: savingToast,
           description: `Nowy pakiet "${formData.name}" został dodany do menu`,
@@ -453,13 +501,12 @@ export default function PackageForm({
                 value={formData.color}
                 onChange={handleChange}
                 placeholder="3b82f6"
-                maxLength={6}
-                pattern="[0-9A-Fa-f]{6}"
+                maxLength={7}
                 className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
               />
               <div 
                 className="w-12 h-12 rounded-xl border-2 border-slate-300 shadow-sm"
-                style={{ backgroundColor: `#${formData.color}` }}
+                style={{ backgroundColor: `#${formData.color.replace('#', '')}` }}
               ></div>
             </div>
           </div>
