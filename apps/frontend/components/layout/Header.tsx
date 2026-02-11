@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell, Search, Moon, Sun } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -15,12 +16,13 @@ interface HeaderProps {
 }
 
 export default function Header({ user }: HeaderProps) {
+  const router = useRouter()
   const [isDark, setIsDark] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications] = useState([
-    { id: 1, title: 'Nowa rezerwacja', message: 'Jan Kowalski - Wesele 15.02', time: '5 min temu', unread: true },
-    { id: 2, title: 'Płatność otrzymana', message: 'Zaliczka 5,000 zł', time: '1 godz. temu', unread: true },
-    { id: 3, title: 'Przypomnienie', message: 'Wydarzenie jutro o 18:00', time: '2 godz. temu', unread: false },
+    { id: 1, title: 'Nowa rezerwacja', message: 'Jan Kowalski - Wesele 15.02', time: '5 min temu', unread: true, link: '/dashboard/reservations' },
+    { id: 2, title: 'Płatność otrzymana', message: 'Zaliczka 5,000 zł', time: '1 godz. temu', unread: true, link: '/dashboard/reservations' },
+    { id: 3, title: 'Przypomnienie', message: 'Wydarzenie jutro o 18:00', time: '2 godz. temu', unread: false, link: '/dashboard/reservations' },
   ])
 
   const unreadCount = notifications.filter(n => n.unread).length
@@ -28,6 +30,18 @@ export default function Header({ user }: HeaderProps) {
   const toggleTheme = () => {
     setIsDark(!isDark)
     document.documentElement.classList.toggle('dark')
+  }
+
+  const handleNotificationClick = (notif: typeof notifications[0]) => {
+    if (notif.link) {
+      router.push(notif.link)
+      setShowNotifications(false)
+    }
+  }
+
+  const handleViewAll = () => {
+    router.push('/dashboard/reservations')
+    setShowNotifications(false)
   }
 
   return (
@@ -106,50 +120,62 @@ export default function Header({ user }: HeaderProps) {
             {/* Notifications Dropdown */}
             <AnimatePresence>
               {showNotifications && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white dark:bg-neutral-800 shadow-hard border border-neutral-200 dark:border-neutral-700 overflow-hidden"
-                >
-                  <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
-                    <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Powiadomienia</h3>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={cn(
-                          'p-4 border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer',
-                          notif.unread && 'bg-primary-50 dark:bg-primary-900/10'
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
-                              {notif.title}
-                            </p>
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
-                              {notif.message}
-                            </p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
-                              {notif.time}
-                            </p>
-                          </div>
-                          {notif.unread && (
-                            <span className="h-2 w-2 rounded-full bg-primary-500 flex-shrink-0 mt-1" />
+                <>
+                  {/* Overlay to close dropdown */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowNotifications(false)}
+                  />
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white dark:bg-neutral-800 shadow-hard border border-neutral-200 dark:border-neutral-700 overflow-hidden z-50"
+                  >
+                    <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+                      <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Powiadomienia</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className={cn(
+                            'p-4 border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer',
+                            notif.unread && 'bg-primary-50 dark:bg-primary-900/10'
                           )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                                {notif.title}
+                              </p>
+                              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
+                                {notif.message}
+                              </p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+                                {notif.time}
+                              </p>
+                            </div>
+                            {notif.unread && (
+                              <span className="h-2 w-2 rounded-full bg-primary-500 flex-shrink-0 mt-1" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
-                    <button className="w-full text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-                      Zobacz wszystkie
-                    </button>
-                  </div>
-                </motion.div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
+                      <button 
+                        onClick={handleViewAll}
+                        className="w-full text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+                      >
+                        Zobacz wszystkie
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>
