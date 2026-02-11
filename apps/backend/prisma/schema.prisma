@@ -183,7 +183,8 @@ model Deposit {
   reservationId   String   @db.Uuid
 
   amount          Decimal  @db.Decimal(10, 2)
-  dueDate         String   @db.VarChar(10)
+  remainingAmount Decimal  @db.Decimal(10, 2)
+  dueDate         DateTime
   status          String   @default("PENDING") @db.VarChar(20)
   paid            Boolean  @default(false)
   paidAt          DateTime?
