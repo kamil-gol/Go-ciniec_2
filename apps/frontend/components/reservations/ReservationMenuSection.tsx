@@ -384,6 +384,13 @@ export function ReservationMenuSection({
               selectedOptions: (selectedOptions || []).map((opt: any) => ({
                 optionId: opt.optionId,
                 quantity: opt.quantity
+              })),
+              dishSelections: (dishSelections || []).map((cat: any) => ({
+                categoryId: cat.categoryId,
+                dishes: cat.dishes.map((dish: any) => ({
+                  dishId: dish.dishId,
+                  quantity: dish.quantity
+                }))
               }))
             }}
             onComplete={handleMenuSelected}
