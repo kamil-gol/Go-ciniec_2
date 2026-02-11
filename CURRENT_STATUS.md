@@ -3,9 +3,9 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 11.02.2026, 16:48 CET  
+**Ostatnia aktualizacja:** 11.02.2026, 17:00 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 0.9.11 (Menu System + Deposits Module)
+**Wersja:** 0.9.12 (Menu System + Deposits Module + Menu Seed Data)
 
 ---
 
@@ -46,6 +46,14 @@
   - Wyszukiwanie pełnotekstowe
   - Premium UI/UX z kartami
 
+✅ **Seed Data Menu** ⭐ NOWE! 11.02.2026
+  - Skrypt seed: `prisma/seeds/seed-menu.ts`
+  - 10 kategorii dań (Zupy, Przystawki, Sałatki, etc.)
+  - 62 przykładowe dania z pełnymi danymi
+  - Alergeny dla każdego dania
+  - NPM script: `npm run db:seed:menu`
+  - Dokumentacja: `prisma/seeds/README.md`
+
 ### ✨ Moduł Zaliczek (NOWE! 11.02.2026)
 ✅ **Backend API (Go + GORM)**
   - Model bazy danych (Deposit, Payment)
@@ -78,7 +86,37 @@
 
 ## 🔧 Ostatnie Zmiany (11.02.2026)
 
-### Deposits Module Implementation
+### Menu Seed Data - 17:00 CET
+**PR:** [#7](https://github.com/kamil-gol/Go-ciniec_2/pull/7)  
+**Status:** ✅ Merged do `main`  
+
+**Implementacja:**
+- ✅ `prisma/seeds/seed-menu.ts` - główny skrypt seeda
+- ✅ 10 kategorii dań z ikonami emoji i kolorami
+- ✅ 62 przykładowe dania
+- ✅ Pełne dane alergenów dla każdego dania
+- ✅ NPM script: `npm run db:seed:menu`
+- ✅ Dokumentacja w `prisma/seeds/README.md`
+- ✅ Automatyczne czyszczenie przed seedowaniem
+- ✅ Szczegółowe logowanie w konsoli
+
+**Kategorie (10):**
+| Kategoria | Slug | Ikona | Liczba dań |
+|-----------|------|-------|------------|
+| Zupy | `SOUP` | 🍲 | 5 |
+| Przystawki | `APPETIZER` | 🥗 | 5 |
+| Sałatki | `SALAD` | 🥬 | 6 |
+| Dania główne | `MAIN_COURSE` | 🍖 | 10 |
+| Dodatki | `SIDE_DISH` | 🍚 | 8 |
+| Ryby | `FISH` | 🐟 | 5 |
+| Desery | `DESSERT` | 🍰 | 8 |
+| Napoje | `BEVERAGE` | 🥤 | 5 |
+| Wypieki | `PASTRY` | 🥐 | 4 |
+| Wegetariańskie | `VEGETARIAN` | 🌱 | 6 |
+
+**Rozwiązuje:** Problem z pustym modułem menu - brak danych testowych
+
+### Deposits Module Implementation - 16:45 CET
 **Czas:** 11.02.2026, 14:30-16:45 CET  
 **Status:** ✅ Gotowe  
 **Implementacja:**
@@ -134,6 +172,7 @@
 | [API.md](API.md) | **API v1.1.0** - Pełna dokumentacja endpointów (w tym Deposits) |
 | [docs/QUEUE.md](docs/QUEUE.md) | Pełna dokumentacja systemu kolejki |
 | [apps/backend/README.md](apps/backend/README.md) | Backend API - wszystkie endpointy w tym Menu System |
+| [apps/backend/prisma/seeds/README.md](apps/backend/prisma/seeds/README.md) | **NOWE** - Dokumentacja seedów menu |
 | [docs/BUGFIX_SESSION_2026-02-07.md](docs/BUGFIX_SESSION_2026-02-07.md) | Sesja naprawcza - Bug #1-7 |
 | [docs/BUGFIX_SESSION_2026-02-09.md](docs/BUGFIX_SESSION_2026-02-09.md) | Sesja naprawcza - Bug #9 |
 | [docs/BUGFIX_SESSION_2026-02-11.md](docs/BUGFIX_SESSION_2026-02-11.md) | Sesja naprawcza - Bug #10-13 |
@@ -160,10 +199,11 @@ Przeczytaj dokumentację:
 2. docs/QUEUE.md - system kolejki rezerwacji
 3. README.md - główny przegląd projektu
 4. CURRENT_STATUS.md - aktualny status rozwoju
+5. apps/backend/prisma/seeds/README.md - dokumentacja seedów menu
 
 Główny branch main zawiera:
 - System kolejki rezerwacji (99% complete)
-- System menu i kategorii dań (100% complete)
+- System menu i kategorii dań (100% complete + seed data)
 - Moduł zaliczek (100% complete)
 - Premium UI/UX components
 - Wszystkie bugfixy
@@ -187,6 +227,7 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 - ✅ Auth issue w dishes API
 - ✅ Infinite loop w DishDialog
 - ✅ Transparentność AlertDialog
+- ✅ **Menu module - brak danych testowych** ⭐ NAPRAWIONE!
 
 ---
 
@@ -304,7 +345,7 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 - **Backend:** 98% ✅ (+2% - Deposits API complete)
 - **Frontend:** 88% ✅ (+1% - Deposits UI complete, brak formów)
 - **Testy:** 78% 🔄
-- **Dokumentacja:** 96% ✅ (+2% - API.md + README.md + CURRENT_STATUS.md)
+- **Dokumentacja:** 98% ✅ (+2% - Menu seed docs)
 - **Deployment:** 70% 🔄
 
 ### Postęp Modułu Zaliczek:
@@ -318,6 +359,7 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 ### Postęp Modułu Menu:
 - **Kategorie Dań:** 100% ✅
 - **Biblioteka Dań:** 100% ✅
+- **Seed Data:** 100% ✅ ⭐ NOWE!
 - **Opcje Menu:** 0% ⏳
 - **Szablony Menu:** 0% ⏳
 - **Pakiety Menu:** 0% ⏳
@@ -345,6 +387,9 @@ docker compose logs -f frontend
 
 # Migracje (jeśli dodano nowe)
 docker compose exec backend npm run prisma:migrate:deploy
+
+# Seed menu (NOWE!)
+docker compose exec backend npm run db:seed:menu
 
 # Instalacja pakietu w kontenerze
 docker compose exec frontend npm install <package-name>
@@ -378,6 +423,7 @@ docker compose exec frontend npm install <package-name>
 - [x] Premium UI components
 - [x] Auth integration
 - [x] Dokumentacja
+- [x] **Seed data - 10 kategorii + 62 dania** ⭐ NOWE!
 - [ ] Opcje menu (kolejny milestone)
 - [ ] Szablony menu (kolejny milestone)
 - [ ] Integracja z rezerwacjami (kolejny milestone)
@@ -388,7 +434,7 @@ docker compose exec frontend npm install <package-name>
 
 **Status:** Branch `main` zawiera:
 - Pełny system kolejki rezerwacji
-- System kategorii i dań
+- System kategorii i dań **+ dane testowe (seed)**
 - **NOWY: Moduł zaliczek (backend + podstawowe UI)**
 
 Gotowy do rozszerzania o formularze, powiadomienia i pełną integrację.
