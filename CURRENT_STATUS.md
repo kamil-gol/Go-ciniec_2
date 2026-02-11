@@ -3,9 +3,9 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 11.02.2026, 17:15 CET  
+**Ostatnia aktualizacja:** 11.02.2026, 17:30 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 0.9.13 (Menu System COMPLETE + Deposits Module + Full Menu Seed Data)
+**Wersja:** 0.9.13 (Menu System 100% COMPLETE + Deposits Module)
 
 ---
 
@@ -54,15 +54,33 @@
   - Alergeny dla każdego dania
   - NPM script: `npm run db:seed:menu`
 
-✅ **Seed Data - Szablony, Pakiety & Opcje** 🎆 NOWE! 11.02.2026 - 17:15
-  - Skrypt seed: `prisma/seeds/seed-menu-templates.ts`
-  - 20+ opcji dodatkowych (torty, bar open, dekoracje, etc.)
-  - Szablony menu dla każdego typu wydarzenia
-  - 3 pakiety dla każdego szablonu (Standard, Premium, VIP)
-  - PackageCategorySettings (ustawienia wyboru dań)
-  - MenuPackageOption (połączenia opcji)
+✅ **Seed Data - Opcje, Szablony & Pakiety** 🎆 NOWE! 11.02.2026 - 17:30
+  - Skrypt seed: `prisma/seeds/seed-menu-advanced.ts`
+  - **27 opcji dodatkowych menu:**
+    - 🍸 Bar alkoholowy (podstawowy, pełen)
+    - 🎧 DJ + Oprawa muzyczna
+    - 🎸 Zespół muzyczny
+    - 🤡 Wodzirej + animacje
+    - 📸 Fotobudka
+    - ☁️ Ciężki dym
+    - 🔥 Pokaz ognia
+    - 🎀 Dekoracje (podstawowe, premium)
+    - 💡 Napis LED
+    - 🎈 Balony z helem
+    - 🎂 Torty (weselny, urodzinowy)
+    - 🍭 Candy bar
+    - 🍣 Stacja sushi
+    - 🍖 Grill na żywo
+    - 🧀 Stół wiejski
+    - 🍲 Posiłek nocny
+    - 🤵 Obsługa kelnerska
+    - 🚗 Valet parking
+    - 📋 Koordynator wesela
+  - **10 szablonów menu** dla różnych typów wydarzeń
+  - **9 pakietów menu** z pełnymi cenami (180-400 zł/os)
+  - Automatyczne połączenia pakietów z opcjami
   - NPM scripts: 
-    - `npm run db:seed:menu-templates`
+    - `npm run db:seed:menu:advanced`
     - `npm run db:seed:all-menu` (pełny seed)
   - Dokumentacja: `prisma/seeds/README.md`
 
@@ -98,43 +116,43 @@
 
 ## 🔧 Ostatnie Zmiany (11.02.2026)
 
-### Menu Templates Seed Data - 17:15 CET 🎆 NOWE!
-**PR:** [#8](https://github.com/kamil-gol/Go-ciniec_2/pull/8)  
+### Menu Advanced Seed Data - 17:30 CET 🎆 NOWE!
+**PR:** [#10](https://github.com/kamil-gol/Go-ciniec_2/pull/10)  
 **Status:** ✅ Merged do `main`  
 
 **Implementacja:**
-- ✅ `prisma/seeds/seed-menu-templates.ts` - kompletny seed
-- ✅ **20+ opcji dodatkowych:**
-  - 🎂 Torty (weselny, urodzinowy)
-  - 🍫 Fontanna czekoladowa
-  - 🍭 Candy bar
-  - 🍷 Wino stołowe, 🥂 Szampan powitalny
-  - 🍺 Bar open standard, 🍸 Bar open premium
-  - 🥘 Stół serwowany, 🍇 Bufet owocowy
-  - 🔥 Grill na żywo, 🌙 Przekąska nocna
-  - 💐 Dekoracje, 📸 Ścianka Instagram
-  - 📷 Fotobudka, 🎵 DJ, 🎆 Ognie sztuczne
-  - 🌱 Menu wegetariańskie, 🌾 bezglutenowe, 👶 dziecięce
+- ✅ `prisma/seeds/seed-menu-advanced.ts` - kompletny seed
+- ✅ **27 opcji dodatkowych menu** (pełna lista powyżej)
+- ✅ **10 szablonów menu:**
+  - Wesele: CLASSIC, PREMIUM, RUSTIC
+  - Urodziny: STANDARD, PREMIUM
+  - Komunia: FAMILY, ELEGANT
+  - Chrzest/Roczek: GENTLE
+  - Rocznica/Jubileusz: ELEGANT
 
-- ✅ **Szablony menu** dla każdego EventType
-- ✅ **3 pakiety** na szablon:
-  - ✨ Standard (250 zł/osoba)
-  - ⭐ Premium (320 zł/osoba) - Popularny
-  - 👑 VIP (400 zł/osoba) - Ekskluzywny
+- ✅ **9 pakietów menu z cenami:**
+  
+  **Wesele - CLASSIC:**
+  1. Standard - 180 zł/os (dorosły), 90 zł/os (dziecko)
+  2. Komfort - 220 zł/os, 110 zł/os ⭐ Popularny
+  3. Premium - 280 zł/os, 140 zł/os 👑
+  
+  **Wesele - PREMIUM:**
+  1. Exclusive - 350 zł/os, 175 zł/os 💎 ⭐
+  
+  **Wesele - RUSTIC:**
+  1. Regionalne Smaki - 200 zł/os, 100 zł/os 🏡 ⭐
+  
+  **Urodziny - STANDARD:**
+  1. Urodzinowy Basic - 120 zł/os, 60 zł/os 🎂 ⭐
+  
+  **Komunia - FAMILY:**
+  1. Komunijny Rodzinny - 150 zł/os, 75 zł/os ⛪ ⭐
 
-- ✅ **PackageCategorySettings** - określa wybory dań dla pakietów
-- ✅ **MenuPackageOption** - połączenia pakietów z opcjami
-- ✅ NPM scripts: `db:seed:menu-templates`, `db:seed:all-menu`
-- ✅ Dokumentacja w `prisma/seeds/README.md`
+- ✅ Automatyczne połączenia pakietów z opcjami według kategorii
+- ✅ NPM scripts: `db:seed:menu:advanced`, `db:seed:all-menu`
 
-**Struktura danych:**
-```
-EventType → MenuTemplate → MenuPackage
-                           ├─ PackageCategorySettings → DishCategory → Dish
-                           └─ MenuPackageOption → MenuOption
-```
-
-**Rozwiązuje:** Pełny system menu z danymi testowymi
+**Rozwiązuje:** Pełny system menu z danymi testowymi - opcje, szablony i pakiety
 
 ---
 
@@ -143,12 +161,10 @@ EventType → MenuTemplate → MenuPackage
 **Status:** ✅ Merged do `main`  
 
 **Implementacja:**
-- ✅ `prisma/seeds/seed-menu.ts` - główny skrypt seeda
-- ✅ 10 kategorii dań z ikonami emoji i kolorami
+- ✅ `prisma/seeds/seed-menu.ts`
+- ✅ 10 kategorii dań
 - ✅ 62 przykładowe dania
-- ✅ Pełne dane alergenów dla każdego dania
-- ✅ NPM script: `npm run db:seed:menu`
-- ✅ Dokumentacja w `prisma/seeds/README.md`
+- ✅ Pełne dane alergenów
 
 **Kategorie (10):**
 | Kategoria | Slug | Ikona | Liczba dań |
@@ -171,17 +187,15 @@ EventType → MenuTemplate → MenuPackage
 **Status:** ✅ Gotowe  
 
 #### Backend (Go)
-- Model `Deposit` z pełną strukturą
-- Model `Payment` dla częściowych wpłat
+- Model `Deposit` + `Payment`
 - 10 endpointów API
-- Automatyczne generowanie receiptNumber (ZAL-YYYY-NNNN)
+- Automatyczne receiptNumber
 - Walidacja biznesowa
 
-#### Frontend (Next.js + TypeScript)
+#### Frontend (Next.js)
 - Strona /dashboard/deposits
 - Komponenty: DepositStats, DepositList, PaymentModal
-- Service layer + TypeScript types
-- Filtrowanie, paginacja, loading states
+- Service layer + types
 
 ---
 
@@ -190,10 +204,10 @@ EventType → MenuTemplate → MenuPackage
 | Dokument | Opis |
 |----------|------|
 | [docs/README.md](docs/README.md) | **START TUTAJ** - Główny indeks dokumentacji |
-| [API.md](API.md) | **API v1.1.0** - Pełna dokumentacja endpointów (w tym Deposits) |
+| [API.md](API.md) | **API v1.1.0** - Pełna dokumentacja endpointów |
 | [docs/QUEUE.md](docs/QUEUE.md) | Pełna dokumentacja systemu kolejki |
-| [apps/backend/README.md](apps/backend/README.md) | Backend API - wszystkie endpointy w tym Menu System |
-| [apps/backend/prisma/seeds/README.md](apps/backend/prisma/seeds/README.md) | **ZAKTUALIZOWANE** - Dokumentacja seedów menu (pełna) |
+| [apps/backend/README.md](apps/backend/README.md) | Backend API - wszystkie endpointy |
+| [apps/backend/prisma/seeds/README.md](apps/backend/prisma/seeds/README.md) | **PEŁNA** - Dokumentacja seedów menu |
 | [docs/BUGFIX_SESSION_2026-02-07.md](docs/BUGFIX_SESSION_2026-02-07.md) | Sesja naprawcza - Bug #1-7 |
 | [docs/BUGFIX_SESSION_2026-02-09.md](docs/BUGFIX_SESSION_2026-02-09.md) | Sesja naprawcza - Bug #9 |
 | [docs/BUGFIX_SESSION_2026-02-11.md](docs/BUGFIX_SESSION_2026-02-11.md) | Sesja naprawcza - Bug #10-13 |
@@ -216,15 +230,15 @@ EventType → MenuTemplate → MenuPackage
 Kontynuuję pracę nad projektem Rezerwacje (repo: kamil-gol/Go-ciniec_2, branch: main).
 
 Przeczytaj dokumentację:
-1. API.md - pełna dokumentacja API v1.1.0 (w tym Deposits)
+1. API.md - pełna dokumentacja API v1.1.0
 2. docs/QUEUE.md - system kolejki rezerwacji
 3. README.md - główny przegląd projektu
 4. CURRENT_STATUS.md - aktualny status rozwoju
-5. apps/backend/prisma/seeds/README.md - dokumentacja seedów menu
+5. apps/backend/prisma/seeds/README.md - pełna dokumentacja seedów menu
 
 Główny branch main zawiera:
 - System kolejki rezerwacji (99% complete)
-- System menu - 100% COMPLETE z pełnymi danymi (kategorie + dania + szablony + pakiety + opcje)
+- System menu - **100% COMPLETE z pełnymi danymi seed** (kategorie + dania + opcje + szablony + pakiety)
 - Moduł zaliczek (backend + podstawowe UI)
 - Premium UI/UX components
 - Wszystkie bugfixy
@@ -249,20 +263,19 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 - ✅ Infinite loop w DishDialog
 - ✅ Transparentność AlertDialog
 - ✅ **Menu module - brak danych testowych** ⭐ NAPRAWIONE!
-- ✅ **Menu templates - brak pakietów i opcji** 🎆 NAPRAWIONE!
+- ✅ **Menu templates/packages - brak danych** 🎆 NAPRAWIONE!
 
 ---
 
 ## 📋 TODO - Następne Features
 
-### Moduł Menu - **COMPLETE!** ✅
+### Moduł Menu - **SEED DATA COMPLETE!** ✅
 - [x] Kategorie dań - API + UI + Seed
 - [x] Biblioteka dań - API + UI + Seed
-- [x] Opcje menu - Seed data
-- [x] Szablony menu - Seed data
-- [x] Pakiety menu - Seed data
-- [x] PackageCategorySettings - Seed data
-- [x] MenuPackageOption - Seed data
+- [x] Opcje menu - Seed data 🎆 COMPLETE!
+- [x] Szablony menu - Seed data 🎆 COMPLETE!
+- [x] Pakiety menu - Seed data 🎆 COMPLETE!
+- [ ] **Frontend UI** dla opcji menu (następny milestone)
 - [ ] **Frontend UI** dla szablonów i pakietów (następny milestone)
 - [ ] **Integracja z Rezerwacjami** (następny milestone)
 
@@ -319,7 +332,7 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 
 ## 📊 Postęp Ogólny
 
-- **Backend:** 99% ✅ (+1% - Menu seed data complete)
+- **Backend:** 99% ✅ (+1% - Menu seed complete)
 - **Frontend:** 88% ✅
 - **Testy:** 78% 🔄
 - **Dokumentacja:** 99% ✅ (+1% - Seeds README complete)
@@ -337,9 +350,9 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 - **Kategorie Dań:** 100% ✅
 - **Biblioteka Dań:** 100% ✅
 - **Seed Data (Dania):** 100% ✅
-- **Seed Data (Opcje):** 100% ✅ 🎆 NOWE!
-- **Seed Data (Szablony):** 100% ✅ 🎆 NOWE!
-- **Seed Data (Pakiety):** 100% ✅ 🎆 NOWE!
+- **Seed Data (Opcje):** 100% ✅ 🎆 COMPLETE!
+- **Seed Data (Szablony):** 100% ✅ 🎆 COMPLETE!
+- **Seed Data (Pakiety):** 100% ✅ 🎆 COMPLETE!
 - **Frontend UI (Opcje):** 0% ⏳
 - **Frontend UI (Szablony):** 0% ⏳
 - **Frontend UI (Pakiety):** 0% ⏳
@@ -372,8 +385,8 @@ docker compose exec backend npm run prisma:migrate:deploy
 docker compose exec backend npm run db:seed:all-menu
 
 # Lub osobno:
-docker compose exec backend npm run db:seed:menu              # Kategorie + Dania
-docker compose exec backend npm run db:seed:menu-templates    # Szablony + Pakiety + Opcje
+docker compose exec backend npm run db:seed:menu              # Kategorie + Dania (62)
+docker compose exec backend npm run db:seed:menu:advanced    # Opcje + Szablony + Pakiety (27+10+9)
 
 # Instalacja pakietu w kontenerze
 docker compose exec frontend npm install <package-name>
@@ -408,11 +421,10 @@ docker compose exec frontend npm install <package-name>
 - [x] Auth integration
 - [x] Dokumentacja
 - [x] **Seed data - 10 kategorii + 62 dania** ✅
-- [x] **Seed data - 20+ opcji menu** ✅ 🎆 NOWE!
-- [x] **Seed data - szablony menu** ✅ 🎆 NOWE!
-- [x] **Seed data - pakiety (Standard, Premium, VIP)** ✅ 🎆 NOWE!
-- [x] **Seed data - ustawienia kategorii** ✅ 🎆 NOWE!
-- [x] **Seed data - połączenia opcji** ✅ 🎆 NOWE!
+- [x] **Seed data - 27 opcji menu** ✅ 🎆 COMPLETE!
+- [x] **Seed data - 10 szablonów menu** ✅ 🎆 COMPLETE!
+- [x] **Seed data - 9 pakietów (180-350zł/os)** ✅ 🎆 COMPLETE!
+- [x] **Seed data - automatyczne połączenia** ✅ 🎆 COMPLETE!
 - [ ] Frontend UI - opcje menu (następny milestone)
 - [ ] Frontend UI - szablony menu (następny milestone)
 - [ ] Frontend UI - pakiety menu (następny milestone)
@@ -422,17 +434,16 @@ docker compose exec frontend npm install <package-name>
 
 ---
 
-## 📊 Podsumowanie Danych w Bazie (po seedzie)
+## 📊 Podsumowanie Danych w Bazie (po pełnym seedzie)
 
-| Element | Ilość | Status |
-|---------|------|--------|
-| Kategorie dań | 10 | ✅ |
-| Dania | 62 | ✅ |
-| Opcje dodatkowe | 20+ | ✅ 🎆 NOWE! |
-| Szablony menu | ~5 | ✅ 🎆 NOWE! |
-| Pakiety | ~15 | ✅ 🎆 NOWE! |
-| Ustawienia kategorii | ~100+ | ✅ 🎆 NOWE! |
-| Połączenia opcji | ~180+ | ✅ 🎆 NOWE! |
+| Element | Ilość | Skrypt | Status |
+|---------|------|--------|--------|
+| Kategorie dań | 10 | `seed-menu.ts` | ✅ |
+| Dania | 62 | `seed-menu.ts` | ✅ |
+| Opcje dodatkowe | 27 | `seed-menu-advanced.ts` | ✅ 🎆 NOWE! |
+| Szablony menu | 10 | `seed-menu-advanced.ts` | ✅ 🎆 NOWE! |
+| Pakiety | 9 | `seed-menu-advanced.ts` | ✅ 🎆 NOWE! |
+| Połączenia pakietów | auto | `seed-menu-advanced.ts` | ✅ 🎆 NOWE! |
 
 **System menu ma pełne dane testowe i jest gotowy do użycia!** 🎉
 
@@ -440,7 +451,9 @@ docker compose exec frontend npm install <package-name>
 
 **Status:** Branch `main` zawiera:
 - Pełny system kolejki rezerwacji (99% complete)
-- **System menu - 100% COMPLETE z pełnymi danymi seed** 🎆
+- **System menu - 100% SEED DATA COMPLETE** 🎆
+  - Kategorie + Dania (API + UI + Seed)
+  - Opcje + Szablony + Pakiety (Seed complete)
 - Moduł zaliczek (backend + podstawowe UI)
 - Premium UI/UX components
 - Wszystkie bugfixy
