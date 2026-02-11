@@ -19,6 +19,8 @@ if [ "$TOKEN" = "null" ]; then
   exit 1
 fi
 
+USER_ID=$(echo $LOGIN | jq -r '.data.user.id')
+
 echo "✅ Logged in as admin"
 echo ""
 
@@ -28,18 +30,18 @@ echo ""
 echo "🏛️  Creating Halls..."
 
 HALLS=(
-  "Sala Kryształowa:150:8000"
-  "Sala Taneczna:100:6000"
-  "Sala Złota:80:5000"
-  "Cały obiekt:300:15000"
-  "Strzecha 1:50:3000"
-  "Strzecha 2:50:3000"
+  "Sala Kryształowa:150:180:120:80"
+  "Sala Taneczna:100:160:100:70"
+  "Sala Złota:80:150:90:60"
+  "Cały obiekt:300:200:150:100"
+  "Strzecha 1:50:140:80:50"
+  "Strzecha 2:50:140:80:50"
 )
 
 declare -A HALL_IDS
 
 for hall_data in "${HALLS[@]}"; do
-  IFS=':' read -r name capacity price <<< "$hall_data"
+  IFS=':' read -r name capacity priceAdult priceChild priceToddler <<< "$hall_data"
   
   HALL=$(curl -s -X POST http://localhost:3001/api/halls \
     -H "Authorization: Bearer $TOKEN" \
@@ -47,7 +49,9 @@ for hall_data in "${HALLS[@]}"; do
     -d "{
       \"name\": \"$name\",
       \"capacity\": $capacity,
-      \"pricePerPerson\": $price,
+      \"pricePerPerson\": $priceAdult,
+      \"pricePerChild\": $priceChild,
+      \"pricePerToddler\": $priceToddler,
       \"description\": \"Piękna sala idealna na różne okazje\",
       \"isActive\": true
     }")
@@ -116,6 +120,11 @@ CLIENTS=(
   "Marek:Mazur:marek.mazur@email.com:+48123450003"
   "Ewa:Krawczyk:ewa.krawczyk@email.com:+48123450004"
   "Andrzej:Piotrowski:andrzej.piotrowski@email.com:+48123450005"
+  "Barbara:Górska:barbara.gorska@email.com:+48123450006"
+  "Robert:Sikora:robert.sikora@email.com:+48123450007"
+  "Elżbieta:Baran:elzbieta.baran@email.com:+48123450008"
+  "Rafał:Szewczyk:rafal.szewczyk@email.com:+48123450009"
+  "Aleksandra:Rutkowska:aleksandra.rutkowska@email.com:+48123450010"
 )
 
 declare -a CLIENT_IDS
@@ -142,42 +151,212 @@ done
 echo ""
 
 # ============================================
-# RESERVATIONS (Rezerwacje)
+# DISH CATEGORIES
 # ============================================
-echo "📅 Creating Reservations..."
+echo "🍽️  Creating Dish Categories..."
 
-# Helper function to get random element from array
-get_random() {
-  local arr=("$@")
-  echo "${arr[RANDOM % ${#arr[@]}]}"
-}
+CATEGORIES=(
+  "cold-appetizers:Przystawki zimne:🥗:1"
+  "hot-appetizers:Przystawki gorące:🍖:2"
+  "soups:Zupy:🍲:3"
+  "main-courses:Dania główne:🍖:4"
+  "side-dishes:Dodatki:🥔:5"
+  "salads:Sałatki:🥗:6"
+  "desserts:Desery:🍰:7"
+  "beverages:Napoje:🥤:8"
+)
 
-# Convert associative arrays to indexed arrays for random selection
+declare -A CATEGORY_IDS
+
+for cat_data in "${CATEGORIES[@]}"; do
+  IFS=':' read -r slug name icon order <<< "$cat_data"
+  
+  CAT=$(curl -s -X POST http://localhost:3001/api/menu/dish-categories \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"slug\": \"$slug\",
+      \"name\": \"$name\",
+      \"icon\": \"$icon\",
+      \"displayOrder\": $order,
+      \"isActive\": true
+    }")
+  
+  CAT_ID=$(echo $CAT | jq -r '.id')
+  CATEGORY_IDS[$slug]=$CAT_ID
+  echo "  ✅ $name $icon"
+done
+
+echo ""
+
+# ============================================
+# DISHES
+# ============================================
+echo "🍴 Creating Dishes..."
+
+# Cold Appetizers
+COLD_APP_ID=${CATEGORY_IDS["cold-appetizers"]}
+for dish in "Tatar wołowy" "Carpaccio" "Rolada z łososia" "Pasztet węgierski" "Szaszlyk z kurczaka"; do
+  curl -s -X POST http://localhost:3001/api/menu/dishes \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"categoryId\":\"$COLD_APP_ID\",\"name\":\"$dish\",\"isActive\":true}" > /dev/null
+  echo "  ✅ $dish"
+done
+
+# Hot Appetizers  
+HOT_APP_ID=${CATEGORY_IDS["hot-appetizers"]}
+for dish in "Krewetki w czośnku" "Krokiety" "Mięso po indyjsku" "Sajgonki" "Krewetki panierowane"; do
+  curl -s -X POST http://localhost:3001/api/menu/dishes \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"categoryId\":\"$HOT_APP_ID\",\"name\":\"$dish\",\"isActive\":true}" > /dev/null
+  echo "  ✅ $dish"
+done
+
+# Soups
+SOUPS_ID=${CATEGORY_IDS["soups"]}
+for dish in "Rosol z makaronem" "Krem z pieczarek" "Barszcz czerwony" "Żurek staropolski" "Krem z dyni"; do
+  curl -s -X POST http://localhost:3001/api/menu/dishes \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"categoryId\":\"$SOUPS_ID\",\"name\":\"$dish\",\"isActive\":true}" > /dev/null
+  echo "  ✅ $dish"
+done
+
+# Main Courses
+MAIN_ID=${CATEGORY_IDS["main-courses"]}
+for dish in "Polędwica wołowa" "Filet z kurczaka" "Pierś kaczki" "Łosoś pieczony" "Stek wieprzowy" "Filet ze szczupaka"; do
+  curl -s -X POST http://localhost:3001/api/menu/dishes \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"categoryId\":\"$MAIN_ID\",\"name\":\"$dish\",\"isActive\":true}" > /dev/null
+  echo "  ✅ $dish"
+done
+
+# Desserts
+DESSERT_ID=${CATEGORY_IDS["desserts"]}
+for dish in "Sernik nowojorski" "Tiramisu" "Lawa czekoladowa" "Panna cotta" "Tort orzechowy"; do
+  curl -s -X POST http://localhost:3001/api/menu/dishes \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"categoryId\":\"$DESSERT_ID\",\"name\":\"$dish\",\"isActive\":true}" > /dev/null
+  echo "  ✅ $dish"
+done
+
+echo ""
+
+# ============================================
+# MENU TEMPLATES & PACKAGES
+# ============================================
+echo "📝 Creating Menu Templates & Packages..."
+
+for event_name in "Wesele" "Urodziny" "Komunia"; do
+  EVENT_ID=${EVENT_TYPE_IDS[$event_name]}
+  
+  if [ "$EVENT_ID" != "" ]; then
+    TEMPLATE=$(curl -s -X POST http://localhost:3001/api/menu/templates \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"eventTypeId\": \"$EVENT_ID\",
+        \"name\": \"Menu $event_name 2026\",
+        \"description\": \"Kompleksowe menu na $event_name\",
+        \"isActive\": true
+      }")
+    
+    TEMPLATE_ID=$(echo $TEMPLATE | jq -r '.id')
+    echo "  ✅ Menu Template: $event_name"
+    
+    # Create 3 packages per template
+    PACKAGES=(
+      "Standard:120:80:40:Podstawowy pakiet"
+      "Premium:160:110:60:Rozszerzony pakiet z dodatkami"
+      "VIP:220:150:80:Pełna obsługa premium"
+    )
+    
+    for pkg_data in "${PACKAGES[@]}"; do
+      IFS=':' read -r name priceAdult priceChild priceToddler desc <<< "$pkg_data"
+      
+      curl -s -X POST http://localhost:3001/api/menu/packages \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"menuTemplateId\": \"$TEMPLATE_ID\",
+          \"name\": \"Pakiet $name\",
+          \"description\": \"$desc\",
+          \"pricePerAdult\": $priceAdult,
+          \"pricePerChild\": $priceChild,
+          \"pricePerToddler\": $priceToddler,
+          \"isActive\": true
+        }" > /dev/null
+      echo "    • Pakiet $name"
+    done
+  fi
+done
+
+echo ""
+
+# ============================================
+# MENU OPTIONS
+# ============================================
+echo "🍸 Creating Menu Options..."
+
+OPTIONS=(
+  "Tort weselny:PER_PERSON:15:desserts"
+  "Candy Bar:PER_EVENT:500:desserts"
+  "Fontanna czekoladowa:PER_EVENT:400:desserts"
+  "Bar alkoholowy:PER_PERSON:30:beverages"
+  "Wino stołowe:PER_PERSON:20:beverages"
+  "Drinki bezalkoholowe:PER_PERSON:10:beverages"
+  "Kawa i herbata:PER_PERSON:5:beverages"
+  "DJ + oświetlenie:PER_EVENT:1500:entertainment"
+  "Zespół na żywo:PER_EVENT:3000:entertainment"
+  "Dekoracje premium:PER_EVENT:800:decorations"
+  "Bukiety kwiatowe:PER_EVENT:300:decorations"
+)
+
+for opt_data in "${OPTIONS[@]}"; do
+  IFS=':' read -r name priceType price category <<< "$opt_data"
+  
+  curl -s -X POST http://localhost:3001/api/menu/options \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"name\": \"$name\",
+      \"category\": \"$category\",
+      \"priceType\": \"$priceType\",
+      \"priceAmount\": $price,
+      \"isActive\": true
+    }" > /dev/null
+  echo "  ✅ $name ($price zł)"
+done
+
+echo ""
+
+# ============================================
+# CONFIRMED RESERVATIONS
+# ============================================
+echo "📅 Creating Confirmed Reservations..."
+
 HALL_ID_ARRAY=("${HALL_IDS[@]}")
 EVENT_TYPE_ID_ARRAY=("${EVENT_TYPE_IDS[@]}")
 
 RESERVATION_COUNT=0
 declare -a RESERVATION_IDS
 
-# Create 20 reservations with various dates
-for i in {1..20}; do
-  # Random date in next 180 days
+for i in {1..15}; do
   DAYS_OFFSET=$((RANDOM % 180 + 1))
   RES_DATE=$(date -d "+$DAYS_OFFSET days" +%Y-%m-%d)
   
-  # Random client
   CLIENT_ID=${CLIENT_IDS[$((RANDOM % ${#CLIENT_IDS[@]}))]}
-  
-  # Random hall
   HALL_ID=${HALL_ID_ARRAY[$((RANDOM % ${#HALL_ID_ARRAY[@]}))]}
-  
-  # Random event type
   EVENT_TYPE_ID=${EVENT_TYPE_ID_ARRAY[$((RANDOM % ${#EVENT_TYPE_ID_ARRAY[@]}))]}
   
-  # Random guest count (30-150)
-  GUESTS=$((RANDOM % 121 + 30))
+  ADULTS=$((RANDOM % 91 + 30))
+  CHILDREN=$((RANDOM % 21))
+  TODDLERS=$((RANDOM % 6))
   
-  # Random price (3000-12000)
   PRICE=$((RANDOM % 9001 + 3000))
   
   RESERVATION=$(curl -s -X POST http://localhost:3001/api/reservations \
@@ -185,13 +364,16 @@ for i in {1..20}; do
     -H "Content-Type: application/json" \
     -d "{
       \"clientId\": \"$CLIENT_ID\",
+      \"createdById\": \"$USER_ID\",
       \"hallId\": \"$HALL_ID\",
       \"eventTypeId\": \"$EVENT_TYPE_ID\",
       \"date\": \"$RES_DATE\",
-      \"guestCount\": $GUESTS,
+      \"adults\": $ADULTS,
+      \"children\": $CHILDREN,
+      \"toddlers\": $TODDLERS,
       \"totalPrice\": $PRICE,
       \"status\": \"CONFIRMED\",
-      \"notes\": \"Testowa rezerwacja #$i\"
+      \"notes\": \"Potwierdzona rezerwacja #$i\"
     }")
   
   RES_ID=$(echo $RESERVATION | jq -r '.id')
@@ -199,7 +381,53 @@ for i in {1..20}; do
   if [ "$RES_ID" != "null" ]; then
     RESERVATION_IDS+=($RES_ID)
     RESERVATION_COUNT=$((RESERVATION_COUNT + 1))
-    echo "  ✅ Reservation #$i: $RES_DATE, $GUESTS guests, ${PRICE} PLN"
+    echo "  ✅ Reservation #$i: $RES_DATE, ${ADULTS}A+${CHILDREN}C+${TODDLERS}T, ${PRICE} PLN"
+  fi
+done
+
+echo ""
+
+# ============================================
+# QUEUE RESERVATIONS (bez potwierdzonej daty)
+# ============================================
+echo "⏳ Creating Queue Reservations..."
+
+QUEUE_COUNT=0
+
+for i in {1..10}; do
+  CLIENT_ID=${CLIENT_IDS[$((RANDOM % ${#CLIENT_IDS[@]}))]}
+  EVENT_TYPE_ID=${EVENT_TYPE_ID_ARRAY[$((RANDOM % ${#EVENT_TYPE_ID_ARRAY[@]}))]}
+  
+  ADULTS=$((RANDOM % 71 + 20))
+  CHILDREN=$((RANDOM % 16))
+  TODDLERS=$((RANDOM % 6))
+  
+  PRICE=$((RANDOM % 6001 + 2000))
+  
+  QUEUE_DATE=$(date -d "+$((RANDOM % 365 + 30)) days" +%Y-%m-%d)
+  
+  QUEUE_RES=$(curl -s -X POST http://localhost:3001/api/reservations \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"clientId\": \"$CLIENT_ID\",
+      \"createdById\": \"$USER_ID\",
+      \"eventTypeId\": \"$EVENT_TYPE_ID\",
+      \"reservationQueueDate\": \"$QUEUE_DATE\",
+      \"reservationQueuePosition\": $i,
+      \"adults\": $ADULTS,
+      \"children\": $CHILDREN,
+      \"toddlers\": $TODDLERS,
+      \"totalPrice\": $PRICE,
+      \"status\": \"RESERVED\",
+      \"notes\": \"W kolejce - oczekuje na potwierdzenie daty\"
+    }")
+  
+  QUEUE_ID=$(echo $QUEUE_RES | jq -r '.id')
+  
+  if [ "$QUEUE_ID" != "null" ]; then
+    QUEUE_COUNT=$((QUEUE_COUNT + 1))
+    echo "  ✅ Queue #$i: pozycja $i, preferred: $QUEUE_DATE, ${ADULTS}A+${CHILDREN}C+${TODDLERS}T"
   fi
 done
 
@@ -213,20 +441,19 @@ echo "💰 Creating Deposits..."
 DEPOSIT_COUNT=0
 
 for RES_ID in "${RESERVATION_IDS[@]}"; do
-  # Get reservation details
   RES=$(curl -s -H "Authorization: Bearer $TOKEN" \
     "http://localhost:3001/api/reservations/$RES_ID")
   
   TOTAL_PRICE=$(echo $RES | jq -r '.totalPrice')
   RES_DATE=$(echo $RES | jq -r '.date')
   
-  # Calculate deposit (30% of total)
-  DEPOSIT_AMOUNT=$(echo "$TOTAL_PRICE * 0.3" | bc | cut -d'.' -f1)
+  if [ "$RES_DATE" = "null" ] || [ -z "$RES_DATE" ]; then
+    continue
+  fi
   
-  # Due date: 30 days before event
+  DEPOSIT_AMOUNT=$(echo "$TOTAL_PRICE * 0.3" | bc | cut -d'.' -f1)
   DUE_DATE=$(date -d "$RES_DATE -30 days" +%Y-%m-%d)
   
-  # Create deposit
   DEPOSIT=$(curl -s -X POST http://localhost:3001/api/deposits \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
@@ -243,20 +470,18 @@ for RES_ID in "${RESERVATION_IDS[@]}"; do
   if [ "$DEPOSIT_ID" != "null" ]; then
     DEPOSIT_COUNT=$((DEPOSIT_COUNT + 1))
     
-    # Randomly pay some deposits
     RANDOM_ACTION=$((RANDOM % 10))
     
     if [ $RANDOM_ACTION -lt 3 ]; then
-      # 30% - fully paid
-      curl -s -X PUT "http://localhost:3001/api/deposits/$DEPOSIT_ID/mark-paid" \
+      curl -s -X POST "http://localhost:3001/api/deposits/$DEPOSIT_ID/payments" \
         -H "Authorization: Bearer $TOKEN" \
         -H "Content-Type: application/json" \
         -d "{
+          \"amount\": $DEPOSIT_AMOUNT,
           \"paymentMethod\": \"TRANSFER\"
         }" > /dev/null
       echo "  ✅ Deposit ${DEPOSIT_AMOUNT} PLN - PAID ✓"
     elif [ $RANDOM_ACTION -lt 5 ]; then
-      # 20% - partial payment
       PARTIAL=$((DEPOSIT_AMOUNT / 2))
       curl -s -X POST "http://localhost:3001/api/deposits/$DEPOSIT_ID/payments" \
         -H "Authorization: Bearer $TOKEN" \
@@ -267,7 +492,6 @@ for RES_ID in "${RESERVATION_IDS[@]}"; do
         }" > /dev/null
       echo "  ✅ Deposit ${DEPOSIT_AMOUNT} PLN - PARTIAL (${PARTIAL} PLN paid)"
     else
-      # 50% - pending
       echo "  ✅ Deposit ${DEPOSIT_AMOUNT} PLN - PENDING"
     fi
   fi
@@ -286,8 +510,14 @@ echo "📊 Summary:"
 echo "  • Halls: ${#HALL_IDS[@]}"
 echo "  • Event Types: ${#EVENT_TYPE_IDS[@]}"
 echo "  • Clients: ${#CLIENT_IDS[@]}"
-echo "  • Reservations: $RESERVATION_COUNT"
+echo "  • Dish Categories: ${#CATEGORY_IDS[@]}"
+echo "  • Dishes: ~35"
+echo "  • Menu Templates: 3"
+echo "  • Menu Packages: 9"
+echo "  • Menu Options: 11"
+echo "  • Confirmed Reservations: $RESERVATION_COUNT"
+echo "  • Queue Reservations: $QUEUE_COUNT"
 echo "  • Deposits: $DEPOSIT_COUNT"
 echo ""
-echo "🎉 Ready to test!"
+echo "🎉 Ready to test all modules!"
 echo ""
