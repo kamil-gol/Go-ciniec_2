@@ -1,8 +1,8 @@
 # 🚀 Rezerwacje API Documentation
 
 **Base URL**: `http://localhost:3001/api`  
-**Version**: 1.0.0  
-**Last Updated**: 2026-02-06  
+**Version**: 1.1.0  
+**Last Updated**: 2026-02-11  
 **Status**: ✅ Production Ready
 
 ---
@@ -438,6 +438,233 @@ DELETE /api/reservations/:id
 
 ---
 
+## 💰 Deposit Management ✨ NEW!
+
+### List All Deposits (STAFF)
+```bash
+GET /api/deposits
+GET /api/deposits?status=PENDING
+GET /api/deposits?status=PAID
+GET /api/deposits?overdue=true
+GET /api/deposits?dateFrom=2026-01-01&dateTo=2026-12-31
+GET /api/deposits?search=Kowalski
+GET /api/deposits?page=1&perPage=20
+```
+
+**Query Parameters**:
+- `status` - Filter by status: PENDING, PARTIAL, PAID, OVERDUE
+- `overdue` - Show only overdue deposits (boolean)
+- `dateFrom` / `dateTo` - Filter by due date range
+- `search` - Search in client name
+- `page` / `perPage` - Pagination
+
+**Response**:
+```json
+{
+  "deposits": [
+    {
+      "id": "uuid",
+      "receiptNumber": "ZAL-2026-0001",
+      "reservationId": "uuid",
+      "amount": 1500.00,
+      "amountPaid": 1500.00,
+      "dueDate": "2026-05-15T00:00:00.000Z",
+      "status": "PAID",
+      "notes": "Zaliczka na wesele",
+      "reminderSent": false,
+      "createdAt": "2026-02-11T00:00:00.000Z",
+      "updatedAt": "2026-02-11T10:30:00.000Z",
+      "reservation": {
+        "id": "uuid",
+        "date": "2026-06-15",
+        "eventType": "Ślub",
+        "hall": "Sala Bankietowa",
+        "client": {
+          "firstName": "Jan",
+          "lastName": "Kowalski",
+          "phone": "+48123456789",
+          "email": "jan@example.com"
+        }
+      },
+      "payments": [
+        {
+          "id": "uuid",
+          "amount": 1500.00,
+          "paymentDate": "2026-02-11T10:30:00.000Z",
+          "paymentMethod": "TRANSFER",
+          "notes": "Przelew bankowy"
+        }
+      ]
+    }
+  ],
+  "total": 25,
+  "page": 1,
+  "perPage": 20,
+  "totalPages": 2
+}
+```
+
+### Get Deposit by ID (STAFF)
+```bash
+GET /api/deposits/:id
+```
+
+**Response**: Single deposit with full reservation and payment history
+
+### Get Deposits for Reservation (STAFF)
+```bash
+GET /api/reservations/:reservationId/deposits
+```
+
+**Response**: All deposits associated with specific reservation
+
+### Create Deposit (STAFF)
+```bash
+POST /api/deposits
+{
+  "reservationId": "uuid",
+  "amount": 1500.00,
+  "dueDate": "2026-05-15",
+  "notes": "Zaliczka na wesele - 30% wartości rezerwacji"
+}
+```
+
+**Validation**:
+- `reservationId` - Required, must exist
+- `amount` - Required, must be > 0
+- `dueDate` - Required
+- Auto-generates unique `receiptNumber` (ZAL-YYYY-NNNN)
+- Initial status is PENDING
+
+**Response**:
+```json
+{
+  "id": "uuid",
+  "receiptNumber": "ZAL-2026-0001",
+  "reservationId": "uuid",
+  "amount": 1500.00,
+  "amountPaid": 0,
+  "dueDate": "2026-05-15T00:00:00.000Z",
+  "status": "PENDING",
+  "notes": "Zaliczka na wesele - 30% wartości rezerwacji",
+  "createdAt": "2026-02-11T00:00:00.000Z"
+}
+```
+
+### Update Deposit (STAFF)
+```bash
+PUT /api/deposits/:id
+{
+  "amount": 1800.00,
+  "dueDate": "2026-05-20",
+  "notes": "Zaktualizowana kwota zaliczki"
+}
+```
+
+**Business Rules**:
+- Cannot update if status is PAID
+- Amount must be >= amountPaid
+- Status recalculated automatically
+
+### Delete Deposit (ADMIN)
+```bash
+DELETE /api/deposits/:id
+```
+
+**Note**: Can only delete deposits with status PENDING and no payments
+
+### Add Payment to Deposit (STAFF)
+```bash
+POST /api/deposits/:depositId/payments
+{
+  "amount": 750.00,
+  "paymentDate": "2026-03-15",
+  "paymentMethod": "CASH",
+  "notes": "Pierwsza wpłata - gotówka"
+}
+```
+
+**Payment Methods**:
+- `CASH` - Gotówka
+- `TRANSFER` - Przelew bankowy
+- `CARD` - Karta płatnicza
+- `OTHER` - Inna metoda
+
+**Validation**:
+- `amount` - Required, must be > 0
+- `paymentDate` - Required
+- `paymentMethod` - Required
+- Amount cannot exceed remaining balance
+- Automatically updates deposit status:
+  - PENDING → PARTIAL (if partial payment)
+  - PARTIAL/PENDING → PAID (if fully paid)
+
+**Response**:
+```json
+{
+  "id": "uuid",
+  "depositId": "uuid",
+  "amount": 750.00,
+  "paymentDate": "2026-03-15T00:00:00.000Z",
+  "paymentMethod": "CASH",
+  "notes": "Pierwsza wpłata - gotówka",
+  "createdAt": "2026-03-15T10:00:00.000Z",
+  "deposit": {
+    "id": "uuid",
+    "amount": 1500.00,
+    "amountPaid": 750.00,
+    "status": "PARTIAL"
+  }
+}
+```
+
+### Get Deposit Statistics (STAFF)
+```bash
+GET /api/deposits/statistics
+```
+
+**Response**:
+```json
+{
+  "totalDeposits": 25,
+  "totalAmount": 37500.00,
+  "totalPaid": 28000.00,
+  "totalRemaining": 9500.00,
+  "paidCount": 18,
+  "pendingCount": 5,
+  "partialCount": 2,
+  "overdueCount": 3,
+  "upcomingDueCount": 4
+}
+```
+
+**Statistics Breakdown**:
+- `totalDeposits` - Total number of deposits
+- `totalAmount` - Sum of all deposit amounts
+- `totalPaid` - Sum of all payments made
+- `totalRemaining` - Amount still to be paid
+- `paidCount` - Fully paid deposits
+- `pendingCount` - Awaiting first payment
+- `partialCount` - Partially paid
+- `overdueCount` - Past due date and not fully paid
+- `upcomingDueCount` - Due within next 7 days
+
+### Get Pending Reminders (STAFF)
+```bash
+GET /api/deposits/reminders/pending
+```
+
+**Response**: List of deposits requiring payment reminders (due within 7 days, not fully paid, reminder not sent)
+
+### Mark Reminder as Sent (STAFF)
+```bash
+PUT /api/deposits/:depositId/reminder-sent
+```
+
+**Response**: Updated deposit with `reminderSent: true`
+
+---
+
 ## 🔒 Role-Based Access Control
 
 | Endpoint | ADMIN | EMPLOYEE | CLIENT |
@@ -463,6 +690,14 @@ DELETE /api/reservations/:id
 | Update | ✅ | ✅ | ❌ |
 | Update Status | ✅ | ✅ | ❌ |
 | Cancel | ✅ | ❌ | ❌ |
+| **Deposits** ✨ |
+| List/Get | ✅ | ✅ | ❌ |
+| Create | ✅ | ✅ | ❌ |
+| Update | ✅ | ✅ | ❌ |
+| Delete | ✅ | ❌ | ❌ |
+| Add Payment | ✅ | ✅ | ❌ |
+| Statistics | ✅ | ✅ | ❌ |
+| Reminders | ✅ | ✅ | ❌ |
 
 ---
 
@@ -496,7 +731,15 @@ DELETE /api/reservations/:id
 ```json
 {
   "success": false,
-  "error": "Hall not found"
+  "error": "Deposit not found"
+}
+```
+
+### 409 Conflict
+```json
+{
+  "success": false,
+  "error": "Payment amount exceeds remaining balance"
 }
 ```
 
@@ -530,6 +773,17 @@ DELETE /api/reservations/:id
 }
 ```
 
+### Paginated Response
+```json
+{
+  "data": [ /* array of items */ ],
+  "total": 100,
+  "page": 1,
+  "perPage": 20,
+  "totalPages": 5
+}
+```
+
 ---
 
 ## 🔧 Development
@@ -543,7 +797,7 @@ GET /api/health
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-02-06T16:00:00.000Z",
+  "timestamp": "2026-02-11T16:00:00.000Z",
   "uptime": 12345.67
 }
 ```
@@ -561,23 +815,31 @@ TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
   -d '{"email":"test@example.com","password":"ValidPass123!"}' \
   | grep -o '"token":"[^"]*' | sed 's/"token":"//')
 
-# Use token
-curl http://localhost:3001/api/halls \
-  -H "Authorization: Bearer $TOKEN"
-
-# Create reservation
-curl -X POST http://localhost:3001/api/reservations \
+# Create deposit
+curl -X POST http://localhost:3001/api/deposits \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "hallId": "uuid",
-    "clientId": "uuid",
-    "eventTypeId": "uuid",
-    "date": "2026-06-15",
-    "startTime": "18:00",
-    "endTime": "23:00",
-    "guests": 80
+    "reservationId": "uuid",
+    "amount": 1500.00,
+    "dueDate": "2026-05-15",
+    "notes": "Zaliczka 30%"
   }'
+
+# Add payment
+curl -X POST http://localhost:3001/api/deposits/{depositId}/payments \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "amount": 750.00,
+    "paymentDate": "2026-03-15",
+    "paymentMethod": "CASH",
+    "notes": "Pierwsza wpłata"
+  }'
+
+# Get statistics
+curl http://localhost:3001/api/deposits/statistics \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ---
@@ -590,8 +852,9 @@ curl -X POST http://localhost:3001/api/reservations \
 - ✅ Client Management API (5 endpoints)
 - ✅ Event Type Management API (5 endpoints)
 - ✅ Reservation Management API (6 endpoints)
+- ✅ **Deposit Management API (10 endpoints)** ✨ NEW!
 
-**Total**: 21 REST API endpoints
+**Total**: 31 REST API endpoints (+10 from v1.0.0)
 
 ### Features Implemented
 - ✅ JWT Authentication
@@ -602,13 +865,39 @@ curl -X POST http://localhost:3001/api/reservations \
 - ✅ Complete audit trail (ReservationHistory)
 - ✅ Comprehensive validation
 - ✅ Business rules enforcement
+- ✅ **Deposit tracking & management** ✨
+- ✅ **Partial payment support** ✨
+- ✅ **Payment history** ✨
+- ✅ **Automatic status updates** ✨
+- ✅ **Statistics & reporting** ✨
+- ✅ **Payment reminders** ✨
 
 ---
 
 ## 📈 API Statistics
 
-- **Modules**: 4 (Auth, Halls, Clients, Event Types, Reservations)
-- **Endpoints**: 21
-- **Story Points**: 60/60 (100%)
-- **Version**: 1.0.0
+- **Modules**: 5 (Auth, Halls, Clients, Event Types, Reservations, **Deposits**)
+- **Endpoints**: 31 (+10)
+- **Story Points**: 75/75 (100%)
+- **Version**: 1.1.0
 - **Status**: ✅ Production Ready
+
+---
+
+## 🆕 Changelog
+
+### v1.1.0 (2026-02-11)
+- ✨ **NEW**: Deposit Management Module
+  - CRUD operations for deposits
+  - Partial payment support
+  - Payment history tracking
+  - Automatic status management
+  - Statistics and reporting
+  - Payment reminder system
+  - 10 new API endpoints
+
+### v1.0.0 (2026-02-06)
+- Initial release
+- Core reservation system
+- Hall, client, event type management
+- 21 API endpoints
