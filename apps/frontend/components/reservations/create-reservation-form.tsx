@@ -137,9 +137,11 @@ export function CreateReservationForm({
 
   // ✅ OPTIMIZED: Calculate selected event type name directly instead of useEffect
   // This ensures immediate rendering of conditional fields
+  // ✅ FIX 1: Add Array.isArray check
   const selectedEventTypeName = useMemo(() => {
     if (!selectedEventTypeId) return ''
-    const eventTypesArray = eventTypes?.data || eventTypes || []
+    const eventTypesRaw = eventTypes?.data || eventTypes || []
+    const eventTypesArray = Array.isArray(eventTypesRaw) ? eventTypesRaw : []
     const selectedType = eventTypesArray.find((t) => t.id === selectedEventTypeId)
     return selectedType?.name || ''
   }, [selectedEventTypeId, eventTypes])
@@ -237,9 +239,12 @@ export function CreateReservationForm({
   }, [watchedFields.startDate, watchedFields.startTime, watchedFields.endDate, watchedFields.endTime, watchedFields.notes, setValue])
 
   // Auto-fill prices when hall changes
+  // ✅ FIX 2: Add Array.isArray check
   useEffect(() => {
     if (watchedFields.hallId) {
-      const selectedHall = halls?.data?.find((h) => h.id === watchedFields.hallId) || halls?.find((h) => h.id === watchedFields.hallId)
+      const hallsRaw = halls?.data || halls || []
+      const hallsArray = Array.isArray(hallsRaw) ? hallsRaw : []
+      const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
         
@@ -304,9 +309,15 @@ export function CreateReservationForm({
     }
   }
 
-  const hallsArray = halls?.data || halls || []
-  const clientsArray = clientsData?.data || []
-  const eventTypesArray = eventTypes?.data || eventTypes || []
+  // ✅ FIX 3: Add Array.isArray checks before map()
+  const hallsRaw = halls?.data || halls || []
+  const hallsArray = Array.isArray(hallsRaw) ? hallsRaw : []
+  
+  const clientsRaw = clientsData?.data || []
+  const clientsArray = Array.isArray(clientsRaw) ? clientsRaw : []
+  
+  const eventTypesRaw = eventTypes?.data || eventTypes || []
+  const eventTypesArray = Array.isArray(eventTypesRaw) ? eventTypesRaw : []
 
   console.log('🏢 Halls array length:', hallsArray.length)
   console.log('🎉 EventTypes array length:', eventTypesArray.length)
