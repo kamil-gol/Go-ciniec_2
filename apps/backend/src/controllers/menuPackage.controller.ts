@@ -17,6 +17,37 @@ import { z } from 'zod';
 export class MenuPackageController {
 
   /**
+   * GET /api/menu-packages
+   * List all packages (with optional filter by menuTemplateId)
+   */
+  async list(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { menuTemplateId } = req.query;
+
+      // If menuTemplateId provided, filter by template
+      if (menuTemplateId && typeof menuTemplateId === 'string') {
+        const packages = await menuService.getPackagesByTemplateId(menuTemplateId);
+        return res.status(200).json({
+          success: true,
+          data: packages,
+          count: packages.length
+        });
+      }
+
+      // Otherwise return all packages
+      const packages = await menuService.getAllPackages();
+
+      return res.status(200).json({
+        success: true,
+        data: packages,
+        count: packages.length
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/menu-packages/template/:templateId
    * List all packages for a menu template
    */
