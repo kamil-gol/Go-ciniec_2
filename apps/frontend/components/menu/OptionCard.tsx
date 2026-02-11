@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { MenuOption } from '@/types/menu.types';
 import { Minus, Plus, Sparkles, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { translateOptionCategory } from '@/lib/menu-utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface OptionCardProps {
@@ -29,6 +30,7 @@ export function OptionCard({
 }: OptionCardProps) {
   const isSelected = quantity > 0;
   const isPricePerPerson = option.priceType === 'PER_PERSON';
+  const translatedCategory = translateOptionCategory(option.category);
 
   const handleIncrement = () => {
     onQuantityChange?.(option.id, quantity + 1);
@@ -101,7 +103,7 @@ export function OptionCard({
                           : "bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400"
                       )}
                     >
-                      {option.category}
+                      {translatedCategory}
                     </Badge>
                   )}
                 </div>
