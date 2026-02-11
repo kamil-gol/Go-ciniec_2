@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware } from '../middlewares/auth';
 import * as depositController from '../controllers/deposit.controller';
 
 const router = Router();
+
+// All routes require authentication
+router.use(authMiddleware);
 
 // ═══════════════════════════════════════════════════════════════
 // STATISTICS & REMINDERS (must be before :id routes)
@@ -27,5 +31,12 @@ router.delete('/:id', depositController.deleteDeposit);
 router.put('/:id/mark-paid', depositController.markDepositPaid);
 router.post('/:id/payments', depositController.addDepositPayment);
 router.put('/:id/reminder-sent', depositController.markReminderSent);
+
+// ═══════════════════════════════════════════════════════════════
+// BACKWARD COMPATIBILITY - Aliases for old endpoint names
+// ═══════════════════════════════════════════════════════════════
+// These are maintained for backward compatibility with old client code
+
+router.patch('/:id/mark-paid', depositController.markDepositPaid);
 
 export default router;
