@@ -14,8 +14,8 @@ npm run db:seed:all-menu
 ```
 
 To uruchomi po kolei:
-1. `seed-menu.ts` - kategorie i dania
-2. `seed-menu-templates.ts` - szablony, pakiety i opcje
+1. `seed-menu.ts` - kategorie i dania (62 dania, 10 kategorii)
+2. `seed-menu-advanced.ts` - opcje, szablony i pakiety (20 opcji, 3 szablony, 7 pakietów)
 
 ---
 
@@ -55,119 +55,123 @@ npm run db:seed:menu
 
 ---
 
-### 2. `seed-menu-templates.ts` - Szablony, Pakiety & Opcje ⭐ NOWE!
+### 2. `seed-menu-advanced.ts` - Opcje, Szablony & Pakiety ⭐ NOWE!
 
 **Uruchomienie:**
 ```bash
-npm run db:seed:menu-templates
+npm run db:seed:menu:advanced
 ```
 
 **Co robi:**
-- Czyści istniejące dane (MenuTemplate, MenuPackage, MenuOption, PackageCategorySettings)
-- **Tworzy opcje dodatkowe (20+ opcji):**
-  - 🎂 Torty (weselny, urodzinowy)
-  - 🍫 Fontanna czekoladowa
-  - 🍭 Candy bar
-  - 🍷 Wino stołowe
-  - 🥂 Szampan powitalny
-  - 🍺 Bar open (standard & premium)
-  - 🥘 Stół serwowany
-  - 🍇 Bufet owocowy
-  - 🔥 Grill na żywo
-  - 🌙 Przekąska nocna
-  - 💐 Dekoracje
-  - 📸 Ścianka Instagram
-  - 📷 Fotobudka
-  - 🎵 DJ + nagłośnienie
-  - 🎆 Pokaz ogni sztucznych
-  - 🌱 Menu specjalne (wegetariańskie, bezglutenowe, dziecięce)
-
-- **Tworzy szablony menu** dla każdego typu wydarzenia (Wesele, Urodziny, Rocznica, etc.)
-- **Każdy szablon ma 3 pakiety:**
-  1. **Standard** (250 zł/osoba)
-     - 1 zupa
-     - 2 dania główne
-     - 2 dodatki
-     - Surówki
-     - Deser
-     - Kawa/herbata
+- Czyści istniejące dane (MenuOption, MenuTemplate, MenuPackage, PackageCategorySettings)
+- **Tworzy 20 opcji dodatkowych menu:**
   
-  2. **Premium** (320 zł/osoba) ⭐ Popularny
-     - 1-2 zupy
-     - 2-3 przystawki
-     - 3 dania główne
-     - 3 dodatki
-     - Surówki + sałatka
-     - 2 desery
-     - Kawa/herbata
+  **🎵 Muzyka & Rozrywka:**
+  - 🎧 DJ - Pakiet podstawowy (2000 zł)
+  - 🎶 DJ - Pakiet premium (3500 zł)
+  - 🎸 Zespół muzyczny (5000 zł)
+  - 🎺 Orkiestra (6000 zł)
+  - ⏱️ Dodatkowa godzina muzyki (400 zł)
   
-  3. **VIP** (400 zł/osoba) 👑 Ekskluzywny
-     - 2 zupy
-     - 3-4 przystawki premium
-     - 3-4 dania główne
-     - 1-2 dania rybne
-     - 4 dodatki
-     - Bufet sałatek (4-6 rodzajów)
-     - 3 desery
-     - Kawa/herbata/espresso
-     - Owoce świeże
+  **🎉 Dekoracje:**
+  - 🌺 Dekoracja stołów (1500 zł)
+  - 🎉 Dekoracja sali - podstawowa (2000 zł)
+  - ✨ Dekoracja sali - premium (4000 zł)
+  - 📸 Fotobudka (1200 zł)
+  
+  **🍺 Napoje:**
+  - 🍺 Bar alkoholowy - podstawowy (80 zł/os)
+  - 🥂 Bar alkoholowy - premium (150 zł/os)
+  - 🍸 Barman + drink bar (1500 zł)
+  - 🥂 Toast o północy (20 zł/os)
+  
+  **🎂 Torty & Słodycze:**
+  - 🎂 Tort weselny - 3 piętra (800 zł)
+  - 🎉 Tort urodzinowy - 2 piętra (500 zł)
+  - 🍭 Candy bar (1200 zł)
+  
+  **🎨 Inne:**
+  - 🎨 Animacje dla dzieci (800 zł)
+  - 🛌 Noclegi dla gości (100 zł/os)
+  - 💼 Koordynator ślubu (2000 zł)
+  - 📷 Fotograf + Kamerzysta (4500 zł)
 
-- **PackageCategorySettings** - określa ile dań z każdej kategorii trzeba wybrać
-- **MenuPackageOption** - łączy pakiety z dostępnymi opcjami dodatkowymi
+- **Tworzy szablony menu** dla typów wydarzeń:
+  - 💍 **Wesele** - Menu Weselne (3 pakiety)
+  - 🎉 **Urodziny** - Menu Urodzinowe (2 pakiety)
+  - 🙏 **Komunia** - Menu Komunijne (2 pakiety)
+
+- **Pakiety w szablonach:**
+  
+  **Wesele:**
+  1. **Ekonomiczny** (200 zł/os) - Podstawowe menu w atrakcyjnej cenie
+  2. **Standard** (280 zł/os) ⭐ - Kompletne menu, popularny wybór
+  3. **Premium** (400 zł/os) 👑 - Ekskluzywne menu premium
+  
+  **Urodziny:**
+  1. **Rodzinny** (180 zł/os) - Dla dzieci i dorosłych
+  2. **Premium** (250 zł/os) ⭐ - Rozbudowane menu
+  
+  **Komunia:**
+  1. **Komunijny** (220 zł/os) ⭐ - Klasyczne menu
+  2. **Rozszerzony** (280 zł/os) - Większy wybór dań
+
+- **PackageCategorySettings** - określa ile dań z każdej kategorii można wybrać
+  - Każdy pakiet ma własne limity (min/max) dla każdej kategorii
+  - Przykład: Standard Wesele = 1 zupa, 1-2 dania główne, 2-4 dodatki
 
 **Wymagania:**
-- **WYMAGANE:** Uruchomiony `seed-menu.ts` (kategorie dań)
-- **WYMAGANE:** Istniejące EventTypes w bazie (z głównego seeda)
+- **WYMAGANE:** Uruchomiony `seed-menu.ts` (kategorie dań muszą istnieć)
+- **WYMAGANE:** Istniejące EventTypes w bazie (z głównego seeda `db:seed`)
 - Działająca baza PostgreSQL
 
 **Bezpieczeństwo:**
-- ⚠️ Czyści dane szablonów przed seedowaniem
+- ⚠️ Czyści dane szablonów, pakietów i opcji przed seedowaniem
 - NIE usuwa kategorii ani dań
 - Idempotentny
 
 **Output:**
 ```
-🎭 Seedowanie szablonów menu, pakietów i opcji...
+🎉 Seedowanie zaawansowanych danych menu...
 
-📋 Pobieranie typów wydarzeń i kategorii dań...
-✓ Znaleziono 5 typów wydarzeń
-✓ Znaleziono 10 kategorii dań
+🔍 Pobieranie danych z bazy...
+   ✓ EventTypes: 7
+   ✓ DishCategories: 10
 
-🎨 Tworzenie opcji menu...
-   ✓ 🎂 Tort weselny 3-piętrowy (25.0 zł)
-   ✓ 🍷 Wino stołowe (15.0 zł)
+⚙️  Tworzenie opcji menu...
+   ✓ 🎧 DJ - Pakiet podstawowy
+   ✓ 🍺 Bar alkoholowy - podstawowy
+   ✓ 🎂 Tort weselny - 3 piętra
    ...
 
 ✅ Utworzono 20 opcji menu
 
-📋 Tworzenie szablonów menu...
-   ✓ Menu Wesele 2026
-   ✓ Menu Urodziny 2026
-   ...
+📋 Tworzenie szablonów menu i pakietów...
 
-✅ Utworzono 5 szablonów menu
-✅ Utworzono 15 pakietów (po 3 dla każdego typu)
+   ✓ Wesele: 1 szablon, 3 pakiety
+   ✓ Urodziny: 1 szablon, 2 pakiety
+   ✓ Komunia: 1 szablon, 2 pakiety
 
-═══════════════════════════════════════════════════════════════
-📊 PODSUMOWANIE SEEDA MENU
-═══════════════════════════════════════════════════════════════
-📋 Szablony menu:        5
-📦 Pakiety:              15
-🎨 Opcje dodatkowe:      20
-⚙️  Ustawienia kategorii: 105
-🔗 Połączenia opcji:     180
+✅ Utworzono 3 szablonów i 7 pakietów
 
-📋 Szablony z liczbą pakietów:
+✅ Utworzono 42 ustawień kategorii
 
-   Wesele               3 pakiety
-   Urodziny             3 pakiety
-   Rocznica             3 pakiety
-   Komunię              3 pakiety
-   Inne                 3 pakiety
+═══════════════════════════════════════════════════════════
+📊 PODSUMOWANIE ZAAWANSOWANEGO SEEDA MENU
+═══════════════════════════════════════════════════════════
+⚙️  Opcje menu:          20
+📋 Szablony menu:       3
+📦 Pakiety menu:        7
+⚙️  Ustawienia kategorii: 42
 
-═══════════════════════════════════════════════════════════════
-✅ Seed menu zakończony pomyślnie!
-═══════════════════════════════════════════════════════════════
+🎉 Typy wydarzeń z menu:
+   ✓ Wesele - 3 pakiety (Ekonomiczny, Standard, Premium)
+   ✓ Urodziny - 2 pakiety (Rodzinny, Premium)
+   ✓ Komunia - 2 pakiety (Komunijny, Rozszerzony)
+
+═══════════════════════════════════════════════════════════
+✅ Seed zaawansowanego menu zakończony pomyślnie!
+═══════════════════════════════════════════════════════════
 ```
 
 ---
@@ -177,12 +181,12 @@ npm run db:seed:menu-templates
 ### Docker (Produkcja)
 
 ```bash
-# Pełne seedowanie menu
+# Pełne seedowanie menu (wszystko naraz)
 docker compose exec backend npm run db:seed:all-menu
 
 # Lub osobno:
 docker compose exec backend npm run db:seed:menu
-docker compose exec backend npm run db:seed:menu-templates
+docker compose exec backend npm run db:seed:menu:advanced
 ```
 
 ### Lokalne Środowisko
@@ -196,7 +200,7 @@ npm run db:seed:all-menu
 
 # Lub osobno:
 npm run db:seed:menu
-npm run db:seed:menu-templates
+npm run db:seed:menu:advanced
 ```
 
 ---
@@ -218,17 +222,17 @@ npm run db:seed:all-menu
 - Sprawdź `.env` czy `DATABASE_URL` jest poprawny
 - Spróbuj połączyć się ręcznie: `docker compose exec postgres psql -U rezerwacje`
 
-### Problem: "Brak typów wydarzeń" (seed-menu-templates)
+### Problem: "Brak typów wydarzeń" (seed-menu-advanced)
 
 **Rozwiązanie:**
 - Uruchom najpierw główny seed: `npm run db:seed`
-- Zawiera EventTypes wymagane przez seed-menu-templates
+- Zawiera EventTypes wymagane przez seed-menu-advanced
 
-### Problem: "Brak kategorii dań" (seed-menu-templates)
+### Problem: "Brak kategorii dań" (seed-menu-advanced)
 
 **Rozwiązanie:**
 - Uruchom najpierw: `npm run db:seed:menu`
-- seed-menu-templates wymaga istniejących kategorii dań
+- seed-menu-advanced wymaga istniejących kategorii dań
 
 ### Problem: Foreign key constraint error
 
@@ -250,29 +254,42 @@ npm run db:seed:all-menu
 3. Uruchom: `npm run db:seed:menu`
 
 ### Dodawanie nowych opcji menu
-1. Edytuj `seed-menu-templates.ts`
+1. Edytuj `seed-menu-advanced.ts`
 2. Dodaj opcję do tablicy `MENU_OPTIONS`
-3. Uruchom: `npm run db:seed:menu-templates`
+3. Uruchom: `npm run db:seed:menu:advanced`
 
 ### Zmiana cen pakietów
-1. Edytuj `seed-menu-templates.ts`
+1. Edytuj `seed-menu-advanced.ts`
 2. Zmień `pricePerAdult` w definicjach pakietów
-3. Uruchom: `npm run db:seed:menu-templates`
+3. Uruchom: `npm run db:seed:menu:advanced`
+
+### Dodawanie nowego pakietu
+1. Edytuj `seed-menu-advanced.ts`
+2. Dodaj pakiet do odpowiedniego szablonu
+3. Skonfiguruj `PackageCategorySettings`
+4. Uruchom: `npm run db:seed:menu:advanced`
 
 ---
 
 ## Struktura Danych
 
 ```
-EventType (Wesele, Urodziny, etc.)
-  └─ MenuTemplate (Menu Wesele 2026)
-      └─ MenuPackage (Standard, Premium, VIP)
+EventType (Wesele, Urodziny, Komunia, etc.)
+  └─ MenuTemplate (Menu Weselne, Menu Urodzinowe, etc.)
+      └─ MenuPackage (Ekonomiczny, Standard, Premium, etc.)
           ├─ PackageCategorySettings (ile dań z każdej kategorii)
-          │   └─ DishCategory (Zupy, Dania Główne, etc.)
-          │       └─ Dish (konkretne dania)
-          └─ MenuPackageOption
-              └─ MenuOption (Tort, Bar open, etc.)
+          │   └─ DishCategory (Zupy, Dania Główne, Desery, etc.)
+          │       └─ Dish (konkretne dania - 62 sztuki)
+          └─ MenuPackageOption (opcjonalne dodatki)
+              └─ MenuOption (DJ, Tort, Bar open, etc. - 20 opcji)
 ```
+
+**Przykład dla pakietu "Standard Wesele":**
+- Musi zawierać: 1 zupę (required)
+- Może zawierać: 1-2 dania główne (required, min 1, max 2)
+- Może zawierać: 2-4 dodatki (required, min 2, max 4)
+- Może zawierać: 0-2 przystawki (optional)
+- Może zawierać: 1-2 desery (required)
 
 ---
 
@@ -292,16 +309,43 @@ execSync('npm run db:seed:all-menu', { stdio: 'inherit' });
 
 ---
 
-## 📊 Podsumowanie Danych po Seedzie
+## 📊 Podsumowanie Danych po Pełnym Seedzie
 
-| Element | Ilość |
-|---------|------|
-| Kategorie dań | 10 |
-| Dania | 62 |
-| Opcje dodatkowe | 20+ |
-| Szablony menu | ~5 (zależnie od EventTypes) |
-| Pakiety | ~15 (3 na typ wydarzenia) |
-| Ustawienia kategorii | ~100+ |
-| Połączenia opcji | ~180+ |
+| Element | Ilość | Skrypt |
+|---------|------|--------|
+| Kategorie dań | 10 | `seed-menu.ts` |
+| Dania | 62 | `seed-menu.ts` |
+| Opcje dodatkowe | 20 | `seed-menu-advanced.ts` |
+| Szablony menu | 3 | `seed-menu-advanced.ts` |
+| Pakiety | 7 | `seed-menu-advanced.ts` |
+| Ustawienia kategorii | ~42 | `seed-menu-advanced.ts` |
 
-**Gotowy system menu do użycia!** 🎉
+**Kompletny system menu gotowy do użycia!** 🎉
+
+---
+
+## 💡 Przykładowe Use Case
+
+### Scenariusz: Rezerwacja wesela dla 100 osób
+
+1. **Wybór typu wydarzenia:** Wesele
+2. **System automatycznie pokazuje:** "Menu Weselne" z 3 pakietami
+3. **Klient wybiera:** Pakiet Standard (280 zł/os)
+4. **System prezentuje wybór dań:**
+   - 1 zupa (wybór z 5 dostępnych)
+   - 2 dania główne (wybór z 10 dostępnych)
+   - 3 dodatki (wybór z 8 dostępnych)
+   - 1-2 desery (wybór z 8 dostępnych)
+5. **Klient dodaje opcje:**
+   - DJ - Pakiet premium (3500 zł)
+   - Tort weselny 3-piętrowy (800 zł)
+   - Bar alkoholowy premium (150 zł × 100 = 15000 zł)
+   - Fotobudka (1200 zł)
+6. **Kalkulacja końcowa:**
+   - Menu: 280 × 100 = 28000 zł
+   - Opcje: 3500 + 800 + 15000 + 1200 = 20500 zł
+   - **RAZEM: 48500 zł**
+
+---
+
+**Gotowe! Masz teraz pełny, działający system menu z opcjami, szablonami i pakietami.** 🍽️🎉
