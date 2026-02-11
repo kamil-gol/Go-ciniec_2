@@ -14,8 +14,9 @@ import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
+import { useAllActivePackages } from '@/hooks/use-menu-packages'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby, CheckCircle, Smile } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed, Sparkles } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { useQueryClient } from '@tanstack/react-query'
@@ -36,10 +37,14 @@ const reservationSchema = z.object({
   children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
   toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
-  // Pricing
-  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0'),
-  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0'),
-  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0'),
+  // Menu package 🆕
+  useMenuPackage: z.boolean(),
+  menuPackageId: z.string().optional(),
+  
+  // Pricing - conditional on menu package
+  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0').optional(),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0').optional(),
+  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0').optional(),
   
   // Confirmation deadline
   confirmationDeadline: z.string().optional(),
@@ -69,6 +74,15 @@ const reservationSchema = z.object({
 }, {
   message: 'Czas zakończenia musi być po czasie rozpoczęcia',
   path: ['endTime'],
+}).refine((data) => {
+  // If menu package is NOT used, manual prices are required
+  if (!data.useMenuPackage || !data.menuPackageId) {
+    return data.pricePerAdult && data.pricePerAdult > 0
+  }
+  return true
+}, {
+  message: 'Cena za dorosłego jest wymagana gdy nie wybrano pakietu menu',
+  path: ['pricePerAdult'],
 })
 
 type ReservationFormData = z.infer<typeof reservationSchema>
@@ -100,6 +114,7 @@ export function CreateReservationForm({
   const { data: halls, isLoading: hallsLoading, error: hallsError } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
   const { data: eventTypes, isLoading: eventTypesLoading, error: eventTypesError } = useEventTypes()
+  const { data: menuPackages, isLoading: menuPackagesLoading } = useAllActivePackages()
   const createReservation = useCreateReservation()
 
   const {
@@ -114,6 +129,7 @@ export function CreateReservationForm({
     defaultValues: {
       hasDeposit: false,
       depositPaid: false,
+      useMenuPackage: false,
       adults: 0,
       children: 0,
       toddlers: 0,
@@ -124,6 +140,8 @@ export function CreateReservationForm({
   const watchedFields = watch()
   const hasDeposit = watch('hasDeposit')
   const depositPaid = watch('depositPaid')
+  const useMenuPackage = watch('useMenuPackage')
+  const menuPackageId = watch('menuPackageId')
   
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
@@ -135,7 +153,21 @@ export function CreateReservationForm({
   const startDate = watch('startDate')
   const startTime = watch('startTime')
 
-  // ✅ FIX 1: eventTypes returns EventType[] directly (not wrapped in object)
+  // Get selected menu package
+  const selectedPackage = useMemo(() => {
+    if (!menuPackageId || !menuPackages) return null
+    return menuPackages.find((pkg) => pkg.id === menuPackageId) || null
+  }, [menuPackageId, menuPackages])
+
+  // Auto-set prices from menu package
+  useEffect(() => {
+    if (useMenuPackage && selectedPackage) {
+      setValue('pricePerAdult', parseFloat(selectedPackage.pricePerAdult))
+      setValue('pricePerChild', parseFloat(selectedPackage.pricePerChild))
+      setValue('pricePerToddler', parseFloat(selectedPackage.pricePerToddler))
+    }
+  }, [useMenuPackage, selectedPackage, setValue])
+
   const selectedEventTypeName = useMemo(() => {
     if (!selectedEventTypeId) return ''
     const eventTypesArray = Array.isArray(eventTypes) ? eventTypes : []
@@ -143,27 +175,25 @@ export function CreateReservationForm({
     return selectedType?.name || ''
   }, [selectedEventTypeId, eventTypes])
 
-  // ✅ BUGFIX 2026-02-07: Support both "Rocznica" and "Rocznica/Jubileusz" naming variations
-  // Calculate conditions immediately without useEffect delay
   const isBirthday = selectedEventTypeName === 'Urodziny'
   const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
   const isCustom = selectedEventTypeName === 'Inne'
 
-  // Auto-set child price to half of adult price
+  // Auto-set child price to half of adult price (only if NOT using menu package)
   useEffect(() => {
-    if (adults > 0 && pricePerAdult > 0 && !childPriceManuallySet) {
+    if (!useMenuPackage && adults > 0 && pricePerAdult > 0 && !childPriceManuallySet) {
       const halfPrice = Math.round(pricePerAdult / 2)
       setValue('pricePerChild', halfPrice)
     }
-  }, [adults, pricePerAdult, setValue, childPriceManuallySet])
+  }, [useMenuPackage, adults, pricePerAdult, setValue, childPriceManuallySet])
 
-  // Auto-set toddler price to 25% of adult price
+  // Auto-set toddler price to 25% of adult price (only if NOT using menu package)
   useEffect(() => {
-    if (adults > 0 && pricePerAdult > 0 && !toddlerPriceManuallySet) {
+    if (!useMenuPackage && adults > 0 && pricePerAdult > 0 && !toddlerPriceManuallySet) {
       const quarterPrice = Math.round(pricePerAdult * 0.25)
       setValue('pricePerToddler', quarterPrice)
     }
-  }, [adults, pricePerAdult, setValue, toddlerPriceManuallySet])
+  }, [useMenuPackage, adults, pricePerAdult, setValue, toddlerPriceManuallySet])
 
   // Auto-set default paid date to today when marking as paid
   useEffect(() => {
@@ -176,8 +206,8 @@ export function CreateReservationForm({
 
   // Disable children fields if adults is 0
   const isChildrenFieldsDisabled = adults === 0
-  const isChildPriceDisabled = adults === 0 || pricePerAdult === 0
-  const isToddlerPriceDisabled = adults === 0 || pricePerAdult === 0
+  const isChildPriceDisabled = useMenuPackage || adults === 0 || pricePerAdult === 0
+  const isToddlerPriceDisabled = useMenuPackage || adults === 0 || pricePerAdult === 0
 
   // Auto-fill end date/time when start date/time changes (default: +6 hours)
   useEffect(() => {
@@ -235,7 +265,6 @@ export function CreateReservationForm({
     }
   }, [watchedFields.startDate, watchedFields.startTime, watchedFields.endDate, watchedFields.endTime, watchedFields.notes, setValue])
 
-  // ✅ FIX 2: halls returns { halls: [...], total: 6 } NOT array
   useEffect(() => {
     if (watchedFields.hallId) {
       const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
@@ -243,12 +272,12 @@ export function CreateReservationForm({
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
         
-        if (!watchedFields.pricePerAdult) {
+        if (!watchedFields.pricePerAdult && !useMenuPackage) {
           setValue('pricePerAdult', selectedHall.pricePerPerson)
         }
       }
     }
-  }, [watchedFields.hallId, halls, setValue, watchedFields.pricePerAdult])
+  }, [watchedFields.hallId, halls, setValue, watchedFields.pricePerAdult, useMenuPackage])
 
   const handleClientCreated = async (newClient: any) => {
     await queryClient.invalidateQueries({ queryKey: ['clients'] })
@@ -257,7 +286,6 @@ export function CreateReservationForm({
   }
 
   const onSubmit = async (data: ReservationFormData) => {
-    // Combine date and time into ISO datetime
     const startDateTime = `${data.startDate}T${data.startTime}`
     const endDateTime = `${data.endDate}T${data.endTime}`
     
@@ -270,15 +298,23 @@ export function CreateReservationForm({
       adults: data.adults,
       children: data.children,
       toddlers: data.toddlers,
-      pricePerAdult: data.pricePerAdult,
-      pricePerChild: data.pricePerChild,
-      pricePerToddler: data.pricePerToddler,
       confirmationDeadline: data.confirmationDeadline,
       customEventType: data.customEventType,
       birthdayAge: data.birthdayAge,
       anniversaryYear: data.anniversaryYear,
       anniversaryOccasion: data.anniversaryOccasion,
       notes: data.notes,
+    }
+
+    // 🆕 Menu package integration
+    if (data.useMenuPackage && data.menuPackageId) {
+      input.menuPackageId = data.menuPackageId
+      // Prices come from package, not manual input
+    } else {
+      // Manual pricing
+      input.pricePerAdult = data.pricePerAdult
+      input.pricePerChild = data.pricePerChild
+      input.pricePerToddler = data.pricePerToddler
     }
 
     if (data.hasDeposit && data.depositAmount && data.depositDueDate) {
@@ -292,7 +328,6 @@ export function CreateReservationForm({
     }
 
     try {
-      // If custom onSubmit provided (e.g. from promote modal), use it
       if (onSubmitProp) {
         await onSubmitProp(input)
       } else {
@@ -304,19 +339,11 @@ export function CreateReservationForm({
     }
   }
 
-  // ✅ FIX 3: Correct API response structure parsing
-  // halls returns { halls: [...], total: 6 }
-  // clientsData returns Client[] (direct array)
-  // eventTypes returns EventType[] (direct array)
   const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
   const clientsArray = Array.isArray(clientsData) ? clientsData : []
   const eventTypesArray = Array.isArray(eventTypes) ? eventTypes : []
+  const menuPackagesArray = Array.isArray(menuPackages) ? menuPackages : []
 
-  console.log('🏢 Halls array length:', hallsArray.length)
-  console.log('👥 Clients array length:', clientsArray.length)
-  console.log('🎉 EventTypes array length:', eventTypesArray.length)
-
-  // ✅ HYBRID APPROACH: Native Select options (includes empty placeholder)
   const hallOptions = [
     { value: '', label: 'Wybierz salę...' },
     ...hallsArray.map((hall) => ({
@@ -341,7 +368,14 @@ export function CreateReservationForm({
     }))
   ]
 
-  // SelectField options (no empty value - Radix UI doesn't support it)
+  const menuPackageOptions = [
+    { value: '', label: 'Wybierz pakiet...' },
+    ...menuPackagesArray.map((pkg) => ({
+      value: pkg.id,
+      label: `${pkg.name} - ${formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba`,
+    }))
+  ]
+
   const paymentMethodOptions = [
     { value: 'CASH', label: 'Gotówka' },
     { value: 'TRANSFER', label: 'Przelew' },
@@ -361,12 +395,12 @@ export function CreateReservationForm({
           </CardHeader>
         )}
         <CardContent>
-          {/* 🔍 DEBUG INFO */}
-          {(hallsLoading || eventTypesLoading) && (
+          {(hallsLoading || eventTypesLoading || menuPackagesLoading) && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
               <p className="text-sm text-blue-800">⏳ Ładowanie danych...</p>
               {hallsLoading && <p className="text-xs text-blue-600">• Ładowanie sal...</p>}
               {eventTypesLoading && <p className="text-xs text-blue-600">• Ładowanie typów wydarzeń...</p>}
+              {menuPackagesLoading && <p className="text-xs text-blue-600">• Ładowanie pakietów menu...</p>}
             </div>
           )}
           
@@ -378,20 +412,7 @@ export function CreateReservationForm({
             </div>
           )}
 
-          {hallsArray.length === 0 && !hallsLoading && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded">
-              <p className="text-sm text-amber-800">⚠️ Brak sal w bazie danych</p>
-            </div>
-          )}
-
-          {eventTypesArray.length === 0 && !eventTypesLoading && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded">
-              <p className="text-sm text-amber-800">⚠️ Brak typów wydarzeń w bazie danych</p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* ✅ CRITICAL: Native Select for hallId */}
             <SelectSimple
               label="Sala"
               options={hallOptions}
@@ -407,7 +428,6 @@ export function CreateReservationForm({
             <div>
               <div className="flex gap-2">
                 <div className="flex-1">
-                  {/* ✅ CRITICAL: Native Select for clientId */}
                   <SelectSimple
                     label="Klient"
                     options={clientOptions}
@@ -438,7 +458,6 @@ export function CreateReservationForm({
               </div>
             </div>
 
-            {/* ✅ CRITICAL: Native Select for eventTypeId (drives conditional logic) */}
             <SelectSimple
               label="Typ Wydarzenia"
               options={eventTypeOptions}
@@ -554,11 +573,6 @@ export function CreateReservationForm({
                   </div>
                 </div>
               </div>
-              {(!startDate || !startTime) && (
-                <p className="text-xs text-secondary-500">
-                  Najpierw wybierz datę i czas rozpoczęcia
-                </p>
-              )}
             </div>
 
             {durationHours > 0 && (
@@ -609,11 +623,6 @@ export function CreateReservationForm({
                 />
               </div>
             </div>
-            {isChildrenFieldsDisabled && (
-              <p className="text-xs text-secondary-500 -mt-4">
-                Pola dzieci będą dostępne po wprowadzeniu liczby dorosłych
-              </p>
-            )}
 
             {totalGuests > 0 && (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -629,48 +638,115 @@ export function CreateReservationForm({
               </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-secondary-500" />
-                <Input
-                  type="number"
-                  label="Cena za dorosłego (PLN)"
-                  placeholder="0.00"
-                  error={errors.pricePerAdult?.message}
-                  {...register('pricePerAdult')}
-                />
+            {/* 🆕 MENU PACKAGE SECTION */}
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-primary-600" />
+                  <label className="text-sm font-medium text-secondary-700">Pakiet Menu</label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="useMenuPackage"
+                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                    {...register('useMenuPackage')}
+                  />
+                  <label htmlFor="useMenuPackage" className="ml-2 text-sm text-secondary-700">
+                    Użyj gotowego pakietu
+                  </label>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-secondary-500" />
-                <Input
-                  type="number"
-                  label="Cena za dziecko 4-12 (PLN)"
-                  placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
-                  error={errors.pricePerChild?.message}
-                  disabled={isChildPriceDisabled}
-                  {...register('pricePerChild', {
-                    onChange: () => setChildPriceManuallySet(true)
-                  })}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-secondary-500" />
-                <Input
-                  type="number"
-                  label="Cena za dziecko 0-3 (PLN)"
-                  placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
-                  error={errors.pricePerToddler?.message}
-                  disabled={isToddlerPriceDisabled}
-                  {...register('pricePerToddler', {
-                    onChange: () => setToddlerPriceManuallySet(true)
-                  })}
-                />
-              </div>
+
+              {useMenuPackage && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 p-4 bg-primary-50 border border-primary-200 rounded-lg"
+                >
+                  <SelectSimple
+                    label="Wybierz pakiet"
+                    options={menuPackageOptions}
+                    error={errors.menuPackageId?.message}
+                    {...register('menuPackageId')}
+                  />
+
+                  {selectedPackage && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="p-4 bg-white rounded-lg border border-primary-300"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Sparkles className="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
+                          {selectedPackage.shortDescription && (
+                            <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>
+                          )}
+                          <div className="grid grid-cols-3 gap-4 mt-3">
+                            <div>
+                              <p className="text-xs text-secondary-500">Dorosły</p>
+                              <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-secondary-500">Dziecko 4-12</p>
+                              <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-secondary-500">Dziecko 0-3</p>
+                              <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
             </div>
-            {(isChildPriceDisabled || isToddlerPriceDisabled) && (
-              <p className="text-xs text-secondary-500 -mt-4">
-                Ceny za dzieci będą dostępne po uzupełnieniu liczby i ceny za dorosłych (domyślnie 50% i 25% ceny za dorosłego)
-              </p>
+
+            {/* Manual Pricing (only if NOT using menu package) */}
+            {!useMenuPackage && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-secondary-500" />
+                  <Input
+                    type="number"
+                    label="Cena za dorosłego (PLN)"
+                    placeholder="0.00"
+                    error={errors.pricePerAdult?.message}
+                    {...register('pricePerAdult')}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-secondary-500" />
+                  <Input
+                    type="number"
+                    label="Cena za dziecko 4-12 (PLN)"
+                    placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
+                    error={errors.pricePerChild?.message}
+                    disabled={isChildPriceDisabled}
+                    {...register('pricePerChild', {
+                      onChange: () => setChildPriceManuallySet(true)
+                    })}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-secondary-500" />
+                  <Input
+                    type="number"
+                    label="Cena za dziecko 0-3 (PLN)"
+                    placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
+                    error={errors.pricePerToddler?.message}
+                    disabled={isToddlerPriceDisabled}
+                    {...register('pricePerToddler', {
+                      onChange: () => setToddlerPriceManuallySet(true)
+                    })}
+                  />
+                </div>
+              </div>
             )}
 
             {calculatedPrice > 0 && (
@@ -698,6 +774,12 @@ export function CreateReservationForm({
                       {formatCurrency(calculatedPrice)}
                     </span>
                   </div>
+                  {useMenuPackage && selectedPackage && (
+                    <p className="text-xs text-primary-700 flex items-center gap-1 pt-2">
+                      <UtensilsCrossed className="w-3 h-3" />
+                      Ceny z pakietu: {selectedPackage.name}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -784,7 +866,6 @@ export function CreateReservationForm({
                         exit={{ opacity: 0, height: 0 }}
                         className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-green-50 p-3 rounded border border-green-200"
                       >
-                        {/* ✨ NON-CRITICAL: Keep SelectField for better UX */}
                         <Controller
                           name="depositPaymentMethod"
                           control={control}
