@@ -4,25 +4,37 @@
 # Skrypt Backup dla Gościniec_2
 # Tworzy backup bazy PostgreSQL + plików aplikacji
 # Author: System Rezerwacji
-# Version: 1.0.2
+# Version: 1.0.3
 ################################################################################
 
 set -e  # Zatrzymaj na błędzie
+
+# ===== ŁADOWANIE ZMIENNYCH ŚRODOWISKOWYCH =====
+
+# Automatycznie ładuj zmienne z .env.backup jeśli istnieje
+PROJECT_DIR="${PROJECT_DIR:-/home/kamil/rezerwacje}"
+if [ -f "${PROJECT_DIR}/.env.backup" ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Ładuję zmienne z .env.backup..."
+    set -a  # Automatycznie eksportuj zmienne
+    source "${PROJECT_DIR}/.env.backup"
+    set +a
+else
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠ UWAGA: Plik .env.backup nie istnieje, używam wartości domyślnych"
+fi
 
 # ===== KONFIGURACJA =====
 
 # Katalogi
 BACKUP_DIR="${BACKUP_DIR:-/home/kamil/backups/gosciniec}"
-PROJECT_DIR="${PROJECT_DIR:-/home/kamil/rezerwacje}"
 LOG_FILE="${BACKUP_DIR}/backup.log"
 
 # Konfiguracja Docker
 DOCKER_COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yml"
-DB_CONTAINER_NAME="${DB_CONTAINER:-rezerwacje-db}"  # ✅ FIXED: Poprawna nazwa kontenera
+DB_CONTAINER_NAME="${DB_CONTAINER:-rezerwacje-db}"
 
-# Baza danych
+# Baza danych - użyj zmiennych z .env.backup lub domyślne
 DB_NAME="${POSTGRES_DB:-rezerwacje}"
-DB_USER="${POSTGRES_USER:-postgres}"
+DB_USER="${POSTGRES_USER:-rezerwacje}"  # ✅ FIXED: Poprawny domyślny user
 DB_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 
 # Rotacja backupów (ile dni przechowywać)
@@ -81,12 +93,20 @@ backup_database() {
     fi
     
     log "  - Kontener znaleziony: ${DB_CONTAINER_NAME}"
+    log "  - Używam użytkownika: ${DB_USER}"
     log "  - Wykonuję pg_dump dla bazy: ${DB_NAME}"
     
     # Wykonaj dump bazy
     if docker exec "${DB_CONTAINER_NAME}" pg_dump -U "${DB_USER}" "${DB_NAME}" | gzip > "${backup_file}"; then
         local size=$(du -h "${backup_file}" | cut -f1)
         log "✓ Backup bazy danych utworzony: ${backup_file} (${size})"
+        
+        # Sprawdź rozmiar - jeśli < 10KB to coś poszło nie tak
+        local size_bytes=$(stat -f%z "${backup_file}" 2>/dev/null || stat -c%s "${backup_file}" 2>/dev/null)
+        if [ "${size_bytes}" -lt 10240 ]; then
+            log "⚠ UWAGA: Backup ma tylko ${size} - może być pusty!"
+        fi
+        
         echo "${backup_file}"
     else
         error "Nie udało się utworzyć backupu bazy danych"
@@ -122,7 +142,6 @@ backup_files() {
     done
     
     if [ -n "${tar_items}" ]; then
-        # ✅ FIXED: --exclude musi być PRZED nazwą plików!
         if tar -czf "${backup_file}" --exclude='node_modules' --exclude='dist' --exclude='.next' --exclude='coverage' ${tar_items} 2>> "$LOG_FILE"; then
             local size=$(du -h "${backup_file}" | cut -f1)
             log "✓ Backup plików utworzony: ${backup_file} (${size})"
@@ -170,6 +189,7 @@ Konfiguracja:
 - Projekt: ${PROJECT_DIR}
 - Katalog backupów: ${BACKUP_DIR}
 - Baza danych: ${DB_NAME}
+- Użytkownik DB: ${DB_USER}
 - Kontener DB: ${DB_CONTAINER_NAME}
 - Retencja: ${RETENTION_DAYS} dni
 
