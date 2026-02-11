@@ -2,10 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/utils'
 import { MenuDishesPreview } from '@/components/menu/MenuDishesPreview'
-import { Badge } from '@/components/ui/badge'
-import { Utensils, Users, Baby, Smile } from 'lucide-react'
+import { Utensils, Users, Baby, Smile, ChefHat } from 'lucide-react'
 
 interface MenuSummaryProps {
   menuData: any
@@ -114,7 +114,15 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
           {/* Wybrane dania */}
           {dishSelections && dishSelections.length > 0 && (
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-3">Wybrane dania</h4>
+              <div className="flex items-center gap-2 mb-3">
+                <ChefHat className="h-5 w-5 text-orange-600" />
+                <h4 className="font-semibold">Wybrane dania</h4>
+                <Badge variant="secondary" className="ml-auto">
+                  {dishSelections.reduce((sum, cat) => 
+                    sum + cat.dishes.reduce((s, d) => s + d.quantity, 0), 0
+                  )} porcji
+                </Badge>
+              </div>
               <MenuDishesPreview dishSelections={dishSelections} />
             </div>
           )}
