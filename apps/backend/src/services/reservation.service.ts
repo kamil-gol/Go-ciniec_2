@@ -342,7 +342,9 @@ export class ReservationService {
         hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         eventType: { select: { id: true, name: true } },
-        createdBy: { select: { id: true, email: true } }
+        createdBy: { select: { id: true, email: true } },
+        menuSnapshot: true, // NEW: Include menu data for PDF generation
+        deposits: true // NEW: Include deposits for PDF
       }
     });
 
