@@ -126,8 +126,69 @@ class PackageCategoryController {
    */
   async create(req: Request, res: Response) {
     try {
-      // TODO: Implement when admin panel is ready
-      res.status(501).json({ error: 'Not implemented yet - coming in admin panel' });
+      const { packageId, categoryId, minSelect, maxSelect, isRequired, isEnabled, displayOrder, customLabel } = req.body;
+
+      // Validate required fields
+      if (!packageId || !categoryId) {
+        return res.status(400).json({ error: 'packageId and categoryId are required' });
+      }
+
+      // Check if package exists
+      const packageExists = await prisma.menuPackage.findUnique({
+        where: { id: packageId },
+      });
+
+      if (!packageExists) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      // Check if category exists
+      const categoryExists = await prisma.dishCategory.findUnique({
+        where: { id: categoryId },
+      });
+
+      if (!categoryExists) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      // Check if setting already exists
+      const existing = await prisma.packageCategorySettings.findUnique({
+        where: {
+          packageId_categoryId: {
+            packageId,
+            categoryId,
+          },
+        },
+      });
+
+      if (existing) {
+        return res.status(409).json({ error: 'Category setting already exists for this package' });
+      }
+
+      // Create setting
+      const setting = await prisma.packageCategorySettings.create({
+        data: {
+          packageId,
+          categoryId,
+          minSelect: minSelect || 1,
+          maxSelect: maxSelect || 1,
+          isRequired: isRequired !== undefined ? isRequired : true,
+          isEnabled: isEnabled !== undefined ? isEnabled : true,
+          displayOrder: displayOrder || 0,
+          customLabel: customLabel || null,
+        },
+        include: {
+          category: true,
+        },
+      });
+
+      console.log('[PackageCategory] Created setting:', setting.id);
+
+      res.status(201).json({
+        success: true,
+        data: setting,
+        message: 'Category setting created successfully',
+      });
     } catch (error: any) {
       console.error('[PackageCategory] Error in create:', error);
       res.status(500).json({ error: error.message || 'Internal server error' });
@@ -140,8 +201,42 @@ class PackageCategoryController {
    */
   async update(req: Request, res: Response) {
     try {
-      // TODO: Implement when admin panel is ready
-      res.status(501).json({ error: 'Not implemented yet - coming in admin panel' });
+      const { id } = req.params;
+      const { minSelect, maxSelect, isRequired, isEnabled, displayOrder, customLabel } = req.body;
+
+      // Check if setting exists
+      const existing = await prisma.packageCategorySettings.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Category setting not found' });
+      }
+
+      // Update setting
+      const updated = await prisma.packageCategorySettings.update({
+        where: { id },
+        data: {
+          ...(minSelect !== undefined && { minSelect }),
+          ...(maxSelect !== undefined && { maxSelect }),
+          ...(isRequired !== undefined && { isRequired }),
+          ...(isEnabled !== undefined && { isEnabled }),
+          ...(displayOrder !== undefined && { displayOrder }),
+          ...(customLabel !== undefined && { customLabel }),
+        },
+        include: {
+          category: true,
+          package: true,
+        },
+      });
+
+      console.log('[PackageCategory] Updated setting:', id);
+
+      res.json({
+        success: true,
+        data: updated,
+        message: 'Category setting updated successfully',
+      });
     } catch (error: any) {
       console.error('[PackageCategory] Error in update:', error);
       res.status(500).json({ error: error.message || 'Internal server error' });
@@ -154,8 +249,28 @@ class PackageCategoryController {
    */
   async delete(req: Request, res: Response) {
     try {
-      // TODO: Implement when admin panel is ready
-      res.status(501).json({ error: 'Not implemented yet - coming in admin panel' });
+      const { id } = req.params;
+
+      // Check if setting exists
+      const existing = await prisma.packageCategorySettings.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Category setting not found' });
+      }
+
+      // Delete setting
+      await prisma.packageCategorySettings.delete({
+        where: { id },
+      });
+
+      console.log('[PackageCategory] Deleted setting:', id);
+
+      res.json({
+        success: true,
+        message: 'Category setting deleted successfully',
+      });
     } catch (error: any) {
       console.error('[PackageCategory] Error in delete:', error);
       res.status(500).json({ error: error.message || 'Internal server error' });
@@ -165,11 +280,85 @@ class PackageCategoryController {
   /**
    * PUT /api/menu-packages/:packageId/categories
    * Bulk update category settings for a package (Admin only)
+   * 
+   * Body: {
+   *   settings: Array<{
+   *     categoryId: string;
+   *     minSelect: number;
+   *     maxSelect: number;
+   *     isRequired: boolean;
+   *     isEnabled: boolean;
+   *     displayOrder: number;
+   *     customLabel?: string;
+   *   }>
+   * }
    */
   async bulkUpdate(req: Request, res: Response) {
     try {
-      // TODO: Implement when admin panel is ready
-      res.status(501).json({ error: 'Not implemented yet - coming in admin panel' });
+      const { packageId } = req.params;
+      const { settings } = req.body;
+
+      console.log('[PackageCategory] Bulk updating categories for package:', packageId);
+      console.log('[PackageCategory] Received settings:', settings?.length || 0);
+
+      // Validate input
+      if (!Array.isArray(settings)) {
+        return res.status(400).json({ error: 'settings must be an array' });
+      }
+
+      // Check if package exists
+      const packageExists = await prisma.menuPackage.findUnique({
+        where: { id: packageId },
+      });
+
+      if (!packageExists) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      // Perform bulk update in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Delete all existing settings for this package
+        await tx.packageCategorySettings.deleteMany({
+          where: { packageId },
+        });
+
+        console.log('[PackageCategory] Deleted old settings');
+
+        // 2. Create new settings
+        if (settings.length > 0) {
+          const createdSettings = await Promise.all(
+            settings.map((setting) =>
+              tx.packageCategorySettings.create({
+                data: {
+                  packageId,
+                  categoryId: setting.categoryId,
+                  minSelect: setting.minSelect || 1,
+                  maxSelect: setting.maxSelect || 1,
+                  isRequired: setting.isRequired !== undefined ? setting.isRequired : true,
+                  isEnabled: setting.isEnabled !== undefined ? setting.isEnabled : true,
+                  displayOrder: setting.displayOrder || 0,
+                  customLabel: setting.customLabel || null,
+                },
+                include: {
+                  category: true,
+                },
+              })
+            )
+          );
+
+          console.log('[PackageCategory] Created', createdSettings.length, 'new settings');
+
+          return createdSettings;
+        }
+
+        return [];
+      });
+
+      res.json({
+        success: true,
+        data: result,
+        message: `Updated ${result.length} category settings`,
+      });
     } catch (error: any) {
       console.error('[PackageCategory] Error in bulkUpdate:', error);
       res.status(500).json({ error: error.message || 'Internal server error' });
