@@ -25,9 +25,9 @@ import {
 
 const prisma = new PrismaClient();
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // MENU TEMPLATES
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export class MenuService {
   
@@ -296,9 +296,42 @@ export class MenuService {
     return await this.getMenuTemplateById(newTemplate.id);
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   // MENU PACKAGES
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get all packages (across all templates)
+   */
+  async getAllPackages() {
+    return await prisma.menuPackage.findMany({
+      include: {
+        menuTemplate: {
+          select: {
+            id: true,
+            name: true,
+            eventType: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        packageOptions: {
+          include: {
+            option: true
+          },
+          orderBy: { displayOrder: 'asc' }
+        },
+        categorySettings: true
+      },
+      orderBy: [
+        { menuTemplateId: 'asc' },
+        { displayOrder: 'asc' }
+      ]
+    });
+  }
 
   /**
    * Get all packages for a menu template
@@ -312,7 +345,8 @@ export class MenuService {
             option: true
           },
           orderBy: { displayOrder: 'asc' }
-        }
+        },
+        categorySettings: true
       },
       orderBy: { displayOrder: 'asc' }
     });
@@ -331,7 +365,8 @@ export class MenuService {
             option: true
           },
           orderBy: { displayOrder: 'asc' }
-        }
+        },
+        categorySettings: true
       }
     });
 
@@ -367,7 +402,8 @@ export class MenuService {
         isRecommended: data.isRecommended ?? false
       },
       include: {
-        menuTemplate: true
+        menuTemplate: true,
+        categorySettings: true
       }
     });
   }
@@ -441,7 +477,8 @@ export class MenuService {
         menuTemplate: true,
         packageOptions: {
           include: { option: true }
-        }
+        },
+        categorySettings: true
       }
     });
 
@@ -503,9 +540,9 @@ export class MenuService {
     return { success: true, updated: orders.length };
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   // MENU OPTIONS
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get all options with optional filters
@@ -655,9 +692,9 @@ export class MenuService {
     });
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   // PACKAGE-OPTION RELATIONSHIPS
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
 
   /**
    * Assign options to package
