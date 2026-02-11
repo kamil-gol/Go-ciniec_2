@@ -359,9 +359,9 @@ for i in {1..15}; do
   
   PRICE=$((RANDOM % 9001 + 3000))
   
-  # Add time fields
+  # Add time fields - use 23:59 instead of 02:00 to pass validation
   START_TIME="15:00"
-  END_TIME="02:00"
+  END_TIME="23:59"
   
   RESERVATION=$(curl -s -X POST http://localhost:3001/api/reservations \
     -H "Authorization: Bearer $TOKEN" \
