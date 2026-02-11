@@ -1,7 +1,29 @@
 /**
  * Reservation Types
  * Types and interfaces for reservation management
+ * UPDATED: Menu integration support
  */
+
+// ═══════════════════════════════════════════════════════════════
+// Menu-related types
+// ═══════════════════════════════════════════════════════════════
+
+export interface MenuOptionSelection {
+  optionId: string;
+  quantity?: number; // For options that allow multiple
+}
+
+export interface UpdateReservationMenuDTO {
+  menuPackageId?: string | null; // null to remove menu
+  selectedOptions?: MenuOptionSelection[];
+  adultsCount?: number; // Override from reservation if different
+  childrenCount?: number;
+  toddlersCount?: number;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Reservation DTOs
+// ═══════════════════════════════════════════════════════════════
 
 export interface CreateReservationDTO {
   hallId: string;
@@ -18,12 +40,21 @@ export interface CreateReservationDTO {
   endTime?: string; // HH:MM format
   
   // Guest count (new - split by age groups)
-  adults?: number;
-  children?: number; // 4-12 years
-  toddlers?: number; // 0-3 years
+  // NOW REQUIRED: At least one group must have > 0 guests
+  adults: number;
+  children: number; // 4-12 years
+  toddlers: number; // 0-3 years
   guests?: number; // Computed or legacy
   
-  // Pricing (new - separate for each age group)
+  // ═══════════════════════════════════════════════════════════════
+  // MENU INTEGRATION (NEW)
+  // ═══════════════════════════════════════════════════════════════
+  menuPackageId?: string; // Optional: Selected menu package
+  selectedOptions?: MenuOptionSelection[]; // Optional: Additional menu options
+  
+  // Pricing (now optional if menuPackageId is provided)
+  // If menuPackageId is set, prices come from package
+  // If menuPackageId is NOT set, these are REQUIRED
   pricePerAdult?: number;
   pricePerChild?: number; // 4-12 years
   pricePerToddler?: number; // 0-3 years

@@ -2,24 +2,49 @@
  * Reservation Menu Controller
  * 
  * HTTP endpoints for menu selection
+ * UPDATED: Integrated with new menu logic in reservation.service
  */
 
 import { Request, Response } from 'express';
-import reservationMenuService from '../services/reservation-menu.service';
-import { MenuSelectionInput } from '../dto/menu-selection.dto';
+import reservationService from '../services/reservation.service';
+import { UpdateReservationMenuDTO } from '../types/reservation.types';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
 
 class ReservationMenuController {
   /**
    * Select menu for reservation
    * POST /api/reservations/:id/menu
    */
-  async selectMenu(req: Request, res: Response): Promise<void> {
+  async selectMenu(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: reservationId } = req.params;
-      const input: MenuSelectionInput = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      const data: UpdateReservationMenuDTO = {
+        menuPackageId: req.body.packageId,
+        selectedOptions: req.body.selectedOptions || [],
+        adultsCount: req.body.adultsCount,
+        childrenCount: req.body.childrenCount,
+        toddlersCount: req.body.toddlersCount,
+      };
 
       // Validate required fields
-      if (!input.packageId) {
+      if (!data.menuPackageId) {
         res.status(400).json({
           success: false,
           error: 'Package ID is required',
@@ -27,7 +52,7 @@ class ReservationMenuController {
         return;
       }
 
-      const result = await reservationMenuService.selectMenu(reservationId, input);
+      const result = await reservationService.updateReservationMenu(reservationId, data, userId);
 
       res.status(201).json({
         success: true,
@@ -39,7 +64,7 @@ class ReservationMenuController {
       
       const statusCode = 
         error.message.includes('not found') ? 404 :
-        error.message.includes('validation') ? 400 :
+        error.message.includes('validation') || error.message.includes('required') || error.message.includes('allows') ? 400 :
         500;
 
       res.status(statusCode).json({
@@ -57,16 +82,24 @@ class ReservationMenuController {
     try {
       const { id: reservationId } = req.params;
 
-      const result = await reservationMenuService.getReservationMenu(reservationId);
+      const reservation = await reservationService.getReservationById(reservationId);
+
+      if (!reservation.menuSnapshot) {
+        res.status(404).json({
+          success: false,
+          error: 'No menu selected for this reservation',
+        });
+        return;
+      }
 
       res.status(200).json({
         success: true,
-        data: result,
+        data: reservation.menuSnapshot,
       });
     } catch (error: any) {
       console.error('[ReservationMenu] Error getting menu:', error);
       
-      const statusCode = error.message.includes('not found') || error.message.includes('not selected') ? 404 : 500;
+      const statusCode = error.message.includes('not found') ? 404 : 500;
 
       res.status(statusCode).json({
         success: false,
@@ -79,13 +112,29 @@ class ReservationMenuController {
    * Update menu for reservation
    * PUT /api/reservations/:id/menu
    */
-  async updateMenu(req: Request, res: Response): Promise<void> {
+  async updateMenu(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: reservationId } = req.params;
-      const input: MenuSelectionInput = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      const data: UpdateReservationMenuDTO = {
+        menuPackageId: req.body.packageId,
+        selectedOptions: req.body.selectedOptions || [],
+        adultsCount: req.body.adultsCount,
+        childrenCount: req.body.childrenCount,
+        toddlersCount: req.body.toddlersCount,
+      };
 
       // Validate required fields
-      if (!input.packageId) {
+      if (!data.menuPackageId) {
         res.status(400).json({
           success: false,
           error: 'Package ID is required',
@@ -93,7 +142,7 @@ class ReservationMenuController {
         return;
       }
 
-      const result = await reservationMenuService.updateMenu(reservationId, input);
+      const result = await reservationService.updateReservationMenu(reservationId, data, userId);
 
       res.status(200).json({
         success: true,
@@ -105,7 +154,7 @@ class ReservationMenuController {
       
       const statusCode = 
         error.message.includes('not found') ? 404 :
-        error.message.includes('validation') ? 400 :
+        error.message.includes('validation') || error.message.includes('required') || error.message.includes('allows') ? 400 :
         500;
 
       res.status(statusCode).json({
@@ -119,11 +168,24 @@ class ReservationMenuController {
    * Remove menu from reservation
    * DELETE /api/reservations/:id/menu
    */
-  async deleteMenu(req: Request, res: Response): Promise<void> {
+  async deleteMenu(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: reservationId } = req.params;
+      const userId = req.user?.id;
 
-      await reservationMenuService.removeMenu(reservationId);
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      const data: UpdateReservationMenuDTO = {
+        menuPackageId: null, // null means remove menu
+      };
+
+      await reservationService.updateReservationMenu(reservationId, data, userId);
 
       res.status(200).json({
         success: true,
