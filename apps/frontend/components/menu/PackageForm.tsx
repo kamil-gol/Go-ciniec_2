@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { MenuPackage, CreatePackageInput, UpdatePackageInput, DishCategory } from '@/types/menu';
-import { createPackage, updatePackage, getDishCategories } from '@/lib/api/menu-packages';
+import { createPackage, updatePackage, getDishCategories, updatePackageCategories } from '@/lib/api/menu-packages';
 import CategorySettingsSection from './CategorySettingsSection';
 import type { CategorySettingInput } from '@/types/menu';
 import { Save, Loader2, AlertCircle, CheckCircle2, X, Palette } from 'lucide-react';
@@ -161,22 +161,7 @@ export default function PackageForm({
     if (enabledSettings.length === 0) return;
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/menu-packages/${packageId}/categories`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ settings: enabledSettings }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save category settings');
-      }
-
+      await updatePackageCategories(packageId, enabledSettings);
       console.log('Category settings saved successfully');
     } catch (error) {
       console.error('Error saving category settings:', error);

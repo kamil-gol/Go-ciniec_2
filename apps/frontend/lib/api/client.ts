@@ -10,6 +10,7 @@ interface RequestOptions {
   method: string;
   headers: Record<string, string>;
   body?: string;
+  credentials: RequestCredentials;
 }
 
 class ApiClient {
@@ -25,12 +26,13 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
-    const config: RequestOptions = {
+    const config: RequestInit = {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // CRITICAL: Send cookies for auth
     };
 
     if (options.body) {
