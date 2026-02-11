@@ -121,6 +121,7 @@ const server = app.listen(PORT, () => {
   logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
   logger.info(`🍽️  Menu System: http://localhost:${PORT}/api/menu-templates`);
   logger.info(`🧮  Menu Calculator: http://localhost:${PORT}/api/menu-calculator/calculate`);
+  logger.info(`💾  Menu Assignment: http://localhost:${PORT}/api/reservations/:id/menu`);
   logger.info(`🍲  Dishes: http://localhost:${PORT}/api/dishes`);
   logger.info(`📂  Categories: http://localhost:${PORT}/api/dish-categories\n`);
   
