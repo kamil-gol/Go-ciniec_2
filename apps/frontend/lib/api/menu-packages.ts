@@ -17,7 +17,7 @@ import type {
  * and their category settings
  */
 
-const BASE_URL = '/api/menu-packages';
+const BASE_URL = '/menu-packages';
 
 /**
  * Get all packages
@@ -183,7 +183,7 @@ export async function updatePackageCategories(
 export async function getDishCategories(): Promise<DishCategory[]> {
   try {
     const response = await apiClient.get<PaginatedResponse<DishCategory>>(
-      '/api/dish-categories'
+      '/dish-categories'
     );
 
     if (response.success && response.data) {
