@@ -86,9 +86,9 @@ export class ReservationService {
       throw new Error(customValidation.error);
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
     // NEW: Guest count validation - ALWAYS REQUIRED
-    // ═══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
     let adults = data.adults ?? 0;
     let children = data.children ?? 0;
     let toddlers = data.toddlers ?? 0;
@@ -105,9 +105,9 @@ export class ReservationService {
       throw new Error(`Number of guests (${guests}) exceeds hall capacity (${hall.capacity})`);
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
     // NEW: MENU PACKAGE INTEGRATION
-    // ═══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
     let pricePerAdult: number;
     let pricePerChild: number;
     let pricePerToddler: number;
@@ -288,9 +288,9 @@ export class ReservationService {
       }
     });
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
     // NEW: Create menu snapshot if package was selected
-    // ═══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
     if (menuPackage) {
       await prisma.reservationMenuSnapshot.create({
         data: {
@@ -670,6 +670,7 @@ export class ReservationService {
 
   /**
    * Update reservation
+   * ⚡ UPDATED: Added menu package support
    */
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     // Validate userId exists
@@ -677,7 +678,7 @@ export class ReservationService {
 
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { hall: true, eventType: true }
+      include: { hall: true, eventType: true, menuSnapshot: true }
     });
 
     if (!existingReservation) {
@@ -691,6 +692,30 @@ export class ReservationService {
 
     if (existingReservation.status === ReservationStatus.CANCELLED) {
       throw new Error('Cannot update cancelled reservation');
+    }
+
+    // ⚡ NEW: Handle menu package updates
+    if (data.menuPackageId !== undefined) {
+      if (data.menuPackageId === null) {
+        // Remove menu package
+        await this.updateReservationMenu(
+          id,
+          { menuPackageId: null },
+          userId
+        );
+      } else {
+        // Update or add menu package
+        await this.updateReservationMenu(
+          id,
+          {
+            menuPackageId: data.menuPackageId,
+            adultsCount: data.adults ?? existingReservation.adults,
+            childrenCount: data.children ?? existingReservation.children,
+            toddlersCount: data.toddlers ?? existingReservation.toddlers
+          },
+          userId
+        );
+      }
     }
 
     // Validate reason if there are changes
@@ -771,36 +796,42 @@ export class ReservationService {
       }
     }
 
-    // Update pricing
-    if (data.pricePerAdult !== undefined) {
-      updateData.pricePerAdult = data.pricePerAdult;
-    }
-    if (data.pricePerChild !== undefined) {
-      updateData.pricePerChild = data.pricePerChild;
-    }
-    if (data.pricePerToddler !== undefined) {
-      updateData.pricePerToddler = data.pricePerToddler;
-    }
+    // ⚡ UPDATED: Only update pricing if NOT using menu package OR menuPackageId is explicitly null
+    const isUsingMenuPackage = existingReservation.menuSnapshot && data.menuPackageId !== null;
+    
+    if (!isUsingMenuPackage) {
+      // Manual pricing update
+      if (data.pricePerAdult !== undefined) {
+        updateData.pricePerAdult = data.pricePerAdult;
+      }
+      if (data.pricePerChild !== undefined) {
+        updateData.pricePerChild = data.pricePerChild;
+      }
+      if (data.pricePerToddler !== undefined) {
+        updateData.pricePerToddler = data.pricePerToddler;
+      }
 
-    // Recalculate total price if any pricing or guest count changed
-    if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
-        data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-      const finalAdults = data.adults ?? existingReservation.adults;
-      const finalChildren = data.children ?? existingReservation.children;
-      const finalToddlers = data.toddlers ?? existingReservation.toddlers;
-      const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
-      const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
-      const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
-      
-      updateData.totalPrice = calculateTotalPrice(
-        finalAdults, 
-        finalChildren, 
-        finalPricePerAdult, 
-        finalPricePerChild,
-        finalToddlers,
-        finalPricePerToddler
-      );
+      // Recalculate total price if any pricing or guest count changed
+      if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
+          data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
+        const finalAdults = data.adults ?? existingReservation.adults;
+        const finalChildren = data.children ?? existingReservation.children;
+        const finalToddlers = data.toddlers ?? existingReservation.toddlers;
+        const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
+        const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
+        const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
+        
+        updateData.totalPrice = calculateTotalPrice(
+          finalAdults, 
+          finalChildren, 
+          finalPricePerAdult, 
+          finalPricePerChild,
+          finalToddlers,
+          finalPricePerToddler
+        );
+      }
     }
+    // Note: If using menu package, prices are updated by updateReservationMenu
 
     // Update confirmation deadline
     if (data.confirmationDeadline) {
