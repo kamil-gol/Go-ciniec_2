@@ -1,7 +1,7 @@
 /**
  * MenuSelectionFlow Component
  * 
- * Multi-step wizard for selecting menu, package, and options
+ * Multi-step wizard for selecting menu, package, dishes, and options
  * Premium UI with gradients and animations
  */
 
@@ -26,10 +26,21 @@ import {
   PackageCardSkeleton,
 } from '@/components/menu';
 import { OptionsSelector } from '@/components/menu/OptionsSelector';
-import { Check, ChevronRight, Users, ArrowLeft, Sparkles } from 'lucide-react';
+import { DishSelector } from '@/components/menu/DishSelector';
+import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+
+interface DishSelection {
+  dishId: string
+  quantity: number
+}
+
+interface CategorySelection {
+  categoryId: string
+  dishes: DishSelection[]
+}
 
 interface MenuSelectionFlowProps {
   eventTypeId?: string;
@@ -41,12 +52,13 @@ interface MenuSelectionFlowProps {
     templateId?: string;
     packageId?: string;
     selectedOptions?: SelectedOption[];
+    dishSelections?: CategorySelection[];
   };
   onComplete?: (selection: any) => void;
   className?: string;
 }
 
-type Step = 'template' | 'package' | 'guests' | 'options';
+type Step = 'template' | 'package' | 'dishes' | 'guests' | 'options';
 
 export function MenuSelectionFlow({ 
   eventTypeId,
@@ -61,6 +73,7 @@ export function MenuSelectionFlow({
   const [currentStep, setCurrentStep] = useState<Step>('template');
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
   const [selectedPackage, setSelectedPackage] = useState<MenuPackage>();
+  const [dishSelections, setDishSelections] = useState<CategorySelection[]>([]);
   const [guestCounts, setGuestCounts] = useState({
     adults,
     children,
@@ -79,6 +92,7 @@ export function MenuSelectionFlow({
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
     { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
     { id: 'package', label: 'Pakiet', icon: Check, gradient: 'from-blue-500 to-cyan-500' },
+    { id: 'dishes', label: 'Dania', icon: UtensilsCrossed, gradient: 'from-red-500 to-rose-500' },
     { id: 'guests', label: 'Goście', icon: Users, gradient: 'from-purple-500 to-pink-500' },
     { id: 'options', label: 'Dodatki', icon: Sparkles, gradient: 'from-green-500 to-emerald-500' },
   ];
@@ -88,11 +102,18 @@ export function MenuSelectionFlow({
   const handleTemplateSelect = (template: MenuTemplate) => {
     setSelectedTemplate(template);
     setSelectedPackage(undefined);
+    setDishSelections([]);
     setCurrentStep('package');
   };
 
   const handlePackageSelect = (pkg: MenuPackage) => {
     setSelectedPackage(pkg);
+    setDishSelections([]);
+    setCurrentStep('dishes');
+  };
+
+  const handleDishesComplete = (selections: CategorySelection[]) => {
+    setDishSelections(selections);
     setCurrentStep('guests');
   };
 
@@ -110,6 +131,7 @@ export function MenuSelectionFlow({
     onComplete?.({
       templateId: selectedTemplate.id,
       packageId: selectedPackage.id,
+      dishSelections,
       selectedOptions,
       adults: guestCounts.adults,
       children: guestCounts.children,
@@ -124,7 +146,7 @@ export function MenuSelectionFlow({
       {/* Premium Progress Steps */}
       <div className="relative">
         {/* Background gradient line */}
-        <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-purple-500 to-green-500 rounded-full opacity-20" />
+        <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 via-purple-500 to-green-500 rounded-full opacity-20" />
         
         <div className="relative flex items-center justify-between">
           {steps.map((step, index) => {
@@ -275,7 +297,30 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 3: Guest Counts */}
+          {/* Step 3: Select Dishes (NEW!) */}
+          {currentStep === 'dishes' && selectedPackage && (
+            <div className="space-y-6">
+              <div className="text-center space-y-3">
+                <div className="inline-flex p-3 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl shadow-lg mb-2">
+                  <UtensilsCrossed className="h-8 w-8 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+                  Wybór Dań
+                </h2>
+                <p className="text-muted-foreground">
+                  {selectedPackage.name}
+                </p>
+              </div>
+
+              <DishSelector
+                packageId={selectedPackage.id}
+                onComplete={handleDishesComplete}
+                onBack={() => setCurrentStep('package')}
+              />
+            </div>
+          )}
+
+          {/* Step 4: Guest Counts */}
           {currentStep === 'guests' && (
             <div className="mx-auto max-w-2xl space-y-6">
               <div className="text-center space-y-3">
@@ -360,7 +405,7 @@ export function MenuSelectionFlow({
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => setCurrentStep('package')}
+                  onClick={() => setCurrentStep('dishes')}
                   className="border-2 px-8"
                 >
                   <ArrowLeft className="mr-2 h-5 w-5" />
@@ -378,7 +423,7 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 4: Select Options */}
+          {/* Step 5: Select Options */}
           {currentStep === 'options' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
