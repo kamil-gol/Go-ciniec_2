@@ -112,9 +112,9 @@ export function MenuSelectionFlow({
       templateId: selectedTemplate.id,
       packageId: selectedPackage.id,
       selectedOptions,
-      adultsCount: guestCounts.adults,
-      childrenCount: guestCounts.children,
-      toddlersCount: guestCounts.toddlers,
+      adults: guestCounts.adults,
+      children: guestCounts.children,
+      toddlers: guestCounts.toddlers,
     });
   };
 
