@@ -58,8 +58,8 @@ export const duplicateMenuTemplateSchema = z.object({
 export const createMenuPackageSchema = z.object({
   menuTemplateId: z.string().uuid('Invalid menu template ID'),
   name: z.string().min(3, 'Name must be at least 3 characters').max(100, 'Name too long'),
-  description: z.string().max(1000, 'Description too long').optional(),
-  shortDescription: z.string().max(200, 'Short description too long').optional(),
+  description: z.string().max(1000, 'Description too long').optional().nullable(),
+  shortDescription: z.string().max(200, 'Short description too long').optional().nullable(),
   
   pricePerAdult: z.number().min(0, 'Price cannot be negative'),
   pricePerChild: z.number().min(0, 'Price cannot be negative'),
@@ -69,7 +69,13 @@ export const createMenuPackageSchema = z.object({
   minGuests: z.number().int().min(0).optional().nullable(),
   maxGuests: z.number().int().min(0).optional().nullable(),
   
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color').optional().nullable(),
+  // Color can be null or empty string - transform to null
+  color: z.string()
+    .transform(val => val === '' ? null : val)
+    .pipe(z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color').nullable())
+    .optional()
+    .nullable(),
+  
   icon: z.string().max(50).optional().nullable(),
   badgeText: z.string().max(50).optional().nullable(),
   imageUrl: z.string().url('Invalid image URL').optional().nullable(),
@@ -103,7 +109,13 @@ export const updateMenuPackageSchema = z.object({
   minGuests: z.number().int().min(0).optional().nullable(),
   maxGuests: z.number().int().min(0).optional().nullable(),
   
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
+  // Color can be null or empty string - transform to null
+  color: z.string()
+    .transform(val => val === '' ? null : val)
+    .pipe(z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color').nullable())
+    .optional()
+    .nullable(),
+  
   icon: z.string().max(50).optional().nullable(),
   badgeText: z.string().max(50).optional().nullable(),
   imageUrl: z.string().url().optional().nullable(),
@@ -122,6 +134,30 @@ export const reorderPackagesSchema = z.object({
       displayOrder: z.number().int().min(0)
     })
   ).min(1, 'At least one package required')
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// CATEGORY SETTINGS VALIDATION
+// ════════════════════════════════════════════════════════════════════════════
+
+export const categorySettingSchema = z.object({
+  categoryId: z.string().uuid('Invalid category ID'),
+  minSelect: z.number().int().min(0, 'Min selection cannot be negative'),
+  maxSelect: z.number().int().min(1, 'Max selection must be at least 1'),
+  isRequired: z.boolean().optional().default(true),
+  isEnabled: z.boolean().optional().default(true),
+  displayOrder: z.number().int().min(0).optional().default(0),
+  customLabel: z.string().max(100).optional().nullable()
+}).refine(
+  (data) => data.minSelect <= data.maxSelect,
+  {
+    message: 'Minimalna wartość nie może być większa niż maksymalna',
+    path: ['minSelect']
+  }
+);
+
+export const bulkUpdateCategorySettingsSchema = z.object({
+  settings: z.array(categorySettingSchema).min(1, 'At least one category setting required')
 });
 
 // ════════════════════════════════════════════════════════════════════════════
