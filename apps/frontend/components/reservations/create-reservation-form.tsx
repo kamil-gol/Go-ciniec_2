@@ -349,9 +349,9 @@ export function CreateReservationForm({
       } else {
         const result = await createReservation.mutateAsync(input)
         
-        // ⚡ ZMIANA: Redirect do szczegółów po utworzeniu
+        // ⚡ FIX: Poprawny redirect do strony szczegółów w dashboardzie
         if (result?.id) {
-          router.push(`/reservations?id=${result.id}`)
+          router.push(`/dashboard/reservations/${result.id}`)
         }
       }
       onSuccess?.()
