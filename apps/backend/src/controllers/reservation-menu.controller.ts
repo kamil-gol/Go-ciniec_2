@@ -36,6 +36,43 @@ function roundToTwo(num: number): number {
   return Math.round(num * 100) / 100;
 }
 
+// Build price breakdown from menuSnapshot
+function buildPriceBreakdown(menuData: any) {
+  const guests = menuData.guests;
+  const pricing = menuData.pricing;
+  const options = menuData.options || [];
+
+  return {
+    packageCost: {
+      adults: {
+        count: guests.adults,
+        priceEach: menuData.package.pricePerAdult,
+        total: menuData.package.pricePerAdult * guests.adults,
+      },
+      children: {
+        count: guests.children,
+        priceEach: menuData.package.pricePerChild,
+        total: menuData.package.pricePerChild * guests.children,
+      },
+      toddlers: {
+        count: guests.toddlers,
+        priceEach: menuData.package.pricePerToddler,
+        total: menuData.package.pricePerToddler * guests.toddlers,
+      },
+      subtotal: pricing.packagePrice,
+    },
+    optionsCost: options.map((opt: any) => ({
+      option: opt.name,
+      priceType: opt.priceType,
+      priceEach: opt.priceAmount,
+      quantity: opt.quantity,
+      total: opt.calculatedPrice,
+    })),
+    optionsSubtotal: pricing.optionsPrice,
+    totalMenuPrice: pricing.totalPrice,
+  };
+}
+
 // === Controllers ===
 
 /**
@@ -222,26 +259,26 @@ export async function saveReservationMenu(req: Request, res: Response) {
       },
     });
 
-    // Return same structure as GET endpoint for consistency
+    // Build price breakdown
+    const priceBreakdown = buildPriceBreakdown(menuData);
+
+    // Return same structure as GET endpoint
     res.status(200).json({
       success: true,
       message: 'Menu saved successfully',
-      hasMenu: true,
-      menuSnapshot: {
-        id: menuSnapshot.id,
-        menuData,
-        packageId: menuSnapshot.packageId,
-        packagePrice: toNumber(menuSnapshot.packagePrice),
-        optionsPrice: toNumber(menuSnapshot.optionsPrice),
-        totalMenuPrice: toNumber(menuSnapshot.totalMenuPrice),
-        guests: {
-          adults: menuSnapshot.adultsCount,
-          children: menuSnapshot.childrenCount,
-          toddlers: menuSnapshot.toddlersCount,
-          total: totalGuests,
+      data: {
+        snapshot: {
+          id: menuSnapshot.id,
+          reservationId: menuSnapshot.reservationId,
+          menuData,
+          adultsCount: menuSnapshot.adultsCount,
+          childrenCount: menuSnapshot.childrenCount,
+          toddlersCount: menuSnapshot.toddlersCount,
+          snapshotDate: menuSnapshot.selectedAt?.toISOString() || new Date().toISOString(),
+          createdAt: menuSnapshot.createdAt.toISOString(),
+          updatedAt: menuSnapshot.updatedAt.toISOString(),
         },
-        selectedAt: menuSnapshot.selectedAt,
-        updatedAt: menuSnapshot.updatedAt,
+        priceBreakdown,
       },
     });
   } catch (error: any) {
@@ -269,23 +306,24 @@ export async function getReservationMenu(req: Request, res: Response) {
       });
     }
 
+    const menuData = menuSnapshot.menuData as any;
+    const priceBreakdown = buildPriceBreakdown(menuData);
+
     res.json({
-      hasMenu: true,
-      menuSnapshot: {
-        id: menuSnapshot.id,
-        menuData: menuSnapshot.menuData,
-        packageId: menuSnapshot.packageId,
-        packagePrice: toNumber(menuSnapshot.packagePrice),
-        optionsPrice: toNumber(menuSnapshot.optionsPrice),
-        totalMenuPrice: toNumber(menuSnapshot.totalMenuPrice),
-        guests: {
-          adults: menuSnapshot.adultsCount,
-          children: menuSnapshot.childrenCount,
-          toddlers: menuSnapshot.toddlersCount,
-          total: menuSnapshot.adultsCount + menuSnapshot.childrenCount + menuSnapshot.toddlersCount,
+      success: true,
+      data: {
+        snapshot: {
+          id: menuSnapshot.id,
+          reservationId: menuSnapshot.reservationId,
+          menuData: menuSnapshot.menuData,
+          adultsCount: menuSnapshot.adultsCount,
+          childrenCount: menuSnapshot.childrenCount,
+          toddlersCount: menuSnapshot.toddlersCount,
+          snapshotDate: menuSnapshot.selectedAt?.toISOString() || new Date().toISOString(),
+          createdAt: menuSnapshot.createdAt.toISOString(),
+          updatedAt: menuSnapshot.updatedAt.toISOString(),
         },
-        selectedAt: menuSnapshot.selectedAt,
-        updatedAt: menuSnapshot.updatedAt,
+        priceBreakdown,
       },
     });
   } catch (error: any) {
@@ -315,6 +353,7 @@ export async function deleteReservationMenu(req: Request, res: Response) {
     });
 
     res.json({ 
+      success: true,
       message: 'Menu deleted successfully',
       reservationId,
     });
