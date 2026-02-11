@@ -12,6 +12,8 @@
     "prisma:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:menu": "tsx prisma/seeds/seed-menu.ts",
+    "db:seed:menu-templates": "tsx prisma/seeds/seed-menu-templates.ts",
+    "db:seed:all-menu": "npm run db:seed:menu && npm run db:seed:menu-templates",
     "db:reset": "prisma migrate reset --force && tsx prisma/seed.ts"
   },
   "prisma": {
