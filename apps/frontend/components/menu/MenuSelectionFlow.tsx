@@ -24,9 +24,8 @@ import {
   MenuCardSkeleton,
   PackageCard,
   PackageCardSkeleton,
-  OptionCard,
-  OptionCardSkeleton,
 } from '@/components/menu';
+import { OptionsSelector } from '@/components/menu/OptionsSelector';
 import { Check, ChevronRight, Users, ArrowLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -394,28 +393,15 @@ export function MenuSelectionFlow({
                 </p>
               </div>
 
-              {optionsLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => <OptionCardSkeleton key={i} />)}
-                </div>
-              ) : options && options.length > 0 ? (
-                <div className="space-y-4">
-                  {options.map(option => (
-                    <OptionCard
-                      key={option.id}
-                      option={option}
-                      quantity={optionQuantities[option.id] || 0}
-                      onQuantityChange={(id, qty) => {
-                        setOptionQuantities(prev => ({ ...prev, [id]: qty }));
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-white dark:bg-gray-950 rounded-2xl border-2">
-                  <p className="text-muted-foreground">Brak dostępnych opcji dodatkowych</p>
-                </div>
-              )}
+              {/* Use OptionsSelector for better UX */}
+              <OptionsSelector
+                options={options || []}
+                isLoading={optionsLoading}
+                quantities={optionQuantities}
+                onQuantityChange={(id, qty) => {
+                  setOptionQuantities(prev => ({ ...prev, [id]: qty }));
+                }}
+              />
 
               <div className="flex justify-center gap-4 pt-6">
                 <Button
