@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Calendar,
   Clock,
@@ -68,6 +69,7 @@ const stats = [
 const upcomingEvents = [
   {
     id: 1,
+    reservationId: '19acd0e5-2b9b-428d-99c9-1989d03a19d5', // Example ID
     date: '15 Luty',
     time: '18:00',
     type: 'Wesele',
@@ -78,6 +80,7 @@ const upcomingEvents = [
   },
   {
     id: 2,
+    reservationId: '29acd0e5-2b9b-428d-99c9-1989d03a19d6', // Example ID
     date: '20 Luty',
     time: '15:00',
     type: 'Komunia Święta',
@@ -88,6 +91,7 @@ const upcomingEvents = [
   },
   {
     id: 3,
+    reservationId: '39acd0e5-2b9b-428d-99c9-1989d03a19d7', // Example ID
     date: '25 Luty',
     time: '16:00',
     type: 'Urodziny',
@@ -99,6 +103,12 @@ const upcomingEvents = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
+
+  const handleEventClick = (reservationId: string) => {
+    router.push(`/dashboard/reservations/${reservationId}`)
+  }
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -190,7 +200,8 @@ export default function DashboardPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7 + index * 0.1 }}
-              className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all hover:scale-[1.01] border border-neutral-200 dark:border-neutral-700"
+              onClick={() => handleEventClick(event.reservationId)}
+              className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all hover:scale-[1.01] border border-neutral-200 dark:border-neutral-700 cursor-pointer"
             >
               <div className="flex h-16 w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-glow flex-shrink-0">
                 <span className="text-xs font-semibold">{event.date.split(' ')[1]}</span>
