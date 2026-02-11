@@ -111,6 +111,17 @@ router.post(
 // ═══════════════════════════════════════════════════════════════
 
 /**
+ * @route   GET /api/menu-packages
+ * @desc    List all packages (with optional filter)
+ * @query   menuTemplateId?: string
+ * @access  Public
+ */
+router.get(
+  '/menu-packages',
+  menuPackageController.list.bind(menuPackageController)
+);
+
+/**
  * @route   GET /api/menu-packages/template/:templateId
  * @desc    List all packages for a menu template
  * @params  templateId: string
