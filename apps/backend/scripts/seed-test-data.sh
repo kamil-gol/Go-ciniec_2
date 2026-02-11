@@ -21,7 +21,7 @@ fi
 
 USER_ID=$(echo $LOGIN | jq -r '.data.user.id')
 
-echo "✅ Logged in as admin"
+echo "✅ Logged in as admin (User ID: ${USER_ID:0:8}...)"
 echo ""
 
 # ============================================
@@ -56,7 +56,7 @@ for hall_data in "${HALLS[@]}"; do
       \"isActive\": true
     }")
   
-  HALL_ID=$(echo $HALL | jq -r '.id')
+  HALL_ID=$(echo $HALL | jq -r '.data.id')
   HALL_IDS[$name]=$HALL_ID
   echo "  ✅ $name (capacity: $capacity, ID: ${HALL_ID:0:8}...)"
 done
@@ -92,7 +92,7 @@ for event_data in "${EVENT_TYPES[@]}"; do
       \"isActive\": true
     }")
   
-  EVENT_ID=$(echo $EVENT | jq -r '.id')
+  EVENT_ID=$(echo $EVENT | jq -r '.data.id')
   EVENT_TYPE_IDS[$name]=$EVENT_ID
   echo "  ✅ $name $icon (ID: ${EVENT_ID:0:8}...)"
 done
@@ -143,7 +143,7 @@ for client_data in "${CLIENTS[@]}"; do
       \"notes\": \"Klient testowy\"
     }")
   
-  CLIENT_ID=$(echo $CLIENT | jq -r '.id')
+  CLIENT_ID=$(echo $CLIENT | jq -r '.data.id')
   CLIENT_IDS+=($CLIENT_ID)
   echo "  ✅ $firstName $lastName ($email)"
 done
@@ -182,7 +182,7 @@ for cat_data in "${CATEGORIES[@]}"; do
       \"isActive\": true
     }")
   
-  CAT_ID=$(echo $CAT | jq -r '.id')
+  CAT_ID=$(echo $CAT | jq -r '.data.id')
   CATEGORY_IDS[$slug]=$CAT_ID
   echo "  ✅ $name $icon"
 done
@@ -265,7 +265,7 @@ for event_name in "Wesele" "Urodziny" "Komunia"; do
         \"isActive\": true
       }")
     
-    TEMPLATE_ID=$(echo $TEMPLATE | jq -r '.id')
+    TEMPLATE_ID=$(echo $TEMPLATE | jq -r '.data.id')
     echo "  ✅ Menu Template: $event_name"
     
     # Create 3 packages per template
@@ -382,7 +382,7 @@ for i in {1..15}; do
       \"notes\": \"Potwierdzona rezerwacja #$i\"
     }")
   
-  RES_ID=$(echo $RESERVATION | jq -r '.id')
+  RES_ID=$(echo $RESERVATION | jq -r '.data.id')
   
   if [ "$RES_ID" != "null" ] && [ "$RES_ID" != "" ]; then
     RESERVATION_IDS+=($RES_ID)
@@ -429,7 +429,7 @@ for i in {1..10}; do
       \"notes\": \"W kolejce - oczekuje na potwierdzenie daty\"
     }")
   
-  QUEUE_ID=$(echo $QUEUE_RES | jq -r '.id')
+  QUEUE_ID=$(echo $QUEUE_RES | jq -r '.data.id')
   
   if [ "$QUEUE_ID" != "null" ] && [ "$QUEUE_ID" != "" ]; then
     QUEUE_COUNT=$((QUEUE_COUNT + 1))
@@ -450,8 +450,8 @@ for RES_ID in "${RESERVATION_IDS[@]}"; do
   RES=$(curl -s -H "Authorization: Bearer $TOKEN" \
     "http://localhost:3001/api/reservations/$RES_ID")
   
-  TOTAL_PRICE=$(echo $RES | jq -r '.totalPrice')
-  RES_DATE=$(echo $RES | jq -r '.date')
+  TOTAL_PRICE=$(echo $RES | jq -r '.data.totalPrice')
+  RES_DATE=$(echo $RES | jq -r '.data.date')
   
   if [ "$RES_DATE" = "null" ] || [ -z "$RES_DATE" ]; then
     continue
