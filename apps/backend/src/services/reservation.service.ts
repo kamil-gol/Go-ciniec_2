@@ -126,9 +126,9 @@ export class ReservationService {
     let optionsPrice = 0;
 
     if (data.menuPackageId) {
-      // ┌───────────────────────────────────────────────────────────
+      // ┌─────────────────────────────────────────────────────────────
       // PATH A: Menu package selected - fetch prices from package
-      // └───────────────────────────────────────────────────────────
+      // └─────────────────────────────────────────────────────────────
       menuPackage = await prisma.menuPackage.findUnique({
         where: { id: data.menuPackageId },
         include: {
@@ -162,16 +162,15 @@ export class ReservationService {
       if (data.selectedOptions && data.selectedOptions.length > 0) {
         selectedOptions = await this.processSelectedOptions(
           data.selectedOptions,
-          menuPackage.packageOptions,
           guests
         );
         optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
       }
 
     } else {
-      // ┌───────────────────────────────────────────────────────────
+      // ┌─────────────────────────────────────────────────────────────
       // PATH B: No package - manual prices REQUIRED
-      // └───────────────────────────────────────────────────────────
+      // └─────────────────────────────────────────────────────────────
       if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
         throw new Error('Price per adult and per child are required when no menu package is selected');
       }
@@ -443,7 +442,6 @@ export class ReservationService {
       if (data.selectedOptions && data.selectedOptions.length > 0) {
         selectedOptions = await this.processSelectedOptions(
           data.selectedOptions,
-          menuPackage.packageOptions,
           guests
         );
         optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
@@ -522,34 +520,39 @@ export class ReservationService {
 
   /**
    * NEW: Process selected options and validate them
+   * UPDATED: Accept any active menu option, not just package-assigned options
    */
   private async processSelectedOptions(
     selections: MenuOptionSelection[],
-    packageOptions: any[],
     totalGuests: number
   ): Promise<any[]> {
     const processed = [];
 
     for (const selection of selections) {
-      // Find option in package
-      const packageOption = packageOptions.find(po => po.optionId === selection.optionId);
-      if (!packageOption) {
-        throw new Error(`Option ${selection.optionId} is not available for this package`);
+      // Fetch option from database
+      const option = await prisma.menuOption.findUnique({
+        where: { id: selection.optionId }
+      });
+
+      if (!option) {
+        throw new Error(`Option ${selection.optionId} not found`);
       }
 
-      const option = packageOption.option;
+      if (!option.isActive) {
+        throw new Error(`Option ${option.name} is not active`);
+      }
 
       // Validate quantity
       const quantity = selection.quantity ?? 1;
       if (option.allowMultiple) {
-        if (quantity > option.maxQuantity) {
+        if (option.maxQuantity && quantity > option.maxQuantity) {
           throw new Error(`Maximum ${option.maxQuantity} of ${option.name} allowed`);
         }
       } else if (quantity > 1) {
         throw new Error(`Option ${option.name} does not allow multiple selections`);
       }
 
-      const price = packageOption.customPrice ? Number(packageOption.customPrice) : Number(option.priceAmount);
+      const price = Number(option.priceAmount);
 
       processed.push({
         optionId: option.id,
@@ -577,7 +580,7 @@ export class ReservationService {
 
       if (option.priceType === 'PER_PERSON') {
         total += price * totalGuests * quantity;
-      } else if (option.priceType === 'FIXED') {
+      } else if (option.priceType === 'FLAT' || option.priceType === 'FREE') {
         total += price * quantity;
       }
     }
