@@ -17,9 +17,9 @@ import type {
   ApiError,
 } from '@/types/menu.types';
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // AXIOS INSTANCE
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
@@ -69,9 +69,9 @@ api.interceptors.response.use(
   }
 );
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 function buildQueryParams(params: Record<string, any>): string {
   const query = new URLSearchParams();
@@ -86,9 +86,9 @@ function buildQueryParams(params: Record<string, any>): string {
   return queryString ? `?${queryString}` : '';
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // MENU API
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 export const menuApi = {
   // ────────────────────────────────────────
@@ -243,13 +243,14 @@ export const menuApi = {
 
   /**
    * Select menu for reservation (initial selection)
+   * Uses POST /reservations/:id/menu
    */
   selectMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
     const { data } = await api.post<ApiResponse<ReservationMenuResponse>>(
-      `/reservations/${reservationId}/select-menu`,
+      `/reservations/${reservationId}/menu`,
       selection
     );
     return data;
@@ -257,13 +258,14 @@ export const menuApi = {
 
   /**
    * Update menu selection for reservation
+   * Uses PUT /reservations/:id/menu
    */
   updateMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
-    const { data } = await api.post<ApiResponse<ReservationMenuResponse>>(
-      `/reservations/${reservationId}/select-menu`,
+    const { data } = await api.put<ApiResponse<ReservationMenuResponse>>(
+      `/reservations/${reservationId}/menu`,
       selection
     );
     return data;
@@ -310,8 +312,8 @@ export const menuApi = {
   },
 };
 
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 // EXPORT AXIOS INSTANCE FOR CUSTOM REQUESTS
-// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 
 export { api as apiClient };
