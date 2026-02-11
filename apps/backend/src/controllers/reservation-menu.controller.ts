@@ -35,13 +35,23 @@ class ReservationMenuController {
         return;
       }
 
+      console.log('[ReservationMenu] Select menu request:', {
+        reservationId,
+        body: req.body,
+      });
+
+      // Map frontend field names to backend field names
       const data: UpdateReservationMenuDTO = {
         menuPackageId: req.body.packageId,
         selectedOptions: req.body.selectedOptions || [],
-        adultsCount: req.body.adultsCount,
-        childrenCount: req.body.childrenCount,
-        toddlersCount: req.body.toddlersCount,
+        // Frontend sends: adults, children, toddlers
+        // Backend expects: adultsCount, childrenCount, toddlersCount
+        adultsCount: req.body.adults ?? req.body.adultsCount,
+        childrenCount: req.body.children ?? req.body.childrenCount,
+        toddlersCount: req.body.toddlers ?? req.body.toddlersCount,
       };
+
+      console.log('[ReservationMenu] Mapped data:', data);
 
       // Validate required fields
       if (!data.menuPackageId) {
@@ -61,6 +71,7 @@ class ReservationMenuController {
       });
     } catch (error: any) {
       console.error('[ReservationMenu] Error selecting menu:', error);
+      console.error('[ReservationMenu] Error stack:', error.stack);
       
       const statusCode = 
         error.message.includes('not found') ? 404 :
@@ -125,13 +136,23 @@ class ReservationMenuController {
         return;
       }
 
+      console.log('[ReservationMenu] Update menu request:', {
+        reservationId,
+        body: req.body,
+      });
+
+      // Map frontend field names to backend field names
       const data: UpdateReservationMenuDTO = {
         menuPackageId: req.body.packageId,
         selectedOptions: req.body.selectedOptions || [],
-        adultsCount: req.body.adultsCount,
-        childrenCount: req.body.childrenCount,
-        toddlersCount: req.body.toddlersCount,
+        // Frontend sends: adults, children, toddlers
+        // Backend expects: adultsCount, childrenCount, toddlersCount
+        adultsCount: req.body.adults ?? req.body.adultsCount,
+        childrenCount: req.body.children ?? req.body.childrenCount,
+        toddlersCount: req.body.toddlers ?? req.body.toddlersCount,
       };
+
+      console.log('[ReservationMenu] Mapped data:', data);
 
       // Validate required fields
       if (!data.menuPackageId) {
@@ -151,6 +172,7 @@ class ReservationMenuController {
       });
     } catch (error: any) {
       console.error('[ReservationMenu] Error updating menu:', error);
+      console.error('[ReservationMenu] Error stack:', error.stack);
       
       const statusCode = 
         error.message.includes('not found') ? 404 :
