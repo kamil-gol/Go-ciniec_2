@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { translateOptionCategory, sortCategories } from '@/lib/menu-utils';
 
 interface OptionsSelectorProps {
   options: MenuOption[];
@@ -31,23 +32,33 @@ export function OptionsSelector({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Get unique categories with counts
+  // Get unique categories with counts (translated to Polish)
   const categories = useMemo(() => {
     const categoryMap = new Map<string, number>();
     options.forEach(option => {
-      const count = categoryMap.get(option.category) || 0;
-      categoryMap.set(option.category, count + 1);
+      const translatedCategory = translateOptionCategory(option.category);
+      const count = categoryMap.get(translatedCategory) || 0;
+      categoryMap.set(translatedCategory, count + 1);
     });
-    return Array.from(categoryMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    
+    const categoryList = Array.from(categoryMap.entries())
+      .map(([name, count]) => ({ name, count }));
+    
+    // Sort categories with preferred order
+    const sortedNames = sortCategories(categoryList.map(c => c.name));
+    return sortedNames.map(name => ({
+      name,
+      count: categoryList.find(c => c.name === name)!.count
+    }));
   }, [options]);
 
   // Filter options
   const filteredOptions = useMemo(() => {
     return options.filter(option => {
+      const translatedCategory = translateOptionCategory(option.category);
+      
       // Category filter
-      if (selectedCategory && option.category !== selectedCategory) {
+      if (selectedCategory && translatedCategory !== selectedCategory) {
         return false;
       }
       // Search filter
@@ -56,7 +67,7 @@ export function OptionsSelector({
         return (
           option.name.toLowerCase().includes(query) ||
           option.description?.toLowerCase().includes(query) ||
-          option.category.toLowerCase().includes(query)
+          translatedCategory.toLowerCase().includes(query)
         );
       }
       return true;
