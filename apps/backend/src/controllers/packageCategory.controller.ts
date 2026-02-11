@@ -7,6 +7,7 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { bulkUpdateCategorySettingsSchema } from '@/validation/menu.validation';
 
 const prisma = new PrismaClient();
 
@@ -133,6 +134,11 @@ class PackageCategoryController {
         return res.status(400).json({ error: 'packageId and categoryId are required' });
       }
 
+      // Validate min <= max
+      if (minSelect > maxSelect) {
+        return res.status(400).json({ error: 'Minimalna wartość nie może być większa niż maksymalna' });
+      }
+
       // Check if package exists
       const packageExists = await prisma.menuPackage.findUnique({
         where: { id: packageId },
@@ -203,6 +209,11 @@ class PackageCategoryController {
     try {
       const { id } = req.params;
       const { minSelect, maxSelect, isRequired, isEnabled, displayOrder, customLabel } = req.body;
+
+      // Validate min <= max
+      if (minSelect !== undefined && maxSelect !== undefined && minSelect > maxSelect) {
+        return res.status(400).json({ error: 'Minimalna wartość nie może być większa niż maksymalna' });
+      }
 
       // Check if setting exists
       const existing = await prisma.packageCategorySettings.findUnique({
@@ -296,15 +307,27 @@ class PackageCategoryController {
   async bulkUpdate(req: Request, res: Response) {
     try {
       const { packageId } = req.params;
-      const { settings } = req.body;
 
       console.log('[PackageCategory] Bulk updating categories for package:', packageId);
-      console.log('[PackageCategory] Received settings:', settings?.length || 0);
+      console.log('[PackageCategory] Request body:', JSON.stringify(req.body, null, 2));
 
-      // Validate input
-      if (!Array.isArray(settings)) {
-        return res.status(400).json({ error: 'settings must be an array' });
+      // Validate input using Zod schema
+      const validation = bulkUpdateCategorySettingsSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        console.error('[PackageCategory] Validation failed:', validation.error.errors);
+        return res.status(400).json({
+          error: 'Validation error',
+          details: validation.error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        });
       }
+
+      const { settings } = validation.data;
+
+      console.log('[PackageCategory] Validated settings:', settings?.length || 0);
 
       // Check if package exists
       const packageExists = await prisma.menuPackage.findUnique({
@@ -332,8 +355,8 @@ class PackageCategoryController {
                 data: {
                   packageId,
                   categoryId: setting.categoryId,
-                  minSelect: setting.minSelect || 1,
-                  maxSelect: setting.maxSelect || 1,
+                  minSelect: setting.minSelect,
+                  maxSelect: setting.maxSelect,
                   isRequired: setting.isRequired !== undefined ? setting.isRequired : true,
                   isEnabled: setting.isEnabled !== undefined ? setting.isEnabled : true,
                   displayOrder: setting.displayOrder || 0,
