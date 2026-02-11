@@ -7,13 +7,26 @@ import type { MenuPackage, CreatePackageInput, UpdatePackageInput, DishCategory 
 import { createPackage, updatePackage, getDishCategories } from '@/lib/api/menu-packages';
 import CategorySettingsSection from './CategorySettingsSection';
 import type { CategorySettingInput } from '@/types/menu';
-import { Save, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Save, Loader2, AlertCircle, CheckCircle2, X, Palette } from 'lucide-react';
 
 interface PackageFormProps {
   menuTemplateId: string;
   initialData?: MenuPackage;
   onSuccess?: () => void;
 }
+
+const PRESET_COLORS = [
+  { name: 'Niebieski', value: '3b82f6' },
+  { name: 'Zielony', value: '22c55e' },
+  { name: 'Fioletowy', value: 'a855f7' },
+  { name: 'Różowy', value: 'ec4899' },
+  { name: 'Pomarańczowy', value: 'f97316' },
+  { name: 'Czerwony', value: 'ef4444' },
+  { name: 'Żółty', value: 'eab308' },
+  { name: 'Turkusowy', value: '06b6d4' },
+  { name: 'Indygo', value: '6366f1' },
+  { name: 'Szary', value: '6b7280' },
+];
 
 export default function PackageForm({
   menuTemplateId,
@@ -30,16 +43,15 @@ export default function PackageForm({
     name: initialData?.name || '',
     description: initialData?.description || '',
     shortDescription: initialData?.shortDescription || '',
-    pricePerAdult: initialData?.pricePerAdult || 0,
-    pricePerChild: initialData?.pricePerChild || 0,
-    pricePerToddler: initialData?.pricePerToddler || 0,
+    pricePerAdult: initialData?.pricePerAdult?.toString() || '',
+    pricePerChild: initialData?.pricePerChild?.toString() || '',
+    pricePerToddler: initialData?.pricePerToddler?.toString() || '0',
     displayOrder: initialData?.displayOrder || 0,
     isPopular: initialData?.isPopular || false,
     isRecommended: initialData?.isRecommended || false,
     color: initialData?.color || '3b82f6',
-    icon: initialData?.icon || '\ud83c\udf82',
+    icon: initialData?.icon || '🎂',
     badgeText: initialData?.badgeText || '',
-    includedItems: initialData?.includedItems || [],
   });
 
   // Load dish categories
@@ -57,21 +69,21 @@ export default function PackageForm({
         isRequired: cs.isRequired,
         isEnabled: cs.isEnabled,
         displayOrder: cs.displayOrder,
-        customLabel: cs.customLabel,
+        customLabel: cs.customLabel || null,
       }));
       setCategorySettings(settings);
     }
   }, [initialData]);
 
   async function loadCategories() {
-    const loadingToast = toast.loading('\ud83d\udcc1 Ładowanie kategorii...');
+    const loadingToast = toast.loading('📁 Ładowanie kategorii...');
     try {
       const data = await getDishCategories();
       setCategories(data);
-      toast.success('\u2705 Kategorie załadowane', { id: loadingToast });
+      toast.success('✅ Kategorie załadowane', { id: loadingToast });
     } catch (error) {
       console.error('Failed to load categories:', error);
-      toast.error('\u274c Błąd ładowania kategorii', { 
+      toast.error('❌ Błąd ładowania kategorii', { 
         id: loadingToast,
         description: 'Spróbuj odświeżyć stronę'
       });
@@ -84,7 +96,7 @@ export default function PackageForm({
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value,
+      [name]: type === 'checkbox' ? checked : type === 'number' ? parseInt(value) || 0 : value,
     }));
   }
 
@@ -95,7 +107,7 @@ export default function PackageForm({
   function validateForm(): boolean {
     // Name validation
     if (!formData.name || formData.name.trim().length < 3) {
-      toast.error('\u26a0\ufe0f Błąd walidacji', {
+      toast.error('⚠️ Błąd walidacji', {
         description: 'Nazwa pakietu musi mieć co najmniej 3 znaki',
         duration: 4000,
       });
@@ -103,16 +115,18 @@ export default function PackageForm({
     }
 
     // Price validation
-    if (formData.pricePerAdult <= 0) {
-      toast.error('\u26a0\ufe0f Błąd walidacji', {
+    const adultPrice = parseFloat(formData.pricePerAdult);
+    if (isNaN(adultPrice) || adultPrice <= 0) {
+      toast.error('⚠️ Błąd walidacji', {
         description: 'Cena dla dorosłych musi być większa od 0',
         duration: 4000,
       });
       return false;
     }
 
-    if (formData.pricePerChild < 0) {
-      toast.error('\u26a0\ufe0f Błąd walidacji', {
+    const childPrice = parseFloat(formData.pricePerChild);
+    if (isNaN(childPrice) || childPrice < 0) {
+      toast.error('⚠️ Błąd walidacji', {
         description: 'Cena dla dzieci nie może być ujemna',
         duration: 4000,
       });
@@ -121,17 +135,18 @@ export default function PackageForm({
 
     // Color validation
     if (formData.color && !/^[0-9A-Fa-f]{6}$/.test(formData.color.replace('#', ''))) {
-      toast.warning('\u26a0\ufe0f Nieprawidłowy kolor', {
-        description: 'Kolor musi być w formacie HEX (np. 3b82f6 lub #3b82f6)',
+      toast.warning('⚠️ Nieprawidłowy kolor', {
+        description: 'Kolor musi być w formacie HEX (np. 3b82f6)',
         duration: 4000,
       });
       return false;
     }
 
     // Category settings validation
-    if (categorySettings.length === 0) {
-      toast.warning('\ud83d\udcc2 Brak kategorii', {
-        description: 'Dodaj co najmniej jedną kategorię do pakietu',
+    const enabledCategories = categorySettings.filter((cs) => cs.isEnabled);
+    if (enabledCategories.length === 0) {
+      toast.warning('📂 Brak kategorii', {
+        description: 'Dodaj i włącz co najmniej jedną kategorię do pakietu',
         duration: 4000,
       });
       return false;
@@ -150,7 +165,7 @@ export default function PackageForm({
 
     setLoading(true);
     const savingToast = toast.loading(
-      initialData ? '\ud83d\udcbe Aktualizacja pakietu...' : '\u2728 Tworzenie pakietu...'
+      initialData ? '💾 Aktualizacja pakietu...' : '✨ Tworzenie pakietu...'
     );
 
     try {
@@ -158,16 +173,28 @@ export default function PackageForm({
       const cleanColor = formData.color.replace('#', '');
 
       const packageData: CreatePackageInput | UpdatePackageInput = {
-        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        shortDescription: formData.shortDescription.trim() || null,
+        pricePerAdult: formData.pricePerAdult,
+        pricePerChild: formData.pricePerChild,
+        pricePerToddler: formData.pricePerToddler || '0',
+        displayOrder: formData.displayOrder,
+        isPopular: formData.isPopular,
+        isRecommended: formData.isRecommended,
         color: cleanColor,
+        icon: formData.icon || null,
+        badgeText: formData.badgeText.trim() || null,
         menuTemplateId,
-        categorySettings,
+        categorySettings: categorySettings.filter((cs) => cs.isEnabled),
       };
+
+      console.log('Sending package data:', packageData);
 
       if (initialData) {
         // Update
         await updatePackage(initialData.id, packageData);
-        toast.success('\ud83c\udf89 Pakiet zaktualizowany!', {
+        toast.success('🎉 Pakiet zaktualizowany!', {
           id: savingToast,
           description: `Pakiet "${formData.name}" został pomyślnie zaktualizowany`,
           duration: 5000,
@@ -175,7 +202,7 @@ export default function PackageForm({
       } else {
         // Create
         await createPackage(packageData as CreatePackageInput);
-        toast.success('\u2728 Pakiet utworzony!', {
+        toast.success('✨ Pakiet utworzony!', {
           id: savingToast,
           description: `Nowy pakiet "${formData.name}" został dodany do menu`,
           duration: 5000,
@@ -195,14 +222,10 @@ export default function PackageForm({
       
       const errorMessage = error?.response?.data?.message || error?.message || 'Nieznany błąd';
       
-      toast.error('\u274c Błąd zapisu', {
+      toast.error('❌ Błąd zapisu', {
         id: savingToast,
         description: errorMessage,
         duration: 6000,
-        action: {
-          label: 'Spróbuj ponownie',
-          onClick: () => handleSubmit(e),
-        },
       });
     } finally {
       setLoading(false);
@@ -291,15 +314,14 @@ export default function PackageForm({
             </label>
             <div className="relative">
               <input
-                type="number"
+                type="text"
                 id="pricePerAdult"
                 name="pricePerAdult"
                 value={formData.pricePerAdult}
                 onChange={handleChange}
-                step="0.01"
-                min="0"
                 required
                 placeholder="180.00"
+                pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">zł</span>
@@ -312,15 +334,14 @@ export default function PackageForm({
             </label>
             <div className="relative">
               <input
-                type="number"
+                type="text"
                 id="pricePerChild"
                 name="pricePerChild"
                 value={formData.pricePerChild}
                 onChange={handleChange}
-                step="0.01"
-                min="0"
                 required
                 placeholder="90.00"
+                pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">zł</span>
@@ -333,14 +354,13 @@ export default function PackageForm({
             </label>
             <div className="relative">
               <input
-                type="number"
+                type="text"
                 id="pricePerToddler"
                 name="pricePerToddler"
                 value={formData.pricePerToddler}
                 onChange={handleChange}
-                step="0.01"
-                min="0"
                 placeholder="0.00"
+                pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">zł</span>
@@ -360,9 +380,9 @@ export default function PackageForm({
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-purple-100 rounded-lg">
-            <CheckCircle2 className="w-5 h-5 text-purple-600" />
+            <Palette className="w-5 h-5 text-purple-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Opcje wyświetlania</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Wygląd i opcje</h2>
         </div>
 
         <div className="space-y-6">
@@ -399,8 +419,53 @@ export default function PackageForm({
             </label>
           </div>
 
+          {/* Color Picker */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              Kolor pakietu
+            </label>
+            <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+              {PRESET_COLORS.map((preset) => (
+                <button
+                  key={preset.value}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, color: preset.value }))}
+                  className={`group relative w-full aspect-square rounded-xl transition-all ${
+                    formData.color === preset.value
+                      ? 'ring-4 ring-blue-500 ring-offset-2 scale-110'
+                      : 'hover:scale-105 hover:ring-2 hover:ring-slate-300'
+                  }`}
+                  style={{ backgroundColor: `#${preset.value}` }}
+                  title={preset.name}
+                >
+                  {formData.color === preset.value && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-white drop-shadow-lg" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                placeholder="3b82f6"
+                maxLength={6}
+                pattern="[0-9A-Fa-f]{6}"
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
+              />
+              <div 
+                className="w-12 h-12 rounded-xl border-2 border-slate-300 shadow-sm"
+                style={{ backgroundColor: `#${formData.color}` }}
+              ></div>
+            </div>
+          </div>
+
           {/* Display inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <label htmlFor="displayOrder" className="block text-sm font-semibold text-slate-700 mb-2">
                 Kolejność
@@ -418,29 +483,6 @@ export default function PackageForm({
             </div>
 
             <div>
-              <label htmlFor="color" className="block text-sm font-semibold text-slate-700 mb-2">
-                Kolor
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="color"
-                  name="color"
-                  value={formData.color}
-                  onChange={handleChange}
-                  placeholder="3b82f6"
-                  maxLength={7}
-                  className="w-full px-4 py-3 pl-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono"
-                />
-                <div 
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded border-2 border-slate-300"
-                  style={{ backgroundColor: `#${formData.color.replace('#', '')}` }}
-                ></div>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Bez # (np. 3b82f6)</p>
-            </div>
-
-            <div>
               <label htmlFor="icon" className="block text-sm font-semibold text-slate-700 mb-2">
                 Emoji
               </label>
@@ -450,7 +492,7 @@ export default function PackageForm({
                 name="icon"
                 value={formData.icon}
                 onChange={handleChange}
-                placeholder="\ud83c\udf82"
+                placeholder="🎂"
                 maxLength={4}
                 className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-2xl text-center"
               />
