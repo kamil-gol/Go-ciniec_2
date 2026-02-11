@@ -402,6 +402,7 @@ QUEUE_COUNT=0
 
 for i in {1..10}; do
   CLIENT_ID=${CLIENT_IDS[$((RANDOM % ${#CLIENT_IDS[@]}))]}
+  HALL_ID=${HALL_ID_ARRAY[$((RANDOM % ${#HALL_ID_ARRAY[@]}))]}  # Add hall for queue
   EVENT_TYPE_ID=${EVENT_TYPE_ID_ARRAY[$((RANDOM % ${#EVENT_TYPE_ID_ARRAY[@]}))]}
   
   ADULTS=$((RANDOM % 71 + 20))
@@ -418,6 +419,7 @@ for i in {1..10}; do
     -d "{
       \"clientId\": \"$CLIENT_ID\",
       \"createdById\": \"$USER_ID\",
+      \"hallId\": \"$HALL_ID\",
       \"eventTypeId\": \"$EVENT_TYPE_ID\",
       \"reservationQueueDate\": \"$QUEUE_DATE\",
       \"reservationQueuePosition\": $i,
