@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   MenuTemplate, 
   MenuPackage, 
@@ -16,7 +16,8 @@ import {
 } from '@/types/menu.types';
 import { 
   useMenuTemplates, 
-  useMenuPackages, 
+  useMenuPackages,
+  useMenuPackage,
   useMenuOptions 
 } from '@/hooks/use-menu';
 import {
@@ -73,13 +74,14 @@ export function MenuSelectionFlow({
   const [currentStep, setCurrentStep] = useState<Step>('template');
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
   const [selectedPackage, setSelectedPackage] = useState<MenuPackage>();
-  const [dishSelections, setDishSelections] = useState<CategorySelection[]>([]);
+  const [dishSelections, setDishSelections] = useState<CategorySelection[]>(initialSelection?.dishSelections || []);
   const [guestCounts, setGuestCounts] = useState({
     adults,
     children,
     toddlers,
   });
   const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Queries
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ 
@@ -87,7 +89,40 @@ export function MenuSelectionFlow({
     isActive: true 
   });
   const { data: packages, isLoading: packagesLoading } = useMenuPackages(selectedTemplate?.id);
+  const { data: initialPackage, isLoading: initialPackageLoading } = useMenuPackage(
+    initialSelection?.packageId && !isInitialized ? initialSelection.packageId : undefined
+  );
   const { data: options, isLoading: optionsLoading } = useMenuOptions({ isActive: true });
+
+  // Initialize from initialSelection
+  useEffect(() => {
+    if (initialSelection && !isInitialized && templates && initialPackage) {
+      // Find template from package
+      const template = templates.find(t => t.id === initialPackage.menuTemplateId);
+      if (template) {
+        setSelectedTemplate(template);
+        setSelectedPackage(initialPackage);
+        
+        // Convert selectedOptions to optionQuantities format
+        if (initialSelection.selectedOptions) {
+          const quantities: Record<string, number> = {};
+          initialSelection.selectedOptions.forEach(opt => {
+            quantities[opt.optionId] = opt.quantity;
+          });
+          setOptionQuantities(quantities);
+        }
+
+        // Start from appropriate step
+        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+          setCurrentStep('options'); // Skip to options if already has dishes
+        } else {
+          setCurrentStep('dishes'); // Go to dishes selection
+        }
+        
+        setIsInitialized(true);
+      }
+    }
+  }, [initialSelection, templates, initialPackage, isInitialized]);
 
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
     { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
@@ -140,6 +175,15 @@ export function MenuSelectionFlow({
   };
 
   const totalGuests = guestCounts.adults + guestCounts.children + guestCounts.toddlers;
+
+  // Show loading when initializing from initialSelection
+  if (initialSelection && !isInitialized && (templatesLoading || initialPackageLoading)) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-8', className)}>
@@ -314,6 +358,7 @@ export function MenuSelectionFlow({
 
               <DishSelector
                 packageId={selectedPackage.id}
+                initialSelections={dishSelections}
                 onComplete={handleDishesComplete}
                 onBack={() => setCurrentStep('package')}
               />
