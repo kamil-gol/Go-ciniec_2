@@ -9,12 +9,12 @@ export async function seedE2ETestData() {
   // 1. HALLS
   console.log('🏛️  Seeding Halls...');
   const halls = [
-    { name: 'Sala Kryształowa', capacity: 200, description: 'Elegancka sala z kryształowymi żyrandolami', isActive: true },
-    { name: 'Sala Taneczna', capacity: 150, description: 'Sala z dużym parkietem tanecznym', isActive: true },
-    { name: 'Sala Złota', capacity: 100, description: 'Kameralna sala w złotych tonach', isActive: true },
-    { name: 'Cały obiekt', capacity: 500, description: 'Wynajem całego obiektu', isActive: true },
-    { name: 'Strzecha 1', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
-    { name: 'Strzecha 2', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
+    { name: 'Sala Kryształowa', capacity: 200, pricePerPerson: 150, description: 'Elegancka sala z kryształowymi żyrandolami', isActive: true },
+    { name: 'Sala Taneczna', capacity: 150, pricePerPerson: 130, description: 'Sala z dużym parkietem tanecznym', isActive: true },
+    { name: 'Sala Złota', capacity: 100, pricePerPerson: 120, description: 'Kameralna sala w złotych tonach', isActive: true },
+    { name: 'Cały obiekt', capacity: 500, pricePerPerson: 200, description: 'Wynajem całego obiektu', isActive: true },
+    { name: 'Strzecha 1', capacity: 80, pricePerPerson: 110, description: 'Sala w stylu ludowym', isActive: true },
+    { name: 'Strzecha 2', capacity: 80, pricePerPerson: 110, description: 'Sala w stylu ludowym', isActive: true },
   ];
 
   await prisma.hall.deleteMany({});
