@@ -47,6 +47,73 @@ export interface Client {
   updatedAt: string
 }
 
+// Menu Package types 🆕 NEW!
+export interface MenuPackage {
+  id: string
+  name: string
+  description?: string
+  menuTemplateId: string
+  pricePerAdult: number
+  pricePerChild: number
+  pricePerToddler: number
+  minGuests?: number
+  maxGuests?: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  menuTemplate?: {
+    id: string
+    name: string
+  }
+}
+
+// Menu Option (dodatki do pakietów) 🆕 NEW!
+export interface MenuOption {
+  id: string
+  menuTemplateId: string
+  name: string
+  description?: string
+  pricePerUnit: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+// Menu Option Selection (wybrane opcje) 🆕 NEW!
+export interface MenuOptionSelection {
+  optionId: string
+  quantity: number
+}
+
+// Menu Snapshot (zapis menu w rezerwacji) 🆕 NEW!
+export interface MenuSnapshot {
+  id: string
+  reservationId: string
+  menuData: {
+    packageName: string
+    templateName: string
+    pricePerAdult: number
+    pricePerChild: number
+    pricePerToddler: number
+    selectedOptions: Array<{
+      name: string
+      pricePerUnit: number
+      quantity: number
+    }>
+    packageDescription?: string
+  }
+  menuTemplateId: string
+  packageId: string
+  packagePrice: string
+  optionsPrice: string
+  totalMenuPrice: string
+  adultsCount: number
+  childrenCount: number
+  toddlersCount: number
+  selectedAt: string
+  updatedAt: string
+}
+
 // Reservation types
 export enum ReservationStatus {
   PENDING = 'PENDING',
@@ -76,15 +143,20 @@ export interface Reservation {
   startDateTime: string // New field - full datetime for event start
   endDateTime: string // New field - full datetime for event end
   
-  // Guest count split
-  adults: number // New field - number of adults
-  children: number // New field - number of children
-  guests: number // Computed field - total guests (adults + children)
+  // Guest count split 🔄 UPDATED!
+  adults: number // Number of adults
+  children: number // Number of children (4-12)
+  toddlers: number // 🆕 NEW! Number of toddlers (0-3)
+  guests: number // Computed field - total guests (adults + children + toddlers)
   
-  // Pricing
-  pricePerAdult: number // New field - price per adult
-  pricePerChild: number // New field - price per child  
+  // Pricing 🔄 UPDATED!
+  pricePerAdult: number // Price per adult
+  pricePerChild: number // Price per child (4-12)
+  pricePerToddler: number // 🆕 NEW! Price per toddler (0-3)
   totalPrice: number
+  
+  // Menu Integration 🆕 NEW!
+  menuSnapshot?: MenuSnapshot // Menu snapshot if menu package selected
   
   // Status related
   status: ReservationStatus
@@ -182,6 +254,7 @@ export interface CreateQueueReservationInput {
   guests: number
   adults: number
   children?: number
+  toddlers?: number // 🆕 NEW!
   notes?: string
 }
 
@@ -196,11 +269,16 @@ export interface PromoteQueueReservationInput {
   endDateTime: string
   adults: number
   children: number
+  toddlers: number // 🆕 NEW!
   pricePerAdult: number
   pricePerChild: number
+  pricePerToddler: number // 🆕 NEW!
   status: 'PENDING' | 'CONFIRMED'
   confirmationDeadline?: string
   notes?: string
+  // Menu fields 🆕 NEW!
+  menuPackageId?: string
+  selectedOptions?: MenuOptionSelection[]
   deposit?: {
     amount: number
     dueDate: string
@@ -273,7 +351,7 @@ export interface ApiError {
   errors?: Record<string, string[]>
 }
 
-// Form types
+// Form types 🔄 UPDATED!
 export interface CreateReservationInput {
   hallId: string
   clientId: string
@@ -286,10 +364,19 @@ export interface CreateReservationInput {
   startDateTime: string // Full ISO datetime
   endDateTime: string // Full ISO datetime
   
+  // Guest counts - ALL REQUIRED 🆕 CHANGED!
   adults: number
   children: number
-  pricePerAdult: number
-  pricePerChild: number
+  toddlers: number // 🆕 NEW!
+  
+  // Pricing - conditional based on menu package 🆕 CHANGED!
+  pricePerAdult?: number // Optional if menuPackageId provided
+  pricePerChild?: number // Optional if menuPackageId provided
+  pricePerToddler?: number // 🆕 NEW! Optional if menuPackageId provided
+  
+  // Menu Integration 🆕 NEW!
+  menuPackageId?: string // Optional - if provided, prices come from package
+  selectedOptions?: MenuOptionSelection[] // Optional - additional menu options
   
   confirmationDeadline?: string // For PENDING status
   
@@ -297,6 +384,9 @@ export interface CreateReservationInput {
   deposit?: {
     amount: number
     dueDate: string
+    paid?: boolean
+    paymentMethod?: string
+    paidAt?: string
   }
 }
 
@@ -314,4 +404,13 @@ export interface CreateClientInput {
   email?: string // Optional email
   phone: string
   notes?: string
+}
+
+// Menu API Types 🆕 NEW!
+export interface UpdateReservationMenuInput {
+  packageId: string | null // null to remove menu
+  adultsCount?: number // Optional - override guest counts
+  childrenCount?: number
+  toddlersCount?: number
+  selectedOptions?: MenuOptionSelection[]
 }
