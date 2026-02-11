@@ -25,17 +25,25 @@
 - **Clients** - baza klientów
 - **Halls** - zarządzanie salami
 
-### 🆕 Menu Integration (NEW!)
+### 🆕 Menu Integration (COMPLETED - 12.02.2026)
 
-**Teraz przy tworzeniu rezerwacji:**
+**Status: ✅ W pełni funkcjonalne**
+
+**Podczas tworzenia/edycji rezerwacji:**
 - ✅ **Liczba osób ZAWSZE wymagana** (adults, children, toddlers)
 - ✅ **Wybór pakietu menu opcjonalny** - ceny pobierane automatycznie z pakietu
 - ✅ **Dodawanie opcji dodatkowych** do pakietu (MenuOptions)
 - ✅ **Ceny ręczne** gdy nie wybrano pakietu
 - ✅ **Edycja menu** w istniejącej rezerwacji (`PUT /api/reservations/:id/menu`)
-- ✅ **MenuSnapshot** - automatyczny zapis danych menu
+- ✅ **MenuSnapshot** - automatyczny zapis danych menu z priceBreakdown
 - ✅ **Walidacja** min/max guests dla pakietu
 - ✅ **Historia zmian** - tracking zmian menu
+- ✅ **Frontend wyświetlanie** - komponenty dla szczegółów menu i cennika
+
+**Naprawione (12.02.2026, 00:27 CET):**
+- 🐛 **Fix:** GET `/api/reservations/:id/menu` endpoint teraz zwraca zarówno `snapshot` jak i `priceBreakdown`
+- 🐛 **Fix:** Frontend poprawnie wyświetla wybrane menu w szczegółach rezerwacji
+- 🐛 **Fix:** Przywrócenie backupu po zmianach schema - dane menu zachowane
 
 **Przykład użycia:**
 ```typescript
@@ -60,6 +68,17 @@ POST /api/reservations
   toddlers: 2,
   pricePerAdult: 150,
   pricePerChild: 75
+}
+
+// Pobieranie menu rezerwacji
+GET /api/reservations/:id/menu
+// Response:
+{
+  "success": true,
+  "data": {
+    "snapshot": { /* dane menu */ },
+    "priceBreakdown": { /* szczegóły cenowe */ }
+  }
 }
 ```
 
@@ -93,6 +112,8 @@ POST /api/reservations
 - React 18
 - TypeScript
 - Tailwind CSS
+- Shadcn/ui components
+- React Query (TanStack Query)
 - Docker
 
 ## 📏 API Endpoints
@@ -108,7 +129,7 @@ GET    /api/reservations/:id/pdf
 
 # Menu Management 🆕
 POST   /api/reservations/:id/menu          # Wybierz menu
-GET    /api/reservations/:id/menu          # Pobierz menu
+GET    /api/reservations/:id/menu          # Pobierz menu (z priceBreakdown)
 PUT    /api/reservations/:id/menu          # Aktualizuj menu
 DELETE /api/reservations/:id/menu          # Usuń menu
 ```
@@ -131,6 +152,7 @@ GET    /api/dish-categories
 GET    /api/dishes
 POST   /api/clients
 GET    /api/halls
+GET    /api/event-types
 ```
 
 ## 📚 Dokumentacja
@@ -230,6 +252,21 @@ const updateMenu = async (reservationId, menuData) => {
   
   return response.json();
 };
+
+// Pobranie menu dla rezerwacji (z priceBreakdown)
+const getMenu = async (reservationId) => {
+  const response = await fetch(
+    `http://localhost:3001/api/reservations/${reservationId}/menu`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  return response.json();
+  // Returns: { success: true, data: { snapshot, priceBreakdown } }
+};
 ```
 
 ## 📊 Struktura Projektu
@@ -241,7 +278,7 @@ Go-ciniec_2/
 │   │   ├── src/
 │   │   │   ├── controllers/
 │   │   │   │   ├── reservation.controller.ts         🔄 Updated
-│   │   │   │   └── reservation-menu.controller.ts   🔄 Updated
+│   │   │   │   └── reservation-menu.controller.ts   ✅ Fixed (12.02.2026)
 │   │   │   ├── routes/
 │   │   │   ├── services/
 │   │   │   │   ├── reservation.service.ts           🔄 Updated
@@ -258,9 +295,13 @@ Go-ciniec_2/
 │       │       └── menu/
 │       │           └── packages/
 │       ├── components/
-│       │   └── menu/
+│       │   ├── menu/
+│       │   └── reservations/
+│       │       └── ReservationMenuSection.tsx      ✅ Working
 │       ├── lib/
 │       │   └── api/
+│       ├── hooks/
+│       │   └── use-menu.ts                         ✅ Working
 │       └── types/
 │
 ├── docs/                # 📚 Dokumentacja
@@ -292,6 +333,14 @@ Go-ciniec_2/
 - Rezerwacje bez menu działają normalnie
 - Istniejące endpointy bez zmian
 
+## 🐛 Recent Fixes
+
+### 12.02.2026 - Menu Display Fix
+- **Problem:** Frontend wyświetlał "Brak wybranego menu" mimo że dane były w bazie
+- **Przyczyna:** Endpoint `GET /api/reservations/:id/menu` zwracał tylko `snapshot` bez `priceBreakdown`
+- **Rozwiązanie:** Dodano kalkulację `priceBreakdown` w endpoint response
+- **Status:** ✅ Naprawione - menu wyświetla się poprawnie
+
 ## 👥 Contributors
 
 - Kamil Gołębiowski ([@kamil-gol](https://github.com/kamil-gol))
@@ -302,4 +351,4 @@ Private project
 
 ---
 
-**Ostatnia aktualizacja:** 11.02.2026, 22:33 CET - Dodano Menu Integration 🚀
+**Ostatnia aktualizacja:** 12.02.2026, 00:29 CET - Menu Integration COMPLETED ✅

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
@@ -14,7 +15,7 @@ import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
-import { useAllActivePackages } from '@/hooks/use-menu-packages'
+import { usePackagesByEventType } from '@/hooks/use-menu-packages'
 import { formatCurrency } from '@/lib/utils'
 import { Calendar, Clock, Users, DollarSign, FileText, UserPlus, AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed, Sparkles } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
@@ -102,6 +103,7 @@ export function CreateReservationForm({
   initialData,
   isPromotingFromQueue = false
 }: CreateReservationFormProps) {
+  const router = useRouter()
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [totalGuests, setTotalGuests] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
@@ -114,7 +116,6 @@ export function CreateReservationForm({
   const { data: halls, isLoading: hallsLoading, error: hallsError } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
   const { data: eventTypes, isLoading: eventTypesLoading, error: eventTypesError } = useEventTypes()
-  const { data: menuPackages, isLoading: menuPackagesLoading } = useAllActivePackages()
   const createReservation = useCreateReservation()
 
   const {
@@ -142,6 +143,7 @@ export function CreateReservationForm({
   const depositPaid = watch('depositPaid')
   const useMenuPackage = watch('useMenuPackage')
   const menuPackageId = watch('menuPackageId')
+  const selectedEventTypeId = watch('eventTypeId')
   
   const adults = Number(watch('adults')) || 0
   const children = Number(watch('children')) || 0
@@ -149,9 +151,11 @@ export function CreateReservationForm({
   const pricePerAdult = Number(watch('pricePerAdult')) || 0
   const pricePerChild = Number(watch('pricePerChild')) || 0
   const pricePerToddler = Number(watch('pricePerToddler')) || 0
-  const selectedEventTypeId = watch('eventTypeId')
   const startDate = watch('startDate')
   const startTime = watch('startTime')
+
+  // ⚡ ZMIANA: Pobieranie pakietów tylko dla wybranego typu wydarzenia
+  const { data: menuPackages, isLoading: menuPackagesLoading } = usePackagesByEventType(selectedEventTypeId)
 
   // Get selected menu package
   const selectedPackage = useMemo(() => {
@@ -167,6 +171,18 @@ export function CreateReservationForm({
       setValue('pricePerToddler', parseFloat(selectedPackage.pricePerToddler))
     }
   }, [useMenuPackage, selectedPackage, setValue])
+
+  // ⚡ ZMIANA: Resetuj wybór pakietu gdy zmienia się typ wydarzenia
+  useEffect(() => {
+    if (selectedEventTypeId && menuPackageId) {
+      // Check if current package is still valid for new event type
+      const isPackageStillValid = menuPackages?.some((pkg) => pkg.id === menuPackageId)
+      if (!isPackageStillValid) {
+        setValue('menuPackageId', '')
+        setValue('useMenuPackage', false)
+      }
+    }
+  }, [selectedEventTypeId, menuPackageId, menuPackages, setValue])
 
   const selectedEventTypeName = useMemo(() => {
     if (!selectedEventTypeId) return ''
@@ -331,7 +347,12 @@ export function CreateReservationForm({
       if (onSubmitProp) {
         await onSubmitProp(input)
       } else {
-        await createReservation.mutateAsync(input)
+        const result = await createReservation.mutateAsync(input)
+        
+        // ⚡ FIX: Poprawny redirect do strony szczegółów w dashboardzie
+        if (result?.id) {
+          router.push(`/dashboard/reservations/${result.id}`)
+        }
       }
       onSuccess?.()
     } catch (error) {
@@ -381,6 +402,9 @@ export function CreateReservationForm({
     { value: 'TRANSFER', label: 'Przelew' },
     { value: 'BLIK', label: 'BLIK' },
   ]
+
+  // ⚡ ZMIANA: Komunikat gdy brak pakietów dla wybranego typu wydarzenia
+  const hasNoPackagesForEventType = selectedEventTypeId && !menuPackagesLoading && menuPackagesArray.length === 0
 
   return (
     <motion.div
@@ -650,6 +674,7 @@ export function CreateReservationForm({
                     type="checkbox"
                     id="useMenuPackage"
                     className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                    disabled={!selectedEventTypeId || hasNoPackagesForEventType}
                     {...register('useMenuPackage')}
                   />
                   <label htmlFor="useMenuPackage" className="ml-2 text-sm text-secondary-700">
@@ -657,6 +682,26 @@ export function CreateReservationForm({
                   </label>
                 </div>
               </div>
+
+              {/* ⚡ ZMIANA: Komunikat gdy brak pakietów */}
+              {hasNoPackagesForEventType && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2"
+                >
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                  <p className="text-sm text-amber-800">
+                    Brak dostępnych pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.
+                  </p>
+                </motion.div>
+              )}
+
+              {!selectedEventTypeId && (
+                <p className="text-sm text-secondary-500">
+                  Wybierz typ wydarzenia aby zobaczyć dostępne pakiety menu
+                </p>
+              )}
 
               {useMenuPackage && (
                 <motion.div
@@ -757,7 +802,7 @@ export function CreateReservationForm({
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm text-secondary-700">
-                    <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
+                    <span>Dorosłi: {adults} × {pricePerAdult} PLN</span>
                     <span className="font-medium">{adults * pricePerAdult} PLN</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-secondary-700">
