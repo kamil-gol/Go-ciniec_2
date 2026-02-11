@@ -32,6 +32,7 @@ import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed } from
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface DishSelection {
   dishId: string
@@ -71,6 +72,7 @@ export function MenuSelectionFlow({
   onComplete,
   className 
 }: MenuSelectionFlowProps) {
+  const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState<Step>('template');
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
   const [selectedPackage, setSelectedPackage] = useState<MenuPackage>();
@@ -134,6 +136,47 @@ export function MenuSelectionFlow({
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
 
+  // Check if user can navigate to a step
+  const canNavigateToStep = (stepId: Step): boolean => {
+    switch (stepId) {
+      case 'template':
+        return true; // Can always go back to template
+      case 'package':
+        return !!selectedTemplate; // Need template selected
+      case 'dishes':
+        return !!selectedTemplate && !!selectedPackage; // Need template and package
+      case 'guests':
+        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0; // Need dishes selected
+      case 'options':
+        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0; // Need dishes selected
+      default:
+        return false;
+    }
+  };
+
+  // Handle step click
+  const handleStepClick = (stepId: Step) => {
+    const stepIndex = steps.findIndex(s => s.id === stepId);
+    
+    // Allow navigation to current or completed steps
+    if (stepIndex <= currentStepIndex) {
+      setCurrentStep(stepId);
+      return;
+    }
+
+    // Check if can navigate forward
+    if (!canNavigateToStep(stepId)) {
+      toast({
+        title: 'Nie można przejść dalej',
+        description: 'Uzupełnij poprzednie kroki przed przejściem dalej.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCurrentStep(stepId);
+  };
+
   const handleTemplateSelect = (template: MenuTemplate) => {
     setSelectedTemplate(template);
     setSelectedPackage(undefined);
@@ -196,10 +239,15 @@ export function MenuSelectionFlow({
           {steps.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = index < currentStepIndex;
+            const isClickable = index <= currentStepIndex || canNavigateToStep(step.id);
             const StepIcon = step.icon;
             
             return (
-              <div key={step.id} className="flex flex-col items-center gap-2 flex-1">
+              <div 
+                key={step.id} 
+                className="flex flex-col items-center gap-2 flex-1"
+                onClick={() => handleStepClick(step.id)}
+              >
                 {/* Step Circle */}
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -207,8 +255,11 @@ export function MenuSelectionFlow({
                     scale: isActive ? 1.1 : 1, 
                     opacity: 1 
                   }}
+                  whileHover={isClickable ? { scale: 1.15 } : {}}
                   className={cn(
                     'relative flex h-12 w-12 items-center justify-center rounded-full border-4 font-bold transition-all shadow-lg',
+                    isClickable && 'cursor-pointer',
+                    !isClickable && 'cursor-not-allowed opacity-60',
                     isCompleted && 'border-green-500 bg-gradient-to-br from-green-500 to-emerald-500 text-white',
                     isActive && `border-white bg-gradient-to-br ${step.gradient} text-white shadow-xl`,
                     !isActive && !isCompleted && 'border-gray-300 bg-white text-gray-400 dark:bg-gray-800 dark:border-gray-600'
@@ -224,12 +275,18 @@ export function MenuSelectionFlow({
                   {isActive && (
                     <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${step.gradient} blur-xl opacity-40 -z-10`} />
                   )}
+
+                  {/* Hover effect for clickable steps */}
+                  {isClickable && !isActive && (
+                    <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 hover:opacity-10 transition-opacity" />
+                  )}
                 </motion.div>
                 
                 {/* Step Label */}
                 <span
                   className={cn(
                     'text-xs sm:text-sm font-semibold text-center transition-colors',
+                    isClickable && 'cursor-pointer',
                     isActive && 'text-transparent bg-clip-text bg-gradient-to-r ' + step.gradient,
                     isCompleted && 'text-green-600',
                     !isActive && !isCompleted && 'text-gray-500'
