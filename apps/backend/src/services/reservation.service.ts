@@ -233,10 +233,12 @@ export class ReservationService {
     } : null);
 
     if (depositData) {
+      const depositAmount = Number(depositData.amount);
       await prisma.deposit.create({
         data: {
           reservationId: reservation.id,
-          amount: depositData.amount,
+          amount: depositAmount,
+          remainingAmount: depositAmount, // Initially, remaining = full amount
           dueDate: new Date(depositData.dueDate),
           paid: depositData.paid || false,
           status: depositData.paid ? 'PAID' : 'PENDING',
