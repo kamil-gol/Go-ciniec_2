@@ -49,12 +49,23 @@ export interface DepositFilters {
 
 const ACTIVE_STATUSES = ['PENDING', 'PAID', 'OVERDUE', 'PARTIALLY_PAID'];
 
+/** Standard include for deposit queries */
+const DEPOSIT_INCLUDE = {
+  reservation: {
+    include: {
+      client: true,
+      hall: true,
+      eventType: true,
+    },
+  },
+} as const;
+
 const depositService = {
   /**
    * Create a new deposit for a reservation
    */
   async create(input: CreateDepositInput) {
-    const { reservationId, amount, dueDate, notes } = input;
+    const { reservationId, amount, dueDate } = input;
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
@@ -82,20 +93,20 @@ const depositService = {
       throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
     }
 
-    const deposit = await prisma.deposit.create({
+    // Create deposit - use plain values, let DB handle defaults for status/paid
+    const created = await prisma.deposit.create({
       data: {
-        reservationId,
-        amount: new Prisma.Decimal(amount),
-        remainingAmount: new Prisma.Decimal(amount),
+        reservation: { connect: { id: reservationId } },
+        amount: amount,
+        remainingAmount: amount,
         dueDate: new Date(dueDate),
-        status: 'PENDING',
-        paid: false,
       },
-      include: {
-        reservation: {
-          include: { client: true },
-        },
-      },
+    });
+
+    // Fetch with full relations separately to avoid null byte in composite query
+    const deposit = await prisma.deposit.findUnique({
+      where: { id: created.id },
+      include: DEPOSIT_INCLUDE,
     });
 
     return deposit;
@@ -107,15 +118,7 @@ const depositService = {
   async getById(id: string) {
     const deposit = await prisma.deposit.findUnique({
       where: { id },
-      include: {
-        reservation: {
-          include: {
-            client: true,
-            hall: true,
-            eventType: true,
-          },
-        },
-      },
+      include: DEPOSIT_INCLUDE,
     });
 
     if (!deposit) {
@@ -192,11 +195,11 @@ const depositService = {
     const where: Prisma.DepositWhereInput = {};
 
     if (reservationId) where.reservationId = reservationId;
-    if (status) where.status = status;
+    if (status) where.status = { equals: status };
     if (paid !== undefined) where.paid = paid;
 
     if (overdue) {
-      where.status = 'PENDING';
+      where.status = { equals: 'PENDING' };
       where.dueDate = { lt: new Date() };
     }
 
@@ -228,15 +231,7 @@ const depositService = {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          reservation: {
-            include: {
-              client: true,
-              hall: true,
-              eventType: true,
-            },
-          },
-        },
+        include: DEPOSIT_INCLUDE,
       }),
       prisma.deposit.count({ where }),
     ]);
@@ -292,23 +287,25 @@ const depositService = {
       }
     }
 
-    const updateData: Prisma.DepositUpdateInput = {};
+    // Build update data with plain values
+    const updateData: any = {};
     if (input.amount !== undefined) {
-      updateData.amount = new Prisma.Decimal(input.amount);
-      updateData.remainingAmount = new Prisma.Decimal(input.amount);
+      updateData.amount = input.amount;
+      updateData.remainingAmount = input.amount;
     }
     if (input.dueDate) {
       updateData.dueDate = new Date(input.dueDate);
     }
 
-    const updated = await prisma.deposit.update({
+    await prisma.deposit.update({
       where: { id },
       data: updateData,
-      include: {
-        reservation: {
-          include: { client: true },
-        },
-      },
+    });
+
+    // Fetch with relations separately
+    const updated = await prisma.deposit.findUnique({
+      where: { id },
+      include: DEPOSIT_INCLUDE,
     });
 
     return updated;
@@ -348,31 +345,23 @@ const depositService = {
     const amountPaid = input.amountPaid || Number(deposit.amount);
     const remaining = Number(deposit.amount) - amountPaid;
 
-    let newStatus: string;
-    let isPaid: boolean;
+    const isPaid = remaining <= 0;
+    const newStatus = isPaid ? 'PAID' : 'PARTIALLY_PAID';
 
-    if (remaining <= 0) {
-      newStatus = 'PAID';
-      isPaid = true;
-    } else {
-      newStatus = 'PARTIALLY_PAID';
-      isPaid = false;
-    }
-
-    const updated = await prisma.deposit.update({
+    await prisma.deposit.update({
       where: { id },
       data: {
         paid: isPaid,
         status: newStatus,
         paidAt: new Date(input.paidAt),
         paymentMethod: input.paymentMethod,
-        remainingAmount: new Prisma.Decimal(Math.max(0, remaining)),
+        remainingAmount: Math.max(0, remaining),
       },
-      include: {
-        reservation: {
-          include: { client: true },
-        },
-      },
+    });
+
+    const updated = await prisma.deposit.findUnique({
+      where: { id },
+      include: DEPOSIT_INCLUDE,
     });
 
     return updated;
@@ -390,20 +379,20 @@ const depositService = {
       throw AppError.badRequest('Ta zaliczka nie jest oznaczona jako oplacona');
     }
 
-    const updated = await prisma.deposit.update({
+    await prisma.deposit.update({
       where: { id },
       data: {
         paid: false,
         status: 'PENDING',
         paidAt: null,
         paymentMethod: null,
-        remainingAmount: deposit.amount,
+        remainingAmount: Number(deposit.amount),
       },
-      include: {
-        reservation: {
-          include: { client: true },
-        },
-      },
+    });
+
+    const updated = await prisma.deposit.findUnique({
+      where: { id },
+      include: DEPOSIT_INCLUDE,
     });
 
     return updated;
@@ -423,17 +412,17 @@ const depositService = {
       );
     }
 
-    const updated = await prisma.deposit.update({
+    await prisma.deposit.update({
       where: { id },
       data: {
         status: 'CANCELLED',
-        remainingAmount: new Prisma.Decimal(0),
+        remainingAmount: 0,
       },
-      include: {
-        reservation: {
-          include: { client: true },
-        },
-      },
+    });
+
+    const updated = await prisma.deposit.findUnique({
+      where: { id },
+      include: DEPOSIT_INCLUDE,
     });
 
     return updated;
@@ -505,15 +494,7 @@ const depositService = {
         dueDate: { lt: now },
       },
       orderBy: { dueDate: 'asc' },
-      include: {
-        reservation: {
-          include: {
-            client: true,
-            hall: true,
-            eventType: true,
-          },
-        },
-      },
+      include: DEPOSIT_INCLUDE,
     });
 
     return deposits;
