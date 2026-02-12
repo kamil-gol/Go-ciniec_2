@@ -25,7 +25,6 @@ export const reservationsApi = {
   // Get all reservations with filters
   getAll: async (filters: ReservationsFilters = {}): Promise<PaginatedResponse<Reservation>> => {
     const { data } = await apiClient.get('/reservations', { params: filters })
-    console.log('Raw reservations response:', data)
     
     // Backend returns: { success: true, data: [...], count: 8 }
     // Transform to PaginatedResponse format
@@ -50,7 +49,6 @@ export const reservationsApi = {
     }
     
     // Fallback for direct array
-    console.warn('Unexpected reservations response format:', data)
     return {
       data: Array.isArray(data) ? data : [],
       total: Array.isArray(data) ? data.length : 0,
@@ -63,20 +61,19 @@ export const reservationsApi = {
   // Get single reservation by ID
   getById: async (id: string): Promise<Reservation> => {
     const { data } = await apiClient.get(`/reservations/${id}`)
-    console.log('Raw reservation by ID response:', data)
-    return data.data || data // Handle both structures
+    return data.data || data
   },
 
   // Create new reservation
   create: async (input: CreateReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.post('/reservations', input)
-    return data.data || data // Handle both structures
+    return data.data || data
   },
 
   // Update reservation - Backend uses PUT not PATCH
   update: async (id: string, input: UpdateReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.put(`/reservations/${id}`, input)
-    return data.data || data // Handle both structures
+    return data.data || data
   },
 
   // Update reservation status - Uses separate endpoint with validation
@@ -85,19 +82,19 @@ export const reservationsApi = {
       status,
       reason: reason || 'Status updated'
     })
-    return data.data || data // Handle both structures
+    return data.data || data
   },
 
   // Cancel reservation
   cancel: async (id: string, input: CancelReservationInput): Promise<Reservation> => {
     const { data } = await apiClient.delete(`/reservations/${id}`, { data: input })
-    return data.data || data // Handle both structures
+    return data.data || data
   },
 
   // Archive reservation
   archive: async (id: string): Promise<Reservation> => {
     const { data } = await apiClient.post(`/reservations/${id}/archive`)
-    return data.data || data // Handle both structures
+    return data.data || data
   },
 
   // Get reservation PDF
@@ -196,7 +193,6 @@ export const useUpdateReservationStatus = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
       queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY, variables.id] })
-      // Also invalidate clients query as client stats might have changed
       queryClient.invalidateQueries({ queryKey: ['clients'] })
     },
   })
