@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   UtensilsCrossed, Plus, Edit, Trash2, DollarSign, 
-  Users, Check, Package, Sparkles, ShoppingCart, ChefHat
+  Users, Package, Sparkles, ShoppingCart, ChefHat
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
 import { MenuDishesPreview } from '@/components/menu/MenuDishesPreview'
@@ -14,7 +14,6 @@ import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteR
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { formatCurrency } from '@/lib/utils'
 
 interface ReservationMenuSectionProps {
   reservationId: string
@@ -91,6 +90,27 @@ export function ReservationMenuSection({
     setShowSelectionDialog(false)
   }
 
+  // Build initial selection for edit mode
+  const buildInitialSelection = () => {
+    if (!hasMenu || !menuData?.snapshot) return undefined
+    const menuDataNested = menuData.snapshot.menuData || {}
+    const { packageId, selectedOptions, dishSelections } = menuDataNested
+    return {
+      packageId,
+      selectedOptions: (selectedOptions || []).map((opt: any) => ({
+        optionId: opt.optionId,
+        quantity: opt.quantity
+      })),
+      dishSelections: (dishSelections || []).map((cat: any) => ({
+        categoryId: cat.categoryId,
+        dishes: cat.dishes.map((dish: any) => ({
+          dishId: dish.dishId,
+          quantity: dish.quantity
+        }))
+      }))
+    }
+  }
+
   if (isLoading) {
     return (
       <Card className="border-0 shadow-xl">
@@ -103,10 +123,24 @@ export function ReservationMenuSection({
     )
   }
 
-  // No menu selected yet
-  if (!hasMenu) {
-    return (
-      <>
+  // Extract menu data if available
+  const snapshot = menuData?.snapshot
+  const priceBreakdown = menuData?.priceBreakdown
+  const menuDataNested = snapshot?.menuData || {}
+  const {
+    packageName,
+    packageDescription,
+    pricePerAdult,
+    pricePerChild,
+    pricePerToddler,
+    dishSelections,
+    selectedOptions
+  } = menuDataNested
+
+  return (
+    <>
+      {/* No menu selected yet */}
+      {!hasMenu && (
         <Card className="border-0 shadow-xl">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
@@ -137,241 +171,209 @@ export function ReservationMenuSection({
             </div>
           </CardContent>
         </Card>
+      )}
 
-        <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
-          <DialogContent 
-            className="max-w-4xl max-h-[90vh] overflow-y-auto"
-            onClose={handleCloseDialog}
-          >
-            <DialogHeader>
-              <DialogTitle>Wybierz menu dla rezerwacji</DialogTitle>
-            </DialogHeader>
-            <MenuSelectionFlow
-              eventTypeId={eventTypeId}
-              eventDate={eventDate}
-              adults={adults}
-              children={children}
-              toddlers={toddlers}
-              onComplete={handleMenuSelected}
-            />
-          </DialogContent>
-        </Dialog>
-      </>
-    )
-  }
-
-  // Menu is selected - show details
-  const { snapshot, priceBreakdown } = menuData
-  
-  // Backend returns menuData nested inside snapshot
-  const menuDataNested = snapshot.menuData || {}
-  const {
-    packageId,
-    packageName,
-    packageDescription,
-    pricePerAdult,
-    pricePerChild,
-    pricePerToddler,
-    dishSelections,
-    selectedOptions
-  } = menuDataNested
-
-  return (
-    <>
-      <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
-                <UtensilsCrossed className="h-5 w-5 text-white" />
+      {/* Menu is selected - show details */}
+      {hasMenu && (
+        <>
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
+                    <UtensilsCrossed className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Menu</h2>
+                    <p className="text-sm text-muted-foreground">{packageName}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSelectionDialog(true)}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Zmień
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDeleteMenu}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold">Menu</h2>
-                <p className="text-sm text-muted-foreground">{packageName}</p>
+
+              {/* Package Section */}
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="h-5 w-5 text-orange-600" />
+                    <h3 className="font-semibold">Pakiet: {packageName}</h3>
+                  </div>
+                  
+                  {packageDescription && (
+                    <p className="text-sm text-muted-foreground mb-3">{packageDescription}</p>
+                  )}
+                  
+                  {/* Package Prices */}
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dorośli</p>
+                      <p className="font-bold">{pricePerAdult} zł</p>
+                    </div>
+                    <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dzieci</p>
+                      <p className="font-bold">{pricePerChild} zł</p>
+                    </div>
+                    <div className="text-center p-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Maluchy</p>
+                      <p className="font-bold">{pricePerToddler} zł</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selected Dishes */}
+                {dishSelections && dishSelections.length > 0 && (
+                  <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <ChefHat className="h-5 w-5 text-orange-600" />
+                      <h3 className="font-semibold">Wybrane dania</h3>
+                      <Badge variant="secondary" className="ml-auto">
+                        {dishSelections.reduce((sum: number, cat: any) => 
+                          sum + cat.dishes.reduce((s: number, d: any) => s + d.quantity, 0), 0
+                        )} porcji
+                      </Badge>
+                    </div>
+                    <MenuDishesPreview dishSelections={dishSelections} />
+                  </div>
+                )}
+
+                {/* Selected Options */}
+                {selectedOptions && selectedOptions.length > 0 && (
+                  <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShoppingCart className="h-5 w-5 text-amber-600" />
+                      <h3 className="font-semibold">Dodatkowe opcje ({selectedOptions.length})</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {selectedOptions.map((opt: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-amber-600" />
+                            <div>
+                              <p className="font-medium text-sm">{opt.optionName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {opt.priceUnit === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">{opt.priceAmount} zł</p>
+                            {opt.quantity && (
+                              <p className="text-xs text-muted-foreground">× {opt.quantity}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSelectionDialog(true)}
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Zmień
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDeleteMenu}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          </Card>
 
-          {/* Package Section */}
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Package className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold">Pakiet: {packageName}</h3>
-              </div>
-              
-              {packageDescription && (
-                <p className="text-sm text-muted-foreground mb-3">{packageDescription}</p>
-              )}
-              
-              {/* Package Prices */}
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Dorośli</p>
-                  <p className="font-bold">{pricePerAdult} zł</p>
+          {/* Price Breakdown Card */}
+          {priceBreakdown && (
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                    <DollarSign className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold">Koszt menu</h2>
                 </div>
-                <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Dzieci</p>
-                  <p className="font-bold">{pricePerChild} zł</p>
-                </div>
-                <div className="text-center p-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Maluchy</p>
-                  <p className="font-bold">{pricePerToddler} zł</p>
-                </div>
-              </div>
-            </div>
 
-            {/* Selected Dishes */}
-            {dishSelections && dishSelections.length > 0 && (
-              <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <ChefHat className="h-5 w-5 text-orange-600" />
-                  <h3 className="font-semibold">Wybrane dania</h3>
-                  <Badge variant="secondary" className="ml-auto">
-                    {dishSelections.reduce((sum, cat) => 
-                      sum + cat.dishes.reduce((s, d) => s + d.quantity, 0), 0
-                    )} porcji
-                  </Badge>
-                </div>
-                <MenuDishesPreview dishSelections={dishSelections} />
-              </div>
-            )}
+                <div className="space-y-3">
+                  {/* Package Cost */}
+                  <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-muted-foreground mb-3">Pakiet</p>
+                    <div className="space-y-2">
+                      {priceBreakdown.packageCost.adults.count > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span>Dorośli ({priceBreakdown.packageCost.adults.count} × {priceBreakdown.packageCost.adults.priceEach} zł)</span>
+                          <span className="font-semibold">{priceBreakdown.packageCost.adults.total} zł</span>
+                        </div>
+                      )}
+                      {priceBreakdown.packageCost.children.count > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span>Dzieci ({priceBreakdown.packageCost.children.count} × {priceBreakdown.packageCost.children.priceEach} zł)</span>
+                          <span className="font-semibold">{priceBreakdown.packageCost.children.total} zł</span>
+                        </div>
+                      )}
+                      {priceBreakdown.packageCost.toddlers.count > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} × {priceBreakdown.packageCost.toddlers.priceEach} zł)</span>
+                          <span className="font-semibold">{priceBreakdown.packageCost.toddlers.total} zł</span>
+                        </div>
+                      )}
+                      <Separator />
+                      <div className="flex justify-between font-semibold">
+                        <span>Suma pakietu</span>
+                        <span>{priceBreakdown.packageCost.subtotal} zł</span>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Selected Options */}
-            {selectedOptions && selectedOptions.length > 0 && (
-              <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <ShoppingCart className="h-5 w-5 text-amber-600" />
-                  <h3 className="font-semibold">Dodatkowe opcje ({selectedOptions.length})</h3>
-                </div>
-                <div className="space-y-2">
-                  {selectedOptions.map((opt: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-amber-600" />
-                        <div>
-                          <p className="font-medium text-sm">{opt.optionName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {opt.priceUnit === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
-                          </p>
+                  {/* Options Cost */}
+                  {priceBreakdown.optionsCost && priceBreakdown.optionsCost.length > 0 && (
+                    <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-muted-foreground mb-3">Opcje dodatkowe</p>
+                      <div className="space-y-2">
+                        {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span>{opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${opt.priceEach} zł` : 'stała'})</span>
+                            <span className="font-semibold">{opt.total} zł</span>
+                          </div>
+                        ))}
+                        <Separator />
+                        <div className="flex justify-between font-semibold">
+                          <span>Suma opcji</span>
+                          <span>{priceBreakdown.optionsSubtotal} zł</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{opt.priceAmount} zł</p>
-                        {opt.quantity && (
-                          <p className="text-xs text-muted-foreground">× {opt.quantity}</p>
-                        )}
+                    </div>
+                  )}
+
+                  {/* Total */}
+                  <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm opacity-90">Całkowity koszt menu</p>
+                        <p className="text-3xl font-bold">{priceBreakdown.totalMenuPrice} zł</p>
                       </div>
+                      <Users className="h-8 w-8 opacity-80" />
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* Price Breakdown Card */}
-      <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-lg">
-              <DollarSign className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="text-xl font-bold">Koszt menu</h2>
-          </div>
-
-          <div className="space-y-3">
-            {/* Package Cost */}
-            <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-              <p className="text-sm font-semibold text-muted-foreground mb-3">Pakiet</p>
-              <div className="space-y-2">
-                {priceBreakdown.packageCost.adults.count > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Dorośli ({priceBreakdown.packageCost.adults.count} × {priceBreakdown.packageCost.adults.priceEach} zł)</span>
-                    <span className="font-semibold">{priceBreakdown.packageCost.adults.total} zł</span>
-                  </div>
-                )}
-                {priceBreakdown.packageCost.children.count > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Dzieci ({priceBreakdown.packageCost.children.count} × {priceBreakdown.packageCost.children.priceEach} zł)</span>
-                    <span className="font-semibold">{priceBreakdown.packageCost.children.total} zł</span>
-                  </div>
-                )}
-                {priceBreakdown.packageCost.toddlers.count > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} × {priceBreakdown.packageCost.toddlers.priceEach} zł)</span>
-                    <span className="font-semibold">{priceBreakdown.packageCost.toddlers.total} zł</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-semibold">
-                  <span>Suma pakietu</span>
-                  <span>{priceBreakdown.packageCost.subtotal} zł</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Options Cost */}
-            {priceBreakdown.optionsCost && priceBreakdown.optionsCost.length > 0 && (
-              <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                <p className="text-sm font-semibold text-muted-foreground mb-3">Opcje dodatkowe</p>
-                <div className="space-y-2">
-                  {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <span>{opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${opt.priceEach} zł` : 'stała'})</span>
-                      <span className="font-semibold">{opt.total} zł</span>
-                    </div>
-                  ))}
-                  <Separator />
-                  <div className="flex justify-between font-semibold">
-                    <span>Suma opcji</span>
-                    <span>{priceBreakdown.optionsSubtotal} zł</span>
                   </div>
                 </div>
               </div>
-            )}
+            </Card>
+          )}
+        </>
+      )}
 
-            {/* Total */}
-            <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-90">Całkowity koszt menu</p>
-                  <p className="text-3xl font-bold">{priceBreakdown.totalMenuPrice} zł</p>
-                </div>
-                <Users className="h-8 w-8 opacity-80" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Edit Dialog */}
+      {/* Single shared Dialog for both add and edit */}
       <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
         <DialogContent 
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="max-w-4xl"
           onClose={handleCloseDialog}
         >
           <DialogHeader>
-            <DialogTitle>Zmień menu rezerwacji</DialogTitle>
+            <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
           </DialogHeader>
           <MenuSelectionFlow
             eventTypeId={eventTypeId}
@@ -379,20 +381,7 @@ export function ReservationMenuSection({
             adults={adults}
             children={children}
             toddlers={toddlers}
-            initialSelection={{
-              packageId: packageId,
-              selectedOptions: (selectedOptions || []).map((opt: any) => ({
-                optionId: opt.optionId,
-                quantity: opt.quantity
-              })),
-              dishSelections: (dishSelections || []).map((cat: any) => ({
-                categoryId: cat.categoryId,
-                dishes: cat.dishes.map((dish: any) => ({
-                  dishId: dish.dishId,
-                  quantity: dish.quantity
-                }))
-              }))
-            }}
+            initialSelection={buildInitialSelection()}
             onComplete={handleMenuSelected}
           />
         </DialogContent>
