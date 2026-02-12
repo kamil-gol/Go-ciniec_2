@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, CalendarDays, TrendingUp, RefreshCw, AlertTriangle, Clock, ListOrdered, Info, ArrowRight } from 'lucide-react'
+import { Plus, CalendarDays, TrendingUp, RefreshCw, AlertTriangle, Clock, ListOrdered, Info } from 'lucide-react'
 import { queueApi } from '@/lib/api/queue'
 import { clientsApi } from '@/lib/api/clients'
 import { QueueItem, Client, QueueStats } from '@/types'
@@ -17,6 +17,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { moduleAccents } from '@/lib/design-tokens'
 
 export default function QueuePage() {
   const [queues, setQueues] = useState<QueueItem[]>([])
@@ -30,6 +32,7 @@ export default function QueuePage() {
   const [showRebuildDialog, setShowRebuildDialog] = useState(false)
   const [isRebuilding, setIsRebuilding] = useState(false)
   const [rebuildConfirmed, setRebuildConfirmed] = useState(false)
+  const accent = moduleAccents.queue
 
   useEffect(() => {
     loadData()
@@ -109,7 +112,7 @@ export default function QueuePage() {
 
     const invalidItem = reorderedItems.find(item => !item.position || item.position < 1)
     if (invalidItem) {
-      toast.error('Wykryto nieprawiłdową pozycję. Odśwież stronę i spróbuj ponownie.')
+      toast.error('Wykryto nieprawidłową pozycję. Odśwież stronę i spróbuj ponownie.')
       throw new Error('Invalid position in reordered items')
     }
 
@@ -124,7 +127,6 @@ export default function QueuePage() {
         id: item.id,
         position: item.position,
       }))
-      
       await queueApi.batchUpdatePositions({ updates })
       toast.success('Kolejność zaktualizowana')
       await loadData()
@@ -139,13 +141,10 @@ export default function QueuePage() {
       toast.error('Musisz potwierdzić zrozumienie konsekwencji')
       return
     }
-
     setIsRebuilding(true)
     try {
       const result = await queueApi.rebuildPositions()
-      toast.success(
-        `Ponumerowano ${result.updatedCount} rezerwacji w ${result.dateCount} datach`
-      )
+      toast.success(`Ponumerowano ${result.updatedCount} rezerwacji w ${result.dateCount} datach`)
       setShowRebuildDialog(false)
       setRebuildConfirmed(false)
       await loadData()
@@ -178,213 +177,133 @@ export default function QueuePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie kolejki...</p>
-        </div>
-      </div>
+      <PageLayout>
+        <LoadingState variant="spinner" message="Wczytywanie kolejki..." />
+      </PageLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto py-8 px-4 space-y-8">
-        {/* Premium Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-          
-          <div className="relative z-10 space-y-6">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <Clock className="h-8 w-8" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold">Kolejka rezerwacji</h1>
-                  <p className="text-white/90 text-lg mt-1">
-                    Zarządzaj kolejką oczekujących klientów
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowRebuildDialog(true)}
-                  disabled={queues.length === 0}
-                  className="bg-white/20 hover:bg-white/30 text-white border-0"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Przebuduj numerację
-                </Button>
-                <Button
-                  onClick={() => setShowAddForm(!showAddForm)}
-                  className="bg-white text-yellow-600 hover:bg-white/90 shadow-xl"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Dodaj do kolejki
-                </Button>
-              </div>
-            </div>
+    <PageLayout>
+      {/* Hero */}
+      <PageHero
+        accent={accent}
+        title="Kolejka rezerwacji"
+        subtitle="Zarządzaj kolejką oczekujących klientów"
+        icon={Clock}
+        action={
+          <div className="flex gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setShowRebuildDialog(true)}
+              disabled={queues.length === 0}
+              className="bg-white/15 hover:bg-white/25 text-white border-0"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Przebuduj numerację
+            </Button>
+            <Button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Dodaj do kolejki
+            </Button>
           </div>
+        }
+      />
 
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+      {/* Stats */}
+      {stats && (
+        <div className="grid gap-6 md:grid-cols-4">
+          <StatCard label="W kolejce" value={stats.totalQueued} subtitle={`${stats.queuesByDate.length} ${stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}`} icon={CalendarDays} iconGradient="from-amber-500 to-orange-500" delay={0.1} />
+          <StatCard label="Najstarsza data" value={stats.oldestQueueDate ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl }) : 'Brak'} subtitle="Najwcześniejszy termin" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
+          <StatCard label="Ręczne kolejności" value={stats.manualOrderCount} subtitle="Zmodyfikowanych pozycji" icon={RefreshCw} iconGradient="from-rose-500 to-pink-500" delay={0.3} />
+          <StatCard label="Liczba dat" value={stats.queuesByDate.length} subtitle="Różnych terminów" icon={ListOrdered} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
         </div>
+      )}
 
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid gap-6 md:grid-cols-4">
-            {/* Total in Queue */}
-            <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-amber-500/10" />
-              <CardContent className="relative p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">W kolejce</p>
-                    <p className="text-3xl font-bold">{stats.totalQueued}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {stats.queuesByDate.length} {stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-xl shadow-lg">
-                    <CalendarDays className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Oldest Date */}
-            <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10" />
-              <CardContent className="relative p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Najstarsza data</p>
-                    <p className="text-2xl font-bold">
-                      {stats.oldestQueueDate
-                        ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl })
-                        : 'Brak'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Najwcześniejszy termin</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                    <TrendingUp className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Manual Orders */}
-            <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-500/10" />
-              <CardContent className="relative p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Ręczne kolejności</p>
-                    <p className="text-3xl font-bold">{stats.manualOrderCount}</p>
-                    <p className="text-xs text-muted-foreground">Zmodyfikowanych pozycji</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-lg">
-                    <RefreshCw className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dates Count */}
-            <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
-              <CardContent className="relative p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Liczba dat</p>
-                    <p className="text-3xl font-bold">{stats.queuesByDate.length}</p>
-                    <p className="text-xs text-muted-foreground">Różnych terminów</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                    <ListOrdered className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Add Form */}
-        {showAddForm && (
-          <Card className="border-0 shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/30 dark:via-amber-950/30 dark:to-orange-950/30 p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-lg shadow-lg">
-                  <Plus className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Dodaj do kolejki</h2>
-                  <p className="text-muted-foreground">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
-                </div>
-              </div>
-              <AddToQueueForm
-                clients={clients}
-                onSubmit={handleAddToQueue}
-                onCancel={() => setShowAddForm(false)}
-                onClientAdded={loadClients}
-              />
-            </div>
-          </Card>
-        )}
-
-        {/* Queue List */}
-        <Card className="border-0 shadow-xl">
-          <div className="bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/30 dark:via-amber-950/30 dark:to-orange-950/30 p-8">
+      {/* Add Form */}
+      {showAddForm && (
+        <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
+          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-lg shadow-lg">
-                <Clock className="h-5 w-5 text-white" />
+              <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
+                <Plus className="h-5 w-5 text-white" />
               </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold">Kolejka</h2>
-                <p className="text-muted-foreground">
-                  {selectedDate === 'all' 
-                    ? 'Wybierz konkretną datę aby zarządzać kolejnością i awansować klientów'
-                    : 'Przeciągnij karty aby zmienić kolejność lub kliknij "Awansuj" aby utworzyć rezerwację'
-                  }
-                </p>
+              <div>
+                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj do kolejki</h2>
+                <p className="text-neutral-500 dark:text-neutral-400">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
               </div>
             </div>
+            <AddToQueueForm
+              clients={clients}
+              onSubmit={handleAddToQueue}
+              onCancel={() => setShowAddForm(false)}
+              onClientAdded={loadClients}
+            />
+          </div>
+        </Card>
+      )}
 
-            {/* Date Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6">
+      {/* Queue List */}
+      <Card>
+        <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
+              <Clock className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kolejka</h2>
+              <p className="text-neutral-500 dark:text-neutral-400">
+                {selectedDate === 'all'
+                  ? 'Wybierz konkretną datę aby zarządzać kolejnością i awansować klientów'
+                  : 'Przeciągnij karty aby zmienić kolejność lub kliknij "Awansuj" aby utworzyć rezerwację'
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* Date Tabs */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <Button
+              variant={selectedDate === 'all' ? 'default' : 'outline'}
+              onClick={() => setSelectedDate('all')}
+              className={selectedDate === 'all' ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}
+            >
+              Wszystkie ({queues.length})
+            </Button>
+            {dates.map((date) => (
               <Button
-                variant={selectedDate === 'all' ? 'default' : 'outline'}
-                onClick={() => setSelectedDate('all')}
-                className={selectedDate === 'all' ? 'bg-gradient-to-r from-yellow-600 to-amber-600 text-white shadow-lg' : ''}
+                key={date}
+                variant={selectedDate === date ? 'default' : 'outline'}
+                onClick={() => setSelectedDate(date)}
+                className={selectedDate === date ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}
               >
-                Wszystkie ({queues.length})
+                {format(parseISO(date), 'd MMM', { locale: pl })} ({queuesByDate[date].length})
               </Button>
-              {dates.map((date) => (
-                <Button
-                  key={date}
-                  variant={selectedDate === date ? 'default' : 'outline'}
-                  onClick={() => setSelectedDate(date)}
-                  className={selectedDate === date ? 'bg-gradient-to-r from-yellow-600 to-amber-600 text-white shadow-lg' : ''}
-                >
-                  {format(parseISO(date), 'd MMM', { locale: pl })} ({queuesByDate[date].length})
-                </Button>
-              ))}
-            </div>
+            ))}
+          </div>
 
-            {/* Info Alert */}
-            {isDragDropDisabled && queues.length > 0 && (
-              <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/30">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 dark:text-blue-300">
-                  Zmiana kolejności dostępna tylko w widoku pojedynczej daty. Wybierz konkretną datę aby przeciągać karty.
-                </AlertDescription>
-              </Alert>
-            )}
+          {/* Info Alert */}
+          {isDragDropDisabled && queues.length > 0 && (
+            <Alert className="mb-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-800 dark:text-blue-300">
+                Zmiana kolejności dostępna tylko w widoku pojedynczej daty. Wybierz konkretną datę aby przeciągać karty.
+              </AlertDescription>
+            </Alert>
+          )}
 
-            {/* Queue Items */}
+          {filteredQueues.length === 0 ? (
+            <EmptyState
+              icon={Clock}
+              title="Kolejka jest pusta"
+              description="Dodaj klientów do kolejki oczekujących"
+              actionLabel="Dodaj do kolejki"
+              onAction={() => setShowAddForm(true)}
+            />
+          ) : (
             <DraggableQueueList
               items={filteredQueues}
               onReorder={handleReorder}
@@ -399,9 +318,9 @@ export default function QueuePage() {
               showPromoteButton={showPromoteButton}
               disabled={isDragDropDisabled}
             />
-          </div>
-        </Card>
-      </div>
+          )}
+        </div>
+      </Card>
 
       {/* Rebuild Dialog */}
       <Dialog open={showRebuildDialog} onOpenChange={(open) => {
@@ -410,46 +329,42 @@ export default function QueuePage() {
       }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-orange-600">
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-6 w-6" />
               Przebuduj numerację kolejki
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-950/30">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800 dark:text-orange-300 font-medium">
+            <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-amber-800 dark:text-amber-300 font-medium">
                 UWAGA: Ta operacja jest nieodwracalna i spowoduje utratę wszystkich ręcznych modyfikacji kolejności!
               </AlertDescription>
             </Alert>
-
             <div className="space-y-3">
-              <p className="text-sm font-medium">Co zostanie zrobione:</p>
-              <ul className="text-sm list-disc list-inside space-y-1.5 ml-2 text-muted-foreground">
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Co zostanie zrobione:</p>
+              <ul className="text-sm list-disc list-inside space-y-1.5 ml-2 text-neutral-500 dark:text-neutral-400">
                 <li>Wszystkie rezerwacje w kolejce zostaną ponumerowane od nowa</li>
                 <li>Każda data będzie miała numerację od 1</li>
                 <li>Sortowanie według daty dodania (starsze rezerwacje pierwsze)</li>
-                <li><strong className="text-orange-600">Wszystkie ręczne ustawienia kolejności zostaną usunięte</strong></li>
+                <li><strong className="text-amber-600 dark:text-amber-400">Wszystkie ręczne ustawienia kolejności zostaną usunięte</strong></li>
               </ul>
             </div>
-
             {stats && stats.manualOrderCount > 0 && (
-              <Alert className="border-red-200 bg-red-50 dark:bg-red-950/30">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+              <Alert className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                 <AlertDescription className="text-red-800 dark:text-red-300 text-sm">
                   <strong>Uwaga!</strong> Obecnie masz {stats.manualOrderCount} {stats.manualOrderCount === 1 ? 'rezerwację' : 'rezerwacji'} z ręcznie ustawioną kolejnością. Wszystkie te zmiany zostaną utracone!
                 </AlertDescription>
               </Alert>
             )}
-
-            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
-              <Info className="h-4 w-4 text-blue-600" />
+            <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
-                <strong>Uwaga:</strong> Ta funkcja jest dostępna tylko dla administratorów. Jeśli nie masz uprawnień, operacja zostanie odrzucona.
+                <strong>Uwaga:</strong> Ta funkcja jest dostępna tylko dla administratorów.
               </AlertDescription>
             </Alert>
-
-            <div className="border-t pt-4">
+            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
               <div className="flex items-start space-x-3">
                 <Checkbox
                   id="rebuild-confirm"
@@ -457,10 +372,10 @@ export default function QueuePage() {
                   onCheckedChange={(checked) => setRebuildConfirmed(checked === true)}
                 />
                 <div className="space-y-1 leading-none">
-                  <label htmlFor="rebuild-confirm" className="text-sm font-medium cursor-pointer">
+                  <label htmlFor="rebuild-confirm" className="text-sm font-medium cursor-pointer text-neutral-900 dark:text-neutral-100">
                     Rozumiem konsekwencje i akceptuję ryzyko utraty ręcznych modyfikacji kolejności
                   </label>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     Potwierdzam, że jestem świadomy nieodwracalności tej operacji
                   </p>
                 </div>
@@ -468,31 +383,14 @@ export default function QueuePage() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowRebuildDialog(false)
-                setRebuildConfirmed(false)
-              }}
-              disabled={isRebuilding}
-            >
+            <Button variant="outline" onClick={() => { setShowRebuildDialog(false); setRebuildConfirmed(false) }} disabled={isRebuilding}>
               Anuluj
             </Button>
-            <Button
-              onClick={handleRebuildPositions}
-              disabled={isRebuilding || !rebuildConfirmed}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
+            <Button onClick={handleRebuildPositions} disabled={isRebuilding || !rebuildConfirmed} className="bg-amber-600 hover:bg-amber-700 text-white">
               {isRebuilding ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Przebudowywanie...
-                </>
+                <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Przebudowywanie...</>
               ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Przebuduj numerację
-                </>
+                <><RefreshCw className="h-4 w-4 mr-2" />Przebuduj numerację</>
               )}
             </Button>
           </DialogFooter>
@@ -503,7 +401,7 @@ export default function QueuePage() {
       <Dialog open={!!editingQueueItem} onOpenChange={(open) => !open && setEditingQueueItem(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edytuj wpis w kolejce</DialogTitle>
+            <DialogTitle className="text-neutral-900 dark:text-neutral-100">Edytuj wpis w kolejce</DialogTitle>
           </DialogHeader>
           {editingQueueItem && (
             <EditQueueForm
@@ -523,6 +421,6 @@ export default function QueuePage() {
         queueItem={selectedQueueItem}
         onPromote={handlePromote}
       />
-    </div>
+    </PageLayout>
   )
 }

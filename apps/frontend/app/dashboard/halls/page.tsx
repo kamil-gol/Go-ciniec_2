@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, TrendingUp, Users, Building2, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { Plus, Search, TrendingUp, Users, Building2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -9,6 +9,8 @@ import { getHalls, type Hall } from '@/lib/api/halls'
 import Link from 'next/link'
 import { HallCard } from '@/components/halls/hall-card'
 import { useToast } from '@/hooks/use-toast'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { moduleAccents } from '@/lib/design-tokens'
 
 export default function HallsPage() {
   const { toast } = useToast()
@@ -16,6 +18,7 @@ export default function HallsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
+  const accent = moduleAccents.halls
 
   useEffect(() => {
     loadHalls()
@@ -24,8 +27,8 @@ export default function HallsPage() {
   const loadHalls = async () => {
     try {
       setLoading(true)
-      const data = await getHalls({ 
-        isActive: !showInactive ? true : undefined 
+      const data = await getHalls({
+        isActive: !showInactive ? true : undefined
       })
       setHalls(data.halls || [])
     } catch (error: any) {
@@ -46,207 +49,93 @@ export default function HallsPage() {
 
   const totalCapacity = halls.reduce((sum, h) => sum + h.capacity, 0)
   const activeHalls = halls.filter(h => h.isActive).length
-  const avgPrice = halls.length > 0 
-    ? Math.round(halls.reduce((sum, h) => sum + Number(h.pricePerPerson), 0) / halls.length) 
+  const avgPrice = halls.length > 0
+    ? Math.round(halls.reduce((sum, h) => sum + Number(h.pricePerPerson), 0) / halls.length)
     : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto py-8 px-4 space-y-8">
-        {/* Premium Header with Gradient */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-          <div className="relative z-10">
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="h-8 w-8" />
-                  <h1 className="text-4xl font-bold">Zarządzanie Salami</h1>
-                </div>
-                <p className="text-white/90 text-lg">
-                  System rezerwacji sal weselnych Gościniec Rodzinny
-                </p>
-              </div>
-              <Link href="/dashboard/halls/new">
-                <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
-                  <Plus className="mr-2 h-5 w-5" />
-                  Dodaj Salę
-                </Button>
-              </Link>
+    <PageLayout>
+      {/* Hero */}
+      <PageHero
+        accent={accent}
+        title="Zarządzanie Salami"
+        subtitle="System rezerwacji sal weselnych Gościniec Rodzinny"
+        icon={Building2}
+        action={
+          <Link href="/dashboard/halls/new">
+            <Button size="lg" className="bg-white text-sky-600 hover:bg-white/90 shadow-xl">
+              <Plus className="mr-2 h-5 w-5" />
+              Dodaj Salę
+            </Button>
+          </Link>
+        }
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient="from-sky-500 to-blue-500" delay={0.1} />
+        <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
+        <StatCard label="Całkowita pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.3} />
+        <StatCard label="Średnia cena/os." value={`${avgPrice} zł`} subtitle="Średnio za osobę" icon={TrendingUp} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
+              <Input
+                placeholder="Szukaj sali po nazwie..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-12 h-12 text-base"
+              />
             </div>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setShowInactive(!showInactive)}
+              className={showInactive
+                ? `bg-gradient-to-r ${accent.gradient} text-white border-transparent shadow-lg`
+                : ''
+              }
+            >
+              {showInactive ? (
+                <><EyeOff className="mr-2 h-5 w-5" />Wszystkie Sale</>
+              ) : (
+                <><Eye className="mr-2 h-5 w-5" />Tylko Aktywne</>
+              )}
+            </Button>
           </div>
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         </div>
+      </Card>
 
-        {/* Premium Stats Cards with Gradients */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Total Halls */}
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10" />
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
-                  <Building2 className="h-6 w-6 text-white" />
-                </div>
-                <Sparkles className="h-5 w-5 text-blue-500" />
-              </div>
-              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                {halls.length}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">Wszystkie sale</div>
-            </div>
-          </Card>
-
-          {/* Active Halls */}
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10" />
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-                <Sparkles className="h-5 w-5 text-green-500" />
-              </div>
-              <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                {activeHalls}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">Aktywne sale</div>
-            </div>
-          </Card>
-
-          {/* Total Capacity */}
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <Sparkles className="h-5 w-5 text-purple-500" />
-              </div>
-              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {totalCapacity}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">Całkowita pojemność</div>
-            </div>
-          </Card>
-
-          {/* Average Price */}
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/10" />
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-                <Sparkles className="h-5 w-5 text-orange-500" />
-              </div>
-              <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                {avgPrice} zł
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">Średnia cena/os.</div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Enhanced Filters Card */}
-        <Card className="border-0 shadow-lg">
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-                  <Input
-                    placeholder="Szukaj sali po nazwie..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-12 h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
-                  />
-                </div>
-              </div>
-              
-              {/* FIXED TOGGLE BUTTON - Proper dark mode support */}
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setShowInactive(!showInactive)}
-                className={`h-12 px-6 text-base font-semibold border-2 transition-all ${
-                  showInactive
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg'
-                    : 'bg-card hover:bg-accent text-foreground border-border hover:border-purple-300 dark:hover:border-purple-700'
-                }`}
-              >
-                {showInactive ? (
-                  <>
-                    <EyeOff className="mr-2 h-5 w-5" />
-                    Wszystkie Sale
-                  </>
-                ) : (
-                  <>
-                    <Eye className="mr-2 h-5 w-5" />
-                    Tylko Aktywne
-                  </>
-                )}
-              </Button>
-            </div>
+      {/* Halls Grid */}
+      {loading ? (
+        <LoadingState variant="skeleton" rows={6} />
+      ) : filteredHalls.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title={search ? 'Nie znaleziono sal' : 'Brak sal'}
+          description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszą salę, aby zacząć'}
+          actionLabel={search ? undefined : 'Dodaj Pierwszą Salę'}
+          onAction={search ? undefined : () => window.location.href = '/dashboard/halls/new'}
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Znaleziono <span className="font-bold text-neutral-900 dark:text-neutral-100">{filteredHalls.length}</span> {filteredHalls.length === 1 ? 'salę' : 'sal'}
+            </p>
           </div>
-        </Card>
-
-        {/* Halls Grid */}
-        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="h-96 animate-pulse border-0 shadow-lg">
-                <div className="h-full bg-gradient-to-br from-muted/50 to-muted rounded-lg" />
-              </Card>
+            {filteredHalls.map((hall) => (
+              <HallCard key={hall.id} hall={hall} onUpdate={loadHalls} />
             ))}
           </div>
-        ) : filteredHalls.length === 0 ? (
-          <Card className="border-0 shadow-lg">
-            <div className="p-16 text-center">
-              <div className="mb-6 inline-flex p-6 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full">
-                <Building2 className="h-12 w-12 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="text-muted-foreground mb-6">
-                {search ? (
-                  <>
-                    <p className="text-2xl font-bold mb-3">Nie znaleziono sal</p>
-                    <p className="text-lg">Spróbuj użyć innego wyszukiwania</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-2xl font-bold mb-3">Brak sal</p>
-                    <p className="text-lg">Dodaj pierwszą salę, aby zacząć</p>
-                  </>
-                )}
-              </div>
-              {!search && (
-                <Link href="/dashboard/halls/new">
-                  <Button size="lg" className="bg-gradient-to-r from-purple-600 to-indigo-600 shadow-xl">
-                    <Plus className="mr-2 h-5 w-5" />
-                    Dodaj Pierwszą Salę
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </Card>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm text-muted-foreground font-medium">
-                Znaleziono <span className="font-bold text-foreground">{filteredHalls.length}</span> {filteredHalls.length === 1 ? 'salę' : 'sal'}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredHalls.map((hall) => (
-                <HallCard key={hall.id} hall={hall} onUpdate={loadHalls} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </PageLayout>
   )
 }
