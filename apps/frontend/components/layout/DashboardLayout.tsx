@@ -17,19 +17,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check authentication
     const token = localStorage.getItem('auth_token')
     if (!token) {
       router.push('/login')
       return
     }
 
-    // Mock user data - w produkcji z API
     setUser({
       firstName: 'Admin',
       lastName: 'System',
       role: 'ADMIN',
-      email: 'admin@gosciniecrodzinny.pl'
+      email: 'admin@gosciniecrodzinny.pl',
     })
     setLoading(false)
   }, [router])
@@ -43,17 +41,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-800">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="h-12 w-12 rounded-full border-4 border-primary-500 border-t-transparent"
-        />
+        <div className="text-center space-y-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="h-12 w-12 rounded-full border-4 border-indigo-500 dark:border-indigo-400 border-t-transparent mx-auto"
+          />
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">Ładowanie...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-100 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-100/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800">
       {/* Sidebar */}
       <Sidebar user={user} onLogout={handleLogout} />
 
@@ -63,11 +64,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <Header user={user} />
 
         {/* Page Content */}
-        <main className="min-h-[calc(100vh-4rem)] p-6">
+        <main className="min-h-[calc(100vh-4rem)]">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             {children}
           </motion.div>
