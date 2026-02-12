@@ -6,17 +6,32 @@ export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
 
-  constructor(message: string, statusCode: number, isOperational = true) {
+  constructor(messageOrCode: string | number, codeOrMessage?: number | string, isOperational = true) {
+    // Support both signatures:
+    //   new AppError('message', 400)      — new style
+    //   new AppError(400, 'message')      — legacy auth.controller style
+    let message: string;
+    let statusCode: number;
+
+    if (typeof messageOrCode === 'number') {
+      // Legacy: new AppError(400, 'message')
+      statusCode = messageOrCode;
+      message = typeof codeOrMessage === 'string' ? codeOrMessage : 'Error';
+    } else {
+      // New: new AppError('message', 400)
+      message = messageOrCode;
+      statusCode = typeof codeOrMessage === 'number' ? codeOrMessage : 500;
+    }
+
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
 
-    // Maintain proper stack trace
     Error.captureStackTrace(this, this.constructor);
     Object.setPrototypeOf(this, AppError.prototype);
   }
 
-  // ─── Factory methods for common errors ───
+  // ——— Factory methods for common errors ———
 
   static badRequest(message: string): AppError {
     return new AppError(message, 400);
