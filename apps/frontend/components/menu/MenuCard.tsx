@@ -1,12 +1,11 @@
 /**
  * MenuCard Component
- * 
- * Displays a menu template card with premium UI styling
+ *
+ * Displays a menu template card with design-token styling
  */
 
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MenuTemplate } from '@/types/menu.types';
 import { UtensilsCrossed, Calendar, CheckCircle2, Clock, Sparkles } from 'lucide-react';
@@ -14,6 +13,9 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { moduleAccents } from '@/lib/design-tokens';
+
+const accent = moduleAccents.menu;
 
 interface MenuCardProps {
   template: MenuTemplate;
@@ -26,35 +28,32 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
 
   return (
     <motion.div
-      whileHover={{ scale: 1.03, y: -5 }}
+      whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2 }}
     >
-      <Card
+      <div
         className={cn(
-          'relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group',
+          'group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden',
           className
         )}
         onClick={() => onSelect?.(template)}
       >
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-yellow-500/10 group-hover:from-orange-500/20 group-hover:via-amber-500/20 group-hover:to-yellow-500/20 transition-all" />
-        
-        {/* Glow Effect */}
-        <div className="absolute -top-20 -right-20 w-40 h-40 bg-orange-400/20 rounded-full blur-3xl group-hover:bg-orange-400/30 transition-all" />
-        
-        <div className="relative z-10 p-6 space-y-4">
+        <div className="p-6 space-y-4">
           {/* Header */}
           <div className="flex items-start justify-between">
-            <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
-              <UtensilsCrossed className="h-7 w-7 text-white" />
+            <div className={cn(
+              'p-3 rounded-xl bg-gradient-to-br shadow-md',
+              accent.iconBg
+            )}>
+              <UtensilsCrossed className="h-6 w-6 text-white" />
             </div>
             <Badge
               className={cn(
-                'border-0 shadow-md',
+                'border-0 shadow-none',
                 isActive
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-400 text-white'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
               )}
             >
               {isActive ? (
@@ -73,13 +72,20 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
 
           {/* Title */}
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold group-hover:text-orange-600 transition-colors">
+            <h3 className={cn(
+              'text-xl font-bold text-neutral-900 dark:text-neutral-100 transition-colors',
+              `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
+            )}>
               {template.name}
             </h3>
             {template.variant && (
               <Badge
                 variant="outline"
-                className="border-orange-200 text-orange-600 bg-orange-50 dark:bg-orange-950/30"
+                className={cn(
+                  'rounded-lg',
+                  accent.badge, accent.badgeText,
+                  'border-rose-200/50 dark:border-rose-800/50'
+                )}
               >
                 <Sparkles className="h-3 w-3 mr-1" />
                 {template.variant}
@@ -89,20 +95,26 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
 
           {/* Event Type */}
           {template.eventType && (
-            <div className="flex items-center gap-2 p-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl">
+            <div className="flex items-center gap-2 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200/50 dark:border-neutral-700/30">
               <div
-                className="w-4 h-4 rounded-full shadow-md"
+                className="w-4 h-4 rounded-full shadow-sm"
                 style={{ backgroundColor: template.eventType.color || '#888' }}
               />
-              <span className="font-medium text-sm">{template.eventType.name}</span>
+              <span className="font-medium text-sm text-neutral-700 dark:text-neutral-300">
+                {template.eventType.name}
+              </span>
             </div>
           )}
 
           {/* Validity Period */}
           {template.validFrom && template.validTo && (
-            <div className="flex items-center gap-2 text-sm p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-muted-foreground">
+            <div className={cn(
+              'flex items-center gap-2 text-sm p-3 rounded-xl border',
+              accent.badge,
+              'border-rose-200/50 dark:border-rose-800/50'
+            )}>
+              <Calendar className={cn('h-4 w-4', accent.text, accent.textDark)} />
+              <span className="text-neutral-600 dark:text-neutral-400">
                 {format(new Date(template.validFrom), 'dd.MM.yyyy', { locale: pl })} -{' '}
                 {format(new Date(template.validTo), 'dd.MM.yyyy', { locale: pl })}
               </span>
@@ -111,41 +123,45 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
 
           {/* Package Count */}
           {template._count?.packages !== undefined && (
-            <div className="pt-2">
-              <Badge className="bg-blue-100 text-blue-700 border-0 dark:bg-blue-950/50 dark:text-blue-400">
-                {template._count.packages} {template._count.packages === 1 ? 'pakiet' : 'pakietów'}
+            <div className="pt-1">
+              <Badge className={cn(
+                'border-0 shadow-none',
+                accent.badge, accent.badgeText
+              )}>
+                {template._count.packages} {template._count.packages === 1 ? 'pakiet' : 'pakiet\u00f3w'}
               </Badge>
             </div>
           )}
 
-          {/* Hover Effect Indicator */}
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-2">
-            <div className="text-sm font-semibold text-orange-600 flex items-center gap-2">
-              Kliknij aby wybrać →
+          {/* Hover Indicator */}
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-1">
+            <div className={cn(
+              'text-sm font-semibold flex items-center gap-2',
+              accent.text, accent.textDark
+            )}>
+              Kliknij aby wybra\u0107 \u2192
             </div>
           </div>
         </div>
-      </Card>
+      </div>
     </motion.div>
   );
 }
 
-// Skeleton Loader
 export function MenuCardSkeleton() {
   return (
-    <Card className="border-0 shadow-xl">
+    <div className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md">
       <div className="p-6 space-y-4">
         <div className="flex items-start justify-between">
-          <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-2xl animate-pulse" />
-          <div className="w-20 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+          <div className="w-14 h-14 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
+          <div className="w-20 h-6 bg-neutral-200 dark:bg-neutral-700 rounded-full animate-pulse" />
         </div>
         <div className="space-y-2">
-          <div className="w-3/4 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="w-1/2 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="w-3/4 h-7 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+          <div className="w-1/2 h-5 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
         </div>
-        <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
-        <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+        <div className="w-full h-12 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
       </div>
-    </Card>
+    </div>
   );
 }

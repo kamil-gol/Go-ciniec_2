@@ -3,15 +3,14 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useReservations } from '@/hooks/use-reservations'
 import { formatDate, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
-import { 
-  Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight, 
-  Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User, 
-  Phone, Mail, MapPin, ChevronRight as ArrowRight
+import {
+  Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
+  Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
+  Phone, Mail
 } from 'lucide-react'
 import { ReservationDetailsModal } from './reservation-details-modal'
 import { EditReservationModal } from './edit-reservation-modal'
@@ -20,15 +19,16 @@ import { apiClient } from '@/lib/api-client'
 import { format, parseISO, isSameDay } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
+import { moduleAccents } from '@/lib/design-tokens'
+import { LoadingState } from '@/components/shared'
+
+const accent = moduleAccents.reservations
 
 // Helper functions
 function getFormattedDate(reservation: any): Date | null {
-  if (reservation.startDateTime) {
-    return new Date(reservation.startDateTime)
-  }
-  if (reservation.date) {
-    return new Date(reservation.date)
-  }
+  if (reservation.startDateTime) return new Date(reservation.startDateTime)
+  if (reservation.date) return new Date(reservation.date)
   return null
 }
 
@@ -38,25 +38,22 @@ function getFormattedTimeRange(reservation: any): string {
     const end = new Date(reservation.endDateTime)
     return `${start.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
   }
-  
   if (reservation.startTime && reservation.endTime) {
     return `${reservation.startTime} - ${reservation.endTime}`
   }
-  
   return 'Brak czasu'
 }
 
-function getGuestBreakdown(reservation: any): { 
-  adults: number; 
-  children: number; 
+function getGuestBreakdown(reservation: any): {
+  adults: number;
+  children: number;
   toddlers: number;
-  total: number 
+  total: number
 } {
   const adults = reservation.adults || 0
   const children = reservation.children || 0
   const toddlers = reservation.toddlers || 0
   const total = reservation.guests || (adults + children + toddlers)
-  
   return { adults, children, toddlers, total }
 }
 
@@ -80,13 +77,8 @@ export function ReservationsList() {
     { value: 'CANCELLED', label: 'Anulowane' },
   ]
 
-  const handleEdit = (reservationId: string) => {
-    setEditingReservationId(reservationId)
-  }
-
-  const handleEditSuccess = () => {
-    refetch()
-  }
+  const handleEdit = (reservationId: string) => setEditingReservationId(reservationId)
+  const handleEditSuccess = () => refetch()
 
   const handleGeneratePDF = async (reservationId: string) => {
     try {
@@ -98,14 +90,9 @@ export function ReservationsList() {
   }
 
   const handleArchive = async (reservationId: string) => {
-    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) {
-      return
-    }
-
+    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
     try {
-      await apiClient.patch(`/reservations/${reservationId}`, {
-        archivedAt: new Date().toISOString()
-      })
+      await apiClient.patch(`/reservations/${reservationId}`, { archivedAt: new Date().toISOString() })
       toast.success('Rezerwacja zarchiwizowana')
       refetch()
     } catch (error) {
@@ -118,11 +105,7 @@ export function ReservationsList() {
       toast.error('Nie można usunąć potwierdzonej rezerwacji. Anuluj ją najpierw.')
       return
     }
-
-    if (!confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')) {
-      return
-    }
-
+    if (!confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')) return
     try {
       await apiClient.delete(`/reservations/${reservationId}`)
       toast.success('Rezerwacja anulowana')
@@ -133,20 +116,13 @@ export function ReservationsList() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Ładowanie rezerwacji...</p>
-        </div>
-      </div>
-    )
+    return <LoadingState variant="skeleton" count={5} />
   }
 
   if (error) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-red-600">Wystąpił błąd podczas ładowania rezerwacji</p>
+        <p className="text-red-600 dark:text-red-400">Wystąpił błąd podczas ładowania rezerwacji</p>
       </div>
     )
   }
@@ -155,18 +131,15 @@ export function ReservationsList() {
   const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
   const totalPages = data?.totalPages || 1
 
-  // Group reservations by date
   const reservationsByDate = reservations.reduce((acc: any, res: any) => {
     const date = getFormattedDate(res)
     if (!date) return acc
-    
     const dateKey = format(date, 'yyyy-MM-dd')
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push(res)
     return acc
   }, {})
 
-  // Sort dates
   const dates = Object.keys(reservationsByDate).sort()
 
   return (
@@ -175,33 +148,34 @@ export function ReservationsList() {
       <div className="flex items-center gap-4">
         <div className="w-64">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
-            <SelectTrigger className="h-12 border-2">
+            <SelectTrigger className="h-11 rounded-xl border-neutral-200 dark:border-neutral-700">
               <SelectValue placeholder="Filtruj po statusie" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               {statusOptions.map(opt => (
                 <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        
         <div className="flex-1" />
-        
-        <div className="text-sm text-muted-foreground">
-          Znaleziono <strong>{reservations.length}</strong> rezerwacji
+        <div className="text-sm text-neutral-500 dark:text-neutral-400">
+          Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji
         </div>
       </div>
 
-      {/* Reservations List - Card Based */}
+      {/* Reservations List */}
       {reservations.length === 0 ? (
-        <Card className="border-dashed">
-          <div className="py-16 text-center">
-            <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">Brak rezerwacji</h3>
-            <p className="text-muted-foreground">Nie znaleziono rezerwacji spełniających kryteria</p>
+        <div className="rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 py-16 text-center">
+          <div className={cn(
+            'w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mx-auto mb-4 shadow-md',
+            accent.iconBg
+          )}>
+            <Calendar className="h-8 w-8 text-white" />
           </div>
-        </Card>
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Brak rezerwacji</h3>
+          <p className="text-neutral-500 dark:text-neutral-400">Nie znaleziono rezerwacji spełniających kryteria</p>
+        </div>
       ) : (
         <div className="space-y-6">
           {dates.map((dateKey) => {
@@ -212,11 +186,12 @@ export function ReservationsList() {
             return (
               <div key={dateKey} className="space-y-3">
                 {/* Date Header */}
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  isToday 
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' 
-                    : 'bg-muted'
-                }`}>
+                <div className={cn(
+                  'flex items-center gap-3 px-4 py-2.5 rounded-xl',
+                  isToday
+                    ? `bg-gradient-to-r ${accent.gradient} text-white shadow-md`
+                    : 'bg-neutral-100 dark:bg-neutral-800/60'
+                )}>
                   <Calendar className="h-4 w-4" />
                   <div>
                     <div className="font-semibold">
@@ -227,7 +202,12 @@ export function ReservationsList() {
                     </div>
                   </div>
                   {dateReservations.length > 1 && (
-                    <Badge variant="outline" className="ml-auto border-blue-300 bg-blue-50 dark:bg-blue-950/30">
+                    <Badge variant="outline" className={cn(
+                      'ml-auto border-0 shadow-none',
+                      isToday
+                        ? 'bg-white/20 text-white'
+                        : cn(accent.badge, accent.badgeText)
+                    )}>
                       {dateReservations.length} rezerwacji
                     </Badge>
                   )}
@@ -237,97 +217,87 @@ export function ReservationsList() {
                 <div className="grid gap-3">
                   {dateReservations.map((reservation: any) => {
                     const guestInfo = getGuestBreakdown(reservation)
-                    
+
                     return (
-                      <Card key={reservation.id} className="border-0 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-teal-500/10 p-6">
+                      <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+                        <div className={cn(
+                          'p-6',
+                          `bg-gradient-to-r ${accent.gradientSubtle}`
+                        )}>
                           {/* Header: Time + Status */}
                           <div className="flex items-start justify-between gap-4 mb-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white dark:bg-black/20 rounded-lg">
-                                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              <div className={cn(
+                                'p-2 rounded-xl bg-gradient-to-br shadow-sm',
+                                accent.iconBg
+                              )}>
+                                <Clock className="h-5 w-5 text-white" />
                               </div>
                               <div>
-                                <div className="font-semibold text-lg">
+                                <div className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">
                                   {getFormattedTimeRange(reservation)}
                                 </div>
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400">
                                   {reservation.eventType?.name || 'Inne wydarzenie'}
                                   {reservation.customEventType && ` - ${reservation.customEventType}`}
                                 </div>
                               </div>
                             </div>
-                            
                             <Badge className={getStatusColor(reservation.status)}>
                               {getStatusLabel(reservation.status)}
                             </Badge>
                           </div>
 
-                          {/* Divider */}
-                          <div className="my-4 border-t border-blue-200/50 dark:border-blue-800/50" />
+                          <div className="my-4 border-t border-neutral-200/50 dark:border-neutral-700/30" />
 
                           {/* Details Grid */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                            {/* Hall */}
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Building2 className="h-3 w-3" />
-                                Sala
+                              <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                                <Building2 className="h-3 w-3" /> Sala
                               </div>
-                              <div className="font-medium">{reservation.hall?.name || 'N/A'}</div>
+                              <div className="font-medium text-neutral-900 dark:text-neutral-100">{reservation.hall?.name || 'N/A'}</div>
                             </div>
-
-                            {/* Client */}
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <User className="h-3 w-3" />
-                                Klient
+                              <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                                <User className="h-3 w-3" /> Klient
                               </div>
-                              <div className="font-medium">
+                              <div className="font-medium text-neutral-900 dark:text-neutral-100">
                                 {reservation.client
                                   ? `${reservation.client.firstName} ${reservation.client.lastName}`
                                   : 'N/A'}
                               </div>
                             </div>
-
-                            {/* Guests */}
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Users className="h-3 w-3" />
-                                Goście
+                              <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                                <Users className="h-3 w-3" /> Goście
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className="font-medium">{guestInfo.total}</div>
+                                <div className="font-medium text-neutral-900 dark:text-neutral-100">{guestInfo.total}</div>
                                 {(guestInfo.adults > 0 || guestInfo.children > 0 || guestInfo.toddlers > 0) && (
                                   <div className="flex gap-2 text-xs">
                                     {guestInfo.adults > 0 && (
-                                      <div className="flex items-center gap-0.5 text-gray-600 dark:text-gray-400" title="Dorośli">
-                                        <Users className="w-3 h-3" />
-                                        {guestInfo.adults}
+                                      <div className="flex items-center gap-0.5 text-neutral-500 dark:text-neutral-400" title="Dorośli">
+                                        <Users className="w-3 h-3" />{guestInfo.adults}
                                       </div>
                                     )}
                                     {guestInfo.children > 0 && (
                                       <div className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400" title="Dzieci 4-12">
-                                        <Smile className="w-3 h-3" />
-                                        {guestInfo.children}
+                                        <Smile className="w-3 h-3" />{guestInfo.children}
                                       </div>
                                     )}
                                     {guestInfo.toddlers > 0 && (
                                       <div className="flex items-center gap-0.5 text-green-600 dark:text-green-400" title="Maluchy 0-3">
-                                        <Baby className="w-3 h-3" />
-                                        {guestInfo.toddlers}
+                                        <Baby className="w-3 h-3" />{guestInfo.toddlers}
                                       </div>
                                     )}
                                   </div>
                                 )}
                               </div>
                             </div>
-
-                            {/* Price */}
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <DollarSign className="h-3 w-3" />
-                                Wartość
+                              <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                                <DollarSign className="h-3 w-3" /> Wartość
                               </div>
                               <div className="font-bold text-lg text-green-600 dark:text-green-400">
                                 {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
@@ -336,76 +306,71 @@ export function ReservationsList() {
                           </div>
 
                           {/* Actions Bar */}
-                          <div className="flex items-center justify-between pt-3 border-t border-blue-200/50 dark:border-blue-800/50">
-                            {/* Contact Info */}
+                          <div className="flex items-center justify-between pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
                             {reservation.client && (
-                              <div className="flex gap-4 text-xs text-muted-foreground">
+                              <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
                                 {reservation.client.phone && (
                                   <div className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    {reservation.client.phone}
+                                    <Phone className="h-3 w-3" />{reservation.client.phone}
                                   </div>
                                 )}
                                 {reservation.client.email && (
                                   <div className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />
-                                    {reservation.client.email}
+                                    <Mail className="h-3 w-3" />{reservation.client.email}
                                   </div>
                                 )}
                               </div>
                             )}
 
-                            {/* Action Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-1">
                               <Link href={`/dashboard/reservations/${reservation.id}`}>
-                                <Button size="sm" variant="ghost" title="Zobacz szczegóły">
+                                <Button size="sm" variant="ghost" title="Zobacz szczegóły" className="rounded-lg">
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </Link>
-                              
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleEdit(reservation.id)}
                                 title="Edytuj rezerwację"
                                 disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
+                                className="rounded-lg"
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleGeneratePDF(reservation.id)}
                                 title="Generuj PDF"
+                                className="rounded-lg"
                               >
                                 <FileText className="w-4 h-4" />
                               </Button>
-                              
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleArchive(reservation.id)}
                                 title="Archiwizuj"
                                 disabled={reservation.status === 'CANCELLED'}
+                                className="rounded-lg"
                               >
                                 <Archive className="w-4 h-4" />
                               </Button>
-                              
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleDelete(reservation.id, reservation.status)}
                                 title="Anuluj rezerwację"
                                 disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>
                         </div>
-                      </Card>
+                      </div>
                     )
                   })}
                 </div>
@@ -418,8 +383,8 @@ export function ReservationsList() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4">
-          <p className="text-sm text-muted-foreground">
-            Strona <strong>{page}</strong> z <strong>{totalPages}</strong>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Strona <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> z <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong>
           </p>
           <div className="flex gap-2">
             <Button
@@ -427,7 +392,7 @@ export function ReservationsList() {
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="border-2"
+              className="rounded-xl border-neutral-200 dark:border-neutral-700"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Poprzednia
@@ -437,7 +402,7 @@ export function ReservationsList() {
               size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="border-2"
+              className="rounded-xl border-neutral-200 dark:border-neutral-700"
             >
               Następna
               <ChevronRight className="w-4 h-4 ml-1" />

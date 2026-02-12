@@ -1,11 +1,14 @@
 'use client'
 
 import { QueueItem } from '@/types'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, Users, Phone, Mail, ArrowUp, ArrowDown, Check, Pencil } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
+import { moduleAccents } from '@/lib/design-tokens'
+
+const accent = moduleAccents.queue
 
 interface QueueItemCardProps {
   item: QueueItem
@@ -27,122 +30,118 @@ export function QueueItemCard({
   onEdit,
 }: QueueItemCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-4">
-          {/* Position Badge */}
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-              <span className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                #{item.position}
-              </span>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Client Info */}
-            <div className="mb-2">
-              <h3 className="font-semibold text-lg">
-                {item.client.firstName} {item.client.lastName}
-              </h3>
-              <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Phone className="h-4 w-4" />
-                  {item.client.phone}
-                </div>
-                {item.client.email && (
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-4 w-4" />
-                    {item.client.email}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Queue Date & Guests */}
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  {format(parseISO(item.queueDate), 'd MMMM yyyy', { locale: pl })}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>{item.guests} osób</span>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {item.notes && (
-              <p className="mt-2 text-sm text-muted-foreground italic">
-                {item.notes}
-              </p>
-            )}
-
-            {/* Created Info */}
-            <div className="mt-2 text-xs text-muted-foreground">
-              Dodane {format(parseISO(item.createdAt), 'd MMM yyyy HH:mm', { locale: pl })}
-              {' przez '}
-              {item.createdBy.firstName} {item.createdBy.lastName}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-1">
-            {/* Promote to Reservation */}
-            {onPromote && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => onPromote(item.id)}
-                className="whitespace-nowrap"
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Awansuj
-              </Button>
-            )}
-
-            {/* Edit */}
-            {onEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(item.id)}
-                className="whitespace-nowrap"
-              >
-                <Pencil className="h-4 w-4 mr-1" />
-                Edytuj
-              </Button>
-            )}
-
-            {/* Move Up/Down */}
-            <div className="flex gap-1">
-              {!isFirst && onMoveUp && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => onMoveUp(item.id)}
-                  title="Przesuwanie w górę"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </Button>
-              )}
-              {!isLast && onMoveDown && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => onMoveDown(item.id)}
-                  title="Przesuń w dół"
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+    <div className="group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5">
+      <div className="flex items-start justify-between gap-4">
+        {/* Position Badge */}
+        <div className="flex-shrink-0">
+          <div className={cn(
+            'w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center text-white font-bold text-lg shadow-md',
+            accent.iconBg
+          )}>
+            #{item.position}
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          <div className="mb-2">
+            <h3 className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">
+              {item.client.firstName} {item.client.lastName}
+            </h3>
+            <div className="flex flex-wrap gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <div className="flex items-center gap-1">
+                <Phone className="h-3.5 w-3.5" />
+                {item.client.phone}
+              </div>
+              {item.client.email && (
+                <div className="flex items-center gap-1">
+                  <Mail className="h-3.5 w-3.5" />
+                  {item.client.email}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>
+                {format(parseISO(item.queueDate), 'd MMMM yyyy', { locale: pl })}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+              <Users className="h-3.5 w-3.5" />
+              <span>{item.guests} osób</span>
+            </div>
+          </div>
+
+          {item.notes && (
+            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400 italic">
+              {item.notes}
+            </p>
+          )}
+
+          <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+            Dodane {format(parseISO(item.createdAt), 'd MMM yyyy HH:mm', { locale: pl })}
+            {' przez '}
+            {item.createdBy.firstName} {item.createdBy.lastName}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-1.5">
+          {onPromote && (
+            <Button
+              size="sm"
+              onClick={() => onPromote(item.id)}
+              className={cn(
+                'whitespace-nowrap bg-gradient-to-r text-white shadow-md hover:shadow-lg rounded-xl',
+                accent.gradient
+              )}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Awansuj
+            </Button>
+          )}
+
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(item.id)}
+              className="whitespace-nowrap rounded-xl border-neutral-200 dark:border-neutral-700"
+            >
+              <Pencil className="h-4 w-4 mr-1" />
+              Edytuj
+            </Button>
+          )}
+
+          <div className="flex gap-1">
+            {!isFirst && onMoveUp && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => onMoveUp(item.id)}
+                title="Przesuń w górę"
+                className="rounded-xl border-neutral-200 dark:border-neutral-700 h-9 w-9"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+            )}
+            {!isLast && onMoveDown && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => onMoveDown(item.id)}
+                title="Przesuń w dół"
+                className="rounded-xl border-neutral-200 dark:border-neutral-700 h-9 w-9"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
