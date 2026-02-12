@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cron from 'node-cron';
 import logger from '@utils/logger';
+import { validateEnv } from '@/config/env';
 import { errorHandler } from '@middlewares/errorHandler';
 import authRoutes from '@/routes/auth.routes';
 import hallRoutes from '@/routes/hall.routes';
@@ -17,22 +18,29 @@ import dishCategoryRoutes from '@/routes/dish-category.routes';
 import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
 import queueService from '@/services/queue.service';
 
+// Validate environment variables early
+validateEnv();
+
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
 /**
  * CORS Allowed Origins
- * Add your frontend URLs here
+ * In production, set CORS_ORIGIN env var (comma-separated for multiple).
+ * In development, localhost origins are allowed by default.
  */
-const allowedOrigins = [
+const defaultDevOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
-  'http://62.171.189.172:3000',  // Production frontend
-  'http://62.171.189.172:3001',  // Production backend
-  process.env.CORS_ORIGIN,
-].filter(Boolean); // Remove undefined values
+];
+
+const envOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+  : [];
+
+const allowedOrigins = [...new Set([...defaultDevOrigins, ...envOrigins])].filter(Boolean);
 
 /**
  * Security Middleware
@@ -53,7 +61,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
     maxAge: 600, // 10 minutes
@@ -98,31 +106,21 @@ app.use('/api/queue', queueRoutes);
 
 /**
  * Menu System Routes
- * Includes:
- * - /api/menu-templates
- * - /api/menu-packages
- * - /api/menu-options
- * - /api/reservations/:id/select-menu (menu selection)
  */
 app.use('/api', menuRoutes);
 
 /**
- * Menu Calculator Routes (NEW)
- * - /api/menu-calculator/calculate
- * - /api/menu-calculator/packages/available
- * - /api/menu-calculator/option/:optionId/calculate
+ * Menu Calculator Routes
  */
 app.use('/api/menu-calculator', menuCalculatorRoutes);
 
 /**
  * Dishes Routes
- * - /api/dishes
  */
 app.use('/api/dishes', dishRoutes);
 
 /**
  * Dish Categories Routes
- * - /api/dish-categories
  */
 app.use('/api/dish-categories', dishCategoryRoutes);
 
@@ -145,15 +143,8 @@ app.use(errorHandler);
  * Start Server
  */
 const server = app.listen(PORT, () => {
-  logger.info(`\n🚀 Server running on http://localhost:${PORT}`);
-  logger.info(`📋 Allowed CORS origins: ${allowedOrigins.join(', ')}`);
-  logger.info(`📝 API Documentation: http://localhost:${PORT}/api/docs`);
-  logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
-  logger.info(`🍽️  Menu System: http://localhost:${PORT}/api/menu-templates`);
-  logger.info(`🧮  Menu Calculator: http://localhost:${PORT}/api/menu-calculator/calculate`);
-  logger.info(`💾  Menu Assignment: http://localhost:${PORT}/api/reservations/:id/menu`);
-  logger.info(`🍲  Dishes: http://localhost:${PORT}/api/dishes`);
-  logger.info(`📂  Categories: http://localhost:${PORT}/api/dish-categories\n`);
+  logger.info(`Server running on http://localhost:${PORT}`);
+  logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
   
   // Setup cron job for auto-canceling expired RESERVED reservations
   setupAutoCancelCron();
@@ -164,7 +155,6 @@ const server = app.listen(PORT, () => {
  * Runs daily at 00:01 AM to cancel expired RESERVED reservations
  */
 function setupAutoCancelCron() {
-  // Run every day at 00:01 AM
   cron.schedule('1 0 * * *', async () => {
     logger.info('[CRON] Running auto-cancel for expired RESERVED reservations...');
     
@@ -184,7 +174,7 @@ function setupAutoCancelCron() {
     }
   });
   
-  logger.info('⏰ Auto-cancel cron job scheduled for 00:01 AM daily');
+  logger.info('Auto-cancel cron job scheduled for 00:01 AM daily');
 }
 
 /**

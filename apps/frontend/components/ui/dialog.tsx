@@ -11,16 +11,31 @@ interface DialogProps {
 }
 
 function Dialog({ open, onOpenChange, children }: DialogProps) {
+  // Lock body scroll when dialog is open
   React.useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = ''
     }
     return () => {
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = ''
     }
   }, [open])
+
+  // Close on Escape key
+  React.useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onOpenChange])
 
   if (!open) return null
 
@@ -57,22 +72,25 @@ const DialogContent = React.forwardRef<
     ref={ref}
     className={cn(
       'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full',
-      'max-h-[85vh] overflow-y-auto',
-      'p-6',
+      'max-h-[85vh] flex flex-col',
       className
     )}
     {...props}
   >
     {onClose && (
-      <button
-        onClick={onClose}
-        className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors z-50"
-        aria-label="Zamknij"
-      >
-        <X className="h-5 w-5" />
-      </button>
+      <div className="sticky top-0 z-50 flex justify-end p-2 bg-white dark:bg-gray-900 rounded-t-lg">
+        <button
+          onClick={onClose}
+          className="rounded-sm p-1 opacity-70 hover:opacity-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          aria-label="Zamknij"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
     )}
-    {children}
+    <div className="overflow-y-auto flex-1 p-6 pt-0">
+      {children}
+    </div>
   </div>
 ))
 DialogContent.displayName = 'DialogContent'
