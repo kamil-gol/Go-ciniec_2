@@ -1,6 +1,6 @@
 /**
  * Deposit Controller
- * Full CRUD + mark-paid/unpaid + stats + overdue + PDF download
+ * Full CRUD + mark-paid/unpaid + stats + overdue + PDF download + send email
  */
 
 import { Request, Response } from 'express';
@@ -14,38 +14,22 @@ import {
 } from '../validation/deposit.validation';
 import { AppError } from '../utils/AppError';
 
-/**
- * GET /api/deposits
- * List all deposits with filters
- */
 export const listDeposits = async (req: Request, res: Response): Promise<void> => {
   const filters = depositFiltersSchema.parse(req.query);
   const result = await depositService.list(filters);
   res.json({ success: true, data: result.deposits, pagination: result.pagination });
 };
 
-/**
- * GET /api/deposits/stats
- * Get global deposit statistics
- */
 export const getDepositStats = async (_req: Request, res: Response): Promise<void> => {
   const stats = await depositService.getStats();
   res.json({ success: true, data: stats });
 };
 
-/**
- * GET /api/deposits/overdue
- * Get all overdue deposits
- */
 export const getOverdueDeposits = async (_req: Request, res: Response): Promise<void> => {
   const deposits = await depositService.getOverdue();
   res.json({ success: true, data: deposits });
 };
 
-/**
- * GET /api/deposits/:id
- * Get single deposit by ID
- */
 export const getDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const deposit = await depositService.getById(id);
@@ -61,7 +45,7 @@ export const downloadDepositPdf = async (req: Request, res: Response): Promise<v
   const deposit = await depositService.getById(id);
 
   if (!deposit.paid) {
-    throw AppError.badRequest('PDF potwierdzenia dostępny tylko dla opłaconych zaliczek');
+    throw AppError.badRequest('PDF potwierdzenia dostepny tylko dla oplaconych zaliczek');
   }
 
   const reservation = deposit.reservation as any;
@@ -103,19 +87,21 @@ export const downloadDepositPdf = async (req: Request, res: Response): Promise<v
 };
 
 /**
- * GET /api/reservations/:reservationId/deposits
- * Get all deposits for a reservation
+ * POST /api/deposits/:id/send-email
+ * Manually send confirmation email with PDF to client
  */
+export const sendDepositEmail = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const result = await depositService.sendConfirmationEmail(id);
+  res.json(result);
+};
+
 export const getReservationDeposits = async (req: Request, res: Response): Promise<void> => {
   const { reservationId } = req.params;
   const result = await depositService.getByReservation(reservationId);
   res.json({ success: true, data: result.deposits, summary: result.summary });
 };
 
-/**
- * POST /api/reservations/:reservationId/deposits
- * Create a new deposit for a reservation
- */
 export const createDeposit = async (req: Request, res: Response): Promise<void> => {
   const { reservationId } = req.params;
   const body = createDepositSchema.parse(req.body);
@@ -130,10 +116,6 @@ export const createDeposit = async (req: Request, res: Response): Promise<void> 
   res.status(201).json({ success: true, data: deposit });
 };
 
-/**
- * PUT /api/deposits/:id
- * Update a deposit
- */
 export const updateDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const body = updateDepositSchema.parse(req.body);
@@ -142,20 +124,12 @@ export const updateDeposit = async (req: Request, res: Response): Promise<void> 
   res.json({ success: true, data: deposit });
 };
 
-/**
- * DELETE /api/deposits/:id
- * Delete a deposit
- */
 export const deleteDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const result = await depositService.delete(id);
   res.json(result);
 };
 
-/**
- * PATCH /api/deposits/:id/mark-paid
- * Mark a deposit as paid
- */
 export const markDepositAsPaid = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const body = markPaidSchema.parse(req.body);
@@ -164,20 +138,12 @@ export const markDepositAsPaid = async (req: Request, res: Response): Promise<vo
   res.json({ success: true, data: deposit });
 };
 
-/**
- * PATCH /api/deposits/:id/mark-unpaid
- * Revert paid status
- */
 export const markDepositAsUnpaid = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const deposit = await depositService.markAsUnpaid(id);
   res.json({ success: true, data: deposit });
 };
 
-/**
- * PATCH /api/deposits/:id/cancel
- * Cancel a deposit
- */
 export const cancelDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const deposit = await depositService.cancel(id);

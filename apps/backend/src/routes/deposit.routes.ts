@@ -1,6 +1,6 @@
 /**
  * Deposit Routes
- * Full CRUD + mark-paid/unpaid + cancel + stats + overdue + PDF
+ * Full CRUD + mark-paid/unpaid + cancel + stats + overdue + PDF + send-email
  */
 
 import { Router } from 'express';
@@ -16,6 +16,7 @@ import {
   markDepositAsUnpaid,
   cancelDeposit,
   downloadDepositPdf,
+  sendDepositEmail,
 } from '../controllers/deposit.controller';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
@@ -30,6 +31,7 @@ router.get('/', authMiddleware, asyncHandler(listDeposits));
 // Single deposit endpoints
 router.get('/:id', authMiddleware, validateUUID('id'), asyncHandler(getDeposit));
 router.get('/:id/pdf', authMiddleware, validateUUID('id'), asyncHandler(downloadDepositPdf));
+router.post('/:id/send-email', authMiddleware, validateUUID('id'), asyncHandler(sendDepositEmail));
 router.put('/:id', authMiddleware, validateUUID('id'), asyncHandler(updateDeposit));
 router.delete('/:id', authMiddleware, validateUUID('id'), asyncHandler(deleteDeposit));
 router.patch('/:id/mark-paid', authMiddleware, validateUUID('id'), asyncHandler(markDepositAsPaid));

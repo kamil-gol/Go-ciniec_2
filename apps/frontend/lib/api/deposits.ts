@@ -158,10 +158,7 @@ export const depositsApi = {
     return response.data.data
   },
 
-  /**
-   * Download payment confirmation PDF
-   * Opens in new tab or triggers download
-   */
+  /** Download payment confirmation PDF */
   downloadPdf: async (id: string): Promise<void> => {
     const response = await apiClient.get(`/deposits/${id}/pdf`, {
       responseType: 'blob',
@@ -175,5 +172,11 @@ export const depositsApi = {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
+  },
+
+  /** Manually send confirmation email with PDF to client */
+  sendEmail: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post(`/deposits/${id}/send-email`)
+    return response.data
   },
 }
