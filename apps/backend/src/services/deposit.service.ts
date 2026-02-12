@@ -7,9 +7,7 @@ import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { Prisma } from '@prisma/client';
 
-// ═══════════════════════════════════════════════════════════════
 // Types
-// ═══════════════════════════════════════════════════════════════
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
@@ -17,7 +15,7 @@ export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
 export interface CreateDepositInput {
   reservationId: string;
   amount: number;
-  dueDate: string; // ISO date
+  dueDate: string;
   notes?: string;
   paymentMethod?: PaymentMethod;
 }
@@ -30,8 +28,8 @@ export interface UpdateDepositInput {
 
 export interface MarkPaidInput {
   paymentMethod: PaymentMethod;
-  paidAt: string; // ISO date
-  amountPaid?: number; // for partial payments
+  paidAt: string;
+  amountPaid?: number;
   notes?: string;
 }
 
@@ -42,16 +40,14 @@ export interface DepositFilters {
   dateFrom?: string;
   dateTo?: string;
   paid?: boolean;
-  search?: string; // search by client name
+  search?: string;
   page?: number;
   limit?: number;
   sortBy?: 'dueDate' | 'amount' | 'createdAt' | 'status';
   sortOrder?: 'asc' | 'desc';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Service
-// ═══════════════════════════════════════════════════════════════
+const ACTIVE_STATUSES = ['PENDING', 'PAID', 'OVERDUE', 'PARTIALLY_PAID'];
 
 const depositService = {
   /**
@@ -60,7 +56,6 @@ const depositService = {
   async create(input: CreateDepositInput) {
     const { reservationId, amount, dueDate, notes } = input;
 
-    // 1. Verify reservation exists
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: { deposits: true, client: true },
@@ -70,7 +65,6 @@ const depositService = {
       throw AppError.notFound('Reservation');
     }
 
-    // 2. Validate: sum of deposits cannot exceed totalPrice
     const existingDepositsSum = reservation.deposits
       .filter(d => d.status !== 'CANCELLED')
       .reduce((sum, d) => sum + Number(d.amount), 0);
@@ -79,16 +73,15 @@ const depositService = {
 
     if (existingDepositsSum + amount > totalPrice) {
       throw AppError.badRequest(
-        `Suma zaliczek (${existingDepositsSum + amount} PLN) przekracza całkowitą cenę rezerwacji (${totalPrice} PLN). ` +
-        `Dostępne do zaliczki: ${(totalPrice - existingDepositsSum).toFixed(2)} PLN`
+        'Suma zaliczek (' + (existingDepositsSum + amount) + ' PLN) przekracza cene rezerwacji (' + totalPrice + ' PLN). ' +
+        'Dostepne do zaliczki: ' + (totalPrice - existingDepositsSum).toFixed(2) + ' PLN'
       );
     }
 
     if (amount <= 0) {
-      throw AppError.badRequest('Kwota zaliczki musi być większa od 0');
+      throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
     }
 
-    // 3. Create deposit
     const deposit = await prisma.deposit.create({
       data: {
         reservationId,
@@ -136,7 +129,6 @@ const depositService = {
    * Get deposits for a specific reservation
    */
   async getByReservation(reservationId: string) {
-    // Verify reservation exists
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
@@ -155,7 +147,6 @@ const depositService = {
       },
     });
 
-    // Calculate summary
     const totalAmount = deposits
       .filter(d => d.status !== 'CANCELLED')
       .reduce((sum, d) => sum + Number(d.amount), 0);
@@ -204,13 +195,11 @@ const depositService = {
     if (status) where.status = status;
     if (paid !== undefined) where.paid = paid;
 
-    // Overdue filter: PENDING + dueDate < now
     if (overdue) {
       where.status = 'PENDING';
       where.dueDate = { lt: new Date() };
     }
 
-    // Date range filter on dueDate
     if (dateFrom || dateTo) {
       where.dueDate = {
         ...(where.dueDate as any || {}),
@@ -219,7 +208,6 @@ const depositService = {
       };
     }
 
-    // Search by client name
     if (search) {
       where.reservation = {
         client: {
@@ -267,7 +255,6 @@ const depositService = {
 
   /**
    * Update deposit (amount, dueDate, notes)
-   * Cannot update a PAID deposit
    */
   async update(id: string, input: UpdateDepositInput) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
@@ -276,14 +263,13 @@ const depositService = {
 
     if (deposit.paid) {
       throw AppError.badRequest(
-        'Nie można edytować opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.'
+        'Nie mozna edytowac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.'
       );
     }
 
-    // If amount changed, validate against reservation total
     if (input.amount !== undefined) {
       if (input.amount <= 0) {
-        throw AppError.badRequest('Kwota zaliczki musi być większa od 0');
+        throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
       }
 
       const reservation = await prisma.reservation.findUnique({
@@ -300,7 +286,7 @@ const depositService = {
 
         if (otherDepositsSum + input.amount > totalPrice) {
           throw AppError.badRequest(
-            `Suma zaliczek (${otherDepositsSum + input.amount} PLN) przekracza cenę rezerwacji (${totalPrice} PLN).`
+            'Suma zaliczek (' + (otherDepositsSum + input.amount) + ' PLN) przekracza cene rezerwacji (' + totalPrice + ' PLN).'
           );
         }
       }
@@ -330,7 +316,6 @@ const depositService = {
 
   /**
    * Delete a deposit
-   * Cannot delete a PAID deposit
    */
   async delete(id: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
@@ -339,13 +324,13 @@ const depositService = {
 
     if (deposit.paid) {
       throw AppError.badRequest(
-        'Nie można usunąć opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.'
+        'Nie mozna usunac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.'
       );
     }
 
     await prisma.deposit.delete({ where: { id } });
 
-    return { success: true, message: 'Zaliczka została usunięta' };
+    return { success: true, message: 'Zaliczka zostala usunieta' };
   },
 
   /**
@@ -357,7 +342,7 @@ const depositService = {
     if (!deposit) throw AppError.notFound('Deposit');
 
     if (deposit.paid) {
-      throw AppError.badRequest('Ta zaliczka jest już oznaczona jako opłacona');
+      throw AppError.badRequest('Ta zaliczka jest juz oznaczona jako oplacona');
     }
 
     const amountPaid = input.amountPaid || Number(deposit.amount);
@@ -402,7 +387,7 @@ const depositService = {
     if (!deposit) throw AppError.notFound('Deposit');
 
     if (!deposit.paid && deposit.status === 'PENDING') {
-      throw AppError.badRequest('Ta zaliczka nie jest oznaczona jako opłacona');
+      throw AppError.badRequest('Ta zaliczka nie jest oznaczona jako oplacona');
     }
 
     const updated = await prisma.deposit.update({
@@ -434,7 +419,7 @@ const depositService = {
 
     if (deposit.paid) {
       throw AppError.badRequest(
-        'Nie można anulować opłaconej zaliczki. Najpierw cofnij płatność.'
+        'Nie mozna anulowac oplaconej zaliczki. Najpierw cofnij platnosc.'
       );
     }
 
@@ -460,53 +445,43 @@ const depositService = {
   async getStats() {
     const now = new Date();
 
-    const [all, pending, paid, overdue, cancelled] = await Promise.all([
-      prisma.deposit.findMany({
-        where: { status: { not: 'CANCELLED' } },
-        select: { amount: true, remainingAmount: true, status: true, paid: true },
-      }),
-      prisma.deposit.count({ where: { status: 'PENDING' } }),
-      prisma.deposit.count({ where: { status: 'PAID' } }),
-      prisma.deposit.count({
-        where: {
-          status: 'PENDING',
-          dueDate: { lt: now },
-        },
-      }),
-      prisma.deposit.count({ where: { status: 'CANCELLED' } }),
-    ]);
-
-    const totalAmount = all.reduce((sum, d) => sum + Number(d.amount), 0);
-    const paidAmount = all.filter(d => d.paid).reduce((sum, d) => sum + Number(d.amount), 0);
-    const pendingAmount = totalAmount - paidAmount;
-
-    // Overdue amount
-    const overdueDeposits = await prisma.deposit.findMany({
+    const allDeposits = await prisma.deposit.findMany({
       where: {
-        status: 'PENDING',
-        dueDate: { lt: now },
+        status: { in: ACTIVE_STATUSES },
       },
-      select: { amount: true },
+      select: { amount: true, remainingAmount: true, status: true, paid: true, dueDate: true },
     });
-    const overdueAmount = overdueDeposits.reduce((sum, d) => sum + Number(d.amount), 0);
 
-    // Upcoming in 7 days
+    const pending = allDeposits.filter(d => d.status === 'PENDING').length;
+    const paid = allDeposits.filter(d => d.status === 'PAID').length;
+    const overdue = allDeposits.filter(d => d.status === 'PENDING' && d.dueDate < now).length;
+    const partiallyPaid = allDeposits.filter(d => d.status === 'PARTIALLY_PAID').length;
+
+    const cancelledCount = await prisma.deposit.count({
+      where: { status: { equals: 'CANCELLED' } },
+    });
+
+    const totalAmount = allDeposits.reduce((sum, d) => sum + Number(d.amount), 0);
+    const paidAmount = allDeposits.filter(d => d.paid).reduce((sum, d) => sum + Number(d.amount), 0);
+    const pendingAmount = totalAmount - paidAmount;
+    const overdueAmount = allDeposits
+      .filter(d => d.status === 'PENDING' && d.dueDate < now)
+      .reduce((sum, d) => sum + Number(d.amount), 0);
+
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
-    const upcomingCount = await prisma.deposit.count({
-      where: {
-        status: 'PENDING',
-        dueDate: { gte: now, lte: nextWeek },
-      },
-    });
+    const upcomingCount = allDeposits.filter(
+      d => d.status === 'PENDING' && d.dueDate >= now && d.dueDate <= nextWeek
+    ).length;
 
     return {
       counts: {
-        total: all.length,
+        total: allDeposits.length,
         pending,
         paid,
         overdue,
-        cancelled,
+        partiallyPaid,
+        cancelled: cancelledCount,
         upcomingIn7Days: upcomingCount,
       },
       amounts: {
@@ -526,7 +501,7 @@ const depositService = {
 
     const deposits = await prisma.deposit.findMany({
       where: {
-        status: 'PENDING',
+        status: { equals: 'PENDING' },
         dueDate: { lt: now },
       },
       orderBy: { dueDate: 'asc' },
@@ -546,14 +521,13 @@ const depositService = {
 
   /**
    * Auto-mark overdue deposits (called by cron)
-   * Changes PENDING → OVERDUE if dueDate has passed
    */
   async autoMarkOverdue() {
     const now = new Date();
 
     const result = await prisma.deposit.updateMany({
       where: {
-        status: 'PENDING',
+        status: { equals: 'PENDING' },
         paid: false,
         dueDate: { lt: now },
       },
