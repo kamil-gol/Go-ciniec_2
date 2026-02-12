@@ -25,6 +25,11 @@ export interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }
 
 export interface DepositReminderData {
@@ -97,19 +102,31 @@ const emailService = {
     if (!transport) {
       logger.info(`[Email][DRY-RUN] To: ${options.to} | Subject: ${options.subject}`);
       logger.debug(`[Email][DRY-RUN] Body preview: ${options.html.substring(0, 200)}...`);
+      if (options.attachments && options.attachments.length > 0) {
+        logger.debug(`[Email][DRY-RUN] Attachments: ${options.attachments.map(a => a.filename).join(', ')}`);
+      }
       return false;
     }
 
     try {
-      const info = await transport.sendMail({
+      const mailOptions: any = {
         from,
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text || '',
-      });
+      };
+
+      if (options.attachments && options.attachments.length > 0) {
+        mailOptions.attachments = options.attachments;
+      }
+
+      const info = await transport.sendMail(mailOptions);
 
       logger.info(`[Email] Sent to ${options.to}: ${options.subject} (messageId: ${info.messageId})`);
+      if (options.attachments && options.attachments.length > 0) {
+        logger.debug(`[Email] Attachments: ${options.attachments.map(a => a.filename).join(', ')}`);
+      }
       return true;
     } catch (error: any) {
       logger.error(`[Email] Failed to send to ${options.to}: ${error.message}`);
@@ -199,7 +216,7 @@ const emailService = {
   },
 
   /**
-   * Send deposit payment confirmation
+   * Send deposit payment confirmation WITH PDF attachment
    */
   async sendDepositPaidConfirmation(to: string, data: {
     clientName: string;
@@ -209,7 +226,7 @@ const emailService = {
     reservationDate: string;
     hallName: string;
     eventType: string;
-  }): Promise<boolean> {
+  }, pdfBuffer?: Buffer): Promise<boolean> {
     const subject = `✅ Potwierdzenie wpłaty zaliczki: ${data.depositAmount} zł`;
 
     const methodLabels: Record<string, string> = {
@@ -247,12 +264,18 @@ const emailService = {
             <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td>
           </tr>
         </table>
-        <p>Dziękujemy za wpłatę! W razie pytań prosimy o kontakt.</p>
+        <p>Dziękujemy za wpłatę! ${pdfBuffer ? 'Potwierdzenie w załączniku PDF.' : ''}</p>
       `,
       footer: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
     });
 
-    return this.send({ to, subject, html });
+    const attachments = pdfBuffer ? [{
+      filename: 'Potwierdzenie_wplaty.pdf',
+      content: pdfBuffer,
+      contentType: 'application/pdf',
+    }] : undefined;
+
+    return this.send({ to, subject, html, attachments });
   },
 
   /**
