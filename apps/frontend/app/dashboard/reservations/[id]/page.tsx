@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft, Edit, Trash2, CheckCircle2, XCircle, Clock, 
   Calendar, Users, DollarSign, Building2, User, Mail, Phone,
-  FileText, Download, Sparkles, MapPin, CreditCard
+  FileText, Download, Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getReservationById, downloadReservationPDF, type Reservation } from '@/lib/api/reservations'
+import { useReservation, useCancelReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -52,31 +52,13 @@ export default function ReservationDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
-  const [reservation, setReservation] = useState<Reservation | null>(null)
-  const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
 
-  useEffect(() => {
-    loadReservation()
-  }, [params.id])
+  const reservationId = params.id as string
 
-  const loadReservation = async () => {
-    try {
-      setLoading(true)
-      const data = await getReservationById(params.id as string)
-      setReservation(data)
-    } catch (error: any) {
-      console.error('Error loading reservation:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować rezerwacji',
-        variant: 'destructive',
-      })
-      router.push('/dashboard/reservations')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // React Query — auto-caches, auto-refetches, no manual state management
+  const { data: reservation, isLoading, isError } = useReservation(reservationId)
+  const cancelMutation = useCancelReservation()
 
   const handleDownloadPDF = async () => {
     if (!reservation) return
@@ -88,8 +70,7 @@ export default function ReservationDetailsPage() {
         title: 'Sukces',
         description: 'PDF został pobrany',
       })
-    } catch (error: any) {
-      console.error('Error downloading PDF:', error)
+    } catch {
       toast({
         title: 'Błąd',
         description: 'Nie udało się pobrać PDF',
@@ -100,7 +81,31 @@ export default function ReservationDetailsPage() {
     }
   }
 
-  if (loading) {
+  const handleCancel = async () => {
+    if (!reservation) return
+    
+    const reason = prompt('Podaj powód anulowania rezerwacji:')
+    if (!reason) return
+
+    try {
+      await cancelMutation.mutateAsync({
+        id: reservation.id,
+        input: { reason }
+      })
+      toast({
+        title: 'Sukces',
+        description: 'Rezerwacja została anulowana',
+      })
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się anulować rezerwacji',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -111,17 +116,29 @@ export default function ReservationDetailsPage() {
     )
   }
 
-  if (!reservation) {
-    return null
+  if (isError || !reservation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <XCircle className="h-16 w-16 text-red-400 mx-auto" />
+          <p className="text-muted-foreground">Nie udało się załadować rezerwacji</p>
+          <Link href="/dashboard/reservations">
+            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const status = statusConfig[reservation.status as keyof typeof statusConfig]
-  const StatusIcon = status.icon
+  const StatusIcon = status?.icon || Clock
   const eventDate = reservation.startDateTime 
     ? new Date(reservation.startDateTime) 
     : reservation.date 
     ? new Date(reservation.date) 
     : null
+
+  const isCancellable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -152,10 +169,12 @@ export default function ReservationDetailsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className={`${status.color} text-white border-0 px-3 py-1`}>
-                    <StatusIcon className="h-3 w-3 mr-1" />
-                    {status.label}
-                  </Badge>
+                  {status && (
+                    <Badge className={`${status.color} text-white border-0 px-3 py-1`}>
+                      <StatusIcon className="h-3 w-3 mr-1" />
+                      {status.label}
+                    </Badge>
+                  )}
                   {eventDate && (
                     <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                       <Calendar className="h-3 w-3 mr-1" />
@@ -292,7 +311,7 @@ export default function ReservationDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Menu Section - NEW! */}
+            {/* Menu Section */}
             {reservation.eventType?.id && eventDate && (
               <ReservationMenuSection
                 reservationId={reservation.id}
@@ -301,7 +320,6 @@ export default function ReservationDetailsPage() {
                 adults={reservation.adults || 0}
                 children={reservation.children || 0}
                 toddlers={reservation.toddlers || 0}
-                onMenuUpdated={loadReservation}
               />
             )}
 
@@ -335,7 +353,6 @@ export default function ReservationDetailsPage() {
                   <h2 className="text-xl font-bold">Goście</h2>
                 </div>
                 <div className="space-y-4">
-                  {/* Adults */}
                   <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
                     <div>
                       <p className="text-sm text-muted-foreground">Dorośli</p>
@@ -343,7 +360,6 @@ export default function ReservationDetailsPage() {
                     </div>
                     <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
                   </div>
-                  {/* Children */}
                   <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
                     <div>
                       <p className="text-sm text-muted-foreground">Dzieci</p>
@@ -351,7 +367,6 @@ export default function ReservationDetailsPage() {
                     </div>
                     <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
                   </div>
-                  {/* Toddlers */}
                   <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
                     <div>
                       <p className="text-sm text-muted-foreground">Maluchy</p>
@@ -359,7 +374,6 @@ export default function ReservationDetailsPage() {
                     </div>
                     <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
                   </div>
-                  {/* Total */}
                   <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border-2 border-purple-200 dark:border-purple-800">
                     <div>
                       <p className="text-sm font-semibold">Razem</p>
@@ -409,13 +423,24 @@ export default function ReservationDetailsPage() {
                 <CardTitle className="text-lg">Szybkie akcje</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-2">
-                <Button variant="outline" className="w-full justify-start" size="lg">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  size="lg"
+                  onClick={() => router.push(`/dashboard/reservations?edit=${reservation.id}`)}
+                >
                   <Edit className="mr-2 h-4 w-4" />
                   Edytuj rezerwację
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" size="lg">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-red-600 hover:text-red-700" 
+                  size="lg"
+                  disabled={!isCancellable || cancelMutation.isPending}
+                  onClick={handleCancel}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Anuluj rezerwację
+                  {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
                 </Button>
               </CardContent>
             </Card>
