@@ -45,11 +45,11 @@ export default function Header({ user }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 h-16 border-b border-neutral-200/80 dark:border-neutral-700/50 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl">
       <div className="flex h-full items-center justify-between px-6">
         {/* Welcome Message */}
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
             Witaj, {user?.firstName}! 👋
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -58,15 +58,15 @@ export default function Header({ user }: HeaderProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Search */}
           <button
-            className="flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 px-4 py-2 text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
             aria-label="Szukaj"
           >
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">Szukaj...</span>
-            <kbd className="hidden sm:inline-flex items-center gap-1 rounded bg-neutral-200 dark:bg-neutral-700 px-2 py-0.5 text-xs">
+            <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md bg-neutral-200/80 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
               ⌘K
             </kbd>
           </button>
@@ -74,29 +74,29 @@ export default function Header({ user }: HeaderProps) {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="rounded-xl bg-neutral-100 dark:bg-neutral-800 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+            className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
             aria-label="Przełącz motyw"
           >
             <AnimatePresence mode="wait">
               {isDark ? (
                 <motion.div
                   key="sun"
-                  initial={{ rotate: -180, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 180, opacity: 0 }}
+                  initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                  exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Sun className="h-5 w-5 text-amber-500" />
+                  <Sun className="h-[18px] w-[18px] text-amber-500" />
                 </motion.div>
               ) : (
                 <motion.div
                   key="moon"
-                  initial={{ rotate: 180, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -180, opacity: 0 }}
+                  initial={{ rotate: 90, opacity: 0, scale: 0.5 }}
+                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                  exit={{ rotate: -90, opacity: 0, scale: 0.5 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Moon className="h-5 w-5 text-neutral-600" />
+                  <Moon className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-400" />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -106,14 +106,18 @@ export default function Header({ user }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative rounded-xl bg-neutral-100 dark:bg-neutral-800 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              className="relative rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
               aria-label="Powiadomienia"
             >
-              <Bell className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+              <Bell className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-400" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-error-500 text-xs font-semibold text-white animate-pulse-glow">
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-neutral-900"
+                >
                   {unreadCount}
-                </span>
+                </motion.span>
               )}
             </button>
 
@@ -121,30 +125,36 @@ export default function Header({ user }: HeaderProps) {
             <AnimatePresence>
               {showNotifications && (
                 <>
-                  {/* Overlay to close dropdown */}
-                  <div 
-                    className="fixed inset-0 z-40" 
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={() => setShowNotifications(false)}
                   />
-                  
+
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white dark:bg-neutral-800 shadow-hard border border-neutral-200 dark:border-neutral-700 overflow-hidden z-50"
+                    className="absolute right-0 top-full mt-2 w-80 rounded-2xl bg-white dark:bg-neutral-800 shadow-xl border border-neutral-200/80 dark:border-neutral-700/50 overflow-hidden z-50"
                   >
-                    <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
-                      <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Powiadomienia</h3>
+                    <div className="p-4 border-b border-neutral-100 dark:border-neutral-700/50">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Powiadomienia</h3>
+                        {unreadCount > 0 && (
+                          <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/30 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                            {unreadCount} nowe
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto scrollbar-thin">
                       {notifications.map((notif) => (
                         <div
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif)}
                           className={cn(
-                            'p-4 border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer',
-                            notif.unread && 'bg-primary-50 dark:bg-primary-900/10'
+                            'p-4 border-b border-neutral-100/80 dark:border-neutral-700/30 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors duration-150 cursor-pointer',
+                            notif.unread && 'bg-indigo-50/50 dark:bg-indigo-950/10'
                           )}
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -152,24 +162,24 @@ export default function Header({ user }: HeaderProps) {
                               <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
                                 {notif.title}
                               </p>
-                              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
+                              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                                 {notif.message}
                               </p>
-                              <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                                 {notif.time}
                               </p>
                             </div>
                             {notif.unread && (
-                              <span className="h-2 w-2 rounded-full bg-primary-500 flex-shrink-0 mt-1" />
+                              <span className="h-2 w-2 rounded-full bg-indigo-500 dark:bg-indigo-400 flex-shrink-0 mt-1.5" />
                             )}
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
-                      <button 
+                    <div className="p-3 border-t border-neutral-100 dark:border-neutral-700/50">
+                      <button
                         onClick={handleViewAll}
-                        className="w-full text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+                        className="w-full text-center text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
                       >
                         Zobacz wszystkie
                       </button>
