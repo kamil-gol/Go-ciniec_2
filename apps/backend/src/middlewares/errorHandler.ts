@@ -1,56 +1,79 @@
-import { Request, Response, NextFunction } from 'express';
-import logger from '@utils/logger';
-import { ApiResponse } from '@types/index';
-
-export class AppError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string,
-    public isOperational: boolean = true
-  ) {
-    super(message);
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
 /**
- * Global error handling middleware
+ * Global Error Handler Middleware
+ * Single point of error handling for the entire application.
+ * 
+ * Must be registered LAST in Express middleware chain:
+ *   app.use(errorHandler);
  */
-export const errorHandler = (
-  err: Error | AppError,
+import { Request, Response, NextFunction } from 'express';
+import { AppError } from '../utils/AppError';
+import { Prisma } from '@prisma/client';
+
+export function errorHandler(
+  err: Error,
   _req: Request,
   res: Response,
   _next: NextFunction
-): void => {
+): void {
+  // ─── AppError (known, operational errors) ───
   if (err instanceof AppError) {
-    if (err.isOperational) {
-      logger.warn(`Operational Error: ${err.message}`);
-      const response: ApiResponse = {
-        success: false,
-        error: err.message,
-      };
-      res.status(err.statusCode).json(response);
-    } else {
-      logger.error('Non-operational error:', err);
-      res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-      });
-    }
-  } else {
-    logger.error('Unexpected error:', err);
-    res.status(500).json({
+    res.status(err.statusCode).json({
       success: false,
-      error: 'Internal server error',
+      error: err.message,
     });
+    return;
   }
-};
 
-/**
- * Wrapper for async route handlers to catch errors
- */
-export const asyncHandler =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+  // ─── Prisma known errors ───
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (err.code) {
+      case 'P2002': {
+        // Unique constraint violation
+        const target = (err.meta?.target as string[])?.join(', ') || 'field';
+        res.status(409).json({
+          success: false,
+          error: `Duplicate value for: ${target}`,
+        });
+        return;
+      }
+      case 'P2025': {
+        // Record not found
+        res.status(404).json({
+          success: false,
+          error: 'Record not found',
+        });
+        return;
+      }
+      case 'P2003': {
+        // Foreign key constraint failed
+        res.status(400).json({
+          success: false,
+          error: 'Referenced record does not exist',
+        });
+        return;
+      }
+      default:
+        break;
+    }
+  }
+
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid data provided',
+    });
+    return;
+  }
+
+  // ─── Unknown errors (500) ───
+  // In production, never leak internal error details
+  console.error('[ERROR]', err);
+
+  res.status(500).json({
+    success: false,
+    error:
+      process.env.NODE_ENV === 'production'
+        ? 'Internal server error'
+        : err.message || 'Internal server error',
+  });
+}
