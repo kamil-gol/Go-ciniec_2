@@ -2,9 +2,10 @@
  * Menu System API Client
  * 
  * Type-safe API client for menu endpoints
+ * Uses the shared apiClient from lib/api-client.ts
  */
 
-import axios, { AxiosError } from 'axios';
+import { apiClient } from '../api-client';
 import type {
   MenuTemplate,
   MenuPackage,
@@ -16,58 +17,6 @@ import type {
   ApiResponse,
   ApiError,
 } from '@/types/menu.types';
-
-// ════════════════════════════════════════════════════════════════════════════════
-// AXIOS INSTANCE
-// ════════════════════════════════════════════════════════════════════════════════
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-});
-
-// Request interceptor for adding auth token
-api.interceptors.request.use(
-  (config) => {
-    // Try to get token from localStorage (client-side only)
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError<ApiError>) => {
-    if (error.response) {
-      // API error response
-      return Promise.reject(error.response.data);
-    } else if (error.request) {
-      // Network error
-      return Promise.reject({
-        success: false,
-        error: 'Błąd połączenia z serwerem',
-      });
-    } else {
-      // Other error
-      return Promise.reject({
-        success: false,
-        error: error.message || 'Nieznany błąd',
-      });
-    }
-  }
-);
 
 // ════════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -100,7 +49,7 @@ export const menuApi = {
    */
   getTemplates: async (filters?: MenuTemplateFilters): Promise<ApiResponse<MenuTemplate[]>> => {
     const query = filters ? buildQueryParams(filters) : '';
-    const { data } = await api.get<ApiResponse<MenuTemplate[]>>(`/menu-templates${query}`);
+    const { data } = await apiClient.get<ApiResponse<MenuTemplate[]>>(`/menu-templates${query}`);
     return data;
   },
 
@@ -108,7 +57,7 @@ export const menuApi = {
    * Get single menu template by ID
    */
   getTemplate: async (id: string): Promise<ApiResponse<MenuTemplate>> => {
-    const { data } = await api.get<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`);
+    const { data } = await apiClient.get<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`);
     return data;
   },
 
@@ -116,7 +65,7 @@ export const menuApi = {
    * Get active menu template for event type
    */
   getActiveTemplate: async (eventTypeId: string): Promise<ApiResponse<MenuTemplate>> => {
-    const { data } = await api.get<ApiResponse<MenuTemplate>>(
+    const { data } = await apiClient.get<ApiResponse<MenuTemplate>>(
       `/menu-templates/active/${eventTypeId}`
     );
     return data;
@@ -126,7 +75,7 @@ export const menuApi = {
    * Create new menu template
    */
   createTemplate: async (input: any): Promise<ApiResponse<MenuTemplate>> => {
-    const { data } = await api.post<ApiResponse<MenuTemplate>>('/menu-templates', input);
+    const { data } = await apiClient.post<ApiResponse<MenuTemplate>>('/menu-templates', input);
     return data;
   },
 
@@ -134,7 +83,7 @@ export const menuApi = {
    * Update menu template
    */
   updateTemplate: async (id: string, input: any): Promise<ApiResponse<MenuTemplate>> => {
-    const { data } = await api.put<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`, input);
+    const { data } = await apiClient.put<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`, input);
     return data;
   },
 
@@ -142,7 +91,7 @@ export const menuApi = {
    * Delete menu template
    */
   deleteTemplate: async (id: string): Promise<ApiResponse<{ message: string }>> => {
-    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/menu-templates/${id}`);
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/menu-templates/${id}`);
     return data;
   },
 
@@ -154,7 +103,7 @@ export const menuApi = {
    * Get all packages for a menu template
    */
   getPackages: async (templateId: string): Promise<ApiResponse<MenuPackage[]>> => {
-    const { data } = await api.get<ApiResponse<MenuPackage[]>>(
+    const { data } = await apiClient.get<ApiResponse<MenuPackage[]>>(
       `/menu-packages/template/${templateId}`
     );
     return data;
@@ -164,7 +113,7 @@ export const menuApi = {
    * Get single package by ID
    */
   getPackage: async (id: string): Promise<ApiResponse<MenuPackage>> => {
-    const { data } = await api.get<ApiResponse<MenuPackage>>(`/menu-packages/${id}`);
+    const { data } = await apiClient.get<ApiResponse<MenuPackage>>(`/menu-packages/${id}`);
     return data;
   },
 
@@ -172,7 +121,7 @@ export const menuApi = {
    * Get categories with dishes for a package
    */
   getPackageCategories: async (packageId: string): Promise<ApiResponse<any>> => {
-    const { data } = await api.get<ApiResponse<any>>(
+    const { data } = await apiClient.get<ApiResponse<any>>(
       `/menu-packages/${packageId}/categories`
     );
     return data;
@@ -182,7 +131,7 @@ export const menuApi = {
    * Create new menu package
    */
   createPackage: async (input: any): Promise<ApiResponse<MenuPackage>> => {
-    const { data } = await api.post<ApiResponse<MenuPackage>>('/menu-packages', input);
+    const { data } = await apiClient.post<ApiResponse<MenuPackage>>('/menu-packages', input);
     return data;
   },
 
@@ -190,7 +139,7 @@ export const menuApi = {
    * Update menu package
    */
   updatePackage: async (id: string, input: any): Promise<ApiResponse<MenuPackage>> => {
-    const { data } = await api.put<ApiResponse<MenuPackage>>(`/menu-packages/${id}`, input);
+    const { data } = await apiClient.put<ApiResponse<MenuPackage>>(`/menu-packages/${id}`, input);
     return data;
   },
 
@@ -198,7 +147,7 @@ export const menuApi = {
    * Delete menu package
    */
   deletePackage: async (id: string): Promise<ApiResponse<{ message: string }>> => {
-    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/menu-packages/${id}`);
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/menu-packages/${id}`);
     return data;
   },
 
@@ -211,7 +160,7 @@ export const menuApi = {
    */
   getOptions: async (filters?: MenuOptionFilters): Promise<ApiResponse<MenuOption[]>> => {
     const query = filters ? buildQueryParams(filters) : '';
-    const { data } = await api.get<ApiResponse<MenuOption[]>>(`/menu-options${query}`);
+    const { data } = await apiClient.get<ApiResponse<MenuOption[]>>(`/menu-options${query}`);
     return data;
   },
 
@@ -219,7 +168,7 @@ export const menuApi = {
    * Get single option by ID
    */
   getOption: async (id: string): Promise<ApiResponse<MenuOption>> => {
-    const { data } = await api.get<ApiResponse<MenuOption>>(`/menu-options/${id}`);
+    const { data } = await apiClient.get<ApiResponse<MenuOption>>(`/menu-options/${id}`);
     return data;
   },
 
@@ -227,7 +176,7 @@ export const menuApi = {
    * Create new menu option
    */
   createOption: async (input: any): Promise<ApiResponse<MenuOption>> => {
-    const { data } = await api.post<ApiResponse<MenuOption>>('/menu-options', input);
+    const { data } = await apiClient.post<ApiResponse<MenuOption>>('/menu-options', input);
     return data;
   },
 
@@ -235,7 +184,7 @@ export const menuApi = {
    * Update menu option
    */
   updateOption: async (id: string, input: any): Promise<ApiResponse<MenuOption>> => {
-    const { data } = await api.put<ApiResponse<MenuOption>>(`/menu-options/${id}`, input);
+    const { data } = await apiClient.put<ApiResponse<MenuOption>>(`/menu-options/${id}`, input);
     return data;
   },
 
@@ -243,7 +192,7 @@ export const menuApi = {
    * Delete menu option
    */
   deleteOption: async (id: string): Promise<ApiResponse<{ message: string }>> => {
-    const { data } = await api.delete<ApiResponse<{ message: string }>>(`/menu-options/${id}`);
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/menu-options/${id}`);
     return data;
   },
 
@@ -259,7 +208,7 @@ export const menuApi = {
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
-    const { data } = await api.post<ApiResponse<ReservationMenuResponse>>(
+    const { data } = await apiClient.post<ApiResponse<ReservationMenuResponse>>(
       `/reservations/${reservationId}/menu`,
       selection
     );
@@ -274,7 +223,7 @@ export const menuApi = {
     reservationId: string,
     selection: MenuSelectionInput
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
-    const { data } = await api.put<ApiResponse<ReservationMenuResponse>>(
+    const { data } = await apiClient.put<ApiResponse<ReservationMenuResponse>>(
       `/reservations/${reservationId}/menu`,
       selection
     );
@@ -287,7 +236,7 @@ export const menuApi = {
   getReservationMenu: async (
     reservationId: string
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
-    const { data } = await api.get<ApiResponse<ReservationMenuResponse>>(
+    const { data } = await apiClient.get<ApiResponse<ReservationMenuResponse>>(
       `/reservations/${reservationId}/menu`
     );
     return data;
@@ -304,7 +253,7 @@ export const menuApi = {
       toddlersCount: number;
     }
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
-    const { data } = await api.put<ApiResponse<ReservationMenuResponse>>(
+    const { data } = await apiClient.put<ApiResponse<ReservationMenuResponse>>(
       `/reservations/${reservationId}/menu`,
       counts
     );
@@ -315,15 +264,9 @@ export const menuApi = {
    * Remove menu selection from reservation
    */
   removeMenu: async (reservationId: string): Promise<ApiResponse<{ message: string }>> => {
-    const { data } = await api.delete<ApiResponse<{ message: string }>>(
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(
       `/reservations/${reservationId}/menu`
     );
     return data;
   },
 };
-
-// ════════════════════════════════════════════════════════════════════════════════
-// EXPORT AXIOS INSTANCE FOR CUSTOM REQUESTS
-// ════════════════════════════════════════════════════════════════════════════════
-
-export { api as apiClient };
