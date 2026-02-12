@@ -1,13 +1,15 @@
 /**
  * Reservation Routes
- * Define routes for reservation management
+ * MIGRATED: asyncHandler + validateUUID
  */
 
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
-import reservationMenuService from '../services/reservation-menu.service';
+import reservationMenuController from '../controllers/reservationMenu.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
+import { asyncHandler } from '../middlewares/asyncHandler';
+import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
 
@@ -16,118 +18,153 @@ const router = Router();
  * @desc    Create a new reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.post('/', authMiddleware, requireStaff, (req, res) => {
-  reservationController.createReservation(req, res);
-});
+router.post(
+  '/',
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await reservationController.createReservation(req, res);
+  })
+);
 
 /**
  * @route   GET /api/reservations
  * @desc    Get all reservations with optional filters
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.get('/', authMiddleware, requireStaff, (req, res) => {
-  reservationController.getReservations(req, res);
-});
+router.get(
+  '/',
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await reservationController.getReservations(req, res);
+  })
+);
 
 /**
  * @route   GET /api/reservations/:id
  * @desc    Get reservation by ID
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.get('/:id', authMiddleware, requireStaff, (req, res) => {
-  reservationController.getReservationById(req, res);
-});
+router.get(
+  '/:id',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.getReservationById(req, res);
+  })
+);
+
 
 /**
  * @route   GET /api/reservations/:id/pdf
  * @desc    Download reservation as PDF
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.get('/:id/pdf', authMiddleware, requireStaff, (req, res) => {
-  reservationController.downloadPDF(req, res);
-});
+router.get(
+  '/:id/pdf',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.downloadPDF(req, res);
+  })
+);
 
 /**
  * @route   PUT /api/reservations/:id
  * @desc    Update reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.put('/:id', authMiddleware, requireStaff, (req, res) => {
-  reservationController.updateReservation(req, res);
-});
+router.put(
+  '/:id',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.updateReservation(req, res);
+  })
+);
 
 /**
  * @route   PATCH /api/reservations/:id/status
  * @desc    Update reservation status
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.patch('/:id/status', authMiddleware, requireStaff, (req, res) => {
-  reservationController.updateStatus(req, res);
-});
+router.patch(
+  '/:id/status',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.updateStatus(req, res);
+  })
+);
 
 // ═══════════════════════════════════════════════════════════════
-// 🍽️ MENU SELECTION ENDPOINTS (using service directly)
+// MENU SELECTION ENDPOINTS
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   POST /api/reservations/:id/menu
- * @desc    Select menu for reservation (supports dishSelections)
+ * @desc    Select menu for reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.post('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
-  try {
-    const result = await reservationMenuService.selectMenu(req.params.id, req.body);
-    res.status(200).json({ success: true, data: result });
-  } catch (error: any) {
-    const status = error.message?.includes('not found') ? 404 : 400;
-    res.status(status).json({ success: false, error: error.message });
-  }
-});
+router.post(
+  '/:id/menu',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.selectMenu(req, res);
+  })
+);
 
 /**
  * @route   GET /api/reservations/:id/menu
  * @desc    Get menu selection for reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.get('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
-  try {
-    const result = await reservationMenuService.getReservationMenu(req.params.id);
-    res.status(200).json({ success: true, data: result });
-  } catch (error: any) {
-    const status = error.message?.includes('not found') || error.message?.includes('not selected') ? 404 : 500;
-    res.status(status).json({ success: false, error: error.message });
-  }
-});
+router.get(
+  '/:id/menu',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.getMenu(req, res);
+  })
+);
 
 /**
  * @route   PUT /api/reservations/:id/menu
- * @desc    Update menu selection for reservation (supports dishSelections)
+ * @desc    Update menu selection for reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.put('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
-  try {
-    const result = await reservationMenuService.updateMenu(req.params.id, req.body);
-    res.status(200).json({ success: true, data: result });
-  } catch (error: any) {
-    const status = error.message?.includes('not found') ? 404 : 400;
-    res.status(status).json({ success: false, error: error.message });
-  }
-});
+router.put(
+  '/:id/menu',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.updateMenu(req, res);
+  })
+);
 
 /**
  * @route   DELETE /api/reservations/:id/menu
  * @desc    Remove menu selection from reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.delete('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
-  try {
-    await reservationMenuService.removeMenu(req.params.id);
-    res.status(200).json({ success: true, message: 'Menu selection removed' });
-  } catch (error: any) {
-    const status = error.message?.includes('not found') ? 404 : 500;
-    res.status(status).json({ success: false, error: error.message });
-  }
-});
+router.delete(
+  '/:id/menu',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.deleteMenu(req, res);
+  })
+);
 
 // ═══════════════════════════════════════════════════════════════
 
@@ -136,8 +173,14 @@ router.delete('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
  * @desc    Cancel reservation
  * @access  Admin only
  */
-router.delete('/:id', authMiddleware, requireAdmin, (req, res) => {
-  reservationController.cancelReservation(req, res);
-});
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.cancelReservation(req, res);
+  })
+);
 
 export default router;

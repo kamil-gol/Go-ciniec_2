@@ -1,12 +1,13 @@
 /**
  * Reservation Controller
- * Handle HTTP requests for reservation management with advanced features
- * UPDATED: Full support for toddlers (0-3 years) age group + PDF generation + MENU INTEGRATION
+ * Handle HTTP requests for reservation management
+ * MIGRATED: Uses AppError (no try/catch — errors forwarded by asyncHandler)
  */
 
 import { Request, Response } from 'express';
 import reservationService from '../services/reservation.service';
 import { pdfService } from '../services/pdf.service';
+import { AppError } from '../utils/AppError';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -19,104 +20,51 @@ export class ReservationController {
   /**
    * Create a new reservation
    * POST /api/reservations
-   * 
-   * NEW: Menu integration support
-   * - Guest counts (adults, children, toddlers) are ALWAYS required
-   * - menuPackageId is optional (if provided, prices come from package)
-   * - If no menuPackageId, pricePerAdult and pricePerChild are required
    */
   async createReservation(req: Request, res: Response): Promise<void> {
-    try {
-      const data: CreateReservationDTO = req.body;
-      const userId = (req as any).user?.id;
+    const data: CreateReservationDTO = req.body;
+    const userId = req.user?.id;
 
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
-        return;
-      }
+    if (!userId) throw AppError.unauthorized();
 
-      // Validate required fields
-      if (!data.hallId || !data.clientId || !data.eventTypeId) {
-        res.status(400).json({
-          success: false,
-          error: 'Hall, client, and event type are required'
-        });
-        return;
-      }
-
-      // Validate either new format (startDateTime/endDateTime) or legacy format (date/startTime/endTime)
-      const hasNewFormat = data.startDateTime && data.endDateTime;
-      const hasLegacyFormat = data.date && data.startTime && data.endTime;
-      
-      if (!hasNewFormat && !hasLegacyFormat) {
-        res.status(400).json({
-          success: false,
-          error: 'Either startDateTime/endDateTime or date/startTime/endTime are required'
-        });
-        return;
-      }
-
-      // ═══════════════════════════════════════════════════════════════
-      // NEW: Guest counts are ALWAYS REQUIRED
-      // ═══════════════════════════════════════════════════════════════
-      if (data.adults === undefined || data.children === undefined || data.toddlers === undefined) {
-        res.status(400).json({
-          success: false,
-          error: 'Guest counts are required: adults, children, and toddlers (can be 0)'
-        });
-        return;
-      }
-
-      // At least one guest is required
-      if (data.adults === 0 && data.children === 0 && data.toddlers === 0) {
-        res.status(400).json({
-          success: false,
-          error: 'At least one guest is required (adults, children, or toddlers)'
-        });
-        return;
-      }
-
-      // ═══════════════════════════════════════════════════════════════
-      // NEW: Menu package OR manual prices
-      // ═══════════════════════════════════════════════════════════════
-      if (!data.menuPackageId) {
-        // No package selected - manual prices are REQUIRED
-        if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
-          res.status(400).json({
-            success: false,
-            error: 'When no menu package is selected, pricePerAdult and pricePerChild are required'
-          });
-          return;
-        }
-      }
-
-      // Cannot specify both menuPackageId and manual prices
-      if (data.menuPackageId && (data.pricePerAdult !== undefined || data.pricePerChild !== undefined)) {
-        res.status(400).json({
-          success: false,
-          error: 'Cannot specify both menuPackageId and manual prices. Choose one method.'
-        });
-        return;
-      }
-
-      const reservation = await reservationService.createReservation(data, userId);
-
-      res.status(201).json({
-        success: true,
-        data: reservation,
-        message: data.menuPackageId 
-          ? 'Reservation created successfully with menu package' 
-          : 'Reservation created successfully'
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        error: error.message || 'Failed to create reservation'
-      });
+    if (!data.hallId || !data.clientId || !data.eventTypeId) {
+      throw AppError.badRequest('Hall, client, and event type are required');
     }
+
+    const hasNewFormat = data.startDateTime && data.endDateTime;
+    const hasLegacyFormat = data.date && data.startTime && data.endTime;
+
+    if (!hasNewFormat && !hasLegacyFormat) {
+      throw AppError.badRequest('Either startDateTime/endDateTime or date/startTime/endTime are required');
+    }
+
+    if (data.adults === undefined || data.children === undefined || data.toddlers === undefined) {
+      throw AppError.badRequest('Guest counts are required: adults, children, and toddlers (can be 0)');
+    }
+
+    if (data.adults === 0 && data.children === 0 && data.toddlers === 0) {
+      throw AppError.badRequest('At least one guest is required (adults, children, or toddlers)');
+    }
+
+    if (!data.menuPackageId) {
+      if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
+        throw AppError.badRequest('When no menu package is selected, pricePerAdult and pricePerChild are required');
+      }
+    }
+
+    if (data.menuPackageId && (data.pricePerAdult !== undefined || data.pricePerChild !== undefined)) {
+      throw AppError.badRequest('Cannot specify both menuPackageId and manual prices. Choose one method.');
+    }
+
+    const reservation = await reservationService.createReservation(data, userId);
+
+    res.status(201).json({
+      success: true,
+      data: reservation,
+      message: data.menuPackageId
+        ? 'Reservation created successfully with menu package'
+        : 'Reservation created successfully'
+    });
   }
 
   /**
@@ -124,30 +72,23 @@ export class ReservationController {
    * GET /api/reservations
    */
   async getReservations(req: Request, res: Response): Promise<void> {
-    try {
-      const filters: ReservationFilters = {
-        status: req.query.status as ReservationStatus,
-        hallId: req.query.hallId as string,
-        clientId: req.query.clientId as string,
-        eventTypeId: req.query.eventTypeId as string,
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
-        archived: req.query.archived === 'true' ? true : req.query.archived === 'false' ? false : undefined
-      };
+    const filters: ReservationFilters = {
+      status: req.query.status as ReservationStatus,
+      hallId: req.query.hallId as string,
+      clientId: req.query.clientId as string,
+      eventTypeId: req.query.eventTypeId as string,
+      dateFrom: req.query.dateFrom as string,
+      dateTo: req.query.dateTo as string,
+      archived: req.query.archived === 'true' ? true : req.query.archived === 'false' ? false : undefined
+    };
 
-      const reservations = await reservationService.getReservations(filters);
+    const reservations = await reservationService.getReservations(filters);
 
-      res.status(200).json({
-        success: true,
-        data: reservations,
-        count: reservations.length
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to fetch reservations'
-      });
-    }
+    res.status(200).json({
+      success: true,
+      data: reservations,
+      count: reservations.length
+    });
   }
 
   /**
@@ -155,21 +96,15 @@ export class ReservationController {
    * GET /api/reservations/:id
    */
   async getReservationById(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const reservation = await reservationService.getReservationById(id);
+    const { id } = req.params;
+    const reservation = await reservationService.getReservationById(id);
 
-      res.status(200).json({
-        success: true,
-        data: reservation
-      });
-    } catch (error: any) {
-      const statusCode = error.message === 'Reservation not found' ? 404 : 500;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to fetch reservation'
-      });
-    }
+    if (!reservation) throw AppError.notFound('Reservation');
+
+    res.status(200).json({
+      success: true,
+      data: reservation
+    });
   }
 
   /**
@@ -177,95 +112,54 @@ export class ReservationController {
    * GET /api/reservations/:id/pdf
    */
   async downloadPDF(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      
-      // Get full reservation data with relations
-      const reservation = await reservationService.getReservationById(id);
+    const { id } = req.params;
+    const reservation = await reservationService.getReservationById(id);
 
-      if (!reservation) {
-        res.status(404).json({
-          success: false,
-          error: 'Reservation not found'
-        });
-        return;
-      }
+    if (!reservation) throw AppError.notFound('Reservation');
 
-      // Generate PDF
-      const pdfBuffer = await pdfService.generateReservationPDF(reservation);
+    const pdfBuffer = await pdfService.generateReservationPDF(reservation);
 
-      // Set headers for file download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="rezerwacja_${id.substring(0, 8)}.pdf"`
-      );
-      res.setHeader('Content-Length', pdfBuffer.length);
-
-      // Send PDF
-      res.send(pdfBuffer);
-    } catch (error: any) {
-      const statusCode = error.message === 'Reservation not found' ? 404 : 500;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to generate PDF'
-      });
-    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="rezerwacja_${id.substring(0, 8)}.pdf"`
+    );
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
   }
 
   /**
    * Update reservation
    * PUT /api/reservations/:id
-   * 
-   * Note: Requires 'reason' field (min 10 characters) if making changes to important fields
    */
   async updateReservation(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const data: UpdateReservationDTO = req.body;
-      const userId = (req as any).user?.id;
+    const { id } = req.params;
+    const data: UpdateReservationDTO = req.body;
+    const userId = req.user?.id;
 
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
-        return;
-      }
+    if (!userId) throw AppError.unauthorized();
 
-      // Validation for important fields that require a reason
-      const hasImportantChanges = 
-        data.startDateTime !== undefined ||
-        data.endDateTime !== undefined ||
-        data.adults !== undefined ||
-        data.children !== undefined ||
-        data.toddlers !== undefined ||
-        data.pricePerAdult !== undefined ||
-        data.pricePerChild !== undefined ||
-        data.pricePerToddler !== undefined;
+    const hasImportantChanges =
+      data.startDateTime !== undefined ||
+      data.endDateTime !== undefined ||
+      data.adults !== undefined ||
+      data.children !== undefined ||
+      data.toddlers !== undefined ||
+      data.pricePerAdult !== undefined ||
+      data.pricePerChild !== undefined ||
+      data.pricePerToddler !== undefined;
 
-      if (hasImportantChanges && (!data.reason || data.reason.length < 10)) {
-        res.status(400).json({
-          success: false,
-          error: 'Reason is required for important changes (minimum 10 characters)'
-        });
-        return;
-      }
-
-      const reservation = await reservationService.updateReservation(id, data, userId);
-
-      res.status(200).json({
-        success: true,
-        data: reservation,
-        message: 'Reservation updated successfully'
-      });
-    } catch (error: any) {
-      const statusCode = error.message === 'Reservation not found' ? 404 : 400;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to update reservation'
-      });
+    if (hasImportantChanges && (!data.reason || data.reason.length < 10)) {
+      throw AppError.badRequest('Reason is required for important changes (minimum 10 characters)');
     }
+
+    const reservation = await reservationService.updateReservation(id, data, userId);
+
+    res.status(200).json({
+      success: true,
+      data: reservation,
+      message: 'Reservation updated successfully'
+    });
   }
 
   /**
@@ -273,41 +167,23 @@ export class ReservationController {
    * PATCH /api/reservations/:id/status
    */
   async updateStatus(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const data: UpdateStatusDTO = req.body;
-      const userId = (req as any).user?.id;
+    const { id } = req.params;
+    const data: UpdateStatusDTO = req.body;
+    const userId = req.user?.id;
 
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
-        return;
-      }
+    if (!userId) throw AppError.unauthorized();
 
-      if (!data.status) {
-        res.status(400).json({
-          success: false,
-          error: 'Status is required'
-        });
-        return;
-      }
-
-      const reservation = await reservationService.updateStatus(id, data, userId);
-
-      res.status(200).json({
-        success: true,
-        data: reservation,
-        message: 'Reservation status updated successfully'
-      });
-    } catch (error: any) {
-      const statusCode = error.message === 'Reservation not found' ? 404 : 400;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to update reservation status'
-      });
+    if (!data.status) {
+      throw AppError.badRequest('Status is required');
     }
+
+    const reservation = await reservationService.updateStatus(id, data, userId);
+
+    res.status(200).json({
+      success: true,
+      data: reservation,
+      message: 'Reservation status updated successfully'
+    });
   }
 
   /**
@@ -315,32 +191,18 @@ export class ReservationController {
    * DELETE /api/reservations/:id
    */
   async cancelReservation(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { reason } = req.body;
-      const userId = (req as any).user?.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
 
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
-        return;
-      }
+    if (!userId) throw AppError.unauthorized();
 
-      await reservationService.cancelReservation(id, userId, reason);
+    await reservationService.cancelReservation(id, userId, reason);
 
-      res.status(200).json({
-        success: true,
-        message: 'Reservation cancelled successfully'
-      });
-    } catch (error: any) {
-      const statusCode = error.message === 'Reservation not found' ? 404 : 400;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to cancel reservation'
-      });
-    }
+    res.status(200).json({
+      success: true,
+      message: 'Reservation cancelled successfully'
+    });
   }
 }
 

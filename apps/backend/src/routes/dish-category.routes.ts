@@ -1,27 +1,72 @@
 /**
  * Dish Category Routes
- * Express routes for dish category management
+ * MIGRATED: asyncHandler + validateUUID
  */
 
 import { Router } from 'express';
 import dishCategoryController from '../controllers/dish-category.controller';
 import { authMiddleware } from '../middlewares/auth';
+import { asyncHandler } from '../middlewares/asyncHandler';
+import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
 
-/**
- * Public Routes
- */
-router.get('/', dishCategoryController.getCategories);
-router.get('/:id', dishCategoryController.getCategoryById);
-router.get('/slug/:slug', dishCategoryController.getCategoryBySlug);
+// Public Routes
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.getCategories(req, res);
+  })
+);
 
-/**
- * Protected Routes (require authentication)
- */
-router.post('/', authMiddleware, dishCategoryController.createCategory);
-router.put('/:id', authMiddleware, dishCategoryController.updateCategory);
-router.delete('/:id', authMiddleware, dishCategoryController.deleteCategory);
-router.post('/reorder', authMiddleware, dishCategoryController.reorderCategories);
+router.get(
+  '/slug/:slug',
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.getCategoryBySlug(req, res);
+  })
+);
+
+router.get(
+  '/:id',
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.getCategoryById(req, res);
+  })
+);
+
+// Protected Routes
+router.post(
+  '/',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.createCategory(req, res);
+  })
+);
+
+router.put(
+  '/:id',
+  authMiddleware,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.updateCategory(req, res);
+  })
+);
+
+router.delete(
+  '/:id',
+  authMiddleware,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.deleteCategory(req, res);
+  })
+);
+
+router.post(
+  '/reorder',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    await dishCategoryController.reorderCategories(req, res);
+  })
+);
 
 export default router;
