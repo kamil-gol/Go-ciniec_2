@@ -3,33 +3,24 @@
  * Business logic for client management
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { CreateClientDTO, UpdateClientDTO, ClientFilters, ClientResponse } from '../types/client.types';
 
-const prisma = new PrismaClient();
-
 export class ClientService {
-  /**
-   * Create a new client
-   */
   async createClient(data: CreateClientDTO): Promise<ClientResponse> {
-    // Validate email if provided
     if (data.email && !this.isValidEmail(data.email)) {
       throw new Error('Invalid email format');
     }
 
-    // Phone is required
     if (!data.phone) {
       throw new Error('Phone number is required');
     }
 
-    // Validate phone
-    const phoneDigits = data.phone.replace(/\D/g, ''); // Remove all non-digits
+    const phoneDigits = data.phone.replace(/\D/g, '');
     if (phoneDigits.length < 9) {
       throw new Error('Phone number must contain at least 9 digits');
     }
 
-    // Check if client with same phone and name exists (to avoid duplicates)
     const existingClient = await prisma.client.findFirst({
       where: { 
         phone: data.phone,
@@ -39,7 +30,7 @@ export class ClientService {
     });
 
     if (existingClient) {
-      throw new Error(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} już istnieje`);
+      throw new Error(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} ju\u017c istnieje`);
     }
 
     const client = await prisma.client.create({
@@ -55,9 +46,6 @@ export class ClientService {
     return client as any;
   }
 
-  /**
-   * Get all clients with optional filters
-   */
   async getClients(filters?: ClientFilters): Promise<ClientResponse[]> {
     const where: any = {};
 
@@ -78,9 +66,6 @@ export class ClientService {
     return clients as any[];
   }
 
-  /**
-   * Get client by ID with reservations
-   */
   async getClientById(id: string): Promise<ClientResponse> {
     const client = await prisma.client.findUnique({
       where: { id },
@@ -95,18 +80,8 @@ export class ClientService {
             guests: true,
             totalPrice: true,
             status: true,
-            eventType: { 
-              select: { 
-                id: true,
-                name: true 
-              } 
-            },
-            hall: { 
-              select: { 
-                id: true,
-                name: true 
-              } 
-            }
+            eventType: { select: { id: true, name: true } },
+            hall: { select: { id: true, name: true } }
           }
         },
         _count: {
@@ -122,32 +97,23 @@ export class ClientService {
     return client as any;
   }
 
-  /**
-   * Update client
-   */
   async updateClient(id: string, data: UpdateClientDTO): Promise<ClientResponse> {
-    // Check if client exists
-    const existingClient = await prisma.client.findUnique({
-      where: { id }
-    });
+    const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
       throw new Error('Client not found');
     }
 
-    // Validate email if provided
     if (data.email && !this.isValidEmail(data.email)) {
       throw new Error('Invalid email format');
     }
 
-    // Validate phone if provided
     if (data.phone) {
       const phoneDigits = data.phone.replace(/\D/g, '');
       if (phoneDigits.length < 9) {
         throw new Error('Phone number must contain at least 9 digits');
       }
 
-      // Check if another client with same phone and name exists
       const firstName = data.firstName || existingClient.firstName;
       const lastName = data.lastName || existingClient.lastName;
       
@@ -161,7 +127,7 @@ export class ClientService {
       });
 
       if (clientWithSameDetails) {
-        throw new Error(`Klient ${firstName} ${lastName} z numerem ${data.phone} już istnieje`);
+        throw new Error(`Klient ${firstName} ${lastName} z numerem ${data.phone} ju\u017c istnieje`);
       }
     }
 
@@ -180,20 +146,13 @@ export class ClientService {
     return client as any;
   }
 
-  /**
-   * Delete client (hard delete)
-   */
   async deleteClient(id: string): Promise<void> {
-    // Check if client exists
-    const existingClient = await prisma.client.findUnique({
-      where: { id }
-    });
+    const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
       throw new Error('Client not found');
     }
 
-    // Check if client has any reservations
     const reservationCount = await prisma.reservation.count({
       where: { clientId: id }
     });
@@ -202,15 +161,9 @@ export class ClientService {
       throw new Error('Cannot delete client with existing reservations');
     }
 
-    // Hard delete
-    await prisma.client.delete({
-      where: { id }
-    });
+    await prisma.client.delete({ where: { id } });
   }
 
-  /**
-   * Validate email format
-   */
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
