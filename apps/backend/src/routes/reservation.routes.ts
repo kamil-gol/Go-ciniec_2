@@ -56,6 +56,7 @@ router.get(
   })
 );
 
+
 /**
  * @route   GET /api/reservations/:id/pdf
  * @desc    Download reservation as PDF
