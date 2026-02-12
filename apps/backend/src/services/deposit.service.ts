@@ -2,10 +2,12 @@
  * Deposit Service
  * Full CRUD + business logic for deposit/advance payment management
  *
- * NOTE: All write operations use raw SQL ($queryRawUnsafe) because
- * the Prisma engine version has a known null-byte (0x00) bug on INSERT/UPDATE
- * for tables with dbgenerated UUID + Decimal fields.
- * Reads use Prisma ORM normally.
+ * IMPORTANT: The actual DB schema differs from Prisma schema.
+ * - dueDate is varchar(10) in DB (not timestamp)
+ * - paidAmount column exists in DB (not in Prisma schema)
+ * - Extra columns: title, description, receiptNumber, etc.
+ * All writes use raw SQL to match the actual DB structure.
+ * Reads use Prisma ORM (works fine for SELECT).
  */
 
 import { prisma } from '../lib/prisma';
@@ -81,8 +83,8 @@ const depositService = {
     }
 
     const existingDepositsSum = reservation.deposits
-      .filter(d => d.status !== 'CANCELLED')
-      .reduce((sum, d) => sum + Number(d.amount), 0);
+      .filter((d: any) => d.status !== 'CANCELLED')
+      .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
     const totalPrice = Number(reservation.totalPrice);
 
@@ -97,14 +99,26 @@ const depositService = {
       throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
     }
 
-    // All params as strings, explicit SQL casts, NOW() for timestamps
+    // dueDate must be YYYY-MM-DD format, max 10 chars (DB column is varchar(10))
+    const dueDateStr = dueDate.substring(0, 10); // ensure max 10 chars
+
+    // Raw SQL matching actual DB schema:
+    // - dueDate is varchar(10), NOT timestamp
+    // - paidAmount is numeric(10,2) NOT NULL with default 0
+    // - remainingAmount is numeric(10,2) NOT NULL
+    // - status is varchar(20) with default 'PENDING'
     const result: any[] = await prisma.$queryRawUnsafe(
-      `INSERT INTO "Deposit" (id, "reservationId", amount, "remainingAmount", "dueDate", status, paid, "createdAt", "updatedAt")
-       VALUES (gen_random_uuid(), $1::uuid, $2::numeric, $2::numeric, $3::date, 'PENDING', false, NOW(), NOW())
-       RETURNING id::text as id`,
+      `INSERT INTO "Deposit" (
+        id, "reservationId", amount, "remainingAmount", "paidAmount",
+        "dueDate", status, paid, "createdAt", "updatedAt"
+      ) VALUES (
+        gen_random_uuid(), $1::uuid, $2, $3, 0,
+        $4, 'PENDING', false, NOW(), NOW()
+      ) RETURNING id::text as id`,
       reservationId,
-      String(amount),
-      dueDate
+      amount,
+      amount,
+      dueDateStr
     );
 
     const newId = result[0].id;
@@ -156,11 +170,11 @@ const depositService = {
     });
 
     const totalAmount = deposits
-      .filter(d => d.status !== 'CANCELLED')
-      .reduce((sum, d) => sum + Number(d.amount), 0);
+      .filter((d: any) => d.status !== 'CANCELLED')
+      .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
     const paidAmount = deposits
-      .filter(d => d.paid)
-      .reduce((sum, d) => sum + Number(d.amount), 0);
+      .filter((d: any) => d.paid)
+      .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
     const pendingAmount = totalAmount - paidAmount;
     const reservationTotal = Number(reservation.totalPrice);
 
@@ -168,7 +182,7 @@ const depositService = {
       deposits,
       summary: {
         totalDeposits: deposits.length,
-        activeDeposits: deposits.filter(d => d.status !== 'CANCELLED').length,
+        activeDeposits: deposits.filter((d: any) => d.status !== 'CANCELLED').length,
         totalAmount: Number(totalAmount.toFixed(2)),
         paidAmount: Number(paidAmount.toFixed(2)),
         pendingAmount: Number(pendingAmount.toFixed(2)),
@@ -205,15 +219,16 @@ const depositService = {
 
     if (overdue) {
       where.status = { equals: 'PENDING' };
-      where.dueDate = { lt: new Date() };
+      // dueDate is varchar(10) in DB, compare as string (YYYY-MM-DD format sorts correctly)
+      const todayStr = new Date().toISOString().substring(0, 10);
+      where.dueDate = { lt: todayStr as any };
     }
 
     if (dateFrom || dateTo) {
-      where.dueDate = {
-        ...(where.dueDate as any || {}),
-        ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
-        ...(dateTo ? { lte: new Date(dateTo) } : {}),
-      };
+      const dueDateFilter: any = {};
+      if (dateFrom) dueDateFilter.gte = dateFrom.substring(0, 10);
+      if (dateTo) dueDateFilter.lte = dateTo.substring(0, 10);
+      where.dueDate = dueDateFilter;
     }
 
     if (search) {
@@ -279,8 +294,8 @@ const depositService = {
 
       if (reservation) {
         const otherDepositsSum = reservation.deposits
-          .filter(d => d.id !== id && d.status !== 'CANCELLED')
-          .reduce((sum, d) => sum + Number(d.amount), 0);
+          .filter((d: any) => d.id !== id && d.status !== 'CANCELLED')
+          .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
         const totalPrice = Number(reservation.totalPrice);
 
@@ -293,19 +308,21 @@ const depositService = {
     }
 
     if (input.amount !== undefined && input.dueDate) {
+      const dueDateStr = input.dueDate.substring(0, 10);
       await prisma.$queryRawUnsafe(
-        `UPDATE "Deposit" SET amount = $1::numeric, "remainingAmount" = $1::numeric, "dueDate" = $2::date, "updatedAt" = NOW() WHERE id = $3::uuid`,
-        String(input.amount), input.dueDate, id
+        `UPDATE "Deposit" SET amount = $1, "remainingAmount" = $2, "dueDate" = $3, "updatedAt" = NOW() WHERE id = $4::uuid`,
+        input.amount, input.amount, dueDateStr, id
       );
     } else if (input.amount !== undefined) {
       await prisma.$queryRawUnsafe(
-        `UPDATE "Deposit" SET amount = $1::numeric, "remainingAmount" = $1::numeric, "updatedAt" = NOW() WHERE id = $2::uuid`,
-        String(input.amount), id
+        `UPDATE "Deposit" SET amount = $1, "remainingAmount" = $2, "updatedAt" = NOW() WHERE id = $3::uuid`,
+        input.amount, input.amount, id
       );
     } else if (input.dueDate) {
+      const dueDateStr = input.dueDate.substring(0, 10);
       await prisma.$queryRawUnsafe(
-        `UPDATE "Deposit" SET "dueDate" = $1::date, "updatedAt" = NOW() WHERE id = $2::uuid`,
-        input.dueDate, id
+        `UPDATE "Deposit" SET "dueDate" = $1, "updatedAt" = NOW() WHERE id = $2::uuid`,
+        dueDateStr, id
       );
     }
 
@@ -358,8 +375,8 @@ const depositService = {
     const remainingAmount = Math.max(0, remaining);
 
     await prisma.$queryRawUnsafe(
-      `UPDATE "Deposit" SET paid = $1::boolean, status = $2, "paidAt" = $3::timestamp, "paymentMethod" = $4, "remainingAmount" = $5::numeric, "updatedAt" = NOW() WHERE id = $6::uuid`,
-      String(isPaid), newStatus, input.paidAt, input.paymentMethod, String(remainingAmount), id
+      `UPDATE "Deposit" SET paid = $1, status = $2, "paidAt" = $3::timestamp, "paymentMethod" = $4, "remainingAmount" = $5, "paidAmount" = $6, "updatedAt" = NOW() WHERE id = $7::uuid`,
+      isPaid, newStatus, input.paidAt, input.paymentMethod, remainingAmount, amountPaid, id
     );
 
     const updated = await prisma.deposit.findUnique({
@@ -382,10 +399,10 @@ const depositService = {
       throw AppError.badRequest('Ta zaliczka nie jest oznaczona jako oplacona');
     }
 
-    const depositAmount = String(Number(deposit.amount));
+    const depositAmount = Number(deposit.amount);
 
     await prisma.$queryRawUnsafe(
-      `UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = $1::numeric, "updatedAt" = NOW() WHERE id = $2::uuid`,
+      `UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = $1, "paidAmount" = 0, "updatedAt" = NOW() WHERE id = $2::uuid`,
       depositAmount, id
     );
 
@@ -428,52 +445,43 @@ const depositService = {
    * Get global deposit statistics
    */
   async getStats() {
-    const now = new Date();
+    const todayStr = new Date().toISOString().substring(0, 10);
 
-    const allDeposits = await prisma.deposit.findMany({
-      where: {
-        status: { in: ACTIVE_STATUSES },
-      },
-      select: { amount: true, remainingAmount: true, status: true, paid: true, dueDate: true },
-    });
+    // Use raw SQL for stats to avoid Prisma schema mismatch issues
+    const stats: any[] = await prisma.$queryRawUnsafe(`
+      SELECT
+        COUNT(*) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID'))::int as total,
+        COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending,
+        COUNT(*) FILTER (WHERE status = 'PAID')::int as paid,
+        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" < $1)::int as overdue,
+        COUNT(*) FILTER (WHERE status = 'PARTIALLY_PAID')::int as "partiallyPaid",
+        COUNT(*) FILTER (WHERE status = 'CANCELLED')::int as cancelled,
+        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" >= $1 AND "dueDate" <= $2)::int as "upcomingIn7Days",
+        COALESCE(SUM(amount) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID')), 0)::numeric as "totalAmount",
+        COALESCE(SUM(amount) FILTER (WHERE paid = true), 0)::numeric as "paidAmountSum",
+        COALESCE(SUM(amount) FILTER (WHERE status = 'PENDING' AND "dueDate" < $1), 0)::numeric as "overdueAmount"
+      FROM "Deposit"
+    `, todayStr, getDatePlusDays(7));
 
-    const pending = allDeposits.filter(d => d.status === 'PENDING').length;
-    const paid = allDeposits.filter(d => d.status === 'PAID').length;
-    const overdue = allDeposits.filter(d => d.status === 'PENDING' && d.dueDate < now).length;
-    const partiallyPaid = allDeposits.filter(d => d.status === 'PARTIALLY_PAID').length;
-
-    const cancelledCount = await prisma.deposit.count({
-      where: { status: { equals: 'CANCELLED' } },
-    });
-
-    const totalAmount = allDeposits.reduce((sum, d) => sum + Number(d.amount), 0);
-    const paidAmount = allDeposits.filter(d => d.paid).reduce((sum, d) => sum + Number(d.amount), 0);
-    const pendingAmount = totalAmount - paidAmount;
-    const overdueAmount = allDeposits
-      .filter(d => d.status === 'PENDING' && d.dueDate < now)
-      .reduce((sum, d) => sum + Number(d.amount), 0);
-
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    const upcomingCount = allDeposits.filter(
-      d => d.status === 'PENDING' && d.dueDate >= now && d.dueDate <= nextWeek
-    ).length;
+    const row = stats[0] || {};
+    const totalAmt = Number(row.totalAmount || 0);
+    const paidAmt = Number(row.paidAmountSum || 0);
 
     return {
       counts: {
-        total: allDeposits.length,
-        pending,
-        paid,
-        overdue,
-        partiallyPaid,
-        cancelled: cancelledCount,
-        upcomingIn7Days: upcomingCount,
+        total: Number(row.total || 0),
+        pending: Number(row.pending || 0),
+        paid: Number(row.paid || 0),
+        overdue: Number(row.overdue || 0),
+        partiallyPaid: Number(row.partiallyPaid || 0),
+        cancelled: Number(row.cancelled || 0),
+        upcomingIn7Days: Number(row.upcomingIn7Days || 0),
       },
       amounts: {
-        total: Number(totalAmount.toFixed(2)),
-        paid: Number(paidAmount.toFixed(2)),
-        pending: Number(pendingAmount.toFixed(2)),
-        overdue: Number(overdueAmount.toFixed(2)),
+        total: Number(totalAmt.toFixed(2)),
+        paid: Number(paidAmt.toFixed(2)),
+        pending: Number((totalAmt - paidAmt).toFixed(2)),
+        overdue: Number(Number(row.overdueAmount || 0).toFixed(2)),
       },
     };
   },
@@ -482,12 +490,13 @@ const depositService = {
    * Get overdue deposits
    */
   async getOverdue() {
-    const now = new Date();
+    const todayStr = new Date().toISOString().substring(0, 10);
 
+    // dueDate is varchar(10) in YYYY-MM-DD format, string comparison works
     const deposits = await prisma.deposit.findMany({
       where: {
         status: { equals: 'PENDING' },
-        dueDate: { lt: now },
+        dueDate: { lt: todayStr as any },
       },
       orderBy: { dueDate: 'asc' },
       include: DEPOSIT_INCLUDE,
@@ -500,18 +509,28 @@ const depositService = {
    * Auto-mark overdue deposits (called by cron)
    */
   async autoMarkOverdue() {
+    const todayStr = new Date().toISOString().substring(0, 10);
+
     const result: any[] = await prisma.$queryRawUnsafe(
       `WITH updated AS (
         UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = NOW()
-        WHERE status = 'PENDING' AND paid = false AND "dueDate" < NOW()
+        WHERE status = 'PENDING' AND paid = false AND "dueDate" < $1
         RETURNING id
-      ) SELECT count(*)::text as count FROM updated`
+      ) SELECT count(*)::int as count FROM updated`,
+      todayStr
     );
 
     return {
-      markedOverdueCount: parseInt(result[0]?.count || '0', 10),
+      markedOverdueCount: Number(result[0]?.count || 0),
     };
   },
 };
+
+/** Helper: get date string YYYY-MM-DD for today + N days */
+function getDatePlusDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().substring(0, 10);
+}
 
 export default depositService;
