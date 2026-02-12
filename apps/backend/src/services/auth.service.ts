@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { validatePassword } from '@utils/password';
 import { generateToken } from '@middlewares/auth';
 import logger from '@utils/logger';

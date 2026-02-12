@@ -6,6 +6,8 @@
  *
  * Usage:
  *   import { prisma } from '@/lib/prisma';
+ *   // or
+ *   import prisma from '@/lib/prisma';
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -27,6 +29,9 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
+
+// Support both: import { prisma } and import prisma from '@/lib/prisma'
+export default prisma;
 
 /**
  * Graceful shutdown helper — call from server.ts SIGTERM handler
