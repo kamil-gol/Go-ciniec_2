@@ -93,19 +93,20 @@ const depositService = {
       throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
     }
 
-    // Create deposit - use plain values, let DB handle defaults for status/paid
-    const created = await prisma.deposit.create({
-      data: {
-        reservation: { connect: { id: reservationId } },
-        amount: amount,
-        remainingAmount: amount,
-        dueDate: new Date(dueDate),
-      },
-    });
+    // Use raw SQL to bypass Prisma null byte bug on INSERT
+    const dueDateObj = new Date(dueDate);
+    const nowDate = new Date();
+    const result: any[] = await prisma.$queryRaw`
+      INSERT INTO "Deposit" (id, "reservationId", amount, "remainingAmount", "dueDate", status, paid, "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), ${reservationId}::uuid, ${amount}::decimal, ${amount}::decimal, ${dueDateObj}::timestamp, 'PENDING', false, ${nowDate}::timestamp, ${nowDate}::timestamp)
+      RETURNING id
+    `;
 
-    // Fetch with full relations separately to avoid null byte in composite query
+    const newId = result[0].id;
+
+    // Fetch with full relations using Prisma (reads work fine)
     const deposit = await prisma.deposit.findUnique({
-      where: { id: created.id },
+      where: { id: newId },
       include: DEPOSIT_INCLUDE,
     });
 
@@ -287,22 +288,24 @@ const depositService = {
       }
     }
 
-    // Build update data with plain values
-    const updateData: any = {};
-    if (input.amount !== undefined) {
-      updateData.amount = input.amount;
-      updateData.remainingAmount = input.amount;
-    }
-    if (input.dueDate) {
-      updateData.dueDate = new Date(input.dueDate);
+    // Use raw SQL for UPDATE to bypass Prisma null byte bug
+    const nowDate = new Date();
+    if (input.amount !== undefined && input.dueDate) {
+      const dueDateObj = new Date(input.dueDate);
+      await prisma.$executeRaw`
+        UPDATE "Deposit" SET amount = ${input.amount}::decimal, "remainingAmount" = ${input.amount}::decimal, "dueDate" = ${dueDateObj}::timestamp, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
+      `;
+    } else if (input.amount !== undefined) {
+      await prisma.$executeRaw`
+        UPDATE "Deposit" SET amount = ${input.amount}::decimal, "remainingAmount" = ${input.amount}::decimal, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
+      `;
+    } else if (input.dueDate) {
+      const dueDateObj = new Date(input.dueDate);
+      await prisma.$executeRaw`
+        UPDATE "Deposit" SET "dueDate" = ${dueDateObj}::timestamp, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
+      `;
     }
 
-    await prisma.deposit.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Fetch with relations separately
     const updated = await prisma.deposit.findUnique({
       where: { id },
       include: DEPOSIT_INCLUDE,
@@ -325,7 +328,7 @@ const depositService = {
       );
     }
 
-    await prisma.deposit.delete({ where: { id } });
+    await prisma.$executeRaw`DELETE FROM "Deposit" WHERE id = ${id}::uuid`;
 
     return { success: true, message: 'Zaliczka zostala usunieta' };
   },
@@ -344,20 +347,15 @@ const depositService = {
 
     const amountPaid = input.amountPaid || Number(deposit.amount);
     const remaining = Number(deposit.amount) - amountPaid;
-
     const isPaid = remaining <= 0;
     const newStatus = isPaid ? 'PAID' : 'PARTIALLY_PAID';
+    const paidAtDate = new Date(input.paidAt);
+    const nowDate = new Date();
+    const remainingAmount = Math.max(0, remaining);
 
-    await prisma.deposit.update({
-      where: { id },
-      data: {
-        paid: isPaid,
-        status: newStatus,
-        paidAt: new Date(input.paidAt),
-        paymentMethod: input.paymentMethod,
-        remainingAmount: Math.max(0, remaining),
-      },
-    });
+    await prisma.$executeRaw`
+      UPDATE "Deposit" SET paid = ${isPaid}, status = ${newStatus}, "paidAt" = ${paidAtDate}::timestamp, "paymentMethod" = ${input.paymentMethod}, "remainingAmount" = ${remainingAmount}::decimal, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
+    `;
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -379,16 +377,12 @@ const depositService = {
       throw AppError.badRequest('Ta zaliczka nie jest oznaczona jako oplacona');
     }
 
-    await prisma.deposit.update({
-      where: { id },
-      data: {
-        paid: false,
-        status: 'PENDING',
-        paidAt: null,
-        paymentMethod: null,
-        remainingAmount: Number(deposit.amount),
-      },
-    });
+    const depositAmount = Number(deposit.amount);
+    const nowDate = new Date();
+
+    await prisma.$executeRaw`
+      UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = ${depositAmount}::decimal, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
+    `;
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -412,13 +406,11 @@ const depositService = {
       );
     }
 
-    await prisma.deposit.update({
-      where: { id },
-      data: {
-        status: 'CANCELLED',
-        remainingAmount: 0,
-      },
-    });
+    const nowDate = new Date();
+
+    await prisma.$executeRaw`
+      UPDATE "Deposit" SET status = 'CANCELLED', "remainingAmount" = 0, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
+    `;
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -506,19 +498,14 @@ const depositService = {
   async autoMarkOverdue() {
     const now = new Date();
 
-    const result = await prisma.deposit.updateMany({
-      where: {
-        status: { equals: 'PENDING' },
-        paid: false,
-        dueDate: { lt: now },
-      },
-      data: {
-        status: 'OVERDUE',
-      },
-    });
+    // Use raw SQL for updateMany to bypass Prisma null byte bug
+    const result = await prisma.$executeRaw`
+      UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = ${now}::timestamp
+      WHERE status = 'PENDING' AND paid = false AND "dueDate" < ${now}::timestamp
+    `;
 
     return {
-      markedOverdueCount: result.count,
+      markedOverdueCount: Number(result),
     };
   },
 };
