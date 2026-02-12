@@ -1,10 +1,11 @@
 /**
  * Deposit Controller
- * Full CRUD + mark-paid/unpaid + stats + overdue
+ * Full CRUD + mark-paid/unpaid + stats + overdue + PDF download
  */
 
 import { Request, Response } from 'express';
 import depositService from '../services/deposit.service';
+import { pdfService } from '../services/pdf.service';
 import {
   createDepositSchema,
   updateDepositSchema,
@@ -49,6 +50,56 @@ export const getDeposit = async (req: Request, res: Response): Promise<void> => 
   const { id } = req.params;
   const deposit = await depositService.getById(id);
   res.json({ success: true, data: deposit });
+};
+
+/**
+ * GET /api/deposits/:id/pdf
+ * Download payment confirmation PDF for a paid deposit
+ */
+export const downloadDepositPdf = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const deposit = await depositService.getById(id);
+
+  if (!deposit.paid) {
+    throw AppError.badRequest('PDF potwierdzenia dostępny tylko dla opłaconych zaliczek');
+  }
+
+  const reservation = deposit.reservation as any;
+  const client = reservation?.client;
+
+  if (!reservation || !client) {
+    throw AppError.badRequest('Brak danych rezerwacji lub klienta');
+  }
+
+  const pdfBuffer = await pdfService.generatePaymentConfirmationPDF({
+    depositId: deposit.id,
+    amount: Number(deposit.amount),
+    paidAt: deposit.paidAt ? new Date(deposit.paidAt) : new Date(),
+    paymentMethod: deposit.paymentMethod || 'TRANSFER',
+    client: {
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email || undefined,
+      phone: client.phone,
+    },
+    reservation: {
+      id: reservation.id,
+      date: reservation.date || '',
+      startTime: reservation.startTime || '',
+      endTime: reservation.endTime || '',
+      hall: reservation.hall?.name,
+      eventType: reservation.eventType?.name,
+      guests: reservation.guests,
+      totalPrice: Number(reservation.totalPrice),
+    },
+  });
+
+  const filename = `Potwierdzenie_wplaty_${deposit.id.substring(0, 8)}.pdf`;
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', pdfBuffer.length);
+  res.send(pdfBuffer);
 };
 
 /**

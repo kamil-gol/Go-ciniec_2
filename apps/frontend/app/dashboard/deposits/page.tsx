@@ -11,6 +11,7 @@ import {
   Search,
   Sparkles,
   Filter,
+  TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,10 +58,7 @@ export default function DepositsPage() {
 
   // Filtered deposits
   const filteredDeposits = deposits.filter((deposit) => {
-    // Status filter
     if (statusFilter !== 'ALL' && deposit.status !== statusFilter) return false
-
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       const clientName = deposit.reservation?.client
@@ -82,9 +80,14 @@ export default function DepositsPage() {
     { label: 'Wszystkie', value: 'ALL', count: stats?.counts.total },
     { label: 'Oczekujące', value: 'PENDING', count: stats?.counts.pending },
     { label: 'Opłacone', value: 'PAID', count: stats?.counts.paid },
-    { label: 'Przeterminowane', value: 'OVERDUE', count: stats?.counts.overdue },
+    { label: 'Przetermin.', value: 'OVERDUE', count: stats?.counts.overdue },
     { label: 'Anulowane', value: 'CANCELLED', count: stats?.counts.cancelled },
   ]
+
+  // Calculate percent paid for progress display
+  const percentPaid = stats && stats.amounts.total > 0
+    ? Math.round((stats.amounts.paid / stats.amounts.total) * 100)
+    : 0
 
   return (
     <PageLayout>
@@ -126,7 +129,7 @@ export default function DepositsPage() {
             delay={0.2}
           />
           <StatCard
-            label="Przeterminowane"
+            label="Przetermin."
             value={stats.counts.overdue}
             subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
             icon={AlertTriangle}
@@ -134,10 +137,10 @@ export default function DepositsPage() {
             delay={0.3}
           />
           <StatCard
-            label="Suma należności"
+            label="Łącznie"
             value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
-            subtitle={`${stats.counts.total} zaliczek łącznie`}
-            icon={Banknote}
+            subtitle={`${percentPaid}% wpłacono · ${stats.counts.total} zaliczek`}
+            icon={TrendingUp}
             iconGradient="from-rose-500 to-pink-500"
             delay={0.4}
           />
@@ -168,7 +171,7 @@ export default function DepositsPage() {
       )}
 
       {/* Deposits List */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -185,9 +188,9 @@ export default function DepositsPage() {
                   <button
                     key={btn.value}
                     onClick={() => setStatusFilter(btn.value)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       statusFilter === btn.value
-                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                        ? 'bg-rose-100 text-rose-700 shadow-sm dark:bg-rose-900/30 dark:text-rose-300'
                         : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
                     }`}
                   >
