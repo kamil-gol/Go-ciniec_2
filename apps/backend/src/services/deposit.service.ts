@@ -49,7 +49,6 @@ export interface DepositFilters {
 
 const ACTIVE_STATUSES = ['PENDING', 'PAID', 'OVERDUE', 'PARTIALLY_PAID'];
 
-/** Standard include for deposit queries */
 const DEPOSIT_INCLUDE = {
   reservation: {
     include: {
@@ -93,18 +92,20 @@ const depositService = {
       throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
     }
 
-    // Use raw SQL to bypass Prisma null byte bug on INSERT
-    const dueDateObj = new Date(dueDate);
-    const nowDate = new Date();
-    const result: any[] = await prisma.$queryRaw`
-      INSERT INTO "Deposit" (id, "reservationId", amount, "remainingAmount", "dueDate", status, paid, "createdAt", "updatedAt")
-      VALUES (gen_random_uuid(), ${reservationId}::uuid, ${amount}::decimal, ${amount}::decimal, ${dueDateObj}::timestamp, 'PENDING', false, ${nowDate}::timestamp, ${nowDate}::timestamp)
-      RETURNING id
-    `;
+    const nowISO = new Date().toISOString();
+
+    const result: any[] = await prisma.$queryRawUnsafe(
+      `INSERT INTO "Deposit" (id, "reservationId", amount, "remainingAmount", "dueDate", status, paid, "createdAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1::uuid, $2::decimal, $2::decimal, $3::timestamp, 'PENDING', false, $4::timestamp, $4::timestamp)
+       RETURNING id`,
+      reservationId,
+      amount,
+      dueDate,
+      nowISO
+    );
 
     const newId = result[0].id;
 
-    // Fetch with full relations using Prisma (reads work fine)
     const deposit = await prisma.deposit.findUnique({
       where: { id: newId },
       include: DEPOSIT_INCLUDE,
@@ -250,7 +251,7 @@ const depositService = {
   },
 
   /**
-   * Update deposit (amount, dueDate, notes)
+   * Update deposit (amount, dueDate)
    */
   async update(id: string, input: UpdateDepositInput) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
@@ -288,22 +289,23 @@ const depositService = {
       }
     }
 
-    // Use raw SQL for UPDATE to bypass Prisma null byte bug
-    const nowDate = new Date();
+    const nowISO = new Date().toISOString();
+
     if (input.amount !== undefined && input.dueDate) {
-      const dueDateObj = new Date(input.dueDate);
-      await prisma.$executeRaw`
-        UPDATE "Deposit" SET amount = ${input.amount}::decimal, "remainingAmount" = ${input.amount}::decimal, "dueDate" = ${dueDateObj}::timestamp, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
-      `;
+      await prisma.$queryRawUnsafe(
+        `UPDATE "Deposit" SET amount = $1::decimal, "remainingAmount" = $1::decimal, "dueDate" = $2::timestamp, "updatedAt" = $3::timestamp WHERE id = $4::uuid`,
+        input.amount, input.dueDate, nowISO, id
+      );
     } else if (input.amount !== undefined) {
-      await prisma.$executeRaw`
-        UPDATE "Deposit" SET amount = ${input.amount}::decimal, "remainingAmount" = ${input.amount}::decimal, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
-      `;
+      await prisma.$queryRawUnsafe(
+        `UPDATE "Deposit" SET amount = $1::decimal, "remainingAmount" = $1::decimal, "updatedAt" = $2::timestamp WHERE id = $3::uuid`,
+        input.amount, nowISO, id
+      );
     } else if (input.dueDate) {
-      const dueDateObj = new Date(input.dueDate);
-      await prisma.$executeRaw`
-        UPDATE "Deposit" SET "dueDate" = ${dueDateObj}::timestamp, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
-      `;
+      await prisma.$queryRawUnsafe(
+        `UPDATE "Deposit" SET "dueDate" = $1::timestamp, "updatedAt" = $2::timestamp WHERE id = $3::uuid`,
+        input.dueDate, nowISO, id
+      );
     }
 
     const updated = await prisma.deposit.findUnique({
@@ -328,7 +330,10 @@ const depositService = {
       );
     }
 
-    await prisma.$executeRaw`DELETE FROM "Deposit" WHERE id = ${id}::uuid`;
+    await prisma.$queryRawUnsafe(
+      `DELETE FROM "Deposit" WHERE id = $1::uuid`,
+      id
+    );
 
     return { success: true, message: 'Zaliczka zostala usunieta' };
   },
@@ -349,13 +354,13 @@ const depositService = {
     const remaining = Number(deposit.amount) - amountPaid;
     const isPaid = remaining <= 0;
     const newStatus = isPaid ? 'PAID' : 'PARTIALLY_PAID';
-    const paidAtDate = new Date(input.paidAt);
-    const nowDate = new Date();
     const remainingAmount = Math.max(0, remaining);
+    const nowISO = new Date().toISOString();
 
-    await prisma.$executeRaw`
-      UPDATE "Deposit" SET paid = ${isPaid}, status = ${newStatus}, "paidAt" = ${paidAtDate}::timestamp, "paymentMethod" = ${input.paymentMethod}, "remainingAmount" = ${remainingAmount}::decimal, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
-    `;
+    await prisma.$queryRawUnsafe(
+      `UPDATE "Deposit" SET paid = $1, status = $2, "paidAt" = $3::timestamp, "paymentMethod" = $4, "remainingAmount" = $5::decimal, "updatedAt" = $6::timestamp WHERE id = $7::uuid`,
+      isPaid, newStatus, input.paidAt, input.paymentMethod, remainingAmount, nowISO, id
+    );
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -378,11 +383,12 @@ const depositService = {
     }
 
     const depositAmount = Number(deposit.amount);
-    const nowDate = new Date();
+    const nowISO = new Date().toISOString();
 
-    await prisma.$executeRaw`
-      UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = ${depositAmount}::decimal, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
-    `;
+    await prisma.$queryRawUnsafe(
+      `UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = $1::decimal, "updatedAt" = $2::timestamp WHERE id = $3::uuid`,
+      depositAmount, nowISO, id
+    );
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -406,11 +412,12 @@ const depositService = {
       );
     }
 
-    const nowDate = new Date();
+    const nowISO = new Date().toISOString();
 
-    await prisma.$executeRaw`
-      UPDATE "Deposit" SET status = 'CANCELLED', "remainingAmount" = 0, "updatedAt" = ${nowDate}::timestamp WHERE id = ${id}::uuid
-    `;
+    await prisma.$queryRawUnsafe(
+      `UPDATE "Deposit" SET status = 'CANCELLED', "remainingAmount" = 0, "updatedAt" = $1::timestamp WHERE id = $2::uuid`,
+      nowISO, id
+    );
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -496,16 +503,19 @@ const depositService = {
    * Auto-mark overdue deposits (called by cron)
    */
   async autoMarkOverdue() {
-    const now = new Date();
+    const nowISO = new Date().toISOString();
 
-    // Use raw SQL for updateMany to bypass Prisma null byte bug
-    const result = await prisma.$executeRaw`
-      UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = ${now}::timestamp
-      WHERE status = 'PENDING' AND paid = false AND "dueDate" < ${now}::timestamp
-    `;
+    const result = await prisma.$queryRawUnsafe<{ count: string }[]>(
+      `WITH updated AS (
+        UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = $1::timestamp
+        WHERE status = 'PENDING' AND paid = false AND "dueDate" < $1::timestamp
+        RETURNING id
+      ) SELECT count(*)::text as count FROM updated`,
+      nowISO
+    );
 
     return {
-      markedOverdueCount: Number(result),
+      markedOverdueCount: parseInt(result[0]?.count || '0', 10),
     };
   },
 };
