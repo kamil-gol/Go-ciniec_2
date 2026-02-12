@@ -12,64 +12,67 @@ import {
   TrendingUp,
   Building2,
   ArrowRight,
+  LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PageLayout, PageHero, StatCard } from '@/components/shared'
+import { moduleAccents } from '@/lib/design-tokens'
 
 const stats = [
   {
     name: 'Rezerwacje Dzisiaj',
     value: '12',
     change: '+15%',
-    changeType: 'positive',
+    changeType: 'positive' as const,
     icon: Calendar,
-    color: 'from-primary-500 to-primary-600',
+    gradient: 'from-blue-500 to-cyan-500',
   },
   {
     name: 'W Kolejce',
     value: '5',
     change: '-2 od wczoraj',
-    changeType: 'neutral',
+    changeType: 'neutral' as const,
     icon: Clock,
-    color: 'from-warning-500 to-warning-600',
+    gradient: 'from-amber-500 to-orange-500',
   },
   {
     name: 'Potwierdzone',
     value: '8',
     change: '+3 dzisiaj',
-    changeType: 'positive',
+    changeType: 'positive' as const,
     icon: CheckCircle2,
-    color: 'from-success-500 to-success-600',
+    gradient: 'from-emerald-500 to-teal-500',
   },
   {
     name: 'Przychód miesiąc',
     value: '45,000 zł',
     change: '+12%',
-    changeType: 'positive',
+    changeType: 'positive' as const,
     icon: DollarSign,
-    color: 'from-secondary-500 to-secondary-600',
+    gradient: 'from-violet-500 to-purple-500',
   },
   {
     name: 'Nowi Klienci',
     value: '24',
     change: 'ten miesiąc',
-    changeType: 'neutral',
+    changeType: 'neutral' as const,
     icon: Users,
-    color: 'from-primary-500 to-secondary-500',
+    gradient: 'from-indigo-500 to-blue-500',
   },
   {
     name: 'Zajętość Sal',
     value: '85%',
     change: 'ten tydzień',
-    changeType: 'positive',
+    changeType: 'positive' as const,
     icon: Building2,
-    color: 'from-warning-500 to-error-500',
+    gradient: 'from-rose-500 to-pink-500',
   },
 ]
 
 const upcomingEvents = [
   {
     id: 1,
-    reservationId: '19acd0e5-2b9b-428d-99c9-1989d03a19d5', // Example ID
+    reservationId: '19acd0e5-2b9b-428d-99c9-1989d03a19d5',
     date: '15 Luty',
     time: '18:00',
     type: 'Wesele',
@@ -80,7 +83,7 @@ const upcomingEvents = [
   },
   {
     id: 2,
-    reservationId: '29acd0e5-2b9b-428d-99c9-1989d03a19d6', // Example ID
+    reservationId: '29acd0e5-2b9b-428d-99c9-1989d03a19d6',
     date: '20 Luty',
     time: '15:00',
     type: 'Komunia Święta',
@@ -91,7 +94,7 @@ const upcomingEvents = [
   },
   {
     id: 3,
-    reservationId: '39acd0e5-2b9b-428d-99c9-1989d03a19d7', // Example ID
+    reservationId: '39acd0e5-2b9b-428d-99c9-1989d03a19d7',
     date: '25 Luty',
     time: '16:00',
     type: 'Urodziny',
@@ -104,81 +107,44 @@ const upcomingEvents = [
 
 export default function DashboardPage() {
   const router = useRouter()
+  const accent = moduleAccents.dashboard
 
   const handleEventClick = (reservationId: string) => {
     router.push(`/dashboard/reservations/${reservationId}`)
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h2 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-          Panel Główny
-        </h2>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          Przejrzyj kluczowe statystyki i zarządzaj rezerwacjami
-        </p>
-      </motion.div>
+    <PageLayout>
+      {/* Hero */}
+      <PageHero
+        accent={accent}
+        title="Panel Główny"
+        subtitle="Przejrzyj kluczowe statystyki i zarządzaj rezerwacjami"
+        icon={LayoutDashboard}
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <motion.div
-              key={stat.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="group relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1 border border-neutral-200 dark:border-neutral-700"
-            >
-              {/* Gradient overlay */}
-              <div className={cn(
-                'absolute top-0 right-0 h-32 w-32 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity',
-                `bg-gradient-to-br ${stat.color}`
-              )} />
-
-              <div className="relative">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                      {stat.name}
-                    </p>
-                    <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-                      {stat.value}
-                    </p>
-                    <p className={cn(
-                      'mt-2 text-sm flex items-center gap-1',
-                      stat.changeType === 'positive' && 'text-success-600 dark:text-success-400',
-                      stat.changeType === 'neutral' && 'text-neutral-600 dark:text-neutral-400'
-                    )}>
-                      {stat.changeType === 'positive' && <TrendingUp className="h-4 w-4" />}
-                      {stat.change}
-                    </p>
-                  </div>
-                  <div className={cn(
-                    'flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br shadow-glow',
-                    stat.color
-                  )}>
-                    <Icon className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
+        {stats.map((stat, index) => (
+          <StatCard
+            key={stat.name}
+            label={stat.name}
+            value={stat.value}
+            change={stat.change}
+            changeType={stat.changeType}
+            icon={stat.icon}
+            iconGradient={stat.gradient}
+            delay={index * 0.08}
+          />
+        ))}
       </div>
 
       {/* Upcoming Events */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="rounded-2xl bg-white dark:bg-neutral-800 p-6 shadow-soft border border-neutral-200 dark:border-neutral-700"
+        transition={{ delay: 0.5 }}
+        className="rounded-2xl bg-white dark:bg-neutral-800/80 p-6 shadow-soft border border-neutral-100 dark:border-neutral-700/50"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -186,24 +152,31 @@ export default function DashboardPage() {
           </h3>
           <Link
             href="/dashboard/reservations"
-            className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+            className={cn(
+              'flex items-center gap-2 text-sm font-medium transition-colors',
+              accent.text, accent.textDark,
+              'hover:opacity-80'
+            )}
           >
             Zobacz wszystkie
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {upcomingEvents.map((event, index) => (
             <motion.div
               key={event.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 + index * 0.1 }}
+              transition={{ delay: 0.6 + index * 0.08 }}
               onClick={() => handleEventClick(event.reservationId)}
-              className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all hover:scale-[1.01] border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+              className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 cursor-pointer"
             >
-              <div className="flex h-16 w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-glow flex-shrink-0">
+              <div className={cn(
+                'flex h-16 w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg flex-shrink-0',
+                accent.iconBg
+              )}>
                 <span className="text-xs font-semibold">{event.date.split(' ')[1]}</span>
                 <span className="text-2xl font-bold">{event.date.split(' ')[0]}</span>
               </div>
@@ -214,10 +187,10 @@ export default function DashboardPage() {
                     {event.type}
                   </h4>
                   <span className={cn(
-                    'rounded-full px-2 py-0.5 text-xs font-semibold',
+                    'rounded-full px-2.5 py-0.5 text-xs font-semibold',
                     event.status === 'confirmed'
-                      ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400'
-                      : 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                   )}>
                     {event.status === 'confirmed' ? '✅ Potwierdzone' : '⌛ Oczekuje'}
                   </span>
@@ -230,11 +203,14 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <ArrowRight className="h-5 w-5 text-neutral-400 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
+              <ArrowRight className={cn(
+                'h-5 w-5 text-neutral-400 group-hover:translate-x-1 transition-all',
+                `group-hover:${accent.text}`
+              )} />
             </motion.div>
           ))}
         </div>
       </motion.div>
-    </div>
+    </PageLayout>
   )
 }
