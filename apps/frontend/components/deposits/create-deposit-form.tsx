@@ -54,10 +54,15 @@ export function CreateDepositForm({ onSuccess, onCancel }: CreateDepositFormProp
       setLoadingReservations(true)
       const response = await apiClient.get('/reservations')
       const data = response.data.data || response.data
-      // Filter to confirmed/pending reservations
+      const today = new Date().toISOString().split('T')[0]
       const active = Array.isArray(data)
-        ? data.filter((r: Reservation) => ['CONFIRMED', 'PENDING', 'COMPLETED'].includes(r.status))
+        ? data.filter((r: Reservation) => {
+            const isActiveStatus = ['CONFIRMED', 'PENDING', 'COMPLETED'].includes(r.status)
+            const isFutureOrToday = r.date >= today
+            return isActiveStatus && isFutureOrToday
+          })
         : []
+      active.sort((a: Reservation, b: Reservation) => a.date.localeCompare(b.date))
       setReservations(active)
     } catch (error) {
       console.error('Error loading reservations:', error)
@@ -120,6 +125,8 @@ export function CreateDepositForm({ onSuccess, onCancel }: CreateDepositFormProp
               <Loader2 className="h-4 w-4 animate-spin" />
               Ładowanie rezerwacji...
             </div>
+          ) : reservations.length === 0 ? (
+            <p className="text-sm text-neutral-500">Brak przyszłych rezerwacji do przypisania zaliczki.</p>
           ) : (
             <select
               id="reservation"

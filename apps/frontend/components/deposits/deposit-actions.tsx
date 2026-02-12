@@ -54,7 +54,7 @@ interface DepositActionsProps {
 
 const paymentMethods: { value: PaymentMethod; label: string; icon: React.ElementType; color: string }[] = [
   { value: 'TRANSFER', label: 'Przelew', icon: ArrowDownUp, color: 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  { value: 'CASH', label: 'Got\u00f3wka', icon: Banknote, color: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  { value: 'CASH', label: 'Gotówka', icon: Banknote, color: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
   { value: 'BLIK', label: 'BLIK', icon: Smartphone, color: 'border-pink-300 bg-pink-50 text-pink-700 dark:border-pink-700 dark:bg-pink-900/30 dark:text-pink-300' },
   { value: 'CARD', label: 'Karta', icon: CreditCard, color: 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
 ]
@@ -72,12 +72,12 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
     try {
       setLoading(true)
       await depositsApi.markAsPaid(deposit.id, { paymentMethod, paidAt })
-      toast.success('Zaliczka oznaczona jako op\u0142acona')
+      toast.success('Zaliczka oznaczona jako opłacona')
       setShowPayDialog(false)
       onUpdate()
     } catch (error: any) {
       console.error('Error marking deposit as paid:', error)
-      toast.error('Nie uda\u0142o si\u0119 oznaczy\u0107 zaliczki jako op\u0142aconej')
+      toast.error('Nie udało się oznaczyć zaliczki jako opłaconej')
     } finally {
       setLoading(false)
     }
@@ -87,11 +87,11 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
     try {
       setLoading(true)
       await depositsApi.markAsUnpaid(deposit.id)
-      toast.success('Cofni\u0119to status p\u0142atno\u015bci')
+      toast.success('Cofnięto status płatności')
       onUpdate()
     } catch (error) {
       console.error('Error marking deposit as unpaid:', error)
-      toast.error('Nie uda\u0142o si\u0119 cofn\u0105\u0107 p\u0142atno\u015bci')
+      toast.error('Nie udało się cofnąć płatności')
     } finally {
       setLoading(false)
     }
@@ -105,7 +105,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
       onUpdate()
     } catch (error) {
       console.error('Error cancelling deposit:', error)
-      toast.error('Nie uda\u0142o si\u0119 anulowa\u0107 zaliczki')
+      toast.error('Nie udało się anulować zaliczki')
     } finally {
       setLoading(false)
     }
@@ -115,12 +115,12 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
     try {
       setLoading(true)
       await depositsApi.delete(deposit.id)
-      toast.success('Zaliczka usuni\u0119ta')
+      toast.success('Zaliczka usunięta')
       setShowDeleteDialog(false)
       onUpdate()
     } catch (error) {
       console.error('Error deleting deposit:', error)
-      toast.error('Nie uda\u0142o si\u0119 usun\u0105\u0107 zaliczki')
+      toast.error('Nie udało się usunąć zaliczki')
     } finally {
       setLoading(false)
     }
@@ -133,7 +133,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
       toast.success('PDF potwierdzenia pobrany')
     } catch (error) {
       console.error('Error downloading PDF:', error)
-      toast.error('Nie uda\u0142o si\u0119 pobra\u0107 PDF')
+      toast.error('Nie udało się pobrać PDF')
     } finally {
       setPdfLoading(false)
     }
@@ -143,10 +143,10 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
     try {
       setEmailLoading(true)
       const result = await depositsApi.sendEmail(deposit.id)
-      toast.success('Email wys\u0142any', { description: result.message })
+      toast.success('Email wysłany', { description: result.message })
     } catch (error: any) {
       console.error('Error sending email:', error)
-      const msg = error?.response?.data?.message || 'Nie uda\u0142o si\u0119 wys\u0142a\u0107 emaila'
+      const msg = error?.response?.data?.message || 'Nie udało się wysłać emaila'
       toast.error(msg)
     } finally {
       setEmailLoading(false)
@@ -167,17 +167,22 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-lg">
-          {/* Mark as paid */}
           {isPending && (
-            <DropdownMenuItem onClick={() => setShowPayDialog(true)}>
+            <DropdownMenuItem
+              onClick={() => setShowPayDialog(true)}
+              className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+            >
               <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
-              Oznacz jako op\u0142acon\u0105
+              Oznacz jako opłaconą
             </DropdownMenuItem>
           )}
 
-          {/* PDF Download — only for paid deposits */}
           {isPaid && (
-            <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+            <DropdownMenuItem
+              onClick={handleDownloadPdf}
+              disabled={pdfLoading}
+              className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+            >
               {pdfLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin text-rose-600" />
               ) : (
@@ -187,51 +192,57 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
             </DropdownMenuItem>
           )}
 
-          {/* Send email — only for paid deposits with client email */}
           {isPaid && clientEmail && (
-            <DropdownMenuItem onClick={handleSendEmail} disabled={emailLoading}>
+            <DropdownMenuItem
+              onClick={handleSendEmail}
+              disabled={emailLoading}
+              className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+            >
               {emailLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" />
               ) : (
                 <Mail className="mr-2 h-4 w-4 text-blue-600" />
               )}
-              Wy\u015blij email
+              Wyślij email
             </DropdownMenuItem>
           )}
 
-          {/* Undo payment */}
           {isPaid && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleMarkAsUnpaid}>
+              <DropdownMenuItem
+                onClick={handleMarkAsUnpaid}
+                className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+              >
                 <Undo2 className="mr-2 h-4 w-4 text-amber-600" />
-                Cofnij p\u0142atno\u015b\u0107
+                Cofnij płatność
               </DropdownMenuItem>
             </>
           )}
 
-          {/* Cancel */}
           {!isCancelled && !isPaid && (
-            <DropdownMenuItem onClick={handleCancel}>
+            <DropdownMenuItem
+              onClick={handleCancel}
+              className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+            >
               <XCircle className="mr-2 h-4 w-4 text-neutral-500" />
-              Anuluj zaliczk\u0119
+              Anuluj zaliczkę
             </DropdownMenuItem>
           )}
 
           <DropdownMenuSeparator />
 
-          {/* Delete */}
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
-            className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+            className="text-red-600 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Usu\u0144 zaliczk\u0119
+            Usuń zaliczkę
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* \u2550\u2550\u2550 Pay Dialog \u2550\u2550\u2550 */}
+      {/* Pay Dialog */}
       <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -239,19 +250,18 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                 <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              Potwierd\u017a p\u0142atno\u015b\u0107
+              Potwierdź płatność
             </DialogTitle>
             <DialogDescription>
-              Oznacz zaliczk\u0119 jako op\u0142acon\u0105. Mo\u017cesz p\u00f3\u017aniej wys\u0142a\u0107 email z potwierdzeniem z menu akcji.
+              Oznacz zaliczkę jako opłaconą. Możesz później wysłać email z potwierdzeniem z menu akcji.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 py-4">
-            {/* Amount display */}
             <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota do zap\u0142aty</p>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota do zapłaty</p>
               <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                {Number(deposit.amount).toLocaleString('pl-PL')} z\u0142
+                {Number(deposit.amount).toLocaleString('pl-PL')} zł
               </p>
               {deposit.reservation?.client && (
                 <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
@@ -260,9 +270,8 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               )}
             </div>
 
-            {/* Payment method selection */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Metoda p\u0142atno\u015bci</Label>
+              <Label className="text-sm font-semibold">Metoda płatności</Label>
               <div className="grid grid-cols-2 gap-2">
                 {paymentMethods.map((method) => {
                   const Icon = method.icon
@@ -286,9 +295,8 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               </div>
             </div>
 
-            {/* Date */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Data p\u0142atno\u015bci</Label>
+              <Label className="text-sm font-semibold">Data płatności</Label>
               <Input
                 type="date"
                 value={paidAt}
@@ -310,13 +318,13 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               ) : (
                 <CheckCircle className="mr-2 h-4 w-4" />
               )}
-              Potwierd\u017a p\u0142atno\u015b\u0107
+              Potwierdź płatność
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* \u2550\u2550\u2550 Delete Confirm \u2550\u2550\u2550 */}
+      {/* Delete Confirm */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -324,14 +332,14 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                 <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
-              Usun\u0105\u0107 zaliczk\u0119?
+              Usunąć zaliczkę?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Ta operacja jest nieodwracalna. Zaliczka na kwot\u0119{' '}
+              Ta operacja jest nieodwracalna. Zaliczka na kwotę{' '}
               <strong className="text-neutral-900 dark:text-neutral-100">
-                {Number(deposit.amount).toLocaleString('pl-PL')} z\u0142
+                {Number(deposit.amount).toLocaleString('pl-PL')} zł
               </strong>{' '}
-              zostanie trwale usuni\u0119ta z systemu.
+              zostanie trwale usunięta z systemu.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -341,7 +349,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Usu\u0144
+              Usuń
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
