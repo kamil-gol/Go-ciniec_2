@@ -85,21 +85,23 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
     },
   })
 
+  const safeClients = clients ?? []
+
   // Filter clients based on search (show results if 3+ chars)
   const filteredClients = useMemo(() => {
     if (clientSearchValue.length < 3) {
       return []
     }
     const searchLower = clientSearchValue.toLowerCase()
-    return clients.filter(
+    return safeClients.filter(
       (client) =>
         client.firstName.toLowerCase().includes(searchLower) ||
         client.lastName.toLowerCase().includes(searchLower) ||
         client.phone.includes(searchLower)
     )
-  }, [clients, clientSearchValue])
+  }, [safeClients, clientSearchValue])
 
-  const selectedClient = clients.find((c) => c.id === form.watch('clientId'))
+  const selectedClient = safeClients.find((c) => c.id === form.watch('clientId'))
 
   // Close dropdown when clicking outside
   useEffect(() => {
