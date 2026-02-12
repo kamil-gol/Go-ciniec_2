@@ -7,8 +7,14 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to login page
-    router.push('/login')
+    // Check if user is already logged in
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
+
+    if (token) {
+      router.push('/dashboard')
+    } else {
+      router.push('/login')
+    }
   }, [router])
 
   // Show loading state while redirecting
