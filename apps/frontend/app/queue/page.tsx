@@ -47,7 +47,7 @@ export default function QueuePage() {
       ])
       setQueues(queuesData)
       setStats(statsData)
-      setClients(clientsData.data)
+      setClients(clientsData)
     } catch (error) {
       console.error('Failed to load queue data:', error)
       toast.error('Nie udało się załadować danych kolejki')
@@ -59,7 +59,7 @@ export default function QueuePage() {
   const loadClients = async () => {
     try {
       const clientsData = await clientsApi.getAll()
-      setClients(clientsData.data)
+      setClients(clientsData)
       toast.success('Lista klientów zaktualizowana')
     } catch (error) {
       console.error('Failed to load clients:', error)
