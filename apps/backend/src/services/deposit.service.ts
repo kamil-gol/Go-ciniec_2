@@ -13,6 +13,9 @@
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { Prisma } from '@prisma/client';
+import pdfService from './pdf.service';
+import emailService from './email.service';
+import logger from '../utils/logger';
 
 // Types
 
@@ -358,6 +361,9 @@ const depositService = {
 
   /**
    * Mark deposit as paid
+   * 1. Update DB status
+   * 2. Generate PDF confirmation
+   * 3. Send email with PDF attachment
    */
   async markAsPaid(id: string, input: MarkPaidInput) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
@@ -374,6 +380,7 @@ const depositService = {
     const newStatus = isPaid ? 'PAID' : 'PARTIALLY_PAID';
     const remainingAmount = Math.max(0, remaining);
 
+    // Update database
     await prisma.$queryRawUnsafe(
       `UPDATE "Deposit" SET paid = $1, status = $2, "paidAt" = $3::timestamp, "paymentMethod" = $4, "remainingAmount" = $5, "paidAmount" = $6, "updatedAt" = NOW() WHERE id = $7::uuid`,
       isPaid, newStatus, input.paidAt, input.paymentMethod, remainingAmount, amountPaid, id
@@ -383,6 +390,68 @@ const depositService = {
       where: { id },
       include: DEPOSIT_INCLUDE,
     });
+
+    if (!updated) {
+      throw AppError.notFound('Updated deposit');
+    }
+
+    // Generate PDF confirmation
+    try {
+      const pdfBuffer = await pdfService.generateDepositConfirmation({
+        depositId: updated.id,
+        clientName: `${updated.reservation.client.firstName} ${updated.reservation.client.lastName}`,
+        depositAmount: Number(updated.amount).toFixed(2),
+        paidAt: new Date(input.paidAt).toLocaleDateString('pl-PL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        paymentMethod: input.paymentMethod,
+        reservationDate: new Date(updated.reservation.eventDate).toLocaleDateString('pl-PL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long',
+        }),
+        hallName: updated.reservation.hall.name,
+        eventType: updated.reservation.eventType.name,
+      });
+
+      logger.info(`[Deposit] PDF confirmation generated for deposit ${id}`);
+
+      // Send email with PDF attachment
+      const clientEmail = updated.reservation.client.email;
+      if (clientEmail) {
+        await emailService.sendDepositPaidConfirmation(
+          clientEmail,
+          {
+            clientName: `${updated.reservation.client.firstName} ${updated.reservation.client.lastName}`,
+            depositAmount: `${Number(updated.amount).toFixed(2)} zł`,
+            paidAt: new Date(input.paidAt).toLocaleDateString('pl-PL', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+            paymentMethod: input.paymentMethod,
+            reservationDate: new Date(updated.reservation.eventDate).toLocaleDateString('pl-PL', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+            hallName: updated.reservation.hall.name,
+            eventType: updated.reservation.eventType.name,
+          },
+          pdfBuffer
+        );
+
+        logger.info(`[Deposit] Email confirmation sent to ${clientEmail}`);
+      } else {
+        logger.warn(`[Deposit] No client email found for deposit ${id} — skipping email`);
+      }
+    } catch (error: any) {
+      logger.error(`[Deposit] Failed to generate PDF or send email: ${error.message}`);
+      // Don't fail the entire operation if PDF/email fails
+    }
 
     return updated;
   },

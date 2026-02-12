@@ -86,6 +86,31 @@ interface ReservationPDFData {
   createdAt: Date;
 }
 
+interface PaymentConfirmationData {
+  depositId: string;
+  amount: number;
+  paidAt: Date;
+  paymentMethod: string;
+  paymentReference?: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone: string;
+    address?: string;
+  };
+  reservation: {
+    id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    hall?: string;
+    eventType?: string;
+    guests: number;
+    totalPrice: number;
+  };
+}
+
 interface RestaurantData {
   name: string;
   address: string;
@@ -220,6 +245,63 @@ export class PDFService {
         doc.end();
       } catch (error) {
         console.error('[PDF Service] Failed to generate PDF:', error);
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Generate payment confirmation PDF
+   * Invoked after deposit is marked as paid
+   */
+  async generatePaymentConfirmationPDF(data: PaymentConfirmationData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log(`[PDF Service] Generating payment confirmation PDF for deposit ${data.depositId}`);
+
+        const doc = new PDFDocument({
+          size: 'A4',
+          margin: 50,
+          info: {
+            Title: `Potwierdzenie wplaty ${data.depositId}`,
+            Author: this.restaurantData.name,
+            Subject: 'Potwierdzenie wplaty zaliczki',
+          },
+        });
+
+        // Register custom fonts if available
+        if (this.useCustomFonts && this.fontRegular && this.fontBold) {
+          try {
+            doc.registerFont('DejaVu', this.fontRegular);
+            doc.registerFont('DejaVu-Bold', this.fontBold);
+            doc.font('DejaVu');
+          } catch (error) {
+            console.error('[PDF Service] Failed to register custom fonts:', error);
+            this.useCustomFonts = false;
+            doc.font('Helvetica');
+          }
+        } else {
+          doc.font('Helvetica');
+        }
+
+        const chunks: Buffer[] = [];
+
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          console.log(`[PDF Service] Payment confirmation PDF generated, size: ${buffer.length} bytes`);
+          resolve(buffer);
+        });
+        doc.on('error', (error) => {
+          console.error('[PDF Service] Payment PDF generation error:', error);
+          reject(error);
+        });
+
+        this.buildPaymentConfirmationContent(doc, data);
+
+        doc.end();
+      } catch (error) {
+        console.error('[PDF Service] Failed to generate payment confirmation PDF:', error);
         reject(error);
       }
     });
@@ -381,6 +463,94 @@ export class PDFService {
       const depositStatus = deposit.paid ? 'Oplacona' : 'Nieoplacona';
       doc.font(this.getBoldFont()).text(`Status: ${depositStatus}`);
     }
+
+    this.addFooter(doc);
+  }
+
+  /**
+   * Build payment confirmation PDF content
+   */
+  private buildPaymentConfirmationContent(
+    doc: PDFKit.PDFDocument,
+    data: PaymentConfirmationData
+  ): void {
+    this.addHeader(doc);
+
+    doc.moveDown(2);
+    doc.fontSize(20).font(this.getBoldFont()).fillColor('#16a34a').text('POTWIERDZENIE WPLATY ZALICZKI', {
+      align: 'center',
+    });
+
+    doc.moveDown(0.5);
+    doc.fontSize(10).font(this.getRegularFont()).fillColor('#666666');
+    doc.text(`Numer depozytu: ${data.depositId}`, { align: 'center' });
+    doc.text(`Data wygenerowania: ${this.formatDate(new Date())}`, { align: 'center' });
+
+    doc.moveDown(1);
+    this.addSeparator(doc);
+
+    // Payment details
+    doc.moveDown(1);
+    doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Szczegoly wplaty');
+    doc.moveDown(0.5);
+    doc.fontSize(11).font(this.getRegularFont());
+
+    const methodLabels: Record<string, string> = {
+      TRANSFER: 'Przelew bankowy',
+      CASH: 'Gotowka',
+      BLIK: 'BLIK',
+      CARD: 'Karta platnicza',
+    };
+
+    doc.font(this.getBoldFont()).text(`Kwota: ${this.formatCurrency(data.amount)}`);
+    doc.font(this.getRegularFont());
+    doc.text(`Data wplaty: ${this.formatDateTime(data.paidAt)}`);
+    doc.text(`Metoda platnosci: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
+    if (data.paymentReference) {
+      doc.text(`Numer referencyjny: ${data.paymentReference}`);
+    }
+
+    doc.moveDown(1);
+    this.addSeparator(doc);
+
+    // Client details
+    doc.moveDown(1);
+    doc.fontSize(14).font(this.getBoldFont()).text('Dane klienta');
+    doc.moveDown(0.5);
+    doc.fontSize(11).font(this.getRegularFont());
+    doc.text(`Imie i nazwisko: ${data.client.firstName} ${data.client.lastName}`);
+    if (data.client.email) {
+      doc.text(`Email: ${data.client.email}`);
+    }
+    doc.text(`Telefon: ${data.client.phone}`);
+    if (data.client.address) {
+      doc.text(`Adres: ${data.client.address}`);
+    }
+
+    doc.moveDown(1);
+    this.addSeparator(doc);
+
+    // Reservation details
+    doc.moveDown(1);
+    doc.fontSize(14).font(this.getBoldFont()).text('Szczegoly rezerwacji');
+    doc.moveDown(0.5);
+    doc.fontSize(11).font(this.getRegularFont());
+    doc.text(`Numer rezerwacji: ${data.reservation.id}`);
+    doc.text(`Data: ${data.reservation.date}`);
+    doc.text(`Godzina: ${data.reservation.startTime} - ${data.reservation.endTime}`);
+    if (data.reservation.hall) {
+      doc.text(`Sala: ${data.reservation.hall}`);
+    }
+    if (data.reservation.eventType) {
+      doc.text(`Typ wydarzenia: ${data.reservation.eventType}`);
+    }
+    doc.text(`Liczba gosci: ${data.reservation.guests}`);
+    doc.text(`Calkowita cena rezerwacji: ${this.formatCurrency(data.reservation.totalPrice)}`);
+
+    doc.moveDown(1.5);
+    doc.fontSize(11).fillColor('#16a34a');
+    doc.font(this.getBoldFont()).text('✓ Wplata zaksiegowana pomyslnie', { align: 'center' });
+    doc.fillColor('#000000');
 
     this.addFooter(doc);
   }
@@ -637,6 +807,16 @@ export class PDFService {
 
   private formatTime(date: Date): string {
     return new Intl.DateTimeFormat('pl-PL', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  private formatDateTime(date: Date): string {
+    return new Intl.DateTimeFormat('pl-PL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
