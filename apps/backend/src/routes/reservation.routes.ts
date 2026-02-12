@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
-import reservationMenuController from '../controllers/reservation-menu.controller';
+import reservationMenuController from '../controllers/reservationMenu.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
