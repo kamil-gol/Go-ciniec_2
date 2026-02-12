@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
-import reservationMenuController from '../controllers/reservation-menu.controller';
+import reservationMenuService from '../services/reservation-menu.service';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 
@@ -66,7 +66,7 @@ router.patch('/:id/status', authMiddleware, requireStaff, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// 🍽️ MENU SELECTION ENDPOINTS (NEW with dishSelections support)
+// 🍽️ MENU SELECTION ENDPOINTS (using service directly)
 // ═══════════════════════════════════════════════════════════════
 
 /**
@@ -74,8 +74,14 @@ router.patch('/:id/status', authMiddleware, requireStaff, (req, res) => {
  * @desc    Select menu for reservation (supports dishSelections)
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.post('/:id/menu', authMiddleware, requireStaff, (req, res) => {
-  reservationMenuController.selectMenu(req, res);
+router.post('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
+  try {
+    const result = await reservationMenuService.selectMenu(req.params.id, req.body);
+    res.status(200).json({ success: true, data: result });
+  } catch (error: any) {
+    const status = error.message?.includes('not found') ? 404 : 400;
+    res.status(status).json({ success: false, error: error.message });
+  }
 });
 
 /**
@@ -83,8 +89,14 @@ router.post('/:id/menu', authMiddleware, requireStaff, (req, res) => {
  * @desc    Get menu selection for reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.get('/:id/menu', authMiddleware, requireStaff, (req, res) => {
-  reservationMenuController.getMenu(req, res);
+router.get('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
+  try {
+    const result = await reservationMenuService.getReservationMenu(req.params.id);
+    res.status(200).json({ success: true, data: result });
+  } catch (error: any) {
+    const status = error.message?.includes('not found') || error.message?.includes('not selected') ? 404 : 500;
+    res.status(status).json({ success: false, error: error.message });
+  }
 });
 
 /**
@@ -92,8 +104,14 @@ router.get('/:id/menu', authMiddleware, requireStaff, (req, res) => {
  * @desc    Update menu selection for reservation (supports dishSelections)
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.put('/:id/menu', authMiddleware, requireStaff, (req, res) => {
-  reservationMenuController.updateMenu(req, res);
+router.put('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
+  try {
+    const result = await reservationMenuService.updateMenu(req.params.id, req.body);
+    res.status(200).json({ success: true, data: result });
+  } catch (error: any) {
+    const status = error.message?.includes('not found') ? 404 : 400;
+    res.status(status).json({ success: false, error: error.message });
+  }
 });
 
 /**
@@ -101,8 +119,14 @@ router.put('/:id/menu', authMiddleware, requireStaff, (req, res) => {
  * @desc    Remove menu selection from reservation
  * @access  Staff (ADMIN + EMPLOYEE)
  */
-router.delete('/:id/menu', authMiddleware, requireStaff, (req, res) => {
-  reservationMenuController.deleteMenu(req, res);
+router.delete('/:id/menu', authMiddleware, requireStaff, async (req, res) => {
+  try {
+    await reservationMenuService.removeMenu(req.params.id);
+    res.status(200).json({ success: true, message: 'Menu selection removed' });
+  } catch (error: any) {
+    const status = error.message?.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: error.message });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
