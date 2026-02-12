@@ -49,7 +49,7 @@ export default function DepositsPage() {
       setStats(statsData)
     } catch (error) {
       console.error('Error loading deposits:', error)
-      toast.error('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 zaliczek')
+      toast.error('Nie udało się załadować zaliczek')
     } finally {
       setLoading(false)
     }
@@ -76,8 +76,8 @@ export default function DepositsPage() {
 
   const filterButtons: { label: string; value: FilterStatus; count?: number }[] = [
     { label: 'Wszystkie', value: 'ALL', count: stats?.counts.total },
-    { label: 'Oczekuj\u0105ce', value: 'PENDING', count: stats?.counts.pending },
-    { label: 'Op\u0142acone', value: 'PAID', count: stats?.counts.paid },
+    { label: 'Oczekujące', value: 'PENDING', count: stats?.counts.pending },
+    { label: 'Opłacone', value: 'PAID', count: stats?.counts.paid },
     { label: 'Przetermin.', value: 'OVERDUE', count: stats?.counts.overdue },
     { label: 'Anulowane', value: 'CANCELLED', count: stats?.counts.cancelled },
   ]
@@ -88,11 +88,10 @@ export default function DepositsPage() {
 
   return (
     <PageLayout>
-      {/* Hero */}
       <PageHero
         accent={accent}
         title="Zaliczki"
-        subtitle="Zarz\u0105dzaj zaliczkami i p\u0142atno\u015bciami"
+        subtitle="Zarządzaj zaliczkami i płatnościami"
         icon={DollarSign}
         action={
           <Button
@@ -106,21 +105,20 @@ export default function DepositsPage() {
         }
       />
 
-      {/* Stats */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            label="Oczekuj\u0105ce"
+            label="Oczekujące"
             value={stats.counts.pending}
-            subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} z\u0142 do zap\u0142aty`}
+            subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} zł do zapłaty`}
             icon={Clock}
             iconGradient="from-amber-500 to-orange-500"
             delay={0.1}
           />
           <StatCard
-            label="Op\u0142acone"
+            label="Opłacone"
             value={stats.counts.paid}
-            subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} z\u0142 wp\u0142acono`}
+            subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} zł wpłacono`}
             icon={CheckCircle2}
             iconGradient="from-emerald-500 to-teal-500"
             delay={0.2}
@@ -128,15 +126,15 @@ export default function DepositsPage() {
           <StatCard
             label="Przetermin."
             value={stats.counts.overdue}
-            subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} z\u0142 zaleg\u0142o\u015bci`}
+            subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
             icon={AlertTriangle}
             iconGradient="from-red-500 to-rose-500"
             delay={0.3}
           />
           <StatCard
-            label="\u0141\u0105cznie"
-            value={`${stats.amounts.total.toLocaleString('pl-PL')} z\u0142`}
-            subtitle={`${percentPaid}% wp\u0142acono \u00b7 ${stats.counts.total} zaliczek`}
+            label="Łącznie"
+            value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
+            subtitle={`${percentPaid}% wpłacono · ${stats.counts.total} zaliczek`}
             icon={TrendingUp}
             iconGradient="from-rose-500 to-pink-500"
             delay={0.4}
@@ -144,7 +142,6 @@ export default function DepositsPage() {
         </div>
       )}
 
-      {/* Create Form */}
       {showCreateForm && (
         <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
           <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
@@ -167,7 +164,6 @@ export default function DepositsPage() {
         </Card>
       )}
 
-      {/* Deposits List */}
       <Card className="overflow-hidden">
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -178,7 +174,6 @@ export default function DepositsPage() {
               <CardTitle>Lista Zaliczek</CardTitle>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Status Filter */}
               <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm overflow-x-auto">
                 <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
                 {filterButtons.map((btn) => (
@@ -198,7 +193,6 @@ export default function DepositsPage() {
                   </button>
                 ))}
               </div>
-              {/* Search */}
               <div className="relative w-full sm:w-64 min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <Input
@@ -214,14 +208,14 @@ export default function DepositsPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="p-6">
-              <LoadingState variant="skeleton" rows={5} message="\u0141adowanie zaliczek..." />
+              <LoadingState variant="skeleton" rows={5} message="Ładowanie zaliczek..." />
             </div>
           ) : filteredDeposits.length === 0 && (searchQuery || statusFilter !== 'ALL') ? (
             <div className="p-6">
               <EmptyState
                 icon={DollarSign}
                 title="Nie znaleziono zaliczek"
-                description="Spr\u00f3buj innych kryteri\u00f3w wyszukiwania lub filtru"
+                description="Spróbuj innych kryteriów wyszukiwania lub filtru"
               />
             </div>
           ) : filteredDeposits.length === 0 ? (
@@ -229,7 +223,7 @@ export default function DepositsPage() {
               <EmptyState
                 icon={DollarSign}
                 title="Brak zaliczek"
-                description="Utw\u00f3rz pierwsz\u0105 zaliczk\u0119 aby zacz\u0105\u0107 \u015bledzi\u0107 p\u0142atno\u015bci"
+                description="Utwórz pierwszą zaliczkę aby zacząć śledzić płatności"
                 actionLabel="Nowa Zaliczka"
                 onAction={() => setShowCreateForm(true)}
               />
