@@ -19,6 +19,8 @@ import dishCategoryRoutes from '@/routes/dish-category.routes';
 import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
+import depositReminderService from '@/services/deposit-reminder.service';
+import emailService from '@/services/email.service';
 
 // Validate environment variables early
 validateEnv();
@@ -152,6 +154,10 @@ const server = app.listen(PORT, () => {
   // Setup cron jobs
   setupAutoCancelCron();
   setupDepositOverdueCron();
+  setupDepositReminderCron();
+  
+  // Verify email on startup
+  emailService.verify();
 });
 
 /**
@@ -205,6 +211,32 @@ function setupDepositOverdueCron() {
   });
   
   logger.info('Deposit overdue cron job scheduled for 06:00 AM daily');
+}
+
+/**
+ * Setup Deposit Reminder Cron Job
+ * Runs daily at 08:00 AM to send email reminders
+ * - 7 days before due → first reminder
+ * - 3 days before due → second reminder  
+ * - 1 day before due → final reminder
+ * - After due date → overdue notices
+ */
+function setupDepositReminderCron() {
+  cron.schedule('0 8 * * *', async () => {
+    logger.info('[CRON] Running deposit email reminders...');
+    
+    try {
+      const result = await depositReminderService.runReminders();
+      
+      logger.info(
+        `[CRON] Deposit reminders completed: ${result.upcomingSent} upcoming, ${result.overdueSent} overdue, ${result.errors} errors`
+      );
+    } catch (error: any) {
+      logger.error('[CRON] Deposit reminders failed:', error.message);
+    }
+  });
+  
+  logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
 }
 
 /**
