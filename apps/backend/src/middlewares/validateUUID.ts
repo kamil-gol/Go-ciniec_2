@@ -9,7 +9,9 @@
  */
 import { Request, Response, NextFunction } from 'express';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Accepts any UUID-shaped string (v1-v8, nil UUID, etc.)
+// Goal: block garbage like "not-a-uuid" before it hits Prisma
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function validateUUID(...paramNames: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
