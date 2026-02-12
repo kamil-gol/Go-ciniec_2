@@ -3,9 +3,8 @@
  * Business logic for dish management
  */
 
-import { PrismaClient, Dish, DishCategory } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Dish, DishCategory } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
 export type DishWithCategory = Dish & { category: DishCategory };
 
@@ -65,6 +64,18 @@ class DishService {
   async findOne(id: string): Promise<DishWithCategory | null> {
     return prisma.dish.findUnique({
       where: { id },
+      include: {
+        category: true,
+      },
+    });
+  }
+
+  /**
+   * Get dishes by multiple IDs
+   */
+  async getByIds(ids: string[]): Promise<DishWithCategory[]> {
+    return prisma.dish.findMany({
+      where: { id: { in: ids } },
       include: {
         category: true,
       },
@@ -180,4 +191,6 @@ class DishService {
   }
 }
 
-export default new DishService();
+const dishServiceInstance = new DishService();
+export default dishServiceInstance;
+export { dishServiceInstance as dishService };

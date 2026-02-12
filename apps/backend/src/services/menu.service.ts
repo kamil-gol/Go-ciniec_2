@@ -8,7 +8,8 @@
  * - Package-option relationships
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { 
   MenuTemplate, 
   MenuPackage, 
@@ -22,8 +23,6 @@ import {
   UpdateMenuOptionInput,
   AssignOptionsToPackageInput
 } from '../types/menu.types';
-
-const prisma = new PrismaClient();
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MENU TEMPLATES
@@ -207,7 +206,6 @@ export class MenuService {
    * Delete menu template
    */
   async deleteMenuTemplate(id: string) {
-    // Check if template is used in any reservations
     const usageCount = await prisma.reservationMenuSnapshot.count({
       where: {
         menuData: {
@@ -240,7 +238,6 @@ export class MenuService {
   ) {
     const original = await this.getMenuTemplateById(id);
 
-    // Create new template
     const newTemplate = await prisma.menuTemplate.create({
       data: {
         eventTypeId: original.eventTypeId,
@@ -254,7 +251,6 @@ export class MenuService {
       }
     });
 
-    // Duplicate packages
     for (const pkg of original.packages) {
       const newPackage = await prisma.menuPackage.create({
         data: {
@@ -278,7 +274,6 @@ export class MenuService {
         }
       });
 
-      // Duplicate package-option relationships
       for (const pkgOpt of pkg.packageOptions) {
         await prisma.menuPackageOption.create({
           data: {
@@ -300,9 +295,6 @@ export class MenuService {
   // MENU PACKAGES
   // ══════════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Get all packages (across all templates)
-   */
   async getAllPackages() {
     return await prisma.menuPackage.findMany({
       include: {
@@ -333,9 +325,6 @@ export class MenuService {
     });
   }
 
-  /**
-   * Get all packages for a menu template
-   */
   async getPackagesByTemplateId(templateId: string) {
     return await prisma.menuPackage.findMany({
       where: { menuTemplateId: templateId },
@@ -352,12 +341,7 @@ export class MenuService {
     });
   }
 
-  /**
-   * Get all active packages for a specific event type
-   * Used by frontend to show only packages relevant to selected event type
-   */
   async getPackagesByEventType(eventTypeId: string) {
-    // Get active templates for this event type
     const templates = await prisma.menuTemplate.findMany({
       where: {
         eventTypeId,
@@ -374,7 +358,6 @@ export class MenuService {
 
     const templateIds = templates.map(t => t.id);
 
-    // Get packages for these templates
     return await prisma.menuPackage.findMany({
       where: {
         menuTemplateId: {
@@ -409,9 +392,6 @@ export class MenuService {
     });
   }
 
-  /**
-   * Get single package by ID
-   */
   async getPackageById(id: string) {
     const pkg = await prisma.menuPackage.findUnique({
       where: { id },
@@ -434,9 +414,6 @@ export class MenuService {
     return pkg;
   }
 
-  /**
-   * Create new package
-   */
   async createPackage(data: CreateMenuPackageInput) {
     return await prisma.menuPackage.create({
       data: {
@@ -465,9 +442,6 @@ export class MenuService {
     });
   }
 
-  /**
-   * Update package
-   */
   async updatePackage(id: string, data: UpdateMenuPackageInput) {
     const currentPackage = await prisma.menuPackage.findUnique({
       where: { id },
@@ -478,7 +452,6 @@ export class MenuService {
       throw new Error('Package not found');
     }
 
-    // Track price changes
     const priceChanges: Array<{
       fieldName: string;
       oldValue: number;
@@ -509,7 +482,6 @@ export class MenuService {
       });
     }
 
-    // Update package
     const updated = await prisma.menuPackage.update({
       where: { id },
       data: {
@@ -539,7 +511,6 @@ export class MenuService {
       }
     });
 
-    // Log price changes
     for (const change of priceChanges) {
       await prisma.menuPriceHistory.create({
         data: {
@@ -558,11 +529,7 @@ export class MenuService {
     return updated;
   }
 
-  /**
-   * Delete package
-   */
   async deletePackage(id: string) {
-    // Check if package is used in any reservations
     const usageCount = await prisma.reservationMenuSnapshot.count({
       where: {
         menuData: {
@@ -581,9 +548,6 @@ export class MenuService {
     });
   }
 
-  /**
-   * Reorder packages
-   */
   async reorderPackages(orders: Array<{ packageId: string; displayOrder: number }>) {
     const updates = orders.map(({ packageId, displayOrder }) =>
       prisma.menuPackage.update({
@@ -601,9 +565,6 @@ export class MenuService {
   // MENU OPTIONS
   // ══════════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Get all options with optional filters
-   */
   async getOptions(filters?: {
     category?: string;
     isActive?: boolean;
@@ -636,9 +597,6 @@ export class MenuService {
     });
   }
 
-  /**
-   * Get single option by ID
-   */
   async getOptionById(id: string) {
     const option = await prisma.menuOption.findUnique({
       where: { id }
@@ -651,9 +609,6 @@ export class MenuService {
     return option;
   }
 
-  /**
-   * Create new option
-   */
   async createOption(data: CreateMenuOptionInput) {
     return await prisma.menuOption.create({
       data: {
@@ -673,9 +628,6 @@ export class MenuService {
     });
   }
 
-  /**
-   * Update option
-   */
   async updateOption(id: string, data: UpdateMenuOptionInput) {
     const currentOption = await prisma.menuOption.findUnique({
       where: { id },
@@ -686,7 +638,6 @@ export class MenuService {
       throw new Error('Option not found');
     }
 
-    // Track price change
     if (data.priceAmount !== undefined && data.priceAmount !== currentOption.priceAmount.toNumber()) {
       await prisma.menuPriceHistory.create({
         data: {
@@ -721,11 +672,7 @@ export class MenuService {
     });
   }
 
-  /**
-   * Delete option
-   */
   async deleteOption(id: string) {
-    // Check if option is used in any reservations
     const usageCount = await prisma.reservationMenuSnapshot.count({
       where: {
         menuData: {
@@ -739,7 +686,6 @@ export class MenuService {
       throw new Error(`Cannot delete option. It is used in ${usageCount} reservation(s).`);
     }
 
-    // Delete package-option relationships
     await prisma.menuPackageOption.deleteMany({
       where: { optionId: id }
     });
@@ -753,16 +699,11 @@ export class MenuService {
   // PACKAGE-OPTION RELATIONSHIPS
   // ══════════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Assign options to package
-   */
   async assignOptionsToPackage(packageId: string, data: AssignOptionsToPackageInput) {
-    // Remove existing assignments
     await prisma.menuPackageOption.deleteMany({
       where: { packageId }
     });
 
-    // Create new assignments
     const assignments = data.options.map((opt, index) => ({
       packageId,
       optionId: opt.optionId,
@@ -779,9 +720,6 @@ export class MenuService {
     return await this.getPackageById(packageId);
   }
 
-  /**
-   * Get price history for entity
-   */
   async getPriceHistory(entityType: 'PACKAGE' | 'OPTION', entityId: string) {
     return await prisma.menuPriceHistory.findMany({
       where: {

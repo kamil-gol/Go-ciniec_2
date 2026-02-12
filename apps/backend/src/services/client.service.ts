@@ -3,10 +3,8 @@
  * Business logic for client management
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { CreateClientDTO, UpdateClientDTO, ClientFilters, ClientResponse } from '../types/client.types';
-
-const prisma = new PrismaClient();
 
 export class ClientService {
   /**

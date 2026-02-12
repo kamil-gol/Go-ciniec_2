@@ -4,10 +4,8 @@
  * Handles all business logic for menu course operations
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { dishService } from './dish.service';
-
-const prisma = new PrismaClient();
 
 export interface CreateMenuCourseInput {
   packageId: string;
@@ -117,7 +115,6 @@ export class MenuCourseService {
    * Update course
    */
   async update(id: string, data: UpdateMenuCourseInput) {
-    // Check if course exists
     await this.getById(id);
 
     return await prisma.menuCourse.update({
@@ -143,10 +140,8 @@ export class MenuCourseService {
    * Delete course
    */
   async delete(id: string) {
-    // Check if course exists
     await this.getById(id);
 
-    // Cascade delete will handle MenuCourseOption records
     return await prisma.menuCourse.delete({
       where: { id }
     });
@@ -156,10 +151,8 @@ export class MenuCourseService {
    * Assign dishes to course
    */
   async assignDishes(courseId: string, dishes: AssignDishInput[]) {
-    // Check if course exists
     const course = await this.getById(courseId);
 
-    // Verify all dishes exist
     const dishIds = dishes.map(d => d.dishId);
     const foundDishes = await dishService.getByIds(dishIds);
 
@@ -169,14 +162,11 @@ export class MenuCourseService {
       throw new Error(`Dishes not found: ${missingIds.join(', ')}`);
     }
 
-    // Use transaction to ensure consistency
     await prisma.$transaction(async (tx) => {
-      // Remove existing dish assignments
       await tx.menuCourseOption.deleteMany({
         where: { courseId }
       });
 
-      // Create new assignments
       const assignments = dishes.map((dish, index) => ({
         courseId,
         dishId: dish.dishId,
@@ -191,7 +181,6 @@ export class MenuCourseService {
       });
     });
 
-    // Return updated course
     return await this.getById(courseId);
   }
 
@@ -199,10 +188,8 @@ export class MenuCourseService {
    * Remove dish from course
    */
   async removeDish(courseId: string, dishId: string) {
-    // Check if course exists
     await this.getById(courseId);
 
-    // Check if assignment exists
     const assignment = await prisma.menuCourseOption.findFirst({
       where: {
         courseId,
@@ -224,7 +211,7 @@ export class MenuCourseService {
    */
   async getForSelection(courseId: string) {
     const course = await prisma.menuCourse.findUnique({
-      where: { id },
+      where: { id: courseId },
       include: {
         options: {
           where: {
@@ -266,10 +253,8 @@ export class MenuCourseService {
    * Reorder dishes within a course
    */
   async reorderDishes(courseId: string, orders: Array<{ dishId: string; displayOrder: number }>) {
-    // Verify course exists
     await this.getById(courseId);
 
-    // Update display orders in transaction
     await prisma.$transaction(
       orders.map(({ dishId, displayOrder }) =>
         prisma.menuCourseOption.updateMany({

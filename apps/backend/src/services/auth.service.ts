@@ -1,10 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { validatePassword } from '@utils/password';
 import { generateToken } from '@middlewares/auth';
 import logger from '@utils/logger';
-
-const prisma = new PrismaClient();
 
 export const authService = {
   async login(email: string, password: string) {

@@ -4,9 +4,8 @@
  * Business logic for managing category settings for menu packages
  */
 
-import { PrismaClient, DishCategory } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { DishCategory } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
 export interface CreateCategorySettingInput {
   packageId: string;
@@ -42,9 +41,6 @@ export interface BulkUpdateCategorySettingsInput {
 
 class PackageCategoryService {
 
-  /**
-   * Get all category settings for a package
-   */
   async getByPackageId(packageId: string) {
     const settings = await prisma.packageCategorySettings.findMany({
       where: { packageId },
@@ -54,9 +50,6 @@ class PackageCategoryService {
     return settings;
   }
 
-  /**
-   * Get single category setting
-   */
   async getById(id: string) {
     const setting = await prisma.packageCategorySettings.findUnique({
       where: { id },
@@ -69,11 +62,7 @@ class PackageCategoryService {
     return setting;
   }
 
-  /**
-   * Create category setting
-   */
   async create(data: CreateCategorySettingInput) {
-    // Check if setting already exists for this package + category
     const existing = await prisma.packageCategorySettings.findUnique({
       where: {
         packageId_category: {
@@ -103,11 +92,7 @@ class PackageCategoryService {
     return setting;
   }
 
-  /**
-   * Update category setting
-   */
   async update(id: string, data: UpdateCategorySettingInput) {
-    // Check if setting exists
     const existing = await prisma.packageCategorySettings.findUnique({
       where: { id },
     });
@@ -124,11 +109,7 @@ class PackageCategoryService {
     return setting;
   }
 
-  /**
-   * Bulk update category settings for a package
-   */
   async bulkUpdate(packageId: string, input: BulkUpdateCategorySettingsInput) {
-    // Verify package exists
     const pkg = await prisma.menuPackage.findUnique({
       where: { id: packageId },
     });
@@ -137,7 +118,6 @@ class PackageCategoryService {
       throw new Error('Package not found');
     }
 
-    // Update each setting
     const results = [];
     for (const settingData of input.settings) {
       const existing = await prisma.packageCategorySettings.findUnique({
@@ -150,7 +130,6 @@ class PackageCategoryService {
       });
 
       if (existing) {
-        // Update existing
         const updated = await prisma.packageCategorySettings.update({
           where: { id: existing.id },
           data: {
@@ -169,9 +148,6 @@ class PackageCategoryService {
     return results;
   }
 
-  /**
-   * Delete category setting
-   */
   async delete(id: string) {
     const setting = await prisma.packageCategorySettings.findUnique({
       where: { id },

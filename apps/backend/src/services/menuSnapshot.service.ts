@@ -5,14 +5,13 @@
  * Snapshots preserve menu data even if templates/packages/options change.
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { 
   MenuSnapshotData,
   CreateMenuSnapshotInput,
   MenuPriceBreakdown
 } from '../types/menu.types';
-
-const prisma = new PrismaClient();
 
 export class MenuSnapshotService {
 
@@ -20,7 +19,6 @@ export class MenuSnapshotService {
    * Create menu snapshot for reservation
    */
   async createSnapshot(input: CreateMenuSnapshotInput) {
-    // 1. Get package with template
     const pkg = await prisma.menuPackage.findUnique({
       where: { id: input.packageId },
       include: {
@@ -36,7 +34,6 @@ export class MenuSnapshotService {
       throw new Error('Package not found');
     }
 
-    // 2. Get selected options
     const optionIds = input.selectedOptions.map(opt => opt.optionId);
     const options = await prisma.menuOption.findMany({
       where: { id: { in: optionIds } }
@@ -46,7 +43,6 @@ export class MenuSnapshotService {
       throw new Error('Some options not found');
     }
 
-    // 3. Build snapshot data
     const snapshotData: MenuSnapshotData = {
       templateId: pkg.menuTemplateId,
       templateName: pkg.menuTemplate.name,
@@ -78,7 +74,6 @@ export class MenuSnapshotService {
       })
     };
 
-    // 4. Calculate prices
     const priceBreakdown = this.calculatePriceBreakdown(
       snapshotData,
       input.adultsCount,
@@ -86,7 +81,6 @@ export class MenuSnapshotService {
       input.toddlersCount
     );
 
-    // 5. Create snapshot
     const snapshot = await prisma.reservationMenuSnapshot.create({
       data: {
         reservationId: input.reservationId,
@@ -116,13 +110,11 @@ export class MenuSnapshotService {
     childrenCount: number,
     toddlersCount: number
   ): MenuPriceBreakdown {
-    // Package cost
     const adultsTotal = adultsCount * menuData.pricePerAdult;
     const childrenTotal = childrenCount * menuData.pricePerChild;
     const toddlersTotal = toddlersCount * menuData.pricePerToddler;
     const packageSubtotal = adultsTotal + childrenTotal + toddlersTotal;
 
-    // Options cost
     const totalGuests = adultsCount + childrenCount + toddlersCount;
     const optionsCost = menuData.selectedOptions.map(opt => {
       let totalPrice = 0;
@@ -173,9 +165,6 @@ export class MenuSnapshotService {
     };
   }
 
-  /**
-   * Get snapshot by reservation ID
-   */
   async getSnapshotByReservationId(reservationId: string) {
     const snapshot = await prisma.reservationMenuSnapshot.findUnique({
       where: { reservationId }
@@ -185,7 +174,6 @@ export class MenuSnapshotService {
       throw new Error('Menu snapshot not found for this reservation');
     }
 
-    // Recalculate price breakdown for display
     const menuData = snapshot.menuData as MenuSnapshotData;
     const priceBreakdown = this.calculatePriceBreakdown(
       menuData,
@@ -200,9 +188,6 @@ export class MenuSnapshotService {
     };
   }
 
-  /**
-   * Update snapshot (e.g., if guest count changes)
-   */
   async updateSnapshot(
     reservationId: string,
     updates: {
@@ -221,12 +206,10 @@ export class MenuSnapshotService {
 
     const menuData = existing.menuData as MenuSnapshotData;
 
-    // Use updated counts or keep existing
     const adultsCount = updates.adultsCount ?? existing.adultsCount;
     const childrenCount = updates.childrenCount ?? existing.childrenCount;
     const toddlersCount = updates.toddlersCount ?? existing.toddlersCount;
 
-    // Recalculate prices
     const priceBreakdown = this.calculatePriceBreakdown(
       menuData,
       adultsCount,
@@ -234,7 +217,6 @@ export class MenuSnapshotService {
       toddlersCount
     );
 
-    // Update snapshot
     const updated = await prisma.reservationMenuSnapshot.update({
       where: { reservationId },
       data: {
@@ -253,18 +235,12 @@ export class MenuSnapshotService {
     };
   }
 
-  /**
-   * Delete snapshot
-   */
   async deleteSnapshot(reservationId: string) {
     return await prisma.reservationMenuSnapshot.delete({
       where: { reservationId }
     });
   }
 
-  /**
-   * Check if reservation has menu snapshot
-   */
   async hasSnapshot(reservationId: string): Promise<boolean> {
     const count = await prisma.reservationMenuSnapshot.count({
       where: { reservationId }
@@ -272,16 +248,11 @@ export class MenuSnapshotService {
     return count > 0;
   }
 
-  /**
-   * Get snapshot statistics
-   */
   async getSnapshotStatistics(filters?: {
     startDate?: Date;
     endDate?: Date;
     eventTypeId?: string;
   }) {
-    // This would require joining with Reservation table
-    // For now, return basic stats
     const totalSnapshots = await prisma.reservationMenuSnapshot.count();
 
     const avgMenuPrice = await prisma.reservationMenuSnapshot.aggregate({
@@ -300,9 +271,6 @@ export class MenuSnapshotService {
     };
   }
 
-  /**
-   * Get popular options (most selected)
-   */
   async getPopularOptions(limit: number = 10) {
     const snapshots = await prisma.reservationMenuSnapshot.findMany({
       select: {
@@ -310,7 +278,6 @@ export class MenuSnapshotService {
       }
     });
 
-    // Count option occurrences
     const optionCounts: Record<string, { name: string; count: number }> = {};
 
     snapshots.forEach(snapshot => {
@@ -326,7 +293,6 @@ export class MenuSnapshotService {
       });
     });
 
-    // Sort and return top N
     return Object.entries(optionCounts)
       .map(([optionId, data]) => ({
         optionId,
@@ -337,9 +303,6 @@ export class MenuSnapshotService {
       .slice(0, limit);
   }
 
-  /**
-   * Get popular packages (most selected)
-   */
   async getPopularPackages(limit: number = 10) {
     const snapshots = await prisma.reservationMenuSnapshot.findMany({
       select: {
@@ -347,7 +310,6 @@ export class MenuSnapshotService {
       }
     });
 
-    // Count package occurrences
     const packageCounts: Record<string, { name: string; count: number }> = {};
 
     snapshots.forEach(snapshot => {
@@ -363,7 +325,6 @@ export class MenuSnapshotService {
       packageCounts[pkgId].count++;
     });
 
-    // Sort and return top N
     return Object.entries(packageCounts)
       .map(([packageId, data]) => ({
         packageId,

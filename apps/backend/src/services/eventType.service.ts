@@ -3,10 +3,8 @@
  * Business logic for event type management
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse } from '../types/eventType.types';
-
-const prisma = new PrismaClient();
 
 export class EventTypeService {
   /**

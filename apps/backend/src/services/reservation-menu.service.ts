@@ -7,14 +7,13 @@
  * - Supports category-based dish selection
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import {
   MenuSelectionInput,
   CategorySelectionDTO,
   MenuSnapshotData,
 } from '../dto/menu-selection.dto';
-
-const prisma = new PrismaClient();
 
 class ReservationMenuService {
   /**
@@ -26,7 +25,6 @@ class ReservationMenuService {
   ): Promise<any> {
     console.log('[ReservationMenu] Selecting menu for reservation:', reservationId);
 
-    // 1. Get reservation with guest counts
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
@@ -38,12 +36,10 @@ class ReservationMenuService {
       throw new Error('Reservation not found');
     }
 
-    // Use guest counts from input or reservation
     const adults = input.adults ?? reservation.adults;
     const children = input.children ?? reservation.children;
     const toddlers = input.toddlers ?? reservation.toddlers;
 
-    // 2. Get package with category settings
     const menuPackage = await prisma.menuPackage.findUnique({
       where: { id: input.packageId },
       include: {
@@ -72,7 +68,6 @@ class ReservationMenuService {
       throw new Error('Menu package not found');
     }
 
-    // 3. Validate dish selections against category rules
     if (input.dishSelections && input.dishSelections.length > 0) {
       await this.validateDishSelections(
         input.dishSelections,
@@ -80,7 +75,6 @@ class ReservationMenuService {
       );
     }
 
-    // 4. Get selected options
     const selectedOptions = input.selectedOptions || [];
     const optionIds = selectedOptions.map(opt => opt.optionId);
     
@@ -91,7 +85,6 @@ class ReservationMenuService {
       },
     }) : [];
 
-    // 5. Build menu snapshot with dishSelections
     const snapshot = await this.buildMenuSnapshot(
       menuPackage,
       input.dishSelections || [],
@@ -102,7 +95,6 @@ class ReservationMenuService {
       toddlers
     );
 
-    // 6. Calculate prices
     const packagePrice = this.calculatePackagePrice(
       menuPackage,
       adults,
@@ -118,7 +110,6 @@ class ReservationMenuService {
 
     const totalMenuPrice = packagePrice + optionsPrice;
 
-    // 7. Save or update snapshot
     const menuSnapshot = await prisma.reservationMenuSnapshot.upsert({
       where: { reservationId },
       create: {
@@ -147,7 +138,6 @@ class ReservationMenuService {
       },
     });
 
-    // 8. Return formatted response
     return this.formatMenuResponse(menuSnapshot, adults, children, toddlers);
   }
 
@@ -178,7 +168,6 @@ class ReservationMenuService {
     reservationId: string,
     input: MenuSelectionInput
   ): Promise<any> {
-    // Reuse selectMenu logic (upsert handles both create and update)
     return this.selectMenu(reservationId, input);
   }
 
@@ -195,9 +184,6 @@ class ReservationMenuService {
   // PRIVATE HELPERS
   // ═════════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Validate dish selections against category min/max rules
-   */
   private async validateDishSelections(
     dishSelections: CategorySelectionDTO[],
     categorySettings: any[]
@@ -234,9 +220,6 @@ class ReservationMenuService {
     }
   }
 
-  /**
-   * Build menu snapshot with full data
-   */
   private async buildMenuSnapshot(
     menuPackage: any,
     dishSelections: CategorySelectionDTO[],
@@ -246,7 +229,6 @@ class ReservationMenuService {
     children: number,
     toddlers: number
   ): Promise<MenuSnapshotData> {
-    // Enrich dishSelections with full dish data
     const enrichedDishSelections = await Promise.all(
       dishSelections.map(async (catSelection) => {
         const categorySetting = menuPackage.categorySettings.find(
@@ -282,7 +264,6 @@ class ReservationMenuService {
       })
     );
 
-    // Filter out null entries
     const validDishSelections = enrichedDishSelections.filter(Boolean);
 
     return {
@@ -310,15 +291,12 @@ class ReservationMenuService {
       prices: {
         packageTotal: this.calculatePackagePrice(menuPackage, adults, children, toddlers),
         optionsTotal: this.calculateOptionsPrice(options, selectedOptions, adults + children + toddlers),
-        total: 0, // Will be calculated
+        total: 0,
       },
       createdAt: new Date().toISOString(),
     };
   }
 
-  /**
-   * Calculate package price
-   */
   private calculatePackagePrice(
     menuPackage: any,
     adults: number,
@@ -332,9 +310,6 @@ class ReservationMenuService {
     return adults * adultPrice + children * childPrice + toddlers * toddlerPrice;
   }
 
-  /**
-   * Calculate options price
-   */
   private calculateOptionsPrice(
     options: any[],
     selectedOptions: any[],
@@ -356,9 +331,6 @@ class ReservationMenuService {
     }, 0);
   }
 
-  /**
-   * Format menu response
-   */
   private formatMenuResponse(
     snapshot: any,
     adults: number,
