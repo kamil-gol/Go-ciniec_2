@@ -11,12 +11,14 @@ import clientRoutes from '@/routes/client.routes';
 import eventTypeRoutes from '@/routes/eventType.routes';
 import reservationRoutes from '@/routes/reservation.routes';
 import depositRoutes from '@/routes/deposit.routes';
+import reservationDepositRoutes from '@/routes/reservation-deposit.routes';
 import queueRoutes from '@/routes/queue.routes';
 import menuRoutes from '@/routes/menu.routes';
 import dishRoutes from '@/routes/dish.routes';
 import dishCategoryRoutes from '@/routes/dish-category.routes';
 import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
 import queueService from '@/services/queue.service';
+import depositService from '@/services/deposit.service';
 
 // Validate environment variables early
 validateEnv();
@@ -102,6 +104,7 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/event-types', eventTypeRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/deposits', depositRoutes);
+app.use('/api/reservations/:reservationId/deposits', reservationDepositRoutes);
 app.use('/api/queue', queueRoutes);
 
 /**
@@ -146,8 +149,9 @@ const server = app.listen(PORT, () => {
   logger.info(`Server running on http://localhost:${PORT}`);
   logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
   
-  // Setup cron job for auto-canceling expired RESERVED reservations
+  // Setup cron jobs
   setupAutoCancelCron();
+  setupDepositOverdueCron();
 });
 
 /**
@@ -175,6 +179,32 @@ function setupAutoCancelCron() {
   });
   
   logger.info('Auto-cancel cron job scheduled for 00:01 AM daily');
+}
+
+/**
+ * Setup Deposit Overdue Cron Job
+ * Runs daily at 06:00 AM to mark overdue deposits
+ */
+function setupDepositOverdueCron() {
+  cron.schedule('0 6 * * *', async () => {
+    logger.info('[CRON] Running deposit overdue check...');
+    
+    try {
+      const result = await depositService.autoMarkOverdue();
+      
+      if (result.markedOverdueCount > 0) {
+        logger.info(
+          `[CRON] Deposit overdue check completed: ${result.markedOverdueCount} deposits marked as overdue`
+        );
+      } else {
+        logger.info('[CRON] Deposit overdue check completed: No overdue deposits found');
+      }
+    } catch (error: any) {
+      logger.error('[CRON] Deposit overdue check failed:', error.message);
+    }
+  });
+  
+  logger.info('Deposit overdue cron job scheduled for 06:00 AM daily');
 }
 
 /**

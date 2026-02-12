@@ -178,28 +178,62 @@ model ReservationHistory {
   @@index([createdAt])
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 💰 DEPOSIT SYSTEM - synced with actual DB structure
+// ═══════════════════════════════════════════════════════════════
+
 model Deposit {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  reservationId   String   @db.Uuid
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId       String   @db.Uuid
 
-  amount          Decimal  @db.Decimal(10, 2)
-  remainingAmount Decimal  @db.Decimal(10, 2)
-  dueDate         DateTime
-  status          String   @default("PENDING") @db.VarChar(20)
-  paid            Boolean  @default(false)
-  paidAt          DateTime?
-  paymentMethod   String?  @db.VarChar(50)
+  amount              Decimal  @db.Decimal(10, 2)
+  remainingAmount     Decimal  @db.Decimal(10, 2)
+  paidAmount          Decimal  @default(0) @db.Decimal(10, 2)
+  dueDate             String   @db.VarChar(10)
+  status              String   @default("PENDING") @db.VarChar(20)
+  paid                Boolean  @default(false)
+  paidAt              DateTime?
+  paymentMethod       String?  @db.VarChar(50)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  title               String?  @db.VarChar(255)
+  description         String?  @db.Text
+  internalNotes       String?  @db.Text
+  receiptNumber       String?  @unique @db.VarChar(50)
+  confirmationPdfUrl  String?  @db.Text
+  reminderSentAt      DateTime?
 
-  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  reservation         Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  payments            DepositPayment[]
 
   @@index([reservationId])
   @@index([dueDate])
   @@index([status])
   @@index([paid])
+  @@index([receiptNumber])
+  @@index([reminderSentAt])
 }
+
+model DepositPayment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  depositId     String   @db.Uuid
+
+  amount        Decimal  @db.Decimal(10, 2)
+  paymentMethod String?  @db.VarChar(50)
+  paidAt        DateTime @default(now())
+  notes         String?  @db.Text
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  deposit       Deposit  @relation(fields: [depositId], references: [id], onDelete: Cascade)
+
+  @@index([depositId])
+}
+
+// ═══════════════════════════════════════════════════════════════
 
 model ActivityLog {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
