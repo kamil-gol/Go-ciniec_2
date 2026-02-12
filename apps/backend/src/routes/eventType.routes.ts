@@ -1,58 +1,59 @@
 /**
  * EventType Routes
- * Define routes for event type management
+ * MIGRATED: asyncHandler + validateUUID
  */
 
 import { Router } from 'express';
 import eventTypeController from '../controllers/eventType.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin } from '../middlewares/roles';
+import { asyncHandler } from '../middlewares/asyncHandler';
+import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
 
-/**
- * @route   POST /api/event-types
- * @desc    Create a new event type
- * @access  Admin only
- */
-router.post('/', authMiddleware, requireAdmin, (req, res) => {
-  eventTypeController.createEventType(req, res);
-});
+router.post(
+  '/',
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await eventTypeController.createEventType(req, res);
+  })
+);
 
-/**
- * @route   GET /api/event-types
- * @desc    Get all event types
- * @access  Public (no auth required)
- */
-router.get('/', (req, res) => {
-  eventTypeController.getEventTypes(req, res);
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    await eventTypeController.getEventTypes(req, res);
+  })
+);
 
-/**
- * @route   GET /api/event-types/:id
- * @desc    Get event type by ID
- * @access  Public (no auth required)
- */
-router.get('/:id', (req, res) => {
-  eventTypeController.getEventTypeById(req, res);
-});
+router.get(
+  '/:id',
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await eventTypeController.getEventTypeById(req, res);
+  })
+);
 
-/**
- * @route   PUT /api/event-types/:id
- * @desc    Update event type
- * @access  Admin only
- */
-router.put('/:id', authMiddleware, requireAdmin, (req, res) => {
-  eventTypeController.updateEventType(req, res);
-});
+router.put(
+  '/:id',
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await eventTypeController.updateEventType(req, res);
+  })
+);
 
-/**
- * @route   DELETE /api/event-types/:id
- * @desc    Delete event type
- * @access  Admin only
- */
-router.delete('/:id', authMiddleware, requireAdmin, (req, res) => {
-  eventTypeController.deleteEventType(req, res);
-});
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await eventTypeController.deleteEventType(req, res);
+  })
+);
 
 export default router;

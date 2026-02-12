@@ -1,58 +1,61 @@
 /**
  * Hall Routes
- * Define routes for hall management
+ * MIGRATED: asyncHandler + validateUUID
  */
 
 import { Router } from 'express';
 import hallController from '../controllers/hall.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin } from '../middlewares/roles';
+import { asyncHandler } from '../middlewares/asyncHandler';
+import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
 
-/**
- * @route   POST /api/halls
- * @desc    Create a new hall
- * @access  Admin only
- */
-router.post('/', authMiddleware, requireAdmin, (req, res) => {
-  hallController.createHall(req, res);
-});
+router.post(
+  '/',
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await hallController.createHall(req, res);
+  })
+);
 
-/**
- * @route   GET /api/halls
- * @desc    Get all halls with optional filters
- * @access  Authenticated (all roles)
- */
-router.get('/', authMiddleware, (req, res) => {
-  hallController.getHalls(req, res);
-});
+router.get(
+  '/',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    await hallController.getHalls(req, res);
+  })
+);
 
-/**
- * @route   GET /api/halls/:id
- * @desc    Get hall by ID
- * @access  Authenticated (all roles)
- */
-router.get('/:id', authMiddleware, (req, res) => {
-  hallController.getHallById(req, res);
-});
+router.get(
+  '/:id',
+  authMiddleware,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await hallController.getHallById(req, res);
+  })
+);
 
-/**
- * @route   PUT /api/halls/:id
- * @desc    Update hall
- * @access  Admin only
- */
-router.put('/:id', authMiddleware, requireAdmin, (req, res) => {
-  hallController.updateHall(req, res);
-});
+router.put(
+  '/:id',
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await hallController.updateHall(req, res);
+  })
+);
 
-/**
- * @route   DELETE /api/halls/:id
- * @desc    Delete hall (soft delete)
- * @access  Admin only
- */
-router.delete('/:id', authMiddleware, requireAdmin, (req, res) => {
-  hallController.deleteHall(req, res);
-});
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await hallController.deleteHall(req, res);
+  })
+);
 
 export default router;
