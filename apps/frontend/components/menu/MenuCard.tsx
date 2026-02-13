@@ -156,7 +156,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
                 'text-sm font-semibold flex items-center gap-2',
                 accent.text, accent.textDark
               )}>
-                Kliknij aby wybra\u0107 \u2192
+                {'Kliknij aby wybra\u0107 \u2192'}
               </div>
             </div>
           )}

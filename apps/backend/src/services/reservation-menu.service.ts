@@ -2,6 +2,7 @@
  * Reservation Menu Service
  * Handles menu selection for reservations
  * UPDATED: Added recalculateForGuestChange for Phase C integration
+ * FIX: formatMenuResponse now exposes menuTemplateId + packageId from DB columns
  */
 
 import { Prisma } from '@prisma/client';
@@ -257,10 +258,17 @@ class ReservationMenuService {
     const menuData = snapshot.menuData as MenuSnapshotData;
     return {
       snapshot: {
-        id: snapshot.id, reservationId: snapshot.reservationId, menuData,
-        adultsCount: snapshot.adultsCount, childrenCount: snapshot.childrenCount,
-        toddlersCount: snapshot.toddlersCount, snapshotDate: snapshot.selectedAt.toISOString(),
-        createdAt: snapshot.selectedAt.toISOString(), updatedAt: snapshot.updatedAt.toISOString()
+        id: snapshot.id,
+        reservationId: snapshot.reservationId,
+        menuData,
+        menuTemplateId: snapshot.menuTemplateId,
+        packageId: snapshot.packageId,
+        adultsCount: snapshot.adultsCount,
+        childrenCount: snapshot.childrenCount,
+        toddlersCount: snapshot.toddlersCount,
+        snapshotDate: snapshot.selectedAt.toISOString(),
+        createdAt: snapshot.selectedAt.toISOString(),
+        updatedAt: snapshot.updatedAt.toISOString()
       },
       priceBreakdown: {
         packageCost: {

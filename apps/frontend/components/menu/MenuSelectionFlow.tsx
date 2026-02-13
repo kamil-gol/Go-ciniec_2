@@ -5,7 +5,7 @@
  * Premium UI with gradients and animations
  * 
  * PHASE A: Guest counts come from reservation (read-only, no step 4)
- * FIX v2: Always fetch package by ID to reliably find the template
+ * FIX v3: Backend now exposes menuTemplateId+packageId in API response
  */
 
 'use client';
@@ -88,7 +88,7 @@ export function MenuSelectionFlow({
   // Total guests calculated from reservation props (read-only)
   const totalGuests = adults + children + toddlers;
 
-  // ── Queries ────────────────────────────────────────────────────────
+  // \u2500\u2500 Queries \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ 
     eventTypeId,
     isActive: true 
@@ -97,33 +97,53 @@ export function MenuSelectionFlow({
   // Always fetch packages for selected template
   const { data: packages, isLoading: packagesLoading } = useMenuPackages(selectedTemplate?.id);
   
-  // ALWAYS fetch the initial package if we have packageId (primary init strategy)
+  // Fetch the initial package if we have packageId (primary init strategy)
   const { data: initialPackage, isLoading: initialPackageLoading } = useMenuPackage(
     initialSelection?.packageId && !isInitialized ? initialSelection.packageId : undefined
   );
   
   const { data: options, isLoading: optionsLoading } = useMenuOptions({ isActive: true });
 
-  // ── Initialize from initialSelection ──────────────────────────────
+  // \u2500\u2500 Initialize from initialSelection \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   useEffect(() => {
-    if (!initialSelection || isInitialized || !templates || templates.length === 0) return;
+    if (!initialSelection || isInitialized) return;
+    if (!templates || templates.length === 0) return;
     
-    // We need the package to find the template
-    if (!initialPackage) return; // still loading
+    // Strategy 1: Use templateId directly (from snapshot.menuTemplateId)
+    // Strategy 2: Fetch package by packageId, get menuTemplateId from it
+    let resolvedTemplateId = initialSelection.templateId;
     
-    // Find the template that owns this package
-    const templateId = initialPackage.menuTemplateId || initialSelection.templateId;
-    const template = templates.find(t => t.id === templateId);
+    if (!resolvedTemplateId && initialPackage) {
+      resolvedTemplateId = (initialPackage as any).menuTemplateId;
+    }
     
-    if (!template) {
-      console.warn('[MenuSelectionFlow] Template not found for ID:', templateId, 'Available:', templates.map(t => t.id));
-      setIsInitialized(true); // give up, show step 1
+    // If we have packageId but package hasn't loaded yet, wait
+    if (!resolvedTemplateId && initialSelection.packageId && !initialPackage && initialPackageLoading) {
+      return; // still loading
+    }
+    
+    if (!resolvedTemplateId) {
+      console.warn('[MenuSelectionFlow] Could not resolve templateId. templateId:', initialSelection.templateId, 'package:', initialPackage);
+      setIsInitialized(true);
       return;
     }
     
-    // Set template and package
+    const template = templates.find(t => t.id === resolvedTemplateId);
+    if (!template) {
+      console.warn('[MenuSelectionFlow] Template not found:', resolvedTemplateId, 'Available:', templates.map(t => ({ id: t.id, name: t.name })));
+      setIsInitialized(true);
+      return;
+    }
+    
+    console.log('[MenuSelectionFlow] Init success. Template:', template.name, 'Package:', initialPackage?.name || 'loading...');
+    
+    // Set template
     setSelectedTemplate(template);
-    setSelectedPackage(initialPackage);
+    
+    // Set package if loaded
+    if (initialPackage) {
+      setSelectedPackage(initialPackage);
+    }
     
     // Restore options
     if (initialSelection.selectedOptions && initialSelection.selectedOptions.length > 0) {
@@ -140,14 +160,16 @@ export function MenuSelectionFlow({
     }
 
     // Jump to the furthest completed step
-    if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+    if (initialPackage && initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
       setCurrentStep('options');
-    } else {
+    } else if (initialPackage) {
       setCurrentStep('dishes');
+    } else {
+      setCurrentStep('package');
     }
     
     setIsInitialized(true);
-  }, [initialSelection, templates, initialPackage, isInitialized]);
+  }, [initialSelection, templates, initialPackage, initialPackageLoading, isInitialized]);
 
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
     { id: 'template', label: 'Wyb\u00f3r Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
@@ -220,7 +242,15 @@ export function MenuSelectionFlow({
   };
 
   const handleComplete = () => {
-    if (!selectedTemplate || !selectedPackage) return;
+    if (!selectedTemplate || !selectedPackage) {
+      console.error('[MenuSelectionFlow] handleComplete called but selectedTemplate or selectedPackage is missing!', { selectedTemplate, selectedPackage });
+      toast({
+        title: 'B\u0142\u0105d',
+        description: 'Nie wybrano menu lub pakietu. Spr\u00f3buj ponownie.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const selectedOptions: SelectedOption[] = Object.entries(optionQuantities)
       .filter(([_, qty]) => qty > 0)
