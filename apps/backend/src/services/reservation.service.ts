@@ -1,7 +1,7 @@
 /**
  * Reservation Service
  * Business logic for reservation management with advanced features
- * UPDATED: Prisma singleton, N+1 fix, pagination
+ * UPDATED: Prisma singleton, N+1 fix, pagination, CASCADE deposit cancellation
  */
 
 import { prisma } from '@/lib/prisma';
@@ -624,6 +624,7 @@ export class ReservationService {
 
   /**
    * Update reservation status
+   * CASCADE: If new status is CANCELLED → auto-cancel pending deposits
    */
   async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
@@ -633,6 +634,41 @@ export class ReservationService {
 
     this.validateStatusTransition(existingReservation.status, data.status);
 
+    // Use transaction for atomicity when cancelling
+    if (data.status === ReservationStatus.CANCELLED) {
+      const reservation = await prisma.$transaction(async (tx) => {
+        // 1. Update reservation status
+        const updatedReservation = await tx.reservation.update({
+          where: { id },
+          data: { status: data.status },
+          include: RESERVATION_INCLUDE
+        });
+
+        // 2. Cascade: cancel all PENDING and OVERDUE deposits
+        const cancelledDeposits = await this.cascadeCancelDeposits(tx, id, userId, data.reason);
+
+        // 3. History entry for status change
+        await tx.reservationHistory.create({
+          data: {
+            reservationId: id,
+            changedByUserId: userId,
+            changeType: 'STATUS_CHANGED',
+            fieldName: 'status',
+            oldValue: existingReservation.status,
+            newValue: data.status,
+            reason: data.reason
+              ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
+              : `Status changed${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
+          }
+        });
+
+        return updatedReservation;
+      });
+
+      return reservation as any;
+    }
+
+    // Non-cancel status changes — no cascade needed
     const reservation = await prisma.reservation.update({
       where: { id },
       data: { status: data.status },
@@ -645,6 +681,7 @@ export class ReservationService {
 
   /**
    * Cancel reservation (soft delete)
+   * CASCADE: Auto-cancels all PENDING and OVERDUE deposits
    */
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
@@ -654,12 +691,82 @@ export class ReservationService {
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error('Reservation is already cancelled');
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error('Cannot cancel completed reservation');
 
-    await prisma.reservation.update({
-      where: { id },
-      data: { status: ReservationStatus.CANCELLED, archivedAt: new Date() }
+    await prisma.$transaction(async (tx) => {
+      // 1. Cancel the reservation
+      await tx.reservation.update({
+        where: { id },
+        data: { status: ReservationStatus.CANCELLED, archivedAt: new Date() }
+      });
+
+      // 2. Cascade: cancel all PENDING and OVERDUE deposits
+      const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
+
+      // 3. History entry
+      await tx.reservationHistory.create({
+        data: {
+          reservationId: id,
+          changedByUserId: userId,
+          changeType: 'CANCELLED',
+          fieldName: 'status',
+          oldValue: existingReservation.status,
+          newValue: ReservationStatus.CANCELLED,
+          reason: reason
+            ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
+            : `Reservation cancelled${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
+        }
+      });
+    });
+  }
+
+  /**
+   * CASCADE: Cancel all PENDING and OVERDUE deposits for a reservation
+   * Returns the number of deposits cancelled.
+   * Works inside a Prisma transaction context.
+   */
+  private async cascadeCancelDeposits(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    reservationId: string,
+    userId: string,
+    reason?: string
+  ): Promise<number> {
+    // Find deposits eligible for cascade cancellation
+    const pendingDeposits = await tx.deposit.findMany({
+      where: {
+        reservationId,
+        status: { in: ['PENDING', 'OVERDUE'] }
+      }
     });
 
-    await this.createHistoryEntry(id, userId, 'CANCELLED', 'status', existingReservation.status, ReservationStatus.CANCELLED, reason || 'Reservation cancelled');
+    if (pendingDeposits.length === 0) return 0;
+
+    // Bulk update all pending/overdue deposits to CANCELLED
+    await tx.deposit.updateMany({
+      where: {
+        reservationId,
+        status: { in: ['PENDING', 'OVERDUE'] }
+      },
+      data: {
+        status: 'CANCELLED',
+        updatedAt: new Date()
+      }
+    });
+
+    // Create individual history entries for each cancelled deposit
+    for (const deposit of pendingDeposits) {
+      await tx.reservationHistory.create({
+        data: {
+          reservationId,
+          changedByUserId: userId,
+          changeType: 'DEPOSIT_CASCADE_CANCELLED',
+          fieldName: 'deposit',
+          oldValue: deposit.status,
+          newValue: 'CANCELLED',
+          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
+        }
+      });
+    }
+
+    return pendingDeposits.length;
   }
 
   private async validateUserId(userId: string): Promise<void> {
