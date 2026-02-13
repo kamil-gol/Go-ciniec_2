@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
+import { ReservationDepositsSection } from '@/components/reservations/ReservationDepositsSection'
 
 const statusConfig = {
   PENDING: {
@@ -56,7 +57,6 @@ export default function ReservationDetailsPage() {
 
   const reservationId = params.id as string
 
-  // React Query — auto-caches, auto-refetches, no manual state management
   const { data: reservation, isLoading, isError } = useReservation(reservationId)
   const cancelMutation = useCancelReservation()
 
@@ -148,7 +148,6 @@ export default function ReservationDetailsPage() {
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
           <div className="relative z-10 space-y-6">
-            {/* Back Button */}
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -156,7 +155,6 @@ export default function ReservationDetailsPage() {
               </Button>
             </Link>
 
-            {/* Title Section */}
             <div className="flex justify-between items-start">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -184,7 +182,6 @@ export default function ReservationDetailsPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <Button 
                   size="lg" 
@@ -199,7 +196,6 @@ export default function ReservationDetailsPage() {
             </div>
           </div>
 
-          {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         </div>
@@ -341,7 +337,7 @@ export default function ReservationDetailsPage() {
             )}
           </div>
 
-          {/* Right Column - Stats & Pricing */}
+          {/* Right Column - Stats, Pricing, Deposits, Actions */}
           <div className="space-y-6">
             {/* Guests Breakdown */}
             <Card className="border-0 shadow-xl overflow-hidden">
@@ -416,6 +412,12 @@ export default function ReservationDetailsPage() {
                 </div>
               </div>
             </Card>
+
+            {/* ═══ Deposits Section (NEW) ═══ */}
+            <ReservationDepositsSection
+              reservationId={reservation.id}
+              totalPrice={Number(reservation.totalPrice) || 0}
+            />
 
             {/* Quick Actions */}
             <Card className="border-0 shadow-xl">
