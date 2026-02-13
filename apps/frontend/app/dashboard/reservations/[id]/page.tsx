@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft, Edit, Trash2, CheckCircle2, XCircle, Clock, 
-  Calendar, Users, DollarSign, Building2, User, Mail, Phone,
+  Calendar, Users, Building2, User, Mail, Phone,
   FileText, Download, Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
-import { ReservationDepositsSection } from '@/components/reservations/ReservationDepositsSection'
+import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
 
 const statusConfig = {
   PENDING: {
@@ -307,7 +307,7 @@ export default function ReservationDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Menu Section */}
+            {/* Menu Section (visual only — no price breakdown, that's in Financial Summary) */}
             {reservation.eventType?.id && eventDate && (
               <ReservationMenuSection
                 reservationId={reservation.id}
@@ -337,7 +337,7 @@ export default function ReservationDetailsPage() {
             )}
           </div>
 
-          {/* Right Column - Stats, Pricing, Deposits, Actions */}
+          {/* Right Column - Guests, Financial Summary, Quick Actions */}
           <div className="space-y-6">
             {/* Guests Breakdown */}
             <Card className="border-0 shadow-xl overflow-hidden">
@@ -383,39 +383,15 @@ export default function ReservationDetailsPage() {
               </div>
             </Card>
 
-            {/* Pricing */}
-            <Card className="border-0 shadow-xl overflow-hidden">
-              <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                    <DollarSign className="h-5 w-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold">Cennik</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Cena za dorosłego</span>
-                    <span className="font-semibold">{reservation.pricePerAdult} zł</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Cena za dziecko</span>
-                    <span className="font-semibold">{reservation.pricePerChild} zł</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Cena za malucha</span>
-                    <span className="font-semibold">{reservation.pricePerToddler} zł</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
-                    <span className="font-bold">Suma całkowita</span>
-                    <span className="text-2xl font-bold">{reservation.totalPrice} zł</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* ═══ Deposits Section (NEW) ═══ */}
-            <ReservationDepositsSection
+            {/* ═══ UNIFIED FINANCIAL SUMMARY (replaces old Cennik + Deposits) ═══ */}
+            <ReservationFinancialSummary
               reservationId={reservation.id}
+              adults={reservation.adults || 0}
+              children={reservation.children || 0}
+              toddlers={reservation.toddlers || 0}
+              pricePerAdult={Number(reservation.pricePerAdult) || 0}
+              pricePerChild={Number(reservation.pricePerChild) || 0}
+              pricePerToddler={Number(reservation.pricePerToddler) || 0}
               totalPrice={Number(reservation.totalPrice) || 0}
             />
 
