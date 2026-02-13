@@ -46,22 +46,34 @@ export function ReservationMenuSection({
 
   const handleMenuSelected = async (selection: any) => {
     try {
-      await selectMenuMutation.mutateAsync({
-        reservationId,
-        selection
-      })
-
-      toast({
-        title: 'Sukces!',
-        description: 'Menu zostało dodane do rezerwacji',
-      })
+      if (hasMenu) {
+        // Update existing menu
+        await updateMenuMutation.mutateAsync({
+          reservationId,
+          selection
+        })
+        toast({
+          title: 'Sukces!',
+          description: 'Menu zostało zaktualizowane',
+        })
+      } else {
+        // Create new menu
+        await selectMenuMutation.mutateAsync({
+          reservationId,
+          selection
+        })
+        toast({
+          title: 'Sukces!',
+          description: 'Menu zostało dodane do rezerwacji',
+        })
+      }
       
       setShowSelectionDialog(false)
       onMenuUpdated?.()
     } catch (error: any) {
       toast({
         title: 'Błąd',
-        description: error.message || 'Nie udało się dodać menu',
+        description: error.message || 'Nie udało się zapisać menu',
         variant: 'destructive',
       })
     }
@@ -90,22 +102,32 @@ export function ReservationMenuSection({
     setShowSelectionDialog(false)
   }
 
-  // Build initial selection for edit mode
+  // Build initial selection for edit mode — FIX: include templateId
   const buildInitialSelection = () => {
     if (!hasMenu || !menuData?.snapshot) return undefined
-    const menuDataNested = menuData.snapshot.menuData || {}
-    const { packageId, selectedOptions, dishSelections } = menuDataNested
+    const snapshot = menuData.snapshot
+    const md = snapshot.menuData || {} as any
+    
+    // Extract IDs — try multiple paths for resilience
+    const templateId = md.templateId || md.menuTemplateId || undefined
+    const packageId = md.packageId || md.selectedPackageId || undefined
+    
+    if (!packageId) {
+      console.warn('⚠️ buildInitialSelection: packageId not found in snapshot.menuData', md)
+    }
+    
     return {
+      templateId,
       packageId,
-      selectedOptions: (selectedOptions || []).map((opt: any) => ({
+      selectedOptions: (md.selectedOptions || []).map((opt: any) => ({
         optionId: opt.optionId,
-        quantity: opt.quantity
+        quantity: opt.quantity || 1
       })),
-      dishSelections: (dishSelections || []).map((cat: any) => ({
+      dishSelections: (md.dishSelections || []).map((cat: any) => ({
         categoryId: cat.categoryId,
-        dishes: cat.dishes.map((dish: any) => ({
+        dishes: (cat.dishes || []).map((dish: any) => ({
           dishId: dish.dishId,
-          quantity: dish.quantity
+          quantity: dish.quantity || 1
         }))
       }))
     }
@@ -126,7 +148,7 @@ export function ReservationMenuSection({
   // Extract menu data if available
   const snapshot = menuData?.snapshot
   const priceBreakdown = menuData?.priceBreakdown
-  const menuDataNested = snapshot?.menuData || {}
+  const menuDataNested = snapshot?.menuData || {} as any
   const {
     packageName,
     packageDescription,
@@ -266,9 +288,9 @@ export function ReservationMenuSection({
                           <div className="flex items-center gap-2">
                             <Sparkles className="h-4 w-4 text-amber-600" />
                             <div>
-                              <p className="font-medium text-sm">{opt.optionName}</p>
+                              <p className="font-medium text-sm">{opt.optionName || opt.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {opt.priceUnit === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
+                                {opt.priceUnit === 'PER_PERSON' || opt.priceType === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
                               </p>
                             </div>
                           </div>

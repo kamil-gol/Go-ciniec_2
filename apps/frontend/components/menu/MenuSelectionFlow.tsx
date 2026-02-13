@@ -5,6 +5,7 @@
  * Premium UI with gradients and animations
  * 
  * PHASE A: Guest counts come from reservation (read-only, no step 4)
+ * FIX: Properly restore selected menu when editing (templateId + packageId from snapshot)
  */
 
 'use client';
@@ -92,15 +93,72 @@ export function MenuSelectionFlow({
     eventTypeId,
     isActive: true 
   });
+  
+  // Fetch packages for selected template (needed for edit mode)
   const { data: packages, isLoading: packagesLoading } = useMenuPackages(selectedTemplate?.id);
-  const { data: initialPackage, isLoading: initialPackageLoading } = useMenuPackage(
-    initialSelection?.packageId && !isInitialized ? initialSelection.packageId : undefined
+  
+  // Also try to fetch packages for the template from initialSelection (for edit mode init)
+  // We need to know the templateId to fetch packages. Get it from initialSelection or from fetching the package.
+  const initTemplateId = initialSelection?.templateId;
+  const { data: initTemplatePackages, isLoading: initPackagesLoading } = useMenuPackages(
+    initTemplateId && !isInitialized ? initTemplateId : undefined
   );
+  
+  // Fallback: fetch individual package if we only have packageId (no templateId)
+  const { data: initialPackage, isLoading: initialPackageLoading } = useMenuPackage(
+    initialSelection?.packageId && !initTemplateId && !isInitialized ? initialSelection.packageId : undefined
+  );
+  
   const { data: options, isLoading: optionsLoading } = useMenuOptions({ isActive: true });
 
-  // Initialize from initialSelection
+  // Initialize from initialSelection — FIX: handle both paths
   useEffect(() => {
-    if (initialSelection && !isInitialized && templates && initialPackage) {
+    if (!initialSelection || isInitialized || !templates) return;
+    
+    // Path A: We have templateId from snapshot (preferred — no extra fetch needed)
+    if (initTemplateId && initTemplatePackages) {
+      const template = templates.find(t => t.id === initTemplateId);
+      if (template) {
+        setSelectedTemplate(template);
+        
+        // Find the package in the loaded packages
+        if (initialSelection.packageId) {
+          const pkg = initTemplatePackages.find(p => p.id === initialSelection.packageId);
+          if (pkg) {
+            setSelectedPackage(pkg);
+          }
+        }
+        
+        // Restore options
+        if (initialSelection.selectedOptions) {
+          const quantities: Record<string, number> = {};
+          initialSelection.selectedOptions.forEach(opt => {
+            quantities[opt.optionId] = opt.quantity;
+          });
+          setOptionQuantities(quantities);
+        }
+
+        // Restore dish selections
+        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+          setDishSelections(initialSelection.dishSelections);
+        }
+
+        // Jump to the last completed step
+        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+          setCurrentStep('options');
+        } else if (initialSelection.packageId) {
+          setCurrentStep('dishes');
+        } else {
+          setCurrentStep('package');
+        }
+        
+        setIsInitialized(true);
+        return;
+      }
+    }
+    
+    // Path B: We only have packageId — fetch package to find template (legacy fallback)
+    if (initialPackage) {
       const template = templates.find(t => t.id === initialPackage.menuTemplateId);
       if (template) {
         setSelectedTemplate(template);
@@ -115,6 +173,7 @@ export function MenuSelectionFlow({
         }
 
         if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+          setDishSelections(initialSelection.dishSelections);
           setCurrentStep('options');
         } else {
           setCurrentStep('dishes');
@@ -123,7 +182,17 @@ export function MenuSelectionFlow({
         setIsInitialized(true);
       }
     }
-  }, [initialSelection, templates, initialPackage, isInitialized]);
+    
+    // Path C: No packageId at all but we have templateId — just select template
+    if (initTemplateId && !initialSelection.packageId && !isInitialized) {
+      const template = templates.find(t => t.id === initTemplateId);
+      if (template) {
+        setSelectedTemplate(template);
+        setCurrentStep('package');
+        setIsInitialized(true);
+      }
+    }
+  }, [initialSelection, templates, initTemplatePackages, initialPackage, isInitialized, initTemplateId]);
 
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
     { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
@@ -216,10 +285,19 @@ export function MenuSelectionFlow({
   };
 
   // Show loading when initializing from initialSelection
-  if (initialSelection && !isInitialized && (templatesLoading || initialPackageLoading)) {
+  const isInitLoading = initialSelection && !isInitialized && (
+    templatesLoading || 
+    initialPackageLoading || 
+    (initTemplateId ? initPackagesLoading : false)
+  );
+  
+  if (isInitLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Ładowanie wybranego menu...</p>
+        </div>
       </div>
     );
   }
@@ -353,6 +431,7 @@ export function MenuSelectionFlow({
                     <MenuCard
                       key={template.id}
                       template={template}
+                      isSelected={selectedTemplate?.id === template.id}
                       onSelect={handleTemplateSelect}
                     />
                   ))}
