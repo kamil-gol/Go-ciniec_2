@@ -3,6 +3,8 @@
  * 
  * Multi-step wizard for selecting menu, package, dishes, and options
  * Premium UI with gradients and animations
+ * 
+ * PHASE A: Guest counts come from reservation (read-only, no step 4)
  */
 
 'use client';
@@ -28,7 +30,7 @@ import {
 } from '@/components/menu';
 import { OptionsSelector } from '@/components/menu/OptionsSelector';
 import { DishSelector } from '@/components/menu/DishSelector';
-import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw } from 'lucide-react';
+import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -47,9 +49,10 @@ interface CategorySelection {
 interface MenuSelectionFlowProps {
   eventTypeId?: string;
   eventDate?: Date;
-  adults?: number;
-  children?: number;
-  toddlers?: number;
+  /** Guest counts from reservation (read-only, single source of truth) */
+  adults: number;
+  children: number;
+  toddlers: number;
   initialSelection?: {
     templateId?: string;
     packageId?: string;
@@ -60,14 +63,15 @@ interface MenuSelectionFlowProps {
   className?: string;
 }
 
-type Step = 'template' | 'package' | 'dishes' | 'guests' | 'options';
+// 4 steps: template → package → dishes → options (guests removed — read from reservation)
+type Step = 'template' | 'package' | 'dishes' | 'options';
 
 export function MenuSelectionFlow({ 
   eventTypeId,
   eventDate,
-  adults = 50,
-  children = 10,
-  toddlers = 5,
+  adults,
+  children,
+  toddlers,
   initialSelection,
   onComplete,
   className 
@@ -77,13 +81,11 @@ export function MenuSelectionFlow({
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
   const [selectedPackage, setSelectedPackage] = useState<MenuPackage>();
   const [dishSelections, setDishSelections] = useState<CategorySelection[]>(initialSelection?.dishSelections || []);
-  const [guestCounts, setGuestCounts] = useState({
-    adults,
-    children,
-    toddlers,
-  });
   const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Total guests calculated from reservation props (read-only)
+  const totalGuests = adults + children + toddlers;
 
   // Queries
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ 
@@ -99,13 +101,11 @@ export function MenuSelectionFlow({
   // Initialize from initialSelection
   useEffect(() => {
     if (initialSelection && !isInitialized && templates && initialPackage) {
-      // Find template from package
       const template = templates.find(t => t.id === initialPackage.menuTemplateId);
       if (template) {
         setSelectedTemplate(template);
         setSelectedPackage(initialPackage);
         
-        // Convert selectedOptions to optionQuantities format
         if (initialSelection.selectedOptions) {
           const quantities: Record<string, number> = {};
           initialSelection.selectedOptions.forEach(opt => {
@@ -114,11 +114,10 @@ export function MenuSelectionFlow({
           setOptionQuantities(quantities);
         }
 
-        // Start from appropriate step
         if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
-          setCurrentStep('options'); // Skip to options if already has dishes
+          setCurrentStep('options');
         } else {
-          setCurrentStep('dishes'); // Go to dishes selection
+          setCurrentStep('dishes');
         }
         
         setIsInitialized(true);
@@ -130,41 +129,34 @@ export function MenuSelectionFlow({
     { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
     { id: 'package', label: 'Pakiet', icon: Check, gradient: 'from-blue-500 to-cyan-500' },
     { id: 'dishes', label: 'Dania', icon: UtensilsCrossed, gradient: 'from-red-500 to-rose-500' },
-    { id: 'guests', label: 'Goście', icon: Users, gradient: 'from-purple-500 to-pink-500' },
     { id: 'options', label: 'Dodatki', icon: Sparkles, gradient: 'from-green-500 to-emerald-500' },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
 
-  // Check if user can navigate to a step
   const canNavigateToStep = (stepId: Step): boolean => {
     switch (stepId) {
       case 'template':
-        return true; // Can always go back to template
+        return true;
       case 'package':
-        return !!selectedTemplate; // Need template selected
+        return !!selectedTemplate;
       case 'dishes':
-        return !!selectedTemplate && !!selectedPackage; // Need template and package
-      case 'guests':
-        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0; // Need dishes selected
+        return !!selectedTemplate && !!selectedPackage;
       case 'options':
-        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0; // Need dishes selected
+        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0;
       default:
         return false;
     }
   };
 
-  // Handle step click
   const handleStepClick = (stepId: Step) => {
     const stepIndex = steps.findIndex(s => s.id === stepId);
     
-    // Allow navigation to current or completed steps
     if (stepIndex <= currentStepIndex) {
       setCurrentStep(stepId);
       return;
     }
 
-    // Check if can navigate forward
     if (!canNavigateToStep(stepId)) {
       toast({
         title: 'Nie można przejść dalej',
@@ -178,7 +170,6 @@ export function MenuSelectionFlow({
   };
 
   const handleTemplateSelect = (template: MenuTemplate) => {
-    // Only reset package and dishes if switching to a DIFFERENT template
     if (selectedTemplate?.id !== template.id) {
       setSelectedTemplate(template);
       setSelectedPackage(undefined);
@@ -188,7 +179,6 @@ export function MenuSelectionFlow({
         description: 'Wybierz ponownie pakiet i dania dla nowego menu.',
       });
     } else {
-      // Same template - just update reference but keep everything
       setSelectedTemplate(template);
     }
     setCurrentStep('package');
@@ -202,10 +192,7 @@ export function MenuSelectionFlow({
 
   const handleDishesComplete = (selections: CategorySelection[]) => {
     setDishSelections(selections);
-    setCurrentStep('guests');
-  };
-
-  const handleGuestsSubmit = () => {
+    // Skip guests step — go directly to options
     setCurrentStep('options');
   };
 
@@ -221,13 +208,12 @@ export function MenuSelectionFlow({
       packageId: selectedPackage.id,
       dishSelections,
       selectedOptions,
-      adults: guestCounts.adults,
-      children: guestCounts.children,
-      toddlers: guestCounts.toddlers,
+      // Guest counts from reservation (read-only, passed through)
+      adults,
+      children,
+      toddlers,
     });
   };
-
-  const totalGuests = guestCounts.adults + guestCounts.children + guestCounts.toddlers;
 
   // Show loading when initializing from initialSelection
   if (initialSelection && !isInitialized && (templatesLoading || initialPackageLoading)) {
@@ -240,10 +226,37 @@ export function MenuSelectionFlow({
 
   return (
     <div className={cn('space-y-8', className)}>
-      {/* Premium Progress Steps */}
+      {/* Guest Info Banner — read-only from reservation */}
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800">
+        <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-sm">
+          <Users className="h-4 w-4 text-white" />
+        </div>
+        <div className="flex-1 flex items-center gap-4">
+          <span className="text-sm font-medium">
+            <span className="font-bold">{adults}</span> dorosłych
+          </span>
+          <span className="text-purple-300">•</span>
+          <span className="text-sm font-medium">
+            <span className="font-bold">{children}</span> dzieci
+          </span>
+          <span className="text-purple-300">•</span>
+          <span className="text-sm font-medium">
+            <span className="font-bold">{toddlers}</span> maluchów
+          </span>
+          <span className="text-purple-300">•</span>
+          <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            {totalGuests} razem
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Info className="h-3.5 w-3.5" />
+          <span>Z rezerwacji</span>
+        </div>
+      </div>
+
+      {/* Premium Progress Steps (4 steps now) */}
       <div className="relative">
-        {/* Background gradient line */}
-        <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 via-purple-500 to-green-500 rounded-full opacity-20" />
+        <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 to-green-500 rounded-full opacity-20" />
         
         <div className="relative flex items-center justify-between">
           {steps.map((step, index) => {
@@ -258,7 +271,6 @@ export function MenuSelectionFlow({
                 className="flex flex-col items-center gap-2 flex-1"
                 onClick={() => handleStepClick(step.id)}
               >
-                {/* Step Circle */}
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ 
@@ -281,18 +293,15 @@ export function MenuSelectionFlow({
                     <StepIcon className="h-6 w-6" />
                   )}
                   
-                  {/* Glow effect for active step */}
                   {isActive && (
                     <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${step.gradient} blur-xl opacity-40 -z-10`} />
                   )}
 
-                  {/* Hover effect for clickable steps */}
                   {isClickable && !isActive && (
                     <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 hover:opacity-10 transition-opacity" />
                   )}
                 </motion.div>
                 
-                {/* Step Label */}
                 <span
                   className={cn(
                     'text-xs sm:text-sm font-semibold text-center transition-colors',
@@ -409,7 +418,7 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 3: Select Dishes (NEW!) */}
+          {/* Step 3: Select Dishes */}
           {currentStep === 'dishes' && selectedPackage && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
@@ -433,110 +442,7 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 4: Guest Counts */}
-          {currentStep === 'guests' && (
-            <div className="mx-auto max-w-2xl space-y-6">
-              <div className="text-center space-y-3">
-                <div className="inline-flex p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg mb-2">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Liczba Gości
-                </h2>
-                <p className="text-muted-foreground">
-                  Podaj przybliżoną liczbę uczestników
-                </p>
-              </div>
-
-              <div className="space-y-4 rounded-2xl border-2 bg-white dark:bg-gray-950 p-8 shadow-xl">
-                {/* Adults */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl">
-                  <label className="flex items-center gap-3 font-semibold text-lg">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-md">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    Dorośli
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={guestCounts.adults}
-                    onChange={(e) => setGuestCounts(prev => ({ ...prev, adults: parseInt(e.target.value) || 0 }))}
-                    className="w-28 rounded-xl border-2 border-purple-200 px-4 py-3 text-center text-xl font-bold focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transition-all"
-                  />
-                </div>
-
-                {/* Children */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl">
-                  <label className="flex items-center gap-3 font-semibold text-lg">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-md">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    Dzieci (do 12 lat)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={guestCounts.children}
-                    onChange={(e) => setGuestCounts(prev => ({ ...prev, children: parseInt(e.target.value) || 0 }))}
-                    className="w-28 rounded-xl border-2 border-blue-200 px-4 py-3 text-center text-xl font-bold focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all"
-                  />
-                </div>
-
-                {/* Toddlers */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl">
-                  <label className="flex items-center gap-3 font-semibold text-lg">
-                    <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-md">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    Maluchy (do 3 lat)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={guestCounts.toddlers}
-                    onChange={(e) => setGuestCounts(prev => ({ ...prev, toddlers: parseInt(e.target.value) || 0 }))}
-                    className="w-28 rounded-xl border-2 border-green-200 px-4 py-3 text-center text-xl font-bold focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all"
-                  />
-                </div>
-
-                {/* Total */}
-                <div className="border-t-2 pt-6 mt-6">
-                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-white shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-8 w-8" />
-                      <span className="text-xl font-bold">Razem:</span>
-                    </div>
-                    <span className="text-4xl font-bold">
-                      {totalGuests}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center gap-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentStep('dishes')}
-                  className="border-2 px-8"
-                >
-                  <ArrowLeft className="mr-2 h-5 w-5" />
-                  Wstecz
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={handleGuestsSubmit}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-8 shadow-lg"
-                >
-                  Dalej
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Select Options */}
+          {/* Step 4: Select Options (was step 5 before Phase A) */}
           {currentStep === 'options' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
@@ -578,7 +484,7 @@ export function MenuSelectionFlow({
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => setCurrentStep('guests')}
+                  onClick={() => setCurrentStep('dishes')}
                   className="border-2 px-8"
                 >
                   <ArrowLeft className="mr-2 h-5 w-5" />
