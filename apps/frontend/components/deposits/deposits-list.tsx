@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarDays, Building2 } from 'lucide-react'
+import { CalendarDays, Building2, ExternalLink } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -13,6 +13,7 @@ import { DepositStatusBadge } from './deposit-status-badge'
 import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { ArrowDownUp, Banknote, Smartphone, CreditCard } from 'lucide-react'
+import Link from 'next/link'
 
 interface DepositsListProps {
   deposits: Deposit[]
@@ -71,31 +72,34 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
             ? `${client.firstName[0]}${client.lastName[0]}`.toUpperCase()
             : '?'
 
+          const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
+
           return (
             <TableRow
               key={deposit.id}
               className="group hover:bg-rose-50/40 dark:hover:bg-rose-900/10 transition-colors"
             >
-              {/* Client */}
+              {/* Client — clickable link to reservation */}
               <TableCell>
-                <div className="flex items-center gap-3">
+                <Link href={reservationLink} className="flex items-center gap-3 group/link">
                   <div className="h-9 w-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                     {initials}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-medium text-sm truncate group-hover/link:text-rose-600 dark:group-hover/link:text-rose-400 transition-colors">
                       {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
+                      <ExternalLink className="inline h-3 w-3 ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                     </p>
                     <p className="text-xs text-neutral-500 truncate">
                       {client?.phone || ''}
                     </p>
                   </div>
-                </div>
+                </Link>
               </TableCell>
 
-              {/* Event */}
+              {/* Event — clickable link to reservation */}
               <TableCell>
-                <div className="flex items-center gap-2">
+                <Link href={reservationLink} className="flex items-center gap-2 group/link">
                   {eventType && (
                     <span
                       className="h-2.5 w-2.5 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
@@ -103,7 +107,9 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                     />
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{eventType?.name || 'Brak'}</p>
+                    <p className="text-sm font-medium truncate group-hover/link:text-rose-600 dark:group-hover/link:text-rose-400 transition-colors">
+                      {eventType?.name || 'Brak'}
+                    </p>
                     {eventDate && (
                       <p className="text-xs text-neutral-500 flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
@@ -111,7 +117,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                       </p>
                     )}
                   </div>
-                </div>
+                </Link>
               </TableCell>
 
               {/* Hall */}
