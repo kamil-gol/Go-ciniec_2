@@ -2,6 +2,7 @@
  * MenuCard Component
  *
  * Displays a menu template card with design-token styling
+ * Supports isSelected prop for edit mode highlighting
  */
 
 'use client';
@@ -19,11 +20,12 @@ const accent = moduleAccents.menu;
 
 interface MenuCardProps {
   template: MenuTemplate;
+  isSelected?: boolean;
   onSelect?: (template: MenuTemplate) => void;
   className?: string;
 }
 
-export function MenuCard({ template, onSelect, className }: MenuCardProps) {
+export function MenuCard({ template, isSelected, onSelect, className }: MenuCardProps) {
   const isActive = template.isActive;
 
   return (
@@ -34,7 +36,10 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
     >
       <div
         className={cn(
-          'group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden',
+          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden',
+          isSelected
+            ? 'border-green-500 ring-2 ring-green-500/50 shadow-green-100 dark:shadow-green-900/20'
+            : 'border-neutral-200/80 dark:border-neutral-700/50',
           className
         )}
         onClick={() => onSelect?.(template)}
@@ -48,33 +53,44 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
             )}>
               <UtensilsCrossed className="h-6 w-6 text-white" />
             </div>
-            <Badge
-              className={cn(
-                'border-0 shadow-none',
-                isActive
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-              )}
-            >
-              {isActive ? (
-                <>
+            <div className="flex items-center gap-2">
+              {isSelected && (
+                <Badge className="bg-green-500 text-white border-0 shadow-sm">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
-                  Aktywny
-                </>
-              ) : (
-                <>
-                  <Clock className="h-3 w-3 mr-1" />
-                  Nieaktywny
-                </>
+                  Wybrane
+                </Badge>
               )}
-            </Badge>
+              <Badge
+                className={cn(
+                  'border-0 shadow-none',
+                  isActive
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                )}
+              >
+                {isActive ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Aktywny
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-3 w-3 mr-1" />
+                    Nieaktywny
+                  </>
+                )}
+              </Badge>
+            </div>
           </div>
 
           {/* Title */}
           <div className="space-y-2">
             <h3 className={cn(
-              'text-xl font-bold text-neutral-900 dark:text-neutral-100 transition-colors',
-              `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
+              'text-xl font-bold transition-colors',
+              isSelected
+                ? 'text-green-700 dark:text-green-400'
+                : 'text-neutral-900 dark:text-neutral-100',
+              !isSelected && `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
             )}>
               {template.name}
             </h3>
@@ -134,14 +150,16 @@ export function MenuCard({ template, onSelect, className }: MenuCardProps) {
           )}
 
           {/* Hover Indicator */}
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-1">
-            <div className={cn(
-              'text-sm font-semibold flex items-center gap-2',
-              accent.text, accent.textDark
-            )}>
-              Kliknij aby wybra\u0107 \u2192
+          {!isSelected && (
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-1">
+              <div className={cn(
+                'text-sm font-semibold flex items-center gap-2',
+                accent.text, accent.textDark
+              )}>
+                Kliknij aby wybra\u0107 \u2192
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </motion.div>

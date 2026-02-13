@@ -5,7 +5,7 @@
  * Premium UI with gradients and animations
  * 
  * PHASE A: Guest counts come from reservation (read-only, no step 4)
- * FIX: Properly restore selected menu when editing (templateId + packageId from snapshot)
+ * FIX v2: Always fetch package by ID to reliably find the template
  */
 
 'use client';
@@ -64,7 +64,7 @@ interface MenuSelectionFlowProps {
   className?: string;
 }
 
-// 4 steps: template → package → dishes → options (guests removed — read from reservation)
+// 4 steps: template -> package -> dishes -> options
 type Step = 'template' | 'package' | 'dishes' | 'options';
 
 export function MenuSelectionFlow({ 
@@ -88,114 +88,69 @@ export function MenuSelectionFlow({
   // Total guests calculated from reservation props (read-only)
   const totalGuests = adults + children + toddlers;
 
-  // Queries
+  // ── Queries ────────────────────────────────────────────────────────
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ 
     eventTypeId,
     isActive: true 
   });
   
-  // Fetch packages for selected template (needed for edit mode)
+  // Always fetch packages for selected template
   const { data: packages, isLoading: packagesLoading } = useMenuPackages(selectedTemplate?.id);
   
-  // Also try to fetch packages for the template from initialSelection (for edit mode init)
-  // We need to know the templateId to fetch packages. Get it from initialSelection or from fetching the package.
-  const initTemplateId = initialSelection?.templateId;
-  const { data: initTemplatePackages, isLoading: initPackagesLoading } = useMenuPackages(
-    initTemplateId && !isInitialized ? initTemplateId : undefined
-  );
-  
-  // Fallback: fetch individual package if we only have packageId (no templateId)
+  // ALWAYS fetch the initial package if we have packageId (primary init strategy)
   const { data: initialPackage, isLoading: initialPackageLoading } = useMenuPackage(
-    initialSelection?.packageId && !initTemplateId && !isInitialized ? initialSelection.packageId : undefined
+    initialSelection?.packageId && !isInitialized ? initialSelection.packageId : undefined
   );
   
   const { data: options, isLoading: optionsLoading } = useMenuOptions({ isActive: true });
 
-  // Initialize from initialSelection — FIX: handle both paths
+  // ── Initialize from initialSelection ──────────────────────────────
   useEffect(() => {
-    if (!initialSelection || isInitialized || !templates) return;
+    if (!initialSelection || isInitialized || !templates || templates.length === 0) return;
     
-    // Path A: We have templateId from snapshot (preferred — no extra fetch needed)
-    if (initTemplateId && initTemplatePackages) {
-      const template = templates.find(t => t.id === initTemplateId);
-      if (template) {
-        setSelectedTemplate(template);
-        
-        // Find the package in the loaded packages
-        if (initialSelection.packageId) {
-          const pkg = initTemplatePackages.find(p => p.id === initialSelection.packageId);
-          if (pkg) {
-            setSelectedPackage(pkg);
-          }
-        }
-        
-        // Restore options
-        if (initialSelection.selectedOptions) {
-          const quantities: Record<string, number> = {};
-          initialSelection.selectedOptions.forEach(opt => {
-            quantities[opt.optionId] = opt.quantity;
-          });
-          setOptionQuantities(quantities);
-        }
-
-        // Restore dish selections
-        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
-          setDishSelections(initialSelection.dishSelections);
-        }
-
-        // Jump to the last completed step
-        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
-          setCurrentStep('options');
-        } else if (initialSelection.packageId) {
-          setCurrentStep('dishes');
-        } else {
-          setCurrentStep('package');
-        }
-        
-        setIsInitialized(true);
-        return;
-      }
+    // We need the package to find the template
+    if (!initialPackage) return; // still loading
+    
+    // Find the template that owns this package
+    const templateId = initialPackage.menuTemplateId || initialSelection.templateId;
+    const template = templates.find(t => t.id === templateId);
+    
+    if (!template) {
+      console.warn('[MenuSelectionFlow] Template not found for ID:', templateId, 'Available:', templates.map(t => t.id));
+      setIsInitialized(true); // give up, show step 1
+      return;
     }
     
-    // Path B: We only have packageId — fetch package to find template (legacy fallback)
-    if (initialPackage) {
-      const template = templates.find(t => t.id === initialPackage.menuTemplateId);
-      if (template) {
-        setSelectedTemplate(template);
-        setSelectedPackage(initialPackage);
-        
-        if (initialSelection.selectedOptions) {
-          const quantities: Record<string, number> = {};
-          initialSelection.selectedOptions.forEach(opt => {
-            quantities[opt.optionId] = opt.quantity;
-          });
-          setOptionQuantities(quantities);
-        }
+    // Set template and package
+    setSelectedTemplate(template);
+    setSelectedPackage(initialPackage);
+    
+    // Restore options
+    if (initialSelection.selectedOptions && initialSelection.selectedOptions.length > 0) {
+      const quantities: Record<string, number> = {};
+      initialSelection.selectedOptions.forEach(opt => {
+        quantities[opt.optionId] = opt.quantity || 1;
+      });
+      setOptionQuantities(quantities);
+    }
 
-        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
-          setDishSelections(initialSelection.dishSelections);
-          setCurrentStep('options');
-        } else {
-          setCurrentStep('dishes');
-        }
-        
-        setIsInitialized(true);
-      }
+    // Restore dish selections
+    if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+      setDishSelections(initialSelection.dishSelections);
+    }
+
+    // Jump to the furthest completed step
+    if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+      setCurrentStep('options');
+    } else {
+      setCurrentStep('dishes');
     }
     
-    // Path C: No packageId at all but we have templateId — just select template
-    if (initTemplateId && !initialSelection.packageId && !isInitialized) {
-      const template = templates.find(t => t.id === initTemplateId);
-      if (template) {
-        setSelectedTemplate(template);
-        setCurrentStep('package');
-        setIsInitialized(true);
-      }
-    }
-  }, [initialSelection, templates, initTemplatePackages, initialPackage, isInitialized, initTemplateId]);
+    setIsInitialized(true);
+  }, [initialSelection, templates, initialPackage, isInitialized]);
 
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
-    { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
+    { id: 'template', label: 'Wyb\u00f3r Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
     { id: 'package', label: 'Pakiet', icon: Check, gradient: 'from-blue-500 to-cyan-500' },
     { id: 'dishes', label: 'Dania', icon: UtensilsCrossed, gradient: 'from-red-500 to-rose-500' },
     { id: 'options', label: 'Dodatki', icon: Sparkles, gradient: 'from-green-500 to-emerald-500' },
@@ -228,8 +183,8 @@ export function MenuSelectionFlow({
 
     if (!canNavigateToStep(stepId)) {
       toast({
-        title: 'Nie można przejść dalej',
-        description: 'Uzupełnij poprzednie kroki przed przejściem dalej.',
+        title: 'Nie mo\u017cna przej\u015b\u0107 dalej',
+        description: 'Uzupe\u0142nij poprzednie kroki przed przej\u015bciem dalej.',
         variant: 'destructive',
       });
       return;
@@ -261,7 +216,6 @@ export function MenuSelectionFlow({
 
   const handleDishesComplete = (selections: CategorySelection[]) => {
     setDishSelections(selections);
-    // Skip guests step — go directly to options
     setCurrentStep('options');
   };
 
@@ -277,7 +231,6 @@ export function MenuSelectionFlow({
       packageId: selectedPackage.id,
       dishSelections,
       selectedOptions,
-      // Guest counts from reservation (read-only, passed through)
       adults,
       children,
       toddlers,
@@ -285,18 +238,12 @@ export function MenuSelectionFlow({
   };
 
   // Show loading when initializing from initialSelection
-  const isInitLoading = initialSelection && !isInitialized && (
-    templatesLoading || 
-    initialPackageLoading || 
-    (initTemplateId ? initPackagesLoading : false)
-  );
-  
-  if (isInitLoading) {
+  if (initialSelection && !isInitialized && (templatesLoading || initialPackageLoading)) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Ładowanie wybranego menu...</p>
+          <p className="text-sm text-muted-foreground">\u0141adowanie wybranego menu...</p>
         </div>
       </div>
     );
@@ -304,24 +251,24 @@ export function MenuSelectionFlow({
 
   return (
     <div className={cn('space-y-8', className)}>
-      {/* Guest Info Banner — read-only from reservation */}
+      {/* Guest Info Banner */}
       <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800">
         <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-sm">
           <Users className="h-4 w-4 text-white" />
         </div>
         <div className="flex-1 flex items-center gap-4">
           <span className="text-sm font-medium">
-            <span className="font-bold">{adults}</span> dorosłych
+            <span className="font-bold">{adults}</span> doros\u0142ych
           </span>
-          <span className="text-purple-300">•</span>
+          <span className="text-purple-300">\u2022</span>
           <span className="text-sm font-medium">
             <span className="font-bold">{children}</span> dzieci
           </span>
-          <span className="text-purple-300">•</span>
+          <span className="text-purple-300">\u2022</span>
           <span className="text-sm font-medium">
-            <span className="font-bold">{toddlers}</span> maluchów
+            <span className="font-bold">{toddlers}</span> maluch\u00f3w
           </span>
-          <span className="text-purple-300">•</span>
+          <span className="text-purple-300">\u2022</span>
           <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             {totalGuests} razem
           </span>
@@ -332,7 +279,7 @@ export function MenuSelectionFlow({
         </div>
       </div>
 
-      {/* Premium Progress Steps (4 steps now) */}
+      {/* Premium Progress Steps */}
       <div className="relative">
         <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 to-green-500 rounded-full opacity-20" />
         
@@ -397,7 +344,7 @@ export function MenuSelectionFlow({
         </div>
       </div>
 
-      {/* Step Content with Premium Animations */}
+      {/* Step Content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -441,7 +388,7 @@ export function MenuSelectionFlow({
                   <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-950/30 dark:to-amber-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-10 w-10 text-orange-600" />
                   </div>
-                  <p className="text-muted-foreground">Brak dostępnych menu</p>
+                  <p className="text-muted-foreground">Brak dost\u0119pnych menu</p>
                 </div>
               )}
             </div>
@@ -479,7 +426,7 @@ export function MenuSelectionFlow({
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">Brak dostępnych pakietów</p>
+                  <p className="text-muted-foreground">Brak dost\u0119pnych pakiet\u00f3w</p>
                 </div>
               )}
 
@@ -491,7 +438,7 @@ export function MenuSelectionFlow({
                   className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6"
                 >
                   <RefreshCw className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
-                  Zmień menu
+                  Zmie\u0144 menu
                 </Button>
               </div>
             </div>
@@ -505,7 +452,7 @@ export function MenuSelectionFlow({
                   <UtensilsCrossed className="h-8 w-8 text-white" />
                 </div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
-                  Wybór Dań
+                  Wyb\u00f3r Da\u0144
                 </h2>
                 <p className="text-muted-foreground">
                   {selectedPackage.name}
@@ -521,7 +468,7 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 4: Select Options (was step 5 before Phase A) */}
+          {/* Step 4: Select Options */}
           {currentStep === 'options' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
@@ -532,7 +479,7 @@ export function MenuSelectionFlow({
                   Opcje Dodatkowe
                 </h2>
                 <p className="text-muted-foreground">
-                  Wybierz dodatkowe usługi (opcjonalne)
+                  Wybierz dodatkowe us\u0142ugi (opcjonalne)
                 </p>
               </div>
 
@@ -544,7 +491,7 @@ export function MenuSelectionFlow({
                   className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
                 >
                   <Check className="mr-2 h-6 w-6" />
-                  Zatwierdź wybór
+                  Zatwierd\u017a wyb\u00f3r
                 </Button>
               </div>
 
@@ -575,7 +522,7 @@ export function MenuSelectionFlow({
                   className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
                 >
                   <Check className="mr-2 h-5 w-5" />
-                  Zatwierdź wybór
+                  Zatwierd\u017a wyb\u00f3r
                 </Button>
               </div>
             </div>
