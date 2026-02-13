@@ -1,7 +1,7 @@
 /**
  * Reservation Service
  * Business logic for reservation management with advanced features
- * UPDATED: Prisma singleton, N+1 fix, pagination, CASCADE deposit cancellation
+ * UPDATED: Phase C — Auto-recalc menu prices when guests change
  */
 
 import { prisma } from '@/lib/prisma';
@@ -24,6 +24,7 @@ import {
   detectReservationChanges,
   formatChangesSummary
 } from '../utils/reservation.utils';
+import reservationMenuService from './reservation-menu.service';
 
 /**
  * Sanitize string by removing null bytes
@@ -492,6 +493,7 @@ export class ReservationService {
 
   /**
    * Update reservation
+   * PHASE C: When guests change and menu exists, auto-recalculate menu prices
    */
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
@@ -554,33 +556,48 @@ export class ReservationService {
     if (data.children !== undefined) updateData.children = data.children;
     if (data.toddlers !== undefined) updateData.toddlers = data.toddlers;
 
-    if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined) {
-      const newAdults = data.adults ?? existingReservation.adults;
-      const newChildren = data.children ?? existingReservation.children;
-      const newToddlers = data.toddlers ?? existingReservation.toddlers;
+    // Detect if guest counts changed
+    const guestsChanged = data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined;
+    const newAdults = data.adults ?? existingReservation.adults;
+    const newChildren = data.children ?? existingReservation.children;
+    const newToddlers = data.toddlers ?? existingReservation.toddlers;
+
+    if (guestsChanged) {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
       if (updateData.guests > existingReservation.hall.capacity) {
         throw new Error(`Number of guests (${updateData.guests}) exceeds hall capacity (${existingReservation.hall.capacity})`);
       }
     }
 
-    const isUsingMenuPackage = existingReservation.menuSnapshot && data.menuPackageId !== null;
+    // PHASE C: Auto-recalculate menu prices when guests change
+    const hasMenuSnapshot = !!existingReservation.menuSnapshot;
+    const isUsingMenuPackage = hasMenuSnapshot && data.menuPackageId !== null;
     
-    if (!isUsingMenuPackage) {
-      if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
-      if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
-      if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
+    if (isUsingMenuPackage && guestsChanged) {
+      // Auto-recalc menu prices with new guest counts
+      const recalcResult = await reservationMenuService.recalculateForGuestChange(
+        id, newAdults, newChildren, newToddlers
+      );
 
-      if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
+      if (recalcResult) {
+        // Update reservation totalPrice from recalculated menu
+        updateData.totalPrice = recalcResult.totalMenuPrice;
+        // Update per-person prices from snapshot (they stay the same, but ensure consistency)
+        console.log(`[Reservation] Auto-recalculated menu for ${id}: ${recalcResult.totalMenuPrice} (was ${Number(existingReservation.totalPrice)})`);
+      }
+    } else if (!isUsingMenuPackage) {
+      // Non-menu-package: manual price calculation
+      if (guestsChanged ||
           data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-        const finalAdults = data.adults ?? existingReservation.adults;
-        const finalChildren = data.children ?? existingReservation.children;
-        const finalToddlers = data.toddlers ?? existingReservation.toddlers;
         const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
         const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
         const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
-        updateData.totalPrice = calculateTotalPrice(finalAdults, finalChildren, finalPricePerAdult, finalPricePerChild, finalToddlers, finalPricePerToddler);
+        updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, finalPricePerAdult, finalPricePerChild, newToddlers, finalPricePerToddler);
       }
+
+      if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
+      if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
+      if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
     }
 
     if (data.confirmationDeadline) {
