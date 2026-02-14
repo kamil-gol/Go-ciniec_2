@@ -35,11 +35,18 @@ import { useQueryClient } from '@tanstack/react-query'
 const STEPS: StepConfig[] = [
   { id: 'event', title: 'Wydarzenie', icon: Sparkles },
   { id: 'venue', title: 'Sala i termin', icon: Building2 },
-  { id: 'guests', title: 'Go\u015bcie', icon: Users },
+  { id: 'guests', title: 'Goście', icon: Users },
   { id: 'menu', title: 'Menu i ceny', icon: UtensilsCrossed },
   { id: 'client', title: 'Klient', icon: User },
   { id: 'summary', title: 'Podsumowanie', icon: ClipboardCheck },
 ]
+
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+
+const EXTRA_HOUR_RATE = 500 // PLN per extra hour beyond 6h
+const STANDARD_HOURS = 6
 
 // ═══════════════════════════════════════════════════
 // SCHEMA
@@ -54,16 +61,16 @@ const reservationSchema = z.object({
   anniversaryOccasion: z.string().optional(),
 
   // Step 2: Venue & Time
-  hallId: z.string().min(1, 'Wybierz sal\u0119'),
-  startDate: z.string().min(1, 'Wybierz dat\u0119 rozpocz\u0119cia'),
-  startTime: z.string().min(1, 'Wybierz czas rozpocz\u0119cia'),
-  endDate: z.string().min(1, 'Wybierz dat\u0119 zako\u0144czenia'),
-  endTime: z.string().min(1, 'Wybierz czas zako\u0144czenia'),
+  hallId: z.string().min(1, 'Wybierz salę'),
+  startDate: z.string().min(1, 'Wybierz datę rozpoczęcia'),
+  startTime: z.string().min(1, 'Wybierz czas rozpoczęcia'),
+  endDate: z.string().min(1, 'Wybierz datę zakończenia'),
+  endTime: z.string().min(1, 'Wybierz czas zakończenia'),
 
   // Step 3: Guests
-  adults: z.coerce.number().min(0, 'Liczba doros\u0142ych musi by\u0107 >= 0'),
-  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi by\u0107 >= 0'),
-  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi by\u0107 >= 0'),
+  adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
+  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
 
   // Step 4: Menu & Pricing
   useMenuPackage: z.boolean(),
@@ -79,14 +86,14 @@ const reservationSchema = z.object({
   confirmationDeadline: z.string().optional(),
   notes: z.string().optional(),
 }).refine((data) => data.adults + data.children + data.toddlers >= 1, {
-  message: '\u0141\u0105czna liczba go\u015bci musi by\u0107 >= 1',
+  message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
 }).refine((data) => {
   const start = new Date(`${data.startDate}T${data.startTime}`)
   const end = new Date(`${data.endDate}T${data.endTime}`)
   return end > start
 }, {
-  message: 'Czas zako\u0144czenia musi by\u0107 po czasie rozpocz\u0119cia',
+  message: 'Czas zakończenia musi być po czasie rozpoczęcia',
   path: ['endTime'],
 }).refine((data) => {
   if (!data.useMenuPackage || !data.menuPackageId) {
@@ -94,7 +101,7 @@ const reservationSchema = z.object({
   }
   return true
 }, {
-  message: 'Cena za doros\u0142ego jest wymagana gdy nie wybrano pakietu menu',
+  message: 'Cena za dorosłego jest wymagana gdy nie wybrano pakietu menu',
   path: ['pricePerAdult'],
 })
 
@@ -250,6 +257,15 @@ export function CreateReservationForm({
     return 0
   }, [startDate, startTime, endDate, endTime])
 
+  // ── Extra hours cost (beyond standard 6h) ──
+  const extraHours = useMemo(() => {
+    if (durationHours > STANDARD_HOURS) return Math.ceil(durationHours - STANDARD_HOURS)
+    return 0
+  }, [durationHours])
+
+  const extraHoursCost = extraHours * EXTRA_HOUR_RATE
+  const totalWithExtras = calculatedPrice + extraHoursCost
+
   // ═══ EFFECTS ═══
 
   // Pre-select hall from defaultHallId
@@ -279,6 +295,15 @@ export function CreateReservationForm({
     }
   }, [useMenuPackage, selectedPackage, setValue])
 
+  // Reset manual price flags when switching to menu package
+  // so auto-calc resumes when user switches back to manual
+  useEffect(() => {
+    if (useMenuPackage) {
+      setChildPriceManuallySet(false)
+      setToddlerPriceManuallySet(false)
+    }
+  }, [useMenuPackage])
+
   // Reset package when event type changes
   useEffect(() => {
     if (selectedEventTypeId && menuPackageId) {
@@ -290,14 +315,14 @@ export function CreateReservationForm({
     }
   }, [selectedEventTypeId, menuPackageId, menuPackages, setValue])
 
-  // Auto-set child price to 50% of adult
+  // Auto-set child price to 50% of adult (only when NOT using menu package)
   useEffect(() => {
     if (!useMenuPackage && pricePerAdult > 0 && !childPriceManuallySet) {
       setValue('pricePerChild', Math.round(pricePerAdult / 2))
     }
   }, [useMenuPackage, pricePerAdult, setValue, childPriceManuallySet])
 
-  // Auto-set toddler price to 25% of adult
+  // Auto-set toddler price to 25% of adult (only when NOT using menu package)
   useEffect(() => {
     if (!useMenuPackage && pricePerAdult > 0 && !toddlerPriceManuallySet) {
       setValue('pricePerToddler', Math.round(pricePerAdult * 0.25))
@@ -311,24 +336,6 @@ export function CreateReservationForm({
       if (hall?.pricePerPerson) setValue('pricePerAdult', hall.pricePerPerson)
     }
   }, [hallId, hallsArray, setValue, useMenuPackage, watchAll.pricePerAdult])
-
-  // Duration note auto-add
-  useEffect(() => {
-    if (durationHours > 6) {
-      const extraHours = Math.ceil(durationHours - 6)
-      const extraCost = extraHours * 500
-      const extraNote = `\n\n\u23f0 Dodatkowe godziny: ${extraHours}h \u00d7 500 PLN = ${extraCost} PLN`
-      const notes = watchAll.notes || ''
-      if (!notes.includes('\u23f0 Dodatkowe godziny')) {
-        setValue('notes', notes + extraNote)
-      }
-    } else if (durationHours > 0) {
-      const notes = watchAll.notes || ''
-      if (notes.includes('\u23f0 Dodatkowe godziny')) {
-        setValue('notes', notes.replace(/\n\n\u23f0 Dodatkowe godziny:.*/, ''))
-      }
-    }
-  }, [durationHours, watchAll.notes, setValue])
 
   // ═══ HANDLERS ═══
 
@@ -436,10 +443,10 @@ export function CreateReservationForm({
   // ═══ OPTIONS ═══
 
   const hallOptions = useMemo(() => [
-    { value: '', label: 'Wybierz sal\u0119...' },
+    { value: '', label: 'Wybierz salę...' },
     ...hallsArray.map((hall) => ({
       value: hall.id,
-      label: `${hall.name} (max ${hall.capacity} os\u00f3b)`,
+      label: `${hall.name} (max ${hall.capacity} osób)`,
     })),
   ], [hallsArray])
 
@@ -478,6 +485,75 @@ export function CreateReservationForm({
     if (currentStep === 1 && availability && !availability.available) return false // allow but warn
     return false
   }, [currentStep, availability])
+
+  // ═══════════════════════════════════════════════════
+  // PRICE SUMMARY COMPONENT (reused in Step 3 & 5)
+  // ═══════════════════════════════════════════════════
+
+  const PriceSummary = useCallback(({ compact = false }: { compact?: boolean }) => {
+    if (calculatedPrice <= 0 && extraHoursCost <= 0) return null
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`p-4 border rounded-xl ${
+          compact
+            ? 'bg-orange-50 border-orange-200'
+            : 'bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200'
+        }`}
+      >
+        <div className="space-y-2">
+          {adults > 0 && (
+            <div className="flex justify-between text-sm text-secondary-700">
+              <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
+              <span className="font-medium">{adults * pricePerAdult} PLN</span>
+            </div>
+          )}
+          {children > 0 && (
+            <div className="flex justify-between text-sm text-secondary-700">
+              <span>Dzieci (4–12): {children} × {pricePerChild} PLN</span>
+              <span className="font-medium">{children * pricePerChild} PLN</span>
+            </div>
+          )}
+          {toddlers > 0 && (
+            <div className="flex justify-between text-sm text-secondary-700">
+              <span>Dzieci (0–3): {toddlers} × {pricePerToddler} PLN</span>
+              <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
+            </div>
+          )}
+
+          {calculatedPrice > 0 && extraHoursCost > 0 && (
+            <div className="flex justify-between text-sm text-secondary-700 pt-1 border-t border-secondary-200">
+              <span className="font-medium">Podsuma menu / goście:</span>
+              <span className="font-medium">{formatCurrency(calculatedPrice)}</span>
+            </div>
+          )}
+
+          {extraHoursCost > 0 && (
+            <div className="flex justify-between text-sm text-amber-800 bg-amber-50 -mx-4 px-4 py-2">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                Dodatkowe godziny: {extraHours}h × {EXTRA_HOUR_RATE} PLN
+              </span>
+              <span className="font-medium">{formatCurrency(extraHoursCost)}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between pt-2 border-t border-primary-300">
+            <span className="font-semibold text-secondary-900">Cena całkowita:</span>
+            <span className="text-2xl font-bold text-primary-600">{formatCurrency(totalWithExtras)}</span>
+          </div>
+
+          {useMenuPackage && selectedPackage && (
+            <p className="text-xs text-primary-700 flex items-center gap-1 pt-1">
+              <UtensilsCrossed className="w-3 h-3" /> Ceny z pakietu: {selectedPackage.name}
+            </p>
+          )}
+        </div>
+      </motion.div>
+    )
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedPackage])
 
   // ═══ RENDER ═══
 
@@ -518,7 +594,7 @@ export function CreateReservationForm({
                       <Sparkles className="w-8 h-8" />
                     </div>
                     <h2 className="text-xl font-bold text-secondary-900">Jaki typ wydarzenia?</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Okre\u015bl rodzaj imprezy \u2014 wp\u0142ynie na dost\u0119pne pakiety menu</p>
+                    <p className="text-sm text-secondary-500 mt-1">Określ rodzaj imprezy — wpłynie na dostępne pakiety menu</p>
                   </div>
 
                   <SelectSimple
@@ -532,7 +608,7 @@ export function CreateReservationForm({
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                       <Input
                         type="number"
-                        label="Kt\u00f3re urodziny"
+                        label="Które urodziny"
                         placeholder="np. 18"
                         error={errors.birthdayAge?.message}
                         {...register('birthdayAge')}
@@ -543,7 +619,7 @@ export function CreateReservationForm({
                   {isCustom && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                       <Input
-                        label="Typ wydarzenia (w\u0142asny)"
+                        label="Typ wydarzenia (własny)"
                         placeholder="np. Spotkanie rodzinne, Impreza firmowa"
                         error={errors.customEventType?.message}
                         {...register('customEventType')}
@@ -559,7 +635,7 @@ export function CreateReservationForm({
                     >
                       <Input
                         type="number"
-                        label="Kt\u00f3ra rocznica"
+                        label="Która rocznica"
                         placeholder="np. 25"
                         error={errors.anniversaryYear?.message}
                         {...register('anniversaryYear')}
@@ -584,8 +660,8 @@ export function CreateReservationForm({
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white mb-3">
                       <Building2 className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Wybierz sal\u0119 i termin</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Sprawdzimy dost\u0119pno\u015b\u0107 automatycznie</p>
+                    <h2 className="text-xl font-bold text-secondary-900">Wybierz salę i termin</h2>
+                    <p className="text-sm text-secondary-500 mt-1">Sprawdzimy dostępność automatycznie</p>
                   </div>
 
                   <SelectSimple
@@ -596,20 +672,20 @@ export function CreateReservationForm({
                   />
                   {selectedHallCapacity > 0 && (
                     <p className="-mt-4 text-sm text-secondary-600">
-                      Maksymalna pojemno\u015b\u0107: {selectedHallCapacity} os\u00f3b
+                      Maksymalna pojemność: {selectedHallCapacity} osób
                     </p>
                   )}
 
                   {defaultHallId && watchAll.hallId === defaultHallId && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="-mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <p className="text-sm text-green-800">Sala wybrana automatycznie z widoku szczeg\u00f3\u0142\u00f3w</p>
+                      <p className="text-sm text-green-800">Sala wybrana automatycznie z widoku szczegółów</p>
                     </motion.div>
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-1">Data i czas rozpocz\u0119cia</label>
+                      <label className="block text-sm font-medium text-secondary-700 mb-1">Data i czas rozpoczęcia</label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-secondary-500 flex-shrink-0" />
@@ -622,7 +698,7 @@ export function CreateReservationForm({
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-1">Data i czas zako\u0144czenia</label>
+                      <label className="block text-sm font-medium text-secondary-700 mb-1">Data i czas zakończenia</label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-secondary-500 flex-shrink-0" />
@@ -640,12 +716,12 @@ export function CreateReservationForm({
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > 6 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}
+                      className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > STANDARD_HOURS ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}
                     >
-                      {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
-                      <span className={`text-sm ${durationHours > 6 ? 'text-amber-800' : 'text-blue-800'}`}>
+                      {durationHours > STANDARD_HOURS && <AlertCircle className="w-5 h-5 text-amber-600" />}
+                      <span className={`text-sm ${durationHours > STANDARD_HOURS ? 'text-amber-800' : 'text-blue-800'}`}>
                         Czas trwania: {durationHours}h
-                        {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - ${Math.ceil(durationHours - 6) * 500} PLN dop\u0142aty)`}
+                        {durationHours > STANDARD_HOURS && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
                       </span>
                     </motion.div>
                   )}
@@ -666,22 +742,22 @@ export function CreateReservationForm({
                       {availabilityLoading ? (
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                          <span className="text-sm text-secondary-600">Sprawdzanie dost\u0119pno\u015bci...</span>
+                          <span className="text-sm text-secondary-600">Sprawdzanie dostępności...</span>
                         </div>
                       ) : availability?.available ? (
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-5 h-5 text-green-600" />
-                          <span className="text-sm font-medium text-green-800">Sala jest dost\u0119pna w wybranym terminie</span>
+                          <span className="text-sm font-medium text-green-800">Sala jest dostępna w wybranym terminie</span>
                         </div>
                       ) : (
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <AlertTriangle className="w-5 h-5 text-red-600" />
-                            <span className="text-sm font-medium text-red-800">Kolizja z istniej\u0105c\u0105 rezerwacj\u0105!</span>
+                            <span className="text-sm font-medium text-red-800">Kolizja z istniejącą rezerwacją!</span>
                           </div>
                           {availability?.conflicts?.map((c) => (
                             <div key={c.id} className="ml-7 text-xs text-red-700">
-                              \u2022 {c.clientName} \u2014 {c.eventType} ({new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}\u2013{new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
+                              • {c.clientName} — {c.eventType} ({new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}–{new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
                             </div>
                           ))}
                         </div>
@@ -692,7 +768,7 @@ export function CreateReservationForm({
               </StepContent>
 
               {/* ═══════════════════════════════════════ */}
-              {/* STEP 2: Go\u015bcie                          */}
+              {/* STEP 2: Goście                          */}
               {/* ═══════════════════════════════════════ */}
               <StepContent stepIndex={2} currentStep={currentStep}>
                 <div className="space-y-6">
@@ -700,15 +776,15 @@ export function CreateReservationForm({
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-white mb-3">
                       <Users className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Ilu go\u015bci?</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Podaj liczb\u0119 os\u00f3b w ka\u017cdej grupie wiekowej</p>
+                    <h2 className="text-xl font-bold text-secondary-900">Ilu gości?</h2>
+                    <p className="text-sm text-secondary-500 mt-1">Podaj liczbę osób w każdej grupie wiekowej</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-primary-300 transition-colors">
                       <div className="flex items-center gap-2 mb-3">
                         <Users className="w-5 h-5 text-primary-600" />
-                        <span className="font-medium text-secondary-700">Doro\u015bli</span>
+                        <span className="font-medium text-secondary-700">Dorośli</span>
                       </div>
                       <Input
                         type="number"
@@ -722,7 +798,7 @@ export function CreateReservationForm({
                     <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-blue-300 transition-colors">
                       <div className="flex items-center gap-2 mb-3">
                         <Smile className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-secondary-700">Dzieci (4\u201312)</span>
+                        <span className="font-medium text-secondary-700">Dzieci (4–12)</span>
                       </div>
                       <Input
                         type="number"
@@ -737,7 +813,7 @@ export function CreateReservationForm({
                     <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-green-300 transition-colors">
                       <div className="flex items-center gap-2 mb-3">
                         <Baby className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-secondary-700">Maluchy (0\u20133)</span>
+                        <span className="font-medium text-secondary-700">Maluchy (0–3)</span>
                       </div>
                       <Input
                         type="number"
@@ -756,7 +832,7 @@ export function CreateReservationForm({
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex items-center justify-center p-4 bg-primary-50 rounded-xl border border-primary-200"
                     >
-                      <span className="text-secondary-700 mr-3">\u0141\u0105cznie go\u015bci:</span>
+                      <span className="text-secondary-700 mr-3">Łącznie gości:</span>
                       <span className="text-3xl font-bold text-primary-600">{totalGuests}</span>
                     </motion.div>
                   )}
@@ -765,7 +841,7 @@ export function CreateReservationForm({
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-red-600" />
                       <span className="text-sm text-red-800">
-                        Liczba go\u015bci ({totalGuests}) przekracza pojemno\u015b\u0107 sali ({selectedHallCapacity})!
+                        Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!
                       </span>
                     </motion.div>
                   )}
@@ -782,14 +858,14 @@ export function CreateReservationForm({
                       <UtensilsCrossed className="w-8 h-8" />
                     </div>
                     <h2 className="text-xl font-bold text-secondary-900">Menu i wycena</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Wybierz pakiet menu lub ustaw ceny r\u0119cznie</p>
+                    <p className="text-sm text-secondary-500 mt-1">Wybierz pakiet menu lub ustaw ceny ręcznie</p>
                   </div>
 
                   {/* Package toggle */}
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border">
                     <div className="flex items-center gap-2">
                       <UtensilsCrossed className="w-5 h-5 text-primary-600" />
-                      <span className="font-medium text-secondary-700">U\u017cyj gotowego pakietu menu</span>
+                      <span className="font-medium text-secondary-700">Użyj gotowego pakietu menu</span>
                     </div>
                     <input
                       type="checkbox"
@@ -802,7 +878,7 @@ export function CreateReservationForm({
                   {hasNoPackagesForEventType && (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-amber-600" />
-                      <p className="text-sm text-amber-800">Brak pakiet\u00f3w menu dla tego typu wydarzenia. U\u017cyj r\u0119cznego ustalania cen.</p>
+                      <p className="text-sm text-amber-800">Brak pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.</p>
                     </div>
                   )}
 
@@ -830,15 +906,15 @@ export function CreateReservationForm({
                               )}
                               <div className="grid grid-cols-3 gap-4 mt-3">
                                 <div>
-                                  <p className="text-xs text-secondary-500">Doros\u0142y</p>
+                                  <p className="text-xs text-secondary-500">Dorosły</p>
                                   <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-secondary-500">Dziecko 4\u201312</p>
+                                  <p className="text-xs text-secondary-500">Dziecko 4–12</p>
                                   <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-secondary-500">Dziecko 0\u20133</p>
+                                  <p className="text-xs text-secondary-500">Dziecko 0–3</p>
                                   <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
                                 </div>
                               </div>
@@ -850,80 +926,53 @@ export function CreateReservationForm({
                   )}
 
                   {!useMenuPackage && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-secondary-500" />
-                        <Input
-                          type="number"
-                          label="Cena za doros\u0142ego (PLN)"
-                          placeholder="0.00"
-                          error={errors.pricePerAdult?.message}
-                          {...register('pricePerAdult')}
-                        />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-5 h-5 text-secondary-500" />
+                          <Input
+                            type="number"
+                            label="Cena za dorosłego (PLN)"
+                            placeholder="0.00"
+                            error={errors.pricePerAdult?.message}
+                            {...register('pricePerAdult')}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-5 h-5 text-secondary-500" />
+                          <Input
+                            type="number"
+                            label="Cena za dziecko 4–12 (PLN)"
+                            placeholder="0.00"
+                            error={errors.pricePerChild?.message}
+                            disabled={pricePerAdult === 0}
+                            {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-5 h-5 text-secondary-500" />
+                          <Input
+                            type="number"
+                            label="Cena za dziecko 0–3 (PLN)"
+                            placeholder="0.00"
+                            error={errors.pricePerToddler?.message}
+                            disabled={pricePerAdult === 0}
+                            {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-secondary-500" />
-                        <Input
-                          type="number"
-                          label="Cena za dziecko 4\u201312 (PLN)"
-                          placeholder="0.00"
-                          error={errors.pricePerChild?.message}
-                          disabled={useMenuPackage || pricePerAdult === 0}
-                          {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-secondary-500" />
-                        <Input
-                          type="number"
-                          label="Cena za dziecko 0\u20133 (PLN)"
-                          placeholder="0.00"
-                          error={errors.pricePerToddler?.message}
-                          disabled={useMenuPackage || pricePerAdult === 0}
-                          {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })}
-                        />
-                      </div>
+
+                      {pricePerAdult > 0 && !childPriceManuallySet && (
+                        <p className="text-xs text-secondary-500">
+                          💡 Cena za dziecko ustawiona automatycznie na 50% ceny dorosłego. Cena za malucha na 25%.
+                          Możesz je zmienić ręcznie.
+                        </p>
+                      )}
                     </motion.div>
                   )}
 
                   {/* Live price summary */}
-                  {calculatedPrice > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-4 bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-200 rounded-xl"
-                    >
-                      <div className="space-y-2">
-                        {adults > 0 && (
-                          <div className="flex justify-between text-sm text-secondary-700">
-                            <span>Doro\u015bli: {adults} \u00d7 {pricePerAdult} PLN</span>
-                            <span className="font-medium">{adults * pricePerAdult} PLN</span>
-                          </div>
-                        )}
-                        {children > 0 && (
-                          <div className="flex justify-between text-sm text-secondary-700">
-                            <span>Dzieci (4\u201312): {children} \u00d7 {pricePerChild} PLN</span>
-                            <span className="font-medium">{children * pricePerChild} PLN</span>
-                          </div>
-                        )}
-                        {toddlers > 0 && (
-                          <div className="flex justify-between text-sm text-secondary-700">
-                            <span>Dzieci (0\u20133): {toddlers} \u00d7 {pricePerToddler} PLN</span>
-                            <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between pt-2 border-t border-primary-300">
-                          <span className="font-semibold text-secondary-900">Cena ca\u0142kowita:</span>
-                          <span className="text-2xl font-bold text-primary-600">{formatCurrency(calculatedPrice)}</span>
-                        </div>
-                        {useMenuPackage && selectedPackage && (
-                          <p className="text-xs text-primary-700 flex items-center gap-1 pt-1">
-                            <UtensilsCrossed className="w-3 h-3" /> Ceny z pakietu: {selectedPackage.name}
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+                  <PriceSummary />
                 </div>
               </StepContent>
 
@@ -937,7 +986,7 @@ export function CreateReservationForm({
                       <User className="w-8 h-8" />
                     </div>
                     <h2 className="text-xl font-bold text-secondary-900">Kto rezerwuje?</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Wyszukaj istniej\u0105cego klienta lub dodaj nowego</p>
+                    <p className="text-sm text-secondary-500 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
                   </div>
 
                   {isPromotingFromQueue ? (
@@ -949,7 +998,7 @@ export function CreateReservationForm({
                       {selectedClient && (
                         <p className="text-sm text-blue-700">
                           {selectedClient.firstName} {selectedClient.lastName}
-                          {selectedClient.phone && ` \u2022 ${selectedClient.phone}`}
+                          {selectedClient.phone && ` • ${selectedClient.phone}`}
                         </p>
                       )}
                     </div>
@@ -964,7 +1013,7 @@ export function CreateReservationForm({
                           onChange={field.onChange}
                           label="Klient"
                           placeholder="Wyszukaj klienta po nazwisku, imieniu lub telefonie..."
-                          searchPlaceholder="Wpisz imi\u0119, nazwisko lub telefon..."
+                          searchPlaceholder="Wpisz imię, nazwisko lub telefon..."
                           emptyMessage="Nie znaleziono klienta."
                           error={errors.clientId?.message}
                           disabled={clientsLoading}
@@ -1012,7 +1061,7 @@ export function CreateReservationForm({
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white mb-3">
                       <ClipboardCheck className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Sprawd\u017a i utw\u00f3rz</h2>
+                    <h2 className="text-xl font-bold text-secondary-900">Sprawdź i utwórz</h2>
                     <p className="text-sm text-secondary-500 mt-1">Przejrzyj dane przed utworzeniem rezerwacji</p>
                   </div>
 
@@ -1024,7 +1073,7 @@ export function CreateReservationForm({
                         <Sparkles className="w-4 h-4 text-purple-600" />
                         <span className="text-xs font-medium text-purple-600 uppercase">Wydarzenie</span>
                       </div>
-                      <p className="font-semibold text-secondary-900">{selectedEventTypeName || '\u2014'}</p>
+                      <p className="font-semibold text-secondary-900">{selectedEventTypeName || '—'}</p>
                       {isBirthday && watchAll.birthdayAge && <p className="text-sm text-secondary-600">{watchAll.birthdayAge}. urodziny</p>}
                       {isAnniversary && watchAll.anniversaryYear && <p className="text-sm text-secondary-600">{watchAll.anniversaryYear}. rocznica</p>}
                       {isCustom && watchAll.customEventType && <p className="text-sm text-secondary-600">{watchAll.customEventType}</p>}
@@ -1036,56 +1085,62 @@ export function CreateReservationForm({
                         <Building2 className="w-4 h-4 text-blue-600" />
                         <span className="text-xs font-medium text-blue-600 uppercase">Sala i termin</span>
                       </div>
-                      <p className="font-semibold text-secondary-900">{selectedHall?.name || '\u2014'}</p>
+                      <p className="font-semibold text-secondary-900">{selectedHall?.name || '—'}</p>
                       {startDate && startTime && (
                         <p className="text-sm text-secondary-600">
                           {new Date(`${startDate}T${startTime}`).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                          {' '}\u2022 {startTime}\u2013{endTime || '?'}
+                          {' '}• {startTime}–{endTime || '?'}
                         </p>
                       )}
-                      {durationHours > 0 && <p className="text-xs text-secondary-500">{durationHours}h</p>}
+                      {durationHours > 0 && (
+                        <p className={`text-xs ${durationHours > STANDARD_HOURS ? 'text-amber-700 font-medium' : 'text-secondary-500'}`}>
+                          {durationHours}h{durationHours > STANDARD_HOURS && ` (w tym ${extraHours}h dodatkowych)`}
+                        </p>
+                      )}
                     </div>
 
                     {/* Guests */}
                     <div className="p-4 rounded-xl border bg-green-50 border-green-200 cursor-pointer hover:border-green-400 transition-colors" onClick={() => goToStep(2)}>
                       <div className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4 text-green-600" />
-                        <span className="text-xs font-medium text-green-600 uppercase">Go\u015bcie</span>
+                        <span className="text-xs font-medium text-green-600 uppercase">Goście</span>
                       </div>
-                      <p className="text-2xl font-bold text-secondary-900">{totalGuests} os\u00f3b</p>
+                      <p className="text-2xl font-bold text-secondary-900">{totalGuests} osób</p>
                       <p className="text-sm text-secondary-600">
                         {adults} dor. {children > 0 && `+ ${children} dzieci `}{toddlers > 0 && `+ ${toddlers} mal.`}
                       </p>
                     </div>
 
-                    {/* Price */}
-                    <div className="p-4 rounded-xl border bg-orange-50 border-orange-200 cursor-pointer hover:border-orange-400 transition-colors" onClick={() => goToStep(3)}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="w-4 h-4 text-orange-600" />
-                        <span className="text-xs font-medium text-orange-600 uppercase">Wycena</span>
-                      </div>
-                      <p className="text-2xl font-bold text-primary-600">{formatCurrency(calculatedPrice)}</p>
-                      {useMenuPackage && selectedPackage && (
-                        <p className="text-sm text-secondary-600">Pakiet: {selectedPackage.name}</p>
-                      )}
-                    </div>
-
                     {/* Client */}
-                    <div className="p-4 rounded-xl border bg-indigo-50 border-indigo-200 cursor-pointer hover:border-indigo-400 transition-colors md:col-span-2" onClick={() => goToStep(4)}>
+                    <div className="p-4 rounded-xl border bg-indigo-50 border-indigo-200 cursor-pointer hover:border-indigo-400 transition-colors" onClick={() => goToStep(4)}>
                       <div className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4 text-indigo-600" />
                         <span className="text-xs font-medium text-indigo-600 uppercase">Klient</span>
                       </div>
                       {selectedClient ? (
-                        <div className="flex items-center gap-3">
+                        <div>
                           <p className="font-semibold text-secondary-900">{selectedClient.firstName} {selectedClient.lastName}</p>
-                          {selectedClient.phone && <span className="text-sm text-secondary-600">\u2022 {selectedClient.phone}</span>}
-                          {selectedClient.email && <span className="text-sm text-secondary-600">\u2022 {selectedClient.email}</span>}
+                          <div className="flex items-center gap-3 text-sm text-secondary-600">
+                            {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                            {selectedClient.email && <span>{selectedClient.email}</span>}
+                          </div>
                         </div>
                       ) : (
-                        <p className="text-secondary-500">\u2014</p>
+                        <p className="text-secondary-500">—</p>
                       )}
                     </div>
+                  </div>
+
+                  {/* Financial summary — full width */}
+                  <div className="cursor-pointer" onClick={() => goToStep(3)}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="w-4 h-4 text-orange-600" />
+                      <span className="text-xs font-medium text-orange-600 uppercase">Podsumowanie finansowe</span>
+                      {useMenuPackage && selectedPackage && (
+                        <span className="text-xs text-secondary-500">• Pakiet: {selectedPackage.name}</span>
+                      )}
+                    </div>
+                    <PriceSummary compact />
                   </div>
 
                   {/* Optional fields */}
@@ -1097,7 +1152,7 @@ export function CreateReservationForm({
                       {...register('confirmationDeadline')}
                     />
                     <p className="-mt-3 text-xs text-secondary-500">
-                      Musi by\u0107 co najmniej 1 dzie\u0144 przed rozpocz\u0119ciem wydarzenia
+                      Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
                     </p>
 
                     <div>
@@ -1120,7 +1175,7 @@ export function CreateReservationForm({
                     <div>
                       <p className="text-sm font-medium text-blue-900">Zaliczka</p>
                       <p className="text-xs text-blue-700">
-                        Zaliczk\u0119 mo\u017cna doda\u0107 po utworzeniu rezerwacji, w widoku szczeg\u00f3\u0142\u00f3w rezerwacji (sekcja finansowa).
+                        Zaliczkę można dodać po utworzeniu rezerwacji, w widoku szczegółów rezerwacji (sekcja finansowa).
                       </p>
                     </div>
                   </div>
@@ -1138,7 +1193,7 @@ export function CreateReservationForm({
               onSubmit={handleFinalSubmit}
               isNextDisabled={isNextDisabled}
               isSubmitting={createReservation.isPending}
-              submitLabel={isPromotingFromQueue ? 'Awansuj do rezerwacji' : 'Utw\u00f3rz Rezerwacj\u0119'}
+              submitLabel={isPromotingFromQueue ? 'Awansuj do rezerwacji' : 'Utwórz Rezerwację'}
               className="mt-8"
             />
           </form>
