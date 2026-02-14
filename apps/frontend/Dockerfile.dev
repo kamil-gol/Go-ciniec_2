@@ -18,10 +18,10 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Copy package files
-COPY package.json ./
+COPY package.json package-lock.json* ./
 
-# Install dependencies (use install instead of ci for development)
-RUN npm install
+# Install dependencies with --legacy-peer-deps to resolve sonner/react-dom peer conflict
+RUN npm install --legacy-peer-deps
 
 # Copy application code
 COPY . .
