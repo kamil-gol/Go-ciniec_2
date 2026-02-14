@@ -146,6 +146,11 @@ export function ReservationFinancialSummary({
     ? priceBreakdown.packageCost.toddlers.priceEach
     : pricePerToddler
 
+  // Effective total: use menu total when available, fallback to reservation prop
+  const effectiveTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
+    ? priceBreakdown.totalMenuPrice
+    : totalPrice
+
   // Deposits state
   const [deposits, setDeposits] = useState<Deposit[]>([])
   const [depositsLoading, setDepositsLoading] = useState(true)
@@ -192,9 +197,9 @@ export function ReservationFinancialSummary({
     const totalPaid = activeDeposits.reduce((sum, d) => sum + Number(d.paidAmount || 0), 0)
     const totalCommitted = activeDeposits.reduce((sum, d) => sum + Number(d.amount), 0)
     const totalPending = totalCommitted - totalPaid
-    const remaining = Math.max(totalPrice - totalPaid, 0)
-    const percentPaid = totalPrice > 0 ? Math.min(Math.round((totalPaid / totalPrice) * 100), 100) : 0
-    const percentCommitted = totalPrice > 0 ? Math.min(Math.round((totalCommitted / totalPrice) * 100), 100) : 0
+    const remaining = Math.max(effectiveTotalPrice - totalPaid, 0)
+    const percentPaid = effectiveTotalPrice > 0 ? Math.min(Math.round((totalPaid / effectiveTotalPrice) * 100), 100) : 0
+    const percentCommitted = effectiveTotalPrice > 0 ? Math.min(Math.round((totalCommitted / effectiveTotalPrice) * 100), 100) : 0
 
     const menuPackageCost = priceBreakdown?.packageCost?.subtotal || 0
     const menuOptionsCost = priceBreakdown?.optionsSubtotal || 0
@@ -213,11 +218,11 @@ export function ReservationFinancialSummary({
       menuTotalCost,
       depositsCount: activeDeposits.length,
     }
-  }, [deposits, totalPrice, priceBreakdown])
+  }, [deposits, effectiveTotalPrice, priceBreakdown])
 
   // Deposit handlers
   const handleOpenCreate = () => {
-    const suggested = Math.round(totalPrice * 0.3)
+    const suggested = Math.round(effectiveTotalPrice * 0.3)
     setCreateAmount(suggested > 0 ? suggested.toString() : '')
     setCreateDueDate(suggestDueDate(14))
     setCreateTitle('')
@@ -303,7 +308,7 @@ export function ReservationFinancialSummary({
                 <span className="text-sm font-semibold">Koszty usług</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">{formatPLN(totalPrice)} zł</span>
+                <span className="text-sm font-bold">{formatPLN(effectiveTotalPrice)} zł</span>
                 {showCostDetails ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </div>
             </button>
@@ -385,7 +390,7 @@ export function ReservationFinancialSummary({
                   <DollarSign className="h-5 w-5 opacity-80" />
                   <span className="font-bold">Razem do zapłaty</span>
                 </div>
-                <span className="text-2xl font-bold">{formatPLN(totalPrice)} zł</span>
+                <span className="text-2xl font-bold">{formatPLN(effectiveTotalPrice)} zł</span>
               </div>
             </div>
           </div>
@@ -400,7 +405,7 @@ export function ReservationFinancialSummary({
                   <span className="text-sm font-semibold">Stan rozliczeń</span>
                 </div>
                 <span className="text-sm font-bold">
-                  {formatPLN(financials.totalPaid)} / {formatPLN(totalPrice)} zł
+                  {formatPLN(financials.totalPaid)} / {formatPLN(effectiveTotalPrice)} zł
                 </span>
               </div>
 
@@ -603,17 +608,17 @@ export function ReservationFinancialSummary({
               Nowa zaliczka
             </DialogTitle>
             <DialogDescription>
-              Sugerowana kwota: 30% ({formatPLN(Math.round(totalPrice * 0.3))} zł)
+              Sugerowana kwota: 30% ({formatPLN(Math.round(effectiveTotalPrice * 0.3))} zł)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Kwota (zł) *</Label>
-              <Input type="number" min="1" step="0.01" placeholder={`np. ${Math.round(totalPrice * 0.3)}`}
+              <Input type="number" min="1" step="0.01" placeholder={`np. ${Math.round(effectiveTotalPrice * 0.3)}`}
                 value={createAmount} onChange={(e) => setCreateAmount(e.target.value)} className="h-10" />
-              {createAmount && totalPrice > 0 && (
+              {createAmount && effectiveTotalPrice > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {((Number(createAmount) / totalPrice) * 100).toFixed(1)}% ceny rezerwacji
+                  {((Number(createAmount) / effectiveTotalPrice) * 100).toFixed(1)}% ceny rezerwacji
                 </p>
               )}
             </div>
