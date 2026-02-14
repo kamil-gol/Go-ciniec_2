@@ -3,7 +3,7 @@
  * Business logic for reservation management with advanced features
  * UPDATED: Phase C — Auto-recalc menu prices when guests change
  * UPDATED: Removed hall pricing references (pricePerPerson/Child removed from Hall model)
- * UPDATED: Whole-venue conflict detection (isWholeVenue)
+ * UPDATED: Whole venue conflict checking — "Cały Obiekt" blocks all halls and vice versa
  */
 
 import { prisma } from '@/lib/prisma';
@@ -45,9 +45,6 @@ const RESERVATION_INCLUDE = {
   eventType: { select: { id: true, name: true } },
   createdBy: { select: { id: true, email: true } },
 } as const;
-
-/** Active reservation statuses (not cancelled/completed) */
-const ACTIVE_STATUSES = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED, ReservationStatus.RESERVED];
 
 export class ReservationService {
   /**
@@ -146,11 +143,11 @@ export class ReservationService {
       if (startDT < new Date()) throw new Error('Reservation date must be in the future');
       if (startDT >= endDT) throw new Error('End time must be after start time');
 
-      // Standard overlap check (same hall)
+      // Check same-hall overlap
       const hasOverlap = await this.checkDateTimeOverlap(data.hallId, startDT, endDT);
-      if (hasOverlap) throw new Error('Ten termin jest ju\u017c zaj\u0119ty dla wybranej sali. Wybierz inny termin.');
+      if (hasOverlap) throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
 
-      // Whole-venue conflict check (cross-hall)
+      // Check whole venue conflict
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       const extraHoursNote = generateExtraHoursNote(startDT, endDT);
@@ -168,7 +165,7 @@ export class ReservationService {
       const hasOverlap = await this.checkOverlap(data.hallId, data.date, data.startTime, data.endTime);
       if (hasOverlap) throw new Error('This time slot is already booked for the selected hall');
 
-      // Whole-venue conflict for legacy format
+      // Check whole venue conflict (legacy format)
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
@@ -561,9 +558,9 @@ export class ReservationService {
 
     if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
       const hasOverlap = await this.checkDateTimeOverlap(existingReservation.hallId!, finalStart, finalEnd, id);
-      if (hasOverlap) throw new Error('Ten termin jest ju\u017c zaj\u0119ty dla wybranej sali. Wybierz inny termin.');
+      if (hasOverlap) throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
 
-      // Whole-venue conflict check on date change
+      // Check whole venue conflict on time change
       await this.checkWholeVenueConflict(existingReservation.hallId!, finalStart, finalEnd, id);
     }
 
@@ -775,7 +772,7 @@ export class ReservationService {
           fieldName: 'deposit',
           oldValue: deposit.status,
           newValue: 'CANCELLED',
-          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} z\u0142 auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
+          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
         }
       });
     }
@@ -783,42 +780,20 @@ export class ReservationService {
     return pendingDeposits.length;
   }
 
-  // ================================================================
-  // PRIVATE HELPERS
-  // ================================================================
-
-  private async validateUserId(userId: string): Promise<void> {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('User not found');
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // 🔒 WHOLE VENUE CONFLICT DETECTION
+  // ═══════════════════════════════════════════════════════════════
 
   /**
-   * Check for time overlap on the SAME hall
-   */
-  private async checkDateTimeOverlap(hallId: string, startDateTime: Date, endDateTime: Date, excludeId?: string): Promise<boolean> {
-    const where: any = {
-      hallId,
-      startDateTime: { not: null },
-      endDateTime: { not: null },
-      status: { in: ACTIVE_STATUSES },
-      archivedAt: null
-    };
-    if (excludeId) where.id = { not: excludeId };
-
-    const overlapping = await prisma.reservation.findFirst({
-      where: { ...where, AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }] }
-    });
-    return !!overlapping;
-  }
-
-  /**
-   * Check for whole-venue conflict (cross-hall blocking)
-   * 
+   * Check for whole venue conflicts.
+   *
    * Rules:
-   * - If booking "Ca\u0142y Obiekt" (isWholeVenue=true): check if ANY other hall has an active reservation in this time slot
-   * - If booking a regular hall: check if "Ca\u0142y Obiekt" has an active reservation in this time slot
-   * 
-   * Throws descriptive error with conflicting hall name if conflict found.
+   * 1. If booking "Cały Obiekt" (isWholeVenue) → no other hall can have
+   *    a reservation (PENDING/CONFIRMED) in the same time range.
+   * 2. If booking a regular hall → "Cały Obiekt" cannot have a reservation
+   *    in the same time range.
+   *
+   * @throws Error with descriptive Polish message on conflict
    */
   private async checkWholeVenueConflict(
     hallId: string,
@@ -829,62 +804,99 @@ export class ReservationService {
     const hall = await prisma.hall.findUnique({ where: { id: hallId } });
     if (!hall) return;
 
-    const overlapCondition = [
-      { startDateTime: { lt: endDateTime } },
-      { endDateTime: { gt: startDateTime } }
-    ];
+    const activeStatuses = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED];
 
     const baseWhere: any = {
-      startDateTime: { not: null },
-      endDateTime: { not: null },
-      status: { in: ACTIVE_STATUSES },
+      status: { in: activeStatuses },
       archivedAt: null,
+      AND: [
+        { startDateTime: { lt: endDateTime } },
+        { endDateTime: { gt: startDateTime } }
+      ]
     };
-    if (excludeReservationId) baseWhere.id = { not: excludeReservationId };
+
+    if (excludeReservationId) {
+      baseWhere.id = { not: excludeReservationId };
+    }
 
     if (hall.isWholeVenue) {
-      // Booking whole venue → check ALL other halls for conflicts
+      // Booking whole venue → check if ANY other hall has a reservation
       const conflict = await prisma.reservation.findFirst({
         where: {
           ...baseWhere,
           hallId: { not: hallId },
-          AND: overlapCondition
         },
-        include: { hall: { select: { name: true } } }
+        include: {
+          hall: { select: { name: true } },
+          client: { select: { firstName: true, lastName: true } }
+        }
       });
 
       if (conflict) {
-        const conflictHallName = conflict.hall?.name || 'inna sala';
+        const clientName = conflict.client
+          ? `${conflict.client.firstName} ${conflict.client.lastName}`
+          : 'nieznany klient';
+        const hallName = (conflict as any).hall?.name || 'inna sala';
         throw new Error(
-          `Nie mo\u017cna zarezerwowa\u0107 ca\u0142ego obiektu \u2014 sala "${conflictHallName}" ma ju\u017c rezerwacj\u0119 w tym terminie.`
+          `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
         );
       }
     } else {
-      // Booking regular hall → check if whole venue is booked
+      // Booking regular hall → check if "Cały Obiekt" is reserved
       const wholeVenueHall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
-      if (!wholeVenueHall) return; // No whole venue hall configured
+      if (!wholeVenueHall) return; // no whole venue hall configured
 
       const conflict = await prisma.reservation.findFirst({
         where: {
           ...baseWhere,
           hallId: wholeVenueHall.id,
-          AND: overlapCondition
+        },
+        include: {
+          client: { select: { firstName: true, lastName: true } }
         }
       });
 
       if (conflict) {
+        const clientName = conflict.client
+          ? `${conflict.client.firstName} ${conflict.client.lastName}`
+          : 'nieznany klient';
         throw new Error(
-          `Nie mo\u017cna zarezerwowa\u0107 tej sali \u2014 w tym terminie zarezerwowany jest ca\u0142y obiekt.`
+          `Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
         );
       }
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // PRIVATE HELPERS
+  // ═══════════════════════════════════════════════════════════════
+
+  private async validateUserId(userId: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+  }
+
+  private async checkDateTimeOverlap(hallId: string, startDateTime: Date, endDateTime: Date, excludeId?: string): Promise<boolean> {
+    const where: any = {
+      hallId,
+      startDateTime: { not: null },
+      endDateTime: { not: null },
+      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+      archivedAt: null
+    };
+    if (excludeId) where.id = { not: excludeId };
+
+    const overlapping = await prisma.reservation.findFirst({
+      where: { ...where, AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }] }
+    });
+    return !!overlapping;
   }
 
   private async checkOverlap(hallId: string, date: string, startTime: string, endTime: string, excludeId?: string): Promise<boolean> {
     const where: any = {
       hallId,
       date,
-      status: { in: ACTIVE_STATUSES },
+      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
       archivedAt: null
     };
     if (excludeId) where.id = { not: excludeId };
