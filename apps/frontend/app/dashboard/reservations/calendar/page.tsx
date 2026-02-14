@@ -3,10 +3,12 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
+  CalendarDays,
   X,
   Users,
   Clock,
@@ -14,6 +16,7 @@ import {
   ArrowRight,
   Filter,
   AlertCircle,
+  List,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageLayout, PageHero } from '@/components/shared'
@@ -358,7 +361,6 @@ export default function CalendarPage() {
       existing.push(r)
       map.set(r.date, existing)
     }
-    // Sort each day's reservations by startTime
     for (const [key, list] of map) {
       list.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
     }
@@ -372,7 +374,6 @@ export default function CalendarPage() {
     return reservationsByDate.get(dateKey(selectedDate)) || []
   }, [selectedDate, reservationsByDate])
 
-  // Unique event types for legend
   const eventTypes = useMemo(() => {
     const map = new Map<string, { name: string; color: string }>()
     for (const r of filteredReservations) {
@@ -398,6 +399,21 @@ export default function CalendarPage() {
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mr-3">
+            <Link
+              href="/dashboard/reservations"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+            >
+              <List className="h-3.5 w-3.5" />
+              Lista
+            </Link>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Kalendarz
+            </span>
+          </div>
+
           <button
             onClick={goToPrevMonth}
             className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors shadow-sm"

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, Sparkles, Search } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, Sparkles, Search, CalendarDays, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,7 +23,6 @@ export default function ReservationsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const accent = moduleAccents.reservations
 
-  // Auto-open create form when ?create=true is in URL
   const defaultHallId = searchParams.get('hallId') || undefined
 
   useEffect(() => {
@@ -118,11 +118,26 @@ export default function ReservationsPage() {
       <Card>
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <CardTitle>Lista Rezerwacji</CardTitle>
+
+              {/* View Toggle: Lista / Kalendarz */}
+              <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 ml-2">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
+                  <List className="h-3.5 w-3.5" />
+                  Lista
+                </span>
+                <Link
+                  href="/dashboard/reservations/calendar"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Kalendarz
+                </Link>
+              </div>
             </div>
             <div className="relative w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
