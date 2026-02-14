@@ -3,6 +3,8 @@
  * MIGRATED: Prisma singleton + AppError + no try/catch
  * CRITICAL FIX: updateMenu now replaces entire snapshot (package + options + dishes)
  * instead of only updating guest counts.
+ * SYNC: selectMenu/updateMenu now sync pricePerAdult/Child/Toddler + totalPrice
+ * back to the Reservation model for consistency across the system.
  */
 
 import { Request, Response } from 'express';
@@ -15,6 +17,33 @@ import {
 import { z } from 'zod';
 
 export class ReservationMenuController {
+  /**
+   * Sync reservation pricing fields from menu snapshot priceBreakdown.
+   * Updates pricePerAdult, pricePerChild, pricePerToddler and totalPrice
+   * so that all parts of the system (lists, API, reports) show correct values.
+   */
+  private async syncReservationPricing(
+    reservationId: string,
+    priceBreakdown: {
+      packageCost: {
+        adults: { priceEach: number };
+        children: { priceEach: number };
+        toddlers: { priceEach: number };
+      };
+      totalMenuPrice: number;
+    }
+  ) {
+    await prisma.reservation.update({
+      where: { id: reservationId },
+      data: {
+        pricePerAdult: priceBreakdown.packageCost.adults.priceEach,
+        pricePerChild: priceBreakdown.packageCost.children.priceEach,
+        pricePerToddler: priceBreakdown.packageCost.toddlers.priceEach,
+        totalPrice: priceBreakdown.totalMenuPrice,
+      },
+    });
+  }
+
   async selectMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
 
@@ -47,6 +76,9 @@ export class ReservationMenuController {
       childrenCount: reservation.children ?? 0,
       toddlersCount: reservation.toddlers ?? 0
     });
+
+    // Sync pricing back to reservation
+    await this.syncReservationPricing(reservationId, result.priceBreakdown);
 
     res.status(201).json({
       success: true,
@@ -101,6 +133,9 @@ export class ReservationMenuController {
       toddlersCount: reservation.toddlers ?? 0
     });
 
+    // Sync pricing back to reservation
+    await this.syncReservationPricing(reservationId, result.priceBreakdown);
+
     res.status(200).json({
       success: true,
       data: result,
@@ -108,10 +143,65 @@ export class ReservationMenuController {
     });
   }
 
+  /**
+   * Delete menu selection for reservation.
+   * Resets per-person prices to hall defaults (if hall assigned),
+   * then recalculates totalPrice from base prices (no menu options).
+   */
   async deleteMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
 
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      select: {
+        id: true,
+        adults: true,
+        children: true,
+        toddlers: true,
+        pricePerAdult: true,
+        pricePerChild: true,
+        pricePerToddler: true,
+        hall: {
+          select: {
+            pricePerPerson: true,
+            pricePerChild: true,
+            pricePerToddler: true,
+          }
+        }
+      }
+    });
+
+    if (!reservation) throw AppError.notFound('Reservation');
+
     await menuSnapshotService.deleteSnapshot(reservationId);
+
+    // Reset per-person prices to hall defaults if hall is assigned,
+    // otherwise keep current per-person prices (from removed menu package).
+    // Then recalculate totalPrice without menu options.
+    const basePricePerAdult = reservation.hall
+      ? reservation.hall.pricePerPerson.toNumber()
+      : reservation.pricePerAdult.toNumber();
+    const basePricePerChild = reservation.hall?.pricePerChild
+      ? reservation.hall.pricePerChild.toNumber()
+      : reservation.pricePerChild.toNumber();
+    const basePricePerToddler = reservation.hall?.pricePerToddler
+      ? reservation.hall.pricePerToddler.toNumber()
+      : reservation.pricePerToddler.toNumber();
+
+    const newTotal =
+      reservation.adults * basePricePerAdult +
+      (reservation.children ?? 0) * basePricePerChild +
+      (reservation.toddlers ?? 0) * basePricePerToddler;
+
+    await prisma.reservation.update({
+      where: { id: reservationId },
+      data: {
+        pricePerAdult: basePricePerAdult,
+        pricePerChild: basePricePerChild,
+        pricePerToddler: basePricePerToddler,
+        totalPrice: newTotal,
+      },
+    });
 
     res.status(200).json({
       success: true,
