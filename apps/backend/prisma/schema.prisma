@@ -33,9 +33,6 @@ model Hall {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String   @unique @db.VarChar(255)
   capacity        Int      @db.SmallInt
-  pricePerPerson  Decimal  @db.Decimal(10, 2)
-  pricePerChild   Decimal? @db.Decimal(10, 2)
-  pricePerToddler Decimal? @db.Decimal(10, 2)
   description     String?  @db.Text
   amenities       String[] @db.Text
   images          String[] @db.Text
