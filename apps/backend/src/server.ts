@@ -17,6 +17,7 @@ import menuRoutes from '@/routes/menu.routes';
 import dishRoutes from '@/routes/dish.routes';
 import dishCategoryRoutes from '@/routes/dish-category.routes';
 import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
+import statsRoutes from '@/routes/stats.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -108,6 +109,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/deposits', depositRoutes);
 app.use('/api/reservations/:reservationId/deposits', reservationDepositRoutes);
 app.use('/api/queue', queueRoutes);
+app.use('/api/stats', statsRoutes);
 
 /**
  * Menu System Routes
@@ -216,10 +218,10 @@ function setupDepositOverdueCron() {
 /**
  * Setup Deposit Reminder Cron Job
  * Runs daily at 08:00 AM to send email reminders
- * - 7 days before due → first reminder
- * - 3 days before due → second reminder  
- * - 1 day before due → final reminder
- * - After due date → overdue notices
+ * - 7 days before due \u2192 first reminder
+ * - 3 days before due \u2192 second reminder  
+ * - 1 day before due \u2192 final reminder
+ * - After due date \u2192 overdue notices
  */
 function setupDepositReminderCron() {
   cron.schedule('0 8 * * *', async () => {
