@@ -142,6 +142,8 @@ export async function seedE2ETestData() {
       pricePerToddler: 60,
       totalPrice: 26850,
       status: 'RESERVED',
+      reservationQueueDate: new Date('2026-06-20'),
+      reservationQueuePosition: 1,
       notes: 'Wesele Marek i Agnieszka - preferencje: muzyka na \u017cywo',
     },
     {
@@ -180,6 +182,8 @@ export async function seedE2ETestData() {
       pricePerToddler: 40,
       totalPrice: 9600,
       status: 'RESERVED',
+      reservationQueueDate: new Date('2026-05-10'),
+      reservationQueuePosition: 1,
       notes: 'Komunia \u015awi\u0119ta Kacpra',
     },
     {
@@ -199,6 +203,8 @@ export async function seedE2ETestData() {
       pricePerToddler: 0,
       totalPrice: 7400,
       status: 'RESERVED',
+      reservationQueueDate: new Date('2026-04-25'),
+      reservationQueuePosition: 1,
       notes: '50-te urodziny',
     },
     {
