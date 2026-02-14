@@ -8,6 +8,7 @@ import { Request, Response } from 'express';
 import reservationService from '../services/reservation.service';
 import { pdfService } from '../services/pdf.service';
 import { AppError } from '../utils/AppError';
+import { PrismaClient } from '@prisma/client';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -15,6 +16,8 @@ import {
   ReservationFilters,
   ReservationStatus
 } from '../types/reservation.types';
+
+const prisma = new PrismaClient();
 
 export class ReservationController {
   /**
@@ -104,6 +107,84 @@ export class ReservationController {
     res.status(200).json({
       success: true,
       data: reservation
+    });
+  }
+
+  /**
+   * Check hall availability for a given time range
+   * GET /api/reservations/check-availability?hallId=X&startDateTime=...&endDateTime=...
+   */
+  async checkAvailability(req: Request, res: Response): Promise<void> {
+    const { hallId, startDateTime, endDateTime, excludeReservationId } = req.query;
+
+    if (!hallId || !startDateTime || !endDateTime) {
+      throw AppError.badRequest('hallId, startDateTime, and endDateTime are required');
+    }
+
+    const start = new Date(startDateTime as string);
+    const end = new Date(endDateTime as string);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw AppError.badRequest('Invalid date format for startDateTime or endDateTime');
+    }
+
+    if (end <= start) {
+      throw AppError.badRequest('endDateTime must be after startDateTime');
+    }
+
+    // Find overlapping reservations (not cancelled)
+    const conflicts = await prisma.reservation.findMany({
+      where: {
+        hallId: hallId as string,
+        status: {
+          notIn: ['CANCELLED'],
+        },
+        ...(excludeReservationId ? { id: { not: excludeReservationId as string } } : {}),
+        // Overlap condition: existing.start < new.end AND existing.end > new.start
+        startDateTime: {
+          lt: end,
+        },
+        endDateTime: {
+          gt: start,
+        },
+      },
+      select: {
+        id: true,
+        startDateTime: true,
+        endDateTime: true,
+        status: true,
+        client: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        eventType: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        startDateTime: 'asc',
+      },
+    });
+
+    const formattedConflicts = conflicts.map((c) => ({
+      id: c.id,
+      clientName: c.client ? `${c.client.firstName} ${c.client.lastName}` : 'Nieznany',
+      eventType: c.eventType?.name || 'Nieznany',
+      startDateTime: c.startDateTime?.toISOString() || '',
+      endDateTime: c.endDateTime?.toISOString() || '',
+      status: c.status,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        available: formattedConflicts.length === 0,
+        conflicts: formattedConflicts,
+      },
     });
   }
 
