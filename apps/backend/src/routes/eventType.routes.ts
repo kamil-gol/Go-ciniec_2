@@ -1,6 +1,6 @@
 /**
  * EventType Routes
- * MIGRATED: asyncHandler + validateUUID
+ * Full CRUD + stats + predefined colors
  */
 
 import { Router } from 'express';
@@ -11,6 +11,23 @@ import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
+
+// Stats endpoint (must be before /:id to avoid UUID conflict)
+router.get(
+  '/stats',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    await eventTypeController.getEventTypeStats(req, res);
+  })
+);
+
+// Predefined colors for color picker
+router.get(
+  '/colors',
+  asyncHandler(async (req, res) => {
+    await eventTypeController.getPredefinedColors(req, res);
+  })
+);
 
 router.post(
   '/',

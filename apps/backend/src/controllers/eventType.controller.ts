@@ -1,6 +1,6 @@
 /**
  * EventType Controller
- * MIGRATED: AppError + no try/catch
+ * Full CRUD + stats for event type management
  */
 
 import { Request, Response } from 'express';
@@ -10,12 +10,13 @@ import { CreateEventTypeDTO, UpdateEventTypeDTO } from '../types/eventType.types
 
 export class EventTypeController {
   async createEventType(req: Request, res: Response): Promise<void> {
-    const data: CreateEventTypeDTO = req.body;
+    const { name, description, color, isActive } = req.body;
 
-    if (!data.name) {
+    if (!name) {
       throw AppError.badRequest('Event type name is required');
     }
 
+    const data: CreateEventTypeDTO = { name, description, color, isActive };
     const eventType = await eventTypeService.createEventType(data);
 
     res.status(201).json({
@@ -25,8 +26,9 @@ export class EventTypeController {
     });
   }
 
-  async getEventTypes(_req: Request, res: Response): Promise<void> {
-    const eventTypes = await eventTypeService.getEventTypes();
+  async getEventTypes(req: Request, res: Response): Promise<void> {
+    const activeOnly = req.query.isActive === 'true';
+    const eventTypes = await eventTypeService.getEventTypes(activeOnly);
 
     res.status(200).json({
       success: true,
@@ -49,7 +51,13 @@ export class EventTypeController {
 
   async updateEventType(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const data: UpdateEventTypeDTO = req.body;
+    const { name, description, color, isActive } = req.body;
+
+    const data: UpdateEventTypeDTO = {};
+    if (name !== undefined) data.name = name;
+    if (description !== undefined) data.description = description;
+    if (color !== undefined) data.color = color;
+    if (isActive !== undefined) data.isActive = isActive;
 
     const eventType = await eventTypeService.updateEventType(id, data);
 
@@ -67,6 +75,25 @@ export class EventTypeController {
     res.status(200).json({
       success: true,
       message: 'Event type deleted successfully'
+    });
+  }
+
+  async getEventTypeStats(_req: Request, res: Response): Promise<void> {
+    const stats = await eventTypeService.getEventTypeStats();
+
+    res.status(200).json({
+      success: true,
+      data: stats,
+      count: stats.length
+    });
+  }
+
+  async getPredefinedColors(_req: Request, res: Response): Promise<void> {
+    const colors = eventTypeService.getPredefinedColors();
+
+    res.status(200).json({
+      success: true,
+      data: colors
     });
   }
 }

@@ -4,12 +4,36 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse } from '../types/eventType.types';
+import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse, EventTypeStatsResponse } from '../types/eventType.types';
+
+// Predefined colors for event types
+const PREDEFINED_COLORS = [
+  '#EF4444', // red
+  '#F97316', // orange
+  '#EAB308', // yellow
+  '#22C55E', // green
+  '#06B6D4', // cyan
+  '#3B82F6', // blue
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+  '#F43F5E', // rose
+  '#14B8A6', // teal
+];
+
+const HEX_COLOR_REGEX = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+
+function isValidColor(color: string): boolean {
+  return HEX_COLOR_REGEX.test(color);
+}
 
 export class EventTypeService {
   async createEventType(data: CreateEventTypeDTO): Promise<EventTypeResponse> {
     if (!data.name || data.name.trim().length === 0) {
       throw new Error('Event type name is required');
+    }
+
+    if (data.color && !isValidColor(data.color)) {
+      throw new Error('Invalid color format. Use hex format (e.g. #FF5733)');
     }
 
     const existingType = await prisma.eventType.findFirst({
@@ -21,23 +45,39 @@ export class EventTypeService {
     }
 
     const eventType = await prisma.eventType.create({
-      data: { name: data.name.trim() }
+      data: {
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        color: data.color || null,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      }
     });
 
-    return eventType as any;
+    return eventType as EventTypeResponse;
   }
 
-  async getEventTypes(): Promise<EventTypeResponse[]> {
+  async getEventTypes(activeOnly: boolean = false): Promise<EventTypeResponse[]> {
+    const where = activeOnly ? { isActive: true } : {};
+
     const eventTypes = await prisma.eventType.findMany({
+      where,
       orderBy: { name: 'asc' }
     });
-    return eventTypes as any[];
+
+    return eventTypes as EventTypeResponse[];
   }
 
-  async getEventTypeById(id: string): Promise<EventTypeResponse> {
+  async getEventTypeById(id: string): Promise<EventTypeResponse & { _count: { reservations: number; menuTemplates: number } }> {
     const eventType = await prisma.eventType.findUnique({
       where: { id },
-      include: { _count: { select: { reservations: true } } }
+      include: {
+        _count: {
+          select: {
+            reservations: true,
+            menuTemplates: true,
+          }
+        }
+      }
     });
 
     if (!eventType) throw new Error('Event type not found');
@@ -48,8 +88,12 @@ export class EventTypeService {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
     if (!existingType) throw new Error('Event type not found');
 
-    if (data.name && data.name.trim().length === 0) {
+    if (data.name !== undefined && data.name.trim().length === 0) {
       throw new Error('Event type name cannot be empty');
+    }
+
+    if (data.color !== undefined && data.color !== null && !isValidColor(data.color)) {
+      throw new Error('Invalid color format. Use hex format (e.g. #FF5733)');
     }
 
     if (data.name && data.name.trim() !== existingType.name) {
@@ -59,12 +103,19 @@ export class EventTypeService {
       if (typeWithSameName) throw new Error('Event type with this name already exists');
     }
 
+    const updateData: Record<string, any> = {};
+
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
+    if (data.color !== undefined) updateData.color = data.color;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
     const eventType = await prisma.eventType.update({
       where: { id },
-      data: { name: data.name?.trim() }
+      data: updateData
     });
 
-    return eventType as any;
+    return eventType as EventTypeResponse;
   }
 
   async deleteEventType(id: string): Promise<void> {
@@ -79,7 +130,42 @@ export class EventTypeService {
       throw new Error(`Cannot delete event type that is used in ${reservationCount} reservation(s)`);
     }
 
+    const menuTemplateCount = await prisma.menuTemplate.count({
+      where: { eventTypeId: id }
+    });
+
+    if (menuTemplateCount > 0) {
+      throw new Error(`Cannot delete event type that has ${menuTemplateCount} menu template(s). Remove templates first.`);
+    }
+
     await prisma.eventType.delete({ where: { id } });
+  }
+
+  async getEventTypeStats(): Promise<EventTypeStatsResponse[]> {
+    const eventTypes = await prisma.eventType.findMany({
+      include: {
+        _count: {
+          select: {
+            reservations: true,
+            menuTemplates: true,
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    return eventTypes.map(et => ({
+      id: et.id,
+      name: et.name,
+      color: et.color,
+      isActive: et.isActive,
+      reservationCount: et._count.reservations,
+      menuTemplateCount: et._count.menuTemplates,
+    }));
+  }
+
+  getPredefinedColors(): string[] {
+    return PREDEFINED_COLORS;
   }
 }
 
