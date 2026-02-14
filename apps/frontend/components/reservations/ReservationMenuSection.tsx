@@ -5,15 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
-  UtensilsCrossed, Plus, Edit, Trash2, DollarSign, 
+  UtensilsCrossed, Plus, Edit, Trash2,
   Users, Package, Sparkles, ShoppingCart, ChefHat
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
-import { MenuDishesPreview } from '@/components/menu/MenuDishesPreview'
 import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteReservationMenu } from '@/hooks/use-menu'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
 
 interface ReservationMenuSectionProps {
   reservationId: string
@@ -23,6 +21,15 @@ interface ReservationMenuSectionProps {
   children: number
   toddlers: number
   onMenuUpdated?: () => void
+}
+
+const CATEGORY_ICONS: Record<string, string> = {
+  'Dania g\u0142\u00f3wne': '\ud83c\udf7d\ufe0f',
+  'Dodatki': '\ud83e\udd54',
+  'Sa\u0142atki': '\ud83e\udd57',
+  'Desery': '\ud83c\udf70',
+  'Zupy': '\ud83c\udf72',
+  'Przystawki': '\ud83e\udd58',
 }
 
 export function ReservationMenuSection({
@@ -53,7 +60,7 @@ export function ReservationMenuSection({
         })
         toast({
           title: 'Sukces!',
-          description: 'Menu zostało zaktualizowane',
+          description: 'Menu zosta\u0142o zaktualizowane',
         })
       } else {
         await selectMenuMutation.mutateAsync({
@@ -62,7 +69,7 @@ export function ReservationMenuSection({
         })
         toast({
           title: 'Sukces!',
-          description: 'Menu zostało dodane do rezerwacji',
+          description: 'Menu zosta\u0142o dodane do rezerwacji',
         })
       }
       
@@ -70,27 +77,27 @@ export function ReservationMenuSection({
       onMenuUpdated?.()
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error.message || 'Nie udało się zapisać menu',
+        title: 'B\u0142\u0105d',
+        description: error.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 menu',
         variant: 'destructive',
       })
     }
   }
 
   const handleDeleteMenu = async () => {
-    if (!confirm('Czy na pewno chcesz usunąć wybrane menu?')) return
+    if (!confirm('Czy na pewno chcesz usun\u0105\u0107 wybrane menu?')) return
 
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
       toast({
         title: 'Sukces',
-        description: 'Menu zostało usunięte',
+        description: 'Menu zosta\u0142o usuni\u0119te',
       })
       onMenuUpdated?.()
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się usunąć menu',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 usun\u0105\u0107 menu',
         variant: 'destructive',
       })
     }
@@ -100,29 +107,13 @@ export function ReservationMenuSection({
     setShowSelectionDialog(false)
   }
 
-  /**
-   * Build initial selection for edit mode.
-   * Uses snapshot.menuTemplateId and snapshot.packageId (DB columns)
-   * exposed by the updated formatMenuResponse, with JSONB fallbacks.
-   */
   const buildInitialSelection = () => {
     if (!hasMenu || !menuData?.snapshot) return undefined
     const snapshot = menuData.snapshot
     const md = snapshot.menuData || {} as any
     
-    // Primary: DB column fields from formatMenuResponse
-    // Fallback: JSONB menuData fields
     const templateId = snapshot.menuTemplateId || md.templateId || md.menuTemplateId || undefined
     const packageId = snapshot.packageId || md.packageId || md.selectedPackageId || undefined
-    
-    if (!packageId) {
-      console.warn('[buildInitialSelection] packageId not found. snapshot keys:', Object.keys(snapshot), 'menuData keys:', Object.keys(md))
-    }
-    if (!templateId) {
-      console.warn('[buildInitialSelection] templateId not found. snapshot keys:', Object.keys(snapshot), 'menuData keys:', Object.keys(md))
-    }
-    
-    console.log('[buildInitialSelection] templateId:', templateId, 'packageId:', packageId)
     
     return {
       templateId,
@@ -153,9 +144,7 @@ export function ReservationMenuSection({
     )
   }
 
-  // Extract menu data if available
   const snapshot = menuData?.snapshot
-  const priceBreakdown = menuData?.priceBreakdown
   const menuDataNested = snapshot?.menuData || {} as any
   const {
     packageName,
@@ -169,7 +158,7 @@ export function ReservationMenuSection({
 
   return (
     <>
-      {/* No menu selected yet */}
+      {/* No menu selected */}
       {!hasMenu && (
         <Card className="border-0 shadow-xl">
           <CardHeader className="border-b">
@@ -188,7 +177,7 @@ export function ReservationMenuSection({
               <div>
                 <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj menu do rezerwacji aby zobaczyć szczegóły
+                  Dodaj menu do rezerwacji aby zobaczy\u0107 szczeg\u00f3\u0142y
                 </p>
               </div>
               <Button
@@ -203,207 +192,133 @@ export function ReservationMenuSection({
         </Card>
       )}
 
-      {/* Menu is selected - show details */}
+      {/* Menu selected - compact view without cost section */}
       {hasMenu && (
-        <>
-          <Card className="border-0 shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
-                    <UtensilsCrossed className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">Menu</h2>
-                    <p className="text-sm text-muted-foreground">{packageName}</p>
-                  </div>
+        <Card className="border-0 shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
+                  <UtensilsCrossed className="h-5 w-5 text-white" />
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowSelectionDialog(true)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Zmień
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeleteMenu}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div>
+                  <h2 className="text-xl font-bold">Menu</h2>
+                  <p className="text-sm text-muted-foreground">{packageName}</p>
                 </div>
               </div>
-
-              {/* Package Section */}
-              <div className="space-y-4">
-                <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Package className="h-5 w-5 text-orange-600" />
-                    <h3 className="font-semibold">Pakiet: {packageName}</h3>
-                  </div>
-                  
-                  {packageDescription && (
-                    <p className="text-sm text-muted-foreground mb-3">{packageDescription}</p>
-                  )}
-                  
-                  {/* Package Prices */}
-                  <div className="grid grid-cols-3 gap-3 mb-3">
-                    <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">Dorośli</p>
-                      <p className="font-bold">{pricePerAdult} zł</p>
-                    </div>
-                    <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">Dzieci</p>
-                      <p className="font-bold">{pricePerChild} zł</p>
-                    </div>
-                    <div className="text-center p-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">Maluchy</p>
-                      <p className="font-bold">{pricePerToddler} zł</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Selected Dishes */}
-                {dishSelections && dishSelections.length > 0 && (
-                  <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <ChefHat className="h-5 w-5 text-orange-600" />
-                      <h3 className="font-semibold">Wybrane dania</h3>
-                      <Badge variant="secondary" className="ml-auto">
-                        {dishSelections.reduce((sum: number, cat: any) => 
-                          sum + cat.dishes.reduce((s: number, d: any) => s + d.quantity, 0), 0
-                        )} porcji
-                      </Badge>
-                    </div>
-                    <MenuDishesPreview dishSelections={dishSelections} />
-                  </div>
-                )}
-
-                {/* Selected Options */}
-                {selectedOptions && selectedOptions.length > 0 && (
-                  <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ShoppingCart className="h-5 w-5 text-amber-600" />
-                      <h3 className="font-semibold">Dodatkowe opcje ({selectedOptions.length})</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {selectedOptions.map((opt: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/50 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-amber-600" />
-                            <div>
-                              <p className="font-medium text-sm">{opt.optionName || opt.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {opt.priceUnit === 'PER_PERSON' || opt.priceType === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold">{opt.priceAmount} zł</p>
-                            {opt.quantity && (
-                              <p className="text-xs text-muted-foreground">× {opt.quantity}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSelectionDialog(true)}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Zmie\u0144
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteMenu}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </Card>
 
-          {/* Price Breakdown Card */}
-          {priceBreakdown && (
-            <Card className="border-0 shadow-xl overflow-hidden">
-              <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                    <DollarSign className="h-5 w-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold">Koszt menu</h2>
+            {/* Package info - compact */}
+            <div className="bg-white dark:bg-black/20 rounded-lg p-4 mb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-orange-600" />
+                  <span className="font-semibold text-sm">Pakiet: {packageName}</span>
                 </div>
-
-                <div className="space-y-3">
-                  {/* Package Cost */}
-                  <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-muted-foreground mb-3">Pakiet</p>
-                    <div className="space-y-2">
-                      {priceBreakdown.packageCost.adults.count > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span>Dorośli ({priceBreakdown.packageCost.adults.count} × {priceBreakdown.packageCost.adults.priceEach} zł)</span>
-                          <span className="font-semibold">{priceBreakdown.packageCost.adults.total} zł</span>
-                        </div>
-                      )}
-                      {priceBreakdown.packageCost.children.count > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span>Dzieci ({priceBreakdown.packageCost.children.count} × {priceBreakdown.packageCost.children.priceEach} zł)</span>
-                          <span className="font-semibold">{priceBreakdown.packageCost.children.total} zł</span>
-                        </div>
-                      )}
-                      {priceBreakdown.packageCost.toddlers.count > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} × {priceBreakdown.packageCost.toddlers.priceEach} zł)</span>
-                          <span className="font-semibold">{priceBreakdown.packageCost.toddlers.total} zł</span>
-                        </div>
-                      )}
-                      <Separator />
-                      <div className="flex justify-between font-semibold">
-                        <span>Suma pakietu</span>
-                        <span>{priceBreakdown.packageCost.subtotal} zł</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Options Cost */}
-                  {priceBreakdown.optionsCost && priceBreakdown.optionsCost.length > 0 && (
-                    <div className="bg-white dark:bg-black/20 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-muted-foreground mb-3">Opcje dodatkowe</p>
-                      <div className="space-y-2">
-                        {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span>{opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${opt.priceEach} zł` : 'stała'})</span>
-                            <span className="font-semibold">{opt.total} zł</span>
-                          </div>
-                        ))}
-                        <Separator />
-                        <div className="flex justify-between font-semibold">
-                          <span>Suma opcji</span>
-                          <span>{priceBreakdown.optionsSubtotal} zł</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm opacity-90">Całkowity koszt menu</p>
-                        <p className="text-3xl font-bold">{priceBreakdown.totalMenuPrice} zł</p>
-                      </div>
-                      <Users className="h-8 w-8 opacity-80" />
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>Dor. <strong>{pricePerAdult} z\u0142</strong></span>
+                  <span>Dz. <strong>{pricePerChild} z\u0142</strong></span>
+                  <span>Mal. <strong>{pricePerToddler} z\u0142</strong></span>
                 </div>
               </div>
-            </Card>
-          )}
-        </>
+              {packageDescription && (
+                <p className="text-xs text-muted-foreground mt-1 ml-6">{packageDescription}</p>
+              )}
+            </div>
+
+            {/* Dishes - compact inline list */}
+            {dishSelections && dishSelections.length > 0 && (
+              <div className="bg-white dark:bg-black/20 rounded-lg p-4 mb-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <ChefHat className="h-4 w-4 text-orange-600" />
+                  <span className="font-semibold text-sm">Wybrane dania</span>
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {dishSelections.reduce((sum: number, cat: any) => 
+                      sum + cat.dishes.reduce((s: number, d: any) => s + d.quantity, 0), 0
+                    )} porcji
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {dishSelections.map((category: any) => {
+                    const icon = CATEGORY_ICONS[category.categoryName] || '\ud83c\udf7d\ufe0f'
+                    return (
+                      <div key={category.categoryId}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-sm">{icon}</span>
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{category.categoryName}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 ml-5">
+                          {category.dishes.map((dish: any) => (
+                            <span
+                              key={dish.dishId}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
+                            >
+                              <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
+                              {dish.quantity > 1 && (
+                                <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Options - compact */}
+            {selectedOptions && selectedOptions.length > 0 && (
+              <div className="bg-white dark:bg-black/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingCart className="h-4 w-4 text-amber-600" />
+                  <span className="font-semibold text-sm">Opcje dodatkowe ({selectedOptions.length})</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedOptions.map((opt: any, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/50 rounded-full text-xs border border-amber-200 dark:border-amber-800"
+                    >
+                      <Sparkles className="h-3 w-3 text-amber-600" />
+                      <span className="font-medium">{opt.optionName || opt.name}</span>
+                      <span className="text-amber-700 font-bold">{opt.priceAmount} z\u0142</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
       )}
 
-      {/* Single shared Dialog for both add and edit */}
+      {/* Selection Dialog */}
       <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
         <DialogContent 
           className="max-w-4xl max-h-[90vh] overflow-y-auto"
           onClose={handleCloseDialog}
         >
           <DialogHeader>
-            <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
+            <DialogTitle>{hasMenu ? 'Zmie\u0144 menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
           </DialogHeader>
           <MenuSelectionFlow
             eventTypeId={eventTypeId}
