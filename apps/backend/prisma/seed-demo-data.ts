@@ -4,12 +4,12 @@ const prisma = new PrismaClient()
 
 // Standardized data
 const HALLS = [
-  { name: 'Sala Kryształowa', capacity: 150, pricePerPerson: 120 },
-  { name: 'Sala Taneczna', capacity: 100, pricePerPerson: 100 },
-  { name: 'Sala Złota', capacity: 80, pricePerPerson: 110 },
-  { name: 'Cały obiekt', capacity: 300, pricePerPerson: 150 },
-  { name: 'Strzecha 1', capacity: 50, pricePerPerson: 90 },
-  { name: 'Strzecha 2', capacity: 50, pricePerPerson: 90 },
+  { name: 'Sala Kryształowa', capacity: 150 },
+  { name: 'Sala Taneczna', capacity: 100 },
+  { name: 'Sala Złota', capacity: 80 },
+  { name: 'Cały obiekt', capacity: 300 },
+  { name: 'Strzecha 1', capacity: 50 },
+  { name: 'Strzecha 2', capacity: 50 },
 ]
 
 const EVENT_TYPES = [
@@ -130,8 +130,6 @@ async function main() {
       data: {
         name: hallData.name,
         capacity: hallData.capacity,
-        pricePerPerson: hallData.pricePerPerson,
-        pricePerChild: Math.round(hallData.pricePerPerson * 0.5), // 50% for children
         description: `Piękna ${hallData.name} idealna na każdą okazję`,
         amenities: ['Klimatyzacja', 'Nagłośnienie', 'Oświetlenie LED', 'Parkiet'],
         images: [],
@@ -139,7 +137,7 @@ async function main() {
       }
     })
     createdHalls.push(hall)
-    console.log(`  ✓ ${hall.name} (${hall.capacity} osób, ${hall.pricePerPerson} PLN/os)`)
+    console.log(`  ✓ ${hall.name} (${hall.capacity} osób)`)
   }
   console.log()
   
@@ -232,6 +230,11 @@ async function main() {
   console.log('📅 Tworzenie 50 aktywnych rezerwacji (PENDING/CONFIRMED)...')
   const statuses = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED]
   
+  // Default pricing (since halls no longer have pricing)
+  const DEFAULT_PRICE_PER_ADULT = 150
+  const DEFAULT_PRICE_PER_CHILD = 75
+  const DEFAULT_PRICE_PER_TODDLER = 38
+  
   for (let i = 0; i < 50; i++) {
     const client = createdClients[(i + 25) % createdClients.length] // Different clients
     const hall = createdHalls[i % createdHalls.length]
@@ -251,9 +254,9 @@ async function main() {
     const toddlers = randomInt(0, 10)
     const guests = adults + children + toddlers
     
-    const pricePerAdult = Number(hall.pricePerPerson)
-    const pricePerChild = Math.round(pricePerAdult * 0.5)
-    const pricePerToddler = Math.round(pricePerAdult * 0.25)
+    const pricePerAdult = DEFAULT_PRICE_PER_ADULT
+    const pricePerChild = DEFAULT_PRICE_PER_CHILD
+    const pricePerToddler = DEFAULT_PRICE_PER_TODDLER
     const totalPrice = (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
     
     const reservation = await prisma.reservation.create({
