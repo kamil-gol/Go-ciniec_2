@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { Calendar, FileText, Pencil, Trash2, Theater, MoreHorizontal } from 'lucide-react'
-import { type EventType, type EventTypeStats } from '@/lib/api/event-types-api'
+import { type EventType, type EventTypeStats, updateEventType } from '@/lib/api/event-types-api'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,17 +20,36 @@ interface EventTypeCardProps {
   eventType: EventType
   stats?: EventTypeStats
   onUpdate: () => void
+  onEdit: (eventType: EventType) => void
+  onDelete: (eventType: EventType) => void
 }
 
-export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps) {
+export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: EventTypeCardProps) {
   const { toast } = useToast()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const reservationCount = stats?.reservationCount ?? 0
   const templateCount = stats?.menuTemplateCount ?? 0
 
   const colorStyle = eventType.color
     ? { backgroundColor: eventType.color }
     : { backgroundColor: '#9CA3AF' }
+
+  const handleToggleActive = async (checked: boolean) => {
+    try {
+      setToggling(true)
+      await updateEventType(eventType.id, { isActive: checked })
+      toast({
+        title: checked ? 'Aktywowany' : 'Dezaktywowany',
+        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
+      })
+      onUpdate()
+    } catch (error: any) {
+      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
+    } finally {
+      setToggling(false)
+    }
+  }
 
   return (
     <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-neutral-200 dark:border-neutral-700">
@@ -80,20 +100,14 @@ export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps
               align="end"
               className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-lg"
             >
-              <DropdownMenuItem
-                onClick={() => {
-                  toast({ title: 'Wkrótce', description: 'Edycja typu — Faza 4' })
-                }}
-              >
+              <DropdownMenuItem onClick={() => onEdit(eventType)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edytuj
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600 focus:text-red-600"
-                onClick={() => {
-                  toast({ title: 'Wkrótce', description: 'Usuwanie typu — Faza 4' })
-                }}
+                onClick={() => onDelete(eventType)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Usuń
@@ -109,18 +123,25 @@ export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps
           </p>
         )}
 
-        {/* Stats */}
-        <div className="flex items-center gap-6 pt-4 border-t border-neutral-100 dark:border-neutral-700">
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-            <Calendar className="h-4 w-4 text-violet-500" />
-            <span className="font-medium">{reservationCount}</span>
-            <span className="text-neutral-400">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
+        {/* Stats + Toggle */}
+        <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-neutral-700">
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
+              <Calendar className="h-4 w-4 text-violet-500" />
+              <span className="font-medium">{reservationCount}</span>
+              <span className="text-neutral-400 hidden sm:inline">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
+              <FileText className="h-4 w-4 text-amber-500" />
+              <span className="font-medium">{templateCount}</span>
+              <span className="text-neutral-400 hidden sm:inline">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-            <FileText className="h-4 w-4 text-amber-500" />
-            <span className="font-medium">{templateCount}</span>
-            <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
-          </div>
+          <Switch
+            checked={eventType.isActive}
+            onCheckedChange={handleToggleActive}
+            disabled={toggling}
+          />
         </div>
       </div>
     </Card>

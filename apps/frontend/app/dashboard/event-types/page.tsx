@@ -10,6 +10,8 @@ import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/comp
 import { moduleAccents } from '@/lib/design-tokens'
 import { getEventTypes, getEventTypeStats, type EventType, type EventTypeStats } from '@/lib/api/event-types-api'
 import { EventTypeCard } from '@/components/event-types/event-type-card'
+import { EventTypeFormDialog } from '@/components/event-types/event-type-form-dialog'
+import { EventTypeDeleteDialog } from '@/components/event-types/event-type-delete-dialog'
 
 export default function EventTypesPage() {
   const { toast } = useToast()
@@ -19,6 +21,12 @@ export default function EventTypesPage() {
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
   const accent = moduleAccents.eventTypes
+
+  // Dialog states
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingType, setEditingType] = useState<EventType | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deletingType, setDeletingType] = useState<EventType | null>(null)
 
   const loadData = useCallback(async () => {
     try {
@@ -58,6 +66,21 @@ export default function EventTypesPage() {
   const totalTemplates = stats.reduce((sum, s) => sum + s.menuTemplateCount, 0)
   const activeTypes = eventTypes.filter(et => et.isActive).length
 
+  const handleCreate = () => {
+    setEditingType(null)
+    setFormOpen(true)
+  }
+
+  const handleEdit = (eventType: EventType) => {
+    setEditingType(eventType)
+    setFormOpen(true)
+  }
+
+  const handleDelete = (eventType: EventType) => {
+    setDeletingType(eventType)
+    setDeleteOpen(true)
+  }
+
   return (
     <PageLayout>
       {/* Hero */}
@@ -70,9 +93,7 @@ export default function EventTypesPage() {
           <Button
             size="lg"
             className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
-            onClick={() => {
-              toast({ title: 'Wkrótce', description: 'Formularz tworzenia typu — Faza 4' })
-            }}
+            onClick={handleCreate}
           >
             <Plus className="mr-2 h-5 w-5" />
             Nowy Typ
@@ -157,9 +178,7 @@ export default function EventTypesPage() {
           title={search ? 'Nie znaleziono typów' : 'Brak typów wydarzeń'}
           description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszy typ wydarzenia, aby zacząć'}
           actionLabel={search ? undefined : 'Dodaj Pierwszy Typ'}
-          onAction={search ? undefined : () => {
-            toast({ title: 'Wkrótce', description: 'Formularz tworzenia typu — Faza 4' })
-          }}
+          onAction={search ? undefined : handleCreate}
         />
       ) : (
         <>
@@ -176,11 +195,28 @@ export default function EventTypesPage() {
                 eventType={eventType}
                 stats={getStatsForType(eventType.id)}
                 onUpdate={loadData}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
               />
             ))}
           </div>
         </>
       )}
+
+      {/* Dialogs */}
+      <EventTypeFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        eventType={editingType}
+        onSuccess={loadData}
+      />
+
+      <EventTypeDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        eventType={deletingType}
+        onSuccess={loadData}
+      />
     </PageLayout>
   )
 }
