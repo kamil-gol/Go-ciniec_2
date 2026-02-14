@@ -6,8 +6,19 @@ const prisma = new PrismaClient();
 export async function seedE2ETestData() {
   console.log('🧪 Starting E2E test data seeding...\n');
 
+  // Clean up in correct order (respecting foreign keys)
+  console.log('🗑️  Cleaning existing data (respecting FK constraints)...');
+  await prisma.reservationMenuSnapshot.deleteMany({});
+  await prisma.reservationHistory.deleteMany({});
+  await prisma.deposit.deleteMany({});
+  await prisma.reservation.deleteMany({});
+  await prisma.client.deleteMany({});
+  await prisma.hall.deleteMany({});
+  await prisma.user.deleteMany({});
+  console.log('   ✅ Cleanup complete');
+
   // 1. HALLS
-  console.log('🏛️  Seeding Halls...');
+  console.log('\n🏛️  Seeding Halls...');
   const halls = [
     { name: 'Sala Kryształowa', capacity: 200, description: 'Elegancka sala z kryształowymi żyrandolami', isActive: true },
     { name: 'Sala Taneczna', capacity: 150, description: 'Sala z dużym parkietem tanecznym', isActive: true },
@@ -17,7 +28,6 @@ export async function seedE2ETestData() {
     { name: 'Strzecha 2', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
   ];
 
-  await prisma.hall.deleteMany({});
   const createdHalls = await Promise.all(
     halls.map(hall => prisma.hall.create({ data: hall }))
   );
@@ -25,7 +35,6 @@ export async function seedE2ETestData() {
 
   // 2. USERS
   console.log('\n👥 Seeding Users...');
-  await prisma.user.deleteMany({});
   
   const users = [
     {
@@ -61,7 +70,6 @@ export async function seedE2ETestData() {
 
   // 3. CLIENTS
   console.log('\n👤 Seeding Clients...');
-  await prisma.client.deleteMany({});
   
   const clients = [
     {
@@ -108,7 +116,6 @@ export async function seedE2ETestData() {
 
   // 4. RESERVATIONS
   console.log('\n📅 Seeding Reservations...');
-  await prisma.reservation.deleteMany({});
   
   const adminUser = createdUsers[0];
   const weselleEvent = await prisma.eventType.findFirst({ where: { name: 'Wesele' } });
@@ -240,7 +247,6 @@ export async function seedE2ETestData() {
 
   // 5. DEPOSITS
   console.log('\n💰 Seeding Deposits...');
-  await prisma.deposit.deleteMany({});
   
   const deposits = [
     {
