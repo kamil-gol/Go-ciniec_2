@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -17,10 +17,15 @@ import {
   Filter,
   AlertCircle,
   List,
+  Plus,
+  CheckCircle2,
+  TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { PageLayout, PageHero } from '@/components/shared'
+import { Button } from '@/components/ui/button'
+import { PageLayout, PageHero, StatCard } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { getReservations } from '@/lib/api/reservations'
 import {
   useCalendarReservations,
   useCalendarHalls,
@@ -101,11 +106,7 @@ function formatCurrency(amount: number | string): string {
 
 function isToday(date: Date): boolean {
   const now = new Date()
-  return (
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear()
-  )
+  return date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
 }
 
 function ReservationPill({ reservation, onClick }: { reservation: CalendarReservation; onClick: () => void }) {
@@ -217,9 +218,29 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [hallFilter, setHallFilter] = useState<string>('all')
+  const [allReservations, setAllReservations] = useState<any[]>([])
 
   const { data: reservations, isLoading, error } = useCalendarReservations(currentYear, currentMonth)
   const { data: halls } = useCalendarHalls()
+
+  // Fetch all reservations for stats
+  useEffect(() => {
+    getReservations().then(setAllReservations).catch(() => {})
+  }, [])
+
+  const stats = useMemo(() => {
+    const now = new Date()
+    return {
+      total: allReservations.length,
+      confirmed: allReservations.filter(r => r.status === 'CONFIRMED').length,
+      pending: allReservations.filter(r => r.status === 'PENDING').length,
+      thisMonth: allReservations.filter(r => {
+        const date = r.startDateTime ? new Date(r.startDateTime) : r.date ? new Date(r.date) : null
+        if (!date) return false
+        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+      }).length,
+    }
+  }, [allReservations])
 
   const goToPrevMonth = () => {
     if (currentMonth === 1) { setCurrentMonth(12); setCurrentYear((y) => y - 1) }
@@ -274,12 +295,31 @@ export default function CalendarPage() {
 
   return (
     <PageLayout>
+      {/* Hero - same as list view */}
       <PageHero
         accent={accent}
-        title="Kalendarz Rezerwacji"
-        subtitle={`${MONTHS_PL[currentMonth - 1]} ${currentYear} — ${filteredReservations.length} rezerwacji`}
+        title="Rezerwacje"
+        subtitle="Zarządzaj rezerwacjami sal weselnych"
         icon={CalendarIcon}
+        action={
+          <Button
+            size="lg"
+            onClick={() => router.push('/dashboard/reservations/list?create=true')}
+            className="bg-white text-blue-600 hover:bg-white/90 shadow-xl"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Nowa Rezerwacja
+          </Button>
+        }
       />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
+        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
+        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+      </div>
 
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
