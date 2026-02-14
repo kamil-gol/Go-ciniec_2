@@ -49,8 +49,8 @@ export default function HallsPage() {
 
   const totalCapacity = halls.reduce((sum, h) => sum + h.capacity, 0)
   const activeHalls = halls.filter(h => h.isActive).length
-  const avgPrice = halls.length > 0
-    ? Math.round(halls.reduce((sum, h) => sum + Number(h.pricePerPerson), 0) / halls.length)
+  const avgCapacity = halls.length > 0
+    ? Math.round(totalCapacity / halls.length)
     : 0
 
   return (
@@ -76,7 +76,7 @@ export default function HallsPage() {
         <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient="from-sky-500 to-blue-500" delay={0.1} />
         <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
         <StatCard label="Całkowita pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.3} />
-        <StatCard label="Średnia cena/os." value={`${avgPrice} zł`} subtitle="Średnio za osobę" icon={TrendingUp} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
+        <StatCard label="Średnia pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
       </div>
 
       {/* Filters */}
