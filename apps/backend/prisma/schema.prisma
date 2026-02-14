@@ -37,6 +37,7 @@ model Hall {
   amenities       String[] @db.Text
   images          String[] @db.Text
   isActive        Boolean  @default(true)
+  isWholeVenue    Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -44,6 +45,7 @@ model Hall {
 
   @@index([name])
   @@index([isActive])
+  @@index([isWholeVenue])
 }
 
 model EventType {
