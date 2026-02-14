@@ -1,5 +1,25 @@
 # 📝 Changelog
 
+## [1.3.0] - 2026-02-14
+
+### ✨ Nowe funkcjonalności
+- **Karta Menu PDF** — generowanie profesjonalnej karty menu jako PDF z pełnymi danymi dań
+  - `GET /api/menu-templates/:id/pdf` — endpoint generujący PDF (wymaga Staff access)
+  - PDFKit z fontami DejaVu dla pełnej obsługi polskich znaków (ą, ę, ś, ź, ż, ó, ł, ń, ć)
+  - Automatyczne pobieranie dań przez PackageCategorySettings → DishCategory → Dish
+  - Dane restauracji z env vars (`RESTAURANT_NAME`, `RESTAURANT_ADDRESS`, etc.)
+  - Przycisk pobierania PDF na karcie szablonu w dashboardzie (ikona 🖨️) z loading state
+  - Rozmiar wygenerowanego PDF: ~55KB z 3 pakietami i 19 kategoriami dań
+
+### 🐛 Bugfixy
+- **Fix import `menu-packages`** — strona pakietów importowała z `@/lib/api/menu-packages` (plik używał nieistniejącego `./client`). Zmieniono na `@/lib/api/menu-packages-api` z prawidłowymi funkcjami `getAllActivePackages()` / `getPackagesByTemplate()`
+- **Fix wyświetlania typu wydarzenia przy edycji szablonu** — `MenuTemplateDialog` nie pokazywał nazwy typu wydarzenia w trybie edycji (race condition: `reset()` ustawiał `eventTypeId` przed załadowaniem `eventTypes`). Naprawiono przez: dodanie `eventTypes` do deps `useEffect` + zamianę disabled `Select` na disabled `Input` z bezpośrednim wyświetlaniem nazwy
+
+### 🧹 Cleanup
+- Usunięto martwy plik `apps/frontend/lib/api/menu-packages.ts` (zastąpiony przez `menu-packages-api.ts`)
+
+---
+
 ## [1.2.0] - 2026-02-14
 
 ### ✨ Nowe funkcjonalności
