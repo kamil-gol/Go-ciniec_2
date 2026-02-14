@@ -179,7 +179,10 @@ export class QueueService {
 
   async getAllQueues(): Promise<QueueItemResponse[]> {
     const reservations = await prisma.reservation.findMany({
-      where: { status: ReservationStatus.RESERVED },
+      where: {
+        status: ReservationStatus.RESERVED,
+        reservationQueueDate: { not: null },
+      },
       include: { client: true, createdBy: { select: { id: true, firstName: true, lastName: true } } },
       orderBy: [{ reservationQueueDate: 'asc' }, { reservationQueuePosition: 'asc' }]
     });
@@ -398,7 +401,7 @@ export class QueueService {
 
   async getQueueStats(): Promise<QueueStats> {
     const reservations = await prisma.reservation.findMany({
-      where: { status: ReservationStatus.RESERVED },
+      where: { status: ReservationStatus.RESERVED, reservationQueueDate: { not: null } },
       select: { reservationQueueDate: true, guests: true, queueOrderManual: true }
     });
 
