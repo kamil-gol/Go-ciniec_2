@@ -1,13 +1,15 @@
 /**
  * Hall Types
- * Types and interfaces for hall management
+ * Type definitions for hall management
+ * UPDATED: Removed pricing fields (pricePerPerson/Child/Toddler) - prices are now managed via menu packages
  */
 
 export interface CreateHallDTO {
   name: string;
   capacity: number;
   description?: string;
-  pricePerPerson: number;
+  amenities?: string[];
+  images?: string[];
   isActive?: boolean;
 }
 
@@ -15,23 +17,18 @@ export interface UpdateHallDTO {
   name?: string;
   capacity?: number;
   description?: string;
-  pricePerPerson?: number;
+  amenities?: string[];
+  images?: string[];
   isActive?: boolean;
-}
-
-export interface HallFilters {
-  isActive?: boolean;
-  minCapacity?: number;
-  maxCapacity?: number;
-  search?: string;
 }
 
 export interface HallResponse {
   id: string;
   name: string;
   capacity: number;
-  description: string | null;
-  pricePerPerson: number;
+  description?: string;
+  amenities: string[];
+  images: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
