@@ -20,29 +20,29 @@ import { PageLayout, PageHero, StatCard } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useDashboardOverview, useDashboardUpcoming } from '@/lib/api/stats-api'
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // HELPERS
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 const statusLabels: Record<string, { label: string; emoji: string; classes: string }> = {
   CONFIRMED: {
     label: 'Potwierdzone',
-    emoji: '\u2705',
+    emoji: '✅',
     classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   },
   PENDING: {
     label: 'Oczekuje',
-    emoji: '\u231B',
+    emoji: '⌛',
     classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   },
   RESERVED: {
     label: 'W kolejce',
-    emoji: '\uD83D\uDCCB',
+    emoji: '📋',
     classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   },
   COMPLETED: {
-    label: 'Zako\u0144czone',
-    emoji: '\uD83C\uDFC1',
+    label: 'Zakończone',
+    emoji: '🏁',
     classes: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
   },
 }
@@ -59,7 +59,7 @@ function formatCurrency(amount: number): string {
 function formatDate(dateStr: string | null): { day: string; month: string; full: string } {
   if (!dateStr) return { day: '?', month: '?', full: 'Brak daty' }
   const [year, month, day] = dateStr.split('-')
-  const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Pa\u017A', 'Lis', 'Gru']
+  const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
   const date = new Date(Number(year), Number(month) - 1, Number(day))
   return {
     day,
@@ -68,9 +68,9 @@ function formatDate(dateStr: string | null): { day: string; month: string; full:
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // SKELETON COMPONENTS
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 function SkeletonCard() {
   return (
@@ -100,9 +100,9 @@ function SkeletonEvent() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -135,7 +135,7 @@ export default function DashboardPage() {
   const stats = overview
     ? [
         {
-          name: 'Rezerwacje Dzi\u015B',
+          name: 'Rezerwacje Dziś',
           value: String(overview.reservationsToday),
           change: `${overview.reservationsThisWeek} w tym tygodniu`,
           changeType: 'neutral' as const,
@@ -145,7 +145,7 @@ export default function DashboardPage() {
         {
           name: 'W Kolejce',
           value: String(overview.queueCount),
-          change: `${overview.reservationsThisMonth} rezerwacji w miesi\u0105cu`,
+          change: `${overview.reservationsThisMonth} rezerwacji w miesiącu`,
           changeType: overview.queueCount > 0 ? ('neutral' as const) : ('positive' as const),
           icon: Clock,
           gradient: 'from-amber-500 to-orange-500',
@@ -153,13 +153,13 @@ export default function DashboardPage() {
         {
           name: 'Potwierdzone',
           value: String(overview.confirmedThisMonth),
-          change: 'ten miesi\u0105c',
+          change: 'ten miesiąc',
           changeType: 'positive' as const,
           icon: CheckCircle2,
           gradient: 'from-emerald-500 to-teal-500',
         },
         {
-          name: 'Przych\u00F3d miesi\u0105c',
+          name: 'Przychód miesiąc',
           value: formatCurrency(overview.revenueThisMonth),
           change:
             overview.revenueChangePercent > 0
@@ -179,18 +179,18 @@ export default function DashboardPage() {
         {
           name: 'Klienci',
           value: String(overview.totalClients),
-          change: `+${overview.newClientsThisMonth} nowych ten miesi\u0105c`,
+          change: `+${overview.newClientsThisMonth} nowych ten miesiąc`,
           changeType: overview.newClientsThisMonth > 0 ? ('positive' as const) : ('neutral' as const),
           icon: Users,
           gradient: 'from-indigo-500 to-blue-500',
         },
         {
-          name: 'Oczekuj\u0105ce Zaliczki',
+          name: 'Oczekujące Zaliczki',
           value: String(overview.pendingDepositsCount),
           change:
             overview.pendingDepositsAmount > 0
-              ? `${formatCurrency(overview.pendingDepositsAmount)} do zap\u0142aty`
-              : 'wszystko op\u0142acone',
+              ? `${formatCurrency(overview.pendingDepositsAmount)} do zapłaty`
+              : 'wszystko opłacone',
           changeType: overview.pendingDepositsCount > 0 ? ('negative' as const) : ('positive' as const),
           icon: Wallet,
           gradient: 'from-rose-500 to-pink-500',
@@ -203,8 +203,8 @@ export default function DashboardPage() {
       {/* Hero */}
       <PageHero
         accent={accent}
-        title="Panel G\u0142\u00F3wny"
-        subtitle="Przegl\u0105daj statystyki na \u017Cywo i zarz\u0105dzaj rezerwacjami"
+        title="Panel Główny"
+        subtitle="Przeglądaj statystyki na żywo i zarządzaj rezerwacjami"
         icon={LayoutDashboard}
         action={
           <button
@@ -212,7 +212,7 @@ export default function DashboardPage() {
             className="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm hover:bg-white/30 transition-colors"
           >
             <RefreshCw className="h-4 w-4" />
-            Od\u015Bwie\u017C
+            Odśwież
           </button>
         }
       />
@@ -227,17 +227,17 @@ export default function DashboardPage() {
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-red-800 dark:text-red-300">
-              Nie uda\u0142o si\u0119 pobra\u0107 statystyk
+              Nie udało się pobrać statystyk
             </p>
             <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-              Sprawd\u017A po\u0142\u0105czenie z serwerem lub od\u015Bwie\u017C stron\u0119
+              Sprawdź połączenie z serwerem lub odśwież stronę
             </p>
           </div>
           <button
             onClick={() => refetchOverview()}
             className="ml-auto text-sm font-medium text-red-700 dark:text-red-300 hover:underline"
           >
-            Spr\u00F3buj ponownie
+            Spróbuj ponownie
           </button>
         </motion.div>
       )}
@@ -269,7 +269,7 @@ export default function DashboardPage() {
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-            \uD83D\uDCC5 Najbli\u017Csze Wydarzenia
+            📅 Najbliższe Wydarzenia
           </h3>
           <Link
             href="/dashboard/reservations"
@@ -291,7 +291,7 @@ export default function DashboardPage() {
           ) : upcomingError ? (
             <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nie uda\u0142o si\u0119 pobra\u0107 nadchodz\u0105cych wydarze\u0144</p>
+              <p className="text-sm">Nie udało się pobrać nadchodzących wydarzeń</p>
             </div>
           ) : upcoming && upcoming.length > 0 ? (
             upcoming.map((event, index) => {
@@ -338,18 +338,18 @@ export default function DashboardPage() {
                     </div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">
                       {clientName}
-                      {event.startTime && ` \u2022 ${event.startTime}`}
-                      {event.hall && ` \u2022 ${event.hall.name}`}
-                      {event.guests > 0 && ` \u2022 ${event.guests} os.`}
+                      {event.startTime && ` • ${event.startTime}`}
+                      {event.hall && ` • ${event.hall.name}`}
+                      {event.guests > 0 && ` • ${event.guests} os.`}
                     </p>
                     {pendingDepositTotal > 0 && (
                       <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                        \uD83D\uDCB0 Zaliczka do zap\u0142aty: {formatCurrency(pendingDepositTotal)}
+                        💰 Zaliczka do zapłaty: {formatCurrency(pendingDepositTotal)}
                       </p>
                     )}
                     {event.deposits.length === 0 && Number(event.totalPrice) > 0 && (
                       <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
-                        \uD83D\uDCB0 Warto\u015B\u0107: {formatCurrency(Number(event.totalPrice))}
+                        💰 Wartość: {formatCurrency(Number(event.totalPrice))}
                       </p>
                     )}
                   </div>
@@ -366,7 +366,7 @@ export default function DashboardPage() {
           ) : (
             <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Brak nadchodz\u0105cych wydarze\u0144</p>
+              <p className="text-sm">Brak nadchodzących wydarzeń</p>
               <Link
                 href="/dashboard/reservations/new"
                 className={cn(
@@ -375,7 +375,7 @@ export default function DashboardPage() {
                   accent.textDark
                 )}
               >
-                Utw\u00F3rz now\u0105 rezerwacj\u0119 \u2192
+                Utwórz nową rezerwację →
               </Link>
             </div>
           )}
