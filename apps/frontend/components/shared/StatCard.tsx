@@ -84,7 +84,7 @@ export function StatCard({
       <div className="relative">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 truncate">
+            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 leading-tight">
               {label}
             </p>
             <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -119,7 +119,7 @@ export function StatCard({
           {/* Icon with gradient background */}
           <div
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-xl',
+              'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl',
               'bg-gradient-to-br shadow-lg',
               'group-hover:scale-110 group-hover:shadow-xl transition-all duration-300',
               iconGradient
