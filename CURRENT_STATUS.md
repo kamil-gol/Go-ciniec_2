@@ -3,9 +3,9 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 14.02.2026, 17:00 CET  
+**Ostatnia aktualizacja:** 14.02.2026, 18:15 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.1.0 (Auth Middleware + Full Menu System)
+**Wersja:** 1.2.0 (Whole-Venue Conflict + Toast Fix + Sanityzacja)
 
 ---
 
@@ -24,7 +24,10 @@
 ✅ **Auto-cancel** (tylko przeszłe daty)  
 ✅ **Walidacja pozycji** w kolejce  
 ✅ **Nullable constraints** dla queue fields  
-✅ **Batch update API** (atomiczne transakcje)
+✅ **Batch update API** (atomiczne transakcje)  
+✅ **Detekcja konfliktu "Cała Sala"** — blokada podwójnej rezerwacji gdy isWholeVenue (v1.2.0)  
+✅ **Sanityzacja null bytes** — `sanitizeString()` chroni PostgreSQL przed `\x00` (v1.2.0)  
+✅ **AppError(401) przy braku użytkownika** — czytelny komunikat zamiast generycznego 404 (v1.2.0)
 
 ### 🍽️ System Menu (KOMPLETNY)
 ✅ **Kategorie Dań** — CRUD API + Frontend UI, sortowanie, ikony emoji + kolory  
@@ -48,6 +51,13 @@
 - Menu calculator → Staff  
 ✅ **Frontend auto-token** — apiClient dodaje Bearer token automatycznie  
 ✅ **Error handling** — 401 → redirect login, 403 → toast "Brak uprawnień"
+
+### 🔔 System Powiadomień (v1.2.0)
+✅ **Sonner Toaster** — single source of truth w `components/ui/toaster.tsx`  
+✅ **Stackowanie toastów** — `expand={true}`, `gap={8}`, `visibleToasts={5}`  
+✅ **Przycisk zamknięcia** — `closeButton` na każdym toaście  
+✅ **z-index: 99999** — toasty zawsze nad modali/dialogami  
+✅ **Rich colors** — automatyczne kolory success/error/warning/info
 
 ### 🔗 Integracja Menu z Rezerwacjami
 ✅ **ReservationMenuSnapshot** — zapis wybranego menu w rezerwacji  
@@ -161,7 +171,7 @@ Przeczytaj na start:
 3. apps/backend/src/routes/README_MENU_API.md — szczegółowa dokumentacja Menu API
 4. apps/backend/prisma/schema.prisma — modele bazy danych
 
-## Co jest gotowe (v1.1.0):
+## Co jest gotowe (v1.2.0):
 - ✅ Rezerwacje + kolejka + drag&drop + auto-cancel
 - ✅ Sale, Klienci, Typy Wydarzeń (pełny CRUD)
 - ✅ Kategorie dań + Biblioteka dań
@@ -170,6 +180,9 @@ Przeczytaj na start:
 - ✅ System zaliczek (Deposits + payments)
 - ✅ Historia cen menu (MenuPriceHistory)
 - ✅ Auth middleware na WSZYSTKICH endpointach menu
+- ✅ Detekcja konfliktu "Cała Sala" (isWholeVenue)
+- ✅ Sanityzacja null bytes + AppError(401)
+- ✅ Toasty — stackowanie, closeButton, z-index
 
 ## Co wymaga dalszej pracy:
 - ❓ Generowanie PDF z menu w rezerwacji
@@ -205,7 +218,7 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 ## 📊 Postęp Ogólny
 
 - **Backend:** 99% ✅
-- **Frontend:** 95% ✅
+- **Frontend:** 96% ✅
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 78% 🔄
 - **Dokumentacja:** 98% ✅ (zaktualizowana 14.02)
@@ -226,6 +239,8 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 - **System Zaliczek:** 100% ✅
 - **Historia Cen:** 100% ✅
 - **Auth Middleware:** 100% ✅ (v1.1.0)
+- **Whole-Venue Conflict:** 100% ✅ (v1.2.0)
+- **Toast Stacking:** 100% ✅ (v1.2.0)
 - **PDF Generation:** ❓ Do implementacji
 
 ---
@@ -270,7 +285,7 @@ docker-compose exec postgres psql -U rezerwacje -d rezerwacje
 - `Hall` — sale bankietowe
 - `Client` — klienci
 - `EventType` — typy wydarzeń (z color, description)
-- `Reservation` — rezerwacje (z kolejką, statusami)
+- `Reservation` — rezerwacje (z kolejką, statusami, isWholeVenue)
 - `ReservationHistory` — audit trail
 
 ### Deposits
@@ -295,4 +310,4 @@ docker-compose exec postgres psql -U rezerwacje -d rezerwacje
 
 ---
 
-**Status:** Projekt w wersji 1.1.0. Kompletny system menu z auth middleware na wszystkich endpointach. Gotowy do dalszego rozwoju (PDF, testy, deployment).
+**Status:** Projekt w wersji 1.2.0. Kompletny system rezerwacji z detekcją konfliktu "Cała Sala", sanityzacją danych, stackowaniem toastów. Gotowy do dalszego rozwoju (PDF, testy, deployment).
