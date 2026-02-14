@@ -23,6 +23,7 @@ interface EventTypeCardProps {
 
 export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps) {
   const { toast } = useToast()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const reservationCount = stats?.reservationCount ?? 0
   const templateCount = stats?.menuTemplateCount ?? 0
 
@@ -61,20 +62,27 @@ export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps
           </div>
 
           {/* Actions dropdown */}
-          <DropdownMenu>
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className={`h-8 w-8 p-0 transition-opacity ${
+                  dropdownOpen
+                    ? 'opacity-100'
+                    : 'opacity-0 group-hover:opacity-100'
+                }`}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-lg"
+            >
               <DropdownMenuItem
                 onClick={() => {
-                  toast({ title: 'Wkr\u00f3tce', description: 'Edycja typu — Faza 4' })
+                  toast({ title: 'Wkrótce', description: 'Edycja typu — Faza 4' })
                 }}
               >
                 <Pencil className="mr-2 h-4 w-4" />
@@ -84,11 +92,11 @@ export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps
               <DropdownMenuItem
                 className="text-red-600 focus:text-red-600"
                 onClick={() => {
-                  toast({ title: 'Wkr\u00f3tce', description: 'Usuwanie typu — Faza 4' })
+                  toast({ title: 'Wkrótce', description: 'Usuwanie typu — Faza 4' })
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Usu\u0144
+                Usuń
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -111,7 +119,7 @@ export function EventTypeCard({ eventType, stats, onUpdate }: EventTypeCardProps
           <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
             <FileText className="h-4 w-4 text-amber-500" />
             <span className="font-medium">{templateCount}</span>
-            <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablon\u00f3w'}</span>
+            <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
           </div>
         </div>
       </div>
