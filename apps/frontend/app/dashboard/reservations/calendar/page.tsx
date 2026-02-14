@@ -31,20 +31,20 @@ import {
 // CONSTANTS
 // ===============================================================
 
-const DAYS_PL = ['Pn', 'Wt', '\u015ar', 'Cz', 'Pt', 'Sb', 'Nd']
+const DAYS_PL = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd']
 const MONTHS_PL = [
-  'Stycze\u0144',
+  'Styczeń',
   'Luty',
   'Marzec',
-  'Kwiecie\u0144',
+  'Kwiecień',
   'Maj',
   'Czerwiec',
   'Lipiec',
-  'Sierpie\u0144',
-  'Wrzesie\u0144',
-  'Pa\u017adziernik',
+  'Sierpień',
+  'Wrzesień',
+  'Październik',
   'Listopad',
-  'Grudzie\u0144',
+  'Grudzień',
 ]
 
 const STATUS_CONFIG: Record<
@@ -57,7 +57,7 @@ const STATUS_CONFIG: Record<
     bgClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   },
   PENDING: {
-    label: 'Oczekuj\u0105ce',
+    label: 'Oczekujące',
     dotClass: 'bg-amber-500',
     bgClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   },
@@ -67,7 +67,7 @@ const STATUS_CONFIG: Record<
     bgClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   },
   COMPLETED: {
-    label: 'Zako\u0144czone',
+    label: 'Zakończone',
     dotClass: 'bg-slate-400',
     bgClass: 'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400',
   },
@@ -160,7 +160,7 @@ function ReservationPill({
         color: color,
         borderLeft: `3px solid ${color}`,
       }}
-      title={`${reservation.eventType?.name || 'Wydarzenie'} \u2014 ${reservation.client?.firstName} ${reservation.client?.lastName} (${reservation.startTime || ''})`}
+      title={`${reservation.eventType?.name || 'Wydarzenie'} — ${reservation.client?.firstName} ${reservation.client?.lastName} (${reservation.startTime || ''})`}
     >
       <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-gray-400')} />
       {reservation.startTime && <span className="opacity-70">{reservation.startTime} </span>}
@@ -279,7 +279,7 @@ function DayDetailPanel({
                     </div>
                     <div className="flex items-center justify-between mt-1.5">
                       <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                        {r.guests} os. \u2022 {formatCurrency(r.totalPrice)}
+                        {r.guests} os. • {formatCurrency(r.totalPrice)}
                       </span>
                       <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
                     </div>
@@ -392,7 +392,7 @@ export default function CalendarPage() {
       <PageHero
         accent={accent}
         title="Kalendarz Rezerwacji"
-        subtitle={`${MONTHS_PL[currentMonth - 1]} ${currentYear} \u2014 ${filteredReservations.length} rezerwacji`}
+        subtitle={`${MONTHS_PL[currentMonth - 1]} ${currentYear} — ${filteredReservations.length} rezerwacji`}
         icon={CalendarIcon}
       />
 
@@ -433,7 +433,7 @@ export default function CalendarPage() {
             onClick={goToToday}
             className="ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
           >
-            Dzi\u015b
+            Dziś
           </button>
         </div>
 
@@ -463,7 +463,7 @@ export default function CalendarPage() {
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji</p>
+          <p className="text-sm text-red-700 dark:text-red-300">Nie udało się załadować rezerwacji</p>
         </div>
       )}
 
@@ -552,7 +552,7 @@ export default function CalendarPage() {
                         ))}
                         {dayReservations.length > MAX_PILLS && (
                           <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
-                            +{dayReservations.length - MAX_PILLS} wi\u0119cej
+                            +{dayReservations.length - MAX_PILLS} więcej
                           </div>
                         )}
                       </div>
@@ -584,7 +584,7 @@ export default function CalendarPage() {
       {/* Legend */}
       {eventTypes.length > 0 && (
         <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-          <span className="font-semibold">Typy wydarze\u0144:</span>
+          <span className="font-semibold">Typy wydarzeń:</span>
           {eventTypes.map((et) => (
             <span key={et.name} className="flex items-center gap-1.5">
               <span
