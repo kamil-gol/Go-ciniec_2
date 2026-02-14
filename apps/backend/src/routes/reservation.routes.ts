@@ -42,6 +42,21 @@ router.get(
 );
 
 /**
+ * @route   GET /api/reservations/check-availability
+ * @desc    Check hall availability for a given time range
+ * @access  Staff (ADMIN + EMPLOYEE)
+ * @query   hallId, startDateTime, endDateTime, excludeReservationId (optional)
+ */
+router.get(
+  '/check-availability',
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await reservationController.checkAvailability(req, res);
+  })
+);
+
+/**
  * @route   GET /api/reservations/:id
  * @desc    Get reservation by ID
  * @access  Staff (ADMIN + EMPLOYEE)

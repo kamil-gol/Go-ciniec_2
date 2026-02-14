@@ -6,6 +6,7 @@ import {
   XCircle, ArrowDownUp, Banknote, Smartphone, CreditCard, Loader2,
   ExternalLink, CalendarDays, Undo2, Mail, TrendingUp, Receipt,
   Package, ShoppingCart, Users, Sparkles, ChevronDown, ChevronUp,
+  Timer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -22,6 +23,10 @@ import { useReservationMenu } from '@/hooks/use-menu'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
+// Constants
+const STANDARD_HOURS = 6
+const DEFAULT_EXTRA_HOUR_RATE = 500
+
 // Types
 interface ReservationFinancialSummaryProps {
   reservationId: string
@@ -32,6 +37,12 @@ interface ReservationFinancialSummaryProps {
   pricePerChild: number
   pricePerToddler: number
   totalPrice: number
+  /** ISO datetime string for event start */
+  startDateTime?: string
+  /** ISO datetime string for event end */
+  endDateTime?: string
+  /** Cost per extra hour beyond standard 6h (default: 500 PLN) */
+  extraHourRate?: number
 }
 
 // Config
@@ -129,6 +140,9 @@ export function ReservationFinancialSummary({
   pricePerChild,
   pricePerToddler,
   totalPrice,
+  startDateTime,
+  endDateTime,
+  extraHourRate = DEFAULT_EXTRA_HOUR_RATE,
 }: ReservationFinancialSummaryProps) {
   // Menu data
   const { data: menuData } = useReservationMenu(reservationId)
@@ -146,10 +160,25 @@ export function ReservationFinancialSummary({
     ? priceBreakdown.packageCost.toddlers.priceEach
     : pricePerToddler
 
-  // Effective total: use menu total when available, fallback to reservation prop
-  const effectiveTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
+  // Extra hours calculation
+  const extraHoursInfo = useMemo(() => {
+    if (!startDateTime || !endDateTime) return null
+    const start = new Date(startDateTime)
+    const end = new Date(endDateTime)
+    const durationMs = end.getTime() - start.getTime()
+    if (durationMs <= 0) return null
+    const durationHours = durationMs / (1000 * 60 * 60)
+    const extraHours = Math.max(0, Math.ceil(durationHours - STANDARD_HOURS))
+    const extraCost = extraHours * extraHourRate
+    return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
+  }, [startDateTime, endDateTime, extraHourRate])
+
+  // Effective total: use menu total when available, fallback to reservation prop, + extra hours
+  const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
     : totalPrice
+  const extraHoursCost = extraHoursInfo?.extraCost || 0
+  const effectiveTotalPrice = baseTotalPrice + extraHoursCost
 
   // Deposits state
   const [deposits, setDeposits] = useState<Deposit[]>([])
@@ -315,7 +344,7 @@ export function ReservationFinancialSummary({
 
             {showCostDetails && (
               <div className="space-y-3 mb-4 animate-in slide-in-from-top-2 duration-200">
-                {/* Package / Base pricing - NOW USES MENU SNAPSHOT PRICES */}
+                {/* Package / Base pricing */}
                 <div className="bg-white dark:bg-black/20 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Users className="h-4 w-4 text-purple-600" />
@@ -380,6 +409,37 @@ export function ReservationFinancialSummary({
                     </div>
                   </div>
                 )}
+
+                {/* Extra hours */}
+                {extraHoursInfo && extraHoursInfo.extraHours > 0 && (
+                  <div className="bg-white dark:bg-black/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Timer className="h-4 w-4 text-blue-600" />
+                      <p className="text-sm font-semibold text-muted-foreground">Dodatkowe godziny</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Czas trwania wydarzenia
+                        </span>
+                        <span className="font-medium">{extraHoursInfo.durationHours}h</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Czas w cenie (standard)
+                        </span>
+                        <span className="font-medium text-emerald-600">{STANDARD_HOURS}h</span>
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
+                        </span>
+                        <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -392,6 +452,12 @@ export function ReservationFinancialSummary({
                 </div>
                 <span className="text-2xl font-bold">{formatPLN(effectiveTotalPrice)} zł</span>
               </div>
+              {extraHoursInfo && extraHoursInfo.extraHours > 0 && (
+                <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+                  <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
+                  <span>+{formatPLN(extraHoursInfo.extraCost)} zł</span>
+                </div>
+              )}
             </div>
           </div>
 

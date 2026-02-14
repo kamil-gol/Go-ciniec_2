@@ -307,7 +307,7 @@ export default function ReservationDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Menu Section (visual only — no price breakdown, that's in Financial Summary) */}
+            {/* Menu Section */}
             {reservation.eventType?.id && eventDate && (
               <ReservationMenuSection
                 reservationId={reservation.id}
@@ -383,7 +383,7 @@ export default function ReservationDetailsPage() {
               </div>
             </Card>
 
-            {/* ═══ UNIFIED FINANCIAL SUMMARY (replaces old Cennik + Deposits) ═══ */}
+            {/* UNIFIED FINANCIAL SUMMARY — now with extra hours */}
             <ReservationFinancialSummary
               reservationId={reservation.id}
               adults={reservation.adults || 0}
@@ -393,6 +393,8 @@ export default function ReservationDetailsPage() {
               pricePerChild={Number(reservation.pricePerChild) || 0}
               pricePerToddler={Number(reservation.pricePerToddler) || 0}
               totalPrice={Number(reservation.totalPrice) || 0}
+              startDateTime={reservation.startDateTime}
+              endDateTime={reservation.endDateTime}
             />
 
             {/* Quick Actions */}
