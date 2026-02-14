@@ -3,13 +3,26 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 14.02.2026, 18:15 CET  
+**Ostatnia aktualizacja:** 14.02.2026, 23:35 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.2.0 (Whole-Venue Conflict + Toast Fix + Sanityzacja)
+**Wersja:** 1.4.0 (Wizard Reservation Form + Szablon→Pakiet Flow + Extra Hours)
 
 ---
 
 ## 📦 Co Działa
+
+### 🧙 Formularz Rezerwacji — 6-krokowy Wizard (v1.4.0) 🆕
+✅ **Krok 1 — Wydarzenie:** Typ wydarzenia + pola kontekstowe (urodziny/rocznica/inne)  
+✅ **Krok 2 — Sala i termin:** Wybór sali + DatePicker + TimePicker + auto-check dostępności  
+✅ **Krok 3 — Goście:** Podział na 3 grupy wiekowe z capacity warning  
+✅ **Krok 4 — Menu i ceny:** Flow Szablon → Pakiet → Ceny (lub ręczne ustalanie)  
+✅ **Krok 5 — Klient:** Combobox z wyszukiwarką + modal tworzenia nowego klienta  
+✅ **Krok 6 — Podsumowanie:** Kolorowe karty klikalne, price breakdown, notatki  
+✅ **Nowe komponenty:** Stepper (desktop/mobile), Combobox, DatePicker, TimePicker  
+✅ **Extra hours:** Automatyczna dopłata 500 PLN/h za godziny ponad 6h w Financial Summary  
+✅ **Breadcrumb:** Szablon → Pakiet → Ceny w kroku Menu  
+✅ **Auto-clear:** Zmiana szablonu kasuje pakiet, zmiana event type kasuje szablon  
+📚 **Dokumentacja:** [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md)
 
 ### System Rezerwacji & Kolejki
 ✅ **System kolejki rezerwacji** (status RESERVED)  
@@ -38,6 +51,7 @@
 ✅ **Grupy Dodatków (AddonGroup)** — CRUD, min/maxSelect, priceType, powiązania z daniami  
 ✅ **Ustawienia Kategorii w Pakietach (PackageCategorySettings)** — minSelect/maxSelect per kategoria  
 ✅ **Historia Cen (MenuPriceHistory)** — automatyczne śledzenie zmian cen  
+✅ **Karta Menu PDF** — generowanie PDF z pełnymi danymi dań (v1.3.0)  
 ✅ **Premium UI/UX Components** — Switch, AlertDialog, DishDialog, loading states
 
 ### 🔒 Bezpieczeństwo & Auth (v1.1.0)
@@ -78,6 +92,12 @@
 ✅ **Model Deposit** — amount, remainingAmount, paidAmount, status, paymentMethod  
 ✅ **DepositPayment** — częściowe płatności  
 ✅ **Backend API** — CRUD + statusy + potwierdzenia
+
+### 🧪 Testy E2E
+✅ **45 testów** (43 pass, 2 skip) w 3 plikach spec  
+✅ **Playwright** w Docker (Chromium)  
+✅ **Regresja Bug #5-9** — 19 testów  
+📚 **Dokumentacja:** [docs/E2E_TESTING_PLAN.md](docs/E2E_TESTING_PLAN.md)
 
 ---
 
@@ -126,6 +146,8 @@ apps/backend/src/routes/
 | [apps/backend/src/routes/README_MENU_API.md](apps/backend/src/routes/README_MENU_API.md) | **Szczegółowa dokumentacja Menu API** z przykładami |
 | [CHANGELOG.md](CHANGELOG.md) | Historia zmian |
 | [docs/README.md](docs/README.md) | Główny indeks dokumentacji |
+| [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md) | 🆕 **Dokumentacja 6-krokowego wizarda rezerwacji** |
+| [docs/E2E_TESTING_PLAN.md](docs/E2E_TESTING_PLAN.md) | Plan testów E2E (45 testów) |
 | [docs/QUEUE.md](docs/QUEUE.md) | Dokumentacja systemu kolejki |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architektura projektu |
 | [docs/DATABASE.md](docs/DATABASE.md) | Struktura bazy danych |
@@ -170,22 +192,26 @@ Przeczytaj na start:
 2. API.md — dokumentacja endpointów
 3. apps/backend/src/routes/README_MENU_API.md — szczegółowa dokumentacja Menu API
 4. apps/backend/prisma/schema.prisma — modele bazy danych
+5. docs/RESERVATION_FORM_WIZARD.md — dokumentacja formularza rezerwacji
 
-## Co jest gotowe (v1.2.0):
+## Co jest gotowe (v1.4.0):
 - ✅ Rezerwacje + kolejka + drag&drop + auto-cancel
+- ✅ **Formularz rezerwacji — 6-krokowy Wizard UI** (Stepper, Combobox, DatePicker, TimePicker)
+- ✅ **Flow: Szablon → Pakiet → Ceny** w formularzu rezerwacji
+- ✅ **Extra hours** — dopłata 500 PLN/h za >6h w Financial Summary
 - ✅ Sale, Klienci, Typy Wydarzeń (pełny CRUD)
 - ✅ Kategorie dań + Biblioteka dań
 - ✅ Szablony Menu + Pakiety + Opcje + Dodatki
 - ✅ Integracja Menu z Rezerwacjami (snapshot + kalkulator cen)
+- ✅ Karta Menu PDF (generowanie + pobieranie)
 - ✅ System zaliczek (Deposits + payments)
 - ✅ Historia cen menu (MenuPriceHistory)
 - ✅ Auth middleware na WSZYSTKICH endpointach menu
 - ✅ Detekcja konfliktu "Cała Sala" (isWholeVenue)
-- ✅ Sanityzacja null bytes + AppError(401)
 - ✅ Toasty — stackowanie, closeButton, z-index
+- ✅ Testy E2E — 45 testów (43 pass, 2 skip)
 
 ## Co wymaga dalszej pracy:
-- ❓ Generowanie PDF z menu w rezerwacji
 - 🔄 Testy jednostkowe systemu menu
 - 🔄 Production deployment
 
@@ -203,7 +229,6 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 ## 📋 TODO
 
 ### 🔄 Planowane
-- [ ] Generowanie PDF z menu w rezerwacji
 - [ ] Testy jednostkowe systemu menu
 - [ ] Production deployment
 - [ ] Import/Export menu (CSV/JSON)
@@ -211,23 +236,23 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 - [ ] Zdjęcia dań (upload + gallery)
 - [ ] Statystyki popularności dań
 - [ ] Multi-language menu (PL/EN)
-- [ ] Generowanie kart menu do wydruku
 
 ---
 
 ## 📊 Postęp Ogólny
 
 - **Backend:** 99% ✅
-- **Frontend:** 96% ✅
+- **Frontend:** 98% ✅
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
-- **Testy:** 78% 🔄
-- **Dokumentacja:** 98% ✅ (zaktualizowana 14.02)
+- **Testy:** 80% 🔄 (E2E: 45 testów pass)
+- **Dokumentacja:** 99% ✅ (zaktualizowana 14.02, 23:35)
 - **Deployment:** 70% 🔄
 
 ### Postęp Modułów:
 - **Sale (Halls):** 100% ✅
 - **Klienci:** 100% ✅
 - **Rezerwacje + Kolejka:** 100% ✅
+- **Formularz Rezerwacji (Wizard):** 100% ✅ (v1.4.0) 🆕
 - **Typy Wydarzeń:** 100% ✅
 - **Kategorie Dań:** 100% ✅
 - **Biblioteka Dań:** 100% ✅
@@ -241,7 +266,8 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 - **Auth Middleware:** 100% ✅ (v1.1.0)
 - **Whole-Venue Conflict:** 100% ✅ (v1.2.0)
 - **Toast Stacking:** 100% ✅ (v1.2.0)
-- **PDF Generation:** ❓ Do implementacji
+- **Karta Menu PDF:** 100% ✅ (v1.3.0)
+- **Testy E2E:** 100% ✅ (45 testów)
 
 ---
 
@@ -310,4 +336,4 @@ docker-compose exec postgres psql -U rezerwacje -d rezerwacje
 
 ---
 
-**Status:** Projekt w wersji 1.2.0. Kompletny system rezerwacji z detekcją konfliktu "Cała Sala", sanityzacją danych, stackowaniem toastów. Gotowy do dalszego rozwoju (PDF, testy, deployment).
+**Status:** Projekt w wersji 1.4.0. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E. Gotowy do dalszego rozwoju (testy jednostkowe, deployment).

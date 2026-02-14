@@ -2,13 +2,18 @@
 
 ## 📋 Przegląd
 
-**Data:** 14 lutego 2026, 19:30 - 19:52 CET  
+**Data:** 14 lutego 2026  
 **Branch:** `main`  
+
+### Sesja 1: 19:30 - 19:52 CET — Menu Module
 **Kontekst:** Naprawa błędów w module Menu — nawigacja, zliczanie pakietów i kodowanie polskich znaków UTF-8
+
+### Sesja 2: 23:00 - 23:30 CET — E2E Tests Alignment
+**Kontekst:** Dopasowanie testów E2E do faktycznego UI Gościnieca — testy były pisane pod nieistniejące elementy
 
 ---
 
-## 🎯 Zidentyfikowane Problemy
+## Sesja 1: Menu Module Fixes
 
 ### Bug #14: Brak nawigacji powrotnej w Pakiety Menu
 **Priorytet:** 🟡 MEDIUM  
@@ -63,11 +68,8 @@ Dodano funkcję pomocniczą `getPackageCount()` która obsługuje oba źródła 
 
 ```typescript
 const getPackageCount = (template: MenuTemplate): number => {
-  // 1. Sprawdź _count (na wypadek przyszłego dodania do backendu)
   if (template._count?.packages !== undefined) return template._count.packages
-  // 2. Licz z tablicy packages
   if (template.packages) return template.packages.length
-  // 3. Fallback
   return 0
 }
 ```
@@ -86,27 +88,11 @@ const getPackageCount = (template: MenuTemplate): number => {
 **Problem:**
 Polskie znaki diakrytyczne wyświetlały się jako literalne sekwencje Unicode zamiast prawidłowych znaków. Dotyczyło obu plików: `packages/page.tsx` i `templates/page.tsx`.
 
-**Przykłady błędnego wyświetlania:**
-
-| Wyświetlane | Oczekiwane |
-|---|---|
-| `Powr\u00f3t do Menu` | Powrót do Menu |
-| `Doro\u015bli` | Dorośli |
-| `z\u0142` | zł |
-| `pakiet\u00f3w` | pakietów |
-| `typ\u00f3w wydarze\u0144` | typów wydarzeń |
-| `usun\u0105\u0107` | usunąć |
-| `Utw\u00f3rz` | Utwórz |
-
 **Przyczyna:**
-Przy pushowaniu plików przez GitHub API, polskie znaki zostały zakodowane jako escape sequences z podwójnym backslashem (`\\u00f3` zamiast `\u00f3`), co spowodowało, że w pliku źródłowym zapisał się literalny tekst `\u00f3` zamiast znaku `ó`.
+Przy pushowaniu plików przez GitHub API, polskie znaki zostały zakodowane jako escape sequences z podwójnym backslashem, co spowodowało, że w pliku źródłowym zapisał się literalny tekst `\u00f3` zamiast znaku `ó`.
 
 **Poprawka:**
 Ponowne pushnięcie obu plików z prawidłowymi znakami UTF-8.
-
-**Dotyczyło znaków:**
-- `ó` (\u00f3), `ą` (\u0105), `ć` (\u0107), `ł` (\u0142)
-- `ś` (\u015b), `ę` (\u0119), `ń` (\u0144), `ż` (\u017c)
 
 **Pliki:**
 - `apps/frontend/app/dashboard/menu/packages/page.tsx`
@@ -116,17 +102,117 @@ Ponowne pushnięcie obu plików z prawidłowymi znakami UTF-8.
 
 ---
 
-## ✅ Rezultaty
+## Sesja 2: E2E Tests Alignment
 
-### Przed naprawą
-- ❌ Brak nawigacji powrotnej w Pakiety Menu
-- ❌ Wszystkie szablony pokazywały "0 pakietów"
-- ❌ Polskie znaki wyświetlane jako `\uXXXX`
+### Bug #17: Testy E2E niedopasowane do faktycznego UI
+**Priorytet:** 🔴 CRITICAL  
+**Status:** ✅ FIXED (3 iteracje)
 
-### Po naprawie
-- ✅ Przycisk "Powrót do Menu" widoczny w `/dashboard/menu/packages`
-- ✅ Prawidłowa liczba pakietów wyświetlana przy każdym szablonie
-- ✅ Polskie znaki diakrytyczne wyświetlane poprawnie w całym module Menu
+**Problem:**
+Testy E2E zostały napisane pod założenia dotyczące UI, które nie odpowiadały faktycznemu kodowi komponentów Gościnieca. 5 z 45 testów failowało.
+
+**Analiza — co zakładały testy vs rzeczywistość:**
+
+| Element | Test zakładał | Faktyczny UI | Komponent |
+|---------|--------------|-------------|----------|
+| User menu | `button[aria-label="Menu użytkownika"]` | **Nie istnieje** — logout bezpośrednio w Sidebar | `Sidebar.tsx` |
+| Logout | Dropdown menu → "Wyloguj" | `button:has-text("Wyloguj")` wprost | `Sidebar.tsx` |
+| Dashboard heading | `/Dashboard\|Panel/` | `h1` → "Witaj, {firstName}! 👋" | `Header.tsx` |
+| Login heading | `/Logowanie/` | `h1` → "Gościniec Rodzinny" | `login/page.tsx` |
+| Empty field error | `.text-red-600`, `input:invalid` | `.text-error-600` (custom Tailwind) | `login/page.tsx` |
+| Login error text | `.text-error-600` | Matchowało SVG `<AlertCircle>` (pusty tekst!) | `login/page.tsx` |
+
+**Root cause:**
+Testy zostały wygenerowane na podstawie założeń o typowym UI (dropdown user menu, standardowe klasy Tailwind), bez weryfikacji faktycznego kodu komponentów `Header.tsx`, `Sidebar.tsx` i `login/page.tsx`.
+
+**Naprawy (3 commity):**
+
+#### Iteracja 1: Refactor całości (`779167c` → `3e42b2d`)
+- Usunięto wszystkie referencje do `button[aria-label="Menu użytkownika"]`
+- Logout: `button:has-text("Wyloguj")` bezpośrednio w sidebar
+- Weryfikacja logowania: `h1` z "Witaj" (Header.tsx)
+- Empty credentials: `.text-error-600` selektor
+- User info: sprawdzanie sidebar `aside` zamiast dropdown
+- **Wynik:** 5 failów → 2 faile
+
+#### Iteracja 2: Fix selektora błędu (`0fe652d`)
+- `.text-error-600` matchował `<svg class="text-error-600">` (ikonę AlertCircle) — pusty tekst
+- Zmieniono na `.bg-error-50` — kontener `<div>` zawierający "Błąd logowania" + treść błędu
+- **Wynik:** 2 faile → 0 failów ✅
+
+#### Wynik końcowy
+```
+45 tests: 43 passed, 2 skipped, 0 failed
+Duration: ~3.0m
+```
+
+**Pliki zmienione:**
+- `apps/frontend/e2e/fixtures/auth.fixture.ts` — logout helper
+- `apps/frontend/e2e/specs/01-auth.spec.ts` — selektory auth testów
+- `apps/frontend/e2e/specs/10-bugfix-regression.spec.ts` — uproszczenie regresji
+
+**Commity:**
+- `779167c` — initial E2E test implementation
+- `3e42b2d` — align E2E tests with actual UI (no user menu dropdown)
+- `0fe652d` — error selector targets `.bg-error-50` container instead of SVG icon
+
+---
+
+## ✅ Rezultaty Całego Dnia
+
+### Sesja 1 (Menu Module): 3 bugi naprawione
+- ✅ Bug #14: Nawigacja powrotna w Pakiety Menu
+- ✅ Bug #15: Zliczanie pakietów w szablonach
+- ✅ Bug #16: Kodowanie polskich znaków UTF-8
+
+### Sesja 2 (E2E Tests): 1 bug naprawiony (3 iteracje)
+- ✅ Bug #17: Testy E2E dopasowane do faktycznego UI
+- ✅ 43/45 testów PASS, 0 FAIL
+
+### Podsumowanie statystyk
+| Metryka | Wartość |
+|---------|----------|
+| Bugi naprawione | 4 (Bug #14-17) |
+| Pliki zmienione | 7 |
+| Commity | 5 |
+| Testy E2E pass | 43/45 |
+| Czas sesji 1 | ~22 min |
+| Czas sesji 2 | ~30 min |
+
+---
+
+## 📝 Lessons Learned
+
+### Sesja 1
+
+#### 1. Spójność nawigacji w podstronach
+- **Problem:** Nowe podstrony modułu (packages) nie miały spójnej nawigacji z istniejącymi (templates)
+- **Best Practice:** Przy tworzeniu nowych widoków w module, zawsze kopiować wzorzec nawigacji z istniejących stron
+
+#### 2. Niezgodność `_count` vs tablica w API
+- **Problem:** Frontend zakładał `_count.packages` z Prisma, ale backend zwracał pełną tablicę `packages[]`
+- **Best Practice:** Używać defensywnego podejścia — sprawdzać oba źródła danych z fallbackiem
+
+#### 3. Kodowanie UTF-8 przy push przez API
+- **Problem:** Polskie znaki zakodowane jako escape sequences w treści plików
+- **Best Practice:** Przy pushowaniu plików przez GitHub API upewnić się, że znaki specjalne są przekazywane jako prawdziwe znaki UTF-8
+
+### Sesja 2
+
+#### 4. Testy E2E muszą być pisane PO weryfikacji kodu komponentów
+- **Problem:** Testy zostały napisane na podstawie założeń ("pewnie jest user menu dropdown"), nie faktycznego kodu
+- **Best Practice:** Przed pisaniem testów E2E zawsze sprawdzić faktyczne:
+  - `aria-label` w komponentach
+  - Klasy CSS (custom vs standardowe Tailwind)
+  - Strukturę DOM (co jest parent, co child)
+
+#### 5. CSS class selektory mogą matchować nieoczekiwane elementy
+- **Problem:** `.text-error-600` matchowało SVG ikonę (pusty tekst) zamiast paragrafów z błędem
+- **Best Practice:** Używać selektorów kontenerów (`.bg-error-50`) lub tag-specific (`p.text-error-700`) zamiast ogólnych klas które mogą być na SVG/ikonach
+
+#### 6. Iteracyjne debugowanie > jednorazowy big-bang fix
+- **Problem:** Pierwsza iteracja naprawiła 3/5 failów, dopiero druga dokończyła
+- **Best Practice:** Po każdej iteracji uruchomić testy i analizować pozostałe błędy — każdy może mieć inną przyczynę
 
 ---
 
@@ -139,29 +225,22 @@ git pull origin main
 docker compose up --build -d
 ```
 
+### Weryfikacja
+```bash
+# Testy E2E
+docker-compose exec frontend npx playwright test
+
+# Oczekiwany wynik: 43 passed, 2 skipped, 0 failed
+```
+
 ### Ważna uwaga
 > ⚠️ **`docker compose restart` NIE wystarczy!** Ponieważ `Dockerfile.dev` kopiuje kod instrukcją `COPY . .`, sam restart uruchamia kontener ze starym obrazem. Konieczne jest `docker compose up --build -d` aby przebudować obraz z nowym kodem.
 
 ---
 
-## 📝 Lessons Learned
-
-### 1. Spójność nawigacji w podstronach
-- **Problem:** Nowe podstrony modułu (packages) nie miały spójnej nawigacji z istniejącymi (templates)
-- **Best Practice:** Przy tworzeniu nowych widoków w module, zawsze kopiować wzorzec nawigacji z istniejących stron
-
-### 2. Niezgodność `_count` vs tablica w API
-- **Problem:** Frontend zakładał `_count.packages` z Prisma, ale backend zwracał pełną tablicę `packages[]`
-- **Best Practice:** Używać defensywnego podejścia — sprawdzać oba źródła danych z fallbackiem
-
-### 3. Kodowanie UTF-8 przy push przez API
-- **Problem:** Polskie znaki zakodowane jako escape sequences w treści plików
-- **Best Practice:** Przy pushowaniu plików przez GitHub API upewnić się, że znaki specjalne są przekazywane jako prawdziwe znaki UTF-8, nie jako `\\uXXXX`
-
----
-
 ## 📚 Związane Dokumenty
 
+- [E2E_TESTING_PLAN.md](./E2E_TESTING_PLAN.md) - Aktualny plan testów E2E z selektorami
 - [BUGFIX_SESSION_2026-02-11.md](./BUGFIX_SESSION_2026-02-11.md) - Bug #10-13
 - [BUGFIX_SESSION_2026-02-09.md](./BUGFIX_SESSION_2026-02-09.md) - Bug #9 Batch Update
 - [BUGFIX_SESSION_2026-02-07.md](./BUGFIX_SESSION_2026-02-07.md) - Bug #1-7
@@ -171,6 +250,6 @@ docker compose up --build -d
 ---
 
 **Status:** ✅ Wszystkie bugi naprawione i zdeployowane  
-**Data zakończenia:** 14.02.2026, 19:52 CET  
+**Data zakończenia:** 14.02.2026, 23:30 CET  
 **Environment:** Production (gosciniec.duckdns.org)  
 **Branch:** main
