@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { getPackages, deletePackage } from '@/lib/api/menu-packages';
-import type { MenuPackage } from '@/types/menu';
+import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/lib/api/menu-packages-api';
+import type { MenuPackage } from '@/lib/api/menu-packages-api';
 import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, DollarSign, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -23,7 +23,9 @@ export default function PackagesListPage() {
   async function loadPackages() {
     try {
       setLoading(true);
-      const data = await getPackages(templateId || undefined);
+      const data = templateId
+        ? await getPackagesByTemplate(templateId)
+        : await getAllActivePackages();
       setPackages(data);
     } catch (error) {
       console.error('Failed to load packages:', error);
@@ -373,7 +375,7 @@ export default function PackagesListPage() {
                       <div className="flex items-center justify-between text-sm mb-4">
                         <span className="flex items-center gap-2 text-slate-600 font-medium">
                           <Sparkles className="w-4 h-4 text-blue-500" />
-                          {pkg.categorySettings?.filter((cs) => cs.isEnabled).length || 0} kategorii
+                          {(pkg as any).categorySettings?.filter((cs: any) => cs.isEnabled).length || 0} kategorii
                         </span>
                         {pkg.menuTemplate && (
                           <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
