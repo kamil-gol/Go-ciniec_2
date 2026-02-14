@@ -5,6 +5,7 @@
  * instead of only updating guest counts.
  * SYNC: selectMenu/updateMenu now sync pricePerAdult/Child/Toddler + totalPrice
  * back to the Reservation model for consistency across the system.
+ * UPDATED: deleteMenu no longer references hall pricing (removed from Hall model)
  */
 
 import { Request, Response } from 'express';
@@ -145,8 +146,8 @@ export class ReservationMenuController {
 
   /**
    * Delete menu selection for reservation.
-   * Resets per-person prices to hall defaults (if hall assigned),
-   * then recalculates totalPrice from base prices (no menu options).
+   * Keeps existing per-person prices from the reservation,
+   * then recalculates totalPrice without menu options.
    */
   async deleteMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
@@ -161,13 +162,6 @@ export class ReservationMenuController {
         pricePerAdult: true,
         pricePerChild: true,
         pricePerToddler: true,
-        hall: {
-          select: {
-            pricePerPerson: true,
-            pricePerChild: true,
-            pricePerToddler: true,
-          }
-        }
       }
     });
 
@@ -175,18 +169,11 @@ export class ReservationMenuController {
 
     await menuSnapshotService.deleteSnapshot(reservationId);
 
-    // Reset per-person prices to hall defaults if hall is assigned,
-    // otherwise keep current per-person prices (from removed menu package).
-    // Then recalculate totalPrice without menu options.
-    const basePricePerAdult = reservation.hall
-      ? reservation.hall.pricePerPerson.toNumber()
-      : reservation.pricePerAdult.toNumber();
-    const basePricePerChild = reservation.hall?.pricePerChild
-      ? reservation.hall.pricePerChild.toNumber()
-      : reservation.pricePerChild.toNumber();
-    const basePricePerToddler = reservation.hall?.pricePerToddler
-      ? reservation.hall.pricePerToddler.toNumber()
-      : reservation.pricePerToddler.toNumber();
+    // Keep existing per-person prices from the reservation
+    // (prices that were set before menu was selected, or manually entered)
+    const basePricePerAdult = reservation.pricePerAdult.toNumber();
+    const basePricePerChild = reservation.pricePerChild.toNumber();
+    const basePricePerToddler = reservation.pricePerToddler.toNumber();
 
     const newTotal =
       reservation.adults * basePricePerAdult +

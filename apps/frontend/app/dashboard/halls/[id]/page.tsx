@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Calendar, Users, DollarSign, Sparkles, CheckCircle2, Building2, Clock, MapPin, Plus } from 'lucide-react'
+import { ArrowLeft, Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, Clock, MapPin, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -30,8 +30,8 @@ export default function HallDetailsPage() {
     } catch (error: any) {
       console.error('Error loading hall:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować sali',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 sali',
         variant: 'destructive',
       })
       router.push('/dashboard/halls')
@@ -72,7 +72,7 @@ export default function HallDetailsPage() {
             <Link href="/dashboard/halls">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
@@ -85,7 +85,7 @@ export default function HallDetailsPage() {
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold">{hall.name}</h1>
-                    <p className="text-white/90 text-lg mt-1">Szczegóły sali weselnej</p>
+                    <p className="text-white/90 text-lg mt-1">Szczeg\u00f3\u0142y sali weselnej</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export default function HallDetailsPage() {
                   )}
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <Users className="h-3 w-3 mr-1" />
-                    Pojemność: {hall.capacity} osób
+                    Pojemno\u015b\u0107: {hall.capacity} os\u00f3b
                   </Badge>
                 </div>
               </div>
@@ -111,7 +111,7 @@ export default function HallDetailsPage() {
                 <Link href={`/dashboard/halls/${hall.id}/edit`}>
                   <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
                     <Edit className="mr-2 h-5 w-5" />
-                    Edytuj Salę
+                    Edytuj Sal\u0119
                   </Button>
                 </Link>
               </div>
@@ -122,78 +122,6 @@ export default function HallDetailsPage() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         </div>
-
-        {/* Premium Pricing Section */}
-        <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="relative bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 p-8">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
-            
-            <div className="relative space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl shadow-lg">
-                  <DollarSign className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Cennik</h2>
-                  <p className="text-muted-foreground">Ceny za osobę w zależności od wieku</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Adults */}
-                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-black/20 p-6 shadow-lg hover:shadow-xl transition-shadow">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
-                  <div className="relative space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
-                      <span className="text-sm font-semibold text-muted-foreground uppercase">Dorośli</span>
-                    </div>
-                    <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                      {hall.pricePerPerson} zł
-                    </div>
-                    <p className="text-sm text-muted-foreground">13+ lat</p>
-                  </div>
-                </div>
-
-                {/* Children */}
-                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-black/20 p-6 shadow-lg hover:shadow-xl transition-shadow">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
-                  <div className="relative space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
-                      <span className="text-sm font-semibold text-muted-foreground uppercase">Dzieci</span>
-                    </div>
-                    <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                      {hall.pricePerChild || hall.pricePerPerson} zł
-                    </div>
-                    <p className="text-sm text-muted-foreground">4-12 lat</p>
-                  </div>
-                </div>
-
-                {/* Toddlers */}
-                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-black/20 p-6 shadow-lg hover:shadow-xl transition-shadow">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
-                  <div className="relative space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
-                      <span className="text-sm font-semibold text-muted-foreground uppercase">Maluchy</span>
-                    </div>
-                    <div className="text-4xl font-bold">
-                      {Number(hall.pricePerToddler) === 0 ? (
-                        <span className="text-green-600 dark:text-green-400">✨ Gratis</span>
-                      ) : (
-                        <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                          {hall.pricePerToddler} zł
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">0-3 lat</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
 
         {/* Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -251,7 +179,7 @@ export default function HallDetailsPage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Kalendarz Rezerwacji</h2>
-                <p className="text-white/90">Zobacz dostępne terminy i wielokrotne rezerwacje dziennie</p>
+                <p className="text-white/90">Zobacz dost\u0119pne terminy i wielokrotne rezerwacje dziennie</p>
               </div>
             </div>
           </div>
@@ -265,7 +193,7 @@ export default function HallDetailsPage() {
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
             <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6">
               <div className="flex items-center gap-4">
@@ -273,22 +201,8 @@ export default function HallDetailsPage() {
                   <Users className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground font-medium">Pojemność</div>
-                  <div className="text-2xl font-bold">{hall.capacity} osób</div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                  <DollarSign className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground font-medium">Cena bazowa</div>
-                  <div className="text-2xl font-bold">{hall.pricePerPerson} zł/os.</div>
+                  <div className="text-sm text-muted-foreground font-medium">Pojemno\u015b\u0107</div>
+                  <div className="text-2xl font-bold">{hall.capacity} os\u00f3b</div>
                 </div>
               </div>
             </div>

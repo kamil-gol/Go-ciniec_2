@@ -4,35 +4,45 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 export async function seedE2ETestData() {
-  console.log('🧪 Starting E2E test data seeding...\n');
+  console.log('\ud83e\uddea Starting E2E test data seeding...\n');
+
+  // Clean up in correct order (respecting foreign keys)
+  console.log('\ud83d\uddd1\ufe0f  Cleaning existing data (respecting FK constraints)...');
+  await prisma.reservationMenuSnapshot.deleteMany({});
+  await prisma.reservationHistory.deleteMany({});
+  await prisma.depositPayment.deleteMany({});
+  await prisma.deposit.deleteMany({});
+  await prisma.reservation.deleteMany({});
+  await prisma.client.deleteMany({});
+  await prisma.hall.deleteMany({});
+  await prisma.user.deleteMany({});
+  console.log('   \u2705 Cleanup complete');
 
   // 1. HALLS
-  console.log('🏛️  Seeding Halls...');
+  console.log('\n\ud83c\udfdb\ufe0f  Seeding Halls...');
   const halls = [
-    { name: 'Sala Kryształowa', capacity: 200, pricePerPerson: 150, description: 'Elegancka sala z kryształowymi żyrandolami', isActive: true },
-    { name: 'Sala Taneczna', capacity: 150, pricePerPerson: 130, description: 'Sala z dużym parkietem tanecznym', isActive: true },
-    { name: 'Sala Złota', capacity: 100, pricePerPerson: 120, description: 'Kameralna sala w złotych tonach', isActive: true },
-    { name: 'Cały obiekt', capacity: 500, pricePerPerson: 200, description: 'Wynajem całego obiektu', isActive: true },
-    { name: 'Strzecha 1', capacity: 80, pricePerPerson: 110, description: 'Sala w stylu ludowym', isActive: true },
-    { name: 'Strzecha 2', capacity: 80, pricePerPerson: 110, description: 'Sala w stylu ludowym', isActive: true },
+    { name: 'Sala Kryszta\u0142owa', capacity: 200, description: 'Elegancka sala z kryszta\u0142owymi \u017cyrandolami', isActive: true },
+    { name: 'Sala Taneczna', capacity: 150, description: 'Sala z du\u017cym parkietem tanecznym', isActive: true },
+    { name: 'Sala Z\u0142ota', capacity: 100, description: 'Kameralna sala w z\u0142otych tonach', isActive: true },
+    { name: 'Ca\u0142y obiekt', capacity: 500, description: 'Wynajem ca\u0142ego obiektu', isActive: true },
+    { name: 'Strzecha 1', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
+    { name: 'Strzecha 2', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
   ];
 
-  await prisma.hall.deleteMany({});
   const createdHalls = await Promise.all(
     halls.map(hall => prisma.hall.create({ data: hall }))
   );
-  console.log(`   ✅ Created ${createdHalls.length} halls`);
+  console.log(`   \u2705 Created ${createdHalls.length} halls`);
 
   // 2. USERS
-  console.log('\n👥 Seeding Users...');
-  await prisma.user.deleteMany({});
+  console.log('\n\ud83d\udc65 Seeding Users...');
   
   const users = [
     {
       email: 'admin@gosciniecrodzinny.pl',
       password: await bcrypt.hash('Admin123!@#', 10),
       firstName: 'Admin',
-      lastName: 'Główny',
+      lastName: 'G\u0142\u00f3wny',
       role: 'ADMIN',
       isActive: true,
     },
@@ -57,11 +67,10 @@ export async function seedE2ETestData() {
   const createdUsers = await Promise.all(
     users.map(user => prisma.user.create({ data: user }))
   );
-  console.log(`   ✅ Created ${createdUsers.length} users`);
+  console.log(`   \u2705 Created ${createdUsers.length} users`);
 
   // 3. CLIENTS
-  console.log('\n👤 Seeding Clients...');
-  await prisma.client.deleteMany({});
+  console.log('\n\ud83d\udc64 Seeding Clients...');
   
   const clients = [
     {
@@ -69,7 +78,7 @@ export async function seedE2ETestData() {
       lastName: 'Kowalski',
       email: 'marek.kowalski@example.com',
       phone: '+48501234567',
-      notes: 'Stały klient, preferencje: menu wegetariańskie',
+      notes: 'Sta\u0142y klient, preferencje: menu wegetaria\u0144skie',
     },
     {
       firstName: 'Anna',
@@ -80,20 +89,20 @@ export async function seedE2ETestData() {
     },
     {
       firstName: 'Piotr',
-      lastName: 'Wiśniewski',
+      lastName: 'Wi\u015bniewski',
       email: 'piotr.wisniewski@example.com',
       phone: '+48503456789',
       notes: null,
     },
     {
       firstName: 'Katarzyna',
-      lastName: 'Dąbrowska',
+      lastName: 'D\u0105browska',
       email: 'katarzyna.dabrowska@example.com',
       phone: '+48504567890',
       notes: 'Komunia syna w maju',
     },
     {
-      firstName: 'Michał',
+      firstName: 'Micha\u0142',
       lastName: 'Lewandowski',
       email: 'michal.lewandowski@example.com',
       phone: '+48505678901',
@@ -104,11 +113,10 @@ export async function seedE2ETestData() {
   const createdClients = await Promise.all(
     clients.map(client => prisma.client.create({ data: client }))
   );
-  console.log(`   ✅ Created ${createdClients.length} clients`);
+  console.log(`   \u2705 Created ${createdClients.length} clients`);
 
   // 4. RESERVATIONS
-  console.log('\n📅 Seeding Reservations...');
-  await prisma.reservation.deleteMany({});
+  console.log('\n\ud83d\udcc5 Seeding Reservations...');
   
   const adminUser = createdUsers[0];
   const weselleEvent = await prisma.eventType.findFirst({ where: { name: 'Wesele' } });
@@ -134,7 +142,7 @@ export async function seedE2ETestData() {
       pricePerToddler: 60,
       totalPrice: 26850,
       status: 'RESERVED',
-      notes: 'Wesele Marek i Agnieszka - preferencje: muzyka na żywo',
+      notes: 'Wesele Marek i Agnieszka - preferencje: muzyka na \u017cywo',
     },
     {
       clientId: createdClients[1].id,
@@ -172,7 +180,7 @@ export async function seedE2ETestData() {
       pricePerToddler: 40,
       totalPrice: 9600,
       status: 'RESERVED',
-      notes: 'Komunia Święta Kacpra',
+      notes: 'Komunia \u015awi\u0119ta Kacpra',
     },
     {
       clientId: createdClients[3].id,
@@ -229,23 +237,24 @@ export async function seedE2ETestData() {
       pricePerToddler: 50,
       totalPrice: 14750,
       status: 'COMPLETED',
-      notes: 'Wesele Magda i Łukasz - zakończone',
+      notes: 'Wesele Magda i \u0141ukasz - zako\u0144czone',
     },
   ];
 
   const createdReservations = await Promise.all(
     reservations.map(reservation => prisma.reservation.create({ data: reservation }))
   );
-  console.log(`   ✅ Created ${createdReservations.length} reservations`);
+  console.log(`   \u2705 Created ${createdReservations.length} reservations`);
 
-  // 5. DEPOSITS
-  console.log('\n💰 Seeding Deposits...');
-  await prisma.deposit.deleteMany({});
+  // 5. DEPOSITS (with remainingAmount and paidAmount)
+  console.log('\n\ud83d\udcb0 Seeding Deposits...');
   
   const deposits = [
     {
       reservationId: createdReservations[0].id,
       amount: 5000,
+      remainingAmount: 0,
+      paidAmount: 5000,
       dueDate: '2026-05-20',
       status: 'PAID',
       paid: true,
@@ -255,6 +264,8 @@ export async function seedE2ETestData() {
     {
       reservationId: createdReservations[1].id,
       amount: 3500,
+      remainingAmount: 0,
+      paidAmount: 3500,
       dueDate: '2026-06-15',
       status: 'PAID',
       paid: true,
@@ -264,6 +275,8 @@ export async function seedE2ETestData() {
     {
       reservationId: createdReservations[2].id,
       amount: 2000,
+      remainingAmount: 0,
+      paidAmount: 2000,
       dueDate: '2026-04-10',
       status: 'PAID',
       paid: true,
@@ -271,8 +284,21 @@ export async function seedE2ETestData() {
       paymentMethod: 'CASH',
     },
     {
+      reservationId: createdReservations[3].id,
+      amount: 1500,
+      remainingAmount: 1500,
+      paidAmount: 0,
+      dueDate: '2026-03-25',
+      status: 'PENDING',
+      paid: false,
+      paidAt: null,
+      paymentMethod: null,
+    },
+    {
       reservationId: createdReservations[4].id,
       amount: 3000,
+      remainingAmount: 0,
+      paidAmount: 3000,
       dueDate: '2026-02-15',
       status: 'PAID',
       paid: true,
@@ -282,6 +308,8 @@ export async function seedE2ETestData() {
     {
       reservationId: createdReservations[5].id,
       amount: 3000,
+      remainingAmount: 0,
+      paidAmount: 3000,
       dueDate: '2026-01-20',
       status: 'PAID',
       paid: true,
@@ -293,16 +321,16 @@ export async function seedE2ETestData() {
   const createdDeposits = await Promise.all(
     deposits.map(deposit => prisma.deposit.create({ data: deposit }))
   );
-  console.log(`   ✅ Created ${createdDeposits.length} deposits`);
+  console.log(`   \u2705 Created ${createdDeposits.length} deposits`);
 
-  console.log('\n✅ E2E test data seeding completed!\n');
+  console.log('\n\u2705 E2E test data seeding completed!\n');
   
-  console.log('📊 Summary:');
-  console.log(`   🏛️  Halls: ${createdHalls.length}`);
-  console.log(`   👥 Users: ${createdUsers.length}`);
-  console.log(`   👤 Clients: ${createdClients.length}`);
-  console.log(`   📅 Reservations: ${createdReservations.length}`);
-  console.log(`   💰 Deposits: ${createdDeposits.length}`);
+  console.log('\ud83d\udcca Summary:');
+  console.log(`   \ud83c\udfdb\ufe0f  Halls: ${createdHalls.length}`);
+  console.log(`   \ud83d\udc65 Users: ${createdUsers.length}`);
+  console.log(`   \ud83d\udc64 Clients: ${createdClients.length}`);
+  console.log(`   \ud83d\udcc5 Reservations: ${createdReservations.length}`);
+  console.log(`   \ud83d\udcb0 Deposits: ${createdDeposits.length}`);
   console.log('');
   
   return {
@@ -317,11 +345,11 @@ export async function seedE2ETestData() {
 if (require.main === module) {
   seedE2ETestData()
     .then(() => {
-      console.log('✅ Seed completed successfully!');
+      console.log('\u2705 Seed completed successfully!');
       process.exit(0);
     })
     .catch((error) => {
-      console.error('❌ Seed failed:', error);
+      console.error('\u274c Seed failed:', error);
       process.exit(1);
     })
     .finally(() => {
