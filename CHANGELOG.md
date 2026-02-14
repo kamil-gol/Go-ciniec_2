@@ -1,5 +1,33 @@
 # 📝 Changelog
 
+## [1.4.0] - 2026-02-14
+
+### ✨ Nowe funkcjonalności
+- **Redesign formularza rezerwacji — 6-krokowy Wizard UI** (PR #49)
+  - Kompletna przebudowa z płaskiego formularza na interaktywny wizard z premium UI
+  - **Nowe komponenty:** Stepper (desktop + mobile), Combobox (z wyszukiwarką), DatePicker, TimePicker
+  - **Krok 1 — Wydarzenie:** Typ + pola kontekstowe (urodziny → wiek, rocznica → rok + okazja, inne → custom)
+  - **Krok 2 — Sala i termin:** Select + DatePicker + TimePicker + auto-check dostępności + info o extra hours
+  - **Krok 3 — Goście:** Karty z inputami dla dorosłych, dzieci 4–12, maluchów 0–3 + capacity warning
+  - **Krok 4 — Menu i ceny:** 🆕 Flow: Szablon → Pakiet → Ceny (lub ręczne ustalanie)
+  - **Krok 5 — Klient:** Combobox z wyszukiwarką + modal tworzenia nowego klienta
+  - **Krok 6 — Podsumowanie:** Kolorowe karty klikalne, price breakdown z extra hours, notatki
+  - Flow Szablon → Pakiet: `useMenuTemplates` filtrowany po `eventTypeId` + `usePackagesByTemplate`
+  - Auto-kasowanie pakietu przy zmianie szablonu / szablonu przy zmianie event type
+  - Breadcrumb `Szablon → Pakiet → Ceny` w kroku Menu
+  - Dodany `menuTemplateId` do Zod schema + submit payload
+
+### 🐛 Bugfixy
+- **Fix Command (Combobox) — transparentne tło:** `bg-popover` → `bg-white text-secondary-900` w `command.tsx`
+- **Fix Extra Hours w Financial Summary:** nowe propsy `startDateTime`/`endDateTime`, obliczanie dodatkowych godzin (>6h = dopłata 500 PLN/h), nowa sekcja UI z ikoną Timer, `effectiveTotalPrice`
+- **Fix propsy datetime na stronie szczegółów rezerwacji:** przekazanie `startDateTime`/`endDateTime` do `ReservationFinancialSummary`
+
+### 📊 Statystyki PR #49
+- **+1894 / -758 linii** | 12 plików zmienionych | 10 commitów
+- Branch: `feature/reservation-form-redesign`
+
+---
+
 ## [1.3.0] - 2026-02-14
 
 ### ✨ Nowe funkcjonalności
@@ -44,7 +72,6 @@
   - Dish categories GET → publiczne (potrzebne do UI)
   - Dish categories POST/PUT/DELETE → `requireAdmin` (wcześniej brak kontroli roli)
   - Menu calculator → `authMiddleware` + `requireStaff`
-  - Reservation menu selection → `authMiddleware` + `requireStaff`
 
 ### 🐛 Bugfixy
 - **Fix route ordering bug:** `PUT /api/menu-packages/reorder` przeniesione PRZED `PUT /api/menu-packages/:id` — wcześniej Express matchował `:id="reorder"` i endpoint nigdy nie działał
