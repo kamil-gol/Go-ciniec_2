@@ -48,8 +48,8 @@ export default function EditHallPage() {
     } catch (error: any) {
       console.error('Error loading hall:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 sali',
+        title: 'Bł\u0105d',
+        description: 'Nie udało się załadować sali',
         variant: 'destructive',
       })
       router.push('/dashboard/halls')
@@ -63,8 +63,8 @@ export default function EditHallPage() {
     
     if (!formData.name || formData.capacity <= 0) {
       toast({
-        title: 'B\u0142\u0105d walidacji',
-        description: 'Wype\u0142nij wszystkie wymagane pola',
+        title: 'Bł\u0105d walidacji',
+        description: 'Wypełnij wszystkie wymagane pola',
         variant: 'destructive',
       })
       return
@@ -78,14 +78,14 @@ export default function EditHallPage() {
       await updateHall(params.id as string, dataToSend)
       toast({
         title: 'Sukces',
-        description: 'Sala zosta\u0142a zaktualizowana',
+        description: 'Sala została zaktualizowana',
       })
       router.push('/dashboard/halls')
     } catch (error: any) {
       console.error('Error updating hall:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: error.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 sali',
+        title: 'Bł\u0105d',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować sali',
         variant: 'destructive',
       })
     } finally {
@@ -132,7 +132,7 @@ export default function EditHallPage() {
             <Link href="/dashboard/halls">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                {"Powr\u00f3t do listy"}
+                Powr&#243;t do listy
               </Button>
             </Link>
 
@@ -141,7 +141,7 @@ export default function EditHallPage() {
                 <Building2 className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold">{"Edytuj Sal\u0119"}</h1>
+                <h1 className="text-4xl font-bold">Edytuj Sal&#281;</h1>
                 <p className="text-white/90 text-lg mt-1">Aktualizuj informacje o sali weselnej</p>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function EditHallPage() {
               <div>
                 <p className="font-semibold text-amber-800 dark:text-amber-300">Sala systemowa</p>
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  Nazwa i status aktywno\u015bci tej sali s\u0105 zablokowane, poniewa\u017c jest u\u017cywana do logiki rezerwacji ca\u0142ego obiektu.
+                  Nazwa i status aktywno&#347;ci tej sali s&#261; zablokowane, poniewa&#380; jest u&#380;ywana do logiki rezerwacji ca&#322;ego obiektu.
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function EditHallPage() {
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder={"np. Sala Kryszta\u0142owa"}
+                    placeholder="np. Sala Kryszta&#322;owa"
                     className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 disabled:opacity-70 disabled:cursor-not-allowed"
                     required
                     disabled={isWholeVenue}
@@ -200,7 +200,7 @@ export default function EditHallPage() {
                 <div className="space-y-2">
                   <Label className="text-base font-semibold flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    {"Pojemno\u015b\u0107 *"}
+                    Pojemno&#347;&#263; *
                   </Label>
                   <Input
                     type="number"
@@ -220,7 +220,7 @@ export default function EditHallPage() {
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder={"Opisz sal\u0119..."}
+                  placeholder="Opisz sal&#281;..."
                   rows={4}
                   className="text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
                 />
@@ -235,8 +235,8 @@ export default function EditHallPage() {
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     {isWholeVenue
-                      ? 'Status tej sali nie mo\u017ce by\u0107 zmieniony'
-                      : 'Czy sala jest dost\u0119pna do rezerwacji?'
+                      ? 'Status tej sali nie mo&#380;e by&#263; zmieniony'
+                      : 'Czy sala jest dost&#281;pna do rezerwacji?'
                     }
                   </p>
                 </div>
@@ -277,7 +277,7 @@ export default function EditHallPage() {
                         onClick={() => removeAmenity(idx)}
                         className="text-red-600 hover:text-red-800 font-bold"
                       >
-                        \u00d7
+                        &#215;
                       </button>
                     </div>
                   ))}
