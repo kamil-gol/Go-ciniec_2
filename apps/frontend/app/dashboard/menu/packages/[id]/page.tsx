@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PackageForm from '@/components/menu/PackageForm';
-import { getPackage } from '@/lib/api/menu-packages';
+import { getPackageById } from '@/lib/api/menu-packages-api';
 import type { MenuPackage } from '@/types/menu';
 
 export default function EditPackagePage() {
@@ -22,7 +22,7 @@ export default function EditPackagePage() {
   async function loadPackage() {
     try {
       setLoading(true);
-      const data = await getPackage(packageId);
+      const data = await getPackageById(packageId);
       setPkg(data);
     } catch (error: any) {
       console.error('Failed to load package:', error);
