@@ -35,7 +35,7 @@ export default function PackagesListPage() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 pakiet "${name}"?`)) {
+    if (!confirm(`Czy na pewno chcesz usunąć pakiet "${name}"?`)) {
       return;
     }
 
@@ -45,7 +45,7 @@ export default function PackagesListPage() {
       await loadPackages();
     } catch (error: any) {
       console.error('Failed to delete package:', error);
-      alert(`B\u0142\u0105d: ${error.message}`);
+      alert(`Błąd: ${error.message}`);
     } finally {
       setDeletingId(null);
     }
@@ -95,7 +95,7 @@ export default function PackagesListPage() {
             className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium text-slate-600 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm hover:bg-white hover:text-blue-600 hover:border-blue-200 hover:shadow-md transition-all duration-200"
           >
             <ArrowLeft className="w-4 h-4" />
-            Powr\u00f3t do Menu
+            Powrót do Menu
           </Link>
 
           <div className="flex items-center justify-between mb-6">
@@ -115,7 +115,7 @@ export default function PackagesListPage() {
                     Pakiety dla wybranego szablonu
                   </>
                 ) : (
-                  'Zarz\u0105dzaj wszystkimi pakietami menu'
+                  'Zarządzaj wszystkimi pakietami menu'
                 )}
               </p>
             </div>
@@ -219,17 +219,17 @@ export default function PackagesListPage() {
                   <Package className="w-16 h-16 text-blue-600" />
                 </motion.div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-4">
-                  Brak pakiet\u00f3w
+                  Brak pakietów
                 </h3>
                 <p className="text-slate-600 text-lg mb-8">
-                  Utw\u00f3rz pierwszy pakiet menu, aby rozpocz\u0105\u0107 zarz\u0105dzanie ofert\u0105 dla go\u015bci.
+                  Utwórz pierwszy pakiet menu, aby rozpocząć zarządzanie ofertą dla gości.
                 </p>
                 <Link
                   href="/dashboard/menu/packages/new"
                   className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 >
                   <Package className="w-5 h-5" />
-                  Utw\u00f3rz pierwszy pakiet
+                  Utwórz pierwszy pakiet
                 </Link>
               </div>
             </motion.div>
@@ -320,7 +320,7 @@ export default function PackagesListPage() {
                     {/* Premium Pricing Section */}
                     <div className="px-6 py-5 bg-gradient-to-br from-slate-50/80 to-blue-50/30 backdrop-blur-sm border-y border-slate-100/50">
                       <div className="grid grid-cols-3 gap-3">
-                        {/* Doro\u015bli */}
+                        {/* Dorosli */}
                         <motion.div 
                           whileHover={{ scale: 1.05, y: -2 }}
                           className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
@@ -329,13 +329,13 @@ export default function PackagesListPage() {
                             <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
                               <Users className="w-3.5 h-3.5 text-white" />
                             </div>
-                            <span className="text-xs font-medium text-slate-600">Doro\u015bli</span>
+                            <span className="text-xs font-medium text-slate-600">Dorośli</span>
                           </div>
                           <div className="flex items-baseline gap-1">
                             <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                               {pkg.pricePerAdult}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">z\u0142</span>
+                            <span className="text-xs text-slate-500 font-medium">zł</span>
                           </div>
                         </motion.div>
 
@@ -354,7 +354,7 @@ export default function PackagesListPage() {
                             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                               {pkg.pricePerChild}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">z\u0142</span>
+                            <span className="text-xs text-slate-500 font-medium">zł</span>
                           </div>
                         </motion.div>
 
@@ -373,7 +373,7 @@ export default function PackagesListPage() {
                             <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                               {pkg.pricePerToddler}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">z\u0142</span>
+                            <span className="text-xs text-slate-500 font-medium">zł</span>
                           </div>
                         </motion.div>
                       </div>
@@ -416,7 +416,7 @@ export default function PackagesListPage() {
                         onClick={() => handleDelete(pkg.id, pkg.name)}
                         disabled={deletingId === pkg.id}
                         className="p-3 bg-gradient-to-r from-red-50 to-pink-50 text-red-600 rounded-xl font-medium hover:from-red-100 hover:to-pink-100 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Usu\u0144 pakiet"
+                        title="Usuń pakiet"
                       >
                         {deletingId === pkg.id ? (
                           <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
