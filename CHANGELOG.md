@@ -1,5 +1,20 @@
 # 📝 Changelog
 
+## [1.2.0] - 2026-02-14
+
+### ✨ Nowe funkcjonalności
+- **Detekcja konfliktu "Cała Sala"** — przy rezerwacji z flagą `isWholeVenue` system sprawdza, czy wybrana sala nie ma już zarezerwowanej w tym terminie innej rezerwacji (i odwrotnie: nie pozwala rezerwować pojedynczej sali, jeśli jest rezerwacja na "Całą Salę")
+
+### 🐛 Bugfixy
+- **Sanityzacja null bytes** — dodana funkcja `sanitizeString()` w backend, która usuwa znaki `\x00` z pól tekstowych przed zapisem do PostgreSQL (zapobieganie `invalid byte sequence for encoding "UTF8": 0x00`)
+- **Fix "User not found" przy tworzeniu rezerwacji** — `validateUserId()` rzuca teraz `AppError(401)` z czytelnym polskim komunikatem zamiast generycznego `Error` trafiającego w 404 bridge pattern
+- **Fix nachodzących powiadomień (toasts)** — jeden `<Toaster/>` z pełną konfiguracją sonner (`expand`, `gap={8}`, `visibleToasts={5}`, `closeButton`, `offset={16}`, `zIndex: 99999`); usunięty duplikat surowego `<Toaster/>` z layout.tsx
+
+### 🛠️ Ulepszenia
+- Import `Toaster` w `layout.tsx` zmieniony z `sonner` na `@/components/ui/toaster` — single source of truth dla konfiguracji toastów
+
+---
+
 ## [1.1.0] - 2026-02-14
 
 ### 🔒 Bezpieczeństwo

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -38,7 +38,7 @@ const reservationSchema = z.object({
   children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
   toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
-  // Menu package 🆕
+  // Menu package
   useMenuPackage: z.boolean(),
   menuPackageId: z.string().optional(),
   
@@ -94,6 +94,7 @@ interface CreateReservationFormProps {
   onCancel?: () => void
   initialData?: Partial<ReservationFormData>
   isPromotingFromQueue?: boolean
+  defaultHallId?: string
 }
 
 export function CreateReservationForm({ 
@@ -101,9 +102,11 @@ export function CreateReservationForm({
   onSuccess, 
   onCancel,
   initialData,
-  isPromotingFromQueue = false
+  isPromotingFromQueue = false,
+  defaultHallId
 }: CreateReservationFormProps) {
   const router = useRouter()
+  const formRef = useRef<HTMLDivElement>(null)
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [totalGuests, setTotalGuests] = useState(0)
   const [selectedHallCapacity, setSelectedHallCapacity] = useState(0)
@@ -154,8 +157,26 @@ export function CreateReservationForm({
   const startDate = watch('startDate')
   const startTime = watch('startTime')
 
-  // ⚡ ZMIANA: Pobieranie pakietów tylko dla wybranego typu wydarzenia
   const { data: menuPackages, isLoading: menuPackagesLoading } = usePackagesByEventType(selectedEventTypeId)
+
+  // Pre-select hall from defaultHallId
+  const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
+
+  useEffect(() => {
+    if (defaultHallId && hallsArray.length > 0 && !watchedFields.hallId) {
+      const hallExists = hallsArray.some((h) => h.id === defaultHallId)
+      if (hallExists) {
+        setValue('hallId', defaultHallId)
+      }
+    }
+  }, [defaultHallId, hallsArray, setValue, watchedFields.hallId])
+
+  // Auto-scroll to form when opened via URL
+  useEffect(() => {
+    if (defaultHallId && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [defaultHallId])
 
   // Get selected menu package
   const selectedPackage = useMemo(() => {
@@ -172,10 +193,9 @@ export function CreateReservationForm({
     }
   }, [useMenuPackage, selectedPackage, setValue])
 
-  // ⚡ ZMIANA: Resetuj wybór pakietu gdy zmienia się typ wydarzenia
+  // Reset package selection when event type changes
   useEffect(() => {
     if (selectedEventTypeId && menuPackageId) {
-      // Check if current package is still valid for new event type
       const isPackageStillValid = menuPackages?.some((pkg) => pkg.id === menuPackageId)
       if (!isPackageStillValid) {
         setValue('menuPackageId', '')
@@ -267,14 +287,14 @@ export function CreateReservationForm({
       if (roundedHours > 6) {
         const extraHours = Math.ceil(roundedHours - 6)
         const extraCost = extraHours * 500
-        const extraNote = `\n\n⏰ Dodatkowe godziny: ${extraHours}h × 500 PLN = ${extraCost} PLN`
+        const extraNote = `\n\n\u23f0 Dodatkowe godziny: ${extraHours}h \u00d7 500 PLN = ${extraCost} PLN`
         
-        if (!notes?.includes('⏰ Dodatkowe godziny')) {
+        if (!notes?.includes('\u23f0 Dodatkowe godziny')) {
           setValue('notes', (notes || '') + extraNote)
         }
       } else {
-        if (notes?.includes('⏰ Dodatkowe godziny')) {
-          const cleanedNotes = notes.replace(/\n\n⏰ Dodatkowe godziny:.*/, '')
+        if (notes?.includes('\u23f0 Dodatkowe godziny')) {
+          const cleanedNotes = notes.replace(/\n\n\u23f0 Dodatkowe godziny:.*/, '')
           setValue('notes', cleanedNotes)
         }
       }
@@ -283,7 +303,6 @@ export function CreateReservationForm({
 
   useEffect(() => {
     if (watchedFields.hallId) {
-      const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
       const selectedHall = hallsArray.find((h) => h.id === watchedFields.hallId)
       if (selectedHall) {
         setSelectedHallCapacity(selectedHall.capacity)
@@ -322,12 +341,10 @@ export function CreateReservationForm({
       notes: data.notes,
     }
 
-    // 🆕 Menu package integration
+    // Menu package integration
     if (data.useMenuPackage && data.menuPackageId) {
       input.menuPackageId = data.menuPackageId
-      // Prices come from package, not manual input
     } else {
-      // Manual pricing
       input.pricePerAdult = data.pricePerAdult
       input.pricePerChild = data.pricePerChild
       input.pricePerToddler = data.pricePerToddler
@@ -349,7 +366,6 @@ export function CreateReservationForm({
       } else {
         const result = await createReservation.mutateAsync(input)
         
-        // ⚡ FIX: Poprawny redirect do strony szczegółów w dashboardzie
         if (result?.id) {
           router.push(`/dashboard/reservations/${result.id}`)
         }
@@ -360,7 +376,6 @@ export function CreateReservationForm({
     }
   }
 
-  const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
   const clientsArray = Array.isArray(clientsData) ? clientsData : []
   const eventTypesArray = Array.isArray(eventTypes) ? eventTypes : []
   const menuPackagesArray = Array.isArray(menuPackages) ? menuPackages : []
@@ -403,11 +418,11 @@ export function CreateReservationForm({
     { value: 'BLIK', label: 'BLIK' },
   ]
 
-  // ⚡ ZMIANA: Komunikat gdy brak pakietów dla wybranego typu wydarzenia
   const hasNoPackagesForEventType = selectedEventTypeId && !menuPackagesLoading && menuPackagesArray.length === 0
 
   return (
     <motion.div
+      ref={formRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -447,6 +462,18 @@ export function CreateReservationForm({
               <p className="-mt-4 text-sm text-secondary-600">
                 Maksymalna pojemność: {selectedHallCapacity} osób
               </p>
+            )}
+
+            {/* Pre-selected hall indicator */}
+            {defaultHallId && watchedFields.hallId === defaultHallId && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="-mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <p className="text-sm text-green-800">Sala została automatycznie wybrana z widoku szczegółów</p>
+              </motion.div>
             )}
 
             <div>
@@ -662,7 +689,7 @@ export function CreateReservationForm({
               </p>
             )}
 
-            {/* 🆕 MENU PACKAGE SECTION */}
+            {/* MENU PACKAGE SECTION */}
             <div className="space-y-4 border-t pt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -683,7 +710,6 @@ export function CreateReservationForm({
                 </div>
               </div>
 
-              {/* ⚡ ZMIANA: Komunikat gdy brak pakietów */}
               {hasNoPackagesForEventType && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -802,7 +828,7 @@ export function CreateReservationForm({
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm text-secondary-700">
-                    <span>Dorosłi: {adults} × {pricePerAdult} PLN</span>
+                    <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
                     <span className="font-medium">{adults * pricePerAdult} PLN</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-secondary-700">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, Sparkles, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,11 +15,21 @@ import { moduleAccents } from '@/lib/design-tokens'
 
 export default function ReservationsPage() {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [reservations, setReservations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const accent = moduleAccents.reservations
+
+  // Auto-open create form when ?create=true is in URL
+  const defaultHallId = searchParams.get('hallId') || undefined
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setShowCreateForm(true)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     loadReservations()
@@ -32,8 +43,8 @@ export default function ReservationsPage() {
     } catch (error: any) {
       console.error('Error loading reservations:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować rezerwacji',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji',
         variant: 'destructive',
       })
     } finally {
@@ -59,7 +70,7 @@ export default function ReservationsPage() {
       <PageHero
         accent={accent}
         title="Rezerwacje"
-        subtitle="Zarządzaj rezerwacjami sal weselnych"
+        subtitle={"Zarz\u0105dzaj rezerwacjami sal weselnych"}
         icon={Calendar}
         action={
           <Button
@@ -75,10 +86,10 @@ export default function ReservationsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
+        <StatCard label="Wszystkie" value={stats.total} subtitle={"\u0141\u0105cznie rezerwacji"} icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
         <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <StatCard label={"Oczekuj\u0105ce"} value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label={"Ten miesi\u0105c"} value={stats.thisMonth} subtitle={"Wydarze\u0144 w tym miesi\u0105cu"} icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
       </div>
 
       {/* Create Form */}
@@ -97,6 +108,7 @@ export default function ReservationsPage() {
                 loadReservations()
               }}
               onCancel={() => setShowCreateForm(false)}
+              defaultHallId={defaultHallId}
             />
           </div>
         </Card>
@@ -125,7 +137,7 @@ export default function ReservationsPage() {
         </CardHeader>
         <CardContent className="p-6">
           {loading ? (
-            <LoadingState variant="skeleton" rows={4} message="Ładowanie rezerwacji..." />
+            <LoadingState variant="skeleton" rows={4} message={"\u0141adowanie rezerwacji..."} />
           ) : (
             <ReservationsList
               reservations={reservations}

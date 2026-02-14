@@ -1,7 +1,7 @@
 /**
  * Hall Service
  * Business logic for hall management
- * UPDATED: Removed pricing fields and validations (pricing now managed via menu packages)
+ * UPDATED: isWholeVenue protection — cannot delete/deactivate "Cały Obiekt"
  */
 
 import { prisma } from '@/lib/prisma';
@@ -43,9 +43,25 @@ export class HallService {
   }
 
   /**
+   * Get the "whole venue" hall
+   */
+  async getWholeVenueHall(): Promise<HallResponse | null> {
+    const hall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
+    return hall as any;
+  }
+
+  /**
    * Create new hall
    */
   async createHall(data: CreateHallDTO): Promise<HallResponse> {
+    // Only one hall can be isWholeVenue
+    if (data.isWholeVenue) {
+      const existing = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
+      if (existing) {
+        throw new Error('Sala "Cały Obiekt" już istnieje. Może być tylko jedna.');
+      }
+    }
+
     const hall = await prisma.hall.create({
       data: {
         name: data.name,
@@ -54,6 +70,7 @@ export class HallService {
         amenities: data.amenities || [],
         images: data.images || [],
         isActive: data.isActive !== undefined ? data.isActive : true,
+        isWholeVenue: data.isWholeVenue || false,
       },
     });
 
@@ -62,10 +79,21 @@ export class HallService {
 
   /**
    * Update hall
+   * PROTECTED: Cannot deactivate or rename isWholeVenue hall
    */
   async updateHall(id: string, data: UpdateHallDTO): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
     if (!existingHall) throw new Error('Hall not found');
+
+    // Protection for "Cały Obiekt"
+    if (existingHall.isWholeVenue) {
+      if (data.isActive === false) {
+        throw new Error('Nie można dezaktywować sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.');
+      }
+      if (data.name !== undefined && data.name !== existingHall.name) {
+        throw new Error('Nie można zmienić nazwy sali "Cały Obiekt".');
+      }
+    }
 
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
@@ -85,10 +113,15 @@ export class HallService {
 
   /**
    * Delete hall (soft delete - deactivate)
+   * PROTECTED: Cannot delete isWholeVenue hall
    */
   async deleteHall(id: string): Promise<void> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
     if (!existingHall) throw new Error('Hall not found');
+
+    if (existingHall.isWholeVenue) {
+      throw new Error('Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.');
+    }
 
     await prisma.hall.update({
       where: { id },

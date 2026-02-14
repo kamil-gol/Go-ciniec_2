@@ -1,7 +1,7 @@
 /**
  * Hall Types
  * Type definitions for hall management
- * UPDATED: Removed pricing fields (pricePerPerson/Child/Toddler) - prices are now managed via menu packages
+ * UPDATED: Added isWholeVenue flag for "Cały Obiekt" protection
  */
 
 export interface CreateHallDTO {
@@ -11,6 +11,7 @@ export interface CreateHallDTO {
   amenities?: string[];
   images?: string[];
   isActive?: boolean;
+  isWholeVenue?: boolean;
 }
 
 export interface UpdateHallDTO {
@@ -30,6 +31,7 @@ export interface HallResponse {
   amenities: string[];
   images: string[];
   isActive: boolean;
+  isWholeVenue: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

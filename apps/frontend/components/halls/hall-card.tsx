@@ -3,11 +3,12 @@
 import { Hall, deleteHall } from '@/lib/api/halls'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, MoreVertical, Eye, Edit, Trash2, CheckCircle2 } from 'lucide-react'
+import { Users, Calendar, MoreVertical, Eye, Edit, Trash2, CheckCircle2, Building2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
@@ -30,6 +31,15 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
+    if (hall.isWholeVenue) {
+      toast({
+        title: 'Operacja zablokowana',
+        description: 'Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (!confirm(`Czy na pewno chcesz usunąć salę "${hall.name}"?`)) return
 
     try {
@@ -60,9 +70,14 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
           <div className="flex items-start gap-3 flex-1">
             <div className={cn(
               'p-2.5 rounded-xl bg-gradient-to-br shadow-md flex-shrink-0',
-              accent.iconBg
+              hall.isWholeVenue
+                ? 'from-amber-500 to-orange-500'
+                : accent.iconBg
             )}>
-              <Users className="h-5 w-5 text-white" />
+              {hall.isWholeVenue
+                ? <Building2 className="h-5 w-5 text-white" />
+                : <Users className="h-5 w-5 text-white" />
+              }
             </div>
             <div className="flex-1 min-w-0">
               <h3 className={cn(
@@ -73,6 +88,12 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                 {hall.name}
               </h3>
               <div className="flex items-center gap-2 mt-2">
+                {hall.isWholeVenue && (
+                  <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-0 shadow-none">
+                    <Building2 className="h-3 w-3 mr-1" />
+                    Cały Obiekt
+                  </Badge>
+                )}
                 {hall.isActive ? (
                   <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0 shadow-none">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -118,14 +139,19 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                   Edytuj
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDelete}
-                disabled={deleting}
-                className="cursor-pointer flex items-center px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-              >
-                <Trash2 className="mr-3 h-4 w-4" />
-                {deleting ? 'Usuwanie...' : 'Usuń'}
-              </DropdownMenuItem>
+              {!hall.isWholeVenue && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="cursor-pointer flex items-center px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  >
+                    <Trash2 className="mr-3 h-4 w-4" />
+                    {deleting ? 'Usuwanie...' : 'Usuń'}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -136,12 +162,15 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
         {/* Capacity */}
         <div className={cn(
           'flex items-center gap-3 p-3 rounded-xl border',
-          accent.badge,
-          'border-sky-200/50 dark:border-sky-800/50'
+          hall.isWholeVenue
+            ? 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-200/50 dark:border-amber-800/50'
+            : `${accent.badge} border-sky-200/50 dark:border-sky-800/50`
         )}>
           <div className={cn(
             'p-2 rounded-lg bg-gradient-to-br shadow-sm',
-            accent.iconBg
+            hall.isWholeVenue
+              ? 'from-amber-500 to-orange-500'
+              : accent.iconBg
           )}>
             <Users className="h-4 w-4 text-white" />
           </div>
@@ -191,7 +220,9 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <Button
               className={cn(
                 'w-full bg-gradient-to-r text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl',
-                accent.gradient
+                hall.isWholeVenue
+                  ? 'from-amber-500 to-orange-500'
+                  : accent.gradient
               )}
             >
               <Calendar className="mr-2 h-4 w-4" />
