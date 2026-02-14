@@ -7,6 +7,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { AppError } from '../utils/AppError';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -871,9 +872,15 @@ export class ReservationService {
   // PRIVATE HELPERS
   // ═══════════════════════════════════════════════════════════════
 
+  /**
+   * Validate that the userId (from JWT) exists in the database.
+   * Throws 401 if user session is stale (e.g. after database reseed).
+   */
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
+    }
   }
 
   private async checkDateTimeOverlap(hallId: string, startDateTime: Date, endDateTime: Date, excludeId?: string): Promise<boolean> {
