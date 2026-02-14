@@ -34,6 +34,7 @@ export interface MenuPackage {
     };
   };
   packageOptions?: PackageOption[];
+  categorySettings?: any[];
   _count?: {
     packageOptions: number;
   };
@@ -107,6 +108,16 @@ export interface ReorderPackagesInput {
   }>;
 }
 
+export interface CategorySettingInput {
+  categoryId: string;
+  minSelect: number;
+  maxSelect: number;
+  isRequired: boolean;
+  isEnabled: boolean;
+  displayOrder: number;
+  customLabel?: string | null;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -115,7 +126,7 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Get all active packages (for reservation form) 🆕 NEW!
+ * Get all active packages (for reservation form)
  */
 export async function getAllActivePackages(): Promise<MenuPackage[]> {
   const { data } = await apiClient.get<ApiResponse<MenuPackage[]>>('/menu-packages');
@@ -196,5 +207,27 @@ export async function assignOptionsToPackage(
     `/menu-packages/${packageId}/options`,
     input
   );
+  return data.data;
+}
+
+/**
+ * Update category settings for a package
+ */
+export async function updatePackageCategories(
+  packageId: string,
+  settings: CategorySettingInput[]
+): Promise<any> {
+  const { data } = await apiClient.put<ApiResponse<any>>(
+    `/menu-packages/${packageId}/categories`,
+    { settings }
+  );
+  return data.data;
+}
+
+/**
+ * Get dish categories (convenience wrapper)
+ */
+export async function getDishCategories(): Promise<any[]> {
+  const { data } = await apiClient.get<ApiResponse<any[]>>('/dish-categories');
   return data.data;
 }
