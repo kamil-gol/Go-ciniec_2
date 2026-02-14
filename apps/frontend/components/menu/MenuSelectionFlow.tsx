@@ -166,7 +166,7 @@ export function MenuSelectionFlow({
   }, [initialSelection, templates, initialPackage, initialPackageLoading, isInitialized]);
 
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
-    { id: 'template', label: 'Wyb\u00f3r Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
+    { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
     { id: 'package', label: 'Pakiet', icon: Check, gradient: 'from-blue-500 to-cyan-500' },
     { id: 'dishes', label: 'Dania', icon: UtensilsCrossed, gradient: 'from-red-500 to-rose-500' },
     { id: 'options', label: 'Dodatki', icon: Sparkles, gradient: 'from-green-500 to-emerald-500' },
@@ -191,7 +191,7 @@ export function MenuSelectionFlow({
       return;
     }
     if (!canNavigateToStep(stepId)) {
-      toast({ title: 'Nie mo\u017cna przej\u015b\u0107 dalej', description: 'Uzupe\u0142nij poprzednie kroki.', variant: 'destructive' });
+      toast({ title: 'Nie można przejść dalej', description: 'Uzupełnij poprzednie kroki.', variant: 'destructive' });
       return;
     }
     setCurrentStep(stepId);
@@ -226,7 +226,7 @@ export function MenuSelectionFlow({
 
   const handleComplete = () => {
     if (!selectedTemplate || !selectedPackage) {
-      toast({ title: 'B\u0142\u0105d', description: 'Nie wybrano menu lub pakietu.', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie wybrano menu lub pakietu.', variant: 'destructive' });
       return;
     }
 
@@ -250,7 +250,7 @@ export function MenuSelectionFlow({
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">{"\u0141adowanie wybranego menu..."}</p>
+          <p className="text-sm text-muted-foreground">{"Ładowanie wybranego menu..."}</p>
         </div>
       </div>
     );
@@ -265,17 +265,17 @@ export function MenuSelectionFlow({
         </div>
         <div className="flex-1 flex items-center gap-4">
           <span className="text-sm font-medium">
-            <span className="font-bold">{adults}</span>{' doros\u0142ych'}
+            <span className="font-bold">{adults}</span>{' dorosłych'}
           </span>
-          <span className="text-purple-300">{"\u2022"}</span>
+          <span className="text-purple-300">{"•"}</span>
           <span className="text-sm font-medium">
             <span className="font-bold">{children}</span>{' dzieci'}
           </span>
-          <span className="text-purple-300">{"\u2022"}</span>
+          <span className="text-purple-300">{"•"}</span>
           <span className="text-sm font-medium">
-            <span className="font-bold">{toddlers}</span>{' maluch\u00f3w'}
+            <span className="font-bold">{toddlers}</span>{' maluchów'}
           </span>
-          <span className="text-purple-300">{"\u2022"}</span>
+          <span className="text-purple-300">{"•"}</span>
           <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             {totalGuests}{' razem'}
           </span>
@@ -358,7 +358,7 @@ export function MenuSelectionFlow({
                   <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-950/30 dark:to-amber-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-10 w-10 text-orange-600" />
                   </div>
-                  <p className="text-muted-foreground">{'Brak dost\u0119pnych menu'}</p>
+                  <p className="text-muted-foreground">{'Brak dostępnych menu'}</p>
                 </div>
               )}
             </div>
@@ -382,12 +382,12 @@ export function MenuSelectionFlow({
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12"><p className="text-muted-foreground">{'Brak dost\u0119pnych pakiet\u00f3w'}</p></div>
+                <div className="text-center py-12"><p className="text-muted-foreground">{'Brak dostępnych pakietów'}</p></div>
               )}
               <div className="flex justify-center">
                 <Button variant="outline" size="lg" onClick={() => setCurrentStep('template')} className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6">
                   <RefreshCw className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
-                  {'Zmie\u0144 menu'}
+                  {'Zmień menu'}
                 </Button>
               </div>
             </div>
@@ -399,7 +399,7 @@ export function MenuSelectionFlow({
                 <div className="inline-flex p-3 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl shadow-lg mb-2">
                   <UtensilsCrossed className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{'Wyb\u00f3r Da\u0144'}</h2>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{'Wybór Dań'}</h2>
                 <p className="text-muted-foreground">{selectedPackage.name}</p>
               </div>
               <DishSelector
@@ -418,12 +418,12 @@ export function MenuSelectionFlow({
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Opcje Dodatkowe</h2>
-                <p className="text-muted-foreground">{'Wybierz dodatkowe us\u0142ugi (opcjonalne)'}</p>
+                <p className="text-muted-foreground">{'Wybierz dodatkowe usługi (opcjonalne)'}</p>
               </div>
               <div className="flex justify-center pb-4 border-b-2">
                 <Button size="lg" onClick={handleComplete} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold">
                   <Check className="mr-2 h-6 w-6" />
-                  {'Zatwierd\u017a wyb\u00f3r'}
+                  {'Zatwierdź wybór'}
                 </Button>
               </div>
               <OptionsSelector options={options || []} isLoading={optionsLoading} quantities={optionQuantities} onQuantityChange={(id, qty) => setOptionQuantities(prev => ({ ...prev, [id]: qty }))} />
@@ -432,7 +432,7 @@ export function MenuSelectionFlow({
                   <ArrowLeft className="mr-2 h-5 w-5" /> Wstecz
                 </Button>
                 <Button size="lg" onClick={handleComplete} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold">
-                  <Check className="mr-2 h-5 w-5" /> {'Zatwierd\u017a wyb\u00f3r'}
+                  <Check className="mr-2 h-5 w-5" /> {'Zatwierdź wybór'}
                 </Button>
               </div>
             </div>
