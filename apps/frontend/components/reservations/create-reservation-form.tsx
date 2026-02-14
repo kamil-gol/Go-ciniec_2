@@ -25,13 +25,15 @@ import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
-import { usePackagesByEventType } from '@/hooks/use-menu-packages'
+import { useMenuTemplates } from '@/hooks/use-menu-templates'
+import { usePackagesByTemplate } from '@/hooks/use-menu-packages'
 import { useCheckAvailability } from '@/hooks/use-check-availability'
 import { formatCurrency } from '@/lib/utils'
 import {
   Calendar, Clock, Users, DollarSign, FileText, UserPlus,
   AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed,
   Sparkles, Building2, User, ClipboardCheck, AlertTriangle,
+  BookOpen, Package, ChevronRight,
 } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
@@ -68,6 +70,7 @@ const reservationSchema = z.object({
   children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
   toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   useMenuPackage: z.boolean(),
+  menuTemplateId: z.string().optional(),
   menuPackageId: z.string().optional(),
   pricePerAdult: z.coerce.number().min(0).optional(),
   pricePerChild: z.coerce.number().min(0).optional(),
@@ -101,7 +104,7 @@ const STEP_FIELDS: Record<number, (keyof ReservationFormData)[]> = {
   0: ['eventTypeId'],
   1: ['hallId', 'startDate', 'startTime', 'endDate', 'endTime'],
   2: ['adults', 'children', 'toddlers'],
-  3: ['useMenuPackage', 'menuPackageId', 'pricePerAdult', 'pricePerChild', 'pricePerToddler'],
+  3: ['useMenuPackage', 'menuTemplateId', 'menuPackageId', 'pricePerAdult', 'pricePerChild', 'pricePerToddler'],
   4: ['clientId'],
   5: ['confirmationDeadline', 'notes'],
 }
@@ -171,6 +174,7 @@ export function CreateReservationForm({
 
   const watchAll = watch()
   const useMenuPackage = watch('useMenuPackage')
+  const menuTemplateId = watch('menuTemplateId')
   const menuPackageId = watch('menuPackageId')
   const selectedEventTypeId = watch('eventTypeId')
   const hallId = watch('hallId')
@@ -189,8 +193,15 @@ export function CreateReservationForm({
   const clientsArray = useMemo(() => Array.isArray(clientsData) ? clientsData : [], [clientsData])
   const eventTypesArray = useMemo(() => Array.isArray(eventTypes) ? eventTypes : [], [eventTypes])
 
-  const { data: menuPackages, isLoading: menuPackagesLoading } = usePackagesByEventType(selectedEventTypeId)
-  const menuPackagesArray = useMemo(() => Array.isArray(menuPackages) ? menuPackages : [], [menuPackages])
+  // Menu templates filtered by event type
+  const { data: menuTemplates, isLoading: menuTemplatesLoading } = useMenuTemplates(
+    selectedEventTypeId ? { eventTypeId: selectedEventTypeId, isActive: true } : undefined
+  )
+  const menuTemplatesArray = useMemo(() => Array.isArray(menuTemplates) ? menuTemplates : [], [menuTemplates])
+
+  // Packages filtered by selected template
+  const { data: templatePackages, isLoading: templatePackagesLoading } = usePackagesByTemplate(menuTemplateId)
+  const templatePackagesArray = useMemo(() => Array.isArray(templatePackages) ? templatePackages : [], [templatePackages])
 
   const startDateTimeISO = useMemo(() => {
     if (startDate && startTime) return `${startDate}T${startTime}:00`
@@ -218,12 +229,17 @@ export function CreateReservationForm({
   const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
   const isCustom = selectedEventTypeName === 'Inne'
 
-  const selectedPackage = useMemo(() => {
-    if (!menuPackageId || !menuPackages) return null
-    return menuPackages.find((pkg) => pkg.id === menuPackageId) || null
-  }, [menuPackageId, menuPackages])
+  const selectedTemplate = useMemo(() => {
+    if (!menuTemplateId || !menuTemplates) return null
+    return menuTemplatesArray.find((t) => t.id === menuTemplateId) || null
+  }, [menuTemplateId, menuTemplates, menuTemplatesArray])
 
-  const hasNoPackagesForEventType = selectedEventTypeId && !menuPackagesLoading && menuPackagesArray.length === 0
+  const selectedPackage = useMemo(() => {
+    if (!menuPackageId || !templatePackages) return null
+    return templatePackagesArray.find((pkg) => pkg.id === menuPackageId) || null
+  }, [menuPackageId, templatePackages, templatePackagesArray])
+
+  const hasNoTemplatesForEventType = selectedEventTypeId && !menuTemplatesLoading && menuTemplatesArray.length === 0
 
   const totalGuests = adults + children + toddlers
   const calculatedPrice = (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
@@ -264,6 +280,7 @@ export function CreateReservationForm({
     }
   }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue])
 
+  // Set prices from selected package
   useEffect(() => {
     if (useMenuPackage && selectedPackage) {
       setValue('pricePerAdult', parseFloat(selectedPackage.pricePerAdult))
@@ -279,15 +296,36 @@ export function CreateReservationForm({
     }
   }, [useMenuPackage])
 
+  // Clear template + package when event type changes
   useEffect(() => {
-    if (selectedEventTypeId && menuPackageId) {
-      const isValid = menuPackages?.some((pkg) => pkg.id === menuPackageId)
-      if (!isValid) {
-        setValue('menuPackageId', '')
-        setValue('useMenuPackage', false)
+    if (selectedEventTypeId) {
+      // Check if current template belongs to selected event type
+      if (menuTemplateId && menuTemplatesArray.length > 0) {
+        const isValid = menuTemplatesArray.some((t) => t.id === menuTemplateId)
+        if (!isValid) {
+          setValue('menuTemplateId', '')
+          setValue('menuPackageId', '')
+        }
       }
     }
-  }, [selectedEventTypeId, menuPackageId, menuPackages, setValue])
+  }, [selectedEventTypeId, menuTemplateId, menuTemplatesArray, setValue])
+
+  // Clear package when template changes
+  useEffect(() => {
+    if (menuTemplateId && templatePackagesArray.length > 0 && menuPackageId) {
+      const isValid = templatePackagesArray.some((pkg) => pkg.id === menuPackageId)
+      if (!isValid) {
+        setValue('menuPackageId', '')
+      }
+    }
+  }, [menuTemplateId, menuPackageId, templatePackagesArray, setValue])
+
+  // Clear template/package when toggling off menu
+  useEffect(() => {
+    if (!useMenuPackage) {
+      // Don't clear — user might toggle back on
+    }
+  }, [useMenuPackage])
 
   useEffect(() => {
     if (!useMenuPackage && pricePerAdult > 0 && !childPriceManuallySet) {
@@ -332,11 +370,11 @@ export function CreateReservationForm({
         await trigger('pricePerAdult')
         return false
       }
-      if (useMenuPackage && !menuPackageId) return false
+      if (useMenuPackage && (!menuTemplateId || !menuPackageId)) return false
     }
 
     return await trigger(fields)
-  }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuPackageId])
+  }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuTemplateId, menuPackageId])
 
   const goToNextStep = useCallback(async () => {
     const isValid = await validateCurrentStep()
@@ -381,6 +419,9 @@ export function CreateReservationForm({
 
     if (data.useMenuPackage && data.menuPackageId) {
       input.menuPackageId = data.menuPackageId
+      if (data.menuTemplateId) {
+        input.menuTemplateId = data.menuTemplateId
+      }
     } else {
       input.pricePerAdult = data.pricePerAdult
       input.pricePerChild = data.pricePerChild
@@ -476,15 +517,18 @@ export function CreateReservationForm({
             <span className="font-semibold text-secondary-900">Cena całkowita:</span>
             <span className="text-2xl font-bold text-primary-600">{formatCurrency(totalWithExtras)}</span>
           </div>
-          {useMenuPackage && selectedPackage && (
+          {useMenuPackage && selectedTemplate && selectedPackage && (
             <p className="text-xs text-primary-700 flex items-center gap-1 pt-1">
-              <UtensilsCrossed className="w-3 h-3" /> Ceny z pakietu: {selectedPackage.name}
+              <UtensilsCrossed className="w-3 h-3" />
+              {selectedTemplate.name}
+              <ChevronRight className="w-3 h-3" />
+              {selectedPackage.name}
             </p>
           )}
         </div>
       </motion.div>
     )
-  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedPackage])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage])
 
   // ═══════════════════════════════════════════════════
   // STEP RENDERERS
@@ -497,7 +541,7 @@ export function CreateReservationForm({
           <Sparkles className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-secondary-900">Jaki typ wydarzenia?</h2>
-        <p className="text-sm text-secondary-500 mt-1">Określ rodzaj imprezy — wpłynie na dostępne pakiety menu</p>
+        <p className="text-sm text-secondary-500 mt-1">Określ rodzaj imprezy — wpłynie na dostępne szablony menu</p>
       </div>
 
       <div className="space-y-1.5">
@@ -643,7 +687,7 @@ export function CreateReservationForm({
                 <AlertTriangle className="w-5 h-5 text-red-600" />
                 <span className="text-sm font-medium text-red-800">Kolizja z istniejącą rezerwacją!</span>
               </div>
-              {availability?.conflicts?.map((c) => (
+              {availability?.conflicts?.map((c: any) => (
                 <div key={c.id} className="ml-7 text-xs text-red-700">
                   • {c.clientName} — {c.eventType} ({new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}–{new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
                 </div>
@@ -696,6 +740,8 @@ export function CreateReservationForm({
     </div>
   )
 
+  // ═══ STEP 3 — SZABLON → PAKIET → CENY ═══
+
   const renderStep3 = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -703,65 +749,161 @@ export function CreateReservationForm({
           <UtensilsCrossed className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-secondary-900">Menu i wycena</h2>
-        <p className="text-sm text-secondary-500 mt-1">Wybierz pakiet menu lub ustaw ceny ręcznie</p>
+        <p className="text-sm text-secondary-500 mt-1">Wybierz szablon menu i pakiet cenowy, lub ustaw ceny ręcznie</p>
       </div>
 
+      {/* Toggle: use menu package */}
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-secondary-200">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
             <UtensilsCrossed className="w-5 h-5 text-primary-600" />
           </div>
           <div>
-            <span className="font-medium text-secondary-800">Gotowy pakiet menu</span>
-            <p className="text-xs text-secondary-500">Ceny zostaną ustawione automatycznie</p>
+            <span className="font-medium text-secondary-800">Gotowe menu</span>
+            <p className="text-xs text-secondary-500">Wybierz szablon i pakiet — ceny ustawią się automatycznie</p>
           </div>
         </div>
         <Controller name="useMenuPackage" control={control} render={({ field }) => (
-          <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!selectedEventTypeId || !!hasNoPackagesForEventType} />
+          <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!selectedEventTypeId || !!hasNoTemplatesForEventType} />
         )} />
       </div>
 
-      {hasNoPackagesForEventType && (
+      {hasNoTemplatesForEventType && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-amber-600" />
-          <p className="text-sm text-amber-800">Brak pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.</p>
+          <p className="text-sm text-amber-800">Brak szablonów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.</p>
         </div>
       )}
 
+      {/* ═══ MENU FLOW: Szablon → Pakiet ═══ */}
       {useMenuPackage && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 p-4 bg-primary-50 border border-primary-200 rounded-xl">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-secondary-700">Wybierz pakiet</label>
-            <Controller name="menuPackageId" control={control} render={({ field }) => (
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <SelectTrigger className="h-11 bg-white"><SelectValue placeholder="Wybierz pakiet..." /></SelectTrigger>
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
+
+          {/* STEP A: Wybierz szablon menu */}
+          <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">1</div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-indigo-600" />
+                <span className="font-semibold text-secondary-800">Szablon menu</span>
+              </div>
+            </div>
+
+            <Controller name="menuTemplateId" control={control} render={({ field }) => (
+              <Select value={field.value || ''} onValueChange={(val) => {
+                field.onChange(val)
+                // Clear package when template changes
+                setValue('menuPackageId', '')
+              }}>
+                <SelectTrigger className="h-11 bg-white">
+                  <SelectValue placeholder={menuTemplatesLoading ? 'Ładowanie szablonów...' : 'Wybierz szablon menu...'} />
+                </SelectTrigger>
                 <SelectContent>
-                  {menuPackagesArray.map((pkg) => (
-                    <SelectItem key={pkg.id} value={pkg.id}>{pkg.name} — {formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba</SelectItem>
+                  {menuTemplatesArray.map((tmpl) => (
+                    <SelectItem key={tmpl.id} value={tmpl.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{tmpl.name}</span>
+                        {tmpl.variant && <span className="text-xs text-muted-foreground">({tmpl.variant})</span>}
+                        {tmpl._count?.packages != null && (
+                          <span className="text-xs text-indigo-500 ml-1">
+                            {tmpl._count.packages} {tmpl._count.packages === 1 ? 'pakiet' : tmpl._count.packages < 5 ? 'pakiety' : 'pakietów'}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )} />
+
+            {selectedTemplate && selectedTemplate.description && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-indigo-700 bg-indigo-100/50 rounded-lg p-2">
+                {selectedTemplate.description}
+              </motion.p>
+            )}
           </div>
-          {selectedPackage && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white rounded-lg border border-primary-300">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
-                  {selectedPackage.shortDescription && <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>}
-                  <div className="grid grid-cols-3 gap-4 mt-3">
-                    <div><p className="text-xs text-secondary-500">Dorosły</p><p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p></div>
-                    <div><p className="text-xs text-secondary-500">Dziecko 4–12</p><p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p></div>
-                    <div><p className="text-xs text-secondary-500">Dziecko 0–3</p><p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p></div>
-                  </div>
+
+          {/* STEP B: Wybierz pakiet (after template is chosen) */}
+          {menuTemplateId && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">2</div>
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-emerald-600" />
+                  <span className="font-semibold text-secondary-800">Pakiet cenowy</span>
                 </div>
               </div>
+
+              {templatePackagesLoading ? (
+                <div className="flex items-center gap-2 py-2">
+                  <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-secondary-600">Ładowanie pakietów...</span>
+                </div>
+              ) : templatePackagesArray.length === 0 ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                  <p className="text-sm text-amber-800">Brak pakietów w tym szablonie. Wybierz inny szablon lub ustaw ceny ręcznie.</p>
+                </div>
+              ) : (
+                <Controller name="menuPackageId" control={control} render={({ field }) => (
+                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                    <SelectTrigger className="h-11 bg-white">
+                      <SelectValue placeholder="Wybierz pakiet..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templatePackagesArray.map((pkg) => (
+                        <SelectItem key={pkg.id} value={pkg.id}>
+                          {pkg.name} — {formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              )}
+
+              {/* Package details card */}
+              {selectedPackage && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white rounded-lg border border-emerald-300">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
+                      {selectedPackage.shortDescription && <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>}
+                      <div className="grid grid-cols-3 gap-4 mt-3">
+                        <div>
+                          <p className="text-xs text-secondary-500">Dorosły</p>
+                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-secondary-500">Dziecko 4–12</p>
+                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-secondary-500">Dziecko 0–3</p>
+                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
+          )}
+
+          {/* Breadcrumb indicator */}
+          {useMenuPackage && (
+            <div className="flex items-center gap-2 text-xs text-secondary-500 px-1">
+              <span className={menuTemplateId ? 'text-indigo-600 font-medium' : 'text-secondary-400'}>Szablon</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className={menuPackageId ? 'text-emerald-600 font-medium' : 'text-secondary-400'}>Pakiet</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className={selectedPackage ? 'text-primary-600 font-medium' : 'text-secondary-400'}>Ceny</span>
+            </div>
           )}
         </motion.div>
       )}
 
+      {/* ═══ MANUAL PRICING ═══ */}
       {!useMenuPackage && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -898,7 +1040,11 @@ export function CreateReservationForm({
         <div className="flex items-center gap-2 mb-2">
           <DollarSign className="w-4 h-4 text-orange-600" />
           <span className="text-xs font-medium text-orange-600 uppercase">Podsumowanie finansowe</span>
-          {useMenuPackage && selectedPackage && <span className="text-xs text-secondary-500">• Pakiet: {selectedPackage.name}</span>}
+          {useMenuPackage && selectedTemplate && selectedPackage && (
+            <span className="text-xs text-secondary-500 flex items-center gap-1">
+              • {selectedTemplate.name} <ChevronRight className="w-3 h-3" /> {selectedPackage.name}
+            </span>
+          )}
         </div>
         <PriceSummary compact />
       </div>
@@ -954,7 +1100,6 @@ export function CreateReservationForm({
           />
 
           <form onSubmit={handleSubmit(onFormSubmit)}>
-            {/* Single child in AnimatePresence to avoid 'multiple children' warning */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={`step-${currentStep}`}
