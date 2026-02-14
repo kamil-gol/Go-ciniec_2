@@ -87,13 +87,12 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
 
 /**
  * Helper: Logout current user
+ * In Gościniec UI the logout button is directly in the Sidebar,
+ * NOT behind a dropdown menu.
  */
 export async function logout(page: Page): Promise<void> {
-  // Click user menu button (matches both Polish and English aria-labels)
-  await page.click('button[aria-label="Menu u\u017cytkownika"], button[aria-label="User menu"]', { timeout: 5000 });
-  
-  // Click logout button
-  await page.click('button:has-text("Wyloguj")');
+  // Click the Wyloguj button directly in the sidebar
+  await page.click('button:has-text("Wyloguj")', { timeout: 5000 });
   
   // Wait for redirect to login
   await page.waitForURL('/login', { timeout: 5000 });
