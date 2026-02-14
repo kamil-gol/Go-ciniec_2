@@ -78,8 +78,10 @@ export function MenuTemplateDialog({
   })
 
   const isActive = watch('isActive')
+  const currentEventTypeId = watch('eventTypeId')
 
   // Load template data when editing
+  // Re-run when eventTypes load so the Select can match the value
   useEffect(() => {
     if (template && open) {
       reset({
@@ -104,7 +106,7 @@ export function MenuTemplateDialog({
         displayOrder: 0,
       })
     }
-  }, [template, open, reset])
+  }, [template, open, reset, eventTypes])
 
   const onSubmit = async (data: FormData) => {
     const input = {
@@ -132,6 +134,11 @@ export function MenuTemplateDialog({
 
   const isLoading = createMutation.isPending || updateMutation.isPending
 
+  // Find event type name for disabled display
+  const selectedEventTypeName = eventTypes.find(
+    (et) => et.id === currentEventTypeId
+  )?.name
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -152,22 +159,30 @@ export function MenuTemplateDialog({
             <Label htmlFor="eventTypeId">
               Typ wydarzenia <span className="text-red-500">*</span>
             </Label>
-            <Select
-              value={watch('eventTypeId')}
-              onValueChange={(value) => setValue('eventTypeId', value)}
-              disabled={loadingEventTypes || isEdit}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Wybierz typ wydarzenia" />
-              </SelectTrigger>
-              <SelectContent>
-                {eventTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isEdit ? (
+              <Input
+                value={selectedEventTypeName || template?.eventType?.name || 'Ładowanie...'}
+                disabled
+                className="bg-muted"
+              />
+            ) : (
+              <Select
+                value={currentEventTypeId}
+                onValueChange={(value) => setValue('eventTypeId', value)}
+                disabled={loadingEventTypes}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Wybierz typ wydarzenia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {eventTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {errors.eventTypeId && (
               <p className="text-sm text-red-500">{errors.eventTypeId.message}</p>
             )}
