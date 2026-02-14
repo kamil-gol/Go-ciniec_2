@@ -1,73 +1,77 @@
-# 🍽️ Menu Integration with Reservations
+# Menu Integration with Reservations
 
-Complete guide to menu integration in the reservation system.
-
----
-
-## 📍 Overview
-
-Menu integration allows users to:
-- ✅ Select menu templates for reservations
-- ✅ Choose packages with pricing tiers
-- ✅ Add optional extras (alcohol, music, decorations, etc.)
-- ✅ View detailed price breakdowns
-- ✅ Edit/update menu selections
-- ✅ See menu costs alongside reservation costs
+Kompletny przewodnik integracji menu z systemem rezerwacji.
 
 ---
 
-## 📊 Integration Architecture
+## Przeglad
+
+Menu integration pozwala na:
+- Wybor szablonow menu dla rezerwacji
+- Wybor pakietow z cennikiem (doroslych/dzieci/maluchow)
+- Dodawanie opcji dodatkowych (alkohol, muzyka, dekoracje, itp.)
+- Automatyczne obliczanie cen na podstawie menu snapshot
+- Edycja/aktualizacja wybranego menu
+- Podsumowanie finansowe z cenami z menu
+
+---
+
+## Architektura
 
 ```
 Reservation Details Page
-    │
-    ├── Client Info
-    ├── Hall Info
-    ├── Event Details
-    ├── 🍽️ Menu Section (NEW!)
-    │   ├── ReservationMenuSection
-    │   │   ├── MenuSelectionFlow (Dialog)
-    │   │   ├── Package Display
-    │   │   ├── Options Display
-    │   │   └── Price Breakdown
-    │   └── CRUD Actions (Add/Edit/Delete)
-    ├── Notes
-    ├── Guests Breakdown
-    └── Pricing
+    |
+    |-- Client Info
+    |-- Hall Info
+    |-- Event Details
+    |-- Menu Section (ReservationMenuSection)
+    |   |-- Package Display (kompaktowy widok)
+    |   |-- Dishes Display (inline chips)
+    |   |-- Options Display (inline chips)
+    |   +-- CRUD Actions (Add/Edit/Delete)
+    |-- Notes
+    |-- Guests Breakdown
+    +-- Financial Summary (ReservationFinancialSummary)
+        |-- Koszty uslug (effectiveTotalPrice)
+        |   |-- Pakiet gastronomiczny (ceny z menu snapshot)
+        |   +-- Opcje dodatkowe (z priceBreakdown)
+        |-- Razem do zaplaty
+        |-- Stan rozliczen (progress bar)
+        +-- Zaliczki (CRUD)
 ```
 
 ---
 
-## 🧩 Components
+## Komponenty
 
 ### 1. ReservationMenuSection
 
-**Location:** `apps/frontend/components/reservations/ReservationMenuSection.tsx`
+**Lokalizacja:** `apps/frontend/components/reservations/ReservationMenuSection.tsx`
 
-**Purpose:** Main component that displays and manages menu for a reservation.
+**Cel:** Wyswietlanie i zarzadzanie menu dla rezerwacji. Kompaktowy widok bez sekcji kosztow (koszty sa w ReservationFinancialSummary).
 
 **Props:**
 ```typescript
 interface ReservationMenuSectionProps {
-  reservationId: string;          // Reservation ID
-  eventTypeId: string;            // Event type to filter templates
-  eventDate: Date;                // Date for menu validity check
-  adults: number;                 // Adult guest count
-  children: number;               // Children count
-  toddlers: number;               // Toddlers count
-  onMenuUpdated?: () => void;     // Callback after menu changes
+  reservationId: string
+  eventTypeId: string
+  eventDate: Date
+  adults: number
+  children: number
+  toddlers: number
+  onMenuUpdated?: () => void
 }
 ```
 
-**Features:**
-- ✅ Auto-fetch menu if already selected
-- ✅ Show "Add Menu" button if no menu
-- ✅ Display selected package & options
-- ✅ Show price breakdown
-- ✅ Edit/delete menu actions
-- ✅ Responsive design matching reservation style
+**Widok kompaktowy zawiera:**
+- Naglowek z nazwa pakietu + przyciski Zmien/Usun
+- Pakiet: jedna linia z cenami (Dor. 200 zl | Dz. 140 zl | Mal. 0 zl)
+- Wybrane dania: inline chips pogrupowane po kategoriach (ChefHat icon)
+- Opcje dodatkowe: inline chips z cenami
 
-**Usage:**
+**WAZNE:** Sekcja "Koszt menu" zostala usunieta z tego komponentu - te dane sa wyswietlane w ReservationFinancialSummary aby uniknac duplikacji.
+
+**Uzycie:**
 ```tsx
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 
@@ -75,185 +79,223 @@ import { ReservationMenuSection } from '@/components/reservations/ReservationMen
   reservationId={reservation.id}
   eventTypeId={reservation.eventType.id}
   eventDate={new Date(reservation.startDateTime)}
-  adults={reservation.adults}
-  children={reservation.children}
-  toddlers={reservation.toddlers}
+  adults={reservation.adults || 0}
+  children={reservation.children || 0}
+  toddlers={reservation.toddlers || 0}
   onMenuUpdated={loadReservation}
 />
 ```
 
 ---
 
-### 2. MenuSelectionFlow (Used in Dialog)
+### 2. ReservationFinancialSummary
 
-**Location:** `apps/frontend/components/menu/MenuSelectionFlow.tsx`
+**Lokalizacja:** `apps/frontend/components/reservations/ReservationFinancialSummary.tsx`
 
-**Purpose:** Multi-step wizard for selecting menu.
+**Cel:** Centralne podsumowanie finansowe rezerwacji z cenami z menu snapshot.
 
-**Flow:**
-1. ➡️ Select Menu Template
-2. ➡️ Choose Package
-3. ➡️ Add Optional Extras
-4. ➡️ Review & Confirm
+**Props:**
+```typescript
+interface ReservationFinancialSummaryProps {
+  reservationId: string
+  adults: number
+  children: number
+  toddlers: number
+  pricePerAdult: number      // fallback gdy brak menu
+  pricePerChild: number      // fallback gdy brak menu
+  pricePerToddler: number    // fallback gdy brak menu
+  totalPrice: number          // fallback gdy brak menu
+}
+```
+
+**Logika cen (effectivePrice):**
+```typescript
+// Ceny per osoba - priorytet: menu snapshot > reservation props
+const effectivePricePerAdult = hasMenu && priceBreakdown?.packageCost?.adults?.priceEach != null
+  ? priceBreakdown.packageCost.adults.priceEach    // np. 200 zl z pakietu
+  : pricePerAdult                                   // np. 280 zl z rezerwacji
+
+// Total - priorytet: menu total > reservation total
+const effectiveTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
+  ? priceBreakdown.totalMenuPrice    // suma pakiet + opcje z menu
+  : totalPrice                        // totalPrice z props rezerwacji
+```
+
+**Sekcje:**
+1. **Koszty uslug** (rozwijane) - pokazuje `effectiveTotalPrice`
+   - Pakiet gastronomiczny: ceny z menu snapshot (effectivePricePerAdult/Child/Toddler)
+   - Opcje dodatkowe: z `priceBreakdown.optionsCost`
+2. **Razem do zaplaty** - zielony banner z `effectiveTotalPrice`
+3. **Stan rozliczen** - progress bar (wplacono / effectiveTotalPrice)
+4. **Zaliczki** - CRUD z modalami (tworzenie, oplata, PDF, email, anulowanie)
+
+**WAZNE:** Gdy menu jest wybrane, komponent automatycznie pobiera ceny z `priceBreakdown` (menu snapshot) zamiast z propsow rezerwacji. To zapewnia ze "Pakiet gastronomiczny" pokazuje ceny z wybranego pakietu (np. 200 zl) a nie z domyslnego cennika rezerwacji (np. 280 zl).
+
+---
+
+### 3. MenuSelectionFlow
+
+**Lokalizacja:** `apps/frontend/components/menu/MenuSelectionFlow.tsx`
+
+**Cel:** Multi-step wizard do wyboru menu (otwierany w Dialog).
+
+**Kroki:**
+1. Wybor szablonu menu
+2. Wybor pakietu
+3. Wybor dan (z kategoriami i limitami)
+4. Dodanie opcji dodatkowych
+5. Podsumowanie i potwierdzenie
 
 **Features:**
-- Filters templates by event type
-- Checks validity dates
-- Calculates prices in real-time
-- Shows guest counts
-- Validates before submission
+- Filtrowanie szablonow po typie wydarzenia
+- Sprawdzanie dat waznosci
+- Obliczanie cen w real-time
+- Walidacja przed zapisem
+- Dialog nie zamyka sie po kliknieciu poza nim (custom overlay behavior)
 
 ---
 
-## 📦 Data Flow
+## Przeplyw danych
 
-### Adding Menu to Reservation
-
-```
-1. User clicks "Add Menu" button
-   ↓
-2. MenuSelectionFlow opens in dialog
-   ↓
-3. User selects template, package, options
-   ↓
-4. User confirms selection
-   ↓
-5. API Call: POST /api/reservations/:id/select-menu
-   ↓
-6. Backend creates menu snapshot
-   ↓
-7. Frontend refetches reservation
-   ↓
-8. Menu section displays selected menu
-```
-
-### Updating Menu
+### Dodawanie menu
 
 ```
-1. User clicks "Edit" button
-   ↓
-2. MenuSelectionFlow opens with current selection
-   ↓
-3. User modifies selection
-   ↓
-4. API Call: POST /api/reservations/:id/select-menu (replaces)
-   ↓
-5. Frontend refetches
+User klika "Dodaj menu"
+  -> MenuSelectionFlow otwiera sie w Dialog
+  -> User wybiera szablon, pakiet, dania, opcje
+  -> User potwierdza
+  -> POST /api/reservations/:id/select-menu
+  -> Backend tworzy menu snapshot
+  -> Frontend refetchuje dane
+  -> ReservationMenuSection wyswietla kompaktowy widok
+  -> ReservationFinancialSummary automatycznie pobiera ceny z menu
 ```
 
-### Deleting Menu
+### Aktualizacja menu
 
 ```
-1. User clicks "Delete" button
-   ↓
-2. Confirmation dialog
-   ↓
-3. API Call: DELETE /api/reservations/:id/menu
-   ↓
-4. Frontend refetches
+User klika "Zmien"
+  -> MenuSelectionFlow otwiera sie z obecna selekcja (buildInitialSelection)
+  -> User modyfikuje wybor
+  -> POST /api/reservations/:id/select-menu (nadpisuje)
+  -> Frontend refetchuje
+```
+
+### Usuwanie menu
+
+```
+User klika ikone kosza
+  -> Confirm dialog
+  -> DELETE /api/reservations/:id/menu
+  -> Frontend refetchuje
+  -> Podsumowanie finansowe wraca do cen z propsow rezerwacji
 ```
 
 ---
 
-## 💰 Price Breakdown Display
+## Przyklad cen
 
-### Package Cost
-
-```
-Dorośli (50 × 300 zł)    15,000 zł
-Dzieci (10 × 150 zł)      1,500 zł
-Maluchy (5 × 0 zł)           0 zł
-───────────────────────────
-Suma pakietu           16,500 zł
-```
-
-### Options Cost
+### Pakiet gastronomiczny (z menu snapshot)
 
 ```
-Bar Open (65 × 50 zł)      3,250 zł
-DJ + Taniec (stała)         800 zł
-Dekoracje (stała)        1,500 zł
-───────────────────────────
-Suma opcji              5,550 zł
+Dorosli (40 x 200 zl)     8 000 zl
+Dzieci (2 x 140 zl)         280 zl
+Maluchy (8)              bezplatnie
+------------------------------------
+Suma podstawowa           8 280 zl
 ```
 
-### Total
+### Opcje dodatkowe
 
 ```
-╔═══════════════════════════╗
-║ Całkowity koszt menu    ║
-║ 22,050 zł              ║
-╚═══════════════════════════╝
+Dodatkowe danie glowne (50 x 45 zl)    2 250 zl
+Dodatkowa przystawka rybna (50 x 25 zl) 1 250 zl
+------------------------------------
+Suma opcji                               3 500 zl
+```
+
+### Razem
+
+```
+========================================
+  Razem do zaplaty:        11 780 zl
+========================================
 ```
 
 ---
 
-## 🎨 UI States
+## Stany UI
 
-### 1. No Menu Selected
+### Brak menu
 
-```tsx
-┌────────────────────────────────────────┐
-│  🍽️ Menu                              │
-├────────────────────────────────────────┤
-│                                        │
-│           🍽️                          │
-│                                        │
-│      Brak wybranego menu               │
-│   Dodaj menu do rezerwacji             │
-│                                        │
-│        [ + Dodaj menu ]                │
-│                                        │
-└────────────────────────────────────────┘
+```
++----------------------------------------+
+|  Menu                                  |
+|                                        |
+|  [ikona]  Brak wybranego menu          |
+|  Dodaj menu do rezerwacji              |
+|                                        |
+|  [ + Dodaj menu ]                      |
++----------------------------------------+
 ```
 
-### 2. Menu Selected
+### Menu wybrane (kompaktowy widok)
 
-```tsx
-┌────────────────────────────────────────┐
-│  🍽️ Menu               [Edit] [❌]   │
-│  Menu Weselne - Premium              │
-├────────────────────────────────────────┤
-│                                        │
-│  📦 Pakiet: Standard                  │
-│     Dorośli: 300 zł                    │
-│     Dzieci: 150 zł                     │
-│                                        │
-│  ✅ 5 dań głównych                     │
-│  ✅ Deser premium                      │
-│                                        │
-│  🛍️ Dodatkowe opcje (2)               │
-│     ✨ Bar Open - 50 zł/osoba           │
-│     ✨ DJ + Taniec - 800 zł stała        │
-│                                        │
-└────────────────────────────────────────┘
-
-┌────────────────────────────────────────┐
-│  💰 Koszt menu                       │
-├────────────────────────────────────────┤
-│  Pakiet:            16,500 zł         │
-│  Opcje dodatkowe:    5,550 zł         │
-│  ────────────────────────────    │
-│  RAZEM:             22,050 zł         │
-└────────────────────────────────────────┘
+```
++----------------------------------------+
+|  Menu                   [Zmien] [X]    |
+|  Tradycyjne                            |
+|                                        |
+|  Pakiet: Tradycyjne                    |
+|  Dor. 200 zl | Dz. 140 zl | Mal. 0 zl |
+|  Klasyczne menu komunijne              |
+|                                        |
+|  Wybrane dania            [17 porcji]  |
+|  PRZYSTAWKI                            |
+|  [Tatar wolowy] [Carpaccio] [Roladki]  |
+|  ZUPY                                  |
+|  [Krem z dyni] [Rosol]                 |
+|  DANIA GLOWNE                          |
+|  [Schab x2] [Losos] [Kurczak]         |
+|                                        |
+|  Opcje dodatkowe (2)                   |
+|  [Dod. danie 45zl] [Przystawka 25zl]  |
++----------------------------------------+
 ```
 
-### 3. Loading State
+### Podsumowanie finansowe
 
-```tsx
-┌────────────────────────────────────────┐
-│  🍽️ Menu                              │
-├────────────────────────────────────────┤
-│                                        │
-│              ⏳                         │
-│         Wczytywanie...                 │
-│                                        │
-└────────────────────────────────────────┘
+```
++----------------------------------------+
+|  Podsumowanie finansowe                |
+|                                        |
+|  Koszty uslug          11 780 zl  [v]  |
+|    Pakiet gastronomiczny               |
+|    Dorosli (40 x 200 zl)   8 000 zl   |
+|    Dzieci (2 x 140 zl)       280 zl   |
+|    Maluchy (8)           bezplatnie    |
+|    Suma podstawowa         8 280 zl   |
+|                                        |
+|    Opcje dodatkowe                     |
+|    Dod. danie (50x45zl)   2 250 zl    |
+|    Przystawka (50x25zl)   1 250 zl    |
+|    Suma opcji              3 500 zl   |
+|                                        |
+|  [===== Razem do zaplaty 11 780 zl ===]|
+|                                        |
+|  Stan rozliczen  1000 / 11 780 zl      |
+|  [=====>                          ]    |
+|  Wplacono (8%) | Brakuje               |
+|                                        |
+|  Zaliczki (1)                      [v] |
+|  [1000 zl - Oplacona]                  |
+|  [ + Dodaj zaliczke ]                  |
++----------------------------------------+
 ```
 
 ---
 
-## 🔧 API Hooks Used
+## API Hooks
 
 ### useReservationMenu
 
@@ -263,15 +305,39 @@ const { data, isLoading, error } = useReservationMenu(reservationId)
 // Returns:
 {
   snapshot: {
-    template: MenuTemplate,
-    package: MenuPackage,
-    selectedOptions: MenuOption[]
+    menuTemplateId: string
+    packageId: string
+    menuData: {
+      packageName: string
+      packageDescription: string
+      pricePerAdult: number      // cena z pakietu menu
+      pricePerChild: number
+      pricePerToddler: number
+      dishSelections: CategorySelection[]
+      selectedOptions: SelectedOption[]
+    }
   },
-  priceBreakdown: PriceBreakdown
+  priceBreakdown: {
+    packageCost: {
+      adults: { count: number, priceEach: number, total: number }
+      children: { count: number, priceEach: number, total: number }
+      toddlers: { count: number, priceEach: number, total: number }
+      subtotal: number
+    },
+    optionsCost: {
+      option: string
+      priceType: 'PER_PERSON' | 'FLAT'
+      priceEach: number
+      quantity: number
+      total: number
+    }[],
+    optionsSubtotal: number,
+    totalMenuPrice: number      // packageCost.subtotal + optionsSubtotal
+  }
 }
 ```
 
-### useSelectMenu
+### useSelectMenu / useUpdateReservationMenu
 
 ```typescript
 const selectMutation = useSelectMenu()
@@ -281,10 +347,11 @@ await selectMutation.mutateAsync({
   selection: {
     templateId: 'tpl_456',
     packageId: 'pkg_789',
-    selectedOptions: [...],
-    adultsCount: 50,
-    childrenCount: 10,
-    toddlersCount: 5
+    selectedOptions: [{ optionId: 'opt_1', quantity: 1 }],
+    dishSelections: [{
+      categoryId: 'cat_1',
+      dishes: [{ dishId: 'dish_1', quantity: 2 }]
+    }]
   }
 })
 ```
@@ -293,138 +360,62 @@ await selectMutation.mutateAsync({
 
 ```typescript
 const deleteMutation = useDeleteReservationMenu()
-
 await deleteMutation.mutateAsync(reservationId)
 ```
 
 ---
 
-## ✅ Features Checklist
+## Wazne decyzje projektowe
 
-### Display Features
-- ✅ Show "No menu" state with add button
-- ✅ Display selected package details
-- ✅ Show package pricing per guest type
-- ✅ List included items with checkmarks
-- ✅ Display selected options with prices
-- ✅ Show complete price breakdown
-- ✅ Calculate per-person and flat costs
-- ✅ Display total menu cost
-- ✅ Match reservation page styling
-- ✅ Responsive design
+### 1. Ceny z menu snapshot vs ceny z rezerwacji
 
-### Interaction Features
-- ✅ Add menu button
-- ✅ Edit menu button
-- ✅ Delete menu button (with confirmation)
-- ✅ Open selection dialog
-- ✅ Auto-reload after changes
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Toast notifications
+Rezerwacja ma wlasne pola `pricePerAdult`, `pricePerChild`, `pricePerToddler`, `totalPrice`.
+Gdy menu jest wybrane, **ReservationFinancialSummary** uzywa cen z `priceBreakdown` (menu snapshot) zamiast z propsow rezerwacji:
 
-### Integration Features
-- ✅ Pass guest counts to price calculation
-- ✅ Filter templates by event type
-- ✅ Check template validity for date
-- ✅ Pre-fill with existing selection on edit
-- ✅ Trigger parent reload on update
-- ✅ Handle conditional rendering
+- `effectivePricePerAdult` = menu snapshot price > reservation prop
+- `effectiveTotalPrice` = `priceBreakdown.totalMenuPrice` > `totalPrice` prop
+
+Dziki temu "Pakiet gastronomiczny" zawsze pokazuje ceny zgodne z wybranym pakietem.
+
+### 2. Brak sekcji "Koszt menu" w ReservationMenuSection
+
+Wczesniej ReservationMenuSection mial osobna karte "Koszt menu" z podsumowaniem cen.
+Zostala **usunieta** poniewaz te same dane sa w ReservationFinancialSummary.
+Unika to duplikacji informacji.
+
+### 3. Kompaktowy widok dan
+
+Dania sa wyswietlane jako **inline chips/tagi** zamiast pelnych kart:
+- Pogrupowane po kategoriach (PRZYSTAWKI, ZUPY, DANIA GLOWNE)
+- Kazde danie to maly tag z nazwa i iloscia (np. "Schab x2")
+- Ikona ChefHat zamiast emoji (unikniecie problemow z Unicode surrogate pairs)
+
+### 4. Dialog nie zamyka sie po kliknieciu poza
+
+MenuSelectionFlow to dlugi wizard - przypadkowe zamkniecie powodowalo utrate selekcji.
+Dialog overlay ma wylaczony `onClick` handler.
 
 ---
 
-## 📝 Usage Example
+## Pliki
 
-### In Reservation Detail Page
-
-```tsx
-import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
-
-function ReservationDetailsPage() {
-  const [reservation, setReservation] = useState(null)
-  
-  const loadReservation = async () => {
-    const data = await getReservationById(id)
-    setReservation(data)
-  }
-
-  return (
-    <div>
-      {/* Client, Hall, Event sections... */}
-      
-      {/* Menu Section */}
-      {reservation.eventType?.id && eventDate && (
-        <ReservationMenuSection
-          reservationId={reservation.id}
-          eventTypeId={reservation.eventType.id}
-          eventDate={eventDate}
-          adults={reservation.adults || 0}
-          children={reservation.children || 0}
-          toddlers={reservation.toddlers || 0}
-          onMenuUpdated={loadReservation}
-        />
-      )}
-      
-      {/* Notes, Guests, Pricing... */}
-    </div>
-  )
-}
-```
+| Plik | Opis |
+|------|------|
+| `components/reservations/ReservationMenuSection.tsx` | Kompaktowy widok menu (pakiet, dania, opcje) |
+| `components/reservations/ReservationFinancialSummary.tsx` | Podsumowanie finansowe (koszty, total, zaliczki) |
+| `components/menu/MenuSelectionFlow.tsx` | Wizard wyboru menu (5 krokow) |
+| `components/menu/MenuDishesPreview.tsx` | Preview dan (legacy, full-size) |
+| `hooks/use-menu.ts` | React Query hooks dla menu API |
+| `lib/api/menu-api.ts` | API client dla menu endpoints |
+| `lib/api/deposits.ts` | API client dla zaliczek |
+| `components/ui/dialog.tsx` | Custom dialog (bez zamykania na overlay) |
 
 ---
 
-## 🚨 Error Handling
+## Obsluga bledow
 
-### Common Errors
-
-1. **No active menu for event type**
-   - Shows empty state
-   - Suggests creating menu first
-
-2. **Invalid date**
-   - Filters out expired templates
-   - Shows warning
-
-3. **API Error**
-   - Shows toast notification
-   - Retries or allows manual retry
-
-4. **Missing guest counts**
-   - Defaults to 0
-   - Still allows menu selection
-
----
-
-## 🔄 Update Flow
-
-### When Guest Counts Change
-
-**Manual Update Required:**
-- Menu prices are **snapshots**
-- If guest counts change in reservation, menu needs manual update
-- Edit button re-opens selection with new counts
-- Prices recalculate automatically
-
-**Future Enhancement:**
-- Auto-update menu when guest counts change
-- Show warning if counts differ
-
----
-
-## 🎉 Complete!
-
-**Integration includes:**
-- ✅ Full CRUD for menu in reservations
-- ✅ Beautiful UI matching reservation design
-- ✅ Real-time price calculations
-- ✅ Responsive & accessible
-- ✅ Error handling & loading states
-- ✅ Toast notifications
-
-**Files:**
-- Component: `apps/frontend/components/reservations/ReservationMenuSection.tsx`
-- Page: `apps/frontend/app/dashboard/reservations/[id]/page.tsx`
-- Hooks: `apps/frontend/hooks/use-menu.ts`
-- API: `apps/frontend/lib/api/menu-api.ts`
-
-**Ready to use!** 🚀
+1. **Brak aktywnego menu dla typu wydarzenia** - pokazuje pusty stan z przyciskiem "Dodaj menu"
+2. **Nieprawidlowa data** - filtruje wygasle szablony
+3. **Blad API** - toast notification z opisem bledu
+4. **Brak liczby gosci** - domyslnie 0, menu mozna dalej wybrac
+5. **Zmiana liczby gosci** - wymaga recznej aktualizacji menu (ceny sa snapshotami)

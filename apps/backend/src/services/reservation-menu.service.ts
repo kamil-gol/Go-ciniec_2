@@ -1,6 +1,8 @@
 /**
  * Reservation Menu Service
  * Handles menu selection for reservations
+ * UPDATED: Added recalculateForGuestChange for Phase C integration
+ * FIX: formatMenuResponse now exposes menuTemplateId + packageId from DB columns
  */
 
 import { Prisma } from '@prisma/client';
@@ -69,6 +71,87 @@ class ReservationMenuService {
     });
 
     return this.formatMenuResponse(menuSnapshot, adults, children, toddlers);
+  }
+
+  /**
+   * Recalculate menu prices when guest counts change.
+   * Reuses existing snapshot (same package, dishes, options) but
+   * recalculates all prices with new guest counts.
+   * 
+   * Called automatically from reservation.service.ts when guests are updated.
+   * Returns the new totalMenuPrice for the reservation to use.
+   */
+  async recalculateForGuestChange(
+    reservationId: string,
+    newAdults: number,
+    newChildren: number,
+    newToddlers: number
+  ): Promise<{ totalMenuPrice: number; packagePrice: number; optionsPrice: number } | null> {
+    const existingSnapshot = await prisma.reservationMenuSnapshot.findUnique({
+      where: { reservationId }
+    });
+
+    if (!existingSnapshot) return null;
+
+    const menuData = existingSnapshot.menuData as any as MenuSnapshotData;
+    if (!menuData) return null;
+
+    // Recalculate package price using stored per-person prices
+    const pricePerAdult = menuData.pricePerAdult || 0;
+    const pricePerChild = menuData.pricePerChild || 0;
+    const pricePerToddler = menuData.pricePerToddler || 0;
+    const packagePrice = (newAdults * pricePerAdult) + (newChildren * pricePerChild) + (newToddlers * pricePerToddler);
+
+    // Recalculate options price with new total guests
+    const newTotalGuests = newAdults + newChildren + newToddlers;
+    let optionsPrice = 0;
+    if (menuData.selectedOptions && menuData.selectedOptions.length > 0) {
+      for (const opt of menuData.selectedOptions) {
+        const price = opt.priceAmount || 0;
+        const quantity = opt.quantity || 1;
+        if (opt.priceUnit === 'PER_PERSON') {
+          optionsPrice += price * newTotalGuests * quantity;
+        } else {
+          // FLAT price — not affected by guest count
+          optionsPrice += price * quantity;
+        }
+      }
+    }
+
+    const totalMenuPrice = packagePrice + optionsPrice;
+
+    // Update snapshot data with new guest counts
+    const updatedMenuData: MenuSnapshotData = {
+      ...menuData,
+      adults: newAdults,
+      children: newChildren,
+      toddlers: newToddlers,
+      prices: {
+        ...menuData.prices,
+        packageTotal: packagePrice,
+        optionsTotal: optionsPrice,
+        total: totalMenuPrice
+      }
+    };
+
+    // Update snapshot in DB
+    await prisma.reservationMenuSnapshot.update({
+      where: { reservationId },
+      data: {
+        menuData: updatedMenuData as Prisma.InputJsonValue,
+        packagePrice,
+        optionsPrice,
+        totalMenuPrice,
+        adultsCount: newAdults,
+        childrenCount: newChildren,
+        toddlersCount: newToddlers,
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`[ReservationMenu] Recalculated prices for ${reservationId}: guests=${newTotalGuests}, package=${packagePrice}, options=${optionsPrice}, total=${totalMenuPrice}`);
+
+    return { totalMenuPrice, packagePrice, optionsPrice };
   }
 
   async getReservationMenu(reservationId: string): Promise<any> {
@@ -175,10 +258,17 @@ class ReservationMenuService {
     const menuData = snapshot.menuData as MenuSnapshotData;
     return {
       snapshot: {
-        id: snapshot.id, reservationId: snapshot.reservationId, menuData,
-        adultsCount: snapshot.adultsCount, childrenCount: snapshot.childrenCount,
-        toddlersCount: snapshot.toddlersCount, snapshotDate: snapshot.selectedAt.toISOString(),
-        createdAt: snapshot.selectedAt.toISOString(), updatedAt: snapshot.updatedAt.toISOString()
+        id: snapshot.id,
+        reservationId: snapshot.reservationId,
+        menuData,
+        menuTemplateId: snapshot.menuTemplateId,
+        packageId: snapshot.packageId,
+        adultsCount: snapshot.adultsCount,
+        childrenCount: snapshot.childrenCount,
+        toddlersCount: snapshot.toddlersCount,
+        snapshotDate: snapshot.selectedAt.toISOString(),
+        createdAt: snapshot.selectedAt.toISOString(),
+        updatedAt: snapshot.updatedAt.toISOString()
       },
       priceBreakdown: {
         packageCost: {

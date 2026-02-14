@@ -25,7 +25,7 @@ interface MenuData {
 
 interface MenuSnapshot {
   id: string;
-  menuData: any; // JSON containing dishSelections
+  menuData: any;
   packagePrice: number;
   optionsPrice: number;
   totalMenuPrice: number;
@@ -132,7 +132,6 @@ const ALLERGEN_LABELS: Record<string, string> = {
 };
 
 export class PDFService {
-  // Try multiple font paths (DejaVu fonts for Polish character support)
   private readonly FONT_PATHS = {
     regular: [
       '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
@@ -163,11 +162,7 @@ export class PDFService {
     this.checkFontsAvailability();
   }
 
-  /**
-   * Check if custom fonts are available on the system
-   */
   private checkFontsAvailability(): void {
-    // Check regular font
     for (const path of this.FONT_PATHS.regular) {
       if (fs.existsSync(path)) {
         this.fontRegular = path;
@@ -176,7 +171,6 @@ export class PDFService {
       }
     }
 
-    // Check bold font
     for (const path of this.FONT_PATHS.bold) {
       if (fs.existsSync(path)) {
         this.fontBold = path;
@@ -209,7 +203,6 @@ export class PDFService {
           },
         });
 
-        // Register custom fonts if available
         if (this.useCustomFonts && this.fontRegular && this.fontBold) {
           try {
             doc.registerFont('DejaVu', this.fontRegular);
@@ -222,7 +215,6 @@ export class PDFService {
             doc.font('Helvetica');
           }
         } else {
-          // Use built-in Helvetica font as fallback
           doc.font('Helvetica');
           console.log('[PDF Service] Using built-in Helvetica font');
         }
@@ -250,10 +242,6 @@ export class PDFService {
     });
   }
 
-  /**
-   * Generate payment confirmation PDF
-   * Invoked after deposit is marked as paid
-   */
   async generatePaymentConfirmationPDF(data: PaymentConfirmationData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
@@ -269,7 +257,6 @@ export class PDFService {
           },
         });
 
-        // Register custom fonts if available
         if (this.useCustomFonts && this.fontRegular && this.fontBold) {
           try {
             doc.registerFont('DejaVu', this.fontRegular);
@@ -325,7 +312,6 @@ export class PDFService {
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // Dane klienta
     doc.moveDown(1);
     doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Dane klienta');
     doc.moveDown(0.5);
@@ -342,7 +328,6 @@ export class PDFService {
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // Szczegoly rezerwacji
     doc.moveDown(1);
     doc.fontSize(14).font(this.getBoldFont()).text('Szczegoly rezerwacji');
     doc.moveDown(0.5);
@@ -395,19 +380,16 @@ export class PDFService {
       doc.font(this.getRegularFont()).text(reservation.notes, { width: pageWidth - 20 });
     }
 
-    // Add menu selection section (UPDATED with prices!)
     const menuSnapshot = reservation.menuSnapshot;
     if (menuSnapshot && menuSnapshot.menuData) {
       this.addMenuSelectionSection(doc, menuSnapshot, pageWidth);
     } else if (reservation.menuData?.dishSelections && reservation.menuData.dishSelections.length > 0) {
-      // Fallback for old format
       this.addMenuSelectionSectionLegacy(doc, reservation.menuData, pageWidth);
     }
 
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // Kalkulacja kosztow
     doc.moveDown(1);
     doc.fontSize(14).font(this.getBoldFont()).text('Kalkulacja kosztow');
     doc.moveDown(0.5);
@@ -441,9 +423,8 @@ export class PDFService {
     doc.fontSize(13).font(this.getBoldFont());
     doc.text(`RAZEM: ${this.formatCurrency(reservation.totalPrice)}`);
 
-    // Use deposits array if available, otherwise fallback to single deposit
-    const deposit = reservation.deposits && reservation.deposits.length > 0 
-      ? reservation.deposits[0] 
+    const deposit = reservation.deposits && reservation.deposits.length > 0
+      ? reservation.deposits[0]
       : reservation.deposit;
 
     if (deposit) {
@@ -454,12 +435,12 @@ export class PDFService {
       doc.moveDown(0.5);
       doc.fontSize(11).font(this.getRegularFont());
       doc.text(`Kwota zaliczki: ${this.formatCurrency(deposit.amount)}`);
-      
-      const dueDate = deposit.dueDate instanceof Date 
-        ? this.formatDate(deposit.dueDate) 
+
+      const dueDate = deposit.dueDate instanceof Date
+        ? this.formatDate(deposit.dueDate)
         : deposit.dueDate;
       doc.text(`Termin wplaty: ${dueDate}`);
-      
+
       const depositStatus = deposit.paid ? 'Oplacona' : 'Nieoplacona';
       doc.font(this.getBoldFont()).text(`Status: ${depositStatus}`);
     }
@@ -469,6 +450,7 @@ export class PDFService {
 
   /**
    * Build payment confirmation PDF content
+   * Uses formatDate (without time) for the payment date
    */
   private buildPaymentConfirmationContent(
     doc: PDFKit.PDFDocument,
@@ -504,7 +486,7 @@ export class PDFService {
 
     doc.font(this.getBoldFont()).text(`Kwota: ${this.formatCurrency(data.amount)}`);
     doc.font(this.getRegularFont());
-    doc.text(`Data wplaty: ${this.formatDateTime(data.paidAt)}`);
+    doc.text(`Data wplaty: ${this.formatDate(data.paidAt)}`);
     doc.text(`Metoda platnosci: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
     if (data.paymentReference) {
       doc.text(`Numer referencyjny: ${data.paymentReference}`);
@@ -549,15 +531,12 @@ export class PDFService {
 
     doc.moveDown(1.5);
     doc.fontSize(11).fillColor('#16a34a');
-    doc.font(this.getBoldFont()).text('✓ Wplata zaksiegowana pomyslnie', { align: 'center' });
+    doc.font(this.getBoldFont()).text('Wplata zaksiegowana pomyslnie', { align: 'center' });
     doc.fillColor('#000000');
 
     this.addFooter(doc);
   }
 
-  /**
-   * Add menu selection section with dishes grouped by category + PRICES (NEW!)
-   */
   private addMenuSelectionSection(
     doc: PDFKit.PDFDocument,
     menuSnapshot: MenuSnapshot,
@@ -570,7 +549,6 @@ export class PDFService {
     doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Wybrane Menu');
     doc.moveDown(0.5);
 
-    // Package name from menuData
     const packageName = menuSnapshot.menuData?.packageName || menuSnapshot.menuData?.package?.name;
     if (packageName) {
       doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
@@ -578,7 +556,6 @@ export class PDFService {
       doc.moveDown(0.3);
     }
 
-    // Guest counts for menu
     doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555');
     const guestParts = [];
     if (menuSnapshot.adultsCount > 0) {
@@ -595,29 +572,25 @@ export class PDFService {
       doc.moveDown(0.5);
     }
 
-    // Dishes grouped by category
     const dishSelections = menuSnapshot.menuData?.dishSelections || [];
     if (dishSelections.length === 0) {
       doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
       doc.text('Brak wybranych dan');
     } else {
       dishSelections.forEach((category: CategorySelection, categoryIndex: number) => {
-        // Category header
         doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
         doc.text(`${category.categoryName} (${category.dishes.length})`);
         doc.moveDown(0.3);
 
-        // Dishes list
         category.dishes.forEach((dish) => {
           doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
-          
+
           const quantityText = dish.quantity === Math.floor(dish.quantity)
             ? dish.quantity.toString()
             : dish.quantity.toFixed(1);
-          
+
           doc.text(`  ${quantityText}x ${dish.dishName}`, { indent: 15 });
 
-          // Allergens
           if (dish.allergens && dish.allergens.length > 0) {
             const allergenLabels = dish.allergens
               .map((a) => ALLERGEN_LABELS[a] || a)
@@ -630,32 +603,27 @@ export class PDFService {
           doc.moveDown(0.2);
         });
 
-        // Add spacing between categories
         if (categoryIndex < dishSelections.length - 1) {
           doc.moveDown(0.5);
         }
       });
     }
 
-    // Menu prices
     doc.moveDown(0.7);
     doc.fontSize(11).font(this.getRegularFont()).fillColor('#000000');
-    
+
     if (menuSnapshot.packagePrice > 0) {
       doc.text(`Cena pakietu: ${this.formatCurrency(menuSnapshot.packagePrice)}`);
     }
-    
+
     if (menuSnapshot.optionsPrice > 0) {
       doc.text(`Dodatki: ${this.formatCurrency(menuSnapshot.optionsPrice)}`);
     }
-    
+
     doc.fontSize(12).font(this.getBoldFont());
     doc.text(`Razem menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`);
   }
 
-  /**
-   * Legacy menu selection section (fallback for old format)
-   */
   private addMenuSelectionSectionLegacy(
     doc: PDFKit.PDFDocument,
     menuData: MenuData,
@@ -675,22 +643,19 @@ export class PDFService {
     }
 
     menuData.dishSelections.forEach((category, categoryIndex) => {
-      // Category header
       doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
       doc.text(`${category.categoryName} (${category.dishes.length})`);
       doc.moveDown(0.3);
 
-      // Dishes list
       category.dishes.forEach((dish) => {
         doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
-        
+
         const quantityText = dish.quantity === Math.floor(dish.quantity)
           ? dish.quantity.toString()
           : dish.quantity.toFixed(1);
-        
+
         doc.text(`  ${quantityText}x ${dish.dishName}`, { indent: 15 });
 
-        // Allergens
         if (dish.allergens && dish.allergens.length > 0) {
           const allergenLabels = dish.allergens
             .map((a) => ALLERGEN_LABELS[a] || a)
@@ -703,7 +668,6 @@ export class PDFService {
         doc.moveDown(0.2);
       });
 
-      // Add spacing between categories
       if (categoryIndex < menuData.dishSelections!.length - 1) {
         doc.moveDown(0.5);
       }

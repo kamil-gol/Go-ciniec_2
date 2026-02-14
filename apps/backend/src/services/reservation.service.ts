@@ -1,7 +1,7 @@
 /**
  * Reservation Service
  * Business logic for reservation management with advanced features
- * UPDATED: Prisma singleton, N+1 fix, pagination
+ * UPDATED: Phase C — Auto-recalc menu prices when guests change
  */
 
 import { prisma } from '@/lib/prisma';
@@ -24,6 +24,7 @@ import {
   detectReservationChanges,
   formatChangesSummary
 } from '../utils/reservation.utils';
+import reservationMenuService from './reservation-menu.service';
 
 /**
  * Sanitize string by removing null bytes
@@ -492,6 +493,7 @@ export class ReservationService {
 
   /**
    * Update reservation
+   * PHASE C: When guests change and menu exists, auto-recalculate menu prices
    */
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
@@ -554,33 +556,48 @@ export class ReservationService {
     if (data.children !== undefined) updateData.children = data.children;
     if (data.toddlers !== undefined) updateData.toddlers = data.toddlers;
 
-    if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined) {
-      const newAdults = data.adults ?? existingReservation.adults;
-      const newChildren = data.children ?? existingReservation.children;
-      const newToddlers = data.toddlers ?? existingReservation.toddlers;
+    // Detect if guest counts changed
+    const guestsChanged = data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined;
+    const newAdults = data.adults ?? existingReservation.adults;
+    const newChildren = data.children ?? existingReservation.children;
+    const newToddlers = data.toddlers ?? existingReservation.toddlers;
+
+    if (guestsChanged) {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
       if (updateData.guests > existingReservation.hall.capacity) {
         throw new Error(`Number of guests (${updateData.guests}) exceeds hall capacity (${existingReservation.hall.capacity})`);
       }
     }
 
-    const isUsingMenuPackage = existingReservation.menuSnapshot && data.menuPackageId !== null;
+    // PHASE C: Auto-recalculate menu prices when guests change
+    const hasMenuSnapshot = !!existingReservation.menuSnapshot;
+    const isUsingMenuPackage = hasMenuSnapshot && data.menuPackageId !== null;
     
-    if (!isUsingMenuPackage) {
-      if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
-      if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
-      if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
+    if (isUsingMenuPackage && guestsChanged) {
+      // Auto-recalc menu prices with new guest counts
+      const recalcResult = await reservationMenuService.recalculateForGuestChange(
+        id, newAdults, newChildren, newToddlers
+      );
 
-      if (data.adults !== undefined || data.children !== undefined || data.toddlers !== undefined ||
+      if (recalcResult) {
+        // Update reservation totalPrice from recalculated menu
+        updateData.totalPrice = recalcResult.totalMenuPrice;
+        // Update per-person prices from snapshot (they stay the same, but ensure consistency)
+        console.log(`[Reservation] Auto-recalculated menu for ${id}: ${recalcResult.totalMenuPrice} (was ${Number(existingReservation.totalPrice)})`);
+      }
+    } else if (!isUsingMenuPackage) {
+      // Non-menu-package: manual price calculation
+      if (guestsChanged ||
           data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-        const finalAdults = data.adults ?? existingReservation.adults;
-        const finalChildren = data.children ?? existingReservation.children;
-        const finalToddlers = data.toddlers ?? existingReservation.toddlers;
         const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
         const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
         const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
-        updateData.totalPrice = calculateTotalPrice(finalAdults, finalChildren, finalPricePerAdult, finalPricePerChild, finalToddlers, finalPricePerToddler);
+        updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, finalPricePerAdult, finalPricePerChild, newToddlers, finalPricePerToddler);
       }
+
+      if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
+      if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
+      if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
     }
 
     if (data.confirmationDeadline) {
@@ -624,6 +641,7 @@ export class ReservationService {
 
   /**
    * Update reservation status
+   * CASCADE: If new status is CANCELLED → auto-cancel pending deposits
    */
   async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
@@ -633,6 +651,41 @@ export class ReservationService {
 
     this.validateStatusTransition(existingReservation.status, data.status);
 
+    // Use transaction for atomicity when cancelling
+    if (data.status === ReservationStatus.CANCELLED) {
+      const reservation = await prisma.$transaction(async (tx) => {
+        // 1. Update reservation status
+        const updatedReservation = await tx.reservation.update({
+          where: { id },
+          data: { status: data.status },
+          include: RESERVATION_INCLUDE
+        });
+
+        // 2. Cascade: cancel all PENDING and OVERDUE deposits
+        const cancelledDeposits = await this.cascadeCancelDeposits(tx, id, userId, data.reason);
+
+        // 3. History entry for status change
+        await tx.reservationHistory.create({
+          data: {
+            reservationId: id,
+            changedByUserId: userId,
+            changeType: 'STATUS_CHANGED',
+            fieldName: 'status',
+            oldValue: existingReservation.status,
+            newValue: data.status,
+            reason: data.reason
+              ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
+              : `Status changed${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
+          }
+        });
+
+        return updatedReservation;
+      });
+
+      return reservation as any;
+    }
+
+    // Non-cancel status changes — no cascade needed
     const reservation = await prisma.reservation.update({
       where: { id },
       data: { status: data.status },
@@ -645,6 +698,7 @@ export class ReservationService {
 
   /**
    * Cancel reservation (soft delete)
+   * CASCADE: Auto-cancels all PENDING and OVERDUE deposits
    */
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
@@ -654,12 +708,82 @@ export class ReservationService {
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error('Reservation is already cancelled');
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error('Cannot cancel completed reservation');
 
-    await prisma.reservation.update({
-      where: { id },
-      data: { status: ReservationStatus.CANCELLED, archivedAt: new Date() }
+    await prisma.$transaction(async (tx) => {
+      // 1. Cancel the reservation
+      await tx.reservation.update({
+        where: { id },
+        data: { status: ReservationStatus.CANCELLED, archivedAt: new Date() }
+      });
+
+      // 2. Cascade: cancel all PENDING and OVERDUE deposits
+      const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
+
+      // 3. History entry
+      await tx.reservationHistory.create({
+        data: {
+          reservationId: id,
+          changedByUserId: userId,
+          changeType: 'CANCELLED',
+          fieldName: 'status',
+          oldValue: existingReservation.status,
+          newValue: ReservationStatus.CANCELLED,
+          reason: reason
+            ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
+            : `Reservation cancelled${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
+        }
+      });
+    });
+  }
+
+  /**
+   * CASCADE: Cancel all PENDING and OVERDUE deposits for a reservation
+   * Returns the number of deposits cancelled.
+   * Works inside a Prisma transaction context.
+   */
+  private async cascadeCancelDeposits(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    reservationId: string,
+    userId: string,
+    reason?: string
+  ): Promise<number> {
+    // Find deposits eligible for cascade cancellation
+    const pendingDeposits = await tx.deposit.findMany({
+      where: {
+        reservationId,
+        status: { in: ['PENDING', 'OVERDUE'] }
+      }
     });
 
-    await this.createHistoryEntry(id, userId, 'CANCELLED', 'status', existingReservation.status, ReservationStatus.CANCELLED, reason || 'Reservation cancelled');
+    if (pendingDeposits.length === 0) return 0;
+
+    // Bulk update all pending/overdue deposits to CANCELLED
+    await tx.deposit.updateMany({
+      where: {
+        reservationId,
+        status: { in: ['PENDING', 'OVERDUE'] }
+      },
+      data: {
+        status: 'CANCELLED',
+        updatedAt: new Date()
+      }
+    });
+
+    // Create individual history entries for each cancelled deposit
+    for (const deposit of pendingDeposits) {
+      await tx.reservationHistory.create({
+        data: {
+          reservationId,
+          changedByUserId: userId,
+          changeType: 'DEPOSIT_CASCADE_CANCELLED',
+          fieldName: 'deposit',
+          oldValue: deposit.status,
+          newValue: 'CANCELLED',
+          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
+        }
+      });
+    }
+
+    return pendingDeposits.length;
   }
 
   private async validateUserId(userId: string): Promise<void> {

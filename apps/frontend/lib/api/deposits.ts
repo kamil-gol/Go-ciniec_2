@@ -5,7 +5,7 @@ import { apiClient } from '../api-client'
 // ═══════════════════════════════════════════════════════════════
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'PARTIALLY_PAID' | 'CANCELLED'
-export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK'
+export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD'
 
 export interface Deposit {
   id: string
@@ -95,7 +95,6 @@ export interface MarkDepositPaidInput {
 // ═══════════════════════════════════════════════════════════════
 
 export const depositsApi = {
-  // List all deposits (with optional filters)
   getAll: async (params?: {
     status?: DepositStatus
     overdue?: boolean
@@ -110,62 +109,74 @@ export const depositsApi = {
     return response.data.data
   },
 
-  // Get deposit stats
   getStats: async (): Promise<DepositStats> => {
     const response = await apiClient.get('/deposits/stats')
     return response.data.data
   },
 
-  // Get single deposit
   getById: async (id: string): Promise<Deposit> => {
     const response = await apiClient.get(`/deposits/${id}`)
     return response.data.data
   },
 
-  // Get deposits for a reservation
   getByReservation: async (reservationId: string): Promise<Deposit[]> => {
     const response = await apiClient.get(`/reservations/${reservationId}/deposits`)
     return response.data.data
   },
 
-  // Create deposit for a reservation
   create: async (reservationId: string, data: CreateDepositInput): Promise<Deposit> => {
     const response = await apiClient.post(`/reservations/${reservationId}/deposits`, data)
     return response.data.data
   },
 
-  // Update deposit
   update: async (id: string, data: UpdateDepositInput): Promise<Deposit> => {
     const response = await apiClient.put(`/deposits/${id}`, data)
     return response.data.data
   },
 
-  // Delete deposit
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/deposits/${id}`)
   },
 
-  // Mark as paid
   markAsPaid: async (id: string, data: MarkDepositPaidInput): Promise<Deposit> => {
     const response = await apiClient.patch(`/deposits/${id}/mark-paid`, data)
     return response.data.data
   },
 
-  // Mark as unpaid (revert)
   markAsUnpaid: async (id: string): Promise<Deposit> => {
     const response = await apiClient.patch(`/deposits/${id}/mark-unpaid`)
     return response.data.data
   },
 
-  // Cancel deposit
   cancel: async (id: string): Promise<Deposit> => {
     const response = await apiClient.patch(`/deposits/${id}/cancel`)
     return response.data.data
   },
 
-  // Get overdue deposits
   getOverdue: async (): Promise<Deposit[]> => {
     const response = await apiClient.get('/deposits/overdue')
     return response.data.data
+  },
+
+  /** Download payment confirmation PDF */
+  downloadPdf: async (id: string): Promise<void> => {
+    const response = await apiClient.get(`/deposits/${id}/pdf`, {
+      responseType: 'blob',
+    })
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Potwierdzenie_wplaty_${id.substring(0, 8)}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  },
+
+  /** Manually send confirmation email with PDF to client */
+  sendEmail: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post(`/deposits/${id}/send-email`)
+    return response.data
   },
 }

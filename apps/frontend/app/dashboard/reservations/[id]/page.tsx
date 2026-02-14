@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft, Edit, Trash2, CheckCircle2, XCircle, Clock, 
-  Calendar, Users, DollarSign, Building2, User, Mail, Phone,
+  Calendar, Users, Building2, User, Mail, Phone,
   FileText, Download, Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
+import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
 
 const statusConfig = {
   PENDING: {
@@ -56,7 +57,6 @@ export default function ReservationDetailsPage() {
 
   const reservationId = params.id as string
 
-  // React Query — auto-caches, auto-refetches, no manual state management
   const { data: reservation, isLoading, isError } = useReservation(reservationId)
   const cancelMutation = useCancelReservation()
 
@@ -148,7 +148,6 @@ export default function ReservationDetailsPage() {
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
           <div className="relative z-10 space-y-6">
-            {/* Back Button */}
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -156,7 +155,6 @@ export default function ReservationDetailsPage() {
               </Button>
             </Link>
 
-            {/* Title Section */}
             <div className="flex justify-between items-start">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -184,7 +182,6 @@ export default function ReservationDetailsPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <Button 
                   size="lg" 
@@ -199,7 +196,6 @@ export default function ReservationDetailsPage() {
             </div>
           </div>
 
-          {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         </div>
@@ -311,7 +307,7 @@ export default function ReservationDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Menu Section */}
+            {/* Menu Section (visual only — no price breakdown, that's in Financial Summary) */}
             {reservation.eventType?.id && eventDate && (
               <ReservationMenuSection
                 reservationId={reservation.id}
@@ -341,7 +337,7 @@ export default function ReservationDetailsPage() {
             )}
           </div>
 
-          {/* Right Column - Stats & Pricing */}
+          {/* Right Column - Guests, Financial Summary, Quick Actions */}
           <div className="space-y-6">
             {/* Guests Breakdown */}
             <Card className="border-0 shadow-xl overflow-hidden">
@@ -387,35 +383,17 @@ export default function ReservationDetailsPage() {
               </div>
             </Card>
 
-            {/* Pricing */}
-            <Card className="border-0 shadow-xl overflow-hidden">
-              <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                    <DollarSign className="h-5 w-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold">Cennik</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Cena za dorosłego</span>
-                    <span className="font-semibold">{reservation.pricePerAdult} zł</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Cena za dziecko</span>
-                    <span className="font-semibold">{reservation.pricePerChild} zł</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Cena za malucha</span>
-                    <span className="font-semibold">{reservation.pricePerToddler} zł</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
-                    <span className="font-bold">Suma całkowita</span>
-                    <span className="text-2xl font-bold">{reservation.totalPrice} zł</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            {/* ═══ UNIFIED FINANCIAL SUMMARY (replaces old Cennik + Deposits) ═══ */}
+            <ReservationFinancialSummary
+              reservationId={reservation.id}
+              adults={reservation.adults || 0}
+              children={reservation.children || 0}
+              toddlers={reservation.toddlers || 0}
+              pricePerAdult={Number(reservation.pricePerAdult) || 0}
+              pricePerChild={Number(reservation.pricePerChild) || 0}
+              pricePerToddler={Number(reservation.pricePerToddler) || 0}
+              totalPrice={Number(reservation.totalPrice) || 0}
+            />
 
             {/* Quick Actions */}
             <Card className="border-0 shadow-xl">

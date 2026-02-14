@@ -102,14 +102,8 @@ const depositService = {
       throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
     }
 
-    // dueDate must be YYYY-MM-DD format, max 10 chars (DB column is varchar(10))
-    const dueDateStr = dueDate.substring(0, 10); // ensure max 10 chars
+    const dueDateStr = dueDate.substring(0, 10);
 
-    // Raw SQL matching actual DB schema:
-    // - dueDate is varchar(10), NOT timestamp
-    // - paidAmount is numeric(10,2) NOT NULL with default 0
-    // - remainingAmount is numeric(10,2) NOT NULL
-    // - status is varchar(20) with default 'PENDING'
     const result: any[] = await prisma.$queryRawUnsafe(
       `INSERT INTO "Deposit" (
         id, "reservationId", amount, "remainingAmount", "paidAmount",
@@ -222,7 +216,6 @@ const depositService = {
 
     if (overdue) {
       where.status = { equals: 'PENDING' };
-      // dueDate is varchar(10) in DB, compare as string (YYYY-MM-DD format sorts correctly)
       const todayStr = new Date().toISOString().substring(0, 10);
       where.dueDate = { lt: todayStr as any };
     }
@@ -361,9 +354,8 @@ const depositService = {
 
   /**
    * Mark deposit as paid
-   * 1. Update DB status
-   * 2. Generate PDF confirmation
-   * 3. Send email with PDF attachment
+   * Only updates DB status — no auto-email.
+   * Email is sent manually via sendConfirmationEmail().
    */
   async markAsPaid(id: string, input: MarkPaidInput) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
@@ -380,7 +372,6 @@ const depositService = {
     const newStatus = isPaid ? 'PAID' : 'PARTIALLY_PAID';
     const remainingAmount = Math.max(0, remaining);
 
-    // Update database
     await prisma.$queryRawUnsafe(
       `UPDATE "Deposit" SET paid = $1, status = $2, "paidAt" = $3::timestamp, "paymentMethod" = $4, "remainingAmount" = $5, "paidAmount" = $6, "updatedAt" = NOW() WHERE id = $7::uuid`,
       isPaid, newStatus, input.paidAt, input.paymentMethod, remainingAmount, amountPaid, id
@@ -395,74 +386,80 @@ const depositService = {
       throw AppError.notFound('Updated deposit');
     }
 
-    // Generate PDF confirmation + send email (non-blocking)
-    try {
-      const reservation = updated.reservation;
-      const client = reservation.client;
+    return updated;
+  },
 
-      const pdfBuffer = await pdfService.generatePaymentConfirmationPDF({
-        depositId: updated.id,
-        amount: Number(updated.amount),
-        paidAt: new Date(input.paidAt),
-        paymentMethod: input.paymentMethod,
-        client: {
-          firstName: client.firstName,
-          lastName: client.lastName,
-          email: client.email || undefined,
-          phone: client.phone,
-        },
-        reservation: {
-          id: reservation.id,
-          date: reservation.date || '',
-          startTime: reservation.startTime || '',
-          endTime: reservation.endTime || '',
-          hall: reservation.hall?.name,
-          eventType: reservation.eventType?.name,
-          guests: reservation.guests,
-          totalPrice: Number(reservation.totalPrice),
-        },
-      });
+  /**
+   * Send confirmation email with PDF for a paid deposit
+   * Called manually by the user from the UI.
+   */
+  async sendConfirmationEmail(id: string) {
+    const deposit = await prisma.deposit.findUnique({
+      where: { id },
+      include: DEPOSIT_INCLUDE,
+    });
 
-      logger.info(`[Deposit] PDF confirmation generated for deposit ${id} (${pdfBuffer.length} bytes)`);
+    if (!deposit) throw AppError.notFound('Deposit');
 
-      // Send email with PDF attachment
-      const clientEmail = client.email;
-      if (clientEmail) {
-        const methodLabels: Record<string, string> = {
-          TRANSFER: 'Przelew bankowy',
-          CASH: 'Gotowka',
-          BLIK: 'BLIK',
-          CARD: 'Karta platnicza',
-        };
-
-        await emailService.sendDepositPaidConfirmation(
-          clientEmail,
-          {
-            clientName: `${client.firstName} ${client.lastName}`,
-            depositAmount: Number(updated.amount).toFixed(2),
-            paidAt: new Date(input.paidAt).toLocaleDateString('pl-PL', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            }),
-            paymentMethod: input.paymentMethod,
-            reservationDate: reservation.date || '',
-            hallName: reservation.hall?.name || 'Nie przypisano',
-            eventType: reservation.eventType?.name || 'Wydarzenie',
-          },
-          pdfBuffer
-        );
-
-        logger.info(`[Deposit] Email confirmation sent to ${clientEmail}`);
-      } else {
-        logger.warn(`[Deposit] No client email found for deposit ${id} — skipping email`);
-      }
-    } catch (error: any) {
-      logger.error(`[Deposit] Failed to generate PDF or send email: ${error.message}`);
-      // Don't fail the entire operation if PDF/email fails
+    if (!deposit.paid) {
+      throw AppError.badRequest('Email potwierdzenia mozna wyslac tylko dla oplaconej zaliczki');
     }
 
-    return updated;
+    const reservation = deposit.reservation as any;
+    const client = reservation?.client;
+
+    if (!client?.email) {
+      throw AppError.badRequest('Klient nie ma przypisanego adresu email');
+    }
+
+    // Generate PDF
+    const pdfBuffer = await pdfService.generatePaymentConfirmationPDF({
+      depositId: deposit.id,
+      amount: Number(deposit.amount),
+      paidAt: deposit.paidAt ? new Date(deposit.paidAt) : new Date(),
+      paymentMethod: deposit.paymentMethod || 'TRANSFER',
+      client: {
+        firstName: client.firstName,
+        lastName: client.lastName,
+        email: client.email || undefined,
+        phone: client.phone,
+      },
+      reservation: {
+        id: reservation.id,
+        date: reservation.date || '',
+        startTime: reservation.startTime || '',
+        endTime: reservation.endTime || '',
+        hall: reservation.hall?.name,
+        eventType: reservation.eventType?.name,
+        guests: reservation.guests,
+        totalPrice: Number(reservation.totalPrice),
+      },
+    });
+
+    logger.info(`[Deposit] PDF generated for email, deposit ${id} (${pdfBuffer.length} bytes)`);
+
+    // Send email
+    await emailService.sendDepositPaidConfirmation(
+      client.email,
+      {
+        clientName: `${client.firstName} ${client.lastName}`,
+        depositAmount: Number(deposit.amount).toFixed(2),
+        paidAt: (deposit.paidAt ? new Date(deposit.paidAt) : new Date()).toLocaleDateString('pl-PL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        paymentMethod: deposit.paymentMethod || 'TRANSFER',
+        reservationDate: reservation.date || '',
+        hallName: reservation.hall?.name || 'Nie przypisano',
+        eventType: reservation.eventType?.name || 'Wydarzenie',
+      },
+      pdfBuffer
+    );
+
+    logger.info(`[Deposit] Email confirmation sent to ${client.email} for deposit ${id}`);
+
+    return { success: true, message: `Email wyslany do ${client.email}` };
   },
 
   /**
@@ -525,7 +522,6 @@ const depositService = {
   async getStats() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    // Use raw SQL for stats to avoid Prisma schema mismatch issues
     const stats: any[] = await prisma.$queryRawUnsafe(`
       SELECT
         COUNT(*) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID'))::int as total,
@@ -570,7 +566,6 @@ const depositService = {
   async getOverdue() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    // dueDate is varchar(10) in YYYY-MM-DD format, string comparison works
     const deposits = await prisma.deposit.findMany({
       where: {
         status: { equals: 'PENDING' },
@@ -604,7 +599,6 @@ const depositService = {
   },
 };
 
-/** Helper: get date string YYYY-MM-DD for today + N days */
 function getDatePlusDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);

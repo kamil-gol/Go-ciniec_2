@@ -3,11 +3,14 @@
  * 
  * Multi-step wizard for selecting menu, package, dishes, and options
  * Premium UI with gradients and animations
+ * 
+ * PHASE A: Guest counts come from reservation (read-only, no step 4)
+ * FIX v6: Real UTF-8 Polish chars (not escape sequences)
  */
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   MenuTemplate, 
   MenuPackage, 
@@ -28,7 +31,7 @@ import {
 } from '@/components/menu';
 import { OptionsSelector } from '@/components/menu/OptionsSelector';
 import { DishSelector } from '@/components/menu/DishSelector';
-import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw } from 'lucide-react';
+import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -47,9 +50,9 @@ interface CategorySelection {
 interface MenuSelectionFlowProps {
   eventTypeId?: string;
   eventDate?: Date;
-  adults?: number;
-  children?: number;
-  toddlers?: number;
+  adults: number;
+  children: number;
+  toddlers: number;
   initialSelection?: {
     templateId?: string;
     packageId?: string;
@@ -60,157 +63,172 @@ interface MenuSelectionFlowProps {
   className?: string;
 }
 
-type Step = 'template' | 'package' | 'dishes' | 'guests' | 'options';
+type Step = 'template' | 'package' | 'dishes' | 'options';
 
 export function MenuSelectionFlow({ 
   eventTypeId,
   eventDate,
-  adults = 50,
-  children = 10,
-  toddlers = 5,
+  adults,
+  children,
+  toddlers,
   initialSelection,
   onComplete,
   className 
 }: MenuSelectionFlowProps) {
   const { toast } = useToast()
+  const containerRef = useRef<HTMLDivElement>(null);
   const [currentStep, setCurrentStep] = useState<Step>('template');
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
   const [selectedPackage, setSelectedPackage] = useState<MenuPackage>();
   const [dishSelections, setDishSelections] = useState<CategorySelection[]>(initialSelection?.dishSelections || []);
-  const [guestCounts, setGuestCounts] = useState({
-    adults,
-    children,
-    toddlers,
-  });
   const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Queries
+  const totalGuests = adults + children + toddlers;
+
+  useEffect(() => {
+    const dialogContent = containerRef.current?.closest('[role="dialog"]') || containerRef.current?.closest('.overflow-y-auto');
+    if (dialogContent) {
+      dialogContent.scrollTop = 0;
+    }
+    containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [currentStep]);
+
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ 
     eventTypeId,
     isActive: true 
   });
+  
   const { data: packages, isLoading: packagesLoading } = useMenuPackages(selectedTemplate?.id);
+  
   const { data: initialPackage, isLoading: initialPackageLoading } = useMenuPackage(
     initialSelection?.packageId && !isInitialized ? initialSelection.packageId : undefined
   );
+  
   const { data: options, isLoading: optionsLoading } = useMenuOptions({ isActive: true });
 
   // Initialize from initialSelection
   useEffect(() => {
-    if (initialSelection && !isInitialized && templates && initialPackage) {
-      // Find template from package
-      const template = templates.find(t => t.id === initialPackage.menuTemplateId);
-      if (template) {
-        setSelectedTemplate(template);
-        setSelectedPackage(initialPackage);
-        
-        // Convert selectedOptions to optionQuantities format
-        if (initialSelection.selectedOptions) {
-          const quantities: Record<string, number> = {};
-          initialSelection.selectedOptions.forEach(opt => {
-            quantities[opt.optionId] = opt.quantity;
-          });
-          setOptionQuantities(quantities);
-        }
-
-        // Start from appropriate step
-        if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
-          setCurrentStep('options'); // Skip to options if already has dishes
-        } else {
-          setCurrentStep('dishes'); // Go to dishes selection
-        }
-        
-        setIsInitialized(true);
-      }
+    if (!initialSelection || isInitialized) return;
+    if (!templates || templates.length === 0) return;
+    
+    let resolvedTemplateId = initialSelection.templateId;
+    
+    if (!resolvedTemplateId && initialPackage) {
+      resolvedTemplateId = (initialPackage as any).menuTemplateId;
     }
-  }, [initialSelection, templates, initialPackage, isInitialized]);
+    
+    if (!resolvedTemplateId && initialSelection.packageId && !initialPackage && initialPackageLoading) {
+      return;
+    }
+    
+    if (!resolvedTemplateId) {
+      console.warn('[MenuSelectionFlow] Could not resolve templateId.');
+      setIsInitialized(true);
+      return;
+    }
+    
+    const template = templates.find(t => t.id === resolvedTemplateId);
+    if (!template) {
+      console.warn('[MenuSelectionFlow] Template not found:', resolvedTemplateId);
+      setIsInitialized(true);
+      return;
+    }
+    
+    console.log('[MenuSelectionFlow] Init success. Template:', template.name, 'Package:', initialPackage?.name || 'loading...');
+    
+    setSelectedTemplate(template);
+    
+    if (initialPackage) {
+      setSelectedPackage(initialPackage);
+    }
+    
+    if (initialSelection.selectedOptions && initialSelection.selectedOptions.length > 0) {
+      const quantities: Record<string, number> = {};
+      initialSelection.selectedOptions.forEach(opt => {
+        quantities[opt.optionId] = opt.quantity || 1;
+      });
+      setOptionQuantities(quantities);
+    }
+
+    if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
+      setDishSelections(initialSelection.dishSelections);
+    }
+
+    // In edit mode start at dishes step so user can see and confirm selections
+    if (initialPackage) {
+      setCurrentStep('dishes');
+    } else {
+      setCurrentStep('package');
+    }
+    
+    setIsInitialized(true);
+  }, [initialSelection, templates, initialPackage, initialPackageLoading, isInitialized]);
 
   const steps: { id: Step; label: string; icon: any; gradient: string; }[] = [
     { id: 'template', label: 'Wybór Menu', icon: Sparkles, gradient: 'from-orange-500 to-amber-500' },
     { id: 'package', label: 'Pakiet', icon: Check, gradient: 'from-blue-500 to-cyan-500' },
     { id: 'dishes', label: 'Dania', icon: UtensilsCrossed, gradient: 'from-red-500 to-rose-500' },
-    { id: 'guests', label: 'Goście', icon: Users, gradient: 'from-purple-500 to-pink-500' },
     { id: 'options', label: 'Dodatki', icon: Sparkles, gradient: 'from-green-500 to-emerald-500' },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
 
-  // Check if user can navigate to a step
   const canNavigateToStep = (stepId: Step): boolean => {
     switch (stepId) {
-      case 'template':
-        return true; // Can always go back to template
-      case 'package':
-        return !!selectedTemplate; // Need template selected
-      case 'dishes':
-        return !!selectedTemplate && !!selectedPackage; // Need template and package
-      case 'guests':
-        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0; // Need dishes selected
-      case 'options':
-        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0; // Need dishes selected
-      default:
-        return false;
+      case 'template': return true;
+      case 'package': return !!selectedTemplate;
+      case 'dishes': return !!selectedTemplate && !!selectedPackage;
+      case 'options': return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0;
+      default: return false;
     }
   };
 
-  // Handle step click
   const handleStepClick = (stepId: Step) => {
     const stepIndex = steps.findIndex(s => s.id === stepId);
-    
-    // Allow navigation to current or completed steps
     if (stepIndex <= currentStepIndex) {
       setCurrentStep(stepId);
       return;
     }
-
-    // Check if can navigate forward
     if (!canNavigateToStep(stepId)) {
-      toast({
-        title: 'Nie można przejść dalej',
-        description: 'Uzupełnij poprzednie kroki przed przejściem dalej.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Nie można przejść dalej', description: 'Uzupełnij poprzednie kroki.', variant: 'destructive' });
       return;
     }
-
     setCurrentStep(stepId);
   };
 
   const handleTemplateSelect = (template: MenuTemplate) => {
-    // Only reset package and dishes if switching to a DIFFERENT template
     if (selectedTemplate?.id !== template.id) {
       setSelectedTemplate(template);
       setSelectedPackage(undefined);
       setDishSelections([]);
-      toast({
-        title: 'Menu zmienione',
-        description: 'Wybierz ponownie pakiet i dania dla nowego menu.',
-      });
+      toast({ title: 'Menu zmienione', description: 'Wybierz ponownie pakiet i dania.' });
     } else {
-      // Same template - just update reference but keep everything
       setSelectedTemplate(template);
     }
     setCurrentStep('package');
   };
 
   const handlePackageSelect = (pkg: MenuPackage) => {
-    setSelectedPackage(pkg);
-    setDishSelections([]);
+    if (selectedPackage?.id !== pkg.id) {
+      setSelectedPackage(pkg);
+      setDishSelections([]);
+    } else {
+      setSelectedPackage(pkg);
+    }
     setCurrentStep('dishes');
   };
 
   const handleDishesComplete = (selections: CategorySelection[]) => {
     setDishSelections(selections);
-    setCurrentStep('guests');
-  };
-
-  const handleGuestsSubmit = () => {
     setCurrentStep('options');
   };
 
   const handleComplete = () => {
-    if (!selectedTemplate || !selectedPackage) return;
+    if (!selectedTemplate || !selectedPackage) {
+      toast({ title: 'Błąd', description: 'Nie wybrano menu lub pakietu.', variant: 'destructive' });
+      return;
+    }
 
     const selectedOptions: SelectedOption[] = Object.entries(optionQuantities)
       .filter(([_, qty]) => qty > 0)
@@ -221,50 +239,67 @@ export function MenuSelectionFlow({
       packageId: selectedPackage.id,
       dishSelections,
       selectedOptions,
-      adults: guestCounts.adults,
-      children: guestCounts.children,
-      toddlers: guestCounts.toddlers,
+      adults,
+      children,
+      toddlers,
     });
   };
 
-  const totalGuests = guestCounts.adults + guestCounts.children + guestCounts.toddlers;
-
-  // Show loading when initializing from initialSelection
   if (initialSelection && !isInitialized && (templatesLoading || initialPackageLoading)) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">{"Ładowanie wybranego menu..."}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={cn('space-y-8', className)}>
-      {/* Premium Progress Steps */}
+    <div ref={containerRef} className={cn('space-y-8', className)}>
+      {/* Guest Info Banner */}
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800">
+        <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-sm">
+          <Users className="h-4 w-4 text-white" />
+        </div>
+        <div className="flex-1 flex items-center gap-4">
+          <span className="text-sm font-medium">
+            <span className="font-bold">{adults}</span>{' dorosłych'}
+          </span>
+          <span className="text-purple-300">{"•"}</span>
+          <span className="text-sm font-medium">
+            <span className="font-bold">{children}</span>{' dzieci'}
+          </span>
+          <span className="text-purple-300">{"•"}</span>
+          <span className="text-sm font-medium">
+            <span className="font-bold">{toddlers}</span>{' maluchów'}
+          </span>
+          <span className="text-purple-300">{"•"}</span>
+          <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            {totalGuests}{' razem'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Info className="h-3.5 w-3.5" />
+          <span>Z rezerwacji</span>
+        </div>
+      </div>
+
+      {/* Progress Steps */}
       <div className="relative">
-        {/* Background gradient line */}
-        <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 via-purple-500 to-green-500 rounded-full opacity-20" />
-        
+        <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 to-green-500 rounded-full opacity-20" />
         <div className="relative flex items-center justify-between">
           {steps.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = index < currentStepIndex;
             const isClickable = index <= currentStepIndex || canNavigateToStep(step.id);
             const StepIcon = step.icon;
-            
             return (
-              <div 
-                key={step.id} 
-                className="flex flex-col items-center gap-2 flex-1"
-                onClick={() => handleStepClick(step.id)}
-              >
-                {/* Step Circle */}
+              <div key={step.id} className="flex flex-col items-center gap-2 flex-1" onClick={() => handleStepClick(step.id)}>
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ 
-                    scale: isActive ? 1.1 : 1, 
-                    opacity: 1 
-                  }}
+                  animate={{ scale: isActive ? 1.1 : 1, opacity: 1 }}
                   whileHover={isClickable ? { scale: 1.15 } : {}}
                   className={cn(
                     'relative flex h-12 w-12 items-center justify-center rounded-full border-4 font-bold transition-all shadow-lg',
@@ -275,42 +310,24 @@ export function MenuSelectionFlow({
                     !isActive && !isCompleted && 'border-gray-300 bg-white text-gray-400 dark:bg-gray-800 dark:border-gray-600'
                   )}
                 >
-                  {isCompleted ? (
-                    <Check className="h-6 w-6" />
-                  ) : (
-                    <StepIcon className="h-6 w-6" />
-                  )}
-                  
-                  {/* Glow effect for active step */}
-                  {isActive && (
-                    <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${step.gradient} blur-xl opacity-40 -z-10`} />
-                  )}
-
-                  {/* Hover effect for clickable steps */}
-                  {isClickable && !isActive && (
-                    <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 hover:opacity-10 transition-opacity" />
-                  )}
+                  {isCompleted ? <Check className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}
+                  {isActive && <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${step.gradient} blur-xl opacity-40 -z-10`} />}
+                  {isClickable && !isActive && <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 hover:opacity-10 transition-opacity" />}
                 </motion.div>
-                
-                {/* Step Label */}
-                <span
-                  className={cn(
-                    'text-xs sm:text-sm font-semibold text-center transition-colors',
-                    isClickable && 'cursor-pointer',
-                    isActive && 'text-transparent bg-clip-text bg-gradient-to-r ' + step.gradient,
-                    isCompleted && 'text-green-600',
-                    !isActive && !isCompleted && 'text-gray-500'
-                  )}
-                >
-                  {step.label}
-                </span>
+                <span className={cn(
+                  'text-xs sm:text-sm font-semibold text-center transition-colors',
+                  isClickable && 'cursor-pointer',
+                  isActive && 'text-transparent bg-clip-text bg-gradient-to-r ' + step.gradient,
+                  isCompleted && 'text-green-600',
+                  !isActive && !isCompleted && 'text-gray-500'
+                )}>{step.label}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Step Content with Premium Animations */}
+      {/* Step Content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -319,33 +336,21 @@ export function MenuSelectionFlow({
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          {/* Step 1: Select Template */}
           {currentStep === 'template' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl shadow-lg mb-2">
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                  Wybierz Menu
-                </h2>
-                <p className="text-muted-foreground">
-                  Dostosowane do Twojego wydarzenia
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">Wybierz Menu</h2>
+                <p className="text-muted-foreground">Dostosowane do Twojego wydarzenia</p>
               </div>
-
               {templatesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map(i => <MenuCardSkeleton key={i} />)}
-                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map(i => <MenuCardSkeleton key={i} />)}</div>
               ) : templates && templates.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {templates.map(template => (
-                    <MenuCard
-                      key={template.id}
-                      template={template}
-                      onSelect={handleTemplateSelect}
-                    />
+                    <MenuCard key={template.id} template={template} isSelected={selectedTemplate?.id === template.id} onSelect={handleTemplateSelect} />
                   ))}
                 </div>
               ) : (
@@ -353,77 +358,50 @@ export function MenuSelectionFlow({
                   <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-950/30 dark:to-amber-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-10 w-10 text-orange-600" />
                   </div>
-                  <p className="text-muted-foreground">Brak dostępnych menu</p>
+                  <p className="text-muted-foreground">{'Brak dostępnych menu'}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Step 2: Select Package */}
           {currentStep === 'package' && selectedTemplate && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg mb-2">
                   <Check className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  Wybierz Pakiet
-                </h2>
-                <p className="text-muted-foreground">
-                  {selectedTemplate.name} - {selectedTemplate.variant}
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Wybierz Pakiet</h2>
+                <p className="text-muted-foreground">{selectedTemplate.name} - {selectedTemplate.variant}</p>
               </div>
-
               {packagesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map(i => <PackageCardSkeleton key={i} />)}
-                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map(i => <PackageCardSkeleton key={i} />)}</div>
               ) : packages && packages.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {packages.map(pkg => (
-                    <PackageCard
-                      key={pkg.id}
-                      package={pkg}
-                      isSelected={selectedPackage?.id === pkg.id}
-                      onSelect={handlePackageSelect}
-                    />
+                    <PackageCard key={pkg.id} package={pkg} isSelected={selectedPackage?.id === pkg.id} onSelect={handlePackageSelect} />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Brak dostępnych pakietów</p>
-                </div>
+                <div className="text-center py-12"><p className="text-muted-foreground">{'Brak dostępnych pakietów'}</p></div>
               )}
-
               <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentStep('template')}
-                  className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6"
-                >
+                <Button variant="outline" size="lg" onClick={() => setCurrentStep('template')} className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6">
                   <RefreshCw className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
-                  Zmień menu
+                  {'Zmień menu'}
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Select Dishes (NEW!) */}
           {currentStep === 'dishes' && selectedPackage && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl shadow-lg mb-2">
                   <UtensilsCrossed className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
-                  Wybór Dań
-                </h2>
-                <p className="text-muted-foreground">
-                  {selectedPackage.name}
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{'Wybór Dań'}</h2>
+                <p className="text-muted-foreground">{selectedPackage.name}</p>
               </div>
-
               <DishSelector
                 packageId={selectedPackage.id}
                 initialSelections={dishSelections}
@@ -433,164 +411,28 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 4: Guest Counts */}
-          {currentStep === 'guests' && (
-            <div className="mx-auto max-w-2xl space-y-6">
-              <div className="text-center space-y-3">
-                <div className="inline-flex p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg mb-2">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Liczba Gości
-                </h2>
-                <p className="text-muted-foreground">
-                  Podaj przybliżoną liczbę uczestników
-                </p>
-              </div>
-
-              <div className="space-y-4 rounded-2xl border-2 bg-white dark:bg-gray-950 p-8 shadow-xl">
-                {/* Adults */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl">
-                  <label className="flex items-center gap-3 font-semibold text-lg">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-md">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    Dorośli
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={guestCounts.adults}
-                    onChange={(e) => setGuestCounts(prev => ({ ...prev, adults: parseInt(e.target.value) || 0 }))}
-                    className="w-28 rounded-xl border-2 border-purple-200 px-4 py-3 text-center text-xl font-bold focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transition-all"
-                  />
-                </div>
-
-                {/* Children */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl">
-                  <label className="flex items-center gap-3 font-semibold text-lg">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-md">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    Dzieci (do 12 lat)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={guestCounts.children}
-                    onChange={(e) => setGuestCounts(prev => ({ ...prev, children: parseInt(e.target.value) || 0 }))}
-                    className="w-28 rounded-xl border-2 border-blue-200 px-4 py-3 text-center text-xl font-bold focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all"
-                  />
-                </div>
-
-                {/* Toddlers */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl">
-                  <label className="flex items-center gap-3 font-semibold text-lg">
-                    <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg shadow-md">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    Maluchy (do 3 lat)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={guestCounts.toddlers}
-                    onChange={(e) => setGuestCounts(prev => ({ ...prev, toddlers: parseInt(e.target.value) || 0 }))}
-                    className="w-28 rounded-xl border-2 border-green-200 px-4 py-3 text-center text-xl font-bold focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all"
-                  />
-                </div>
-
-                {/* Total */}
-                <div className="border-t-2 pt-6 mt-6">
-                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-white shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-8 w-8" />
-                      <span className="text-xl font-bold">Razem:</span>
-                    </div>
-                    <span className="text-4xl font-bold">
-                      {totalGuests}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center gap-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentStep('dishes')}
-                  className="border-2 px-8"
-                >
-                  <ArrowLeft className="mr-2 h-5 w-5" />
-                  Wstecz
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={handleGuestsSubmit}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-8 shadow-lg"
-                >
-                  Dalej
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Select Options */}
           {currentStep === 'options' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl shadow-lg mb-2">
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  Opcje Dodatkowe
-                </h2>
-                <p className="text-muted-foreground">
-                  Wybierz dodatkowe usługi (opcjonalne)
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Opcje Dodatkowe</h2>
+                <p className="text-muted-foreground">{'Wybierz dodatkowe usługi (opcjonalne)'}</p>
               </div>
-
-              {/* Top Confirm Button */}
               <div className="flex justify-center pb-4 border-b-2">
-                <Button
-                  size="lg"
-                  onClick={handleComplete}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
-                >
+                <Button size="lg" onClick={handleComplete} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold">
                   <Check className="mr-2 h-6 w-6" />
-                  Zatwierdź wybór
+                  {'Zatwierdź wybór'}
                 </Button>
               </div>
-
-              {/* Use OptionsSelector for better UX */}
-              <OptionsSelector
-                options={options || []}
-                isLoading={optionsLoading}
-                quantities={optionQuantities}
-                onQuantityChange={(id, qty) => {
-                  setOptionQuantities(prev => ({ ...prev, [id]: qty }));
-                }}
-              />
-
-              {/* Bottom Navigation */}
+              <OptionsSelector options={options || []} isLoading={optionsLoading} quantities={optionQuantities} onQuantityChange={(id, qty) => setOptionQuantities(prev => ({ ...prev, [id]: qty }))} />
               <div className="flex justify-center gap-4 pt-6 border-t-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentStep('guests')}
-                  className="border-2 px-8"
-                >
-                  <ArrowLeft className="mr-2 h-5 w-5" />
-                  Wstecz
+                <Button variant="outline" size="lg" onClick={() => setCurrentStep('dishes')} className="border-2 px-8">
+                  <ArrowLeft className="mr-2 h-5 w-5" /> Wstecz
                 </Button>
-                <Button
-                  size="lg"
-                  onClick={handleComplete}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
-                >
-                  <Check className="mr-2 h-5 w-5" />
-                  Zatwierdź wybór
+                <Button size="lg" onClick={handleComplete} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold">
+                  <Check className="mr-2 h-5 w-5" /> {'Zatwierdź wybór'}
                 </Button>
               </div>
             </div>
