@@ -32,12 +32,16 @@ import {
   Calendar,
   Eye,
   EyeOff,
+  Printer,
+  Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useMenuTemplates, useDeleteMenuTemplate } from '@/hooks/use-menu-templates'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { MenuTemplateDialog } from '@/components/menu/MenuTemplateDialog'
+import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
+import { toast } from 'sonner'
 
 export default function MenuTemplatesPage() {
   const [selectedEventType, setSelectedEventType] = useState<string>('all')
@@ -46,6 +50,7 @@ export default function MenuTemplatesPage() {
   const [editingTemplate, setEditingTemplate] = useState<MenuTemplate | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [templateToDelete, setTemplateToDelete] = useState<MenuTemplate | null>(null)
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null)
 
   const { data: eventTypes = [] } = useEventTypes()
   const { data: allTemplates = [], isLoading } = useMenuTemplates()
@@ -81,6 +86,18 @@ export default function MenuTemplatesPage() {
     }
   }
 
+  const handleDownloadPdf = async (template: MenuTemplate) => {
+    try {
+      setPdfLoading(template.id)
+      await downloadMenuTemplatePDF(template.id, template.name)
+      toast.success('Karta menu pobrana')
+    } catch {
+      toast.error('Nie udalo sie pobrac karty menu')
+    } finally {
+      setPdfLoading(null)
+    }
+  }
+
   const stats = {
     total: allTemplates.length,
     active: allTemplates.filter((t) => t.isActive).length,
@@ -97,7 +114,7 @@ export default function MenuTemplatesPage() {
           <Link href="/dashboard/menu">
             <Button variant="ghost" className="text-white hover:bg-white/20 mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Powrót do Menu
+              Powrot do Menu
             </Button>
           </Link>
           
@@ -108,7 +125,7 @@ export default function MenuTemplatesPage() {
               </div>
               <div>
                 <h1 className="text-5xl font-bold tracking-tight">Szablony Menu</h1>
-                <p className="text-white/90 text-lg mt-2">Konfiguruj szablony menu dla typów wydarzeń</p>
+                <p className="text-white/90 text-lg mt-2">Konfiguruj szablony menu dla typow wydarzen</p>
               </div>
             </div>
 
@@ -180,7 +197,7 @@ export default function MenuTemplatesPage() {
                   onClick={() => setShowInactive(!showInactive)}
                 >
                   {showInactive ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
-                  {showInactive ? 'Pokaż wszystkie' : 'Pokaż nieaktywne'}
+                  {showInactive ? 'Pokaz wszystkie' : 'Pokaz nieaktywne'}
                 </Button>
               </div>
             </div>
@@ -190,21 +207,21 @@ export default function MenuTemplatesPage() {
         {/* Templates Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Wczytywanie szablonów...</p>
+            <p className="text-muted-foreground">Wczytywanie szablonow...</p>
           </div>
         ) : templates.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Brak szablonów</h3>
+              <h3 className="text-xl font-semibold mb-2">Brak szablonow</h3>
               <p className="text-muted-foreground mb-6">
                 {selectedEventType !== 'all'
-                  ? 'Brak szablonów dla wybranego typu wydarzenia'
+                  ? 'Brak szablonow dla wybranego typu wydarzenia'
                   : 'Zacznij od stworzenia pierwszego szablonu menu'}
               </p>
               <Button onClick={handleCreate}>
                 <Plus className="h-4 w-4 mr-2" />
-                Utwórz szablon
+                Utworz szablon
               </Button>
             </CardContent>
           </Card>
@@ -256,7 +273,7 @@ export default function MenuTemplatesPage() {
                   <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Package className="h-4 w-4" />
-                      <span>{template._count?.packages || 0} pakietów</span>
+                      <span>{template._count?.packages || 0} pakietow</span>
                     </div>
                     {(template.validFrom || template.validTo) && (
                       <div className="flex items-center gap-1">
@@ -276,6 +293,19 @@ export default function MenuTemplatesPage() {
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Edytuj
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadPdf(template)}
+                      disabled={pdfLoading === template.id}
+                      title="Drukuj karte menu"
+                    >
+                      {pdfLoading === template.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Printer className="h-4 w-4" />
+                      )}
                     </Button>
                     <Button
                       size="sm"
@@ -302,16 +332,16 @@ export default function MenuTemplatesPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Czy na pewno chcesz usunąć?</AlertDialogTitle>
+            <AlertDialogTitle>Czy na pewno chcesz usunac?</AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon "{templateToDelete?.name}" zostanie trwale usunięty.
-              Wszystkie powiązane pakiety również zostaną usunięte.
+              Szablon "{templateToDelete?.name}" zostanie trwale usuniety.
+              Wszystkie powiazane pakiety rowniez zostana usuniete.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
-              Usuń
+              Usun
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

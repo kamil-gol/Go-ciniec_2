@@ -120,6 +120,58 @@ interface RestaurantData {
   nip?: string;
 }
 
+// ═══════════════ MENU CARD PDF TYPES ═══════════════
+
+interface MenuCardDish {
+  name: string;
+  description?: string | null;
+  allergens?: string[];
+  isDefault?: boolean;
+  isRecommended?: boolean;
+}
+
+interface MenuCardCourse {
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  minSelect: number;
+  maxSelect: number;
+  dishes: MenuCardDish[];
+}
+
+interface MenuCardOption {
+  name: string;
+  description?: string | null;
+  category: string;
+  priceType: string;
+  priceAmount: number;
+  isRequired?: boolean;
+}
+
+interface MenuCardPackage {
+  name: string;
+  description?: string | null;
+  shortDescription?: string | null;
+  pricePerAdult: number;
+  pricePerChild: number;
+  pricePerToddler: number;
+  isPopular?: boolean;
+  isRecommended?: boolean;
+  badgeText?: string | null;
+  includedItems?: string[];
+  courses: MenuCardCourse[];
+  options: MenuCardOption[];
+}
+
+export interface MenuCardPDFData {
+  templateName: string;
+  templateDescription?: string | null;
+  variant?: string | null;
+  eventTypeName: string;
+  eventTypeColor?: string | null;
+  packages: MenuCardPackage[];
+}
+
 const ALLERGEN_LABELS: Record<string, string> = {
   gluten: 'Gluten',
   lactose: 'Laktoza',
@@ -148,17 +200,17 @@ export class PDFService {
   private useCustomFonts: boolean = false;
   private fontRegular?: string;
   private fontBold?: string;
-
-  private restaurantData: RestaurantData = {
-    name: 'Gosciniec Rodzinny',
-    address: 'ul. Przykladowa 123, 00-000 Miasto',
-    phone: '+48 123 456 789',
-    email: 'kontakt@gosciniecdrodizinny.pl',
-    website: 'www.gosciniecrodzinny.pl',
-    nip: '123-456-78-90',
-  };
+  private restaurantData: RestaurantData;
 
   constructor() {
+    this.restaurantData = {
+      name: process.env.RESTAURANT_NAME || 'Gosciniec Rodzinny',
+      address: process.env.RESTAURANT_ADDRESS || 'ul. Przykladowa 123, 00-000 Miasto',
+      phone: process.env.RESTAURANT_PHONE || '+48 123 456 789',
+      email: process.env.RESTAURANT_EMAIL || 'kontakt@gosciniecrodzinny.pl',
+      website: process.env.RESTAURANT_WEBSITE || 'www.gosciniecrodzinny.pl',
+      nip: process.env.RESTAURANT_NIP || '123-456-78-90',
+    };
     this.checkFontsAvailability();
   }
 
@@ -293,6 +345,59 @@ export class PDFService {
       }
     });
   }
+
+  // ═══════════════ MENU CARD PDF ═══════════════
+
+  async generateMenuCardPDF(data: MenuCardPDFData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log(`[PDF Service] Generating menu card PDF: ${data.templateName}`);
+
+        const doc = new PDFDocument({
+          size: 'A4',
+          margin: 50,
+          bufferPages: true,
+          info: {
+            Title: `Karta Menu - ${data.templateName}`,
+            Author: this.restaurantData.name,
+            Subject: 'Karta menu',
+          },
+        });
+
+        if (this.useCustomFonts && this.fontRegular && this.fontBold) {
+          try {
+            doc.registerFont('DejaVu', this.fontRegular);
+            doc.registerFont('DejaVu-Bold', this.fontBold);
+            doc.font('DejaVu');
+          } catch (error) {
+            console.error('[PDF Service] Failed to register custom fonts:', error);
+            this.useCustomFonts = false;
+            doc.font('Helvetica');
+          }
+        } else {
+          doc.font('Helvetica');
+        }
+
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          console.log(`[PDF Service] Menu card PDF generated, size: ${buffer.length} bytes`);
+          resolve(buffer);
+        });
+        doc.on('error', (error) => reject(error));
+
+        this.buildMenuCardContent(doc, data);
+
+        doc.end();
+      } catch (error) {
+        console.error('[PDF Service] Failed to generate menu card PDF:', error);
+        reject(error);
+      }
+    });
+  }
+
+  // ═══════════════ EXISTING PDF BUILDERS ═══════════════
 
   private buildPDFContent(doc: PDFKit.PDFDocument, reservation: ReservationPDFData): void {
     const pageWidth = doc.page.width - 100;
@@ -448,10 +553,6 @@ export class PDFService {
     this.addFooter(doc);
   }
 
-  /**
-   * Build payment confirmation PDF content
-   * Uses formatDate (without time) for the payment date
-   */
   private buildPaymentConfirmationContent(
     doc: PDFKit.PDFDocument,
     data: PaymentConfirmationData
@@ -471,7 +572,6 @@ export class PDFService {
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // Payment details
     doc.moveDown(1);
     doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Szczegoly wplaty');
     doc.moveDown(0.5);
@@ -495,7 +595,6 @@ export class PDFService {
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // Client details
     doc.moveDown(1);
     doc.fontSize(14).font(this.getBoldFont()).text('Dane klienta');
     doc.moveDown(0.5);
@@ -512,7 +611,6 @@ export class PDFService {
     doc.moveDown(1);
     this.addSeparator(doc);
 
-    // Reservation details
     doc.moveDown(1);
     doc.fontSize(14).font(this.getBoldFont()).text('Szczegoly rezerwacji');
     doc.moveDown(0.5);
@@ -536,6 +634,211 @@ export class PDFService {
 
     this.addFooter(doc);
   }
+
+  // ═══════════════ MENU CARD BUILDER ═══════════════
+
+  private buildMenuCardContent(doc: PDFKit.PDFDocument, data: MenuCardPDFData): void {
+    const pageWidth = doc.page.width - 100;
+
+    this.addHeader(doc);
+
+    doc.moveDown(2);
+    doc.fontSize(22).font(this.getBoldFont()).fillColor('#2c3e50').text('KARTA MENU', {
+      align: 'center',
+    });
+
+    doc.moveDown(0.5);
+    doc.fontSize(16).font(this.getBoldFont()).fillColor('#34495e').text(data.templateName, {
+      align: 'center',
+    });
+
+    const subtitleParts: string[] = [data.eventTypeName];
+    if (data.variant) subtitleParts.push(data.variant);
+    doc.moveDown(0.3);
+    doc.fontSize(11).font(this.getRegularFont()).fillColor('#7f8c8d').text(subtitleParts.join(' | '), {
+      align: 'center',
+    });
+
+    if (data.templateDescription) {
+      doc.moveDown(0.5);
+      doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555').text(data.templateDescription, {
+        align: 'center',
+        width: pageWidth,
+      });
+    }
+
+    doc.moveDown(0.5);
+    doc.fontSize(8).fillColor('#999999').text(
+      `Wygenerowano: ${this.formatDate(new Date())}`,
+      { align: 'center' }
+    );
+
+    data.packages.forEach((pkg) => {
+      if (doc.y > doc.page.height - 250) {
+        doc.addPage();
+      }
+
+      doc.moveDown(1.5);
+      this.addSeparator(doc);
+      doc.moveDown(1);
+
+      // Package header
+      const pkgHeaderY = doc.y;
+      const headerHeight = 60;
+      doc.rect(50, pkgHeaderY, pageWidth, headerHeight)
+        .fillAndStroke('#2c3e50', '#2c3e50');
+
+      const badgeText = pkg.badgeText || (pkg.isPopular ? 'POPULARNY' : pkg.isRecommended ? 'POLECANY' : null);
+      if (badgeText) {
+        doc.rect(50 + pageWidth - 100, pkgHeaderY + 5, 90, 18)
+          .fillAndStroke('#e67e22', '#e67e22');
+        doc.fillColor('#ffffff').fontSize(8).font(this.getBoldFont());
+        doc.text(badgeText, 50 + pageWidth - 100, pkgHeaderY + 9, { width: 90, align: 'center' });
+      }
+
+      doc.fillColor('#ffffff').fontSize(16).font(this.getBoldFont());
+      doc.text(pkg.name, 65, pkgHeaderY + 12, { width: pageWidth - 30 });
+
+      doc.fontSize(9).font(this.getRegularFont()).fillColor('#ecf0f1');
+      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosla`];
+      if (pkg.pricePerChild > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerChild)}/dziecko`);
+      if (pkg.pricePerToddler > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerToddler)}/maluch`);
+      doc.text(priceParts.join('  |  '), 65, pkgHeaderY + 38, { width: pageWidth - 30 });
+
+      doc.y = pkgHeaderY + headerHeight + 10;
+      doc.fillColor('#000000');
+
+      if (pkg.description) {
+        doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555');
+        doc.text(pkg.description, { width: pageWidth });
+        doc.moveDown(0.5);
+      }
+
+      if (pkg.includedItems && pkg.includedItems.length > 0) {
+        doc.fontSize(9).font(this.getBoldFont()).fillColor('#27ae60');
+        doc.text('W cenie: ', { continued: true });
+        doc.font(this.getRegularFont()).fillColor('#555555');
+        doc.text(pkg.includedItems.join(', '));
+        doc.moveDown(0.5);
+      }
+
+      // Courses
+      if (pkg.courses.length > 0) {
+        pkg.courses.forEach((course) => {
+          if (doc.y > doc.page.height - 150) {
+            doc.addPage();
+          }
+
+          doc.moveDown(0.7);
+
+          const selectText = course.minSelect === course.maxSelect
+            ? `wybierz ${course.minSelect}`
+            : `wybierz ${course.minSelect}-${course.maxSelect}`;
+
+          doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
+          doc.text(course.name, { continued: true });
+          doc.fontSize(9).font(this.getRegularFont()).fillColor('#7f8c8d');
+          doc.text(`  (${selectText} z ${course.dishes.length})`);
+
+          if (course.description) {
+            doc.fontSize(9).font(this.getRegularFont()).fillColor('#888888');
+            doc.text(course.description);
+          }
+
+          doc.moveDown(0.3);
+
+          course.dishes.forEach((dish) => {
+            if (doc.y > doc.page.height - 100) {
+              doc.addPage();
+            }
+
+            let marker = '  ';
+            if (dish.isRecommended) marker = '* ';
+            else if (dish.isDefault) marker = '> ';
+
+            doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
+            doc.text(`  ${marker}${dish.name}`, { indent: 15 });
+
+            if (dish.description) {
+              doc.fontSize(8).fillColor('#777777');
+              doc.text(`     ${dish.description}`, { indent: 25 });
+            }
+
+            if (dish.allergens && dish.allergens.length > 0) {
+              const labels = dish.allergens
+                .map((a) => ALLERGEN_LABELS[a] || a)
+                .join(', ');
+              doc.fontSize(7).fillColor('#e67e22');
+              doc.text(`     Alergeny: ${labels}`, { indent: 25 });
+            }
+
+            doc.moveDown(0.15);
+            doc.fillColor('#000000');
+          });
+        });
+      }
+
+      // Options
+      const requiredOptions = pkg.options.filter(o => o.isRequired);
+      const activeOptions = pkg.options.filter(o => !o.isRequired);
+
+      if (requiredOptions.length > 0) {
+        if (doc.y > doc.page.height - 120) doc.addPage();
+
+        doc.moveDown(0.7);
+        doc.fontSize(11).font(this.getBoldFont()).fillColor('#27ae60');
+        doc.text('W pakiecie:');
+        doc.moveDown(0.2);
+
+        requiredOptions.forEach((opt) => {
+          doc.fontSize(9).font(this.getRegularFont()).fillColor('#333333');
+          doc.text(`  + ${opt.name}`, { indent: 15 });
+          if (opt.description) {
+            doc.fontSize(8).fillColor('#777777');
+            doc.text(`     ${opt.description}`, { indent: 25 });
+          }
+        });
+      }
+
+      if (activeOptions.length > 0) {
+        if (doc.y > doc.page.height - 120) doc.addPage();
+
+        doc.moveDown(0.7);
+        doc.fontSize(11).font(this.getBoldFont()).fillColor('#8e44ad');
+        doc.text('Opcje dodatkowe:');
+        doc.moveDown(0.2);
+
+        activeOptions.forEach((opt) => {
+          const priceLabel = opt.priceType === 'PER_PERSON'
+            ? `+${this.formatCurrency(opt.priceAmount)}/os.`
+            : `+${this.formatCurrency(opt.priceAmount)}`;
+
+          doc.fontSize(9).font(this.getRegularFont()).fillColor('#333333');
+          doc.text(`  - ${opt.name}`, { continued: true, indent: 15 });
+          doc.fillColor('#8e44ad').font(this.getBoldFont());
+          doc.text(`  ${priceLabel}`);
+
+          if (opt.description) {
+            doc.fontSize(8).font(this.getRegularFont()).fillColor('#777777');
+            doc.text(`     ${opt.description}`, { indent: 25 });
+          }
+        });
+      }
+    });
+
+    // Legend
+    doc.moveDown(1.5);
+    this.addSeparator(doc);
+    doc.moveDown(0.5);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor('#999999');
+    doc.text('* = polecane przez szefa kuchni  |  > = domyslny wybor  |  - = dostepne', {
+      align: 'center',
+    });
+
+    this.addFooter(doc);
+  }
+
+  // ═══════════════ SHARED HELPERS ═══════════════
 
   private addMenuSelectionSection(
     doc: PDFKit.PDFDocument,
