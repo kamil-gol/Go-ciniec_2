@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Power } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Power, Palette } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +25,6 @@ export default function EventTypeDetailPage() {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
 
-  // Dialog states
   const [formOpen, setFormOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -41,8 +40,8 @@ export default function EventTypeDetailPage() {
     } catch (error: any) {
       console.error('Error loading event type:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować typu wydarzenia',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 typu wydarzenia',
         variant: 'destructive',
       })
       router.push('/dashboard/event-types')
@@ -58,11 +57,11 @@ export default function EventTypeDetailPage() {
       await updateEventType(eventType.id, { isActive: checked })
       toast({
         title: checked ? 'Aktywowany' : 'Dezaktywowany',
-        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
+        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'zosta\u0142 dezaktywowany'}`,
       })
       loadEventType()
     } catch (error: any) {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
+      toast({ title: 'B\u0142\u0105d', description: 'Nie uda\u0142o si\u0119 zmieni\u0107 statusu', variant: 'destructive' })
     } finally {
       setToggling(false)
     }
@@ -103,13 +102,7 @@ export default function EventTypeDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Hero */}
-        <div
-          className="relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl"
-          style={{
-            background: `linear-gradient(135deg, ${color}, ${color}CC, ${color}99)`,
-          }}
-        >
-          <div className="absolute inset-0 bg-black/10" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-fuchsia-600 via-fuchsia-500 to-pink-600 p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
 
           <div className="relative z-10 space-y-6">
@@ -117,25 +110,32 @@ export default function EventTypeDetailPage() {
             <Link href="/dashboard/event-types">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
-            {/* Title */}
+            {/* Title + Actions */}
             <div className="flex justify-between items-start">
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
                     <Theater className="h-8 w-8" />
                   </div>
                   <div>
-                    <h1 className="text-4xl font-bold">{eventType.name}</h1>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-4xl font-bold">{eventType.name}</h1>
+                      <div
+                        className="h-6 w-6 rounded-full border-2 border-white/50 shadow-lg"
+                        style={{ backgroundColor: color }}
+                        title={`Kolor: ${color}`}
+                      />
+                    </div>
                     {eventType.description && (
-                      <p className="text-white/90 text-lg mt-1">{eventType.description}</p>
+                      <p className="text-white/80 text-lg mt-1">{eventType.description}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   {eventType.isActive ? (
                     <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -152,24 +152,24 @@ export default function EventTypeDetailPage() {
                   </Badge>
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <FileText className="h-3 w-3 mr-1" />
-                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablonów'} menu
+                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablon\u00f3w'} menu
                   </Badge>
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <Button
                   size="lg"
-                  className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30"
+                  variant="ghost"
+                  className="text-white hover:bg-white/20 border border-white/30"
                   onClick={() => setDeleteOpen(true)}
                 >
                   <Trash2 className="mr-2 h-5 w-5" />
-                  Usuń
+                  Usu\u0144
                 </Button>
                 <Button
                   size="lg"
-                  className="bg-white text-neutral-800 hover:bg-white/90 shadow-xl"
+                  className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
                   onClick={() => setFormOpen(true)}
                 >
                   <Edit className="mr-2 h-5 w-5" />
@@ -179,51 +179,48 @@ export default function EventTypeDetailPage() {
             </div>
           </div>
 
-          {/* Decorative */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg">
-                  <Calendar className="h-6 w-6 text-white" />
+        {/* Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Info Card */}
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-lg">
+                  <Theater className="h-5 w-5 text-white" />
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground font-medium">Rezerwacje</div>
-                  <div className="text-2xl font-bold">{reservationCount}</div>
+                Informacje
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-muted-foreground">Nazwa</span>
+                  <span className="font-semibold">{eventType.name}</span>
                 </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-lg">
-                  <FileText className="h-6 w-6 text-white" />
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-muted-foreground">Opis</span>
+                  <span className="font-medium text-right max-w-[60%] text-sm">{eventType.description || '\u2014'}</span>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground font-medium">Szablony menu</div>
-                  <div className="text-2xl font-bold">{templateCount}</div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-muted-foreground">Kolor</span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-6 w-6 rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="font-mono text-sm text-muted-foreground">{eventType.color || 'Brak'}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg">
-                  <Power className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground font-medium">Status</div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-muted-foreground">Status</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-bold">{eventType.isActive ? 'Aktywny' : 'Nieaktywny'}</span>
+                    <Badge variant={eventType.isActive ? 'default' : 'secondary'}>
+                      {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
+                    </Badge>
                     <Switch
                       checked={eventType.isActive}
                       onCheckedChange={handleToggleActive}
@@ -231,115 +228,81 @@ export default function EventTypeDetailPage() {
                     />
                   </div>
                 </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
-                  <Clock className="h-6 w-6 text-white" />
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-muted-foreground">Utworzony</span>
+                  <span className="font-medium text-sm">{createdDate}</span>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground font-medium">Utworzony</div>
-                  <div className="text-lg font-bold">{createdDate}</div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-muted-foreground">Aktualizacja</span>
+                  <span className="font-medium text-sm">{updatedDate}</span>
                 </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Details Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Info */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: color }}>
-                  <Theater className="h-5 w-5 text-white" />
-                </div>
-                Informacje
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-800">
-                <span className="text-sm text-muted-foreground">Nazwa</span>
-                <span className="font-medium">{eventType.name}</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-800">
-                <span className="text-sm text-muted-foreground">Opis</span>
-                <span className="font-medium text-right max-w-[60%]">{eventType.description || '—'}</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-800">
-                <span className="text-sm text-muted-foreground">Kolor</span>
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-5 rounded-full border" style={{ backgroundColor: color }} />
-                  <span className="font-mono text-sm">{eventType.color || 'Brak'}</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-800">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant={eventType.isActive ? 'default' : 'secondary'}>
-                  {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-muted-foreground">Ostatnia aktualizacja</span>
-                <span className="font-medium">{updatedDate}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Relations */}
-          <Card className="border-0 shadow-lg">
+          {/* Relations Card */}
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
-                Powiązania
+                Powi\u0105zania
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-neutral-100 dark:border-neutral-800 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-violet-500" />
-                    <span className="font-medium">Rezerwacje</span>
+              {/* Reservations */}
+              <div className="rounded-xl bg-gradient-to-br from-violet-500/5 to-purple-500/5 border border-violet-100 dark:border-violet-900/30 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
+                      <Calendar className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold">Rezerwacje</span>
                   </div>
-                  <span className="text-2xl font-bold">{reservationCount}</span>
+                  <span className="text-3xl font-bold text-violet-600 dark:text-violet-400">{reservationCount}</span>
                 </div>
-                {reservationCount > 0 && (
+                {reservationCount > 0 ? (
                   <Link href={`/dashboard/reservations?eventType=${eventType.id}`}>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950/50">
                       Zobacz rezerwacje
                     </Button>
                   </Link>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center">Brak powi\u0105zanych rezerwacji</p>
                 )}
               </div>
 
-              <div className="rounded-lg border border-neutral-100 dark:border-neutral-800 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-amber-500" />
-                    <span className="font-medium">Szablony menu</span>
+              {/* Menu Templates */}
+              <div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-100 dark:border-amber-900/30 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold">Szablony menu</span>
                   </div>
-                  <span className="text-2xl font-bold">{templateCount}</span>
+                  <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">{templateCount}</span>
                 </div>
-                {templateCount > 0 && (
+                {templateCount > 0 ? (
                   <Link href={`/dashboard/menu?eventType=${eventType.id}`}>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/50">
                       Zobacz szablony
                     </Button>
                   </Link>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center">Brak powi\u0105zanych szablon\u00f3w</p>
                 )}
               </div>
 
               {reservationCount === 0 && templateCount === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-2">
-                  Ten typ nie ma jeszcze żadnych powiązań
-                </p>
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Ten typ nie ma jeszcze \u017cadnych powi\u0105za\u0144.
+                    <br />
+                    Zostanie u\u017cyty przy tworzeniu rezerwacji lub szablon\u00f3w menu.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
