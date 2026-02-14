@@ -6,6 +6,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { menuService } from '../services/menu.service';
+import { pdfService } from '../services/pdf.service';
+import type { MenuCardPDFData } from '../services/pdf.service';
+import { menuCourseService } from '../services/menuCourse.service';
 import {
   createMenuTemplateSchema,
   updateMenuTemplateSchema,
@@ -22,7 +25,6 @@ export class MenuTemplateController {
    */
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validate query params
       const filters = menuTemplateQuerySchema.parse(req.query);
 
       const templates = await menuService.getMenuTemplates({
@@ -110,7 +112,6 @@ export class MenuTemplateController {
    */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validate request body
       const data = createMenuTemplateSchema.parse(req.body);
 
       const template = await menuService.createMenuTemplate(data);
@@ -140,7 +141,6 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
 
-      // Validate request body
       const data = updateMenuTemplateSchema.parse(req.body);
 
       const template = await menuService.updateMenuTemplate(id, data);
@@ -207,7 +207,6 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
 
-      // Validate request body
       const data = duplicateMenuTemplateSchema.parse(req.body);
 
       const template = await menuService.duplicateMenuTemplate(id, {
@@ -234,6 +233,86 @@ export class MenuTemplateController {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found'
+        });
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/menu-templates/:id/pdf
+   * Download menu card PDF for a template
+   */
+  async downloadPdf(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      const template = await menuService.getMenuTemplateById(id);
+
+      // Fetch courses for each package
+      const packagesWithCourses = await Promise.all(
+        template.packages.map(async (pkg) => {
+          const courses = await menuCourseService.listByPackage(pkg.id);
+
+          return {
+            name: pkg.name,
+            description: pkg.description,
+            shortDescription: pkg.shortDescription,
+            pricePerAdult: Number(pkg.pricePerAdult),
+            pricePerChild: Number(pkg.pricePerChild),
+            pricePerToddler: Number(pkg.pricePerToddler),
+            isPopular: pkg.isPopular,
+            isRecommended: pkg.isRecommended,
+            badgeText: pkg.badgeText,
+            includedItems: Array.isArray(pkg.includedItems) ? pkg.includedItems as string[] : [],
+            courses: courses.map((course) => ({
+              name: course.name,
+              description: course.description,
+              icon: course.icon,
+              minSelect: course.minSelect,
+              maxSelect: course.maxSelect,
+              dishes: course.options.map((opt) => ({
+                name: opt.dish.name,
+                description: opt.dish.description,
+                allergens: Array.isArray((opt.dish as any).allergens) ? (opt.dish as any).allergens as string[] : [],
+                isDefault: opt.isDefault,
+                isRecommended: opt.isRecommended,
+              })),
+            })),
+            options: pkg.packageOptions.map((po) => ({
+              name: po.option.name,
+              description: po.option.description,
+              category: po.option.category,
+              priceType: po.option.priceType,
+              priceAmount: Number(po.customPrice ?? po.option.priceAmount),
+              isRequired: po.isRequired,
+            })),
+          };
+        })
+      );
+
+      const pdfData: MenuCardPDFData = {
+        templateName: template.name,
+        templateDescription: template.description,
+        variant: template.variant,
+        eventTypeName: template.eventType?.name || 'Ogolne',
+        eventTypeColor: template.eventType?.color,
+        packages: packagesWithCourses,
+      };
+
+      const pdfBuffer = await pdfService.generateMenuCardPDF(pdfData);
+
+      const filename = `Karta_menu_${template.name.replace(/\s+/g, '_')}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Menu template not found') {
+        return res.status(404).json({
+          success: false,
+          error: 'Menu template not found',
         });
       }
       next(error);

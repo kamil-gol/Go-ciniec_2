@@ -38,6 +38,13 @@ services:
       SMTP_PASS: ${SMTP_PASS:-your-app-password}
       SMTP_FROM: ${SMTP_FROM:-noreply@gosciniecrodzinny.pl}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Restaurant branding (used in PDF generation)
+      RESTAURANT_NAME: ${RESTAURANT_NAME:-Gosciniec Rodzinny}
+      RESTAURANT_ADDRESS: ${RESTAURANT_ADDRESS:-ul. Przykladowa 123, 00-000 Miasto}
+      RESTAURANT_PHONE: ${RESTAURANT_PHONE:-+48 123 456 789}
+      RESTAURANT_EMAIL: ${RESTAURANT_EMAIL:-kontakt@gosciniecrodzinny.pl}
+      RESTAURANT_WEBSITE: ${RESTAURANT_WEBSITE:-www.gosciniecrodzinny.pl}
+      RESTAURANT_NIP: ${RESTAURANT_NIP:-123-456-78-90}
     ports:
       - '${API_PORT:-3001}:3001'
     depends_on:
@@ -60,7 +67,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://62.171.189.172:3001/api}
-      NEXT_PUBLIC_APP_NAME: 'Rezerwacje Gościniec Rodzinny'
+      NEXT_PUBLIC_APP_NAME: 'Rezerwacje Gosciniec Rodzinny'
     ports:
       - '${WEB_PORT:-3000}:3000'
     depends_on:
