@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
-import { Stepper, StepContent, StepNavigation, StepConfig } from '@/components/ui/stepper'
+import { Stepper, StepNavigation, StepConfig } from '@/components/ui/stepper'
 import { Switch } from '@/components/ui/switch'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
@@ -37,9 +37,7 @@ import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { useQueryClient } from '@tanstack/react-query'
 
-// ═══════════════════════════════════════════════════
-// STEP CONFIGURATION
-// ═══════════════════════════════════════════════════
+// ═══ STEP CONFIGURATION ═══
 
 const STEPS: StepConfig[] = [
   { id: 'event', title: 'Wydarzenie', icon: Sparkles },
@@ -50,16 +48,10 @@ const STEPS: StepConfig[] = [
   { id: 'summary', title: 'Podsumowanie', icon: ClipboardCheck },
 ]
 
-// ═══════════════════════════════════════════════════
-// CONSTANTS
-// ═══════════════════════════════════════════════════
-
 const EXTRA_HOUR_RATE = 500
 const STANDARD_HOURS = 6
 
-// ═══════════════════════════════════════════════════
-// SCHEMA
-// ═══════════════════════════════════════════════════
+// ═══ SCHEMA ═══
 
 const reservationSchema = z.object({
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
@@ -114,9 +106,15 @@ const STEP_FIELDS: Record<number, (keyof ReservationFormData)[]> = {
   5: ['confirmationDeadline', 'notes'],
 }
 
-// ═══════════════════════════════════════════════════
-// PROPS
-// ═══════════════════════════════════════════════════
+// ═══ STEP ANIMATION VARIANTS ═══
+
+const stepVariants = {
+  enter: { opacity: 0, x: 30 },
+  center: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -30 },
+}
+
+// ═══ PROPS ═══
 
 interface CreateReservationFormProps {
   onSubmit?: (data: any) => void | Promise<void>
@@ -127,9 +125,7 @@ interface CreateReservationFormProps {
   defaultHallId?: string
 }
 
-// ═══════════════════════════════════════════════════
-// COMPONENT
-// ═══════════════════════════════════════════════════
+// ═══ COMPONENT ═══
 
 export function CreateReservationForm({
   onSubmit: onSubmitProp,
@@ -149,9 +145,9 @@ export function CreateReservationForm({
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
 
-  const { data: halls, isLoading: hallsLoading } = useHalls()
+  const { data: halls } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
-  const { data: eventTypes, isLoading: eventTypesLoading } = useEventTypes()
+  const { data: eventTypes } = useEventTypes()
   const createReservation = useCreateReservation()
 
   const {
@@ -336,13 +332,10 @@ export function CreateReservationForm({
         await trigger('pricePerAdult')
         return false
       }
-      if (useMenuPackage && !menuPackageId) {
-        return false
-      }
+      if (useMenuPackage && !menuPackageId) return false
     }
 
-    const result = await trigger(fields)
-    return result
+    return await trigger(fields)
   }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuPackageId])
 
   const goToNextStep = useCallback(async () => {
@@ -428,14 +421,9 @@ export function CreateReservationForm({
     clientsArray.find((c) => c.id === watchAll.clientId),
   [clientsArray, watchAll.clientId])
 
-  const isNextDisabled = useMemo(() => {
-    if (currentStep === 1 && availability && !availability.available) return false
-    return false
-  }, [currentStep, availability])
+  const isNextDisabled = useMemo(() => false, [])
 
-  // ═══════════════════════════════════════════════════
-  // PRICE SUMMARY
-  // ═══════════════════════════════════════════════════
+  // ═══ PRICE SUMMARY ═══
 
   const PriceSummary = useCallback(({ compact = false }: { compact?: boolean }) => {
     if (calculatedPrice <= 0 && extraHoursCost <= 0) return null
@@ -469,14 +457,12 @@ export function CreateReservationForm({
               <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
             </div>
           )}
-
           {calculatedPrice > 0 && extraHoursCost > 0 && (
             <div className="flex justify-between text-sm text-secondary-700 pt-1 border-t border-secondary-200">
               <span className="font-medium">Podsuma menu / goście:</span>
               <span className="font-medium">{formatCurrency(calculatedPrice)}</span>
             </div>
           )}
-
           {extraHoursCost > 0 && (
             <div className="flex justify-between text-sm text-amber-800 bg-amber-50 -mx-4 px-4 py-2">
               <span className="flex items-center gap-1">
@@ -486,12 +472,10 @@ export function CreateReservationForm({
               <span className="font-medium">{formatCurrency(extraHoursCost)}</span>
             </div>
           )}
-
           <div className="flex justify-between pt-2 border-t border-primary-300">
             <span className="font-semibold text-secondary-900">Cena całkowita:</span>
             <span className="text-2xl font-bold text-primary-600">{formatCurrency(totalWithExtras)}</span>
           </div>
-
           {useMenuPackage && selectedPackage && (
             <p className="text-xs text-primary-700 flex items-center gap-1 pt-1">
               <UtensilsCrossed className="w-3 h-3" /> Ceny z pakietu: {selectedPackage.name}
@@ -501,6 +485,448 @@ export function CreateReservationForm({
       </motion.div>
     )
   }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedPackage])
+
+  // ═══════════════════════════════════════════════════
+  // STEP RENDERERS
+  // ═══════════════════════════════════════════════════
+
+  const renderStep0 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white mb-3">
+          <Sparkles className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-secondary-900">Jaki typ wydarzenia?</h2>
+        <p className="text-sm text-secondary-500 mt-1">Określ rodzaj imprezy — wpłynie na dostępne pakiety menu</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-secondary-700">Typ wydarzenia</label>
+        <Controller
+          name="eventTypeId"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400' : ''}`}>
+                <SelectValue placeholder="Wybierz typ wydarzenia..." />
+              </SelectTrigger>
+              <SelectContent>
+                {eventTypesArray.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.eventTypeId && <p className="text-xs text-red-500">{errors.eventTypeId.message}</p>}
+      </div>
+
+      {isBirthday && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+          <Input type="number" label="Które urodziny" placeholder="np. 18" error={errors.birthdayAge?.message} {...register('birthdayAge')} />
+        </motion.div>
+      )}
+
+      {isCustom && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+          <Input label="Typ wydarzenia (własny)" placeholder="np. Spotkanie rodzinne" error={errors.customEventType?.message} {...register('customEventType')} />
+        </motion.div>
+      )}
+
+      {isAnniversary && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input type="number" label="Która rocznica" placeholder="np. 25" error={errors.anniversaryYear?.message} {...register('anniversaryYear')} />
+          <Input label="Jaka okazja" placeholder="np. Srebrne wesele" error={errors.anniversaryOccasion?.message} {...register('anniversaryOccasion')} />
+        </motion.div>
+      )}
+    </div>
+  )
+
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white mb-3">
+          <Building2 className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-secondary-900">Wybierz salę i termin</h2>
+        <p className="text-sm text-secondary-500 mt-1">Sprawdzimy dostępność automatycznie</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-secondary-700">Sala</label>
+        <Controller
+          name="hallId"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400' : ''}`}>
+                <SelectValue placeholder="Wybierz salę..." />
+              </SelectTrigger>
+              <SelectContent>
+                {hallsArray.map((hall) => (
+                  <SelectItem key={hall.id} value={hall.id}>
+                    {hall.name} (max {hall.capacity} osób)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.hallId && <p className="text-xs text-red-500">{errors.hallId.message}</p>}
+      </div>
+
+      {selectedHallCapacity > 0 && (
+        <p className="-mt-4 text-sm text-secondary-600">Maksymalna pojemność: {selectedHallCapacity} osób</p>
+      )}
+
+      {defaultHallId && watchAll.hallId === defaultHallId && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="-mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+          <p className="text-sm text-green-800">Sala wybrana automatycznie z widoku szczegółów</p>
+        </motion.div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-secondary-800">Rozpoczęcie</p>
+          <Controller name="startDate" control={control} render={({ field }) => (
+            <DatePicker value={field.value} onChange={field.onChange} label="Data" placeholder="Wybierz datę..." error={errors.startDate?.message} minDate={new Date()} />
+          )} />
+          <Controller name="startTime" control={control} render={({ field }) => (
+            <TimePicker value={field.value} onChange={field.onChange} label="Godzina" placeholder="Wybierz godzinę..." error={errors.startTime?.message} />
+          )} />
+        </div>
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-secondary-800">Zakończenie</p>
+          <Controller name="endDate" control={control} render={({ field }) => (
+            <DatePicker value={field.value} onChange={field.onChange} label="Data" placeholder="Wybierz datę..." error={errors.endDate?.message} disabled={!startDate} minDate={startDate ? new Date(startDate) : undefined} />
+          )} />
+          <Controller name="endTime" control={control} render={({ field }) => (
+            <TimePicker value={field.value} onChange={field.onChange} label="Godzina" placeholder="Wybierz godzinę..." error={errors.endTime?.message} disabled={!startDate || !startTime} />
+          )} />
+        </div>
+      </div>
+
+      {durationHours > 0 && (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > STANDARD_HOURS ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}
+        >
+          {durationHours > STANDARD_HOURS && <AlertCircle className="w-5 h-5 text-amber-600" />}
+          <span className={`text-sm ${durationHours > STANDARD_HOURS ? 'text-amber-800' : 'text-blue-800'}`}>
+            Czas trwania: {durationHours}h
+            {durationHours > STANDARD_HOURS && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
+          </span>
+        </motion.div>
+      )}
+
+      {hallId && startDateTimeISO && endDateTimeISO && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className={`p-4 rounded-lg border ${
+            availabilityLoading ? 'bg-gray-50 border-gray-200'
+              : availability?.available ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}
+        >
+          {availabilityLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-secondary-600">Sprawdzanie dostępności...</span>
+            </div>
+          ) : availability?.available ? (
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="text-sm font-medium text-green-800">Sala jest dostępna w wybranym terminie</span>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <span className="text-sm font-medium text-red-800">Kolizja z istniejącą rezerwacją!</span>
+              </div>
+              {availability?.conflicts?.map((c) => (
+                <div key={c.id} className="ml-7 text-xs text-red-700">
+                  • {c.clientName} — {c.eventType} ({new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}–{new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
+    </div>
+  )
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-white mb-3">
+          <Users className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-secondary-900">Ilu gości?</h2>
+        <p className="text-sm text-secondary-500 mt-1">Podaj liczbę osób w każdej grupie wiekowej</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-primary-300 transition-colors">
+          <div className="flex items-center gap-2 mb-3"><Users className="w-5 h-5 text-primary-600" /><span className="font-medium text-secondary-700">Dorośli</span></div>
+          <Input type="number" placeholder="0" error={errors.adults?.message} className="text-center text-2xl font-bold h-14" {...register('adults')} />
+        </div>
+        <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-blue-300 transition-colors">
+          <div className="flex items-center gap-2 mb-3"><Smile className="w-5 h-5 text-blue-600" /><span className="font-medium text-secondary-700">Dzieci (4–12)</span></div>
+          <Input type="number" placeholder="0" error={errors.children?.message} disabled={adults === 0} className="text-center text-2xl font-bold h-14" {...register('children')} />
+        </div>
+        <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-green-300 transition-colors">
+          <div className="flex items-center gap-2 mb-3"><Baby className="w-5 h-5 text-green-600" /><span className="font-medium text-secondary-700">Maluchy (0–3)</span></div>
+          <Input type="number" placeholder="0" error={errors.toddlers?.message} disabled={adults === 0} className="text-center text-2xl font-bold h-14" {...register('toddlers')} />
+        </div>
+      </div>
+
+      {totalGuests > 0 && (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center justify-center p-4 bg-primary-50 rounded-xl border border-primary-200">
+          <span className="text-secondary-700 mr-3">Łącznie gości:</span>
+          <span className="text-3xl font-bold text-primary-600">{totalGuests}</span>
+        </motion.div>
+      )}
+
+      {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-red-600" />
+          <span className="text-sm text-red-800">Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!</span>
+        </motion.div>
+      )}
+    </div>
+  )
+
+  const renderStep3 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white mb-3">
+          <UtensilsCrossed className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-secondary-900">Menu i wycena</h2>
+        <p className="text-sm text-secondary-500 mt-1">Wybierz pakiet menu lub ustaw ceny ręcznie</p>
+      </div>
+
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-secondary-200">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
+            <UtensilsCrossed className="w-5 h-5 text-primary-600" />
+          </div>
+          <div>
+            <span className="font-medium text-secondary-800">Gotowy pakiet menu</span>
+            <p className="text-xs text-secondary-500">Ceny zostaną ustawione automatycznie</p>
+          </div>
+        </div>
+        <Controller name="useMenuPackage" control={control} render={({ field }) => (
+          <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!selectedEventTypeId || !!hasNoPackagesForEventType} />
+        )} />
+      </div>
+
+      {hasNoPackagesForEventType && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-600" />
+          <p className="text-sm text-amber-800">Brak pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.</p>
+        </div>
+      )}
+
+      {useMenuPackage && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 p-4 bg-primary-50 border border-primary-200 rounded-xl">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-secondary-700">Wybierz pakiet</label>
+            <Controller name="menuPackageId" control={control} render={({ field }) => (
+              <Select value={field.value || ''} onValueChange={field.onChange}>
+                <SelectTrigger className="h-11 bg-white"><SelectValue placeholder="Wybierz pakiet..." /></SelectTrigger>
+                <SelectContent>
+                  {menuPackagesArray.map((pkg) => (
+                    <SelectItem key={pkg.id} value={pkg.id}>{pkg.name} — {formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )} />
+          </div>
+          {selectedPackage && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white rounded-lg border border-primary-300">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
+                  {selectedPackage.shortDescription && <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>}
+                  <div className="grid grid-cols-3 gap-4 mt-3">
+                    <div><p className="text-xs text-secondary-500">Dorosły</p><p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p></div>
+                    <div><p className="text-xs text-secondary-500">Dziecko 4–12</p><p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p></div>
+                    <div><p className="text-xs text-secondary-500">Dziecko 0–3</p><p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
+
+      {!useMenuPackage && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary-500" />
+              <Input type="number" label="Cena za dorosłego (PLN)" placeholder="0.00" error={errors.pricePerAdult?.message} {...register('pricePerAdult')} />
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary-500" />
+              <Input type="number" label="Cena za dziecko 4–12 (PLN)" placeholder="0.00" error={errors.pricePerChild?.message} disabled={pricePerAdult === 0} {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })} />
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary-500" />
+              <Input type="number" label="Cena za dziecko 0–3 (PLN)" placeholder="0.00" error={errors.pricePerToddler?.message} disabled={pricePerAdult === 0} {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })} />
+            </div>
+          </div>
+          {pricePerAdult > 0 && !childPriceManuallySet && (
+            <p className="text-xs text-secondary-500">💡 Cena za dziecko ustawiona automatycznie na 50% ceny dorosłego. Cena za malucha na 25%. Możesz je zmienić ręcznie.</p>
+          )}
+        </motion.div>
+      )}
+
+      <PriceSummary />
+    </div>
+  )
+
+  const renderStep4 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white mb-3">
+          <User className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-secondary-900">Kto rezerwuje?</h2>
+        <p className="text-sm text-secondary-500 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
+      </div>
+
+      {isPromotingFromQueue ? (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-5 h-5 text-blue-600" />
+            <span className="font-medium text-blue-900">Klient przekazany z kolejki</span>
+          </div>
+          {selectedClient && <p className="text-sm text-blue-700">{selectedClient.firstName} {selectedClient.lastName}{selectedClient.phone && ` • ${selectedClient.phone}`}</p>}
+        </div>
+      ) : (
+        <Controller name="clientId" control={control} render={({ field }) => (
+          <Combobox
+            options={clientComboboxOptions}
+            value={field.value}
+            onChange={field.onChange}
+            label="Klient"
+            placeholder="Wyszukaj klienta po nazwisku, imieniu lub telefonie..."
+            searchPlaceholder="Wpisz imię, nazwisko lub telefon..."
+            emptyMessage="Nie znaleziono klienta."
+            error={errors.clientId?.message}
+            disabled={clientsLoading}
+            footerAction={{ label: 'Dodaj nowego klienta', icon: <UserPlus className="h-4 w-4" />, onClick: () => setShowCreateClientModal(true) }}
+          />
+        )} />
+      )}
+
+      {selectedClient && !isPromotingFromQueue && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-50 border border-green-200 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center"><User className="w-5 h-5 text-green-700" /></div>
+            <div>
+              <p className="font-semibold text-green-900">{selectedClient.firstName} {selectedClient.lastName}</p>
+              <div className="flex items-center gap-3 text-sm text-green-700">
+                {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                {selectedClient.email && <span>{selectedClient.email}</span>}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+
+  const renderStep5 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white mb-3">
+          <ClipboardCheck className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-secondary-900">Sprawdź i utwórz</h2>
+        <p className="text-sm text-secondary-500 mt-1">Przejrzyj dane przed utworzeniem rezerwacji</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 rounded-xl border bg-purple-50 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors" onClick={() => goToStep(0)}>
+          <div className="flex items-center gap-2 mb-2"><Sparkles className="w-4 h-4 text-purple-600" /><span className="text-xs font-medium text-purple-600 uppercase">Wydarzenie</span></div>
+          <p className="font-semibold text-secondary-900">{selectedEventTypeName || '—'}</p>
+          {isBirthday && watchAll.birthdayAge && <p className="text-sm text-secondary-600">{watchAll.birthdayAge}. urodziny</p>}
+          {isAnniversary && watchAll.anniversaryYear && <p className="text-sm text-secondary-600">{watchAll.anniversaryYear}. rocznica</p>}
+          {isCustom && watchAll.customEventType && <p className="text-sm text-secondary-600">{watchAll.customEventType}</p>}
+        </div>
+
+        <div className="p-4 rounded-xl border bg-blue-50 border-blue-200 cursor-pointer hover:border-blue-400 transition-colors" onClick={() => goToStep(1)}>
+          <div className="flex items-center gap-2 mb-2"><Building2 className="w-4 h-4 text-blue-600" /><span className="text-xs font-medium text-blue-600 uppercase">Sala i termin</span></div>
+          <p className="font-semibold text-secondary-900">{selectedHall?.name || '—'}</p>
+          {startDate && startTime && (
+            <p className="text-sm text-secondary-600">
+              {new Date(`${startDate}T${startTime}`).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} • {startTime}–{endTime || '?'}
+            </p>
+          )}
+          {durationHours > 0 && (
+            <p className={`text-xs ${durationHours > STANDARD_HOURS ? 'text-amber-700 font-medium' : 'text-secondary-500'}`}>
+              {durationHours}h{durationHours > STANDARD_HOURS && ` (w tym ${extraHours}h dodatkowych)`}
+            </p>
+          )}
+        </div>
+
+        <div className="p-4 rounded-xl border bg-green-50 border-green-200 cursor-pointer hover:border-green-400 transition-colors" onClick={() => goToStep(2)}>
+          <div className="flex items-center gap-2 mb-2"><Users className="w-4 h-4 text-green-600" /><span className="text-xs font-medium text-green-600 uppercase">Goście</span></div>
+          <p className="text-2xl font-bold text-secondary-900">{totalGuests} osób</p>
+          <p className="text-sm text-secondary-600">{adults} dor. {children > 0 && `+ ${children} dzieci `}{toddlers > 0 && `+ ${toddlers} mal.`}</p>
+        </div>
+
+        <div className="p-4 rounded-xl border bg-indigo-50 border-indigo-200 cursor-pointer hover:border-indigo-400 transition-colors" onClick={() => goToStep(4)}>
+          <div className="flex items-center gap-2 mb-2"><User className="w-4 h-4 text-indigo-600" /><span className="text-xs font-medium text-indigo-600 uppercase">Klient</span></div>
+          {selectedClient ? (
+            <div>
+              <p className="font-semibold text-secondary-900">{selectedClient.firstName} {selectedClient.lastName}</p>
+              <div className="flex items-center gap-3 text-sm text-secondary-600">
+                {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                {selectedClient.email && <span>{selectedClient.email}</span>}
+              </div>
+            </div>
+          ) : <p className="text-secondary-500">—</p>}
+        </div>
+      </div>
+
+      <div className="cursor-pointer" onClick={() => goToStep(3)}>
+        <div className="flex items-center gap-2 mb-2">
+          <DollarSign className="w-4 h-4 text-orange-600" />
+          <span className="text-xs font-medium text-orange-600 uppercase">Podsumowanie finansowe</span>
+          {useMenuPackage && selectedPackage && <span className="text-xs text-secondary-500">• Pakiet: {selectedPackage.name}</span>}
+        </div>
+        <PriceSummary compact />
+      </div>
+
+      <div className="space-y-4 pt-4 border-t">
+        <Controller name="confirmationDeadline" control={control} render={({ field }) => (
+          <DatePicker value={field.value || ''} onChange={field.onChange} label="Termin potwierdzenia (opcjonalnie)" placeholder="Wybierz datę..." error={errors.confirmationDeadline?.message} minDate={new Date()} />
+        )} />
+        <p className="-mt-2 text-xs text-secondary-500">Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia</p>
+
+        <div>
+          <div className="flex items-center gap-2 mb-1"><FileText className="w-5 h-5 text-secondary-500" /><label className="block text-sm font-medium text-secondary-700">Notatki</label></div>
+          <textarea className="w-full rounded-xl border border-secondary-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-400 transition-colors resize-none" rows={3} placeholder="Dodatkowe informacje..." {...register('notes')} />
+        </div>
+      </div>
+
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+        <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-blue-900">Zaliczka</p>
+          <p className="text-xs text-blue-700">Zaliczkę można dodać po utworzeniu rezerwacji, w widoku szczegółów rezerwacji (sekcja finansowa).</p>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Map step index to renderer
+  const stepRenderers = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5]
 
   // ═══ RENDER ═══
 
@@ -528,693 +954,18 @@ export function CreateReservationForm({
           />
 
           <form onSubmit={handleSubmit(onFormSubmit)}>
+            {/* Single child in AnimatePresence to avoid 'multiple children' warning */}
             <AnimatePresence mode="wait">
-
-              {/* ═══ STEP 0: Typ wydarzenia ═══ */}
-              <StepContent stepIndex={0} currentStep={currentStep}>
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white mb-3">
-                      <Sparkles className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Jaki typ wydarzenia?</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Określ rodzaj imprezy — wpłynie na dostępne pakiety menu</p>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-secondary-700">Typ wydarzenia</label>
-                    <Controller
-                      name="eventTypeId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400' : ''}`}>
-                            <SelectValue placeholder="Wybierz typ wydarzenia..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {eventTypesArray.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.eventTypeId && (
-                      <p className="text-xs text-red-500">{errors.eventTypeId.message}</p>
-                    )}
-                  </div>
-
-                  {isBirthday && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                      <Input
-                        type="number"
-                        label="Które urodziny"
-                        placeholder="np. 18"
-                        error={errors.birthdayAge?.message}
-                        {...register('birthdayAge')}
-                      />
-                    </motion.div>
-                  )}
-
-                  {isCustom && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                      <Input
-                        label="Typ wydarzenia (własny)"
-                        placeholder="np. Spotkanie rodzinne, Impreza firmowa"
-                        error={errors.customEventType?.message}
-                        {...register('customEventType')}
-                      />
-                    </motion.div>
-                  )}
-
-                  {isAnniversary && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                    >
-                      <Input
-                        type="number"
-                        label="Która rocznica"
-                        placeholder="np. 25"
-                        error={errors.anniversaryYear?.message}
-                        {...register('anniversaryYear')}
-                      />
-                      <Input
-                        label="Jaka okazja"
-                        placeholder="np. Srebrne wesele"
-                        error={errors.anniversaryOccasion?.message}
-                        {...register('anniversaryOccasion')}
-                      />
-                    </motion.div>
-                  )}
-                </div>
-              </StepContent>
-
-              {/* ═══ STEP 1: Sala i termin ═══ */}
-              <StepContent stepIndex={1} currentStep={currentStep}>
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white mb-3">
-                      <Building2 className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Wybierz salę i termin</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Sprawdzimy dostępność automatycznie</p>
-                  </div>
-
-                  {/* Hall select */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-secondary-700">Sala</label>
-                    <Controller
-                      name="hallId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400' : ''}`}>
-                            <SelectValue placeholder="Wybierz salę..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {hallsArray.map((hall) => (
-                              <SelectItem key={hall.id} value={hall.id}>
-                                {hall.name} (max {hall.capacity} osób)
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.hallId && (
-                      <p className="text-xs text-red-500">{errors.hallId.message}</p>
-                    )}
-                  </div>
-
-                  {selectedHallCapacity > 0 && (
-                    <p className="-mt-4 text-sm text-secondary-600">
-                      Maksymalna pojemność: {selectedHallCapacity} osób
-                    </p>
-                  )}
-
-                  {defaultHallId && watchAll.hallId === defaultHallId && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="-mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <p className="text-sm text-green-800">Sala wybrana automatycznie z widoku szczegółów</p>
-                    </motion.div>
-                  )}
-
-                  {/* Date & Time pickers */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <p className="text-sm font-semibold text-secondary-800">Rozpoczęcie</p>
-                      <Controller
-                        name="startDate"
-                        control={control}
-                        render={({ field }) => (
-                          <DatePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            label="Data"
-                            placeholder="Wybierz datę..."
-                            error={errors.startDate?.message}
-                            minDate={new Date()}
-                          />
-                        )}
-                      />
-                      <Controller
-                        name="startTime"
-                        control={control}
-                        render={({ field }) => (
-                          <TimePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            label="Godzina"
-                            placeholder="Wybierz godzinę..."
-                            error={errors.startTime?.message}
-                          />
-                        )}
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-sm font-semibold text-secondary-800">Zakończenie</p>
-                      <Controller
-                        name="endDate"
-                        control={control}
-                        render={({ field }) => (
-                          <DatePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            label="Data"
-                            placeholder="Wybierz datę..."
-                            error={errors.endDate?.message}
-                            disabled={!startDate}
-                            minDate={startDate ? new Date(startDate) : undefined}
-                          />
-                        )}
-                      />
-                      <Controller
-                        name="endTime"
-                        control={control}
-                        render={({ field }) => (
-                          <TimePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            label="Godzina"
-                            placeholder="Wybierz godzinę..."
-                            error={errors.endTime?.message}
-                            disabled={!startDate || !startTime}
-                          />
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  {durationHours > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > STANDARD_HOURS ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}
-                    >
-                      {durationHours > STANDARD_HOURS && <AlertCircle className="w-5 h-5 text-amber-600" />}
-                      <span className={`text-sm ${durationHours > STANDARD_HOURS ? 'text-amber-800' : 'text-blue-800'}`}>
-                        Czas trwania: {durationHours}h
-                        {durationHours > STANDARD_HOURS && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {/* Availability */}
-                  {hallId && startDateTimeISO && endDateTimeISO && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className={`p-4 rounded-lg border ${
-                        availabilityLoading
-                          ? 'bg-gray-50 border-gray-200'
-                          : availability?.available
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-red-50 border-red-200'
-                      }`}
-                    >
-                      {availabilityLoading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                          <span className="text-sm text-secondary-600">Sprawdzanie dostępności...</span>
-                        </div>
-                      ) : availability?.available ? (
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <span className="text-sm font-medium text-green-800">Sala jest dostępna w wybranym terminie</span>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="w-5 h-5 text-red-600" />
-                            <span className="text-sm font-medium text-red-800">Kolizja z istniejącą rezerwacją!</span>
-                          </div>
-                          {availability?.conflicts?.map((c) => (
-                            <div key={c.id} className="ml-7 text-xs text-red-700">
-                              • {c.clientName} — {c.eventType} ({new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}–{new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </div>
-              </StepContent>
-
-              {/* ═══ STEP 2: Goście ═══ */}
-              <StepContent stepIndex={2} currentStep={currentStep}>
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-white mb-3">
-                      <Users className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Ilu gości?</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Podaj liczbę osób w każdej grupie wiekowej</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-primary-300 transition-colors">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Users className="w-5 h-5 text-primary-600" />
-                        <span className="font-medium text-secondary-700">Dorośli</span>
-                      </div>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        error={errors.adults?.message}
-                        className="text-center text-2xl font-bold h-14"
-                        {...register('adults')}
-                      />
-                    </div>
-
-                    <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-blue-300 transition-colors">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Smile className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-secondary-700">Dzieci (4–12)</span>
-                      </div>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        error={errors.children?.message}
-                        disabled={adults === 0}
-                        className="text-center text-2xl font-bold h-14"
-                        {...register('children')}
-                      />
-                    </div>
-
-                    <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-green-300 transition-colors">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Baby className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-secondary-700">Maluchy (0–3)</span>
-                      </div>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        error={errors.toddlers?.message}
-                        disabled={adults === 0}
-                        className="text-center text-2xl font-bold h-14"
-                        {...register('toddlers')}
-                      />
-                    </div>
-                  </div>
-
-                  {totalGuests > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center justify-center p-4 bg-primary-50 rounded-xl border border-primary-200"
-                    >
-                      <span className="text-secondary-700 mr-3">Łącznie gości:</span>
-                      <span className="text-3xl font-bold text-primary-600">{totalGuests}</span>
-                    </motion.div>
-                  )}
-
-                  {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                      <span className="text-sm text-red-800">
-                        Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!
-                      </span>
-                    </motion.div>
-                  )}
-                </div>
-              </StepContent>
-
-              {/* ═══ STEP 3: Menu i ceny ═══ */}
-              <StepContent stepIndex={3} currentStep={currentStep}>
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white mb-3">
-                      <UtensilsCrossed className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Menu i wycena</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Wybierz pakiet menu lub ustaw ceny ręcznie</p>
-                  </div>
-
-                  {/* Package toggle — premium Switch */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-secondary-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
-                        <UtensilsCrossed className="w-5 h-5 text-primary-600" />
-                      </div>
-                      <div>
-                        <span className="font-medium text-secondary-800">Gotowy pakiet menu</span>
-                        <p className="text-xs text-secondary-500">Ceny zostaną ustawione automatycznie</p>
-                      </div>
-                    </div>
-                    <Controller
-                      name="useMenuPackage"
-                      control={control}
-                      render={({ field }) => (
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={!selectedEventTypeId || !!hasNoPackagesForEventType}
-                        />
-                      )}
-                    />
-                  </div>
-
-                  {hasNoPackagesForEventType && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-amber-600" />
-                      <p className="text-sm text-amber-800">Brak pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.</p>
-                    </div>
-                  )}
-
-                  {useMenuPackage && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="space-y-4 p-4 bg-primary-50 border border-primary-200 rounded-xl"
-                    >
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-secondary-700">Wybierz pakiet</label>
-                        <Controller
-                          name="menuPackageId"
-                          control={control}
-                          render={({ field }) => (
-                            <Select value={field.value || ''} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-11 bg-white">
-                                <SelectValue placeholder="Wybierz pakiet..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {menuPackagesArray.map((pkg) => (
-                                  <SelectItem key={pkg.id} value={pkg.id}>
-                                    {pkg.name} — {formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-
-                      {selectedPackage && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white rounded-lg border border-primary-300">
-                          <div className="flex items-start gap-3">
-                            <Sparkles className="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
-                              {selectedPackage.shortDescription && (
-                                <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>
-                              )}
-                              <div className="grid grid-cols-3 gap-4 mt-3">
-                                <div>
-                                  <p className="text-xs text-secondary-500">Dorosły</p>
-                                  <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-secondary-500">Dziecko 4–12</p>
-                                  <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-secondary-500">Dziecko 0–3</p>
-                                  <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  )}
-
-                  {!useMenuPackage && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-5 h-5 text-secondary-500" />
-                          <Input
-                            type="number"
-                            label="Cena za dorosłego (PLN)"
-                            placeholder="0.00"
-                            error={errors.pricePerAdult?.message}
-                            {...register('pricePerAdult')}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-5 h-5 text-secondary-500" />
-                          <Input
-                            type="number"
-                            label="Cena za dziecko 4–12 (PLN)"
-                            placeholder="0.00"
-                            error={errors.pricePerChild?.message}
-                            disabled={pricePerAdult === 0}
-                            {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-5 h-5 text-secondary-500" />
-                          <Input
-                            type="number"
-                            label="Cena za dziecko 0–3 (PLN)"
-                            placeholder="0.00"
-                            error={errors.pricePerToddler?.message}
-                            disabled={pricePerAdult === 0}
-                            {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })}
-                          />
-                        </div>
-                      </div>
-
-                      {pricePerAdult > 0 && !childPriceManuallySet && (
-                        <p className="text-xs text-secondary-500">
-                          💡 Cena za dziecko ustawiona automatycznie na 50% ceny dorosłego. Cena za malucha na 25%.
-                          Możesz je zmienić ręcznie.
-                        </p>
-                      )}
-                    </motion.div>
-                  )}
-
-                  <PriceSummary />
-                </div>
-              </StepContent>
-
-              {/* ═══ STEP 4: Klient ═══ */}
-              <StepContent stepIndex={4} currentStep={currentStep}>
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white mb-3">
-                      <User className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Kto rezerwuje?</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
-                  </div>
-
-                  {isPromotingFromQueue ? (
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-blue-900">Klient przekazany z kolejki</span>
-                      </div>
-                      {selectedClient && (
-                        <p className="text-sm text-blue-700">
-                          {selectedClient.firstName} {selectedClient.lastName}
-                          {selectedClient.phone && ` • ${selectedClient.phone}`}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <Controller
-                      name="clientId"
-                      control={control}
-                      render={({ field }) => (
-                        <Combobox
-                          options={clientComboboxOptions}
-                          value={field.value}
-                          onChange={field.onChange}
-                          label="Klient"
-                          placeholder="Wyszukaj klienta po nazwisku, imieniu lub telefonie..."
-                          searchPlaceholder="Wpisz imię, nazwisko lub telefon..."
-                          emptyMessage="Nie znaleziono klienta."
-                          error={errors.clientId?.message}
-                          disabled={clientsLoading}
-                          footerAction={{
-                            label: 'Dodaj nowego klienta',
-                            icon: <UserPlus className="h-4 w-4" />,
-                            onClick: () => setShowCreateClientModal(true),
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-
-                  {selectedClient && !isPromotingFromQueue && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 bg-green-50 border border-green-200 rounded-xl"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center">
-                          <User className="w-5 h-5 text-green-700" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-green-900">
-                            {selectedClient.firstName} {selectedClient.lastName}
-                          </p>
-                          <div className="flex items-center gap-3 text-sm text-green-700">
-                            {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                            {selectedClient.email && <span>{selectedClient.email}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              </StepContent>
-
-              {/* ═══ STEP 5: Podsumowanie ═══ */}
-              <StepContent stepIndex={5} currentStep={currentStep}>
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white mb-3">
-                      <ClipboardCheck className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-secondary-900">Sprawdź i utwórz</h2>
-                    <p className="text-sm text-secondary-500 mt-1">Przejrzyj dane przed utworzeniem rezerwacji</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl border bg-purple-50 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors" onClick={() => goToStep(0)}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-purple-600" />
-                        <span className="text-xs font-medium text-purple-600 uppercase">Wydarzenie</span>
-                      </div>
-                      <p className="font-semibold text-secondary-900">{selectedEventTypeName || '—'}</p>
-                      {isBirthday && watchAll.birthdayAge && <p className="text-sm text-secondary-600">{watchAll.birthdayAge}. urodziny</p>}
-                      {isAnniversary && watchAll.anniversaryYear && <p className="text-sm text-secondary-600">{watchAll.anniversaryYear}. rocznica</p>}
-                      {isCustom && watchAll.customEventType && <p className="text-sm text-secondary-600">{watchAll.customEventType}</p>}
-                    </div>
-
-                    <div className="p-4 rounded-xl border bg-blue-50 border-blue-200 cursor-pointer hover:border-blue-400 transition-colors" onClick={() => goToStep(1)}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Building2 className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs font-medium text-blue-600 uppercase">Sala i termin</span>
-                      </div>
-                      <p className="font-semibold text-secondary-900">{selectedHall?.name || '—'}</p>
-                      {startDate && startTime && (
-                        <p className="text-sm text-secondary-600">
-                          {new Date(`${startDate}T${startTime}`).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                          {' '}• {startTime}–{endTime || '?'}
-                        </p>
-                      )}
-                      {durationHours > 0 && (
-                        <p className={`text-xs ${durationHours > STANDARD_HOURS ? 'text-amber-700 font-medium' : 'text-secondary-500'}`}>
-                          {durationHours}h{durationHours > STANDARD_HOURS && ` (w tym ${extraHours}h dodatkowych)`}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="p-4 rounded-xl border bg-green-50 border-green-200 cursor-pointer hover:border-green-400 transition-colors" onClick={() => goToStep(2)}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4 text-green-600" />
-                        <span className="text-xs font-medium text-green-600 uppercase">Goście</span>
-                      </div>
-                      <p className="text-2xl font-bold text-secondary-900">{totalGuests} osób</p>
-                      <p className="text-sm text-secondary-600">
-                        {adults} dor. {children > 0 && `+ ${children} dzieci `}{toddlers > 0 && `+ ${toddlers} mal.`}
-                      </p>
-                    </div>
-
-                    <div className="p-4 rounded-xl border bg-indigo-50 border-indigo-200 cursor-pointer hover:border-indigo-400 transition-colors" onClick={() => goToStep(4)}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="w-4 h-4 text-indigo-600" />
-                        <span className="text-xs font-medium text-indigo-600 uppercase">Klient</span>
-                      </div>
-                      {selectedClient ? (
-                        <div>
-                          <p className="font-semibold text-secondary-900">{selectedClient.firstName} {selectedClient.lastName}</p>
-                          <div className="flex items-center gap-3 text-sm text-secondary-600">
-                            {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                            {selectedClient.email && <span>{selectedClient.email}</span>}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-secondary-500">—</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="cursor-pointer" onClick={() => goToStep(3)}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-4 h-4 text-orange-600" />
-                      <span className="text-xs font-medium text-orange-600 uppercase">Podsumowanie finansowe</span>
-                      {useMenuPackage && selectedPackage && (
-                        <span className="text-xs text-secondary-500">• Pakiet: {selectedPackage.name}</span>
-                      )}
-                    </div>
-                    <PriceSummary compact />
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t">
-                    <Controller
-                      name="confirmationDeadline"
-                      control={control}
-                      render={({ field }) => (
-                        <DatePicker
-                          value={field.value || ''}
-                          onChange={field.onChange}
-                          label="Termin potwierdzenia (opcjonalnie)"
-                          placeholder="Wybierz datę..."
-                          error={errors.confirmationDeadline?.message}
-                          minDate={new Date()}
-                        />
-                      )}
-                    />
-                    <p className="-mt-2 text-xs text-secondary-500">
-                      Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
-                    </p>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText className="w-5 h-5 text-secondary-500" />
-                        <label className="block text-sm font-medium text-secondary-700">Notatki</label>
-                      </div>
-                      <textarea
-                        className="w-full rounded-xl border border-secondary-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-400 transition-colors resize-none"
-                        rows={3}
-                        placeholder="Dodatkowe informacje..."
-                        {...register('notes')}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-900">Zaliczka</p>
-                      <p className="text-xs text-blue-700">
-                        Zaliczkę można dodać po utworzeniu rezerwacji, w widoku szczegółów rezerwacji (sekcja finansowa).
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </StepContent>
-
+              <motion.div
+                key={`step-${currentStep}`}
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              >
+                {stepRenderers[currentStep]()}
+              </motion.div>
             </AnimatePresence>
 
             <StepNavigation
@@ -1232,12 +983,7 @@ export function CreateReservationForm({
 
           {onCancel && (
             <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="text-sm text-secondary-500 hover:text-secondary-700 transition-colors"
-                disabled={createReservation.isPending}
-              >
+              <button type="button" onClick={onCancel} className="text-sm text-secondary-500 hover:text-secondary-700 transition-colors" disabled={createReservation.isPending}>
                 Anuluj tworzenie rezerwacji
               </button>
             </div>
@@ -1246,11 +992,7 @@ export function CreateReservationForm({
       </Card>
 
       {!isPromotingFromQueue && (
-        <CreateClientModal
-          open={showCreateClientModal}
-          onClose={() => setShowCreateClientModal(false)}
-          onSuccess={handleClientCreated}
-        />
+        <CreateClientModal open={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onSuccess={handleClientCreated} />
       )}
     </motion.div>
   )

@@ -60,7 +60,7 @@ export function DatePicker({
             disabled={disabled}
             className={cn(
               'w-full justify-start text-left font-normal h-11',
-              'border-secondary-300 hover:border-primary-400 hover:bg-primary-50/50',
+              'border-secondary-300 bg-white hover:border-primary-400 hover:bg-primary-50/50',
               'focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
               'transition-all duration-200',
               !dateValue && 'text-secondary-400',
@@ -74,7 +74,7 @@ export function DatePicker({
               : placeholder}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0 bg-white" align="start">
           <Calendar
             mode="single"
             selected={dateValue}
