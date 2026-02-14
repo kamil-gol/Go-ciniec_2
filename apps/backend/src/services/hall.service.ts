@@ -1,7 +1,8 @@
 /**
  * Hall Service
  * Business logic for hall management
- * UPDATED: Removed pricing fields and validations (pricing now managed via menu packages)
+ * UPDATED: Added isWholeVenue protection (cannot delete/deactivate whole venue hall)
+ * UPDATED: Whole venue hall name and isWholeVenue flag cannot be changed
  */
 
 import { prisma } from '@/lib/prisma';
@@ -54,6 +55,7 @@ export class HallService {
         amenities: data.amenities || [],
         images: data.images || [],
         isActive: data.isActive !== undefined ? data.isActive : true,
+        isWholeVenue: data.isWholeVenue || false,
       },
     });
 
@@ -62,10 +64,21 @@ export class HallService {
 
   /**
    * Update hall
+   * PROTECTION: Whole venue hall cannot be deactivated or renamed
    */
   async updateHall(id: string, data: UpdateHallDTO): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
     if (!existingHall) throw new Error('Hall not found');
+
+    // Protect whole venue hall
+    if (existingHall.isWholeVenue) {
+      if (data.isActive === false) {
+        throw new Error('Sala "Ca\u0142y Obiekt" nie mo\u017ce by\u0107 dezaktywowana');
+      }
+      if (data.name !== undefined && data.name !== existingHall.name) {
+        throw new Error('Nie mo\u017cna zmieni\u0107 nazwy sali "Ca\u0142y Obiekt"');
+      }
+    }
 
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
@@ -85,10 +98,15 @@ export class HallService {
 
   /**
    * Delete hall (soft delete - deactivate)
+   * PROTECTION: Whole venue hall cannot be deleted
    */
   async deleteHall(id: string): Promise<void> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
     if (!existingHall) throw new Error('Hall not found');
+
+    if (existingHall.isWholeVenue) {
+      throw new Error('Sala "Ca\u0142y Obiekt" nie mo\u017ce by\u0107 usuni\u0119ta');
+    }
 
     await prisma.hall.update({
       where: { id },

@@ -8,6 +8,7 @@ export interface Hall {
   amenities: string[]
   images: string[]
   isActive: boolean
+  isWholeVenue: boolean
   createdAt: string
   updatedAt: string
 }
