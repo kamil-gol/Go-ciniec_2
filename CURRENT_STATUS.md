@@ -3,9 +3,9 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 14.02.2026, 16:30 CET  
+**Ostatnia aktualizacja:** 14.02.2026, 16:41 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 0.9.8 (Event Types Module + UI/UX)
+**Wersja:** 1.0.0 (Full Menu System + Reservation Integration)
 
 ---
 
@@ -26,57 +26,73 @@
 ✅ **Nullable constraints** dla queue fields  
 ✅ **Batch update API** (atomiczne transakcje)
 
-### ✨ System Menu & Dania
-✅ **Kategorie Dań** - CRUD API + Frontend UI, sortowanie, ikony emoji + kolory  
-✅ **Biblioteka Dań** - CRUD, alergeny, filtrowanie, wyszukiwanie, premium UI  
-✅ **Premium UI/UX Components** - Switch, AlertDialog, DishDialog, loading states
+### 🍽️ System Menu (KOMPLETNY)
+✅ **Kategorie Dań** — CRUD API + Frontend UI, sortowanie, ikony emoji + kolory  
+✅ **Biblioteka Dań** — CRUD, alergeny, filtrowanie, wyszukiwanie, premium UI  
+✅ **Szablony Menu (MenuTemplate)** — CRUD, warianty, validFrom/validTo, duplikowanie, przypisanie do EventType  
+✅ **Pakiety Menu (MenuPackage)** — CRUD, ceny per adult/child/toddler, includedItems, reorder, isPopular/isRecommended  
+✅ **Opcje Menu (MenuOption)** — CRUD, kategorie (Alkohol, Muzyka itp.), priceType: PER_PERSON/FLAT, przypisanie do pakietów  
+✅ **Grupy Dodatków (AddonGroup)** — CRUD, min/maxSelect, priceType, powiązania z daniami  
+✅ **Ustawienia Kategorii w Pakietach (PackageCategorySettings)** — minSelect/maxSelect per kategoria  
+✅ **Historia Cen (MenuPriceHistory)** — automatyczne śledzenie zmian cen  
+✅ **Premium UI/UX Components** — Switch, AlertDialog, DishDialog, loading states
 
-### 🎭 Typy Wydarzeń (NOWE! 14.02.2026)
-✅ **Backend API** - pełny CRUD + stats endpoint + filtrowanie isActive  
-✅ **Nowe pola modelu** - `description`, `color` (hex), `isActive`  
-✅ **Frontend - Lista typów**
-  - Hero z gradientem fuchsia + statystyki (total, aktywne, z rezerwacjami)
-  - Wyszukiwanie + filtr aktywne/wszystkie
-  - Grid kart z kolorami, badge'ami, toggle aktywności
-  - Kliknięcie karty → strona szczegółów
+### 🔗 Integracja Menu z Rezerwacjami
+✅ **ReservationMenuSnapshot** — zapis wybranego menu w rezerwacji  
+✅ **POST /api/reservations/:id/select-menu** — wybór menu z kalkulacją cen  
+✅ **GET /api/reservations/:id/menu** — pobranie snapshotu z price breakdown  
+✅ **PUT /api/reservations/:id/menu** — aktualizacja (zmiana liczby gości)  
+✅ **DELETE /api/reservations/:id/menu** — usunięcie menu z rezerwacji  
+✅ **Kalkulator cen** — packageCost + optionsCost = totalMenuPrice
 
-✅ **Frontend - Strona szczegółów** (`/dashboard/event-types/[id]`)
-  - Hero z gradient fuchsia + kolor typu jako swatch
-  - Przyciski Edytuj/Usuń w hero
-  - Karta Informacje (nazwa, opis, kolor, status + switch, daty)
-  - Karta Powiązania (rezerwacje + szablony menu z liczbami i linkami)
+### 🎭 Typy Wydarzeń
+✅ **Backend API** — pełny CRUD + stats endpoint + filtrowanie isActive  
+✅ **Nowe pola modelu** — `description`, `color` (hex), `isActive`  
+✅ **Frontend** — lista z hero, statystykami, wyszukiwaniem + strona szczegółów  
+✅ **Formularze** — dialog tworzenia/edycji z color picker, dialog usuwania z walidacją  
+✅ **Design System** — accent fuchsia/pink, design tokens
 
-✅ **Formularze**
-  - Dialog tworzenia/edycji z color picker + podgląd koloru
-  - Dialog usuwania z walidacją powiązań (blokuje jeśli ma rezerwacje/szablony)
-
-✅ **Design System**
-  - Accent: fuchsia/pink (odróżnienie od halls=violet, menu=emerald)
-  - Design tokens w `lib/design-tokens.ts`
-  - Spójność z pozostałymi modułami
+### 💰 System Zaliczek (Deposits)
+✅ **Model Deposit** — amount, remainingAmount, paidAmount, status, paymentMethod  
+✅ **DepositPayment** — częściowe płatności  
+✅ **Backend API** — CRUD + statusy + potwierdzenia
 
 ---
 
-## 🔧 Ostatnie Zmiany (14.02.2026)
+## 📁 Struktura Frontend Menu
 
-### Event Types Frontend Module
-**Status:** ✅ Gotowe  
-**Pliki:**
-- `apps/frontend/lib/api/event-types-api.ts` - warstwa API
-- `apps/frontend/app/dashboard/event-types/page.tsx` - lista
-- `apps/frontend/app/dashboard/event-types/[id]/page.tsx` - szczegóły
-- `apps/frontend/components/event-types/event-type-card.tsx` - karta
-- `apps/frontend/components/event-types/event-type-form-dialog.tsx` - formularz
-- `apps/frontend/components/event-types/event-type-delete-dialog.tsx` - usuwanie
-- `apps/frontend/lib/design-tokens.ts` - tokeny designu
+```
+apps/frontend/app/dashboard/menu/
+├── page.tsx              # Główna strona Menu (hub)
+├── categories/           # Kategorie dań
+├── dishes/               # Biblioteka dań
+├── courses/              # Dania/kursy
+├── templates/            # Szablony menu (page.tsx)
+├── packages/             # Pakiety cenowe
+├── options/              # Opcje dodatkowe
+└── addons/               # Grupy dodatków
+```
 
-### Kluczowe cechy:
-- Pełny CRUD z poziomu UI
-- Color picker z 12 predefiniowanymi kolorami + custom hex
-- Toggle aktywności inline (z karty i strony szczegółów)
-- Walidacja usuwania (nie można usunąć typu z rezerwacjami)
-- Powiązania z rezerwacjami i szablonami menu
-- Responsywny design
+---
+
+## 📁 Backend Routes
+
+```
+apps/backend/src/routes/
+├── auth.routes.ts
+├── hall.routes.ts
+├── client.routes.ts
+├── eventType.routes.ts
+├── reservation.routes.ts
+├── queue.routes.ts
+├── deposit.routes.ts
+├── reservation-deposit.routes.ts
+├── dish-category.routes.ts
+├── dish.routes.ts
+├── menu.routes.ts              # Templates + Packages + Options (18KB)
+├── menu-calculator.routes.ts   # Kalkulator cen
+└── README_MENU_API.md          # Pełna dokumentacja Menu API
+```
 
 ---
 
@@ -84,11 +100,11 @@
 
 | Dokument | Opis |
 |----------|------|
-| [API.md](API.md) | Dokumentacja API — wszystkie endpointy (w tym Event Types) |
+| [API.md](API.md) | Dokumentacja API — wszystkie endpointy |
+| [apps/backend/src/routes/README_MENU_API.md](apps/backend/src/routes/README_MENU_API.md) | **Szczegółowa dokumentacja Menu API** z przykładami |
 | [CHANGELOG.md](CHANGELOG.md) | Historia zmian |
-| [docs/README.md](docs/README.md) | **START TUTAJ** - Główny indeks dokumentacji |
-| [docs/QUEUE.md](docs/QUEUE.md) | Pełna dokumentacja systemu kolejki |
-| [apps/backend/README.md](apps/backend/README.md) | Backend API |
+| [docs/README.md](docs/README.md) | Główny indeks dokumentacji |
+| [docs/QUEUE.md](docs/QUEUE.md) | Dokumentacja systemu kolejki |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architektura projektu |
 | [docs/DATABASE.md](docs/DATABASE.md) | Struktura bazy danych |
 | [docs/SPRINTS.md](docs/SPRINTS.md) | Plan i postęp sprintów |
@@ -100,22 +116,54 @@
 ### Użyj tego promptu:
 
 ```
-Kontynuuję pracę nad projektem Rezerwacje (repo: kamil-gol/Go-ciniec_2, branch: main).
+Kontynuuję pracę nad projektem "Gościniec" — system rezerwacji (repo: kamil-gol/Go-ciniec_2, branch: main).
 
-Przeczytaj dokumentację:
-1. CURRENT_STATUS.md - aktualny status rozwoju
-2. API.md - dokumentacja API
-3. docs/QUEUE.md - system kolejki rezerwacji
-4. README.md - główny przegląd projektu
+## Repo & Infrastruktura
+- **GitHub:** kamil-gol/Go-ciniec_2
+- **Branch:** main
+- **Serwer:** Docker na VPS (cd /home/kamil/rezerwacje)
+- **Baza:** PostgreSQL (serwis: postgres, user: rezerwacje, database: rezerwacje)
+- **Frontend:** Next.js (port 3000)
+- **Backend:** Node.js + Prisma (port 3001)
 
-Branch main zawiera:
-- System kolejki rezerwacji (complete)
-- System menu i kategorii dań (complete)
-- Moduł Typy Wydarzeń z pełnym CRUD (complete)
-- Premium UI/UX components
-- Wszystkie bugfixy
+## Zasady pracy
+1. Masz pełny dostęp do GitHub — czytaj, edytuj, twórz pliki bezpośrednio bez pytania
+2. Twórz nowe branche na nowe funkcjonalności, potem PR do main
+3. Po zmianach daj mi TYLKO komendy do wykonania na serwerze
+4. Nie każ mi robić rzeczy manualnie — sam organizuj pliki na GitHubie
+5. Sprawdzaj istniejący kod przed edycją
+6. Aktualizuj dokumentację po każdym module
+7. Polskie znaki pisz bezpośrednio (ą, ę, ó, ś)
 
-Co dalej?
+## Workflow
+- Sprawdzanie kodu: get_file_contents → repo: kamil-gol/Go-ciniec_2
+- Edycja: create_or_update_file → zapisuje bezpośrednio
+- Po zmianach komendy:
+  cd /home/kamil/rezerwacje && git pull origin main
+  docker-compose restart backend  # lub frontend
+  docker-compose logs -f backend --tail=50
+
+Przeczytaj na start:
+1. CURRENT_STATUS.md — pełny status + TODO
+2. API.md — dokumentacja endpointów
+3. apps/backend/src/routes/README_MENU_API.md — szczegółowa dokumentacja Menu API
+4. apps/backend/prisma/schema.prisma — modele bazy danych
+
+## Co jest gotowe (v1.0.0):
+- ✅ Rezerwacje + kolejka + drag&drop + auto-cancel
+- ✅ Sale, Klienci, Typy Wydarzeń (pełny CRUD)
+- ✅ Kategorie dań + Biblioteka dań
+- ✅ Szablony Menu + Pakiety + Opcje + Dodatki
+- ✅ Integracja Menu z Rezerwacjami (snapshot + kalkulator cen)
+- ✅ System zaliczek (Deposits + payments)
+- ✅ Historia cen menu (MenuPriceHistory)
+
+## Co wymaga weryfikacji / dalszej pracy:
+- ❓ Generowanie PDF z menu w rezerwacji
+- ❓ Testy jednostkowe systemu menu
+- ❓ Production deployment
+
+Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 ```
 
 ---
@@ -124,72 +172,49 @@ Co dalej?
 
 **Brak znanych bugów** 🎉
 
-Wszystkie zidentyfikowane problemy zostały naprawione:
-- ✅ Bug #5: Race conditions
-- ✅ Bug #6: Loading states
-- ✅ Bug #7: Auto-cancel logic
-- ✅ Bug #8: Position validation
-- ✅ Bug #9: Nullable constraints + Batch update
-- ✅ Auth issue w dishes API
-- ✅ Infinite loop w DishDialog
-- ✅ Transparentność AlertDialog
-
 ---
 
-## 📋 TODO - Następne Moduły
+## 📋 TODO
+
+### ❓ Do weryfikacji
+- [ ] Generowanie PDF z menu w rezerwacji
+- [ ] Auth middleware na endpointach menu (README_MENU_API.md wskazuje "Coming Soon")
 
 ### 🔄 Planowane
-
-#### 1. **Opcje Menu (Menu Options)** - WYSOKI PRIORYTET
-- [ ] Model bazy danych (MenuOption)
-- [ ] Backend API (/api/menu-options)
-- [ ] Frontend UI
-
-#### 2. **Szablony Menu (Menu Templates)** - WYSOKI PRIORYTET
-- [ ] Model bazy danych (MenuTemplate)
-- [ ] Backend API (/api/menu-templates)
-- [ ] Frontend UI - builder szablonów
-
-#### 3. **Pakiety Menu (Menu Packages)** - ŚREDNI PRIORYTET
-- [ ] Model bazy danych (MenuPackage)
-- [ ] Backend API (/api/menu-packages)
-- [ ] Frontend UI
-
-#### 4. **Integracja z Rezerwacjami** - KRYTYCZNY
-- [ ] Rozszerzenie modelu Reservation o menu
-- [ ] Formularz rezerwacji - sekcja Menu
-- [ ] Backend kalkulacja cen
-- [ ] PDF Generation z menu
-
-#### 5. **Zaawansowane Features** - NISKI PRIORYTET
+- [ ] Testy jednostkowe systemu menu
+- [ ] Production deployment
 - [ ] Import/Export menu (CSV/JSON)
-- [ ] Historia zmian cen dań
 - [ ] Sezonowość dań
-- [ ] Zdjęcia dań
-- [ ] Statystyki popularności
+- [ ] Zdjęcia dań (upload + gallery)
+- [ ] Statystyki popularności dań
+- [ ] Multi-language menu (PL/EN)
+- [ ] Generowanie kart menu do wydruku
 
 ---
 
 ## 📊 Postęp Ogólny
 
-- **Backend:** 96% ✅
-- **Frontend:** 90% ✅ (+2% - Event Types module)
+- **Backend:** 98% ✅
+- **Frontend:** 95% ✅
 - **Testy:** 78% 🔄
-- **Dokumentacja:** 96% ✅ (zaktualizowana 14.02)
+- **Dokumentacja:** 98% ✅ (zaktualizowana 14.02)
 - **Deployment:** 70% 🔄
 
 ### Postęp Modułów:
 - **Sale (Halls):** 100% ✅
 - **Klienci:** 100% ✅
-- **Rezerwacje:** 100% ✅
-- **Kolejka:** 100% ✅
+- **Rezerwacje + Kolejka:** 100% ✅
+- **Typy Wydarzeń:** 100% ✅
 - **Kategorie Dań:** 100% ✅
 - **Biblioteka Dań:** 100% ✅
-- **Typy Wydarzeń:** 100% ✅ (NOWE!)
-- **Opcje Menu:** 0% ⏳
-- **Szablony Menu:** 0% ⏳
-- **Pakiety Menu:** 0% ⏳
-- **Integracja Menu+Rezerwacje:** 0% ⏳
+- **Szablony Menu:** 100% ✅
+- **Pakiety Menu:** 100% ✅
+- **Opcje Menu:** 100% ✅
+- **Grupy Dodatków:** 100% ✅
+- **Integracja Menu+Rezerwacje:** 100% ✅
+- **System Zaliczek:** 100% ✅
+- **Historia Cen:** 100% ✅
+- **PDF Generation:** ❓ Do weryfikacji
 
 ---
 
@@ -197,44 +222,65 @@ Wszystkie zidentyfikowane problemy zostały naprawione:
 
 ```bash
 # Pobranie zmian
+cd /home/kamil/rezerwacje
 git checkout main
 git pull origin main
 
 # Restart (po pull)
-docker compose restart backend frontend
+docker-compose restart backend frontend
 
 # Rebuild (jeśli zmiany w package.json lub Dockerfile)
-docker compose down
-docker compose up --build -d
+docker-compose down
+docker-compose up --build -d
 
-# Pełny rebuild bez cache (problemy z kodowaniem itp.)
-docker compose down
-docker compose build --no-cache frontend
-docker compose up -d
+# Pełny rebuild bez cache
+docker-compose down
+docker-compose build --no-cache frontend
+docker-compose up -d
 
 # Logi
-docker compose logs -f backend
-docker compose logs -f frontend
+docker-compose logs -f backend --tail=50
+docker-compose logs -f frontend --tail=50
 
-# Migracje (jeśli dodano nowe)
-docker compose exec backend npm run prisma:migrate:deploy
+# Migracje
+docker-compose exec backend npm run prisma:migrate:deploy
+
+# Baza danych
+docker-compose exec postgres psql -U rezerwacje -d rezerwacje
 ```
 
 ---
 
-## 🚨 Deploy Checklist
+## 🗄️ Modele Bazy Danych (Prisma)
 
-- [x] Backend: Event Types API (description, color, isActive, stats)
-- [x] Frontend: Event Types lista + szczegóły
-- [x] Frontend: Event Types CRUD dialogi
-- [x] Design tokens (fuchsia accent)
-- [x] Dokumentacja API zaktualizowana
-- [x] CURRENT_STATUS zaktualizowany
-- [x] CHANGELOG zaktualizowany
-- [ ] Opcje menu (kolejny milestone)
-- [ ] Integracja z rezerwacjami (kolejny milestone)
-- [ ] Production deployment
+### Core
+- `User` — użytkownicy systemu (ADMIN, EMPLOYEE)
+- `Hall` — sale bankietowe
+- `Client` — klienci
+- `EventType` — typy wydarzeń (z color, description)
+- `Reservation` — rezerwacje (z kolejką, statusami)
+- `ReservationHistory` — audit trail
+
+### Deposits
+- `Deposit` — zaliczki z statusem i terminami
+- `DepositPayment` — częściowe płatności
+
+### Menu System
+- `DishCategory` — kategorie dań (slug, icon, color)
+- `Dish` — dania (allergens, categoryId)
+- `MenuTemplate` — szablony menu (eventTypeId, variant, validFrom/To)
+- `MenuPackage` — pakiety cenowe (pricePerAdult/Child/Toddler)
+- `MenuOption` — opcje dodatkowe (priceType: PER_PERSON/FLAT)
+- `MenuPackageOption` — junction: pakiet ↔ opcja
+- `PackageCategorySettings` — konfiguracja kategorii w pakietach
+- `AddonGroup` — grupy dodatków
+- `AddonGroupDish` — junction: grupa ↔ danie
+- `ReservationMenuSnapshot` — snapshot menu w rezerwacji (menuData JSON)
+- `MenuPriceHistory` — historia zmian cen
+
+### Other
+- `ActivityLog` — logi aktywności
 
 ---
 
-**Status:** Branch `main` zawiera kompletny moduł Typów Wydarzeń z pełnym CRUD, kolorami, statystykami i premium UI. Gotowy do dalszego rozwoju.
+**Status:** Projekt w wersji 1.0.0. Kompletny system menu z szablonami, pakietami, opcjami, dodatkami i pełną integracją z rezerwacjami. Gotowy do dalszego rozwoju (PDF, testy, deployment).
