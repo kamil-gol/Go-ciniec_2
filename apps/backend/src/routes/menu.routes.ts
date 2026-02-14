@@ -2,6 +2,7 @@
  * Menu Routes
  * 
  * Express router for all menu-related endpoints
+ * Auth: GET = requireStaff, POST/PUT/DELETE = requireAdmin
  */
 
 import { Router } from 'express';
@@ -12,9 +13,10 @@ import { reservationMenuController } from '../controllers/reservationMenu.contro
 import { menuCourseController } from '../controllers/menuCourse.controller';
 import { packageCategoryController } from '../controllers/packageCategory.controller';
 import { addonGroupController } from '../controllers/addonGroup.controller';
-
-// TODO: Import authentication middleware when ready
-// import { authenticate, requireAdmin } from '../middleware/auth';
+import { authMiddleware } from '../middlewares/auth';
+import { requireAdmin, requireStaff } from '../middlewares/roles';
+import { asyncHandler } from '../middlewares/asyncHandler';
+import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
 
@@ -26,11 +28,15 @@ const router = Router();
  * @route   GET /api/menu-templates
  * @desc    List all menu templates (with optional filters)
  * @query   eventTypeId?: string, isActive?: boolean, date?: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-templates',
-  menuTemplateController.list.bind(menuTemplateController)
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.list.call(menuTemplateController, req, res);
+  })
 );
 
 /**
@@ -38,22 +44,32 @@ router.get(
  * @desc    Get active menu template for event type on specific date
  * @params  eventTypeId: string
  * @query   date?: string (defaults to today)
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-templates/active/:eventTypeId',
-  menuTemplateController.getActive.bind(menuTemplateController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('eventTypeId'),
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.getActive.call(menuTemplateController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/menu-templates/:id
  * @desc    Get single menu template by ID
  * @params  id: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-templates/:id',
-  menuTemplateController.getById.bind(menuTemplateController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.getById.call(menuTemplateController, req, res);
+  })
 );
 
 /**
@@ -64,8 +80,11 @@ router.get(
  */
 router.post(
   '/menu-templates',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuTemplateController.create.bind(menuTemplateController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.create.call(menuTemplateController, req, res);
+  })
 );
 
 /**
@@ -77,8 +96,12 @@ router.post(
  */
 router.put(
   '/menu-templates/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuTemplateController.update.bind(menuTemplateController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.update.call(menuTemplateController, req, res);
+  })
 );
 
 /**
@@ -89,8 +112,12 @@ router.put(
  */
 router.delete(
   '/menu-templates/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuTemplateController.delete.bind(menuTemplateController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.delete.call(menuTemplateController, req, res);
+  })
 );
 
 /**
@@ -102,8 +129,12 @@ router.delete(
  */
 router.post(
   '/menu-templates/:id/duplicate',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuTemplateController.duplicate.bind(menuTemplateController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuTemplateController.duplicate.call(menuTemplateController, req, res);
+  })
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -114,44 +145,79 @@ router.post(
  * @route   GET /api/menu-packages
  * @desc    List all packages (with optional filter)
  * @query   menuTemplateId?: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-packages',
-  menuPackageController.list.bind(menuPackageController)
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await menuPackageController.list.call(menuPackageController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/menu-packages/event-type/:eventTypeId
  * @desc    List all active packages for a specific event type
  * @params  eventTypeId: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-packages/event-type/:eventTypeId',
-  menuPackageController.listByEventType.bind(menuPackageController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('eventTypeId'),
+  asyncHandler(async (req, res) => {
+    await menuPackageController.listByEventType.call(menuPackageController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/menu-packages/template/:templateId
  * @desc    List all packages for a menu template
  * @params  templateId: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-packages/template/:templateId',
-  menuPackageController.listByTemplate.bind(menuPackageController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('templateId'),
+  asyncHandler(async (req, res) => {
+    await menuPackageController.listByTemplate.call(menuPackageController, req, res);
+  })
+);
+
+/**
+ * @route   PUT /api/menu-packages/reorder
+ * @desc    Reorder packages (drag & drop)
+ * @body    ReorderPackagesInput
+ * @access  Admin only
+ * @note    MUST be defined BEFORE /menu-packages/:id to avoid route conflict
+ */
+router.put(
+  '/menu-packages/reorder',
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await menuPackageController.reorder.call(menuPackageController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/menu-packages/:id
  * @desc    Get single package by ID
  * @params  id: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-packages/:id',
-  menuPackageController.getById.bind(menuPackageController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuPackageController.getById.call(menuPackageController, req, res);
+  })
 );
 
 /**
@@ -162,8 +228,11 @@ router.get(
  */
 router.post(
   '/menu-packages',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuPackageController.create.bind(menuPackageController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await menuPackageController.create.call(menuPackageController, req, res);
+  })
 );
 
 /**
@@ -175,8 +244,12 @@ router.post(
  */
 router.put(
   '/menu-packages/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuPackageController.update.bind(menuPackageController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuPackageController.update.call(menuPackageController, req, res);
+  })
 );
 
 /**
@@ -187,20 +260,12 @@ router.put(
  */
 router.delete(
   '/menu-packages/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuPackageController.delete.bind(menuPackageController)
-);
-
-/**
- * @route   PUT /api/menu-packages/reorder
- * @desc    Reorder packages (drag & drop)
- * @body    ReorderPackagesInput
- * @access  Admin only
- */
-router.put(
-  '/menu-packages/reorder',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuPackageController.reorder.bind(menuPackageController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuPackageController.delete.call(menuPackageController, req, res);
+  })
 );
 
 /**
@@ -212,23 +277,32 @@ router.put(
  */
 router.post(
   '/menu-packages/:id/options',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuPackageController.assignOptions.bind(menuPackageController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuPackageController.assignOptions.call(menuPackageController, req, res);
+  })
 );
 
 // ═══════════════════════════════════════════════════════════════
-// 📋 PACKAGE CATEGORY SETTINGS (NEW)
+// 📋 PACKAGE CATEGORY SETTINGS
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   GET /api/menu-packages/:packageId/categories
  * @desc    Get all category settings for a package
  * @params  packageId: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-packages/:packageId/categories',
-  packageCategoryController.getByPackage.bind(packageCategoryController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('packageId'),
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.getByPackage.call(packageCategoryController, req, res);
+  })
 );
 
 /**
@@ -240,19 +314,28 @@ router.get(
  */
 router.put(
   '/menu-packages/:packageId/categories',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  packageCategoryController.bulkUpdate.bind(packageCategoryController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('packageId'),
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.bulkUpdate.call(packageCategoryController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/package-category-settings/:id
  * @desc    Get single category setting
  * @params  id: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/package-category-settings/:id',
-  packageCategoryController.getById.bind(packageCategoryController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.getById.call(packageCategoryController, req, res);
+  })
 );
 
 /**
@@ -263,8 +346,11 @@ router.get(
  */
 router.post(
   '/package-category-settings',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  packageCategoryController.create.bind(packageCategoryController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.create.call(packageCategoryController, req, res);
+  })
 );
 
 /**
@@ -276,8 +362,12 @@ router.post(
  */
 router.put(
   '/package-category-settings/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  packageCategoryController.update.bind(packageCategoryController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.update.call(packageCategoryController, req, res);
+  })
 );
 
 /**
@@ -288,34 +378,47 @@ router.put(
  */
 router.delete(
   '/package-category-settings/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  packageCategoryController.delete.bind(packageCategoryController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.delete.call(packageCategoryController, req, res);
+  })
 );
 
 // ═══════════════════════════════════════════════════════════════
-// 🍔 ADDON GROUPS (NEW)
+// 🍔 ADDON GROUPS
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * @route   GET /api/addon-groups
  * @desc    List all addon groups (with optional filters)
  * @query   isActive?: boolean, search?: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/addon-groups',
-  addonGroupController.list.bind(addonGroupController)
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await addonGroupController.list.call(addonGroupController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/addon-groups/:id
  * @desc    Get single addon group by ID
  * @params  id: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/addon-groups/:id',
-  addonGroupController.getById.bind(addonGroupController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await addonGroupController.getById.call(addonGroupController, req, res);
+  })
 );
 
 /**
@@ -326,8 +429,11 @@ router.get(
  */
 router.post(
   '/addon-groups',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  addonGroupController.create.bind(addonGroupController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await addonGroupController.create.call(addonGroupController, req, res);
+  })
 );
 
 /**
@@ -339,8 +445,12 @@ router.post(
  */
 router.put(
   '/addon-groups/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  addonGroupController.update.bind(addonGroupController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await addonGroupController.update.call(addonGroupController, req, res);
+  })
 );
 
 /**
@@ -351,8 +461,12 @@ router.put(
  */
 router.delete(
   '/addon-groups/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  addonGroupController.delete.bind(addonGroupController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await addonGroupController.delete.call(addonGroupController, req, res);
+  })
 );
 
 /**
@@ -364,8 +478,12 @@ router.delete(
  */
 router.put(
   '/addon-groups/:id/dishes',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  addonGroupController.assignDishes.bind(addonGroupController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await addonGroupController.assignDishes.call(addonGroupController, req, res);
+  })
 );
 
 /**
@@ -376,8 +494,11 @@ router.put(
  */
 router.delete(
   '/addon-groups/:groupId/dishes/:dishId',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  addonGroupController.removeDish.bind(addonGroupController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await addonGroupController.removeDish.call(addonGroupController, req, res);
+  })
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -388,22 +509,31 @@ router.delete(
  * @route   GET /api/menu-options
  * @desc    List all menu options (with optional filters)
  * @query   category?: string, isActive?: boolean, search?: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-options',
-  menuOptionController.list.bind(menuOptionController)
+  authMiddleware,
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    await menuOptionController.list.call(menuOptionController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/menu-options/:id
  * @desc    Get single option by ID
  * @params  id: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-options/:id',
-  menuOptionController.getById.bind(menuOptionController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuOptionController.getById.call(menuOptionController, req, res);
+  })
 );
 
 /**
@@ -414,8 +544,11 @@ router.get(
  */
 router.post(
   '/menu-options',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuOptionController.create.bind(menuOptionController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await menuOptionController.create.call(menuOptionController, req, res);
+  })
 );
 
 /**
@@ -427,8 +560,12 @@ router.post(
  */
 router.put(
   '/menu-options/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuOptionController.update.bind(menuOptionController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuOptionController.update.call(menuOptionController, req, res);
+  })
 );
 
 /**
@@ -439,8 +576,12 @@ router.put(
  */
 router.delete(
   '/menu-options/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuOptionController.delete.bind(menuOptionController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuOptionController.delete.call(menuOptionController, req, res);
+  })
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -451,22 +592,32 @@ router.delete(
  * @route   GET /api/menu-courses/package/:packageId
  * @desc    List all courses for a package
  * @params  packageId: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-courses/package/:packageId',
-  menuCourseController.listByPackage.bind(menuCourseController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('packageId'),
+  asyncHandler(async (req, res) => {
+    await menuCourseController.listByPackage.call(menuCourseController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/menu-courses/:id
  * @desc    Get single course by ID
  * @params  id: string
- * @access  Public
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/menu-courses/:id',
-  menuCourseController.getById.bind(menuCourseController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuCourseController.getById.call(menuCourseController, req, res);
+  })
 );
 
 /**
@@ -477,8 +628,11 @@ router.get(
  */
 router.post(
   '/menu-courses',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuCourseController.create.bind(menuCourseController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await menuCourseController.create.call(menuCourseController, req, res);
+  })
 );
 
 /**
@@ -490,8 +644,12 @@ router.post(
  */
 router.put(
   '/menu-courses/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuCourseController.update.bind(menuCourseController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuCourseController.update.call(menuCourseController, req, res);
+  })
 );
 
 /**
@@ -502,8 +660,12 @@ router.put(
  */
 router.delete(
   '/menu-courses/:id',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuCourseController.delete.bind(menuCourseController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuCourseController.delete.call(menuCourseController, req, res);
+  })
 );
 
 /**
@@ -515,8 +677,12 @@ router.delete(
  */
 router.post(
   '/menu-courses/:id/dishes',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuCourseController.assignDishes.bind(menuCourseController)
+  authMiddleware,
+  requireAdmin,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await menuCourseController.assignDishes.call(menuCourseController, req, res);
+  })
 );
 
 /**
@@ -527,12 +693,15 @@ router.post(
  */
 router.delete(
   '/menu-courses/:courseId/dishes/:dishId',
-  // requireAdmin,  // TODO: Uncomment when auth ready
-  menuCourseController.removeDish.bind(menuCourseController)
+  authMiddleware,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    await menuCourseController.removeDish.call(menuCourseController, req, res);
+  })
 );
 
 // ═══════════════════════════════════════════════════════════════
-// RESERVATION MENU SELECTION (CLIENT-FACING)
+// RESERVATION MENU SELECTION (STAFF-FACING)
 // ═══════════════════════════════════════════════════════════════
 
 /**
@@ -540,24 +709,32 @@ router.delete(
  * @desc    Select menu for reservation (create snapshot)
  * @params  id: string (reservation ID)
  * @body    SelectMenuInput
- * @access  Authenticated (reservation owner or admin)
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.post(
   '/reservations/:id/select-menu',
-  // authenticate,  // TODO: Uncomment when auth ready
-  reservationMenuController.selectMenu.bind(reservationMenuController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.selectMenu.call(reservationMenuController, req, res);
+  })
 );
 
 /**
  * @route   GET /api/reservations/:id/menu
  * @desc    Get menu snapshot for reservation
  * @params  id: string (reservation ID)
- * @access  Authenticated (reservation owner or admin)
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.get(
   '/reservations/:id/menu',
-  // authenticate,  // TODO: Uncomment when auth ready
-  reservationMenuController.getMenu.bind(reservationMenuController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.getMenu.call(reservationMenuController, req, res);
+  })
 );
 
 /**
@@ -565,36 +742,36 @@ router.get(
  * @desc    Update menu selection (guest counts)
  * @params  id: string (reservation ID)
  * @body    UpdateMenuSelectionInput
- * @access  Authenticated (reservation owner or admin)
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.put(
   '/reservations/:id/menu',
-  // authenticate,  // TODO: Uncomment when auth ready
-  reservationMenuController.updateMenu.bind(reservationMenuController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.updateMenu.call(reservationMenuController, req, res);
+  })
 );
 
 /**
  * @route   DELETE /api/reservations/:id/menu
  * @desc    Remove menu selection
  * @params  id: string (reservation ID)
- * @access  Authenticated (reservation owner or admin)
+ * @access  Staff (ADMIN + EMPLOYEE)
  */
 router.delete(
   '/reservations/:id/menu',
-  // authenticate,  // TODO: Uncomment when auth ready
-  reservationMenuController.deleteMenu.bind(reservationMenuController)
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.deleteMenu.call(reservationMenuController, req, res);
+  })
 );
-
-// ═══════════════════════════════════════════════════════════════
-// NOTE: Dishes routes moved to /routes/dish.routes.ts
-// ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORT ROUTER
 // ═══════════════════════════════════════════════════════════════
 
 export default router;
-
-// Usage in main app.ts:
-// import menuRoutes from './routes/menu.routes';
-// app.use('/api', menuRoutes);
