@@ -1,8 +1,8 @@
 # 🚀 Rezerwacje API Documentation
 
 **Base URL**: `http://localhost:3001/api`  
-**Version**: 1.0.0  
-**Last Updated**: 2026-02-06  
+**Version**: 1.1.0  
+**Last Updated**: 2026-02-14  
 **Status**: ✅ Production Ready
 
 ---
@@ -159,7 +159,7 @@ GET /api/clients/:id
         "id": "uuid",
         "date": "2026-03-15",
         "status": "CONFIRMED",
-        "eventType": { "name": "Ślub" },
+        "eventType": { "name": "Śląb" },
         "hall": { "name": "Sala Bankietowa" }
       }
     ]
@@ -208,6 +208,7 @@ DELETE /api/clients/:id
 ### List All Event Types
 ```bash
 GET /api/event-types
+GET /api/event-types?isActive=true
 ```
 
 **Response**:
@@ -218,27 +219,28 @@ GET /api/event-types
     {
       "id": "uuid",
       "name": "Komunia",
-      "createdAt": "2026-02-06T16:00:00Z"
+      "description": "Przyjęcia komunijne",
+      "color": "#3B82F6",
+      "isActive": true,
+      "createdAt": "2026-02-06T16:00:00Z",
+      "updatedAt": "2026-02-06T16:00:00Z",
+      "_count": {
+        "reservations": 3,
+        "menuTemplates": 1
+      }
     },
     {
       "id": "uuid",
-      "name": "Konferencja",
-      "createdAt": "2026-02-06T16:00:00Z"
-    },
-    {
-      "id": "uuid",
-      "name": "Rocznica",
-      "createdAt": "2026-02-06T16:00:00Z"
-    },
-    {
-      "id": "uuid",
-      "name": "Urodziny",
-      "createdAt": "2026-02-06T16:00:00Z"
-    },
-    {
-      "id": "uuid",
-      "name": "Ślub",
-      "createdAt": "2026-02-06T16:00:00Z"
+      "name": "Śląb",
+      "description": "Śluby i wesela",
+      "color": "#EC4899",
+      "isActive": true,
+      "createdAt": "2026-02-06T16:00:00Z",
+      "updatedAt": "2026-02-06T16:00:00Z",
+      "_count": {
+        "reservations": 15,
+        "menuTemplates": 2
+      }
     }
   ],
   "count": 5
@@ -250,17 +252,41 @@ GET /api/event-types
 GET /api/event-types/:id
 ```
 
-**Response** includes reservation count:
+**Response** includes reservation and template counts:
 ```json
 {
   "success": true,
   "data": {
     "id": "uuid",
-    "name": "Ślub",
+    "name": "Śląb",
+    "description": "Śluby i wesela",
+    "color": "#EC4899",
+    "isActive": true,
     "createdAt": "2026-02-06T16:00:00Z",
+    "updatedAt": "2026-02-14T10:00:00Z",
     "_count": {
-      "reservations": 15
+      "reservations": 15,
+      "menuTemplates": 2
     }
+  }
+}
+```
+
+### Get Event Type Stats
+```bash
+GET /api/event-types/stats
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "total": 8,
+    "active": 6,
+    "inactive": 2,
+    "withReservations": 5,
+    "totalReservations": 42
   }
 }
 ```
@@ -269,15 +295,35 @@ GET /api/event-types/:id
 ```bash
 POST /api/event-types
 {
-  "name": "Ślub"
+  "name": "Śląb",
+  "description": "Śluby i wesela",
+  "color": "#EC4899",
+  "isActive": true
 }
 ```
+
+**Validation**:
+- `name` - Required, unique
+- `description` - Optional
+- `color` - Optional, hex format (e.g. `#FF5733`)
+- `isActive` - Optional, defaults to `true`
 
 ### Update Event Type (ADMIN)
 ```bash
 PUT /api/event-types/:id
 {
-  "name": "Ślub i Wesele"
+  "name": "Śląb i Wesele",
+  "description": "Pełne wesela z ceremonią",
+  "color": "#DB2777",
+  "isActive": true
+}
+```
+
+### Toggle Event Type Active Status (ADMIN)
+```bash
+PUT /api/event-types/:id
+{
+  "isActive": false
 }
 ```
 
@@ -286,7 +332,7 @@ PUT /api/event-types/:id
 DELETE /api/event-types/:id
 ```
 
-**Note**: Cannot delete event type used in reservations.
+**Note**: Cannot delete event type used in reservations or menu templates. Deactivate instead.
 
 ---
 
@@ -334,7 +380,7 @@ GET /api/reservations?archived=true
       },
       "eventType": {
         "id": "uuid",
-        "name": "Ślub"
+        "name": "Śląb"
       },
       "createdByUser": {
         "id": "uuid",
@@ -386,7 +432,7 @@ POST /api/reservations
     "id": "uuid",
     "totalPrice": "4000.00",
     "status": "PENDING",
-    ...
+    "...": "..."
   },
   "message": "Reservation created successfully"
 }
@@ -454,6 +500,7 @@ DELETE /api/reservations/:id
 | Delete | ✅ | ❌ | ❌ |
 | **Event Types** |
 | List/Get | ✅ | ✅ | ✅ |
+| Stats | ✅ | ✅ | ❌ |
 | Create | ✅ | ❌ | ❌ |
 | Update | ✅ | ❌ | ❌ |
 | Delete | ✅ | ❌ | ❌ |
@@ -516,8 +563,8 @@ DELETE /api/reservations/:id
 ```json
 {
   "success": true,
-  "data": { /* response data */ },
-  "message": "Operation completed successfully" // optional
+  "data": { "/* response data */": "" },
+  "message": "Operation completed successfully"
 }
 ```
 
@@ -525,7 +572,7 @@ DELETE /api/reservations/:id
 ```json
 {
   "success": true,
-  "data": [ /* array of items */ ],
+  "data": [],
   "count": 10
 }
 ```
@@ -588,10 +635,10 @@ curl -X POST http://localhost:3001/api/reservations \
 - ✅ Authentication & Authorization
 - ✅ Hall Management API (5 endpoints)
 - ✅ Client Management API (5 endpoints)
-- ✅ Event Type Management API (5 endpoints)
+- ✅ Event Type Management API (6 endpoints incl. stats)
 - ✅ Reservation Management API (6 endpoints)
 
-**Total**: 21 REST API endpoints
+**Total**: 22 REST API endpoints
 
 ### Features Implemented
 - ✅ JWT Authentication
@@ -602,13 +649,14 @@ curl -X POST http://localhost:3001/api/reservations \
 - ✅ Complete audit trail (ReservationHistory)
 - ✅ Comprehensive validation
 - ✅ Business rules enforcement
+- ✅ Event type colors & descriptions
+- ✅ Event type activation/deactivation
 
 ---
 
 ## 📈 API Statistics
 
-- **Modules**: 4 (Auth, Halls, Clients, Event Types, Reservations)
-- **Endpoints**: 21
-- **Story Points**: 60/60 (100%)
-- **Version**: 1.0.0
+- **Modules**: 5 (Auth, Halls, Clients, Event Types, Reservations)
+- **Endpoints**: 22
+- **Version**: 1.1.0
 - **Status**: ✅ Production Ready
