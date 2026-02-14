@@ -4,9 +4,6 @@ export interface Hall {
   id: string
   name: string
   capacity: number
-  pricePerPerson: number
-  pricePerChild?: number
-  pricePerToddler?: number
   description?: string
   amenities: string[]
   images: string[]
@@ -31,9 +28,6 @@ export interface HallAvailability {
 export interface CreateHallInput {
   name: string
   capacity: number
-  pricePerPerson: number
-  pricePerChild?: number
-  pricePerToddler?: number
   description?: string
   amenities?: string[]
   images?: string[]
@@ -43,9 +37,6 @@ export interface CreateHallInput {
 export interface UpdateHallInput {
   name?: string
   capacity?: number
-  pricePerPerson?: number
-  pricePerChild?: number
-  pricePerToddler?: number
   description?: string
   amenities?: string[]
   images?: string[]
