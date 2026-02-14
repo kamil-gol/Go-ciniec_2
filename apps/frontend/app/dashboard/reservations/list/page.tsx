@@ -43,8 +43,8 @@ export default function ReservationsListPage() {
     } catch (error: any) {
       console.error('Error loading reservations:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji',
+        title: 'Błąd',
+        description: 'Nie udało się załadować rezerwacji',
         variant: 'destructive',
       })
     } finally {
@@ -70,7 +70,7 @@ export default function ReservationsListPage() {
       <PageHero
         accent={accent}
         title="Rezerwacje"
-        subtitle="Zarz\u0105dzaj rezerwacjami sal weselnych"
+        subtitle="Zarządzaj rezerwacjami sal weselnych"
         icon={Calendar}
         action={
           <Button
@@ -86,10 +86,10 @@ export default function ReservationsListPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="\u0141\u0105cznie rezerwacji" icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
         <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekuj\u0105ce" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesi\u0105c" value={stats.thisMonth} subtitle="Wydarze\u0144 w tym miesi\u0105cu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
       </div>
 
       {/* Controls bar - same as calendar */}
@@ -147,7 +147,7 @@ export default function ReservationsListPage() {
       <Card>
         <CardContent className="p-6">
           {loading ? (
-            <LoadingState variant="skeleton" rows={4} message="\u0141adowanie rezerwacji..." />
+            <LoadingState variant="skeleton" rows={4} message="Ładowanie rezerwacji..." />
           ) : (
             <ReservationsList
               reservations={reservations}
