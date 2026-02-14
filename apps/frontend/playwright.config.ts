@@ -4,7 +4,12 @@ import { defineConfig, devices } from '@playwright/test';
  * E2E Test Configuration for Rezerwacje System
  * 
  * See https://playwright.dev/docs/test-configuration
+ * 
+ * On Alpine Linux (Docker), set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
  */
+
+const chromiumExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+
 export default defineConfig({
   testDir: './e2e/specs',
   
@@ -64,39 +69,50 @@ export default defineConfig({
       use: { 
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
+        // Use system Chromium when PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set (Alpine/Docker)
+        ...(chromiumExecutable ? {
+          launchOptions: {
+            executablePath: chromiumExecutable,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+            ],
+          },
+        } : {}),
       },
     },
     
-    {
-      name: 'firefox',
-      use: { 
-        ...devices['Desktop Firefox'],
-        viewport: { width: 1920, height: 1080 },
+    // Firefox & WebKit only when NOT using system Chromium (i.e., not in Docker Alpine)
+    ...(!chromiumExecutable ? [
+      {
+        name: 'firefox',
+        use: { 
+          ...devices['Desktop Firefox'],
+          viewport: { width: 1920, height: 1080 },
+        },
       },
-    },
-    
-    {
-      name: 'webkit',
-      use: { 
-        ...devices['Desktop Safari'],
-        viewport: { width: 1920, height: 1080 },
+      {
+        name: 'webkit',
+        use: { 
+          ...devices['Desktop Safari'],
+          viewport: { width: 1920, height: 1080 },
+        },
       },
-    },
-    
-    /* Test against mobile viewports */
-    {
-      name: 'mobile-chrome',
-      use: { 
-        ...devices['Pixel 5'],
+      {
+        name: 'mobile-chrome',
+        use: { 
+          ...devices['Pixel 5'],
+        },
       },
-    },
-    
-    {
-      name: 'mobile-safari',
-      use: { 
-        ...devices['iPhone 12'],
+      {
+        name: 'mobile-safari',
+        use: { 
+          ...devices['iPhone 12'],
+        },
       },
-    },
+    ] : []),
   ],
   
   /* Run your local dev server before starting the tests */
