@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,7 +10,7 @@ import { ReservationStatus } from '@/types'
 import {
   Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
-  Phone, Mail
+  Phone, Mail, CheckCircle2, AlertTriangle
 } from 'lucide-react'
 import { ReservationDetailsModal } from './reservation-details-modal'
 import { EditReservationModal } from './edit-reservation-modal'
@@ -22,6 +22,8 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
 import { LoadingState } from '@/components/shared'
+import { depositsApi } from '@/lib/api/deposits'
+import type { Deposit } from '@/lib/api/deposits'
 
 const accent = moduleAccents.reservations
 
@@ -57,17 +59,67 @@ function getGuestBreakdown(reservation: any): {
   return { adults, children, toddlers, total }
 }
 
+// ═══ Deposit Badge Helper ═══
+function DepositBadge({ deposits }: { deposits: Deposit[] }) {
+  const active = deposits.filter(d => d.status !== 'CANCELLED')
+  if (active.length === 0) return null
+
+  const allPaid = active.every(d => d.status === 'PAID')
+  const hasOverdue = active.some(d => d.status === 'OVERDUE')
+  const totalAmount = active.reduce((s, d) => s + Number(d.amount), 0)
+  const paidAmount = active.reduce((s, d) => s + Number(d.paidAmount || 0), 0)
+
+  if (allPaid) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800">
+        <CheckCircle2 className="h-3 w-3" />
+        Zaliczka opłacona
+      </span>
+    )
+  }
+
+  if (hasOverdue) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800 animate-pulse">
+        <AlertTriangle className="h-3 w-3" />
+        Zaległa: {totalAmount.toLocaleString('pl-PL')} zł
+      </span>
+    )
+  }
+
+  // Pending
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
+      <Clock className="h-3 w-3" />
+      Zaliczka: {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} / ` : ''}{totalAmount.toLocaleString('pl-PL')} zł
+    </span>
+  )
+}
+
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null)
+  const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
 
   const { data, isLoading, error, refetch } = useReservations({
     page,
     pageSize: 20,
     status: statusFilter === 'ALL' ? undefined : statusFilter,
   })
+
+  // Fetch all deposits once and group by reservationId
+  useEffect(() => {
+    depositsApi.getAll().then(deposits => {
+      const map: Record<string, Deposit[]> = {}
+      deposits.forEach(d => {
+        if (!map[d.reservationId]) map[d.reservationId] = []
+        map[d.reservationId].push(d)
+      })
+      setDepositMap(map)
+    }).catch(console.error)
+  }, [])
 
   const statusOptions = [
     { value: 'ALL', label: 'Wszystkie statusy' },
@@ -217,6 +269,7 @@ export function ReservationsList() {
                 <div className="grid gap-3">
                   {dateReservations.map((reservation: any) => {
                     const guestInfo = getGuestBreakdown(reservation)
+                    const resDeposits = depositMap[reservation.id] || []
 
                     return (
                       <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
@@ -224,7 +277,7 @@ export function ReservationsList() {
                           'p-6',
                           `bg-gradient-to-r ${accent.gradientSubtle}`
                         )}>
-                          {/* Header: Time + Status */}
+                          {/* Header: Time + Status + Deposit Badge */}
                           <div className="flex items-start justify-between gap-4 mb-4">
                             <div className="flex items-center gap-3">
                               <div className={cn(
@@ -243,9 +296,12 @@ export function ReservationsList() {
                                 </div>
                               </div>
                             </div>
-                            <Badge className={getStatusColor(reservation.status)}>
-                              {getStatusLabel(reservation.status)}
-                            </Badge>
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                              <DepositBadge deposits={resDeposits} />
+                              <Badge className={getStatusColor(reservation.status)}>
+                                {getStatusLabel(reservation.status)}
+                              </Badge>
+                            </div>
                           </div>
 
                           <div className="my-4 border-t border-neutral-200/50 dark:border-neutral-700/30" />

@@ -1,6 +1,8 @@
 /**
  * Menu Snapshot Service
  * Creates and manages immutable menu snapshots for reservations.
+ * FIX: dishSelections enriched with dish/category names from DB
+ * FIX: menuTemplateId/packageId saved in DB columns (not just JSONB)
  */
 
 import { Prisma } from '@prisma/client';
@@ -21,8 +23,63 @@ export class MenuSnapshotService {
     if (!pkg) throw new Error('Package not found');
 
     const optionIds = input.selectedOptions.map(opt => opt.optionId);
-    const options = await prisma.menuOption.findMany({ where: { id: { in: optionIds } } });
+    const options = optionIds.length > 0 
+      ? await prisma.menuOption.findMany({ where: { id: { in: optionIds } } })
+      : [];
     if (options.length !== optionIds.length) throw new Error('Some options not found');
+
+    // ── Enrich dishSelections with names from DB ──
+    let enrichedDishSelections: any[] = [];
+    if (input.dishSelections && input.dishSelections.length > 0) {
+      // Collect all dishIds and categoryIds
+      const allDishIds: string[] = [];
+      const allCategoryIds: string[] = [];
+      
+      for (const catSel of input.dishSelections) {
+        allCategoryIds.push(catSel.categoryId);
+        for (const dish of catSel.dishes) {
+          allDishIds.push(dish.dishId);
+        }
+      }
+
+      // Fetch dishes and categories in bulk
+      const [dishes, categories] = await Promise.all([
+        allDishIds.length > 0 
+          ? prisma.dish.findMany({ 
+              where: { id: { in: allDishIds } },
+              select: { id: true, name: true, description: true, allergens: true }
+            })
+          : [],
+        allCategoryIds.length > 0
+          ? prisma.dishCategory.findMany({
+              where: { id: { in: allCategoryIds } },
+              select: { id: true, name: true, icon: true }
+            })
+          : []
+      ]);
+
+      const dishMap = new Map(dishes.map(d => [d.id, d]));
+      const categoryMap = new Map(categories.map(c => [c.id, c]));
+
+      enrichedDishSelections = input.dishSelections.map(catSel => {
+        const category = categoryMap.get(catSel.categoryId);
+        return {
+          categoryId: catSel.categoryId,
+          categoryName: category?.name || 'Nieznana kategoria',
+          categoryIcon: category?.icon || null,
+          dishes: catSel.dishes.map(dish => {
+            const dishData = dishMap.get(dish.dishId);
+            return {
+              dishId: dish.dishId,
+              dishName: dishData?.name || 'Nieznane danie',
+              description: dishData?.description || null,
+              allergens: dishData?.allergens || [],
+              quantity: dish.quantity
+            };
+          })
+        };
+      });
+    }
 
     const snapshotData: MenuSnapshotData = {
       templateId: pkg.menuTemplateId,
@@ -46,7 +103,9 @@ export class MenuSnapshotService {
           priceAmount: option.priceAmount.toNumber(), quantity: selectedOpt.quantity,
           icon: option.icon
         };
-      })
+      }),
+      // Store enriched dish selections with names
+      dishSelections: enrichedDishSelections
     };
 
     const priceBreakdown = this.calculatePriceBreakdown(snapshotData, input.adultsCount, input.childrenCount, input.toddlersCount);
@@ -54,6 +113,8 @@ export class MenuSnapshotService {
     const snapshot = await prisma.reservationMenuSnapshot.create({
       data: {
         reservationId: input.reservationId,
+        menuTemplateId: pkg.menuTemplateId,
+        packageId: pkg.id,
         menuData: snapshotData as any,
         packagePrice: priceBreakdown.packageCost.subtotal,
         optionsPrice: priceBreakdown.optionsSubtotal,
@@ -66,6 +127,22 @@ export class MenuSnapshotService {
     });
 
     return { snapshot, priceBreakdown };
+  }
+
+  /**
+   * Replace entire snapshot (delete old + create new).
+   * Used when user changes package, options, or dishes via "Zmien" flow.
+   */
+  async replaceSnapshot(input: CreateMenuSnapshotInput) {
+    const existing = await prisma.reservationMenuSnapshot.findUnique({
+      where: { reservationId: input.reservationId }
+    });
+    if (existing) {
+      await prisma.reservationMenuSnapshot.delete({
+        where: { reservationId: input.reservationId }
+      });
+    }
+    return this.createSnapshot(input);
   }
 
   calculatePriceBreakdown(

@@ -2,6 +2,7 @@
  * Menu System React Query Hooks
  * 
  * Custom hooks for data fetching and mutations
+ * UPDATED: Phase C — all mutation hooks invalidate both menu AND reservation queries
  */
 
 import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
@@ -39,12 +40,6 @@ export const menuKeys = {
 // MENU TEMPLATES - QUERIES
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Get all menu templates
- * 
- * @example
- * const { data, isLoading } = useMenuTemplates({ eventTypeId: '...' });
- */
 export function useMenuTemplates(filters?: MenuTemplateFilters) {
   return useQuery({
     queryKey: [...menuKeys.templates(), filters],
@@ -53,12 +48,6 @@ export function useMenuTemplates(filters?: MenuTemplateFilters) {
   });
 }
 
-/**
- * Get single menu template
- * 
- * @example
- * const { data } = useMenuTemplate(templateId);
- */
 export function useMenuTemplate(id: string | undefined) {
   return useQuery({
     queryKey: menuKeys.template(id!),
@@ -68,12 +57,6 @@ export function useMenuTemplate(id: string | undefined) {
   });
 }
 
-/**
- * Get active menu template for event type
- * 
- * @example
- * const { data } = useActiveMenuTemplate(eventTypeId);
- */
 export function useActiveMenuTemplate(eventTypeId: string | undefined) {
   return useQuery({
     queryKey: menuKeys.activeTemplate(eventTypeId!),
@@ -87,13 +70,6 @@ export function useActiveMenuTemplate(eventTypeId: string | undefined) {
 // MENU TEMPLATES - MUTATIONS
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Create menu template
- * 
- * @example
- * const mutation = useCreateTemplate();
- * mutation.mutate({ name: 'New Template', ... });
- */
 export function useCreateTemplate() {
   const queryClient = useQueryClient();
 
@@ -105,13 +81,6 @@ export function useCreateTemplate() {
   });
 }
 
-/**
- * Update menu template
- * 
- * @example
- * const mutation = useUpdateTemplate();
- * mutation.mutate({ id: '...', data: {...} });
- */
 export function useUpdateTemplate() {
   const queryClient = useQueryClient();
 
@@ -125,13 +94,6 @@ export function useUpdateTemplate() {
   });
 }
 
-/**
- * Delete menu template
- * 
- * @example
- * const mutation = useDeleteTemplate();
- * mutation.mutate(templateId);
- */
 export function useDeleteTemplate() {
   const queryClient = useQueryClient();
 
@@ -147,12 +109,6 @@ export function useDeleteTemplate() {
 // MENU PACKAGES - QUERIES
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Get packages for menu template
- * 
- * @example
- * const { data } = useMenuPackages(templateId);
- */
 export function useMenuPackages(templateId: string | undefined | null) {
   return useQuery({
     queryKey: menuKeys.packages(templateId!),
@@ -162,12 +118,6 @@ export function useMenuPackages(templateId: string | undefined | null) {
   });
 }
 
-/**
- * Get single package
- * 
- * @example
- * const { data } = useMenuPackage(packageId);
- */
 export function useMenuPackage(id: string | undefined) {
   return useQuery({
     queryKey: menuKeys.package(id!),
@@ -177,12 +127,6 @@ export function useMenuPackage(id: string | undefined) {
   });
 }
 
-/**
- * Get categories with dishes for a package
- * 
- * @example
- * const { data } = usePackageCategories(packageId);
- */
 export function usePackageCategories(packageId: string | undefined) {
   return useQuery({
     queryKey: menuKeys.packageCategories(packageId!),
@@ -196,20 +140,12 @@ export function usePackageCategories(packageId: string | undefined) {
 // MENU PACKAGES - MUTATIONS
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Create menu package
- * 
- * @example
- * const mutation = useCreatePackage();
- * mutation.mutate({ templateId: '...', name: 'Package', ... });
- */
 export function useCreatePackage() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (input: any) => menuApi.createPackage(input),
     onSuccess: (response) => {
-      // Invalidate packages list for this template
       const templateId = response.data.templateId;
       queryClient.invalidateQueries({ queryKey: menuKeys.packages(templateId) });
       queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
@@ -217,13 +153,6 @@ export function useCreatePackage() {
   });
 }
 
-/**
- * Update menu package
- * 
- * @example
- * const mutation = useUpdatePackage();
- * mutation.mutate({ id: '...', data: {...} });
- */
 export function useUpdatePackage() {
   const queryClient = useQueryClient();
 
@@ -238,13 +167,6 @@ export function useUpdatePackage() {
   });
 }
 
-/**
- * Delete menu package
- * 
- * @example
- * const mutation = useDeletePackage();
- * mutation.mutate({ id: '...', templateId: '...' });
- */
 export function useDeletePackage() {
   const queryClient = useQueryClient();
 
@@ -262,12 +184,6 @@ export function useDeletePackage() {
 // MENU OPTIONS - QUERIES
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Get all menu options
- * 
- * @example
- * const { data } = useMenuOptions({ category: 'Alkohol' });
- */
 export function useMenuOptions(filters?: MenuOptionFilters) {
   return useQuery({
     queryKey: [...menuKeys.options(), filters],
@@ -276,12 +192,6 @@ export function useMenuOptions(filters?: MenuOptionFilters) {
   });
 }
 
-/**
- * Get single option
- * 
- * @example
- * const { data } = useMenuOption(optionId);
- */
 export function useMenuOption(id: string | undefined) {
   return useQuery({
     queryKey: menuKeys.option(id!),
@@ -295,13 +205,6 @@ export function useMenuOption(id: string | undefined) {
 // MENU OPTIONS - MUTATIONS
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Create menu option
- * 
- * @example
- * const mutation = useCreateOption();
- * mutation.mutate({ name: 'DJ', priceAmount: 500, ... });
- */
 export function useCreateOption() {
   const queryClient = useQueryClient();
 
@@ -313,13 +216,6 @@ export function useCreateOption() {
   });
 }
 
-/**
- * Update menu option
- * 
- * @example
- * const mutation = useUpdateOption();
- * mutation.mutate({ id: '...', data: {...} });
- */
 export function useUpdateOption() {
   const queryClient = useQueryClient();
 
@@ -333,13 +229,6 @@ export function useUpdateOption() {
   });
 }
 
-/**
- * Delete menu option
- * 
- * @example
- * const mutation = useDeleteOption();
- * mutation.mutate(optionId);
- */
 export function useDeleteOption() {
   const queryClient = useQueryClient();
 
@@ -355,17 +244,10 @@ export function useDeleteOption() {
 // EVENT TYPES
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Get all event types
- * 
- * @example
- * const { data } = useEventTypes();
- */
 export function useEventTypes() {
   return useQuery({
     queryKey: menuKeys.eventTypes(),
     queryFn: async () => {
-      // Fetch from backend API with fallback URL
       const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const response = await fetch(`${baseURL}/event-types`);
       if (!response.ok) throw new Error('Failed to fetch event types');
@@ -381,15 +263,7 @@ export function useEventTypes() {
 
 /**
  * Get reservation menu with price breakdown
- * 
- * IMPORTANT: This returns null when menu is not selected (not an error).
- * Use `isLoading` to distinguish between loading state and "no menu" state.
- * 
- * @example
- * const { data, isLoading } = useReservationMenu(reservationId);
- * if (!isLoading && !data) {
- *   // Menu not selected - show "Add Menu" button
- * }
+ * Returns null when menu is not selected (not an error).
  */
 export function useReservationMenu(reservationId: string | undefined) {
   return useQuery({
@@ -399,7 +273,6 @@ export function useReservationMenu(reservationId: string | undefined) {
         const response = await menuApi.getReservationMenu(reservationId!);
         return response;
       } catch (error: any) {
-        // If menu is not selected, return null instead of throwing error
         if (
           error.response?.status === 404 ||
           error.response?.data?.error?.includes('Menu not selected') ||
@@ -408,22 +281,17 @@ export function useReservationMenu(reservationId: string | undefined) {
           console.log('ℹ️ Menu not selected for reservation:', reservationId);
           return null;
         }
-        // For other errors, throw them
         throw error;
       }
     },
     select: (response) => response?.data || null,
     enabled: !!reservationId,
-    retry: false, // Don't retry when menu is not selected
+    retry: false,
   });
 }
 
 /**
- * Select menu for reservation (mutation)
- * 
- * @example
- * const mutation = useSelectMenu();
- * mutation.mutate({ reservationId, selection });
+ * Select menu for reservation
  */
 export function useSelectMenu() {
   const queryClient = useQueryClient();
@@ -438,11 +306,9 @@ export function useSelectMenu() {
     }) => menuApi.selectMenu(reservationId, selection),
     
     onSuccess: (data, variables) => {
-      // Invalidate reservation menu cache
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(variables.reservationId),
       });
-      // Also invalidate reservation details
       queryClient.invalidateQueries({
         queryKey: ['reservations', variables.reservationId],
       });
@@ -451,11 +317,7 @@ export function useSelectMenu() {
 }
 
 /**
- * Update reservation menu (mutation)
- * 
- * @example
- * const mutation = useUpdateReservationMenu();
- * mutation.mutate({ reservationId, selection });
+ * Update reservation menu
  */
 export function useUpdateReservationMenu() {
   const queryClient = useQueryClient();
@@ -470,11 +332,9 @@ export function useUpdateReservationMenu() {
     }) => menuApi.updateMenu(reservationId, selection),
     
     onSuccess: (data, variables) => {
-      // Invalidate reservation menu cache
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(variables.reservationId),
       });
-      // Also invalidate reservation details
       queryClient.invalidateQueries({
         queryKey: ['reservations', variables.reservationId],
       });
@@ -483,11 +343,7 @@ export function useUpdateReservationMenu() {
 }
 
 /**
- * Delete reservation menu (mutation)
- * 
- * @example
- * const mutation = useDeleteReservationMenu();
- * mutation.mutate(reservationId);
+ * Delete reservation menu
  */
 export function useDeleteReservationMenu() {
   const queryClient = useQueryClient();
@@ -496,11 +352,9 @@ export function useDeleteReservationMenu() {
     mutationFn: (reservationId: string) => menuApi.removeMenu(reservationId),
     
     onSuccess: (data, reservationId) => {
-      // Invalidate reservation menu cache
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(reservationId),
       });
-      // Also invalidate reservation details
       queryClient.invalidateQueries({
         queryKey: ['reservations', reservationId],
       });
@@ -509,11 +363,8 @@ export function useDeleteReservationMenu() {
 }
 
 /**
- * Update guest counts for reservation menu (mutation)
- * 
- * @example
- * const mutation = useUpdateGuestCounts();
- * mutation.mutate({ reservationId, counts });
+ * Update guest counts for reservation menu
+ * Phase C: Now also invalidates reservation query so totalPrice refreshes
  */
 export function useUpdateGuestCounts() {
   const queryClient = useQueryClient();
@@ -532,20 +383,25 @@ export function useUpdateGuestCounts() {
     }) => menuApi.updateGuestCounts(reservationId, counts),
     
     onSuccess: (data, variables) => {
-      // Invalidate reservation menu cache
+      // Invalidate BOTH menu and reservation caches
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(variables.reservationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['reservations', variables.reservationId],
+      });
+      // Also invalidate the reservations list
+      queryClient.invalidateQueries({
+        queryKey: ['reservations'],
+        exact: false,
       });
     },
   });
 }
 
 /**
- * Remove menu selection from reservation (mutation)
- * 
- * @example
- * const mutation = useRemoveMenu();
- * mutation.mutate(reservationId);
+ * Remove menu selection from reservation
+ * Phase C: Now also invalidates reservation query for price sync
  */
 export function useRemoveMenu() {
   const queryClient = useQueryClient();
@@ -554,9 +410,12 @@ export function useRemoveMenu() {
     mutationFn: (reservationId: string) => menuApi.removeMenu(reservationId),
     
     onSuccess: (data, reservationId) => {
-      // Invalidate reservation menu cache
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(reservationId),
+      });
+      // Also invalidate reservation to sync totalPrice
+      queryClient.invalidateQueries({
+        queryKey: ['reservations', reservationId],
       });
     },
   });
@@ -566,12 +425,6 @@ export function useRemoveMenu() {
 // HELPER HOOKS
 // ════════════════════════════════════════════════════════════════════
 
-/**
- * Get options grouped by category
- * 
- * @example
- * const { data: groupedOptions } = useOptionsGroupedByCategory();
- */
 export function useOptionsGroupedByCategory() {
   return useQuery({
     queryKey: [...menuKeys.options(), 'grouped'],
@@ -579,7 +432,6 @@ export function useOptionsGroupedByCategory() {
       const response = await menuApi.getOptions({ isActive: true });
       const options = response.data;
 
-      // Group by category
       const grouped = options.reduce((acc, option) => {
         const category = option.category;
         if (!acc[category]) {
@@ -594,12 +446,6 @@ export function useOptionsGroupedByCategory() {
   });
 }
 
-/**
- * Check if reservation has menu selected
- * 
- * @example
- * const hasMenu = useHasReservationMenu(reservationId);
- */
 export function useHasReservationMenu(reservationId: string | undefined) {
   const { data, isLoading } = useReservationMenu(reservationId);
   return {

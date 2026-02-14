@@ -1,5 +1,6 @@
 'use client'
 
+import { CalendarDays, Building2, ExternalLink } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -10,114 +11,178 @@ import {
 } from '@/components/ui/table'
 import { DepositStatusBadge } from './deposit-status-badge'
 import { DepositActions } from './deposit-actions'
-import type { Deposit } from '@/lib/api/deposits'
+import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
+import { ArrowDownUp, Banknote, Smartphone, CreditCard } from 'lucide-react'
+import Link from 'next/link'
 
 interface DepositsListProps {
   deposits: Deposit[]
   onUpdate: () => void
 }
 
+const paymentMethodConfig: Record<PaymentMethod, { label: string; icon: React.ElementType; className: string }> = {
+  TRANSFER: { label: 'Przelew', icon: ArrowDownUp, className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' },
+  CASH: { label: 'Gotówka', icon: Banknote, className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800' },
+  BLIK: { label: 'BLIK', icon: Smartphone, className: 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800' },
+  CARD: { label: 'Karta', icon: CreditCard, className: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800' },
+}
+
+function getDaysInfo(dateStr: string): { text: string; className: string } | null {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(dateStr)
+  due.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return { text: 'dzisiaj', className: 'text-amber-600 dark:text-amber-400' }
+  if (diffDays === 1) return { text: 'jutro', className: 'text-amber-600 dark:text-amber-400' }
+  if (diffDays > 1 && diffDays <= 7) return { text: `za ${diffDays} dni`, className: 'text-blue-600 dark:text-blue-400' }
+  if (diffDays < 0) return { text: `${Math.abs(diffDays)} dni temu`, className: 'text-red-600 dark:text-red-400' }
+  return null
+}
+
 export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
-  const formatMoney = (value: string | number) => {
-    return Number(value).toLocaleString('pl-PL', { minimumFractionDigits: 0 }) + ' zł'
-  }
-
-  const isOverdue = (deposit: Deposit) => {
-    if (deposit.status === 'PAID' || deposit.status === 'CANCELLED') return false
-    return new Date(deposit.dueDate) < new Date()
-  }
-
   return (
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead>Klient</TableHead>
-          <TableHead>Wydarzenie</TableHead>
-          <TableHead>Sala</TableHead>
-          <TableHead className="text-right">Kwota</TableHead>
-          <TableHead className="text-right">Zapłacono</TableHead>
-          <TableHead>Termin</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Metoda</TableHead>
-          <TableHead className="w-[50px]"></TableHead>
+        <TableRow className="bg-neutral-50/50 dark:bg-neutral-800/50">
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Klient</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Wydarzenie</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Sala</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Kwota</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Wpłacono</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Termin</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Status</TableHead>
+          <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Metoda</TableHead>
+          <TableHead className="w-10"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {deposits.map((deposit) => (
-          <TableRow
-            key={deposit.id}
-            className={isOverdue(deposit) ? 'bg-red-50/50 dark:bg-red-900/10' : ''}
-          >
-            <TableCell className="font-medium">
-              {deposit.reservation?.client ? (
-                <div>
-                  <p className="font-semibold text-sm">
-                    {deposit.reservation.client.firstName} {deposit.reservation.client.lastName}
-                  </p>
-                  <p className="text-xs text-neutral-500">
-                    {deposit.reservation.client.phone || deposit.reservation.client.email}
-                  </p>
-                </div>
-              ) : (
-                <span className="text-neutral-400">—</span>
-              )}
-            </TableCell>
-            <TableCell>
-              {deposit.reservation?.eventType ? (
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: deposit.reservation.eventType.color }}
-                  />
-                  <div>
-                    <p className="text-sm">{deposit.reservation.eventType.name}</p>
-                    <p className="text-xs text-neutral-500">
-                      {deposit.reservation.date ? formatDate(deposit.reservation.date) : ''}
+        {deposits.map((deposit) => {
+          const client = deposit.reservation?.client
+          const hall = deposit.reservation?.hall
+          const eventType = deposit.reservation?.eventType
+          const eventDate = deposit.reservation?.date
+          const paidAmount = Number(deposit.paidAmount || 0)
+          const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
+            ? getDaysInfo(deposit.dueDate)
+            : null
+
+          const initials = client
+            ? `${client.firstName[0]}${client.lastName[0]}`.toUpperCase()
+            : '?'
+
+          const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
+
+          return (
+            <TableRow
+              key={deposit.id}
+              className="group hover:bg-rose-50/40 dark:hover:bg-rose-900/10 transition-colors"
+            >
+              {/* Client — clickable link to reservation */}
+              <TableCell>
+                <Link href={reservationLink} className="flex items-center gap-3 group/link">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate group-hover/link:text-rose-600 dark:group-hover/link:text-rose-400 transition-colors">
+                      {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
+                      <ExternalLink className="inline h-3 w-3 ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                    </p>
+                    <p className="text-xs text-neutral-500 truncate">
+                      {client?.phone || ''}
                     </p>
                   </div>
+                </Link>
+              </TableCell>
+
+              {/* Event — clickable link to reservation */}
+              <TableCell>
+                <Link href={reservationLink} className="flex items-center gap-2 group/link">
+                  {eventType && (
+                    <span
+                      className="h-2.5 w-2.5 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
+                      style={{ backgroundColor: eventType.color || '#6b7280' }}
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate group-hover/link:text-rose-600 dark:group-hover/link:text-rose-400 transition-colors">
+                      {eventType?.name || 'Brak'}
+                    </p>
+                    {eventDate && (
+                      <p className="text-xs text-neutral-500 flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              </TableCell>
+
+              {/* Hall */}
+              <TableCell>
+                <div className="flex items-center gap-1.5 text-sm">
+                  <Building2 className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="truncate">{hall?.name || 'Brak'}</span>
                 </div>
-              ) : (
-                <span className="text-neutral-400">—</span>
-              )}
-            </TableCell>
-            <TableCell className="text-sm">
-              {deposit.reservation?.hall?.name || '—'}
-            </TableCell>
-            <TableCell className="text-right font-semibold">
-              {formatMoney(deposit.amount)}
-            </TableCell>
-            <TableCell className="text-right">
-              <span className={Number(deposit.paidAmount) > 0 ? 'text-emerald-600 font-medium' : 'text-neutral-400'}>
-                {formatMoney(deposit.paidAmount)}
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={isOverdue(deposit) ? 'text-red-600 font-semibold' : 'text-sm'}>
-                {formatDate(deposit.dueDate)}
-              </span>
-            </TableCell>
-            <TableCell>
-              <DepositStatusBadge status={deposit.status} />
-            </TableCell>
-            <TableCell className="text-sm text-neutral-500">
-              {deposit.paymentMethod === 'TRANSFER' && 'Przelew'}
-              {deposit.paymentMethod === 'CASH' && 'Gotówka'}
-              {deposit.paymentMethod === 'BLIK' && 'BLIK'}
-              {!deposit.paymentMethod && '—'}
-            </TableCell>
-            <TableCell>
-              <DepositActions deposit={deposit} onUpdate={onUpdate} />
-            </TableCell>
-          </TableRow>
-        ))}
+              </TableCell>
+
+              {/* Amount */}
+              <TableCell className="text-right">
+                <span className="font-semibold tabular-nums text-sm">
+                  {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                </span>
+              </TableCell>
+
+              {/* Paid */}
+              <TableCell className="text-right">
+                <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                  {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
+                </span>
+              </TableCell>
+
+              {/* Due Date */}
+              <TableCell>
+                <div>
+                  <p className={`text-sm tabular-nums ${daysInfo && deposit.status === 'OVERDUE' ? 'text-red-600 dark:text-red-400 font-medium' : ''}`}>
+                    {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                  {daysInfo && (
+                    <p className={`text-xs ${daysInfo.className}`}>{daysInfo.text}</p>
+                  )}
+                </div>
+              </TableCell>
+
+              {/* Status */}
+              <TableCell>
+                <DepositStatusBadge status={deposit.status} />
+              </TableCell>
+
+              {/* Payment Method */}
+              <TableCell>
+                {deposit.paymentMethod ? (() => {
+                  const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
+                  if (!config) return <span className="text-sm text-neutral-400">—</span>
+                  const Icon = config.icon
+                  return (
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
+                      <Icon className="h-3 w-3" />
+                      {config.label}
+                    </span>
+                  )
+                })() : (
+                  <span className="text-sm text-neutral-300 dark:text-neutral-600">—</span>
+                )}
+              </TableCell>
+
+              {/* Actions */}
+              <TableCell>
+                <DepositActions deposit={deposit} onUpdate={onUpdate} />
+              </TableCell>
+            </TableRow>
+          )
+        })}
       </TableBody>
     </Table>
   )

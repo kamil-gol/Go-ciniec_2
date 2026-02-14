@@ -7,10 +7,10 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Banknote,
   Search,
   Sparkles,
   Filter,
+  TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,12 +55,8 @@ export default function DepositsPage() {
     }
   }
 
-  // Filtered deposits
   const filteredDeposits = deposits.filter((deposit) => {
-    // Status filter
     if (statusFilter !== 'ALL' && deposit.status !== statusFilter) return false
-
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       const clientName = deposit.reservation?.client
@@ -82,13 +78,16 @@ export default function DepositsPage() {
     { label: 'Wszystkie', value: 'ALL', count: stats?.counts.total },
     { label: 'Oczekujące', value: 'PENDING', count: stats?.counts.pending },
     { label: 'Opłacone', value: 'PAID', count: stats?.counts.paid },
-    { label: 'Przeterminowane', value: 'OVERDUE', count: stats?.counts.overdue },
+    { label: 'Przetermin.', value: 'OVERDUE', count: stats?.counts.overdue },
     { label: 'Anulowane', value: 'CANCELLED', count: stats?.counts.cancelled },
   ]
 
+  const percentPaid = stats && stats.amounts.total > 0
+    ? Math.round((stats.amounts.paid / stats.amounts.total) * 100)
+    : 0
+
   return (
     <PageLayout>
-      {/* Hero */}
       <PageHero
         accent={accent}
         title="Zaliczki"
@@ -106,7 +105,6 @@ export default function DepositsPage() {
         }
       />
 
-      {/* Stats */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
@@ -126,7 +124,7 @@ export default function DepositsPage() {
             delay={0.2}
           />
           <StatCard
-            label="Przeterminowane"
+            label="Przetermin."
             value={stats.counts.overdue}
             subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
             icon={AlertTriangle}
@@ -134,17 +132,16 @@ export default function DepositsPage() {
             delay={0.3}
           />
           <StatCard
-            label="Suma należności"
+            label="Łącznie"
             value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
-            subtitle={`${stats.counts.total} zaliczek łącznie`}
-            icon={Banknote}
+            subtitle={`${percentPaid}% wpłacono · ${stats.counts.total} zaliczek`}
+            icon={TrendingUp}
             iconGradient="from-rose-500 to-pink-500"
             delay={0.4}
           />
         </div>
       )}
 
-      {/* Create Form */}
       {showCreateForm && (
         <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
           <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
@@ -167,8 +164,7 @@ export default function DepositsPage() {
         </Card>
       )}
 
-      {/* Deposits List */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -178,16 +174,15 @@ export default function DepositsPage() {
               <CardTitle>Lista Zaliczek</CardTitle>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Status Filter */}
-              <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm">
-                <Filter className="h-4 w-4 text-neutral-400 ml-2" />
+              <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm overflow-x-auto">
+                <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
                 {filterButtons.map((btn) => (
                   <button
                     key={btn.value}
                     onClick={() => setStatusFilter(btn.value)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                       statusFilter === btn.value
-                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                        ? 'bg-rose-100 text-rose-700 shadow-sm dark:bg-rose-900/30 dark:text-rose-300'
                         : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
                     }`}
                   >
@@ -198,14 +193,13 @@ export default function DepositsPage() {
                   </button>
                 ))}
               </div>
-              {/* Search */}
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64 min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <Input
                   placeholder="Szukaj..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-9 pl-9 text-sm"
+                  className="h-9 pl-9 text-sm w-full"
                 />
               </div>
             </div>
