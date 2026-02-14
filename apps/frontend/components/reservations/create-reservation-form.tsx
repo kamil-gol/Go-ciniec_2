@@ -23,29 +23,29 @@ import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { useQueryClient } from '@tanstack/react-query'
 
 const reservationSchema = z.object({
-  hallId: z.string().min(1, 'Wybierz sal\u0119'),
+  hallId: z.string().min(1, 'Wybierz salę'),
   clientId: z.string().min(1, 'Wybierz klienta'),
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
   
   // Split datetime into date and time
-  startDate: z.string().min(1, 'Wybierz dat\u0119 rozpocz\u0119cia'),
-  startTime: z.string().min(1, 'Wybierz czas rozpocz\u0119cia'),
-  endDate: z.string().min(1, 'Wybierz dat\u0119 zako\u0144czenia'),
-  endTime: z.string().min(1, 'Wybierz czas zako\u0144czenia'),
+  startDate: z.string().min(1, 'Wybierz datę rozpoczęcia'),
+  startTime: z.string().min(1, 'Wybierz czas rozpoczęcia'),
+  endDate: z.string().min(1, 'Wybierz datę zakończenia'),
+  endTime: z.string().min(1, 'Wybierz czas zakończenia'),
   
   // Split guest counts by age
-  adults: z.coerce.number().min(0, 'Liczba doros\u0142ych musi by\u0107 >= 0'),
-  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi by\u0107 >= 0'),
-  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi by\u0107 >= 0'),
+  adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
+  children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
+  toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
   
   // Menu package
   useMenuPackage: z.boolean(),
   menuPackageId: z.string().optional(),
   
   // Pricing - conditional on menu package
-  pricePerAdult: z.coerce.number().min(0, 'Cena za doros\u0142ego musi by\u0107 >= 0').optional(),
-  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi by\u0107 >= 0').optional(),
-  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi by\u0107 >= 0').optional(),
+  pricePerAdult: z.coerce.number().min(0, 'Cena za dorosłego musi być >= 0').optional(),
+  pricePerChild: z.coerce.number().min(0, 'Cena za dziecko (4-12) musi być >= 0').optional(),
+  pricePerToddler: z.coerce.number().min(0, 'Cena za dziecko (0-3) musi być >= 0').optional(),
   
   // Confirmation deadline
   confirmationDeadline: z.string().optional(),
@@ -66,14 +66,14 @@ const reservationSchema = z.object({
   depositPaymentMethod: z.string().optional(),
   depositPaidAt: z.string().optional(),
 }).refine((data) => data.adults + data.children + data.toddlers >= 1, {
-  message: '\u0141\u0105czna liczba go\u015bci musi by\u0107 >= 1',
+  message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
 }).refine((data) => {
   const start = new Date(`${data.startDate}T${data.startTime}`)
   const end = new Date(`${data.endDate}T${data.endTime}`)
   return end > start
 }, {
-  message: 'Czas zako\u0144czenia musi by\u0107 po czasie rozpocz\u0119cia',
+  message: 'Czas zakończenia musi być po czasie rozpoczęcia',
   path: ['endTime'],
 }).refine((data) => {
   // If menu package is NOT used, manual prices are required
@@ -82,7 +82,7 @@ const reservationSchema = z.object({
   }
   return true
 }, {
-  message: 'Cena za doros\u0142ego jest wymagana gdy nie wybrano pakietu menu',
+  message: 'Cena za dorosłego jest wymagana gdy nie wybrano pakietu menu',
   path: ['pricePerAdult'],
 })
 
@@ -159,7 +159,7 @@ export function CreateReservationForm({
 
   const { data: menuPackages, isLoading: menuPackagesLoading } = usePackagesByEventType(selectedEventTypeId)
 
-  // Pre-select hall from defaultHallId (e.g. when navigating from hall detail page)
+  // Pre-select hall from defaultHallId
   const hallsArray = Array.isArray(halls?.halls) ? halls.halls : []
 
   useEffect(() => {
@@ -381,10 +381,10 @@ export function CreateReservationForm({
   const menuPackagesArray = Array.isArray(menuPackages) ? menuPackages : []
 
   const hallOptions = [
-    { value: '', label: 'Wybierz sal\u0119...' },
+    { value: '', label: 'Wybierz salę...' },
     ...hallsArray.map((hall) => ({
       value: hall.id,
-      label: `${hall.name} (max ${hall.capacity} os\u00f3b)`,
+      label: `${hall.name} (max ${hall.capacity} osób)`,
     }))
   ]
 
@@ -413,7 +413,7 @@ export function CreateReservationForm({
   ]
 
   const paymentMethodOptions = [
-    { value: 'CASH', label: 'Got\u00f3wka' },
+    { value: 'CASH', label: 'Gotówka' },
     { value: 'TRANSFER', label: 'Przelew' },
     { value: 'BLIK', label: 'BLIK' },
   ]
@@ -436,18 +436,18 @@ export function CreateReservationForm({
         <CardContent>
           {(hallsLoading || eventTypesLoading || menuPackagesLoading) && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-sm text-blue-800">\u23f3 \u0141adowanie danych...</p>
-              {hallsLoading && <p className="text-xs text-blue-600">\u2022 \u0141adowanie sal...</p>}
-              {eventTypesLoading && <p className="text-xs text-blue-600">\u2022 \u0141adowanie typ\u00f3w wydarze\u0144...</p>}
-              {menuPackagesLoading && <p className="text-xs text-blue-600">\u2022 \u0141adowanie pakiet\u00f3w menu...</p>}
+              <p className="text-sm text-blue-800">⏳ Ładowanie danych...</p>
+              {hallsLoading && <p className="text-xs text-blue-600">• Ładowanie sal...</p>}
+              {eventTypesLoading && <p className="text-xs text-blue-600">• Ładowanie typów wydarzeń...</p>}
+              {menuPackagesLoading && <p className="text-xs text-blue-600">• Ładowanie pakietów menu...</p>}
             </div>
           )}
           
           {(hallsError || eventTypesError) && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-              <p className="text-sm font-medium text-red-800">\u274c B\u0142\u0105d \u0142adowania danych</p>
-              {hallsError && <p className="text-xs text-red-600">\u2022 Sale: {String(hallsError)}</p>}
-              {eventTypesError && <p className="text-xs text-red-600">\u2022 Typy wydarze\u0144: {String(eventTypesError)}</p>}
+              <p className="text-sm font-medium text-red-800">❌ Błąd ładowania danych</p>
+              {hallsError && <p className="text-xs text-red-600">• Sale: {String(hallsError)}</p>}
+              {eventTypesError && <p className="text-xs text-red-600">• Typy wydarzeń: {String(eventTypesError)}</p>}
             </div>
           )}
 
@@ -460,7 +460,7 @@ export function CreateReservationForm({
             />
             {selectedHallCapacity > 0 && (
               <p className="-mt-4 text-sm text-secondary-600">
-                Maksymalna pojemno\u015b\u0107: {selectedHallCapacity} os\u00f3b
+                Maksymalna pojemność: {selectedHallCapacity} osób
               </p>
             )}
 
@@ -472,7 +472,7 @@ export function CreateReservationForm({
                 className="-mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
               >
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-green-800">Sala zosta\u0142a automatycznie wybrana z widoku szczeg\u00f3\u0142\u00f3w</p>
+                <p className="text-sm text-green-800">Sala została automatycznie wybrana z widoku szczegółów</p>
               </motion.div>
             )}
 
@@ -524,7 +524,7 @@ export function CreateReservationForm({
               >
                 <Input
                   type="number"
-                  label="Kt\u00f3re urodziny"
+                  label="Które urodziny"
                   placeholder="np. 18"
                   error={errors.birthdayAge?.message}
                   {...register('birthdayAge')}
@@ -539,7 +539,7 @@ export function CreateReservationForm({
                 exit={{ opacity: 0, height: 0 }}
               >
                 <Input
-                  label="Typ wydarzenia (w\u0142asny)"
+                  label="Typ wydarzenia (własny)"
                   placeholder="np. Spotkanie rodzinne, Impreza firmowa"
                   error={errors.customEventType?.message}
                   {...register('customEventType')}
@@ -556,7 +556,7 @@ export function CreateReservationForm({
               >
                 <Input
                   type="number"
-                  label="Kt\u00f3ra rocznica"
+                  label="Która rocznica"
                   placeholder="np. 25"
                   error={errors.anniversaryYear?.message}
                   {...register('anniversaryYear')}
@@ -574,7 +574,7 @@ export function CreateReservationForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary-700 mb-1">
-                    Data i czas rozpocz\u0119cia
+                    Data i czas rozpoczęcia
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex items-center gap-2">
@@ -599,7 +599,7 @@ export function CreateReservationForm({
                 
                 <div>
                   <label className="block text-sm font-medium text-secondary-700 mb-1">
-                    Data i czas zako\u0144czenia
+                    Data i czas zakończenia
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex items-center gap-2">
@@ -635,7 +635,7 @@ export function CreateReservationForm({
                 {durationHours > 6 && <AlertCircle className="w-5 h-5 text-amber-600" />}
                 <span className={`text-sm ${durationHours > 6 ? 'text-amber-800' : 'text-blue-800'}`}>
                   Czas trwania: {durationHours}h
-                  {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - ${Math.ceil(durationHours - 6) * 500} PLN dop\u0142aty)`}
+                  {durationHours > 6 && ` (${Math.ceil(durationHours - 6)}h ponad standard - ${Math.ceil(durationHours - 6) * 500} PLN dopłaty)`}
                 </span>
               </motion.div>
             )}
@@ -645,7 +645,7 @@ export function CreateReservationForm({
                 <Users className="w-5 h-5 text-secondary-500" />
                 <Input
                   type="number"
-                  label="Liczba doros\u0142ych"
+                  label="Liczba dorosłych"
                   placeholder="0"
                   error={errors.adults?.message}
                   {...register('adults')}
@@ -656,7 +656,7 @@ export function CreateReservationForm({
                 <Input
                   type="number"
                   label="Liczba dzieci (4-12)"
-                  placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowad\u017a liczb\u0119 doros\u0142ych' : '0'}
+                  placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                   error={errors.children?.message}
                   disabled={isChildrenFieldsDisabled}
                   {...register('children')}
@@ -667,7 +667,7 @@ export function CreateReservationForm({
                 <Input
                   type="number"
                   label="Liczba dzieci (0-3)"
-                  placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowad\u017a liczb\u0119 doros\u0142ych' : '0'}
+                  placeholder={isChildrenFieldsDisabled ? 'Najpierw wprowadź liczbę dorosłych' : '0'}
                   error={errors.toddlers?.message}
                   disabled={isChildrenFieldsDisabled}
                   {...register('toddlers')}
@@ -677,7 +677,7 @@ export function CreateReservationForm({
 
             {totalGuests > 0 && (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-secondary-700">\u0141\u0105cznie go\u015bci:</span>
+                <span className="text-sm font-medium text-secondary-700">Łącznie gości:</span>
                 <span className="text-lg font-bold text-secondary-900">{totalGuests}</span>
               </div>
             )}
@@ -685,7 +685,7 @@ export function CreateReservationForm({
             {totalGuests > selectedHallCapacity && selectedHallCapacity > 0 && (
               <p className="text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
-                Liczba go\u015bci ({totalGuests}) przekracza pojemno\u015b\u0107 sali ({selectedHallCapacity})!
+                Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!
               </p>
             )}
 
@@ -705,7 +705,7 @@ export function CreateReservationForm({
                     {...register('useMenuPackage')}
                   />
                   <label htmlFor="useMenuPackage" className="ml-2 text-sm text-secondary-700">
-                    U\u017cyj gotowego pakietu
+                    Użyj gotowego pakietu
                   </label>
                 </div>
               </div>
@@ -718,14 +718,14 @@ export function CreateReservationForm({
                 >
                   <AlertCircle className="w-5 h-5 text-amber-600" />
                   <p className="text-sm text-amber-800">
-                    Brak dost\u0119pnych pakiet\u00f3w menu dla tego typu wydarzenia. U\u017cyj r\u0119cznego ustalania cen.
+                    Brak dostępnych pakietów menu dla tego typu wydarzenia. Użyj ręcznego ustalania cen.
                   </p>
                 </motion.div>
               )}
 
               {!selectedEventTypeId && (
                 <p className="text-sm text-secondary-500">
-                  Wybierz typ wydarzenia aby zobaczy\u0107 dost\u0119pne pakiety menu
+                  Wybierz typ wydarzenia aby zobaczyć dostępne pakiety menu
                 </p>
               )}
 
@@ -758,7 +758,7 @@ export function CreateReservationForm({
                           )}
                           <div className="grid grid-cols-3 gap-4 mt-3">
                             <div>
-                              <p className="text-xs text-secondary-500">Doros\u0142y</p>
+                              <p className="text-xs text-secondary-500">Dorosły</p>
                               <p className="text-lg font-bold text-primary-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
                             </div>
                             <div>
@@ -785,7 +785,7 @@ export function CreateReservationForm({
                   <DollarSign className="w-5 h-5 text-secondary-500" />
                   <Input
                     type="number"
-                    label="Cena za doros\u0142ego (PLN)"
+                    label="Cena za dorosłego (PLN)"
                     placeholder="0.00"
                     error={errors.pricePerAdult?.message}
                     {...register('pricePerAdult')}
@@ -796,7 +796,7 @@ export function CreateReservationForm({
                   <Input
                     type="number"
                     label="Cena za dziecko 4-12 (PLN)"
-                    placeholder={isChildPriceDisabled ? 'Najpierw uzupe\u0142nij cen\u0119 za doros\u0142ego' : '0.00'}
+                    placeholder={isChildPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                     error={errors.pricePerChild?.message}
                     disabled={isChildPriceDisabled}
                     {...register('pricePerChild', {
@@ -809,7 +809,7 @@ export function CreateReservationForm({
                   <Input
                     type="number"
                     label="Cena za dziecko 0-3 (PLN)"
-                    placeholder={isToddlerPriceDisabled ? 'Najpierw uzupe\u0142nij cen\u0119 za doros\u0142ego' : '0.00'}
+                    placeholder={isToddlerPriceDisabled ? 'Najpierw uzupełnij cenę za dorosłego' : '0.00'}
                     error={errors.pricePerToddler?.message}
                     disabled={isToddlerPriceDisabled}
                     {...register('pricePerToddler', {
@@ -828,19 +828,19 @@ export function CreateReservationForm({
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm text-secondary-700">
-                    <span>Doro\u015bli: {adults} \u00d7 {pricePerAdult} PLN</span>
+                    <span>Dorośli: {adults} × {pricePerAdult} PLN</span>
                     <span className="font-medium">{adults * pricePerAdult} PLN</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-secondary-700">
-                    <span>Dzieci (4-12): {children} \u00d7 {pricePerChild} PLN</span>
+                    <span>Dzieci (4-12): {children} × {pricePerChild} PLN</span>
                     <span className="font-medium">{children * pricePerChild} PLN</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-secondary-700">
-                    <span>Dzieci (0-3): {toddlers} \u00d7 {pricePerToddler} PLN</span>
+                    <span>Dzieci (0-3): {toddlers} × {pricePerToddler} PLN</span>
                     <span className="font-medium">{toddlers * pricePerToddler} PLN</span>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-primary-300">
-                    <span className="font-medium text-secondary-900">Cena ca\u0142kowita:</span>
+                    <span className="font-medium text-secondary-900">Cena całkowita:</span>
                     <span className="text-2xl font-bold text-primary-600">
                       {formatCurrency(calculatedPrice)}
                     </span>
@@ -863,7 +863,7 @@ export function CreateReservationForm({
                 {...register('confirmationDeadline')}
               />
               <p className="mt-1 text-xs text-secondary-500">
-                Musi by\u0107 co najmniej 1 dzie\u0144 przed rozpocz\u0119ciem wydarzenia
+                Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
               </p>
             </div>
 
@@ -889,7 +889,7 @@ export function CreateReservationForm({
                   {...register('hasDeposit')}
                 />
                 <label htmlFor="hasDeposit" className="ml-2 text-sm font-medium text-secondary-700">
-                  Dodaj zaliczk\u0119
+                  Dodaj zaliczkę
                 </label>
               </div>
 
@@ -910,7 +910,7 @@ export function CreateReservationForm({
                     />
                     <Input
                       type="date"
-                      label="Termin p\u0142atno\u015bci"
+                      label="Termin płatności"
                       error={errors.depositDueDate?.message}
                       {...register('depositDueDate')}
                     />
@@ -926,7 +926,7 @@ export function CreateReservationForm({
                       />
                       <label htmlFor="depositPaid" className="ml-2 text-sm font-medium text-secondary-700 flex items-center gap-1">
                         <CheckCircle className="w-4 h-4 text-green-600" />
-                        Zaliczka zosta\u0142a ju\u017c zap\u0142acona
+                        Zaliczka została już zapłacona
                       </label>
                     </div>
 
@@ -942,8 +942,8 @@ export function CreateReservationForm({
                           control={control}
                           render={({ field }) => (
                             <SelectField
-                              label="Spos\u00f3b p\u0142atno\u015bci"
-                              placeholder="Wybierz metod\u0119 p\u0142atno\u015bci..."
+                              label="Sposób płatności"
+                              placeholder="Wybierz metodę płatności..."
                               options={paymentMethodOptions}
                               error={errors.depositPaymentMethod?.message}
                               {...field}
@@ -952,7 +952,7 @@ export function CreateReservationForm({
                         />
                         <Input
                           type="date"
-                          label="Data p\u0142atno\u015bci"
+                          label="Data płatności"
                           error={errors.depositPaidAt?.message}
                           {...register('depositPaidAt')}
                         />
@@ -976,7 +976,7 @@ export function CreateReservationForm({
                 type="submit"
                 disabled={createReservation.isPending || (totalGuests > selectedHallCapacity && selectedHallCapacity > 0)}
               >
-                {createReservation.isPending ? 'Tworzenie...' : isPromotingFromQueue ? 'Awansuj do rezerwacji' : 'Utw\u00f3rz Rezerwacj\u0119'}
+                {createReservation.isPending ? 'Tworzenie...' : isPromotingFromQueue ? 'Awansuj do rezerwacji' : 'Utwórz Rezerwację'}
               </Button>
             </div>
           </form>
