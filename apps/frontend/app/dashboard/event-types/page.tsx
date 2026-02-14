@@ -32,8 +32,8 @@ export default function EventTypesPage() {
     } catch (error: any) {
       console.error('Error loading event types:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 typ\u00f3w wydarze\u0144',
+        title: 'Błąd',
+        description: 'Nie udało się załadować typów wydarzeń',
         variant: 'destructive',
       })
     } finally {
@@ -63,7 +63,7 @@ export default function EventTypesPage() {
       {/* Hero */}
       <PageHero
         accent={accent}
-        title="Typy Wydarze\u0144"
+        title="Typy Wydarzeń"
         subtitle="Konfiguruj rodzaje imprez i ich parametry"
         icon={Theater}
         action={
@@ -71,8 +71,7 @@ export default function EventTypesPage() {
             size="lg"
             className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
             onClick={() => {
-              // Phase 4: open create dialog
-              toast({ title: 'Wkr\u00f3tce', description: 'Formularz tworzenia typu — Faza 4' })
+              toast({ title: 'Wkrótce', description: 'Formularz tworzenia typu — Faza 4' })
             }}
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -84,7 +83,7 @@ export default function EventTypesPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          label="Typy wydarze\u0144"
+          label="Typy wydarzeń"
           value={eventTypes.length}
           subtitle="W systemie"
           icon={Theater}
@@ -94,7 +93,7 @@ export default function EventTypesPage() {
         <StatCard
           label="Aktywne typy"
           value={activeTypes}
-          subtitle="Dost\u0119pne do wyboru"
+          subtitle="Dostępne do wyboru"
           icon={TrendingUp}
           iconGradient="from-emerald-500 to-teal-500"
           delay={0.2}
@@ -102,7 +101,7 @@ export default function EventTypesPage() {
         <StatCard
           label="Rezerwacje"
           value={totalReservations}
-          subtitle="Powi\u0105zane \u0142\u0105cznie"
+          subtitle="Powiązane łącznie"
           icon={Calendar}
           iconGradient="from-violet-500 to-purple-500"
           delay={0.3}
@@ -110,7 +109,7 @@ export default function EventTypesPage() {
         <StatCard
           label="Szablony menu"
           value={totalTemplates}
-          subtitle="Przypisane \u0142\u0105cznie"
+          subtitle="Przypisane łącznie"
           icon={FileText}
           iconGradient="from-amber-500 to-orange-500"
           delay={0.4}
@@ -155,11 +154,11 @@ export default function EventTypesPage() {
       ) : filteredTypes.length === 0 ? (
         <EmptyState
           icon={Theater}
-          title={search ? 'Nie znaleziono typ\u00f3w' : 'Brak typ\u00f3w wydarze\u0144'}
-          description={search ? 'Spr\u00f3buj u\u017cy\u0107 innego wyszukiwania' : 'Dodaj pierwszy typ wydarzenia, aby zacz\u0105\u0107'}
+          title={search ? 'Nie znaleziono typów' : 'Brak typów wydarzeń'}
+          description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszy typ wydarzenia, aby zacząć'}
           actionLabel={search ? undefined : 'Dodaj Pierwszy Typ'}
           onAction={search ? undefined : () => {
-            toast({ title: 'Wkr\u00f3tce', description: 'Formularz tworzenia typu — Faza 4' })
+            toast({ title: 'Wkrótce', description: 'Formularz tworzenia typu — Faza 4' })
           }}
         />
       ) : (
@@ -167,7 +166,7 @@ export default function EventTypesPage() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
               Znaleziono <span className="font-bold text-neutral-900 dark:text-neutral-100">{filteredTypes.length}</span>{' '}
-              {filteredTypes.length === 1 ? 'typ' : filteredTypes.length < 5 ? 'typy' : 'typ\u00f3w'}
+              {filteredTypes.length === 1 ? 'typ' : filteredTypes.length < 5 ? 'typy' : 'typów'}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
