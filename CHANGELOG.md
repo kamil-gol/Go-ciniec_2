@@ -1,5 +1,26 @@
 # 📝 Changelog
 
+## [1.1.0] - 2026-02-14
+
+### 🔒 Bezpieczeństwo
+- **Auth middleware na endpointach menu** — wszystkie 45+ endpointów zabezpieczonych
+  - GET endpointy → `authMiddleware` + `requireStaff` (ADMIN + EMPLOYEE)
+  - POST/PUT/DELETE → `authMiddleware` + `requireAdmin`
+  - Dish categories GET → publiczne (potrzebne do UI)
+  - Dish categories POST/PUT/DELETE → `requireAdmin` (wcześniej brak kontroli roli)
+  - Menu calculator → `authMiddleware` + `requireStaff`
+  - Reservation menu selection → `authMiddleware` + `requireStaff`
+
+### 🐛 Bugfixy
+- **Fix route ordering bug:** `PUT /api/menu-packages/reorder` przeniesione PRZED `PUT /api/menu-packages/:id` — wcześniej Express matchował `:id="reorder"` i endpoint nigdy nie działał
+
+### 🛠️ Ulepszenia
+- Dodano `asyncHandler` wrapper na wszystkie endpointy menu (spójne error handling)
+- Dodano `validateUUID` na wszystkie parametry UUID w menu routes
+- Ujednolicony pattern: controller wywołania przez `.call()` zamiast `.bind()`
+
+---
+
 ## [1.0.0] - 2026-02-14
 
 ### 📚 Dokumentacja
