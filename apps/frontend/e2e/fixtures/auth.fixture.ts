@@ -89,8 +89,8 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
  * Helper: Logout current user
  */
 export async function logout(page: Page): Promise<void> {
-  // Click user menu
-  await page.click('button[aria-label="User menu"]', { timeout: 5000 });
+  // Click user menu button (matches both Polish and English aria-labels)
+  await page.click('button[aria-label="Menu u\u017cytkownika"], button[aria-label="User menu"]', { timeout: 5000 });
   
   // Click logout button
   await page.click('button:has-text("Wyloguj")');
