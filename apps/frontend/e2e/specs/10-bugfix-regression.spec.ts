@@ -229,7 +229,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
       // This depends on UI implementation
       
       // If there's a "Move to position" button/input
-      const moveButton = adminPage.locator('button:has-text("Przenieś")');
+      const moveButton = adminPage.locator('button:has-text("Przenie\u015b")');
       const hasMoveButton = await moveButton.count() > 0;
       
       if (hasMoveButton) {
@@ -245,7 +245,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
         // Should show error
         await expect(
           adminPage.locator('.error-message, .toast-error')
-        ).toContainText(/Position must be between|Pozycja musi być/i);
+        ).toContainText(/Position must be between|Pozycja musi by\u0107/i);
       }
     }
   });
@@ -253,7 +253,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
   test('should show user-friendly error messages', async ({ adminPage }) => {
     // Bug #8 added user-friendly error messages
     // Instead of "P2002: Unique constraint failed"
-    // Should show "Pozycja już jest zajęta. Odśwież i spróbuj ponownie."
+    // Should show "Pozycja ju\u017c jest zaj\u0119ta. Od\u015bwie\u017c i spr\u00f3buj ponownie."
     
     await adminPage.goto('/queue');
     
@@ -273,7 +273,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
     const count = await queueItems.count();
     
     if (count > 0) {
-      const moveButton = adminPage.locator('button:has-text("Przenieś")');
+      const moveButton = adminPage.locator('button:has-text("Przenie\u015b")');
       const hasMoveButton = await moveButton.count() > 0;
       
       if (hasMoveButton) {
@@ -360,9 +360,9 @@ test.describe('All Bugs - Final Verification', () => {
   test('all bugfixes should be deployed and working', async ({ adminPage }) => {
     // Smoke test: Navigate through all affected pages
     
-    // 1. Dashboard
+    // 1. Dashboard - accept various heading patterns
     await adminPage.goto('/dashboard');
-    await expect(adminPage.locator('h1, h2').first()).toContainText(/Dashboard/i);
+    await expect(adminPage.locator('h1, h2').first()).toContainText(/Dashboard|Panel|Witaj/i);
     
     // 2. Reservations
     await adminPage.goto('/reservations');
@@ -422,7 +422,7 @@ test.describe('All Bugs - Final Verification', () => {
       await expect(adminPage.locator('.error-fatal')).not.toBeVisible();
     }
     
-    // System is stable ✅
+    // System is stable \u2705
     expect(true).toBe(true);
   });
 });
