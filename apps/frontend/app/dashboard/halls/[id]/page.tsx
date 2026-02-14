@@ -41,7 +41,7 @@ export default function HallDetailsPage() {
   }
 
   const handleCreateReservation = () => {
-    router.push(`/dashboard/reservations/new?hallId=${params.id}`)
+    router.push(`/dashboard/reservations?create=true&hallId=${params.id}`)
   }
 
   if (loading) {
