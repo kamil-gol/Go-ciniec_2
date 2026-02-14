@@ -64,7 +64,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md"
               style={colorStyle}
             >
               <Theater className="h-5 w-5" />
@@ -87,7 +87,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
               <Button
                 variant="ghost"
                 size="sm"
-                className={`h-8 w-8 p-0 transition-opacity ${
+                className={`h-8 w-8 p-0 shrink-0 transition-opacity ${
                   dropdownOpen
                     ? 'opacity-100'
                     : 'opacity-0 group-hover:opacity-100'
@@ -123,25 +123,33 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
           </p>
         )}
 
-        {/* Stats + Toggle */}
-        <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-neutral-700">
+        {/* Footer: Stats + Toggle */}
+        <div className="space-y-3 pt-4 border-t border-neutral-100 dark:border-neutral-700">
+          {/* Stats row */}
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
-              <Calendar className="h-4 w-4 text-violet-500" />
+              <Calendar className="h-4 w-4 shrink-0 text-violet-500" />
               <span className="font-medium">{reservationCount}</span>
-              <span className="text-neutral-400 hidden sm:inline">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
+              <span className="text-neutral-400">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
             </div>
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
-              <FileText className="h-4 w-4 text-amber-500" />
+              <FileText className="h-4 w-4 shrink-0 text-amber-500" />
               <span className="font-medium">{templateCount}</span>
-              <span className="text-neutral-400 hidden sm:inline">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
+              <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
             </div>
           </div>
-          <Switch
-            checked={eventType.isActive}
-            onCheckedChange={handleToggleActive}
-            disabled={toggling}
-          />
+
+          {/* Toggle row */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-neutral-400">
+              {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
+            </span>
+            <Switch
+              checked={eventType.isActive}
+              onCheckedChange={handleToggleActive}
+              disabled={toggling}
+            />
+          </div>
         </div>
       </div>
     </Card>
