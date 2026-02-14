@@ -74,18 +74,18 @@ export function PackageCard({
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200/50 dark:border-neutral-700/30">
               <Users className="h-4 w-4 mx-auto mb-1.5 text-neutral-600 dark:text-neutral-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Doro\u015bli</p>
-              <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{pkg.pricePerAdult} z\u0142</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Dorośli</p>
+              <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{pkg.pricePerAdult} zł</p>
             </div>
             <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
               <Smile className="h-4 w-4 mx-auto mb-1.5 text-blue-600 dark:text-blue-400" />
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Dzieci</p>
-              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild} z\u0142</p>
+              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild} zł</p>
             </div>
             <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200/50 dark:border-green-800/50">
               <Baby className="h-4 w-4 mx-auto mb-1.5 text-green-600 dark:text-green-400" />
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Maluchy</p>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler} z\u0142</p>
+              <p className="text-lg font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler} zł</p>
             </div>
           </div>
 
@@ -121,7 +121,7 @@ export function PackageCard({
                 ? 'bg-blue-500 text-white'
                 : cn('bg-neutral-100 dark:bg-neutral-700', accent.text, accent.textDark)
             )}>
-              {isSelected ? '\u2713 Wybrany' : 'Kliknij aby wybra\u0107'}
+              {isSelected ? '✓ Wybrany' : 'Kliknij aby wybrać'}
             </div>
           </div>
         </div>
