@@ -2,6 +2,7 @@
  * Reservation Service
  * Business logic for reservation management with advanced features
  * UPDATED: Phase C — Auto-recalc menu prices when guests change
+ * UPDATED: Removed hall pricing references (pricePerPerson/Child removed from Hall model)
  */
 
 import { prisma } from '@/lib/prisma';
@@ -38,7 +39,7 @@ function sanitizeString(value: any): string | null {
 
 /** Default include for reservation queries */
 const RESERVATION_INCLUDE = {
-  hall: { select: { id: true, name: true, capacity: true, pricePerPerson: true, pricePerChild: true } },
+  hall: { select: { id: true, name: true, capacity: true } },
   client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
   eventType: { select: { id: true, name: true } },
   createdBy: { select: { id: true, email: true } },
