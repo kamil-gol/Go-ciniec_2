@@ -106,10 +106,10 @@ export function OptionCard({
                 )}>
                   <div className="flex items-center gap-1 text-white">
                     <span className="text-lg font-bold">{option.priceAmount}</span>
-                    <span className="text-xs opacity-90">z\u0142</span>
+                    <span className="text-xs opacity-90">zł</span>
                   </div>
                   <p className="text-[10px] text-white/80 text-center mt-0.5">
-                    {isPricePerPerson ? 'za osob\u0119' : 'sta\u0142a'}
+                    {isPricePerPerson ? 'za osobę' : 'stała'}
                   </p>
                 </div>
               </div>
@@ -179,7 +179,7 @@ export function OptionCard({
                       exit={{ scale: 0, opacity: 0 }}
                       className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full shadow-sm"
                     >
-                      \u2713 Dodano
+                      ✓ Dodano
                     </motion.div>
                   )}
                 </AnimatePresence>

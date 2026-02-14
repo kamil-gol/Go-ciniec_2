@@ -53,7 +53,7 @@ export function ReservationMenuSection({
         })
         toast({
           title: 'Sukces!',
-          description: 'Menu zosta\u0142o zaktualizowane',
+          description: 'Menu zostało zaktualizowane',
         })
       } else {
         await selectMenuMutation.mutateAsync({
@@ -62,7 +62,7 @@ export function ReservationMenuSection({
         })
         toast({
           title: 'Sukces!',
-          description: 'Menu zosta\u0142o dodane do rezerwacji',
+          description: 'Menu zostało dodane do rezerwacji',
         })
       }
       
@@ -70,27 +70,27 @@ export function ReservationMenuSection({
       onMenuUpdated?.()
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 menu',
+        title: 'Błąd',
+        description: error.message || 'Nie udało się zapisać menu',
         variant: 'destructive',
       })
     }
   }
 
   const handleDeleteMenu = async () => {
-    if (!confirm('Czy na pewno chcesz usun\u0105\u0107 wybrane menu?')) return
+    if (!confirm('Czy na pewno chcesz usunąć wybrane menu?')) return
 
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
       toast({
         title: 'Sukces',
-        description: 'Menu zosta\u0142o usuni\u0119te',
+        description: 'Menu zostało usunięte',
       })
       onMenuUpdated?.()
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 usun\u0105\u0107 menu',
+        title: 'Błąd',
+        description: 'Nie udało się usunąć menu',
         variant: 'destructive',
       })
     }
@@ -188,7 +188,7 @@ export function ReservationMenuSection({
               <div>
                 <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj menu do rezerwacji aby zobaczy\u0107 szczeg\u00f3\u0142y
+                  Dodaj menu do rezerwacji aby zobaczyć szczegóły
                 </p>
               </div>
               <Button
@@ -225,7 +225,7 @@ export function ReservationMenuSection({
                     onClick={() => setShowSelectionDialog(true)}
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    Zmie\u0144
+                    Zmień
                   </Button>
                   <Button
                     variant="outline"
@@ -253,16 +253,16 @@ export function ReservationMenuSection({
                   {/* Package Prices */}
                   <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">Doro\u015bli</p>
-                      <p className="font-bold">{pricePerAdult} z\u0142</p>
+                      <p className="text-xs text-muted-foreground">Dorośli</p>
+                      <p className="font-bold">{pricePerAdult} zł</p>
                     </div>
                     <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">Dzieci</p>
-                      <p className="font-bold">{pricePerChild} z\u0142</p>
+                      <p className="font-bold">{pricePerChild} zł</p>
                     </div>
                     <div className="text-center p-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">Maluchy</p>
-                      <p className="font-bold">{pricePerToddler} z\u0142</p>
+                      <p className="font-bold">{pricePerToddler} zł</p>
                     </div>
                   </div>
                 </div>
@@ -298,14 +298,14 @@ export function ReservationMenuSection({
                             <div>
                               <p className="font-medium text-sm">{opt.optionName || opt.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {opt.priceUnit === 'PER_PERSON' || opt.priceType === 'PER_PERSON' ? 'za osob\u0119' : 'kwota sta\u0142a'}
+                                {opt.priceUnit === 'PER_PERSON' || opt.priceType === 'PER_PERSON' ? 'za osobę' : 'kwota stała'}
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold">{opt.priceAmount} z\u0142</p>
+                            <p className="font-bold">{opt.priceAmount} zł</p>
                             {opt.quantity && (
-                              <p className="text-xs text-muted-foreground">\u00d7 {opt.quantity}</p>
+                              <p className="text-xs text-muted-foreground">× {opt.quantity}</p>
                             )}
                           </div>
                         </div>
@@ -335,26 +335,26 @@ export function ReservationMenuSection({
                     <div className="space-y-2">
                       {priceBreakdown.packageCost.adults.count > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span>Doro\u015bli ({priceBreakdown.packageCost.adults.count} \u00d7 {priceBreakdown.packageCost.adults.priceEach} z\u0142)</span>
-                          <span className="font-semibold">{priceBreakdown.packageCost.adults.total} z\u0142</span>
+                          <span>Dorośli ({priceBreakdown.packageCost.adults.count} × {priceBreakdown.packageCost.adults.priceEach} zł)</span>
+                          <span className="font-semibold">{priceBreakdown.packageCost.adults.total} zł</span>
                         </div>
                       )}
                       {priceBreakdown.packageCost.children.count > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span>Dzieci ({priceBreakdown.packageCost.children.count} \u00d7 {priceBreakdown.packageCost.children.priceEach} z\u0142)</span>
-                          <span className="font-semibold">{priceBreakdown.packageCost.children.total} z\u0142</span>
+                          <span>Dzieci ({priceBreakdown.packageCost.children.count} × {priceBreakdown.packageCost.children.priceEach} zł)</span>
+                          <span className="font-semibold">{priceBreakdown.packageCost.children.total} zł</span>
                         </div>
                       )}
                       {priceBreakdown.packageCost.toddlers.count > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} \u00d7 {priceBreakdown.packageCost.toddlers.priceEach} z\u0142)</span>
-                          <span className="font-semibold">{priceBreakdown.packageCost.toddlers.total} z\u0142</span>
+                          <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} × {priceBreakdown.packageCost.toddlers.priceEach} zł)</span>
+                          <span className="font-semibold">{priceBreakdown.packageCost.toddlers.total} zł</span>
                         </div>
                       )}
                       <Separator />
                       <div className="flex justify-between font-semibold">
                         <span>Suma pakietu</span>
-                        <span>{priceBreakdown.packageCost.subtotal} z\u0142</span>
+                        <span>{priceBreakdown.packageCost.subtotal} zł</span>
                       </div>
                     </div>
                   </div>
@@ -366,14 +366,14 @@ export function ReservationMenuSection({
                       <div className="space-y-2">
                         {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
                           <div key={idx} className="flex justify-between text-sm">
-                            <span>{opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} \u00d7 ${opt.priceEach} z\u0142` : 'sta\u0142a'})</span>
-                            <span className="font-semibold">{opt.total} z\u0142</span>
+                            <span>{opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${opt.priceEach} zł` : 'stała'})</span>
+                            <span className="font-semibold">{opt.total} zł</span>
                           </div>
                         ))}
                         <Separator />
                         <div className="flex justify-between font-semibold">
                           <span>Suma opcji</span>
-                          <span>{priceBreakdown.optionsSubtotal} z\u0142</span>
+                          <span>{priceBreakdown.optionsSubtotal} zł</span>
                         </div>
                       </div>
                     </div>
@@ -383,8 +383,8 @@ export function ReservationMenuSection({
                   <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm opacity-90">Ca\u0142kowity koszt menu</p>
-                        <p className="text-3xl font-bold">{priceBreakdown.totalMenuPrice} z\u0142</p>
+                        <p className="text-sm opacity-90">Całkowity koszt menu</p>
+                        <p className="text-3xl font-bold">{priceBreakdown.totalMenuPrice} zł</p>
                       </div>
                       <Users className="h-8 w-8 opacity-80" />
                     </div>
@@ -403,7 +403,7 @@ export function ReservationMenuSection({
           onClose={handleCloseDialog}
         >
           <DialogHeader>
-            <DialogTitle>{hasMenu ? 'Zmie\u0144 menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
+            <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
           </DialogHeader>
           <MenuSelectionFlow
             eventTypeId={eventTypeId}
