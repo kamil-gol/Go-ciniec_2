@@ -68,6 +68,7 @@ export default function QueuePage() {
   }
 
   const queuesByDate = queues.reduce((acc, item) => {
+    if (!item.queueDate) return acc
     const date = format(parseISO(item.queueDate), 'yyyy-MM-dd')
     if (!acc[date]) acc[date] = []
     acc[date].push(item)
@@ -171,7 +172,7 @@ export default function QueuePage() {
     }
   }
 
-  const filteredQueues = selectedDate === 'all' ? queues : queuesByDate[selectedDate] || []
+  const filteredQueues = selectedDate === 'all' ? queues.filter(q => q.queueDate) : queuesByDate[selectedDate] || []
   const showPromoteButton = selectedDate !== 'all'
   const isDragDropDisabled = selectedDate === 'all'
 
@@ -271,7 +272,7 @@ export default function QueuePage() {
               onClick={() => setSelectedDate('all')}
               className={selectedDate === 'all' ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}
             >
-              Wszystkie ({queues.length})
+              Wszystkie ({queues.filter(q => q.queueDate).length})
             </Button>
             {dates.map((date) => (
               <Button
