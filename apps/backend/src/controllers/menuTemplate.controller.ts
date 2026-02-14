@@ -243,16 +243,29 @@ export class MenuTemplateController {
    * GET /api/menu-templates/:id/pdf
    * Download menu card PDF for a template
    */
-  async downloadPdf(req: Request, res: Response, next: NextFunction) {
+  async downloadPdf(req: Request, res: Response) {
     try {
       const { id } = req.params;
 
+      console.log(`[MenuTemplate PDF] Starting PDF generation for template ${id}`);
+
       const template = await menuService.getMenuTemplateById(id);
+      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${template.packages?.length || 0}`);
 
       // Fetch courses for each package
       const packagesWithCourses = await Promise.all(
-        template.packages.map(async (pkg) => {
-          const courses = await menuCourseService.listByPackage(pkg.id);
+        (template.packages || []).map(async (pkg: any) => {
+          console.log(`[MenuTemplate PDF] Fetching courses for package: ${pkg.name} (${pkg.id})`);
+
+          let courses: any[] = [];
+          try {
+            courses = await menuCourseService.listByPackage(pkg.id);
+          } catch (courseError) {
+            console.error(`[MenuTemplate PDF] Failed to fetch courses for package ${pkg.id}:`, courseError);
+            courses = [];
+          }
+
+          console.log(`[MenuTemplate PDF] Package ${pkg.name}: ${courses.length} courses found`);
 
           return {
             name: pkg.name,
@@ -265,26 +278,26 @@ export class MenuTemplateController {
             isRecommended: pkg.isRecommended,
             badgeText: pkg.badgeText,
             includedItems: Array.isArray(pkg.includedItems) ? pkg.includedItems as string[] : [],
-            courses: courses.map((course) => ({
+            courses: courses.map((course: any) => ({
               name: course.name,
               description: course.description,
               icon: course.icon,
               minSelect: course.minSelect,
               maxSelect: course.maxSelect,
-              dishes: course.options.map((opt) => ({
-                name: opt.dish.name,
-                description: opt.dish.description,
-                allergens: Array.isArray((opt.dish as any).allergens) ? (opt.dish as any).allergens as string[] : [],
+              dishes: (course.options || []).map((opt: any) => ({
+                name: opt.dish?.name || 'Nieznane danie',
+                description: opt.dish?.description || null,
+                allergens: Array.isArray(opt.dish?.allergens) ? opt.dish.allergens : [],
                 isDefault: opt.isDefault,
                 isRecommended: opt.isRecommended,
               })),
             })),
-            options: pkg.packageOptions.map((po) => ({
-              name: po.option.name,
-              description: po.option.description,
-              category: po.option.category,
-              priceType: po.option.priceType,
-              priceAmount: Number(po.customPrice ?? po.option.priceAmount),
+            options: (pkg.packageOptions || []).map((po: any) => ({
+              name: po.option?.name || 'Nieznana opcja',
+              description: po.option?.description || null,
+              category: po.option?.category || 'OTHER',
+              priceType: po.option?.priceType || 'FLAT',
+              priceAmount: Number(po.customPrice ?? po.option?.priceAmount ?? 0),
               isRequired: po.isRequired,
             })),
           };
@@ -295,27 +308,38 @@ export class MenuTemplateController {
         templateName: template.name,
         templateDescription: template.description,
         variant: template.variant,
-        eventTypeName: template.eventType?.name || 'Ogolne',
-        eventTypeColor: template.eventType?.color,
+        eventTypeName: (template as any).eventType?.name || 'Ogolne',
+        eventTypeColor: (template as any).eventType?.color,
         packages: packagesWithCourses,
       };
 
+      console.log(`[MenuTemplate PDF] Generating PDF with ${packagesWithCourses.length} packages`);
+
       const pdfBuffer = await pdfService.generateMenuCardPDF(pdfData);
+
+      console.log(`[MenuTemplate PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
 
       const filename = `Karta_menu_${template.name.replace(/\s+/g, '_')}.pdf`;
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', pdfBuffer.length);
-      res.send(pdfBuffer);
+      return res.send(pdfBuffer);
     } catch (error) {
+      console.error('[MenuTemplate PDF] Error:', error);
+
       if (error instanceof Error && error.message === 'Menu template not found') {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found',
         });
       }
-      next(error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'PDF generation failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 }
