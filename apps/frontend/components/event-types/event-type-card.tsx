@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,7 @@ interface EventTypeCardProps {
 
 export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: EventTypeCardProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [toggling, setToggling] = useState(false)
   const reservationCount = stats?.reservationCount ?? 0
@@ -51,8 +53,20 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
     }
   }
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement
+    if (target.closest('button') || target.closest('[role="menuitem"]') || target.closest('[role="switch"]')) {
+      return
+    }
+    router.push(`/dashboard/event-types/${eventType.id}`)
+  }
+
   return (
-    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-neutral-200 dark:border-neutral-700">
+    <Card
+      className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-neutral-200 dark:border-neutral-700 cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Color bar at top */}
       <div
         className="h-2 w-full"
