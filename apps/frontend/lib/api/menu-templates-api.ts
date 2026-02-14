@@ -168,3 +168,20 @@ export async function duplicateMenuTemplate(
   );
   return data.data;
 }
+
+/**
+ * Download menu card PDF for a template
+ */
+export async function downloadMenuTemplatePDF(id: string, templateName: string): Promise<void> {
+  const { data } = await apiClient.get(`/menu-templates/${id}/pdf`, {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Karta_menu_${templateName.replace(/\s+/g, '_')}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}

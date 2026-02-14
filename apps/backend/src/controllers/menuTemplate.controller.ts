@@ -6,6 +6,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { menuService } from '../services/menu.service';
+import { pdfService } from '../services/pdf.service';
+import type { MenuCardPDFData } from '../services/pdf.service';
+import { prisma } from '@/lib/prisma';
 import {
   createMenuTemplateSchema,
   updateMenuTemplateSchema,
@@ -22,7 +25,6 @@ export class MenuTemplateController {
    */
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validate query params
       const filters = menuTemplateQuerySchema.parse(req.query);
 
       const templates = await menuService.getMenuTemplates({
@@ -110,7 +112,6 @@ export class MenuTemplateController {
    */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validate request body
       const data = createMenuTemplateSchema.parse(req.body);
 
       const template = await menuService.createMenuTemplate(data);
@@ -140,7 +141,6 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
 
-      // Validate request body
       const data = updateMenuTemplateSchema.parse(req.body);
 
       const template = await menuService.updateMenuTemplate(id, data);
@@ -207,7 +207,6 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
 
-      // Validate request body
       const data = duplicateMenuTemplateSchema.parse(req.body);
 
       const template = await menuService.duplicateMenuTemplate(id, {
@@ -237,6 +236,118 @@ export class MenuTemplateController {
         });
       }
       next(error);
+    }
+  }
+
+  /**
+   * GET /api/menu-templates/:id/pdf
+   * Download menu card PDF for a template
+   */
+  async downloadPdf(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      console.log(`[MenuTemplate PDF] Starting PDF generation for template ${id}`);
+
+      const template = await menuService.getMenuTemplateById(id);
+      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${template.packages?.length || 0}`);
+
+      // Fetch category settings (= courses) + dishes for each package
+      const packagesWithCourses = await Promise.all(
+        (template.packages || []).map(async (pkg: any) => {
+          console.log(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
+
+          // Get PackageCategorySettings with DishCategory and Dishes
+          const categorySettings = await prisma.packageCategorySettings.findMany({
+            where: { packageId: pkg.id, isEnabled: true },
+            include: {
+              category: {
+                include: {
+                  dishes: {
+                    where: { isActive: true },
+                    orderBy: { displayOrder: 'asc' }
+                  }
+                }
+              }
+            },
+            orderBy: { displayOrder: 'asc' }
+          });
+
+          console.log(`[MenuTemplate PDF] Package ${pkg.name}: ${categorySettings.length} categories found`);
+
+          return {
+            name: pkg.name,
+            description: pkg.description,
+            shortDescription: pkg.shortDescription,
+            pricePerAdult: Number(pkg.pricePerAdult),
+            pricePerChild: Number(pkg.pricePerChild),
+            pricePerToddler: Number(pkg.pricePerToddler),
+            isPopular: pkg.isPopular,
+            isRecommended: pkg.isRecommended,
+            badgeText: pkg.badgeText,
+            includedItems: Array.isArray(pkg.includedItems) ? pkg.includedItems as string[] : [],
+            courses: categorySettings.map((cs: any) => ({
+              name: cs.customLabel || cs.category.name,
+              description: null,
+              icon: cs.category.icon,
+              minSelect: Number(cs.minSelect),
+              maxSelect: Number(cs.maxSelect),
+              dishes: (cs.category.dishes || []).map((dish: any) => ({
+                name: dish.name,
+                description: dish.description,
+                allergens: Array.isArray(dish.allergens) ? dish.allergens : [],
+                isDefault: false,
+                isRecommended: false,
+              })),
+            })),
+            options: (pkg.packageOptions || []).map((po: any) => ({
+              name: po.option?.name || 'Nieznana opcja',
+              description: po.option?.description || null,
+              category: po.option?.category || 'OTHER',
+              priceType: po.option?.priceType || 'FLAT',
+              priceAmount: Number(po.customPrice ?? po.option?.priceAmount ?? 0),
+              isRequired: po.isRequired,
+            })),
+          };
+        })
+      );
+
+      const pdfData: MenuCardPDFData = {
+        templateName: template.name,
+        templateDescription: template.description,
+        variant: template.variant,
+        eventTypeName: (template as any).eventType?.name || 'Ogolne',
+        eventTypeColor: (template as any).eventType?.color,
+        packages: packagesWithCourses,
+      };
+
+      console.log(`[MenuTemplate PDF] Generating PDF with ${packagesWithCourses.length} packages`);
+
+      const pdfBuffer = await pdfService.generateMenuCardPDF(pdfData);
+
+      console.log(`[MenuTemplate PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
+
+      const filename = `Karta_menu_${template.name.replace(/\s+/g, '_')}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      return res.send(pdfBuffer);
+    } catch (error) {
+      console.error('[MenuTemplate PDF] Error:', error);
+
+      if (error instanceof Error && error.message === 'Menu template not found') {
+        return res.status(404).json({
+          success: false,
+          error: 'Menu template not found',
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: 'PDF generation failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 }
