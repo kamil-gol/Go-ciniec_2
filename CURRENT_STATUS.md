@@ -3,9 +3,9 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 14.02.2026, 16:41 CET  
+**Ostatnia aktualizacja:** 14.02.2026, 17:00 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.0.0 (Full Menu System + Reservation Integration)
+**Wersja:** 1.1.0 (Auth Middleware + Full Menu System)
 
 ---
 
@@ -36,6 +36,18 @@
 ✅ **Ustawienia Kategorii w Pakietach (PackageCategorySettings)** — minSelect/maxSelect per kategoria  
 ✅ **Historia Cen (MenuPriceHistory)** — automatyczne śledzenie zmian cen  
 ✅ **Premium UI/UX Components** — Switch, AlertDialog, DishDialog, loading states
+
+### 🔒 Bezpieczeństwo & Auth (v1.1.0)
+✅ **JWT Authentication** — Bearer token, auto-refresh, secure fallback  
+✅ **Role-Based Access Control** — ADMIN, EMPLOYEE  
+✅ **Auth middleware na WSZYSTKICH endpointach menu** — 45+ endpointów zabezpieczonych  
+✅ **Polityka dostępu:**  
+- GET (odczyt) → Staff (ADMIN + EMPLOYEE)  
+- POST/PUT/DELETE (zapis) → Admin only  
+- Dish categories GET → Publiczne  
+- Menu calculator → Staff  
+✅ **Frontend auto-token** — apiClient dodaje Bearer token automatycznie  
+✅ **Error handling** — 401 → redirect login, 403 → toast "Brak uprawnień"
 
 ### 🔗 Integracja Menu z Rezerwacjami
 ✅ **ReservationMenuSnapshot** — zapis wybranego menu w rezerwacji  
@@ -89,8 +101,8 @@ apps/backend/src/routes/
 ├── reservation-deposit.routes.ts
 ├── dish-category.routes.ts
 ├── dish.routes.ts
-├── menu.routes.ts              # Templates + Packages + Options (18KB)
-├── menu-calculator.routes.ts   # Kalkulator cen
+├── menu.routes.ts              # Templates + Packages + Options (auth protected)
+├── menu-calculator.routes.ts   # Kalkulator cen (auth protected)
 └── README_MENU_API.md          # Pełna dokumentacja Menu API
 ```
 
@@ -149,7 +161,7 @@ Przeczytaj na start:
 3. apps/backend/src/routes/README_MENU_API.md — szczegółowa dokumentacja Menu API
 4. apps/backend/prisma/schema.prisma — modele bazy danych
 
-## Co jest gotowe (v1.0.0):
+## Co jest gotowe (v1.1.0):
 - ✅ Rezerwacje + kolejka + drag&drop + auto-cancel
 - ✅ Sale, Klienci, Typy Wydarzeń (pełny CRUD)
 - ✅ Kategorie dań + Biblioteka dań
@@ -157,11 +169,12 @@ Przeczytaj na start:
 - ✅ Integracja Menu z Rezerwacjami (snapshot + kalkulator cen)
 - ✅ System zaliczek (Deposits + payments)
 - ✅ Historia cen menu (MenuPriceHistory)
+- ✅ Auth middleware na WSZYSTKICH endpointach menu
 
-## Co wymaga weryfikacji / dalszej pracy:
+## Co wymaga dalszej pracy:
 - ❓ Generowanie PDF z menu w rezerwacji
-- ❓ Testy jednostkowe systemu menu
-- ❓ Production deployment
+- 🔄 Testy jednostkowe systemu menu
+- 🔄 Production deployment
 
 Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 ```
@@ -176,11 +189,8 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 
 ## 📋 TODO
 
-### ❓ Do weryfikacji
-- [ ] Generowanie PDF z menu w rezerwacji
-- [ ] Auth middleware na endpointach menu (README_MENU_API.md wskazuje "Coming Soon")
-
 ### 🔄 Planowane
+- [ ] Generowanie PDF z menu w rezerwacji
 - [ ] Testy jednostkowe systemu menu
 - [ ] Production deployment
 - [ ] Import/Export menu (CSV/JSON)
@@ -194,8 +204,9 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 
 ## 📊 Postęp Ogólny
 
-- **Backend:** 98% ✅
+- **Backend:** 99% ✅
 - **Frontend:** 95% ✅
+- **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 78% 🔄
 - **Dokumentacja:** 98% ✅ (zaktualizowana 14.02)
 - **Deployment:** 70% 🔄
@@ -214,7 +225,8 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 - **Integracja Menu+Rezerwacje:** 100% ✅
 - **System Zaliczek:** 100% ✅
 - **Historia Cen:** 100% ✅
-- **PDF Generation:** ❓ Do weryfikacji
+- **Auth Middleware:** 100% ✅ (v1.1.0)
+- **PDF Generation:** ❓ Do implementacji
 
 ---
 
@@ -283,4 +295,4 @@ docker-compose exec postgres psql -U rezerwacje -d rezerwacje
 
 ---
 
-**Status:** Projekt w wersji 1.0.0. Kompletny system menu z szablonami, pakietami, opcjami, dodatkami i pełną integracją z rezerwacjami. Gotowy do dalszego rozwoju (PDF, testy, deployment).
+**Status:** Projekt w wersji 1.1.0. Kompletny system menu z auth middleware na wszystkich endpointach. Gotowy do dalszego rozwoju (PDF, testy, deployment).
