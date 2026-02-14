@@ -29,8 +29,10 @@ async function checkAvailability(
   if (excludeReservationId) {
     params.append('excludeReservationId', excludeReservationId)
   }
-  const response = await apiClient.get(`/api/reservations/check-availability?${params.toString()}`)
-  return response.data
+  // apiClient.baseURL already includes /api, so use relative path
+  const response = await apiClient.get(`/reservations/check-availability?${params.toString()}`)
+  // Backend returns { success, data: { available, conflicts } } — unwrap envelope
+  return response.data?.data ?? response.data
 }
 
 /**
