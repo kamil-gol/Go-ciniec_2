@@ -25,8 +25,9 @@ test.describe('Autentykacja', () => {
   test('should display login page correctly', async ({ page }) => {
     await page.goto('/login');
     
-    // Verify login page elements - accept brand name or login title
-    await expect(page.locator('h1, h2').first()).toContainText(/Logowanie|Zaloguj|Go\u015bciniec/i);
+    // Login page shows "Gościniec Rodzinny" as h1 and "Zaloguj się" as h2
+    await expect(page.locator('h1')).toContainText(/Gościniec/i);
+    await expect(page.locator('h2')).toContainText(/Zaloguj/i);
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
@@ -45,13 +46,11 @@ test.describe('Autentykacja', () => {
     // Verify redirect to dashboard
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
     
-    // Verify dashboard loaded - accept various heading patterns
-    await expect(page.locator('h1, h2').first()).toContainText(/Dashboard|Panel|Witaj/i);
+    // Header.tsx shows "Witaj, {firstName}!" as h1
+    await expect(page.locator('h1').first()).toContainText(/Witaj/i);
     
-    // Verify user menu visible (user is logged in)
-    await expect(
-      page.locator('button[aria-label="Menu u\u017cytkownika"], button[aria-label="User menu"]')
-    ).toBeVisible();
+    // Sidebar shows "Wyloguj" button (proves user is authenticated)
+    await expect(page.locator('button:has-text("Wyloguj")')).toBeVisible();
   });
   
   test.skip('should login with valid employee credentials', async ({ page }) => {
@@ -67,7 +66,7 @@ test.describe('Autentykacja', () => {
     
     // Verify redirect to dashboard
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
-    await expect(page.locator('h1, h2').first()).toContainText(/Dashboard|Panel|Witaj/i);
+    await expect(page.locator('h1').first()).toContainText(/Witaj/i);
   });
   
   test('should fail login with invalid email', async ({ page }) => {
@@ -83,13 +82,13 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Wait for error feedback (toast or inline error)
+    // Wait for error feedback (toast via sonner or inline error)
     await page.waitForTimeout(1500);
-    const errorEl = page.locator('.error-message, [data-sonner-toast], .toast');
+    const errorEl = page.locator('[data-sonner-toast], .text-error-600, .text-error-700');
     const hasError = await errorEl.first().isVisible().catch(() => false);
     
     if (hasError) {
-      await expect(errorEl.first()).toContainText(/niepoprawne|b\u0142\u0119dne|error|has\u0142o|Invalid/i);
+      await expect(errorEl.first()).toContainText(/niepoprawne|błędne|error|hasło|Invalid|Niepoprawny/i);
     } else {
       // Fallback: password was cleared = error handler ran (security best practice)
       const pwd = await page.inputValue('input[name="password"]');
@@ -110,13 +109,13 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Wait for error feedback (toast or inline error)
+    // Wait for error feedback (toast via sonner or inline error)
     await page.waitForTimeout(1500);
-    const errorEl = page.locator('.error-message, [data-sonner-toast], .toast');
+    const errorEl = page.locator('[data-sonner-toast], .text-error-600, .text-error-700');
     const hasError = await errorEl.first().isVisible().catch(() => false);
     
     if (hasError) {
-      await expect(errorEl.first()).toContainText(/niepoprawne|b\u0142\u0119dne|error|has\u0142o|Invalid/i);
+      await expect(errorEl.first()).toContainText(/niepoprawne|błędne|error|hasło|Invalid|Niepoprawny/i);
     } else {
       // Fallback: password was cleared = error handler ran (security best practice)
       const pwd = await page.inputValue('input[name="password"]');
@@ -133,16 +132,17 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Check for validation errors - inline error text, red styling, or HTML5 :invalid
-    const anyError = page.locator('p.error, .text-red-600, .error-message, [data-sonner-toast], input:invalid').first();
-    await expect(anyError).toBeVisible({ timeout: 3000 });
+    // Login page uses text-error-600 class for field validation errors
+    // e.g. "Email jest wymagany" / "Hasło jest wymagane"
+    const fieldError = page.locator('.text-error-600, .text-error-400').first();
+    await expect(fieldError).toBeVisible({ timeout: 3000 });
   });
   
   test('should logout successfully', async ({ adminPage }) => {
     // adminPage is already authenticated
     await expect(adminPage).toHaveURL('/dashboard');
     
-    // Logout
+    // Logout (clicks "Wyloguj" button directly in sidebar)
     await logout(adminPage);
     
     // Verify redirect to login
@@ -185,23 +185,24 @@ test.describe('Autentykacja', () => {
     
     // Should still be on dashboard (session persisted)
     await expect(adminPage).toHaveURL('/dashboard');
-    await expect(
-      adminPage.locator('button[aria-label="Menu u\u017cytkownika"], button[aria-label="User menu"]')
-    ).toBeVisible();
+    
+    // Header still shows welcome message (proves session is alive)
+    await expect(adminPage.locator('h1').first()).toContainText(/Witaj/i);
   });
   
-  test('should show user info in menu', async ({ adminPage }) => {
+  test('should show user info in sidebar', async ({ adminPage }) => {
     await expect(adminPage).toHaveURL('/dashboard');
     
-    // Click user menu
-    await adminPage.click('button[aria-label="Menu u\u017cytkownika"], button[aria-label="User menu"]');
+    // In Gościniec UI, user info is displayed directly in the sidebar
+    // (not behind a dropdown menu)
+    const sidebar = adminPage.locator('aside');
+    await expect(sidebar).toBeVisible();
     
-    // Should show user menu dropdown (absolute positioned div or role=menu)
-    const userMenu = adminPage.locator('div.absolute.right-0, [role="menu"], .dropdown-menu, .user-dropdown');
-    await expect(userMenu.first()).toBeVisible();
+    // Sidebar bottom section shows user name/email and logout button
+    await expect(sidebar.locator('button:has-text("Wyloguj")')).toBeVisible();
     
-    // Should contain logout option
-    await expect(userMenu.first()).toContainText(/Wyloguj|Logout/i);
+    // User info (name or email) should be visible in sidebar
+    await expect(sidebar).toContainText(/admin|Admin/i);
   });
 });
 
