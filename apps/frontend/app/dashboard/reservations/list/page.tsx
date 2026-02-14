@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, Sparkles, Search, CalendarDays, List } from 'lucide-react'
+import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, Search, CalendarDays, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ReservationsList } from '@/components/reservations/reservations-list'
 import { CreateReservationForm } from '@/components/reservations/create-reservation-form'
@@ -43,8 +43,8 @@ export default function ReservationsListPage() {
     } catch (error: any) {
       console.error('Error loading reservations:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować rezerwacji',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji',
         variant: 'destructive',
       })
     } finally {
@@ -70,7 +70,7 @@ export default function ReservationsListPage() {
       <PageHero
         accent={accent}
         title="Rezerwacje"
-        subtitle="Zarządzaj rezerwacjami sal weselnych"
+        subtitle="Zarz\u0105dzaj rezerwacjami sal weselnych"
         icon={Calendar}
         action={
           <Button
@@ -86,10 +86,39 @@ export default function ReservationsListPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
+        <StatCard label="Wszystkie" value={stats.total} subtitle="\u0141\u0105cznie rezerwacji" icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
         <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <StatCard label="Oczekuj\u0105ce" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Ten miesi\u0105c" value={stats.thisMonth} subtitle="Wydarze\u0144 w tym miesi\u0105cu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+      </div>
+
+      {/* Controls bar - same as calendar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {/* View Toggle - Kalendarz left, Lista right */}
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mr-3">
+            <Link
+              href="/dashboard/reservations/calendar"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              Kalendarz
+            </Link>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
+              <List className="h-3.5 w-3.5" />
+              Lista
+            </span>
+          </div>
+        </div>
+        <div className="relative w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+          <Input
+            placeholder="Szukaj rezerwacji..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10 pl-12 text-base"
+          />
+        </div>
       </div>
 
       {/* Create Form */}
@@ -116,43 +145,9 @@ export default function ReservationsListPage() {
 
       {/* Reservations List */}
       <Card>
-        <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle>Lista Rezerwacji</CardTitle>
-
-              {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 ml-2">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
-                  <List className="h-3.5 w-3.5" />
-                  Lista
-                </span>
-                <Link
-                  href="/dashboard/reservations/calendar"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
-                >
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  Kalendarz
-                </Link>
-              </div>
-            </div>
-            <div className="relative w-96">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
-              <Input
-                placeholder="Szukaj rezerwacji..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-12 pl-12 text-base"
-              />
-            </div>
-          </div>
-        </CardHeader>
         <CardContent className="p-6">
           {loading ? (
-            <LoadingState variant="skeleton" rows={4} message="Ładowanie rezerwacji..." />
+            <LoadingState variant="skeleton" rows={4} message="\u0141adowanie rezerwacji..." />
           ) : (
             <ReservationsList
               reservations={reservations}
