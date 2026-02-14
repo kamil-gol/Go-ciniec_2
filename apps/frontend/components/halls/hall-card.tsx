@@ -151,52 +151,6 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
           </div>
         </div>
 
-        {/* Pricing */}
-        <div className="rounded-xl bg-neutral-50 dark:bg-neutral-800/50 p-4 border border-neutral-200/50 dark:border-neutral-700/30 space-y-2.5">
-          <div className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
-            Cennik
-          </div>
-
-          {/* Adults */}
-          <div className="flex items-center justify-between p-2.5 bg-white dark:bg-neutral-800/80 rounded-lg">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-sky-500" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Dorośli:</span>
-            </div>
-            <strong className={cn('text-lg font-bold', accent.text, accent.textDark)}>
-              {hall.pricePerPerson} zł
-            </strong>
-          </div>
-
-          {/* Children */}
-          <div className="flex items-center justify-between p-2.5 bg-white dark:bg-neutral-800/80 rounded-lg">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Dzieci (4-12):</span>
-            </div>
-            <strong className={cn('text-lg font-bold', accent.text, accent.textDark)}>
-              {hall.pricePerChild || hall.pricePerPerson} zł
-            </strong>
-          </div>
-
-          {/* Toddlers */}
-          <div className="flex items-center justify-between p-2.5 bg-white dark:bg-neutral-800/80 rounded-lg">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Maluchy (0-3):</span>
-            </div>
-            <strong className="text-lg font-bold">
-              {Number(hall.pricePerToddler) === 0 ? (
-                <span className="text-green-600 dark:text-green-400">Gratis</span>
-              ) : (
-                <span className={cn(accent.text, accent.textDark)}>
-                  {hall.pricePerToddler} zł
-                </span>
-              )}
-            </strong>
-          </div>
-        </div>
-
         {/* Description */}
         {hall.description && (
           <p className="text-sm text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">

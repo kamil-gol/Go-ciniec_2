@@ -10,9 +10,6 @@ const HALLS = [
   { 
     name: 'Sala Kryształowa', 
     capacity: 80, 
-    pricePerPerson: 250, 
-    pricePerChild: 175,  // 70% of adult price
-    pricePerToddler: 0,  // Free for 0-3 years
     description: 'Elegancka sala z kryształowymi żyrandolami', 
     amenities: ['Klimatyzacja', 'Parkiet'], 
     images: [] 
@@ -20,9 +17,6 @@ const HALLS = [
   { 
     name: 'Sala Taneczna', 
     capacity: 120, 
-    pricePerPerson: 280, 
-    pricePerChild: 196,  // 70%
-    pricePerToddler: 0,
     description: 'Przestronna sala z parkietem tanecznym', 
     amenities: ['Parkiet', 'Nagłośnienie'], 
     images: [] 
@@ -30,9 +24,6 @@ const HALLS = [
   { 
     name: 'Sala Złota', 
     capacity: 150, 
-    pricePerPerson: 320, 
-    pricePerChild: 224,  // 70%
-    pricePerToddler: 0,
     description: 'Reprezentacyjna sala ze złotymi zdobieniami', 
     amenities: ['Scena', 'Oświetlenie LED'], 
     images: [] 
@@ -40,9 +31,6 @@ const HALLS = [
   { 
     name: 'Cały obiekt', 
     capacity: 300, 
-    pricePerPerson: 400, 
-    pricePerChild: 280,  // 70%
-    pricePerToddler: 0,
     description: 'Wynajem całego obiektu na ekskluzywne wydarzenia', 
     amenities: ['Wszystkie sale', 'Ogród', 'Parking'], 
     images: [] 
@@ -50,9 +38,6 @@ const HALLS = [
   { 
     name: 'Strzecha 1', 
     capacity: 50, 
-    pricePerPerson: 200, 
-    pricePerChild: 140,  // 70%
-    pricePerToddler: 0,
     description: 'Kameralna sala w stylu rustykalnym', 
     amenities: ['Kominek', 'Drewniane wnętrze'], 
     images: [] 
@@ -60,14 +45,16 @@ const HALLS = [
   { 
     name: 'Strzecha 2', 
     capacity: 60, 
-    pricePerPerson: 220, 
-    pricePerChild: 154,  // 70%
-    pricePerToddler: 0,
     description: 'Druga sala w stylu wiejskim z kominkiem', 
     amenities: ['Kominek', 'Taras'], 
     images: [] 
   },
 ]
+
+// Default pricing constants (since Hall model no longer has pricing)
+const DEFAULT_PRICE_PER_ADULT = 250
+const DEFAULT_PRICE_PER_CHILD = 175  // ~70% of adult price
+const DEFAULT_PRICE_PER_TODDLER = 0  // Free for 0-3 years
 
 const EVENT_TYPES = [
   { name: 'Wesele', description: 'Uroczystość weselna z przyjęciem', color: '#FF69B4' },
@@ -165,7 +152,7 @@ async function main() {
       data: hallData,
     })
     halls.push(hall)
-    console.log(`   ✓ ${hall.name} (${hall.capacity} osób, ${hall.pricePerPerson} zł/dorosły, ${hall.pricePerChild} zł/dziecko 4-12, ${hall.pricePerToddler} zł/dziecko 0-3)`)
+    console.log(`   ✓ ${hall.name} (${hall.capacity} osób)`)
   }
   console.log(`✅ Utworzono ${halls.length} sal\n`)
 
@@ -244,10 +231,10 @@ async function main() {
     const endDateTime = new Date(eventDate)
     endDateTime.setHours(endHour, 0, 0, 0)
     
-    // Ceny (konwersja do Decimal poprzez string)
-    const pricePerAdult = Number(hall.pricePerPerson)
-    const pricePerChild = Number(hall.pricePerChild || 0)
-    const pricePerToddler = Number(hall.pricePerToddler || 0)
+    // Ceny — use default constants (Hall no longer has pricing)
+    const pricePerAdult = DEFAULT_PRICE_PER_ADULT
+    const pricePerChild = DEFAULT_PRICE_PER_CHILD
+    const pricePerToddler = DEFAULT_PRICE_PER_TODDLER
     
     const totalPrice = (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
     
