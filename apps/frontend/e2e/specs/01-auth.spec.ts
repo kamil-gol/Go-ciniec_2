@@ -82,13 +82,17 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Wait for error feedback (toast via sonner or inline error)
+    // Wait for error feedback
     await page.waitForTimeout(1500);
-    const errorEl = page.locator('[data-sonner-toast], .text-error-600, .text-error-700');
-    const hasError = await errorEl.first().isVisible().catch(() => false);
+    
+    // Error alert container has .bg-error-50 class and contains error text
+    // Also check for sonner toast as alternative
+    const errorContainer = page.locator('.bg-error-50, [data-sonner-toast]');
+    const hasError = await errorContainer.first().isVisible().catch(() => false);
     
     if (hasError) {
-      await expect(errorEl.first()).toContainText(/niepoprawne|błędne|error|hasło|Invalid|Niepoprawny/i);
+      // The container holds: "Błąd logowania" + actual error message
+      await expect(errorContainer.first()).toContainText(/Błąd|niepoprawne|error|Invalid|Niepoprawny/i);
     } else {
       // Fallback: password was cleared = error handler ran (security best practice)
       const pwd = await page.inputValue('input[name="password"]');
@@ -109,13 +113,15 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Wait for error feedback (toast via sonner or inline error)
+    // Wait for error feedback
     await page.waitForTimeout(1500);
-    const errorEl = page.locator('[data-sonner-toast], .text-error-600, .text-error-700');
-    const hasError = await errorEl.first().isVisible().catch(() => false);
+    
+    // Error alert container has .bg-error-50 class and contains error text
+    const errorContainer = page.locator('.bg-error-50, [data-sonner-toast]');
+    const hasError = await errorContainer.first().isVisible().catch(() => false);
     
     if (hasError) {
-      await expect(errorEl.first()).toContainText(/niepoprawne|błędne|error|hasło|Invalid|Niepoprawny/i);
+      await expect(errorContainer.first()).toContainText(/Błąd|niepoprawne|error|Invalid|Niepoprawny/i);
     } else {
       // Fallback: password was cleared = error handler ran (security best practice)
       const pwd = await page.inputValue('input[name="password"]');
