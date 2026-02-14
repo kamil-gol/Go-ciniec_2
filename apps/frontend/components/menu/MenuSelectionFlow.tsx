@@ -5,8 +5,7 @@
  * Premium UI with gradients and animations
  * 
  * PHASE A: Guest counts come from reservation (read-only, no step 4)
- * FIX v4: Real UTF-8 Polish chars + auto scroll-to-top on step change
- * FIX v5: Edit mode starts at 'dishes' step so user can see/confirm selections
+ * FIX v6: Real UTF-8 Polish chars (not escape sequences)
  */
 
 'use client';
@@ -51,7 +50,6 @@ interface CategorySelection {
 interface MenuSelectionFlowProps {
   eventTypeId?: string;
   eventDate?: Date;
-  /** Guest counts from reservation (read-only, single source of truth) */
   adults: number;
   children: number;
   toddlers: number;
@@ -65,7 +63,6 @@ interface MenuSelectionFlowProps {
   className?: string;
 }
 
-// 4 steps: template -> package -> dishes -> options
 type Step = 'template' | 'package' | 'dishes' | 'options';
 
 export function MenuSelectionFlow({ 
@@ -87,10 +84,8 @@ export function MenuSelectionFlow({
   const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Total guests calculated from reservation props (read-only)
   const totalGuests = adults + children + toddlers;
 
-  // Auto scroll to top when step changes
   useEffect(() => {
     const dialogContent = containerRef.current?.closest('[role="dialog"]') || containerRef.current?.closest('.overflow-y-auto');
     if (dialogContent) {
@@ -99,7 +94,6 @@ export function MenuSelectionFlow({
     containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [currentStep]);
 
-  // Queries
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ 
     eventTypeId,
     isActive: true 
@@ -129,14 +123,14 @@ export function MenuSelectionFlow({
     }
     
     if (!resolvedTemplateId) {
-      console.warn('[MenuSelectionFlow] Could not resolve templateId. templateId:', initialSelection.templateId, 'package:', initialPackage);
+      console.warn('[MenuSelectionFlow] Could not resolve templateId.');
       setIsInitialized(true);
       return;
     }
     
     const template = templates.find(t => t.id === resolvedTemplateId);
     if (!template) {
-      console.warn('[MenuSelectionFlow] Template not found:', resolvedTemplateId, 'Available:', templates.map(t => ({ id: t.id, name: t.name })));
+      console.warn('[MenuSelectionFlow] Template not found:', resolvedTemplateId);
       setIsInitialized(true);
       return;
     }
@@ -149,7 +143,6 @@ export function MenuSelectionFlow({
       setSelectedPackage(initialPackage);
     }
     
-    // Restore options
     if (initialSelection.selectedOptions && initialSelection.selectedOptions.length > 0) {
       const quantities: Record<string, number> = {};
       initialSelection.selectedOptions.forEach(opt => {
@@ -158,17 +151,12 @@ export function MenuSelectionFlow({
       setOptionQuantities(quantities);
     }
 
-    // Restore dish selections
     if (initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
       setDishSelections(initialSelection.dishSelections);
     }
 
-    // FIX: In edit mode, start at 'dishes' step so user can see and re-confirm
-    // their dish selections. Previously jumped to 'options' which left the
-    // "Zatwierdz wybor" button disabled because dishes weren't re-validated.
-    if (initialPackage && initialSelection.dishSelections && initialSelection.dishSelections.length > 0) {
-      setCurrentStep('dishes');
-    } else if (initialPackage) {
+    // In edit mode start at dishes step so user can see and confirm selections
+    if (initialPackage) {
       setCurrentStep('dishes');
     } else {
       setCurrentStep('package');
@@ -188,36 +176,24 @@ export function MenuSelectionFlow({
 
   const canNavigateToStep = (stepId: Step): boolean => {
     switch (stepId) {
-      case 'template':
-        return true;
-      case 'package':
-        return !!selectedTemplate;
-      case 'dishes':
-        return !!selectedTemplate && !!selectedPackage;
-      case 'options':
-        return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0;
-      default:
-        return false;
+      case 'template': return true;
+      case 'package': return !!selectedTemplate;
+      case 'dishes': return !!selectedTemplate && !!selectedPackage;
+      case 'options': return !!selectedTemplate && !!selectedPackage && dishSelections.length > 0;
+      default: return false;
     }
   };
 
   const handleStepClick = (stepId: Step) => {
     const stepIndex = steps.findIndex(s => s.id === stepId);
-    
     if (stepIndex <= currentStepIndex) {
       setCurrentStep(stepId);
       return;
     }
-
     if (!canNavigateToStep(stepId)) {
-      toast({
-        title: 'Nie mo\u017cna przej\u015b\u0107 dalej',
-        description: 'Uzupe\u0142nij poprzednie kroki przed przej\u015bciem dalej.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Nie mo\u017cna przej\u015b\u0107 dalej', description: 'Uzupe\u0142nij poprzednie kroki.', variant: 'destructive' });
       return;
     }
-
     setCurrentStep(stepId);
   };
 
@@ -226,10 +202,7 @@ export function MenuSelectionFlow({
       setSelectedTemplate(template);
       setSelectedPackage(undefined);
       setDishSelections([]);
-      toast({
-        title: 'Menu zmienione',
-        description: 'Wybierz ponownie pakiet i dania dla nowego menu.',
-      });
+      toast({ title: 'Menu zmienione', description: 'Wybierz ponownie pakiet i dania.' });
     } else {
       setSelectedTemplate(template);
     }
@@ -238,7 +211,6 @@ export function MenuSelectionFlow({
 
   const handlePackageSelect = (pkg: MenuPackage) => {
     if (selectedPackage?.id !== pkg.id) {
-      // Package changed - clear dish selections
       setSelectedPackage(pkg);
       setDishSelections([]);
     } else {
@@ -254,12 +226,7 @@ export function MenuSelectionFlow({
 
   const handleComplete = () => {
     if (!selectedTemplate || !selectedPackage) {
-      console.error('[MenuSelectionFlow] handleComplete called but selectedTemplate or selectedPackage is missing!', { selectedTemplate, selectedPackage });
-      toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie wybrano menu lub pakietu. Spr\u00f3buj ponownie.',
-        variant: 'destructive',
-      });
+      toast({ title: 'B\u0142\u0105d', description: 'Nie wybrano menu lub pakietu.', variant: 'destructive' });
       return;
     }
 
@@ -278,7 +245,6 @@ export function MenuSelectionFlow({
     });
   };
 
-  // Show loading when initializing from initialSelection
   if (initialSelection && !isInitialized && (templatesLoading || initialPackageLoading)) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -299,19 +265,19 @@ export function MenuSelectionFlow({
         </div>
         <div className="flex-1 flex items-center gap-4">
           <span className="text-sm font-medium">
-            <span className="font-bold">{adults}</span> doros\u0142ych
+            <span className="font-bold">{adults}</span>{' doros\u0142ych'}
           </span>
-          <span className="text-purple-300">\u2022</span>
+          <span className="text-purple-300">{"\u2022"}</span>
           <span className="text-sm font-medium">
-            <span className="font-bold">{children}</span> dzieci
+            <span className="font-bold">{children}</span>{' dzieci'}
           </span>
-          <span className="text-purple-300">\u2022</span>
+          <span className="text-purple-300">{"\u2022"}</span>
           <span className="text-sm font-medium">
-            <span className="font-bold">{toddlers}</span> maluch\u00f3w
+            <span className="font-bold">{toddlers}</span>{' maluch\u00f3w'}
           </span>
-          <span className="text-purple-300">\u2022</span>
+          <span className="text-purple-300">{"\u2022"}</span>
           <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            {totalGuests} razem
+            {totalGuests}{' razem'}
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -320,29 +286,20 @@ export function MenuSelectionFlow({
         </div>
       </div>
 
-      {/* Premium Progress Steps */}
+      {/* Progress Steps */}
       <div className="relative">
         <div className="absolute top-5 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-blue-500 via-red-500 to-green-500 rounded-full opacity-20" />
-        
         <div className="relative flex items-center justify-between">
           {steps.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = index < currentStepIndex;
             const isClickable = index <= currentStepIndex || canNavigateToStep(step.id);
             const StepIcon = step.icon;
-            
             return (
-              <div 
-                key={step.id} 
-                className="flex flex-col items-center gap-2 flex-1"
-                onClick={() => handleStepClick(step.id)}
-              >
+              <div key={step.id} className="flex flex-col items-center gap-2 flex-1" onClick={() => handleStepClick(step.id)}>
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ 
-                    scale: isActive ? 1.1 : 1, 
-                    opacity: 1 
-                  }}
+                  animate={{ scale: isActive ? 1.1 : 1, opacity: 1 }}
                   whileHover={isClickable ? { scale: 1.15 } : {}}
                   className={cn(
                     'relative flex h-12 w-12 items-center justify-center rounded-full border-4 font-bold transition-all shadow-lg',
@@ -353,32 +310,17 @@ export function MenuSelectionFlow({
                     !isActive && !isCompleted && 'border-gray-300 bg-white text-gray-400 dark:bg-gray-800 dark:border-gray-600'
                   )}
                 >
-                  {isCompleted ? (
-                    <Check className="h-6 w-6" />
-                  ) : (
-                    <StepIcon className="h-6 w-6" />
-                  )}
-                  
-                  {isActive && (
-                    <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${step.gradient} blur-xl opacity-40 -z-10`} />
-                  )}
-
-                  {isClickable && !isActive && (
-                    <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 hover:opacity-10 transition-opacity" />
-                  )}
+                  {isCompleted ? <Check className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}
+                  {isActive && <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${step.gradient} blur-xl opacity-40 -z-10`} />}
+                  {isClickable && !isActive && <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 hover:opacity-10 transition-opacity" />}
                 </motion.div>
-                
-                <span
-                  className={cn(
-                    'text-xs sm:text-sm font-semibold text-center transition-colors',
-                    isClickable && 'cursor-pointer',
-                    isActive && 'text-transparent bg-clip-text bg-gradient-to-r ' + step.gradient,
-                    isCompleted && 'text-green-600',
-                    !isActive && !isCompleted && 'text-gray-500'
-                  )}
-                >
-                  {step.label}
-                </span>
+                <span className={cn(
+                  'text-xs sm:text-sm font-semibold text-center transition-colors',
+                  isClickable && 'cursor-pointer',
+                  isActive && 'text-transparent bg-clip-text bg-gradient-to-r ' + step.gradient,
+                  isCompleted && 'text-green-600',
+                  !isActive && !isCompleted && 'text-gray-500'
+                )}>{step.label}</span>
               </div>
             );
           })}
@@ -394,34 +336,21 @@ export function MenuSelectionFlow({
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          {/* Step 1: Select Template */}
           {currentStep === 'template' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl shadow-lg mb-2">
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                  Wybierz Menu
-                </h2>
-                <p className="text-muted-foreground">
-                  Dostosowane do Twojego wydarzenia
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">Wybierz Menu</h2>
+                <p className="text-muted-foreground">Dostosowane do Twojego wydarzenia</p>
               </div>
-
               {templatesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map(i => <MenuCardSkeleton key={i} />)}
-                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map(i => <MenuCardSkeleton key={i} />)}</div>
               ) : templates && templates.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {templates.map(template => (
-                    <MenuCard
-                      key={template.id}
-                      template={template}
-                      isSelected={selectedTemplate?.id === template.id}
-                      onSelect={handleTemplateSelect}
-                    />
+                    <MenuCard key={template.id} template={template} isSelected={selectedTemplate?.id === template.id} onSelect={handleTemplateSelect} />
                   ))}
                 </div>
               ) : (
@@ -429,77 +358,50 @@ export function MenuSelectionFlow({
                   <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-950/30 dark:to-amber-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-10 w-10 text-orange-600" />
                   </div>
-                  <p className="text-muted-foreground">Brak dost\u0119pnych menu</p>
+                  <p className="text-muted-foreground">{'Brak dost\u0119pnych menu'}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Step 2: Select Package */}
           {currentStep === 'package' && selectedTemplate && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg mb-2">
                   <Check className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  Wybierz Pakiet
-                </h2>
-                <p className="text-muted-foreground">
-                  {selectedTemplate.name} - {selectedTemplate.variant}
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Wybierz Pakiet</h2>
+                <p className="text-muted-foreground">{selectedTemplate.name} - {selectedTemplate.variant}</p>
               </div>
-
               {packagesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map(i => <PackageCardSkeleton key={i} />)}
-                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map(i => <PackageCardSkeleton key={i} />)}</div>
               ) : packages && packages.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {packages.map(pkg => (
-                    <PackageCard
-                      key={pkg.id}
-                      package={pkg}
-                      isSelected={selectedPackage?.id === pkg.id}
-                      onSelect={handlePackageSelect}
-                    />
+                    <PackageCard key={pkg.id} package={pkg} isSelected={selectedPackage?.id === pkg.id} onSelect={handlePackageSelect} />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Brak dost\u0119pnych pakiet\u00f3w</p>
-                </div>
+                <div className="text-center py-12"><p className="text-muted-foreground">{'Brak dost\u0119pnych pakiet\u00f3w'}</p></div>
               )}
-
               <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentStep('template')}
-                  className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6"
-                >
+                <Button variant="outline" size="lg" onClick={() => setCurrentStep('template')} className="group border-2 border-blue-300 hover:border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 dark:from-blue-950/30 dark:to-cyan-950/30 dark:hover:from-blue-950/50 dark:hover:to-cyan-950/50 text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100 shadow-md hover:shadow-lg transition-all px-6">
                   <RefreshCw className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
-                  Zmie\u0144 menu
+                  {'Zmie\u0144 menu'}
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Select Dishes */}
           {currentStep === 'dishes' && selectedPackage && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl shadow-lg mb-2">
                   <UtensilsCrossed className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
-                  Wyb\u00f3r Da\u0144
-                </h2>
-                <p className="text-muted-foreground">
-                  {selectedPackage.name}
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{'Wyb\u00f3r Da\u0144'}</h2>
+                <p className="text-muted-foreground">{selectedPackage.name}</p>
               </div>
-
               <DishSelector
                 packageId={selectedPackage.id}
                 initialSelections={dishSelections}
@@ -509,61 +411,28 @@ export function MenuSelectionFlow({
             </div>
           )}
 
-          {/* Step 4: Select Options */}
           {currentStep === 'options' && (
             <div className="space-y-6">
               <div className="text-center space-y-3">
                 <div className="inline-flex p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl shadow-lg mb-2">
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  Opcje Dodatkowe
-                </h2>
-                <p className="text-muted-foreground">
-                  Wybierz dodatkowe us\u0142ugi (opcjonalne)
-                </p>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Opcje Dodatkowe</h2>
+                <p className="text-muted-foreground">{'Wybierz dodatkowe us\u0142ugi (opcjonalne)'}</p>
               </div>
-
-              {/* Top Confirm Button */}
               <div className="flex justify-center pb-4 border-b-2">
-                <Button
-                  size="lg"
-                  onClick={handleComplete}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
-                >
+                <Button size="lg" onClick={handleComplete} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold">
                   <Check className="mr-2 h-6 w-6" />
-                  Zatwierd\u017a wyb\u00f3r
+                  {'Zatwierd\u017a wyb\u00f3r'}
                 </Button>
               </div>
-
-              {/* Use OptionsSelector for better UX */}
-              <OptionsSelector
-                options={options || []}
-                isLoading={optionsLoading}
-                quantities={optionQuantities}
-                onQuantityChange={(id, qty) => {
-                  setOptionQuantities(prev => ({ ...prev, [id]: qty }));
-                }}
-              />
-
-              {/* Bottom Navigation */}
+              <OptionsSelector options={options || []} isLoading={optionsLoading} quantities={optionQuantities} onQuantityChange={(id, qty) => setOptionQuantities(prev => ({ ...prev, [id]: qty }))} />
               <div className="flex justify-center gap-4 pt-6 border-t-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentStep('dishes')}
-                  className="border-2 px-8"
-                >
-                  <ArrowLeft className="mr-2 h-5 w-5" />
-                  Wstecz
+                <Button variant="outline" size="lg" onClick={() => setCurrentStep('dishes')} className="border-2 px-8">
+                  <ArrowLeft className="mr-2 h-5 w-5" /> Wstecz
                 </Button>
-                <Button
-                  size="lg"
-                  onClick={handleComplete}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold"
-                >
-                  <Check className="mr-2 h-5 w-5" />
-                  Zatwierd\u017a wyb\u00f3r
+                <Button size="lg" onClick={handleComplete} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-12 shadow-lg text-lg font-bold">
+                  <Check className="mr-2 h-5 w-5" /> {'Zatwierd\u017a wyb\u00f3r'}
                 </Button>
               </div>
             </div>

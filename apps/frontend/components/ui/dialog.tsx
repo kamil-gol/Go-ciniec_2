@@ -41,10 +41,8 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="fixed inset-0 bg-black/50"
-        onClick={() => onOpenChange(false)}
-      />
+      {/* Overlay - no onClick, dialog only closes via X button or Escape */}
+      <div className="fixed inset-0 bg-black/50" />
       <div className="relative z-50 w-full flex items-center justify-center">{children}</div>
     </div>
   )
