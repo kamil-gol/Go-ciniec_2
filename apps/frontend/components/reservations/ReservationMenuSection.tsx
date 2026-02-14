@@ -100,11 +100,18 @@ export function ReservationMenuSection({
     setShowSelectionDialog(false)
   }
 
+  /**
+   * Build initial selection for edit mode.
+   * Uses snapshot.menuTemplateId and snapshot.packageId (DB columns)
+   * exposed by the updated formatMenuResponse, with JSONB fallbacks.
+   */
   const buildInitialSelection = () => {
     if (!hasMenu || !menuData?.snapshot) return undefined
     const snapshot = menuData.snapshot
     const md = snapshot.menuData || {} as any
     
+    // Primary: DB column fields from formatMenuResponse
+    // Fallback: JSONB menuData fields
     const templateId = snapshot.menuTemplateId || md.templateId || md.menuTemplateId || undefined
     const packageId = snapshot.packageId || md.packageId || md.selectedPackageId || undefined
     
@@ -146,6 +153,7 @@ export function ReservationMenuSection({
     )
   }
 
+  // Extract menu data if available
   const snapshot = menuData?.snapshot
   const priceBreakdown = menuData?.priceBreakdown
   const menuDataNested = snapshot?.menuData || {} as any
@@ -161,6 +169,7 @@ export function ReservationMenuSection({
 
   return (
     <>
+      {/* No menu selected yet */}
       {!hasMenu && (
         <Card className="border-0 shadow-xl">
           <CardHeader className="border-b">
@@ -194,6 +203,7 @@ export function ReservationMenuSection({
         </Card>
       )}
 
+      {/* Menu is selected - show details */}
       {hasMenu && (
         <>
           <Card className="border-0 shadow-xl overflow-hidden">
@@ -228,6 +238,7 @@ export function ReservationMenuSection({
                 </div>
               </div>
 
+              {/* Package Section */}
               <div className="space-y-4">
                 <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -239,6 +250,7 @@ export function ReservationMenuSection({
                     <p className="text-sm text-muted-foreground mb-3">{packageDescription}</p>
                   )}
                   
+                  {/* Package Prices */}
                   <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">Doro\u015bli</p>
@@ -255,6 +267,7 @@ export function ReservationMenuSection({
                   </div>
                 </div>
 
+                {/* Selected Dishes */}
                 {dishSelections && dishSelections.length > 0 && (
                   <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-4">
@@ -270,6 +283,7 @@ export function ReservationMenuSection({
                   </div>
                 )}
 
+                {/* Selected Options */}
                 {selectedOptions && selectedOptions.length > 0 && (
                   <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -303,6 +317,7 @@ export function ReservationMenuSection({
             </div>
           </Card>
 
+          {/* Price Breakdown Card */}
           {priceBreakdown && (
             <Card className="border-0 shadow-xl overflow-hidden">
               <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30 p-6">
@@ -314,6 +329,7 @@ export function ReservationMenuSection({
                 </div>
 
                 <div className="space-y-3">
+                  {/* Package Cost */}
                   <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                     <p className="text-sm font-semibold text-muted-foreground mb-3">Pakiet</p>
                     <div className="space-y-2">
@@ -343,6 +359,7 @@ export function ReservationMenuSection({
                     </div>
                   </div>
 
+                  {/* Options Cost */}
                   {priceBreakdown.optionsCost && priceBreakdown.optionsCost.length > 0 && (
                     <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                       <p className="text-sm font-semibold text-muted-foreground mb-3">Opcje dodatkowe</p>
@@ -362,6 +379,7 @@ export function ReservationMenuSection({
                     </div>
                   )}
 
+                  {/* Total */}
                   <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
                     <div className="flex items-center justify-between">
                       <div>
@@ -378,6 +396,7 @@ export function ReservationMenuSection({
         </>
       )}
 
+      {/* Single shared Dialog for both add and edit */}
       <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
         <DialogContent 
           className="max-w-4xl max-h-[90vh] overflow-y-auto"
