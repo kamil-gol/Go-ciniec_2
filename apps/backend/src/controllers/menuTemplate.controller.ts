@@ -8,7 +8,7 @@ import { Request, Response, NextFunction } from 'express';
 import { menuService } from '../services/menu.service';
 import { pdfService } from '../services/pdf.service';
 import type { MenuCardPDFData } from '../services/pdf.service';
-import { menuCourseService } from '../services/menuCourse.service';
+import { prisma } from '@/lib/prisma';
 import {
   createMenuTemplateSchema,
   updateMenuTemplateSchema,
@@ -252,20 +252,28 @@ export class MenuTemplateController {
       const template = await menuService.getMenuTemplateById(id);
       console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${template.packages?.length || 0}`);
 
-      // Fetch courses for each package
+      // Fetch category settings (= courses) + dishes for each package
       const packagesWithCourses = await Promise.all(
         (template.packages || []).map(async (pkg: any) => {
-          console.log(`[MenuTemplate PDF] Fetching courses for package: ${pkg.name} (${pkg.id})`);
+          console.log(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
 
-          let courses: any[] = [];
-          try {
-            courses = await menuCourseService.listByPackage(pkg.id);
-          } catch (courseError) {
-            console.error(`[MenuTemplate PDF] Failed to fetch courses for package ${pkg.id}:`, courseError);
-            courses = [];
-          }
+          // Get PackageCategorySettings with DishCategory and Dishes
+          const categorySettings = await prisma.packageCategorySettings.findMany({
+            where: { packageId: pkg.id, isEnabled: true },
+            include: {
+              category: {
+                include: {
+                  dishes: {
+                    where: { isActive: true },
+                    orderBy: { displayOrder: 'asc' }
+                  }
+                }
+              }
+            },
+            orderBy: { displayOrder: 'asc' }
+          });
 
-          console.log(`[MenuTemplate PDF] Package ${pkg.name}: ${courses.length} courses found`);
+          console.log(`[MenuTemplate PDF] Package ${pkg.name}: ${categorySettings.length} categories found`);
 
           return {
             name: pkg.name,
@@ -278,18 +286,18 @@ export class MenuTemplateController {
             isRecommended: pkg.isRecommended,
             badgeText: pkg.badgeText,
             includedItems: Array.isArray(pkg.includedItems) ? pkg.includedItems as string[] : [],
-            courses: courses.map((course: any) => ({
-              name: course.name,
-              description: course.description,
-              icon: course.icon,
-              minSelect: course.minSelect,
-              maxSelect: course.maxSelect,
-              dishes: (course.options || []).map((opt: any) => ({
-                name: opt.dish?.name || 'Nieznane danie',
-                description: opt.dish?.description || null,
-                allergens: Array.isArray(opt.dish?.allergens) ? opt.dish.allergens : [],
-                isDefault: opt.isDefault,
-                isRecommended: opt.isRecommended,
+            courses: categorySettings.map((cs: any) => ({
+              name: cs.customLabel || cs.category.name,
+              description: null,
+              icon: cs.category.icon,
+              minSelect: Number(cs.minSelect),
+              maxSelect: Number(cs.maxSelect),
+              dishes: (cs.category.dishes || []).map((dish: any) => ({
+                name: dish.name,
+                description: dish.description,
+                allergens: Array.isArray(dish.allergens) ? dish.allergens : [],
+                isDefault: false,
+                isRecommended: false,
               })),
             })),
             options: (pkg.packageOptions || []).map((po: any) => ({
