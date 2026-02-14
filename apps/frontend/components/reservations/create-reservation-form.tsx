@@ -8,10 +8,19 @@ import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { SelectSimple } from '@/components/ui/select-simple'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
 import { Stepper, StepContent, StepNavigation, StepConfig } from '@/components/ui/stepper'
+import { Switch } from '@/components/ui/switch'
+import { DatePicker } from '@/components/ui/date-picker'
+import { TimePicker } from '@/components/ui/time-picker'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCreateReservation } from '@/hooks/use-reservations'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
@@ -45,7 +54,7 @@ const STEPS: StepConfig[] = [
 // CONSTANTS
 // ═══════════════════════════════════════════════════
 
-const EXTRA_HOUR_RATE = 500 // PLN per extra hour beyond 6h
+const EXTRA_HOUR_RATE = 500
 const STANDARD_HOURS = 6
 
 // ═══════════════════════════════════════════════════
@@ -53,36 +62,25 @@ const STANDARD_HOURS = 6
 // ═══════════════════════════════════════════════════
 
 const reservationSchema = z.object({
-  // Step 1: Event
   eventTypeId: z.string().min(1, 'Wybierz typ wydarzenia'),
   customEventType: z.string().optional(),
   birthdayAge: z.coerce.number().optional(),
   anniversaryYear: z.coerce.number().optional(),
   anniversaryOccasion: z.string().optional(),
-
-  // Step 2: Venue & Time
   hallId: z.string().min(1, 'Wybierz salę'),
   startDate: z.string().min(1, 'Wybierz datę rozpoczęcia'),
   startTime: z.string().min(1, 'Wybierz czas rozpoczęcia'),
   endDate: z.string().min(1, 'Wybierz datę zakończenia'),
   endTime: z.string().min(1, 'Wybierz czas zakończenia'),
-
-  // Step 3: Guests
   adults: z.coerce.number().min(0, 'Liczba dorosłych musi być >= 0'),
   children: z.coerce.number().min(0, 'Liczba dzieci (4-12) musi być >= 0'),
   toddlers: z.coerce.number().min(0, 'Liczba dzieci (0-3) musi być >= 0'),
-
-  // Step 4: Menu & Pricing
   useMenuPackage: z.boolean(),
   menuPackageId: z.string().optional(),
   pricePerAdult: z.coerce.number().min(0).optional(),
   pricePerChild: z.coerce.number().min(0).optional(),
   pricePerToddler: z.coerce.number().min(0).optional(),
-
-  // Step 5: Client
   clientId: z.string().min(1, 'Wybierz klienta'),
-
-  // Step 6: Summary extras
   confirmationDeadline: z.string().optional(),
   notes: z.string().optional(),
 }).refine((data) => data.adults + data.children + data.toddlers >= 1, {
@@ -107,7 +105,6 @@ const reservationSchema = z.object({
 
 type ReservationFormData = z.infer<typeof reservationSchema>
 
-// Fields that belong to each step (for per-step validation)
 const STEP_FIELDS: Record<number, (keyof ReservationFormData)[]> = {
   0: ['eventTypeId'],
   1: ['hallId', 'startDate', 'startTime', 'endDate', 'endTime'],
@@ -146,22 +143,17 @@ export function CreateReservationForm({
   const formRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
 
-  // ── Wizard state ──
   const [currentStep, setCurrentStep] = useState(0)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
-
-  // ── UI state ──
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
 
-  // ── Data hooks ──
   const { data: halls, isLoading: hallsLoading } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
   const { data: eventTypes, isLoading: eventTypesLoading } = useEventTypes()
   const createReservation = useCreateReservation()
 
-  // ── Form ──
   const {
     register,
     handleSubmit,
@@ -181,7 +173,6 @@ export function CreateReservationForm({
     },
   })
 
-  // ── Watched values ──
   const watchAll = watch()
   const useMenuPackage = watch('useMenuPackage')
   const menuPackageId = watch('menuPackageId')
@@ -198,7 +189,6 @@ export function CreateReservationForm({
   const endDate = watch('endDate')
   const endTime = watch('endTime')
 
-  // ── Derived data ──
   const hallsArray = useMemo(() => Array.isArray(halls?.halls) ? halls.halls : [], [halls])
   const clientsArray = useMemo(() => Array.isArray(clientsData) ? clientsData : [], [clientsData])
   const eventTypesArray = useMemo(() => Array.isArray(eventTypes) ? eventTypes : [], [eventTypes])
@@ -206,7 +196,6 @@ export function CreateReservationForm({
   const { data: menuPackages, isLoading: menuPackagesLoading } = usePackagesByEventType(selectedEventTypeId)
   const menuPackagesArray = useMemo(() => Array.isArray(menuPackages) ? menuPackages : [], [menuPackages])
 
-  // ── Availability check ──
   const startDateTimeISO = useMemo(() => {
     if (startDate && startTime) return `${startDate}T${startTime}:00`
     return undefined
@@ -221,11 +210,9 @@ export function CreateReservationForm({
     hallId, startDateTimeISO, endDateTimeISO
   )
 
-  // ── Selected hall info ──
   const selectedHall = useMemo(() => hallsArray.find((h) => h.id === hallId), [hallsArray, hallId])
   const selectedHallCapacity = selectedHall?.capacity || 0
 
-  // ── Event type info ──
   const selectedEventTypeName = useMemo(() => {
     const t = eventTypesArray.find((t) => t.id === selectedEventTypeId)
     return t?.name || ''
@@ -235,7 +222,6 @@ export function CreateReservationForm({
   const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
   const isCustom = selectedEventTypeName === 'Inne'
 
-  // ── Package info ──
   const selectedPackage = useMemo(() => {
     if (!menuPackageId || !menuPackages) return null
     return menuPackages.find((pkg) => pkg.id === menuPackageId) || null
@@ -243,7 +229,6 @@ export function CreateReservationForm({
 
   const hasNoPackagesForEventType = selectedEventTypeId && !menuPackagesLoading && menuPackagesArray.length === 0
 
-  // ── Computed values ──
   const totalGuests = adults + children + toddlers
   const calculatedPrice = (adults * pricePerAdult) + (children * pricePerChild) + (toddlers * pricePerToddler)
 
@@ -257,7 +242,6 @@ export function CreateReservationForm({
     return 0
   }, [startDate, startTime, endDate, endTime])
 
-  // ── Extra hours cost (beyond standard 6h) ──
   const extraHours = useMemo(() => {
     if (durationHours > STANDARD_HOURS) return Math.ceil(durationHours - STANDARD_HOURS)
     return 0
@@ -268,7 +252,6 @@ export function CreateReservationForm({
 
   // ═══ EFFECTS ═══
 
-  // Pre-select hall from defaultHallId
   useEffect(() => {
     if (defaultHallId && hallsArray.length > 0 && !watchAll.hallId) {
       const hallExists = hallsArray.some((h) => h.id === defaultHallId)
@@ -276,7 +259,6 @@ export function CreateReservationForm({
     }
   }, [defaultHallId, hallsArray, setValue, watchAll.hallId])
 
-  // Auto-fill end date/time (+6h)
   useEffect(() => {
     if (startDate && startTime && !watchAll.endDate && !watchAll.endTime) {
       const start = new Date(`${startDate}T${startTime}`)
@@ -286,7 +268,6 @@ export function CreateReservationForm({
     }
   }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue])
 
-  // Auto-set prices from menu package
   useEffect(() => {
     if (useMenuPackage && selectedPackage) {
       setValue('pricePerAdult', parseFloat(selectedPackage.pricePerAdult))
@@ -295,8 +276,6 @@ export function CreateReservationForm({
     }
   }, [useMenuPackage, selectedPackage, setValue])
 
-  // Reset manual price flags when switching to menu package
-  // so auto-calc resumes when user switches back to manual
   useEffect(() => {
     if (useMenuPackage) {
       setChildPriceManuallySet(false)
@@ -304,7 +283,6 @@ export function CreateReservationForm({
     }
   }, [useMenuPackage])
 
-  // Reset package when event type changes
   useEffect(() => {
     if (selectedEventTypeId && menuPackageId) {
       const isValid = menuPackages?.some((pkg) => pkg.id === menuPackageId)
@@ -315,21 +293,18 @@ export function CreateReservationForm({
     }
   }, [selectedEventTypeId, menuPackageId, menuPackages, setValue])
 
-  // Auto-set child price to 50% of adult (only when NOT using menu package)
   useEffect(() => {
     if (!useMenuPackage && pricePerAdult > 0 && !childPriceManuallySet) {
       setValue('pricePerChild', Math.round(pricePerAdult / 2))
     }
   }, [useMenuPackage, pricePerAdult, setValue, childPriceManuallySet])
 
-  // Auto-set toddler price to 25% of adult (only when NOT using menu package)
   useEffect(() => {
     if (!useMenuPackage && pricePerAdult > 0 && !toddlerPriceManuallySet) {
       setValue('pricePerToddler', Math.round(pricePerAdult * 0.25))
     }
   }, [useMenuPackage, pricePerAdult, setValue, toddlerPriceManuallySet])
 
-  // Auto-set hall default price
   useEffect(() => {
     if (hallId && !useMenuPackage && !watchAll.pricePerAdult) {
       const hall = hallsArray.find((h) => h.id === hallId)
@@ -349,7 +324,6 @@ export function CreateReservationForm({
     const fields = STEP_FIELDS[currentStep]
     if (!fields || fields.length === 0) return true
 
-    // Custom step validations
     if (currentStep === 2) {
       if (adults + children + toddlers < 1) {
         await trigger('adults')
@@ -374,7 +348,6 @@ export function CreateReservationForm({
   const goToNextStep = useCallback(async () => {
     const isValid = await validateCurrentStep()
     if (!isValid) return
-
     setCompletedSteps((prev) => new Set([...prev, currentStep]))
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1))
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -442,30 +415,6 @@ export function CreateReservationForm({
 
   // ═══ OPTIONS ═══
 
-  const hallOptions = useMemo(() => [
-    { value: '', label: 'Wybierz salę...' },
-    ...hallsArray.map((hall) => ({
-      value: hall.id,
-      label: `${hall.name} (max ${hall.capacity} osób)`,
-    })),
-  ], [hallsArray])
-
-  const eventTypeOptions = useMemo(() => [
-    { value: '', label: 'Wybierz typ wydarzenia...' },
-    ...eventTypesArray.map((type) => ({
-      value: type.id,
-      label: type.name,
-    })),
-  ], [eventTypesArray])
-
-  const menuPackageOptions = useMemo(() => [
-    { value: '', label: 'Wybierz pakiet...' },
-    ...menuPackagesArray.map((pkg) => ({
-      value: pkg.id,
-      label: `${pkg.name} - ${formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba`,
-    })),
-  ], [menuPackagesArray])
-
   const clientComboboxOptions = useMemo(() =>
     clientsArray.map((client) => ({
       value: client.id,
@@ -475,19 +424,17 @@ export function CreateReservationForm({
     })),
   [clientsArray])
 
-  // ── Selected client for summary ──
   const selectedClient = useMemo(() =>
     clientsArray.find((c) => c.id === watchAll.clientId),
   [clientsArray, watchAll.clientId])
 
-  // ═══ Check if next is disabled (step-specific) ═══
   const isNextDisabled = useMemo(() => {
-    if (currentStep === 1 && availability && !availability.available) return false // allow but warn
+    if (currentStep === 1 && availability && !availability.available) return false
     return false
   }, [currentStep, availability])
 
   // ═══════════════════════════════════════════════════
-  // PRICE SUMMARY COMPONENT (reused in Step 3 & 5)
+  // PRICE SUMMARY
   // ═══════════════════════════════════════════════════
 
   const PriceSummary = useCallback(({ compact = false }: { compact?: boolean }) => {
@@ -572,7 +519,6 @@ export function CreateReservationForm({
         )}
 
         <CardContent className="pt-6">
-          {/* ── STEPPER ── */}
           <Stepper
             steps={STEPS}
             currentStep={currentStep}
@@ -584,9 +530,7 @@ export function CreateReservationForm({
           <form onSubmit={handleSubmit(onFormSubmit)}>
             <AnimatePresence mode="wait">
 
-              {/* ═══════════════════════════════════════ */}
-              {/* STEP 0: Typ wydarzenia                 */}
-              {/* ═══════════════════════════════════════ */}
+              {/* ═══ STEP 0: Typ wydarzenia ═══ */}
               <StepContent stepIndex={0} currentStep={currentStep}>
                 <div className="space-y-6">
                   <div className="text-center mb-6">
@@ -597,12 +541,30 @@ export function CreateReservationForm({
                     <p className="text-sm text-secondary-500 mt-1">Określ rodzaj imprezy — wpłynie na dostępne pakiety menu</p>
                   </div>
 
-                  <SelectSimple
-                    label="Typ wydarzenia"
-                    options={eventTypeOptions}
-                    error={errors.eventTypeId?.message}
-                    {...register('eventTypeId')}
-                  />
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-secondary-700">Typ wydarzenia</label>
+                    <Controller
+                      name="eventTypeId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400' : ''}`}>
+                            <SelectValue placeholder="Wybierz typ wydarzenia..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {eventTypesArray.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.eventTypeId && (
+                      <p className="text-xs text-red-500">{errors.eventTypeId.message}</p>
+                    )}
+                  </div>
 
                   {isBirthday && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
@@ -651,9 +613,7 @@ export function CreateReservationForm({
                 </div>
               </StepContent>
 
-              {/* ═══════════════════════════════════════ */}
-              {/* STEP 1: Sala i termin                  */}
-              {/* ═══════════════════════════════════════ */}
+              {/* ═══ STEP 1: Sala i termin ═══ */}
               <StepContent stepIndex={1} currentStep={currentStep}>
                 <div className="space-y-6">
                   <div className="text-center mb-6">
@@ -664,12 +624,32 @@ export function CreateReservationForm({
                     <p className="text-sm text-secondary-500 mt-1">Sprawdzimy dostępność automatycznie</p>
                   </div>
 
-                  <SelectSimple
-                    label="Sala"
-                    options={hallOptions}
-                    error={errors.hallId?.message}
-                    {...register('hallId')}
-                  />
+                  {/* Hall select */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-secondary-700">Sala</label>
+                    <Controller
+                      name="hallId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400' : ''}`}>
+                            <SelectValue placeholder="Wybierz salę..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {hallsArray.map((hall) => (
+                              <SelectItem key={hall.id} value={hall.id}>
+                                {hall.name} (max {hall.capacity} osób)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.hallId && (
+                      <p className="text-xs text-red-500">{errors.hallId.message}</p>
+                    )}
+                  </div>
+
                   {selectedHallCapacity > 0 && (
                     <p className="-mt-4 text-sm text-secondary-600">
                       Maksymalna pojemność: {selectedHallCapacity} osób
@@ -683,32 +663,69 @@ export function CreateReservationForm({
                     </motion.div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-1">Data i czas rozpoczęcia</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-secondary-500 flex-shrink-0" />
-                          <Input type="date" error={errors.startDate?.message} {...register('startDate')} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-secondary-500 flex-shrink-0" />
-                          <Input type="time" placeholder="16:00" error={errors.startTime?.message} {...register('startTime')} />
-                        </div>
-                      </div>
+                  {/* Date & Time pickers */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-secondary-800">Rozpoczęcie</p>
+                      <Controller
+                        name="startDate"
+                        control={control}
+                        render={({ field }) => (
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            label="Data"
+                            placeholder="Wybierz datę..."
+                            error={errors.startDate?.message}
+                            minDate={new Date()}
+                          />
+                        )}
+                      />
+                      <Controller
+                        name="startTime"
+                        control={control}
+                        render={({ field }) => (
+                          <TimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            label="Godzina"
+                            placeholder="Wybierz godzinę..."
+                            error={errors.startTime?.message}
+                          />
+                        )}
+                      />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-1">Data i czas zakończenia</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-secondary-500 flex-shrink-0" />
-                          <Input type="date" error={errors.endDate?.message} {...register('endDate')} disabled={!startDate} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-secondary-500 flex-shrink-0" />
-                          <Input type="time" placeholder="22:00" error={errors.endTime?.message} {...register('endTime')} disabled={!startDate || !startTime} />
-                        </div>
-                      </div>
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-secondary-800">Zakończenie</p>
+                      <Controller
+                        name="endDate"
+                        control={control}
+                        render={({ field }) => (
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            label="Data"
+                            placeholder="Wybierz datę..."
+                            error={errors.endDate?.message}
+                            disabled={!startDate}
+                            minDate={startDate ? new Date(startDate) : undefined}
+                          />
+                        )}
+                      />
+                      <Controller
+                        name="endTime"
+                        control={control}
+                        render={({ field }) => (
+                          <TimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            label="Godzina"
+                            placeholder="Wybierz godzinę..."
+                            error={errors.endTime?.message}
+                            disabled={!startDate || !startTime}
+                          />
+                        )}
+                      />
                     </div>
                   </div>
 
@@ -726,7 +743,7 @@ export function CreateReservationForm({
                     </motion.div>
                   )}
 
-                  {/* Availability indicator */}
+                  {/* Availability */}
                   {hallId && startDateTimeISO && endDateTimeISO && (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -767,9 +784,7 @@ export function CreateReservationForm({
                 </div>
               </StepContent>
 
-              {/* ═══════════════════════════════════════ */}
-              {/* STEP 2: Goście                          */}
-              {/* ═══════════════════════════════════════ */}
+              {/* ═══ STEP 2: Goście ═══ */}
               <StepContent stepIndex={2} currentStep={currentStep}>
                 <div className="space-y-6">
                   <div className="text-center mb-6">
@@ -848,9 +863,7 @@ export function CreateReservationForm({
                 </div>
               </StepContent>
 
-              {/* ═══════════════════════════════════════ */}
-              {/* STEP 3: Menu i ceny                    */}
-              {/* ═══════════════════════════════════════ */}
+              {/* ═══ STEP 3: Menu i ceny ═══ */}
               <StepContent stepIndex={3} currentStep={currentStep}>
                 <div className="space-y-6">
                   <div className="text-center mb-6">
@@ -861,17 +874,27 @@ export function CreateReservationForm({
                     <p className="text-sm text-secondary-500 mt-1">Wybierz pakiet menu lub ustaw ceny ręcznie</p>
                   </div>
 
-                  {/* Package toggle */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border">
-                    <div className="flex items-center gap-2">
-                      <UtensilsCrossed className="w-5 h-5 text-primary-600" />
-                      <span className="font-medium text-secondary-700">Użyj gotowego pakietu menu</span>
+                  {/* Package toggle — premium Switch */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-secondary-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
+                        <UtensilsCrossed className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium text-secondary-800">Gotowy pakiet menu</span>
+                        <p className="text-xs text-secondary-500">Ceny zostaną ustawione automatycznie</p>
+                      </div>
                     </div>
-                    <input
-                      type="checkbox"
-                      className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
-                      disabled={!selectedEventTypeId || !!hasNoPackagesForEventType}
-                      {...register('useMenuPackage')}
+                    <Controller
+                      name="useMenuPackage"
+                      control={control}
+                      render={({ field }) => (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!selectedEventTypeId || !!hasNoPackagesForEventType}
+                        />
+                      )}
                     />
                   </div>
 
@@ -888,12 +911,27 @@ export function CreateReservationForm({
                       animate={{ opacity: 1, height: 'auto' }}
                       className="space-y-4 p-4 bg-primary-50 border border-primary-200 rounded-xl"
                     >
-                      <SelectSimple
-                        label="Wybierz pakiet"
-                        options={menuPackageOptions}
-                        error={errors.menuPackageId?.message}
-                        {...register('menuPackageId')}
-                      />
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-secondary-700">Wybierz pakiet</label>
+                        <Controller
+                          name="menuPackageId"
+                          control={control}
+                          render={({ field }) => (
+                            <Select value={field.value || ''} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-11 bg-white">
+                                <SelectValue placeholder="Wybierz pakiet..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {menuPackagesArray.map((pkg) => (
+                                  <SelectItem key={pkg.id} value={pkg.id}>
+                                    {pkg.name} — {formatCurrency(parseFloat(pkg.pricePerAdult))}/osoba
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
 
                       {selectedPackage && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white rounded-lg border border-primary-300">
@@ -971,14 +1009,11 @@ export function CreateReservationForm({
                     </motion.div>
                   )}
 
-                  {/* Live price summary */}
                   <PriceSummary />
                 </div>
               </StepContent>
 
-              {/* ═══════════════════════════════════════ */}
-              {/* STEP 4: Klient                         */}
-              {/* ═══════════════════════════════════════ */}
+              {/* ═══ STEP 4: Klient ═══ */}
               <StepContent stepIndex={4} currentStep={currentStep}>
                 <div className="space-y-6">
                   <div className="text-center mb-6">
@@ -1052,9 +1087,7 @@ export function CreateReservationForm({
                 </div>
               </StepContent>
 
-              {/* ═══════════════════════════════════════ */}
-              {/* STEP 5: Podsumowanie                   */}
-              {/* ═══════════════════════════════════════ */}
+              {/* ═══ STEP 5: Podsumowanie ═══ */}
               <StepContent stepIndex={5} currentStep={currentStep}>
                 <div className="space-y-6">
                   <div className="text-center mb-6">
@@ -1065,9 +1098,7 @@ export function CreateReservationForm({
                     <p className="text-sm text-secondary-500 mt-1">Przejrzyj dane przed utworzeniem rezerwacji</p>
                   </div>
 
-                  {/* Summary cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Event */}
                     <div className="p-4 rounded-xl border bg-purple-50 border-purple-200 cursor-pointer hover:border-purple-400 transition-colors" onClick={() => goToStep(0)}>
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-4 h-4 text-purple-600" />
@@ -1079,7 +1110,6 @@ export function CreateReservationForm({
                       {isCustom && watchAll.customEventType && <p className="text-sm text-secondary-600">{watchAll.customEventType}</p>}
                     </div>
 
-                    {/* Venue */}
                     <div className="p-4 rounded-xl border bg-blue-50 border-blue-200 cursor-pointer hover:border-blue-400 transition-colors" onClick={() => goToStep(1)}>
                       <div className="flex items-center gap-2 mb-2">
                         <Building2 className="w-4 h-4 text-blue-600" />
@@ -1099,7 +1129,6 @@ export function CreateReservationForm({
                       )}
                     </div>
 
-                    {/* Guests */}
                     <div className="p-4 rounded-xl border bg-green-50 border-green-200 cursor-pointer hover:border-green-400 transition-colors" onClick={() => goToStep(2)}>
                       <div className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4 text-green-600" />
@@ -1111,7 +1140,6 @@ export function CreateReservationForm({
                       </p>
                     </div>
 
-                    {/* Client */}
                     <div className="p-4 rounded-xl border bg-indigo-50 border-indigo-200 cursor-pointer hover:border-indigo-400 transition-colors" onClick={() => goToStep(4)}>
                       <div className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4 text-indigo-600" />
@@ -1131,7 +1159,6 @@ export function CreateReservationForm({
                     </div>
                   </div>
 
-                  {/* Financial summary — full width */}
                   <div className="cursor-pointer" onClick={() => goToStep(3)}>
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="w-4 h-4 text-orange-600" />
@@ -1143,15 +1170,22 @@ export function CreateReservationForm({
                     <PriceSummary compact />
                   </div>
 
-                  {/* Optional fields */}
                   <div className="space-y-4 pt-4 border-t">
-                    <Input
-                      type="date"
-                      label="Termin potwierdzenia (opcjonalnie)"
-                      error={errors.confirmationDeadline?.message}
-                      {...register('confirmationDeadline')}
+                    <Controller
+                      name="confirmationDeadline"
+                      control={control}
+                      render={({ field }) => (
+                        <DatePicker
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          label="Termin potwierdzenia (opcjonalnie)"
+                          placeholder="Wybierz datę..."
+                          error={errors.confirmationDeadline?.message}
+                          minDate={new Date()}
+                        />
+                      )}
                     />
-                    <p className="-mt-3 text-xs text-secondary-500">
+                    <p className="-mt-2 text-xs text-secondary-500">
                       Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
                     </p>
 
@@ -1161,7 +1195,7 @@ export function CreateReservationForm({
                         <label className="block text-sm font-medium text-secondary-700">Notatki</label>
                       </div>
                       <textarea
-                        className="w-full rounded-md border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full rounded-xl border border-secondary-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-400 transition-colors resize-none"
                         rows={3}
                         placeholder="Dodatkowe informacje..."
                         {...register('notes')}
@@ -1169,7 +1203,6 @@ export function CreateReservationForm({
                     </div>
                   </div>
 
-                  {/* Deposit info note */}
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
                     <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div>
@@ -1184,7 +1217,6 @@ export function CreateReservationForm({
 
             </AnimatePresence>
 
-            {/* ── NAVIGATION ── */}
             <StepNavigation
               currentStep={currentStep}
               totalSteps={STEPS.length}
@@ -1198,7 +1230,6 @@ export function CreateReservationForm({
             />
           </form>
 
-          {/* Cancel button */}
           {onCancel && (
             <div className="mt-4 text-center">
               <button
@@ -1214,7 +1245,6 @@ export function CreateReservationForm({
         </CardContent>
       </Card>
 
-      {/* Create client modal */}
       {!isPromotingFromQueue && (
         <CreateClientModal
           open={showCreateClientModal}
