@@ -1,7 +1,7 @@
 # 🚀 Rezerwacje API Documentation
 
 **Base URL**: `http://localhost:3001/api`  
-**Version**: 2.0.0  
+**Version**: 2.1.0  
 **Last Updated**: 2026-02-14  
 **Status**: ✅ Production Ready
 
@@ -250,13 +250,51 @@ POST /api/menu-templates/:id/duplicate
 
 Duplicates template with all packages and their options.
 
+### Download Menu Card PDF (STAFF) 🆕
+```bash
+GET /api/menu-templates/:id/pdf
+```
+
+Generates a professionally formatted PDF menu card for the given template. Includes all packages with their dish categories and individual dishes.
+
+**Response**: `application/pdf` binary stream
+
+**Headers**:
+```http
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="karta-menu-{slug}.pdf"
+```
+
+**Features**:
+- Full Polish character support (DejaVu fonts)
+- Restaurant branding from env vars (`RESTAURANT_NAME`, `RESTAURANT_ADDRESS`, `RESTAURANT_PHONE`)
+- Auto-fetches dishes via PackageCategorySettings → DishCategory → Dish relations
+- Separate page sections per package with category grouping
+
+**Example**:
+```bash
+curl -o karta_menu.pdf \
+  http://localhost:3001/api/menu-templates/{id}/pdf \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ---
 
 ## 📦 Menu Packages
 
+### List All Active Packages 🆕
+```bash
+GET /api/menu-packages
+```
+
 ### List Packages by Template
 ```bash
 GET /api/menu-packages/template/:templateId
+```
+
+### List Packages by Event Type 🆕
+```bash
+GET /api/menu-packages/event-type/:eventTypeId
 ```
 
 ### Get Package by ID
@@ -452,6 +490,7 @@ POST   /api/deposits/:id/payments             # Add partial payment
 | Reservations — CUD | ✅ | ✅ | ❌ |
 | Menu Templates — List/Get | ✅ | ✅ | ✅ |
 | Menu Templates — CUD | ✅ | ❌ | ❌ |
+| Menu Templates — PDF | ✅ | ✅ | ❌ |
 | Menu Packages — List/Get | ✅ | ✅ | ✅ |
 | Menu Packages — CUD | ✅ | ❌ | ❌ |
 | Menu Options — List/Get | ✅ | ✅ | ✅ |
@@ -480,6 +519,15 @@ POST   /api/deposits/:id/payments             # Add partial payment
 GET /api/health
 ```
 
+### Environment Variables (Menu PDF)
+```env
+RESTAURANT_NAME="Gościniec"
+RESTAURANT_ADDRESS="ul. Przykładowa 1, 41-500 Chorzów"
+RESTAURANT_PHONE="+48 123 456 789"
+RESTAURANT_EMAIL="kontakt@gosciniec.pl"
+RESTAURANT_WEBSITE="www.gosciniec.pl"
+```
+
 ---
 
 ## ✅ Implementation Status
@@ -491,8 +539,8 @@ GET /api/health
 - Event Types (6 endpoints)
 - Reservations (6 endpoints)
 - Queue (5 endpoints)
-- Menu Templates (7 endpoints incl. duplicate, active-by-event-type)
-- Menu Packages (7 endpoints incl. reorder, assign-options)
+- Menu Templates (8 endpoints incl. duplicate, active-by-event-type, **PDF export**)
+- Menu Packages (9 endpoints incl. reorder, assign-options, list-all, by-event-type)
 - Menu Options (5 endpoints)
 - Reservation Menu (4 endpoints: select, get, update, remove)
 - Menu Calculator
@@ -500,8 +548,8 @@ GET /api/health
 - Dishes (5 endpoints)
 - Deposits (6 endpoints)
 
-**Total**: ~68 REST API endpoints  
-**Version**: 2.0.0  
+**Total**: ~71 REST API endpoints  
+**Version**: 2.1.0  
 **Status**: ✅ Production Ready
 
 ---
