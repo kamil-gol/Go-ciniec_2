@@ -1,6 +1,8 @@
 /**
  * Menu Snapshot Service
  * Creates and manages immutable menu snapshots for reservations.
+ * FIX: dishSelections are now persisted in menuData JSONB
+ * FIX: replaceSnapshot() for full menu update (not just guest counts)
  */
 
 import { Prisma } from '@prisma/client';
@@ -21,7 +23,9 @@ export class MenuSnapshotService {
     if (!pkg) throw new Error('Package not found');
 
     const optionIds = input.selectedOptions.map(opt => opt.optionId);
-    const options = await prisma.menuOption.findMany({ where: { id: { in: optionIds } } });
+    const options = optionIds.length > 0 
+      ? await prisma.menuOption.findMany({ where: { id: { in: optionIds } } })
+      : [];
     if (options.length !== optionIds.length) throw new Error('Some options not found');
 
     const snapshotData: MenuSnapshotData = {
@@ -46,7 +50,9 @@ export class MenuSnapshotService {
           priceAmount: option.priceAmount.toNumber(), quantity: selectedOpt.quantity,
           icon: option.icon
         };
-      })
+      }),
+      // Persist dish selections in the JSONB snapshot
+      dishSelections: input.dishSelections || []
     };
 
     const priceBreakdown = this.calculatePriceBreakdown(snapshotData, input.adultsCount, input.childrenCount, input.toddlersCount);
@@ -66,6 +72,24 @@ export class MenuSnapshotService {
     });
 
     return { snapshot, priceBreakdown };
+  }
+
+  /**
+   * Replace entire snapshot (delete old + create new).
+   * Used when user changes package, options, or dishes via "Zmien" flow.
+   */
+  async replaceSnapshot(input: CreateMenuSnapshotInput) {
+    // Delete existing snapshot if any
+    const existing = await prisma.reservationMenuSnapshot.findUnique({
+      where: { reservationId: input.reservationId }
+    });
+    if (existing) {
+      await prisma.reservationMenuSnapshot.delete({
+        where: { reservationId: input.reservationId }
+      });
+    }
+    // Create fresh snapshot
+    return this.createSnapshot(input);
   }
 
   calculatePriceBreakdown(

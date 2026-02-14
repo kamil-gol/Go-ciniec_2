@@ -2,6 +2,8 @@
  * Menu Validation Schemas
  * 
  * Zod schemas for validating menu-related API requests
+ * FIX: selectMenuSchema now includes dishSelections
+ * FIX: updateMenuSelectionSchema removed (updateMenu now uses selectMenuSchema)
  */
 
 import { z } from 'zod';
@@ -69,7 +71,6 @@ export const createMenuPackageSchema = z.object({
   minGuests: z.number().int().min(0).optional().nullable(),
   maxGuests: z.number().int().min(0).optional().nullable(),
   
-  // Color can be null or empty string - transform to null
   color: z.string()
     .transform(val => val === '' ? null : val)
     .pipe(z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color').nullable())
@@ -109,7 +110,6 @@ export const updateMenuPackageSchema = z.object({
   minGuests: z.number().int().min(0).optional().nullable(),
   maxGuests: z.number().int().min(0).optional().nullable(),
   
-  // Color can be null or empty string - transform to null
   color: z.string()
     .transform(val => val === '' ? null : val)
     .pipe(z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color').nullable())
@@ -140,16 +140,10 @@ export const reorderPackagesSchema = z.object({
 // CATEGORY SETTINGS VALIDATION
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Category Setting Schema
- * 
- * SUPPORTS FLOAT VALUES (0.5, 1.5, 2.5, etc) for partial servings
- * Example: 1.5 portions of salad
- */
 export const categorySettingSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID'),
-  minSelect: z.number().min(0, 'Min selection cannot be negative'),  // ✅ Float allowed
-  maxSelect: z.number().min(0, 'Max selection must be at least 0'),  // ✅ Float allowed
+  minSelect: z.number().min(0, 'Min selection cannot be negative'),
+  maxSelect: z.number().min(0, 'Max selection must be at least 0'),
   isRequired: z.boolean().optional().default(true),
   isEnabled: z.boolean().optional().default(true),
   displayOrder: z.number().int().min(0).optional().default(0),
@@ -157,7 +151,7 @@ export const categorySettingSchema = z.object({
 }).refine(
   (data) => data.minSelect <= data.maxSelect,
   {
-    message: 'Minimalna wartość nie może być większa niż maksymalna',
+    message: 'Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna',
     path: ['minSelect']
   }
 );
@@ -230,6 +224,23 @@ export const assignOptionsToPackageSchema = z.object({
 // MENU SELECTION (SNAPSHOT) VALIDATION
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Dish selection within a category
+ */
+const dishSelectionSchema = z.object({
+  dishId: z.string().uuid('Invalid dish ID'),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1)
+});
+
+const categoryDishSelectionSchema = z.object({
+  categoryId: z.string().uuid('Invalid category ID'),
+  dishes: z.array(dishSelectionSchema).default([])
+});
+
+/**
+ * Full menu selection schema - used for both POST and PUT
+ * Includes packageId, selectedOptions, AND dishSelections
+ */
 export const selectMenuSchema = z.object({
   packageId: z.string().uuid('Invalid package ID'),
   selectedOptions: z.array(
@@ -237,9 +248,18 @@ export const selectMenuSchema = z.object({
       optionId: z.string().uuid('Invalid option ID'),
       quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1)
     })
-  ).optional().default([])
+  ).optional().default([]),
+  dishSelections: z.array(categoryDishSelectionSchema).optional().default([]),
+  // These are sent by frontend but ignored by backend (guest counts come from reservation)
+  templateId: z.string().optional(),
+  adults: z.number().optional(),
+  children: z.number().optional(),
+  toddlers: z.number().optional(),
 });
 
+/**
+ * Guest counts update schema - for updating only counts (e.g. from reservation edit)
+ */
 export const updateMenuSelectionSchema = z.object({
   adultsCount: z.number().int().min(0, 'Adults count cannot be negative').optional(),
   childrenCount: z.number().int().min(0, 'Children count cannot be negative').optional(),

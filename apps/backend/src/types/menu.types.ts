@@ -74,7 +74,7 @@ export interface UpdateMenuPackageInput {
   displayOrder?: number;
   isPopular?: boolean;
   isRecommended?: boolean;
-  changeReason?: string; // For price history
+  changeReason?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -109,7 +109,7 @@ export interface UpdateMenuOptionInput {
   imageUrl?: string | null;
   displayOrder?: number;
   isActive?: boolean;
-  changeReason?: string; // For price history
+  changeReason?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -124,6 +124,20 @@ export interface AssignOptionsToPackageInput {
     isDefault?: boolean;
     displayOrder?: number;
   }>;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DISH SELECTION TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface DishSelectionItem {
+  dishId: string;
+  quantity: number;
+}
+
+export interface CategoryDishSelection {
+  categoryId: string;
+  dishes: DishSelectionItem[];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -159,6 +173,9 @@ export interface MenuSnapshotData {
     quantity: number;
     icon: string | null;
   }>;
+
+  // Dish selections (added for full menu persistence)
+  dishSelections?: CategoryDishSelection[];
 }
 
 export interface CreateMenuSnapshotInput {
@@ -168,6 +185,7 @@ export interface CreateMenuSnapshotInput {
     optionId: string;
     quantity: number;
   }>;
+  dishSelections?: CategoryDishSelection[];
   adultsCount: number;
   childrenCount: number;
   toddlersCount: number;
