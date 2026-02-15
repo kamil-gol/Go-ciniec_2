@@ -5,20 +5,20 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     CLIENT LAYER                             │
-│  ┌──────────────────────────────────────────────────────┐   │
+│  ┌────────────────────────────────────────────────────┐   │
 │  │  Next.js Frontend (React + TypeScript)              │   │
 │  │  - Dashboard                                         │   │
 │  │  - Rezerwacje                                        │   │
 │  │  - Klienci                                           │   │
 │  │  - Admin Panel                                       │   │
 │  │  - Analytics                                         │   │
-│  └──────────────────────────────────────────────────────┘   │
+│  └────────────────────────────────────────────────────┘   │
 └─────────────────┬──────────────────────────────────────────┘
                   │ HTTPS/REST API
                   │
 ┌─────────────────▼──────────────────────────────────────────┐
 │                     API LAYER (Backend)                     │
-│  ┌──────────────────────────────────────────────────────┐   │
+│  ┌────────────────────────────────────────────────────┐   │
 │  │  Express.js + TypeScript                             │   │
 │  │  ┌────────────┬──────────────┬───────────────────┐  │   │
 │  │  │ Auth       │ Reservations │ Clients           │  │   │
@@ -32,7 +32,7 @@
 │  │  │ Middleware │ Calculator   │ Service           │  │   │
 │  │  │ JWT Auth   │ PDF Generator│ Backup Service    │  │   │
 │  │  └────────────┴──────────────┴───────────────────┘  │   │
-│  └──────────────────────────────────────────────────────┘   │
+│  └────────────────────────────────────────────────────┘   │
 └─────────────────┬──────────────────────────────────────────┘
                   │
         ┌─────────┼─────────┐
@@ -67,7 +67,7 @@ frontend/
 │   │   ├── page.tsx
 │   │   ├── reservations/
 │   │   │   ├── page.tsx
-│   │   │   ├── [id]/page.tsx
+│   │   │   ├── [id]/page.tsx          # Szczegóły + inline editing
 │   │   │   └── new/page.tsx
 │   │   ├── clients/
 │   │   │   ├── page.tsx
@@ -81,12 +81,28 @@ frontend/
 │   ├── layout.tsx
 │   └── error.tsx
 ├── components/
-│   ├── ui/
+│   ├── ui/                            # Bazowe komponenty UI
 │   │   ├── Button.tsx
 │   │   ├── Input.tsx
 │   │   ├── Select.tsx
-│   │   ├── Modal.tsx
+│   │   ├── DatePicker.tsx
+│   │   ├── TimePicker.tsx
 │   │   └── ...
+│   ├── reservations/
+│   │   ├── editable/                  # 🆕 Inline editing (PR #54)
+│   │   │   ├── EditableCard.tsx       # Generyczny wrapper view/edit
+│   │   │   ├── StatusChanger.tsx      # Zmiana statusu w hero
+│   │   │   ├── EditableHallCard.tsx   # Sala + availability check
+│   │   │   ├── EditableEventCard.tsx  # Typ/data/czas + DatePicker
+│   │   │   ├── EditableGuestsCard.tsx # Goście + capacity validation
+│   │   │   ├── EditableNotesCard.tsx  # Notatki + deadline
+│   │   │   └── index.ts              # Barrel export
+│   │   ├── reservations-list.tsx       # Lista rezerwacji
+│   │   ├── create-reservation-form.tsx # Formularz tworzenia
+│   │   ├── ReservationMenuSection.tsx  # Menu (już interaktywne)
+│   │   ├── ReservationFinancialSummary.tsx  # Finanse
+│   │   ├── ReservationDepositsSection.tsx   # Zaliczki
+│   │   └── reservation-history.tsx     # Historia zmian
 │   ├── forms/
 │   │   ├── LoginForm.tsx
 │   │   ├── ReservationForm.tsx
@@ -95,10 +111,11 @@ frontend/
 │   │   ├── DashboardLayout.tsx
 │   │   ├── AdminLayout.tsx
 │   │   └── Header.tsx
-│   └── ...
+│   └── shared/                        # Wspólne komponenty
 ├── hooks/
 │   ├── useAuth.ts
 │   ├── useReservations.ts
+│   ├── useCheckAvailability.ts         # Sprawdzanie dostępności sali
 │   ├── useForm.ts
 │   └── ...
 ├── utils/
@@ -117,9 +134,12 @@ frontend/
     └── globals.css
 ```
 
+> **Uwaga:** Pliki `edit-reservation-modal.tsx` i `reservation-details-modal.tsx` zostały usunięte w PR #54 (15.02.2026). Edycja rezerwacji odbywa się teraz inline na stronie `/dashboard/reservations/[id]`.
+
 **Odpowiedzialności**:
 - Renderowanie UI
 - User interactions
+- Inline editing rezerwacji (EditableCard pattern)
 - Form validation (client-side)
 - API communication
 - State management (React Query)
@@ -255,18 +275,25 @@ Main Tables:
 - Services handle database operations
 - Easy testing and reusability
 
-### 3. **Middleware Pattern**
+### 3. **EditableCard Pattern** 🆕
+- Generyczny wrapper dla inline editing
+- View mode → Edit mode z animacją framer-motion
+- Wymagany powód zmiany (audit trail)
+- Walidacja przed zapisem
+- Używany przez: StatusChanger, EditableHallCard, EditableEventCard, EditableGuestsCard, EditableNotesCard
+
+### 4. **Middleware Pattern**
 - Authentication middleware
 - Error handling
 - Request logging
 - Validation
 - CORS
 
-### 4. **Repository Pattern (via Prisma)**
+### 5. **Repository Pattern (via Prisma)**
 - Centralized data access
 - Abstraction from database
 
-### 5. **Factory Pattern**
+### 6. **Factory Pattern**
 - Email service factory
 - PDF generator factory
 
@@ -378,7 +405,7 @@ interface ReservationHistory {
   changeType: 'CREATE' | 'UPDATE' | 'DELETE';
   oldValue: Record<string, any>;   // previous state
   newValue: Record<string, any>;   // new state
-  reason: string;             // why the change
+  reason: string;             // why the change (required, min 10 chars)
   timestamp: Date;
 }
 
@@ -386,12 +413,14 @@ interface ReservationHistory {
 - date
 - startTime
 - endTime
-- guests
+- guests (adults, children, toddlers)
 - status
 - notes
 - totalPrice
 - depositAmount
 - depositDueDate
+- hallId
+- eventTypeId
 ```
 
 ---
@@ -518,4 +547,4 @@ interface ReservationHistory {
 
 ---
 
-**Last Updated**: 06.02.2026
+**Last Updated**: 15.02.2026
