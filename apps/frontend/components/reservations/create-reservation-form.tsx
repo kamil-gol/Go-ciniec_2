@@ -949,20 +949,29 @@ export function CreateReservationForm({
           {selectedClient && <p className="text-sm text-blue-700">{selectedClient.firstName} {selectedClient.lastName}{selectedClient.phone && ` • ${selectedClient.phone}`}</p>}
         </div>
       ) : (
-        <Controller name="clientId" control={control} render={({ field }) => (
-          <Combobox
-            options={clientComboboxOptions}
-            value={field.value}
-            onChange={field.onChange}
-            label="Klient"
-            placeholder="Wyszukaj klienta po nazwisku, imieniu lub telefonie..."
-            searchPlaceholder="Wpisz imię, nazwisko lub telefon..."
-            emptyMessage="Nie znaleziono klienta."
-            error={errors.clientId?.message}
-            disabled={clientsLoading}
-            footerAction={{ label: 'Dodaj nowego klienta', icon: <UserPlus className="h-4 w-4" />, onClick: () => setShowCreateClientModal(true) }}
-          />
-        )} />
+        <div className="space-y-3">
+          <Controller name="clientId" control={control} render={({ field }) => (
+            <Combobox
+              options={clientComboboxOptions}
+              value={field.value}
+              onChange={field.onChange}
+              label="Klient"
+              placeholder="Wyszukaj klienta po nazwisku, imieniu lub telefonie..."
+              searchPlaceholder="Wpisz imię, nazwisko lub telefon..."
+              emptyMessage="Nie znaleziono klienta."
+              error={errors.clientId?.message}
+              disabled={clientsLoading}
+            />
+          )} />
+          <button
+            type="button"
+            onClick={() => setShowCreateClientModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 border-dashed border-primary-300 text-primary-600 font-medium text-sm hover:bg-primary-50 hover:border-primary-400 transition-colors"
+          >
+            <UserPlus className="h-4 w-4" />
+            Dodaj nowego klienta
+          </button>
+        </div>
       )}
 
       {selectedClient && !isPromotingFromQueue && (
