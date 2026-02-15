@@ -763,6 +763,82 @@ export class ReservationService {
     });
   }
 
+  /**
+   * Archive reservation - set archivedAt timestamp
+   */
+  async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {
+    await this.validateUserId(userId);
+
+    const reservation = await prisma.reservation.findUnique({
+      where: { id },
+      include: { client: true, hall: true }
+    });
+
+    if (!reservation) throw new Error('Reservation not found');
+    if (reservation.archivedAt) throw new Error('Reservation is already archived');
+
+    await prisma.reservation.update({
+      where: { id },
+      data: { archivedAt: new Date() }
+    });
+
+    await this.createHistoryEntry(
+      id, userId, 'ARCHIVED', 'archivedAt',
+      'null', new Date().toISOString(),
+      reason || 'Reservation archived'
+    );
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'ARCHIVE',
+      entityType: 'RESERVATION',
+      entityId: id,
+      details: {
+        description: `Zarchiwizowano rezerwację: ${reservation.client.firstName} ${reservation.client.lastName} | ${reservation.hall?.name || 'Brak sali'}`,
+        reason
+      }
+    });
+  }
+
+  /**
+   * Unarchive reservation - remove archivedAt timestamp
+   */
+  async unarchiveReservation(id: string, userId: string, reason?: string): Promise<void> {
+    await this.validateUserId(userId);
+
+    const reservation = await prisma.reservation.findUnique({
+      where: { id },
+      include: { client: true, hall: true }
+    });
+
+    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation.archivedAt) throw new Error('Reservation is not archived');
+
+    await prisma.reservation.update({
+      where: { id },
+      data: { archivedAt: null }
+    });
+
+    await this.createHistoryEntry(
+      id, userId, 'UNARCHIVED', 'archivedAt',
+      reservation.archivedAt.toISOString(), 'null',
+      reason || 'Reservation restored from archive'
+    );
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'UNARCHIVE',
+      entityType: 'RESERVATION',
+      entityId: id,
+      details: {
+        description: `Przywrócono rezerwację z archiwum: ${reservation.client.firstName} ${reservation.client.lastName} | ${reservation.hall?.name || 'Brak sali'}`,
+        reason
+      }
+    });
+  }
+
   private async cascadeCancelDeposits(
     tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
     reservationId: string,
