@@ -441,12 +441,7 @@ export class PDFService {
     this.addStatusBadge(doc, reservation.status);
     doc.moveDown(0.5);
 
-    if (reservation.hall) {
-      doc.text(`Sala: ${reservation.hall.name}`);
-    } else {
-      doc.text('Sala: Nie przypisano (lista rezerwowa)');
-    }
-
+    // US-6.2: Hall name removed from PDF — client should not see hall assignment
     const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie okreslono';
     doc.text(`Typ wydarzenia: ${eventTypeName}`);
 

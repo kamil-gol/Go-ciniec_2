@@ -21,7 +21,6 @@ import {
 import {
   calculateTotalGuests,
   calculateTotalPrice,
-  generateExtraHoursNote,
   validateConfirmationDeadline,
   validateCustomEventFields,
   detectReservationChanges,
@@ -151,8 +150,12 @@ export class ReservationService {
       // Check whole venue conflict
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
-      const extraHoursNote = generateExtraHoursNote(startDT, endDT);
-      if (extraHoursNote) notes += extraHoursNote;
+      // US-6.3: Removed auto-note about events longer than 6 hours
+
+      // US-6.6: Auto-note about inflation for next year reservations
+      if (startDT.getFullYear() > new Date().getFullYear()) {
+        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+      }
     }
 
     if (hasLegacyFormat && data.date && data.startTime && data.endTime) {
@@ -170,6 +173,11 @@ export class ReservationService {
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
+
+      // US-6.6: Auto-note about inflation for next year reservations (legacy format)
+      if (reservationDate.getFullYear() > new Date().getFullYear()) {
+        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+      }
     }
 
     if (data.confirmationDeadline && data.startDateTime) {
@@ -626,12 +634,7 @@ export class ReservationService {
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
     if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
 
-    if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
-      const extraHoursNote = generateExtraHoursNote(finalStart, finalEnd);
-      if (extraHoursNote) {
-        updateData.notes = sanitizeString((updateData.notes || existingReservation.notes || '') + extraHoursNote);
-      }
-    }
+    // US-6.3: Removed auto-note about events longer than 6 hours
 
     const reservation = await prisma.reservation.update({
       where: { id },
@@ -658,6 +661,18 @@ export class ReservationService {
     if (!existingReservation) throw new Error('Reservation not found');
 
     this.validateStatusTransition(existingReservation.status, data.status);
+
+    // US-6.4: Block COMPLETED status before event date
+    if (data.status === ReservationStatus.COMPLETED) {
+      const eventDate = existingReservation.startDateTime
+        ? new Date(existingReservation.startDateTime)
+        : existingReservation.date
+          ? new Date(existingReservation.date)
+          : null;
+      if (eventDate && eventDate > new Date()) {
+        throw new Error('Nie mo\u017cna zako\u0144czy\u0107 rezerwacji przed dat\u0105 wydarzenia');
+      }
+    }
 
     if (data.status === ReservationStatus.CANCELLED) {
       const reservation = await prisma.$transaction(async (tx) => {
