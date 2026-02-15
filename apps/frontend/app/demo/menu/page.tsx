@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 export default function MenuDemoPage() {
   const [activeTab, setActiveTab] = useState<'components' | 'flow'>('components');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>();
+  const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
 
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ isActive: true });
   const { data: packages } = useMenuPackages(selectedTemplateId);
@@ -53,7 +54,7 @@ export default function MenuDemoPage() {
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-            🎨 Menu Components Demo
+            \ud83c\udfa8 Menu Components Demo
           </h1>
           <p className="mt-2 text-neutral-600 dark:text-neutral-400">
             Interactive showcase of all menu system components
@@ -160,9 +161,11 @@ export default function MenuDemoPage() {
                     <OptionCard
                       key={option.id}
                       option={option}
+                      quantity={optionQuantities[option.id] || 0}
                       onQuantityChange={(id, qty) => {
+                        setOptionQuantities(prev => ({ ...prev, [id]: qty }));
                         if (qty > 0) {
-                          toast.success(`Dodano: ${option.name} (×${qty})`);
+                          toast.success(`Dodano: ${option.name} (\u00d7${qty})`);
                         }
                       }}
                     />
@@ -192,7 +195,7 @@ export default function MenuDemoPage() {
             <MenuSelectionFlow
               onComplete={(selection) => {
                 console.log('Selection completed:', selection);
-                toast.success('✅ Wybór menu zakończony!', {
+                toast.success('\u2705 Wyb\u00f3r menu zako\u0144czony!', {
                   description: `${selection.template.name} - ${selection.package.name}`,
                 });
               }}
@@ -205,7 +208,7 @@ export default function MenuDemoPage() {
       <div className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
           <p>
-            📚 Documentation:{' '}
+            \ud83d\udcda Documentation:{' '}
             <a
               href="https://github.com/kamil-gol/Go-ciniec_2/blob/main/apps/frontend/components/menu/README.md"
               target="_blank"
@@ -216,7 +219,7 @@ export default function MenuDemoPage() {
             </a>
           </p>
           <p className="mt-2">
-            🚀 API Status: Connected to <code>http://localhost:3001/api</code>
+            \ud83d\ude80 API Status: Connected to <code>http://localhost:3001/api</code>
           </p>
         </div>
       </div>
