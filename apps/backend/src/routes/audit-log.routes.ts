@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import auditLogController from '../controllers/audit-log.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
