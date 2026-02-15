@@ -555,7 +555,7 @@ export function ReservationsList() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1)))} 
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="rounded-xl border-neutral-200 dark:border-neutral-700"
             >
