@@ -12,7 +12,8 @@ import { ReservationStatus } from '@/types'
 import {
   Eye, Trash2, Archive, ArchiveRestore, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
-  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert
+  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert,
+  Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
@@ -145,6 +146,7 @@ export function ReservationsList() {
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
   const [contractMap, setContractMap] = useState<Record<string, boolean>>({})
   const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
+  const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
 
   const archiveMutation = useArchiveReservation()
   const unarchiveMutation = useUnarchiveReservation()
@@ -200,10 +202,26 @@ export function ReservationsList() {
 
   const handleGeneratePDF = async (reservationId: string) => {
     try {
+      setGeneratingPdfId(reservationId)
       toast.info('Generowanie PDF...')
+      const response = await apiClient.get(`/reservations/${reservationId}/pdf`, {
+        responseType: 'blob',
+      })
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `rezerwacja_${reservationId.slice(0, 8)}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
       toast.success('PDF wygenerowany pomyślnie')
-    } catch (error) {
-      toast.error('Błąd podczas generowania PDF')
+    } catch (error: any) {
+      console.error('PDF generation error:', error)
+      toast.error(error?.response?.data?.error || 'Błąd podczas generowania PDF')
+    } finally {
+      setGeneratingPdfId(null)
     }
   }
 
@@ -370,6 +388,7 @@ export function ReservationsList() {
                     const hasContract = contractMap[reservation.id]
                     const clientId = reservation.clientId || reservation.client?.id
                     const hasRodo = clientId ? rodoMap[clientId] : undefined
+                    const isPdfGenerating = generatingPdfId === reservation.id
 
                     return (
                       <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
@@ -498,8 +517,13 @@ export function ReservationsList() {
                                 onClick={() => handleGeneratePDF(reservation.id)}
                                 title="Generuj PDF"
                                 className="rounded-lg"
+                                disabled={isPdfGenerating}
                               >
-                                <FileText className="w-4 h-4" />
+                                {isPdfGenerating ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <FileText className="w-4 h-4" />
+                                )}
                               </Button>
                               {!reservation.archivedAt ? (
                                 <Button
