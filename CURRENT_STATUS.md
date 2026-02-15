@@ -1,17 +1,23 @@
-# 📍 Status Projektu - 14.02.2026
+# 📍 Status Projektu - 15.02.2026
 
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 14.02.2026, 23:35 CET  
+**Ostatnia aktualizacja:** 15.02.2026, 12:20 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.4.0 (Wizard Reservation Form + Szablon→Pakiet Flow + Extra Hours)
+**Wersja:** 1.4.1 (Build Fixes: NODE_ENV, menu-selection import, not-found.tsx)
 
 ---
 
 ## 📦 Co Działa
 
-### 🧙 Formularz Rezerwacji — 6-krokowy Wizard (v1.4.0) 🆕
+### 🔧 Build Fixes (v1.4.1) 🆕
+✅ **Fix `menu-selection.ts`** — import `./client` (nieistniejący) → `@/lib/api-client`  
+✅ **Fix NODE_ENV dual-bundle** — wymuszenie `NODE_ENV=production` w build script (eliminacja podwójnego React runtime)  
+✅ **Fix Pages Router 404** — dodanie `app/not-found.tsx` (App Router custom 404)  
+✅ **Build 29/29 stron** — kompilacja, linting, generowanie static pages bez błędów  
+
+### 🧙 Formularz Rezerwacji — 6-krokowy Wizard (v1.4.0)
 ✅ **Krok 1 — Wydarzenie:** Typ wydarzenia + pola kontekstowe (urodziny/rocznica/inne)  
 ✅ **Krok 2 — Sala i termin:** Wybór sali + DatePicker + TimePicker + auto-check dostępności  
 ✅ **Krok 3 — Goście:** Podział na 3 grupy wiekowe z capacity warning  
@@ -146,7 +152,7 @@ apps/backend/src/routes/
 | [apps/backend/src/routes/README_MENU_API.md](apps/backend/src/routes/README_MENU_API.md) | **Szczegółowa dokumentacja Menu API** z przykładami |
 | [CHANGELOG.md](CHANGELOG.md) | Historia zmian |
 | [docs/README.md](docs/README.md) | Główny indeks dokumentacji |
-| [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md) | 🆕 **Dokumentacja 6-krokowego wizarda rezerwacji** |
+| [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md) | **Dokumentacja 6-krokowego wizarda rezerwacji** |
 | [docs/E2E_TESTING_PLAN.md](docs/E2E_TESTING_PLAN.md) | Plan testów E2E (45 testów) |
 | [docs/QUEUE.md](docs/QUEUE.md) | Dokumentacja systemu kolejki |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architektura projektu |
@@ -167,70 +173,86 @@ Kontynuuję pracę nad projektem "Gościniec" — system rezerwacji (repo: kamil
 - **Branch:** main
 - **Serwer:** Docker na VPS (cd /home/kamil/rezerwacje)
 - **Baza:** PostgreSQL (serwis: postgres, user: rezerwacje, database: rezerwacje)
-- **Frontend:** Next.js (port 3000)
-- **Backend:** Node.js + Prisma (port 3001)
+- **Frontend:** Next.js 14 App Router (port 3000, kontener: rezerwacje-web)
+- **Backend:** Node.js + Express + Prisma (port 3001, kontener: rezerwacje-api)
+- **Build:** `NODE_ENV=production next build` (wymuszony w package.json)
 
-## Zasady pracy
-1. Masz pełny dostęp do GitHub — czytaj, edytuj, twórz pliki bezpośrednio bez pytania
-2. Twórz nowe branche na nowe funkcjonalności, potem PR do main
-3. Po zmianach daj mi TYLKO komendy do wykonania na serwerze
-4. Nie każ mi robić rzeczy manualnie — sam organizuj pliki na GitHubie
-5. Sprawdzaj istniejący kod przed edycją
-6. Aktualizuj dokumentację po każdym module
-7. Polskie znaki pisz bezpośrednio (ą, ę, ó, ś)
+## Zasady pracy — BEZWZGLĘDNE
+1. Masz PEŁNY dostęp do GitHub — czytaj, edytuj, twórz pliki BEZPOŚREDNIO bez pytania o zgodę
+2. Wykonuj WSZYSTKIE operacje na GitHubie automatycznie — nie pytaj o zatwierdzenie
+3. Twórz nowe branche na nowe funkcjonalności (`feature/nazwa`), potem merguj do main
+4. Po zmianach daj mi TYLKO komendy do wykonania na serwerze (git pull + docker restart)
+5. NIE każ mi robić rzeczy manualnie — sam organizuj pliki na GitHubie
+6. Sprawdzaj istniejący kod PRZED edycją (get_file_contents)
+7. Aktualizuj dokumentację (CHANGELOG.md, CURRENT_STATUS.md) po KAŻDEJ zmianie
+8. Polskie znaki pisz bezpośrednio (ą, ę, ó, ś, ź, ż, ł, ń, ć)
 
 ## Workflow
-- Sprawdzanie kodu: get_file_contents → repo: kamil-gol/Go-ciniec_2
-- Edycja: create_or_update_file → zapisuje bezpośrednio
-- Po zmianach komendy:
-  cd /home/kamil/rezerwacje && git pull origin main
-  docker-compose restart backend  # lub frontend
-  docker-compose logs -f backend --tail=50
+```bash
+# Sprawdzanie kodu:
+mcp_tool_github_mcp_direct_get_file_contents → repo: kamil-gol/Go-ciniec_2
 
-Przeczytaj na start:
-1. CURRENT_STATUS.md — pełny status + TODO
-2. API.md — dokumentacja endpointów
-3. apps/backend/src/routes/README_MENU_API.md — szczegółowa dokumentacja Menu API
-4. apps/backend/prisma/schema.prisma — modele bazy danych
-5. docs/RESERVATION_FORM_WIZARD.md — dokumentacja formularza rezerwacji
+# Edycja plików:
+mcp_tool_github_mcp_direct_create_or_update_file → zapisuje bezpośrednio do repo
+mcp_tool_github_mcp_direct_push_files → wiele plików w jednym ucommit
 
-## Co jest gotowe (v1.4.0):
-- ✅ Rezerwacje + kolejka + drag&drop + auto-cancel
-- ✅ **Formularz rezerwacji — 6-krokowy Wizard UI** (Stepper, Combobox, DatePicker, TimePicker)
-- ✅ **Flow: Szablon → Pakiet → Ceny** w formularzu rezerwacji
-- ✅ **Extra hours** — dopłata 500 PLN/h za >6h w Financial Summary
+# Po zmianach DAJ MI komendy:
+cd /home/kamil/rezerwacje && git pull origin main
+docker compose exec frontend npm run build && docker compose restart frontend  # zmiany frontend
+docker compose restart backend  # zmiany backend
+docker compose logs -f backend --tail=50  # sprawdź logi
+```
+
+## Przeczytaj na start:
+1. CURRENT_STATUS.md — pełny status + TODO + struktura
+2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.1)
+3. apps/backend/prisma/schema.prisma — modele bazy danych
+4. docker-compose.yml — konfiguracja kontenerów
+
+## Co jest gotowe (v1.4.1):
+- ✅ Rezerwacje + kolejka + drag&drop + auto-cancel + row-level locking
+- ✅ Formularz rezerwacji — 6-krokowy Wizard UI (Stepper, Combobox, DatePicker, TimePicker)
+- ✅ Flow: Szablon → Pakiet → Ceny w formularzu rezerwacji
+- ✅ Extra hours — dopłata 500 PLN/h za >6h w Financial Summary
 - ✅ Sale, Klienci, Typy Wydarzeń (pełny CRUD)
-- ✅ Kategorie dań + Biblioteka dań
-- ✅ Szablony Menu + Pakiety + Opcje + Dodatki
+- ✅ System Menu kompletny (Kategorie, Dania, Szablony, Pakiety, Opcje, Dodatki)
 - ✅ Integracja Menu z Rezerwacjami (snapshot + kalkulator cen)
 - ✅ Karta Menu PDF (generowanie + pobieranie)
-- ✅ System zaliczek (Deposits + payments)
-- ✅ Historia cen menu (MenuPriceHistory)
-- ✅ Auth middleware na WSZYSTKICH endpointach menu
+- ✅ System zaliczek (Deposits + partial payments)
+- ✅ Auth middleware na WSZYSTKICH endpointach (JWT + RBAC)
 - ✅ Detekcja konfliktu "Cała Sala" (isWholeVenue)
-- ✅ Toasty — stackowanie, closeButton, z-index
+- ✅ Build 29/29 stron bez błędów (NODE_ENV=production)
 - ✅ Testy E2E — 45 testów (43 pass, 2 skip)
+
+## Znane uwagi:
+- ⚠️ Frontend kontener serwuje przez `npm run dev` — docelowo zmienić na `npm run start`
+- ⚠️ SWC Minifier warning — informacyjne, zniknie w Next.js 15
 
 ## Co wymaga dalszej pracy:
 - 🔄 Testy jednostkowe systemu menu
-- 🔄 Production deployment
+- 🔄 Production deployment (zmiana na npm run start)
+- 🔄 Import/Export menu (CSV/JSON)
 
-Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
+Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych działań.
 ```
 
 ---
 
 ## 🐞 Znane Problemy
 
-**Brak znanych bugów** 🎉
+**Brak krytycznych bugów** 🎉
+
+### ⚠️ Uwagi
+- Frontend kontener serwuje przez `npm run dev` — dla produkcji zalecana zmiana na `npm run start` w `docker-compose.yml`
+- Ostrzeżenie "Disabling SWC Minifier" jest informacyjne — zostanie usunięte w Next.js 15
 
 ---
 
 ## 📋 TODO
 
 ### 🔄 Planowane
+- [ ] Zmiana frontend na production mode (`npm run start` w docker-compose.yml)
 - [ ] Testy jednostkowe systemu menu
-- [ ] Production deployment
 - [ ] Import/Export menu (CSV/JSON)
 - [ ] Sezonowość dań
 - [ ] Zdjęcia dań (upload + gallery)
@@ -245,14 +267,14 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 - **Frontend:** 98% ✅
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 80% 🔄 (E2E: 45 testów pass)
-- **Dokumentacja:** 99% ✅ (zaktualizowana 14.02, 23:35)
+- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 12:20)
 - **Deployment:** 70% 🔄
 
 ### Postęp Modułów:
 - **Sale (Halls):** 100% ✅
 - **Klienci:** 100% ✅
 - **Rezerwacje + Kolejka:** 100% ✅
-- **Formularz Rezerwacji (Wizard):** 100% ✅ (v1.4.0) 🆕
+- **Formularz Rezerwacji (Wizard):** 100% ✅ (v1.4.0)
 - **Typy Wydarzeń:** 100% ✅
 - **Kategorie Dań:** 100% ✅
 - **Biblioteka Dań:** 100% ✅
@@ -267,6 +289,7 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan.
 - **Whole-Venue Conflict:** 100% ✅ (v1.2.0)
 - **Toast Stacking:** 100% ✅ (v1.2.0)
 - **Karta Menu PDF:** 100% ✅ (v1.3.0)
+- **Build Fixes:** 100% ✅ (v1.4.1) 🆕
 - **Testy E2E:** 100% ✅ (45 testów)
 
 ---
@@ -280,26 +303,29 @@ git checkout main
 git pull origin main
 
 # Restart (po pull)
-docker-compose restart backend frontend
+docker compose restart backend frontend
+
+# Build frontendu (po zmianach w kodzie frontend)
+docker compose exec frontend npm run build && docker compose restart frontend
 
 # Rebuild (jeśli zmiany w package.json lub Dockerfile)
-docker-compose down
-docker-compose up --build -d
+docker compose down
+docker compose up --build -d
 
 # Pełny rebuild bez cache
-docker-compose down
-docker-compose build --no-cache frontend
-docker-compose up -d
+docker compose down
+docker compose build --no-cache frontend
+docker compose up -d
 
 # Logi
-docker-compose logs -f backend --tail=50
-docker-compose logs -f frontend --tail=50
+docker compose logs -f backend --tail=50
+docker compose logs -f frontend --tail=50
 
 # Migracje
-docker-compose exec backend npm run prisma:migrate:deploy
+docker compose exec backend npm run prisma:migrate:deploy
 
 # Baza danych
-docker-compose exec postgres psql -U rezerwacje -d rezerwacje
+docker compose exec postgres psql -U rezerwacje -d rezerwacje
 ```
 
 ---
@@ -336,4 +362,4 @@ docker-compose exec postgres psql -U rezerwacje -d rezerwacje
 
 ---
 
-**Status:** Projekt w wersji 1.4.0. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E. Gotowy do dalszego rozwoju (testy jednostkowe, deployment).
+**Status:** Projekt w wersji 1.4.1. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E, naprawionym buildem. Gotowy do dalszego rozwoju.
