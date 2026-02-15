@@ -71,7 +71,7 @@ export default function HallDetailsPage() {
             <Link href="/dashboard/halls">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr&#243;t do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
@@ -84,7 +84,7 @@ export default function HallDetailsPage() {
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold">{hall.name}</h1>
-                    <p className="text-white/90 text-lg mt-1">Szczeg&#243;&#322;y sali weselnej</p>
+                    <p className="text-white/90 text-lg mt-1">Szczeg\u00f3\u0142y sali weselnej</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -100,7 +100,7 @@ export default function HallDetailsPage() {
                   )}
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <Users className="h-3 w-3 mr-1" />
-                    Pojemno&#347;&#263;: {hall.capacity} os&#243;b
+                    Pojemno\u015b\u0107: {hall.capacity} os\u00f3b
                   </Badge>
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function HallDetailsPage() {
                 <Link href={`/dashboard/halls/${hall.id}/edit`}>
                   <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
                     <Edit className="mr-2 h-5 w-5" />
-                    Edytuj Sal&#281;
+                    Edytuj Sal\u0119
                   </Button>
                 </Link>
               </div>
@@ -157,8 +157,7 @@ export default function HallDetailsPage() {
                   {hall.amenities.map((amenity, idx) => (
                     <Badge 
                       key={idx}
-                      variant="outline"
-                      className="text-sm py-2 px-3 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50"
+                      className="text-sm py-2 px-3 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300"
                     >
                       {amenity}
                     </Badge>
@@ -178,7 +177,7 @@ export default function HallDetailsPage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Kalendarz Rezerwacji</h2>
-                <p className="text-white/90">Zobacz dost&#281;pne terminy i wielokrotne rezerwacje dziennie</p>
+                <p className="text-white/90">Zobacz dost\u0119pne terminy i wielokrotne rezerwacje dziennie</p>
               </div>
             </div>
           </div>
@@ -200,8 +199,8 @@ export default function HallDetailsPage() {
                   <Users className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground font-medium">Pojemno&#347;&#263;</div>
-                  <div className="text-2xl font-bold">{hall.capacity} os&#243;b</div>
+                  <div className="text-sm text-muted-foreground font-medium">Pojemno\u015b\u0107</div>
+                  <div className="text-2xl font-bold">{hall.capacity} os\u00f3b</div>
                 </div>
               </div>
             </div>
