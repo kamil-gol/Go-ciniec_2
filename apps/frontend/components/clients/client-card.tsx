@@ -12,7 +12,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 const accent = moduleAccents.clients
 
 interface ClientCardProps {
-  client: Client & { _count?: { reservations: number } }
+  client: Client & { _count?: { reservations: number }; address?: string; notes?: string }
   onDelete?: (id: string) => void
   canDelete?: boolean
 }
@@ -32,11 +32,11 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
     e.stopPropagation()
 
     if (hasReservations) {
-      alert('Nie można usunąć klienta, który ma rezerwacje!')
+      alert('Nie mo\u017cna usun\u0105\u0107 klienta, kt\u00f3ry ma rezerwacje!')
       return
     }
 
-    if (confirm(`Czy na pewno chcesz usunąć klienta: ${client.firstName} ${client.lastName}?`)) {
+    if (confirm(`Czy na pewno chcesz usun\u0105\u0107 klienta: ${client.firstName} ${client.lastName}?`)) {
       onDelete?.(client.id)
     }
   }
@@ -153,7 +153,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
                   ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
                   : 'text-neutral-500 dark:text-neutral-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500'
               )}
-              title={hasReservations ? 'Nie można usunąć klienta z rezerwacjami' : 'Usuń klienta'}
+              title={hasReservations ? 'Nie mo\u017cna usun\u0105\u0107 klienta z rezerwacjami' : 'Usu\u0144 klienta'}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -162,7 +162,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
           <Link
             href={`/dashboard/clients/${client.id}`}
             className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-            title="Szczegóły klienta"
+            title="Szczeg\u00f3\u0142y klienta"
           >
             <ChevronRight className="w-4 h-4" />
           </Link>
