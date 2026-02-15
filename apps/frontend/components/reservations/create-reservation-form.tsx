@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateReservation } from '@/hooks/use-reservations'
+import { useApplyDiscount } from '@/hooks/use-discount'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
@@ -33,10 +34,11 @@ import {
   Calendar, Clock, Users, DollarSign, FileText, UserPlus,
   AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed,
   Sparkles, Building2, User, ClipboardCheck, AlertTriangle,
-  BookOpen, Package, ChevronRight,
+  BookOpen, Package, Tag, ChevronRight,
 } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
+import { CreateReservationDiscountSection } from '@/components/reservations/CreateReservationDiscountSection'
 import { useQueryClient } from '@tanstack/react-query'
 
 // ═══ STEP CONFIGURATION ═══
@@ -78,6 +80,12 @@ const reservationSchema = z.object({
   clientId: z.string().min(1, 'Wybierz klienta'),
   confirmationDeadline: z.string().optional(),
   notes: z.string().optional(),
+
+  // Sprint 7 — Discount (optional)
+  discountEnabled: z.boolean().optional(),
+  discountType: z.enum(['PERCENTAGE', 'FIXED']).optional(),
+  discountValue: z.coerce.number().min(0).optional(),
+  discountReason: z.string().optional(),
 }).refine((data) => data.adults + data.children + data.toddlers >= 1, {
   message: 'Łączna liczba gości musi być >= 1',
   path: ['adults'],
@@ -152,6 +160,7 @@ export function CreateReservationForm({
   const { data: clientsData, isLoading: clientsLoading } = useClients()
   const { data: eventTypes } = useEventTypes()
   const createReservation = useCreateReservation()
+  const applyDiscount = useApplyDiscount()
 
   const {
     register,
@@ -168,6 +177,9 @@ export function CreateReservationForm({
       adults: 0,
       children: 0,
       toddlers: 0,
+      discountEnabled: false,
+      discountType: 'PERCENTAGE',
+      discountReason: '',
       ...initialData,
     },
   })
@@ -188,6 +200,12 @@ export function CreateReservationForm({
   const startTime = watch('startTime')
   const endDate = watch('endDate')
   const endTime = watch('endTime')
+
+  // Discount (Sprint 7)
+  const discountEnabled = !!watch('discountEnabled')
+  const discountType = (watch('discountType') || 'PERCENTAGE') as 'PERCENTAGE' | 'FIXED'
+  const discountValue = Number(watch('discountValue')) || 0
+  const discountReason = watch('discountReason') || ''
 
   const hallsArray = useMemo(() => Array.isArray(halls?.halls) ? halls.halls : [], [halls])
   const clientsArray = useMemo(() => Array.isArray(clientsData) ? clientsData : [], [clientsData])
@@ -261,6 +279,17 @@ export function CreateReservationForm({
 
   const extraHoursCost = extraHours * EXTRA_HOUR_RATE
   const totalWithExtras = calculatedPrice + extraHoursCost
+
+  const discountAmount = useMemo(() => {
+    if (!discountEnabled || discountValue <= 0 || totalWithExtras <= 0) return 0
+    if (discountType === 'PERCENTAGE') {
+      return Math.round((totalWithExtras * discountValue) / 100)
+    }
+    return Math.min(discountValue, totalWithExtras)
+  }, [discountEnabled, discountType, discountValue, totalWithExtras])
+
+  const finalTotalPrice = Math.max(0, totalWithExtras - discountAmount)
+  const isDiscountValid = discountEnabled && discountAmount > 0 && discountReason.trim().length >= 3
 
   // ═══ EFFECTS ═══
 
@@ -428,11 +457,32 @@ export function CreateReservationForm({
       input.pricePerToddler = data.pricePerToddler
     }
 
+    const shouldApplyDiscount =
+      !!data.discountEnabled &&
+      Number(data.discountValue) > 0 &&
+      (data.discountReason || '').trim().length >= 3
+
     try {
       if (onSubmitProp) {
         await onSubmitProp(input)
       } else {
         const result = await createReservation.mutateAsync(input)
+
+        if (result?.id && shouldApplyDiscount) {
+          try {
+            await applyDiscount.mutateAsync({
+              id: result.id,
+              input: {
+                type: (data.discountType || 'PERCENTAGE') as any,
+                value: Number(data.discountValue),
+                reason: (data.discountReason || '').trim(),
+              },
+            })
+          } catch (e) {
+            // Discount failure shouldn't block reservation creation
+          }
+        }
+
         if (result?.id) router.push(`/dashboard/reservations/${result.id}`)
       }
       onSuccess?.()
@@ -927,6 +977,12 @@ export function CreateReservationForm({
       )}
 
       <PriceSummary />
+
+      <CreateReservationDiscountSection
+        control={control}
+        register={register}
+        totalPrice={totalWithExtras}
+      />
     </div>
   )
 
@@ -1056,6 +1112,49 @@ export function CreateReservationForm({
           )}
         </div>
         <PriceSummary compact />
+
+        {discountEnabled && (
+          <div className="mt-3">
+            {isDiscountValid ? (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl space-y-1 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <Tag className="w-4 h-4 text-orange-600" />
+                  <span className="font-semibold text-secondary-800">Rabat</span>
+                  <span className="text-xs text-orange-600 font-medium">
+                    {discountType === 'PERCENTAGE' ? `${discountValue}%` : formatCurrency(discountValue)}
+                  </span>
+                </div>
+
+                {discountReason.trim().length >= 3 && (
+                  <p className="text-xs text-orange-600/70 italic">{discountReason}</p>
+                )}
+
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-secondary-600">
+                    <span>Cena bazowa</span>
+                    <span>{formatCurrency(totalWithExtras)}</span>
+                  </div>
+                  <div className="flex justify-between text-orange-600 font-medium">
+                    <span>Rabat</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-orange-200 pt-1">
+                    <span>Po rabacie</span>
+                    <span className="text-emerald-700">{formatCurrency(finalTotalPrice)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-amber-700" />
+                  <span className="font-semibold text-amber-900">Rabat nie zostanie zastosowany</span>
+                </div>
+                <p className="text-xs text-amber-800 mt-1">Uzupełnij wartość rabatu i powód (min. 3 znaki).</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-4 pt-4 border-t">

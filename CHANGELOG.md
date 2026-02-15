@@ -1,5 +1,58 @@
 # 📝 Changelog
 
+## [1.6.0-dev] - 2026-02-15 (W trakcie — Sprint 7: System Rabatów)
+
+### ✨ Nowe funkcjonalności
+
+**Branch:** `feature/sprint-7-discount-system`
+
+#### US-7.1: Schema & Migracja DB
+- 5 nowych pól w tabeli `Reservation`: `discountType` (enum: PERCENTAGE/FIXED), `discountValue` (Decimal), `discountAmount` (Decimal), `discountReason` (String), `priceBeforeDiscount` (Decimal)
+- Migracja Prisma + ALTER TABLE na produkcji
+
+#### US-7.2: Backend API — Rabaty
+- `PATCH /api/reservations/:id/discount` — zastosuj/edytuj rabat (typ, wartość, powód)
+- `DELETE /api/reservations/:id/discount` — usuń rabat (przywraca oryginalną cenę)
+- Walidacja: value > 0, reason min 3 znaki, % ≤ 100
+- Historia: wpisy `DISCOUNT_APPLIED` / `DISCOUNT_REMOVED` w `ReservationHistory`
+- Obsługa edycji: użycie `priceBeforeDiscount` jako bazy przy zmianie rabatu
+
+#### US-7.3: Frontend — Rabat w szczegółach rezerwacji ✅
+- `DiscountSection.tsx` — standalone komponent z 3 stanami: brak rabatu → dashed button "Dodaj rabat"; aktywny rabat → karta z edit/delete; edycja → formularz z live preview
+- `discountApi` — `apply` (PATCH) + `remove` (DELETE)
+- `useApplyDiscount` / `useRemoveDiscount` — hooki z cache invalidation
+- Integracja w `ReservationFinancialSummary.tsx` między breakdown a total bar
+- 5 pól rabatu dodanych do `Reservation` interface w `types/index.ts`
+- `finalTotalPrice = effectiveTotalPrice - discountAmount` (poprawna kalkulacja)
+
+#### US-7.4: Frontend — Rabat w formularzu tworzenia (🔄 W trakcie)
+- `CreateReservationDiscountSection.tsx` — komponent gotowy i pushnięty
+  - Toggle rabatu, wybór typu (% / PLN), pole wartości, pole powodu
+  - Live preview: cena bazowa → rabat → cena po rabacie
+  - Integracja z react-hook-form (useWatch + Controller)
+- ⏳ **Pozostało:** Integracja komponentu w `create-reservation-form.tsx` (schema Zod, defaultValues, render w Step 3, submit, podsumowanie w Step 5)
+
+### 🐛 Bugfixy (Sprint 7)
+- **Fix mutacji discount** — `{ reservationId, data }` → `{ id, input }` (naprawia error 400 na `/reservations/undefined/discount`)
+- **Fix kalkulacji ceny** — dodanie `finalTotalPrice` = effectiveTotalPrice - discountAmount (total bar, balance, deposits używają zdyskontowanej ceny)
+- **Fix layoutu DiscountSection** — usunięcie Card wrapper (card-in-card), kompaktowy design, vertical price layout
+- **Fix unicode w ReservationMenuSection** — zamiana `\uXXXX` JSX text na UTF-8 (Zmień, zł, szczegóły, ×)
+
+### 📦 Zmienione/nowe pliki
+- `apps/backend/prisma/schema.prisma` — 5 nowych pól discount
+- `apps/backend/src/services/discount.service.ts` — **nowy** — applyDiscount + removeDiscount
+- `apps/backend/src/controllers/discount.controller.ts` — **nowy** — wrapper HTTP
+- `apps/backend/src/routes/reservation.routes.ts` — nowe endpointy discount
+- `apps/frontend/lib/api/discount-api.ts` — **nowy** — API client
+- `apps/frontend/hooks/use-discounts.ts` — **nowy** — hooki React Query
+- `apps/frontend/components/reservations/DiscountSection.tsx` — **nowy** — UI rabatu (detail view)
+- `apps/frontend/components/reservations/CreateReservationDiscountSection.tsx` — **nowy** — UI rabatu (create form)
+- `apps/frontend/components/reservations/ReservationFinancialSummary.tsx` — integracja discount + finalTotalPrice
+- `apps/frontend/components/reservations/ReservationMenuSection.tsx` — fix unicode encoding
+- `apps/frontend/types/index.ts` — 5 nowych pól w `Reservation` interface
+
+---
+
 ## [1.5.0] - 2026-02-15
 
 ### ✨ Nowe funkcjonalności (Sprint 6 — Quick Wins)

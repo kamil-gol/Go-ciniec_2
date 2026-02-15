@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
 import { reservationMenuController } from '../controllers/reservationMenu.controller';
+import { discountController } from '../controllers/discount.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
@@ -178,6 +179,40 @@ router.delete(
   validateUUID('id'),
   asyncHandler(async (req, res) => {
     await reservationMenuController.deleteMenu(req, res);
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════
+// 💰 DISCOUNT ENDPOINTS (Sprint 7)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   PATCH /api/reservations/:id/discount
+ * @desc    Apply or update discount on reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.patch(
+  '/:id/discount',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await discountController.applyDiscount(req, res);
+  })
+);
+
+/**
+ * @route   DELETE /api/reservations/:id/discount
+ * @desc    Remove discount from reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.delete(
+  '/:id/discount',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await discountController.removeDiscount(req, res);
   })
 );
 

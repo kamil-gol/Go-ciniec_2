@@ -119,6 +119,13 @@ model Reservation {
   pricePerChild   Decimal  @default(0) @db.Decimal(10, 2)
   pricePerToddler Decimal  @default(0) @db.Decimal(10, 2)
   totalPrice      Decimal  @db.Decimal(10, 2)
+
+  // 💰 Discount system (Sprint 7)
+  discountType        String?   @db.VarChar(20)    // PERCENTAGE | FIXED
+  discountValue       Decimal?  @db.Decimal(10, 2) // np. 10 (=10%) lub 500 (=500 PLN)
+  discountAmount      Decimal?  @db.Decimal(10, 2) // wyliczona kwota rabatu w PLN
+  discountReason      String?   @db.Text           // powód rabatu
+  priceBeforeDiscount Decimal?  @db.Decimal(10, 2) // oryginalna cena przed rabatem
   
   status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime?
