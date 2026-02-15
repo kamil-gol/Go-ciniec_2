@@ -29,7 +29,7 @@ export function useAuditLogs(
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.pageSize) params.append('pageSize', filters.pageSize.toString());
 
-      const response = await api.get(`/api/audit-log?${params.toString()}`);
+      const response = await api.get(`/audit-log?${params.toString()}`);
       return response.data;
     },
     staleTime: 30000, // 30s
@@ -43,7 +43,7 @@ export function useRecentAuditLogs(
   return useQuery({
     queryKey: ['audit-logs', 'recent', limit],
     queryFn: async () => {
-      const response = await api.get(`/api/audit-log/recent?limit=${limit}`);
+      const response = await api.get(`/audit-log/recent?limit=${limit}`);
       return response.data;
     },
     staleTime: 10000, // 10s
@@ -55,7 +55,7 @@ export function useAuditLogStatistics(): UseQueryResult<AuditLogStatistics> {
   return useQuery({
     queryKey: ['audit-logs', 'statistics'],
     queryFn: async () => {
-      const response = await api.get('/api/audit-log/statistics');
+      const response = await api.get('/audit-log/statistics');
       return response.data;
     },
     staleTime: 60000, // 1min
@@ -67,7 +67,7 @@ export function useEntityTypes(): UseQueryResult<EntityType[]> {
   return useQuery({
     queryKey: ['audit-logs', 'entity-types'],
     queryFn: async () => {
-      const response = await api.get('/api/audit-log/meta/entity-types');
+      const response = await api.get('/audit-log/meta/entity-types');
       return response.data;
     },
     staleTime: Infinity, // Cache forever (rzadko się zmienia)
@@ -79,7 +79,7 @@ export function useActions(): UseQueryResult<AuditAction[]> {
   return useQuery({
     queryKey: ['audit-logs', 'actions'],
     queryFn: async () => {
-      const response = await api.get('/api/audit-log/meta/actions');
+      const response = await api.get('/audit-log/meta/actions');
       return response.data;
     },
     staleTime: Infinity,
@@ -95,7 +95,7 @@ export function useEntityAuditLogs(
     queryKey: ['audit-logs', 'entity', entityType, entityId],
     queryFn: async () => {
       const response = await api.get(
-        `/api/audit-log/entity/${entityType}/${entityId}`
+        `/audit-log/entity/${entityType}/${entityId}`
       );
       return response.data;
     },
