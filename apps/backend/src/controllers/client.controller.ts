@@ -17,8 +17,18 @@ export class ClientController {
       throw AppError.unauthorized('User not authenticated');
     }
 
-    if (!data.firstName || !data.lastName || !data.email) {
-      throw AppError.badRequest('First name, last name, and email are required');
+    if (!data.firstName || !data.lastName || !data.phone) {
+      throw AppError.badRequest('Imię, nazwisko i telefon są wymagane');
+    }
+
+    // Walidacja formatu email jeśli podany
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      throw AppError.badRequest('Nieprawidłowy format adresu email');
+    }
+
+    // Ustaw email na null jeśli pusty string
+    if (!data.email || data.email.trim() === '') {
+      data.email = undefined;
     }
 
     const client = await clientService.createClient(data, userId);
@@ -63,6 +73,11 @@ export class ClientController {
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');
+    }
+
+    // Walidacja formatu email jeśli podany
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      throw AppError.badRequest('Nieprawidłowy format adresu email');
     }
 
     const client = await clientService.updateClient(id, data, userId);
