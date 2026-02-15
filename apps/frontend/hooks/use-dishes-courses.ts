@@ -16,10 +16,12 @@ import type {
 import type {
   CreateDishInput,
   UpdateDishInput,
+} from '@/lib/api/dishes-api';
+import type {
   CreateMenuCourseInput,
   UpdateMenuCourseInput,
   AssignDishesInput,
-} from '@/lib/api/dishes-api';
+} from '@/lib/api/menu-courses-api';
 
 // ════════════════════════════════════════════════════════════════════════════
 // QUERY KEYS
