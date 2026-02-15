@@ -46,9 +46,6 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
     name: '',
     description: '',
     category: 'MAIN_COURSE',
-    priceModifier: '0',
-    imageUrl: '',
-    thumbnailUrl: '',
   })
 
   const [allergens, setAllergens] = useState<string[]>([])
@@ -74,9 +71,6 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
         description: formData.description || undefined,
         categoryId: formData.category,
         allergens: allergens.length > 0 ? allergens : undefined,
-        priceModifier: parseFloat(formData.priceModifier),
-        imageUrl: formData.imageUrl || undefined,
-        thumbnailUrl: formData.thumbnailUrl || undefined,
         isActive: true,
       })
       
@@ -85,9 +79,6 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
         name: '',
         description: '',
         category: 'MAIN_COURSE',
-        priceModifier: '0',
-        imageUrl: '',
-        thumbnailUrl: '',
       })
       setAllergens([])
       onOpenChange(false)
@@ -200,46 +191,6 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Price Modifier */}
-            <div className="space-y-2">
-              <Label htmlFor="priceModifier">Modyfikator ceny (z\u0142)</Label>
-              <Input
-                id="priceModifier"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.priceModifier}
-                onChange={(e) => setFormData({ ...formData, priceModifier: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Dodatkowa op\u0142ata lub rabat dla tego dania
-              </p>
-            </div>
-
-            {/* Image URL */}
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl">URL zdj\u0119cia</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://..."
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              />
-            </div>
-
-            {/* Thumbnail URL */}
-            <div className="space-y-2">
-              <Label htmlFor="thumbnailUrl">URL miniatury</Label>
-              <Input
-                id="thumbnailUrl"
-                type="url"
-                placeholder="https://..."
-                value={formData.thumbnailUrl}
-                onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-              />
             </div>
           </div>
 
