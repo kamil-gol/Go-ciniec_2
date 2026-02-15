@@ -32,11 +32,11 @@ interface CreateDishDialogProps {
 const DISH_CATEGORIES = [
   { value: 'APPETIZER', label: 'Przystawka' },
   { value: 'SOUP', label: 'Zupa' },
-  { value: 'MAIN_COURSE', label: 'Danie g\u0142\u00f3wne' },
+  { value: 'MAIN_COURSE', label: 'Danie główne' },
   { value: 'SIDE_DISH', label: 'Dodatek' },
-  { value: 'SALAD', label: 'Sa\u0142atka' },
+  { value: 'SALAD', label: 'Sałatka' },
   { value: 'DESSERT', label: 'Deser' },
-  { value: 'DRINK', label: 'Nap\u00f3j' },
+  { value: 'DRINK', label: 'Napój' },
 ]
 
 export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) {
@@ -111,7 +111,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
               <Label htmlFor="name">Nazwa *</Label>
               <Input
                 id="name"
-                placeholder="np. Stek wo\u0142owy z grilla"
+                placeholder="np. Stek wołowy z grilla"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -143,7 +143,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
               <Label htmlFor="description">Opis</Label>
               <Textarea
                 id="description"
-                placeholder="Opis dania, sk\u0142adniki, spos\u00f3b przygotowania..."
+                placeholder="Opis dania, składniki, sposób przygotowania..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}

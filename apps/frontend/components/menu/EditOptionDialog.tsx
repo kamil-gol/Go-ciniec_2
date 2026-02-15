@@ -102,9 +102,9 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
       })
       
       onOpenChange(false)
-      alert('\u2705 Opcja zosta\u0142a zaktualizowana!')
+      alert('✅ Opcja została zaktualizowana!')
     } catch (error: any) {
-      alert(`\u274C B\u0142\u0105d: ${error.error || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 opcji'}`)
+      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować opcji'}`)
     }
   }
 
@@ -120,7 +120,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-2xl">Edytuj Opcj\u0119</DialogTitle>
+                <DialogTitle className="text-2xl">Edytuj Opcję</DialogTitle>
                 <DialogDescription>
                   Modyfikuj ustawienia opcji dodatkowej
                 </DialogDescription>
@@ -173,7 +173,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
 
             {/* Price Amount */}
             <div className="space-y-2">
-              <Label htmlFor="price">Cena (z\u0142) *</Label>
+              <Label htmlFor="price">Cena (zł) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -199,8 +199,8 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PER_PERSON">Za osob\u0119</SelectItem>
-                  <SelectItem value="FIXED">Sta\u0142a cena</SelectItem>
+                  <SelectItem value="PER_PERSON">Za osobę</SelectItem>
+                  <SelectItem value="FIXED">Stała cena</SelectItem>
                   <SelectItem value="FREE">Gratis</SelectItem>
                 </SelectContent>
               </Select>

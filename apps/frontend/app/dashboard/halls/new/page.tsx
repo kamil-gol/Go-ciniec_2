@@ -31,8 +31,8 @@ export default function NewHallPage() {
     
     if (!formData.name || formData.capacity <= 0) {
       toast({
-        title: 'B\u0142\u0105d walidacji',
-        description: 'Wype\u0142nij wszystkie wymagane pola',
+        title: 'Błąd walidacji',
+        description: 'Wypełnij wszystkie wymagane pola',
         variant: 'destructive',
       })
       return
@@ -43,14 +43,14 @@ export default function NewHallPage() {
       await createHall(formData)
       toast({
         title: 'Sukces',
-        description: 'Sala zosta\u0142a utworzona',
+        description: 'Sala została utworzona',
       })
       router.push('/dashboard/halls')
     } catch (error: any) {
       console.error('Error creating hall:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: error.response?.data?.message || 'Nie uda\u0142o si\u0119 utworzy\u0107 sali',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć sali',
         variant: 'destructive',
       })
     } finally {
@@ -225,7 +225,7 @@ export default function NewHallPage() {
               className="flex-1 h-14 text-lg bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 shadow-xl"
             >
               <Plus className="mr-2 h-5 w-5" />
-              {saving ? 'Tworzenie...' : 'Utw\u00f3rz Sal\u0119'}
+              {saving ? 'Tworzenie...' : 'Utwórz Salę'}
             </Button>
             <Link href="/dashboard/halls" className="flex-1">
               <Button type="button" variant="outline" size="lg" className="w-full h-14 text-lg">

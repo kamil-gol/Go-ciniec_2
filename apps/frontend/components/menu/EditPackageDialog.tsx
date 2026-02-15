@@ -86,9 +86,9 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
       })
       
       onOpenChange(false)
-      alert('\u2705 Pakiet zosta\u0142 zaktualizowany!')
+      alert('✅ Pakiet został zaktualizowany!')
     } catch (error: any) {
-      alert(`\u274C B\u0142\u0105d: ${error.error || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 pakietu'}`)
+      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować pakietu'}`)
     }
   }
 
@@ -126,11 +126,11 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
 
             {/* Prices */}
             <div className="space-y-3">
-              <Label>Ceny za osob\u0119 (z\u0142) *</Label>
+              <Label>Ceny za osobę (zł) *</Label>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="pricePerAdult" className="text-xs text-muted-foreground">
-                    Doros\u0142y
+                    Dorosły
                   </Label>
                   <Input
                     id="pricePerAdult"
@@ -192,7 +192,7 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
                 {formData.includedItems.map((item, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
-                      placeholder="np. Przystawki, Zupa, G\u0142\u00f3wne danie"
+                      placeholder="np. Przystawki, Zupa, Główne danie"
                       value={item}
                       onChange={(e) => updateIncludedItem(index, e.target.value)}
                     />
@@ -210,7 +210,7 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Puste elementy zostan\u0105 automatycznie pomini\u0119te
+                Puste elementy zostaną automatycznie pominięte
               </p>
             </div>
           </div>

@@ -75,9 +75,9 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
       })
       
       onOpenChange(false)
-      alert('\u2705 Szablon menu zosta\u0142 zaktualizowany!')
+      alert('✅ Szablon menu został zaktualizowany!')
     } catch (error: any) {
-      alert(`\u274C B\u0142\u0105d: ${error.error || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 szablonu'}`)
+      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować szablonu'}`)
     }
   }
 
@@ -153,7 +153,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="validFrom">Wa\u017cny od *</Label>
+                <Label htmlFor="validFrom">Ważny od *</Label>
                 <Input
                   id="validFrom"
                   type="date"
@@ -163,7 +163,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="validTo">Wa\u017cny do</Label>
+                <Label htmlFor="validTo">Ważny do</Label>
                 <Input
                   id="validTo"
                   type="date"
@@ -186,7 +186,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
                 htmlFor="isActive"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Aktywny (dost\u0119pny do wyboru)
+                Aktywny (dostępny do wyboru)
               </Label>
             </div>
           </div>

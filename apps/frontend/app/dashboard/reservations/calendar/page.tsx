@@ -326,10 +326,6 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2">
           {/* View Toggle - Kalendarz left, Lista right */}
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mr-3">
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Kalendarz
-            </span>
             <Link
               href="/dashboard/reservations/list"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
@@ -337,6 +333,10 @@ export default function CalendarPage() {
               <List className="h-3.5 w-3.5" />
               Lista
             </Link>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Kalendarz
+            </span>
           </div>
 
           <button onClick={goToPrevMonth} className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors shadow-sm">

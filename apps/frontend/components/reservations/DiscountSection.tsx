@@ -64,7 +64,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
   }
 
   const handleRemove = async () => {
-    if (!confirm('Czy na pewno chcesz usun\u0105\u0107 rabat?')) return
+    if (!confirm('Czy na pewno chcesz usunąć rabat?')) return
     try {
       await removeDiscount.mutateAsync(reservation.id)
     } catch (error) {
@@ -129,12 +129,12 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PERCENTAGE">{'Procent (%)'}</SelectItem>
-                <SelectItem value="FIXED">{'Kwota (z\u0142)'}</SelectItem>
+                <SelectItem value="FIXED">{'Kwota (zł)'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs font-medium">{'Warto\u015b\u0107'}</Label>
+            <Label className="text-xs font-medium">{'Wartość'}</Label>
             <Input
               type="number"
               min="0"
@@ -149,11 +149,11 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
         </div>
 
         <div>
-          <Label className="text-xs font-medium">{'Pow\u00f3d rabatu'}</Label>
+          <Label className="text-xs font-medium">{'Powód rabatu'}</Label>
           <Input
             value={discountReason}
             onChange={(e) => setDiscountReason(e.target.value)}
-            placeholder={'np. Sta\u0142y klient, promocja...'}
+            placeholder={'np. Stały klient, promocja...'}
             className="h-8 text-xs mt-1"
           />
         </div>
@@ -220,7 +220,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
             onClick={handleRemove}
             disabled={removeDiscount.isPending}
             className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            title={'Usu\u0144 rabat'}
+            title={'Usuń rabat'}
           >
             <X className="h-3 w-3 text-red-500" />
           </button>
