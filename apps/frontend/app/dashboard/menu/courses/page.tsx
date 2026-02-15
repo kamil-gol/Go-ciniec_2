@@ -252,11 +252,11 @@ export default function CoursesPage() {
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Doro\u015bli:</span>
-                              <span className="font-semibold">{pkg.priceAdult} z\u0142</span>
+                              <span className="font-semibold">{pkg.pricePerAdult} z\u0142</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Dzieci:</span>
-                              <span className="font-semibold">{pkg.priceChild} z\u0142</span>
+                              <span className="font-semibold">{pkg.pricePerChild} z\u0142</span>
                             </div>
                           </div>
                         </CardContent>
