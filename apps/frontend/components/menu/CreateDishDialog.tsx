@@ -32,11 +32,11 @@ interface CreateDishDialogProps {
 const DISH_CATEGORIES = [
   { value: 'APPETIZER', label: 'Przystawka' },
   { value: 'SOUP', label: 'Zupa' },
-  { value: 'MAIN_COURSE', label: 'Danie główne' },
+  { value: 'MAIN_COURSE', label: 'Danie g\u0142\u00f3wne' },
   { value: 'SIDE_DISH', label: 'Dodatek' },
-  { value: 'SALAD', label: 'Sałatka' },
+  { value: 'SALAD', label: 'Sa\u0142atka' },
   { value: 'DESSERT', label: 'Deser' },
-  { value: 'DRINK', label: 'Napój' },
+  { value: 'DRINK', label: 'Nap\u00f3j' },
 ]
 
 export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) {
@@ -72,7 +72,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
       await createMutation.mutateAsync({
         name: formData.name,
         description: formData.description || undefined,
-        category: formData.category,
+        categoryId: formData.category,
         allergens: allergens.length > 0 ? allergens : undefined,
         priceModifier: parseFloat(formData.priceModifier),
         imageUrl: formData.imageUrl || undefined,
@@ -120,7 +120,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
               <Label htmlFor="name">Nazwa *</Label>
               <Input
                 id="name"
-                placeholder="np. Stek wołowy z grilla"
+                placeholder="np. Stek wo\u0142owy z grilla"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -152,7 +152,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
               <Label htmlFor="description">Opis</Label>
               <Textarea
                 id="description"
-                placeholder="Opis dania, składniki, sposób przygotowania..."
+                placeholder="Opis dania, sk\u0142adniki, spos\u00f3b przygotowania..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
@@ -187,7 +187,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
               {allergens.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {allergens.map((allergen) => (
-                    <Badge key={allergen} variant="secondary" className="gap-1">
+                    <Badge key={allergen} variant="default" className="gap-1 bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300">
                       {allergen}
                       <button
                         type="button"
@@ -204,7 +204,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
 
             {/* Price Modifier */}
             <div className="space-y-2">
-              <Label htmlFor="priceModifier">Modyfikator ceny (zł)</Label>
+              <Label htmlFor="priceModifier">Modyfikator ceny (z\u0142)</Label>
               <Input
                 id="priceModifier"
                 type="number"
@@ -214,13 +214,13 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
                 onChange={(e) => setFormData({ ...formData, priceModifier: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                Dodatkowa opłata lub rabat dla tego dania
+                Dodatkowa op\u0142ata lub rabat dla tego dania
               </p>
             </div>
 
             {/* Image URL */}
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">URL zdjęcia</Label>
+              <Label htmlFor="imageUrl">URL zdj\u0119cia</Label>
               <Input
                 id="imageUrl"
                 type="url"
