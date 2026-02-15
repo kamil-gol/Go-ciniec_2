@@ -11,12 +11,17 @@ import { CreateClientDTO, UpdateClientDTO, ClientFilters } from '../types/client
 export class ClientController {
   async createClient(req: Request, res: Response): Promise<void> {
     const data: CreateClientDTO = req.body;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw AppError.unauthorized('User not authenticated');
+    }
 
     if (!data.firstName || !data.lastName || !data.email) {
       throw AppError.badRequest('First name, last name, and email are required');
     }
 
-    const client = await clientService.createClient(data);
+    const client = await clientService.createClient(data, userId);
 
     res.status(201).json({
       success: true,
@@ -54,8 +59,13 @@ export class ClientController {
   async updateClient(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const data: UpdateClientDTO = req.body;
+    const userId = (req as any).user?.id;
 
-    const client = await clientService.updateClient(id, data);
+    if (!userId) {
+      throw AppError.unauthorized('User not authenticated');
+    }
+
+    const client = await clientService.updateClient(id, data, userId);
 
     res.status(200).json({
       success: true,
@@ -66,7 +76,13 @@ export class ClientController {
 
   async deleteClient(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    await clientService.deleteClient(id);
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw AppError.unauthorized('User not authenticated');
+    }
+
+    await clientService.deleteClient(id, userId);
 
     res.status(200).json({
       success: true,
