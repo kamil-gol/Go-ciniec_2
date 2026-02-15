@@ -30,8 +30,8 @@ export default function HallDetailsPage() {
     } catch (error: any) {
       console.error('Error loading hall:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 sali',
+        title: 'Błąd',
+        description: 'Nie udało się załadować sali',
         variant: 'destructive',
       })
       router.push('/dashboard/halls')
@@ -71,7 +71,7 @@ export default function HallDetailsPage() {
             <Link href="/dashboard/halls">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -84,7 +84,7 @@ export default function HallDetailsPage() {
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold">{hall.name}</h1>
-                    <p className="text-white/90 text-lg mt-1">Szczeg\u00f3\u0142y sali weselnej</p>
+                    <p className="text-white/90 text-lg mt-1">Szczegóły sali weselnej</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -100,7 +100,7 @@ export default function HallDetailsPage() {
                   )}
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <Users className="h-3 w-3 mr-1" />
-                    Pojemno\u015b\u0107: {hall.capacity} os\u00f3b
+                    Pojemność: {hall.capacity} osób
                   </Badge>
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function HallDetailsPage() {
                 <Link href={`/dashboard/halls/${hall.id}/edit`}>
                   <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
                     <Edit className="mr-2 h-5 w-5" />
-                    Edytuj Sal\u0119
+                    Edytuj Salę
                   </Button>
                 </Link>
               </div>
@@ -177,7 +177,7 @@ export default function HallDetailsPage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Kalendarz Rezerwacji</h2>
-                <p className="text-white/90">Zobacz dost\u0119pne terminy i wielokrotne rezerwacje dziennie</p>
+                <p className="text-white/90">Zobacz dostępne terminy i wielokrotne rezerwacje dziennie</p>
               </div>
             </div>
           </div>
@@ -199,8 +199,8 @@ export default function HallDetailsPage() {
                   <Users className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground font-medium">Pojemno\u015b\u0107</div>
-                  <div className="text-2xl font-bold">{hall.capacity} os\u00f3b</div>
+                  <div className="text-sm text-muted-foreground font-medium">Pojemność</div>
+                  <div className="text-2xl font-bold">{hall.capacity} osób</div>
                 </div>
               </div>
             </div>

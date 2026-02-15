@@ -104,20 +104,20 @@ export default function CategorySettingsSection({
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 bg-orange-100 rounded-lg">
-            <span className="text-2xl">{"\uD83C\uDF7D\uFE0F"}</span>
+            <span className="text-2xl">{"🍽️"}</span>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Kategorie da\u0144 w pakiecie</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Kategorie dań w pakiecie</h2>
         </div>
         <p className="text-sm text-slate-600">
-          Wybierz z jakich kategorii go\u015bcie b\u0119d\u0105 mogli wybiera\u0107 dania oraz okre\u015bl
-          minimaln\u0105 i maksymaln\u0105 liczb\u0119 wybor\u00f3w.
+          Wybierz z jakich kategorii goście będą mogli wybierać dania oraz określ
+          minimalną i maksymalną liczbę wyborów.
         </p>
       </div>
 
       {categories.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 rounded-xl">
           <p className="text-slate-500">
-            Brak dost\u0119pnych kategorii da\u0144. Najpierw stw\u00f3rz kategorie w systemie.
+            Brak dostępnych kategorii dań. Najpierw stwórz kategorie w systemie.
           </p>
         </div>
       ) : (
@@ -173,7 +173,7 @@ export default function CategorySettingsSection({
                       {/* Min Select */}
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 mb-2">
-                          Min wybor\u00f3w
+                          Min wyborów
                         </label>
                         <input
                           type="number"
@@ -198,7 +198,7 @@ export default function CategorySettingsSection({
                       {/* Max Select */}
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 mb-2">
-                          Max wybor\u00f3w
+                          Max wyborów
                         </label>
                         <input
                           type="number"
@@ -240,7 +240,7 @@ export default function CategorySettingsSection({
                       {/* Custom Label */}
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 mb-2">
-                          W\u0142asna etykieta
+                          Własna etykieta
                         </label>
                         <input
                           type="text"
@@ -259,7 +259,7 @@ export default function CategorySettingsSection({
                       <div className="mt-3 flex items-start gap-2 text-red-700 text-xs bg-red-100 border border-red-300 rounded-lg p-3">
                         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         <div>
-                          <strong>B\u0142\u0105d walidacji:</strong> Minimalna warto\u015b\u0107 ({setting.minSelect}) nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna ({setting.maxSelect}).
+                          <strong>Błąd walidacji:</strong> Minimalna wartość ({setting.minSelect}) nie może być większa niż maksymalna ({setting.maxSelect}).
                         </div>
                       </div>
                     )}
@@ -275,7 +275,7 @@ export default function CategorySettingsSection({
       {localSettings.filter((s) => s.isEnabled).length > 0 && (
         <div className="mt-6 pt-6 border-t border-slate-200">
           <h3 className="text-sm font-semibold text-slate-700 mb-3">
-            {"\uD83D\uDCCA"} Podsumowanie:
+            {"📊"} Podsumowanie:
           </h3>
           <ul className="text-sm text-slate-600 space-y-2">
             {localSettings
@@ -285,10 +285,10 @@ export default function CategorySettingsSection({
                 const error = hasValidationError(s);
                 return (
                   <li key={s.categoryId} className={error ? 'text-red-700 font-medium' : ''}>
-                    {error && '\u26A0\uFE0F '}
-                    \u2022 <strong>{cat?.name}</strong>: {s.minSelect}\u2013{s.maxSelect} wybor\u00f3w
+                    {error && '⚠️ '}
+                    • <strong>{cat?.name}</strong>: {s.minSelect}–{s.maxSelect} wyborów
                     {s.isRequired && ' (wymagane)'}
-                    {error && ' - NIEPRAWID\u0141OWE!'}
+                    {error && ' - NIEPRAWIDŁOWE!'}
                   </li>
                 );
               })}

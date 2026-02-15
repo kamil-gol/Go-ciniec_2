@@ -46,13 +46,13 @@ export default function EditPackagePage() {
     return (
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">B\u0142\u0105d</h2>
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Błąd</h2>
           <p className="text-red-600">{error || 'Nie znaleziono pakietu'}</p>
           <button
             onClick={() => router.back()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           >
-            Wr\u00f3\u0107
+            Wróć
           </button>
         </div>
       </div>
