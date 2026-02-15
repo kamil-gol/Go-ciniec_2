@@ -123,3 +123,25 @@ export const attachmentsApi = {
     window.URL.revokeObjectURL(url)
   },
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Batch Operations (used by list pages)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Batch check RODO status for multiple clients.
+ * Returns a map: clientId -> hasRodo (boolean)
+ */
+export const batchCheckRodo = async (clientIds: string[]): Promise<Record<string, boolean>> => {
+  const response = await apiClient.post('/attachments/batch-check-rodo', { clientIds })
+  return response.data.data
+}
+
+/**
+ * Batch check contract status for multiple reservations.
+ * Returns a map: reservationId -> hasContract (boolean)
+ */
+export const batchCheckContract = async (reservationIds: string[]): Promise<Record<string, boolean>> => {
+  const response = await apiClient.post('/attachments/batch-check-contract', { reservationIds })
+  return response.data.data
+}
