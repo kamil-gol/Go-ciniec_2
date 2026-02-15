@@ -3,7 +3,7 @@
 **Status**: 🔧 W budowie  
 **Okres**: Ciągły rozwój  
 **Start projektu**: 06.02.2026  
-**Aktualna wersja**: 1.6.0  
+**Aktualna wersja**: 1.6.1  
 
 ---
 
@@ -19,14 +19,14 @@ SPRINT 4 (12.02 - 13.02)   → System Menu & Dania               ✅ DONE
 SPRINT 5 (13.02 - 15.02)   → Stabilizacja & Production Mode    ✅ DONE
 ─────────────────────────────────────────────────────────────────
 SPRINT 6 (16.02 - 17.02)   → Quick Wins & Bugfixy              ✅ DONE
-SPRINT 7 (18.02 - 20.02)   → System Rabatów                    ✅ DONE
+SPRINT 7 (18.02 - 20.02)   → System Rabatów + Cleanup          ✅ DONE
 SPRINT 8 (21.02 - 26.02)   → Historia Zmian & Archiwum         🔳 TODO
 SPRINT 9 (27.02 - 05.03)   → Ujednolicenie UI & Mobile         🔳 TODO
 ```
 
 ---
 
-# ✅ SPRINTY 1-7: ZAKOŃCZONE (v1.0.0 → v1.6.0)
+# ✅ SPRINTY 1-7: ZAKOŃCZONE (v1.0.0 → v1.6.1)
 
 Szczegóły zakończonych sprintów → patrz [CHANGELOG.md](../CHANGELOG.md)
 
@@ -39,7 +39,7 @@ Szczegóły zakończonych sprintów → patrz [CHANGELOG.md](../CHANGELOG.md)
 - ✅ 45 testów E2E (Playwright)
 - ✅ Pełna dokumentacja API (~68 endpointów)
 - ✅ Sprint 6: quick wins
-- ✅ Sprint 7: system rabatów (% / PLN)
+- ✅ Sprint 7: system rabatów (% / PLN) + cleanup UTF-8
 
 ---
 
@@ -139,14 +139,14 @@ Szczegóły zakończonych sprintów → patrz [CHANGELOG.md](../CHANGELOG.md)
 
 ---
 
-# ✅ SPRINT 7: System Rabatów (18.02 - 20.02.2026)
+# ✅ SPRINT 7: System Rabatów + Cleanup (18.02 - 20.02.2026)
 
 ## Cel
 Możliwość udzielenia rabatu procentowego lub kwotowego na cenę końcową rezerwacji.
 
 **Estymacja:** ~2-3 dni  
-**Wersja:** v1.6.0  
-**Branch:** `feature/discount-system`
+**Wersja:** v1.6.0 – v1.6.1  
+**Branch:** `feature/discount-system` + `fix/sprint7-cleanup`
 
 ---
 
@@ -201,9 +201,26 @@ Możliwość udzielenia rabatu procentowego lub kwotowego na cenę końcową rez
 
 ---
 
+### US-7.5: Cleanup — globalny fix UTF-8 + lista rezerwacji (v1.6.1)
+**Priority**: 🟡 HIGH  
+**Points**: 5  
+**Wersja**: v1.6.1  
+**Branch**: `fix/sprint7-cleanup`  
+**Sesja**: [SPRINT7_CLEANUP_2026-02-16.md](SPRINT7_CLEANUP_2026-02-16.md)
+
+**Subtasks**:
+- [x] Globalny fix Unicode w 29 plikach frontendowych (625 zamian)
+- [x] Obsługa emoji surrogate pairs (\uD83C\uDF89 → 🎉)
+- [x] Usunięcie zduplikowanych stron `/queue` i `/reservations`
+- [x] Wymuszenie `charset=utf-8` w backend response headers
+- [x] Domyślny widok listy rezerwacji (zamiast kalendarza)
+- [x] Toggle Lista|Kalendarz
+
+---
+
 ## 📊 Summary Sprint 7
-- **Total Points**: 26
-- **Deliverables**: Kompletny system rabatów (DB + API + UI + PDF)
+- **Total Points**: 31 (26 + 5 cleanup)
+- **Deliverables**: Kompletny system rabatów (DB + API + UI + PDF) + globalny fix UTF-8
 - **Migracja DB**: ✅ Wymagana (5 nowych pól w Reservation)
 - **Restart wymagany**: backend + frontend + migracja
 - **Risk**: Średni
@@ -237,12 +254,12 @@ Spójny wygląd wszystkich modułów + pełna responsywność mobilna.
 | Sprint | Temat | Points | Estymacja | Wersja | Status |
 |--------|-------|--------|-----------|--------|--------|
 | 6 | Quick Wins & Bugfixy | 16 | ~1 dzień | v1.5.0-v1.5.5 | ✅ DONE |
-| 7 | System Rabatów | 26 | ~2-3 dni | v1.6.0 | ✅ DONE |
+| 7 | System Rabatów + Cleanup | 31 | ~2-3 dni | v1.6.0-v1.6.1 | ✅ DONE |
 | 8 | Historia Zmian & Archiwum | 47 | ~3-5 dni | v1.7.0-v1.7.1 | 🔳 TODO |
 | 9 | Ujednolicenie UI & Mobile | 47 | ~5-7 dni | v1.8.0 | 🔳 TODO |
-| **RAZEM** | | **136** | **~11-16 dni** | | |
+| **RAZEM** | | **141** | **~11-16 dni** | | |
 
 ---
 
-**Last Updated**: 15.02.2026, 19:13 CET  
+**Last Updated**: 16.02.2026, 00:20 CET  
 **Project Status**: 🔧 Sprint 8 zaplanowany
