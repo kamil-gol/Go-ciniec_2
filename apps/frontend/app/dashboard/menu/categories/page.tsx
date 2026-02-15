@@ -38,7 +38,7 @@ export default function DishCategoriesPage() {
     displayOrder: 0,
   })
 
-  // Aktualizuj formularz gdy edytujesz kategorię
+  // Aktualizuj formularz gdy edytujesz kategori\u0119
   useEffect(() => {
     if (editingCategory) {
       setFormData({
@@ -68,7 +68,7 @@ export default function DishCategoriesPage() {
   }
 
   const handleCreate = () => {
-    // Ustaw kolejność na najwyższą +1
+    // Ustaw kolejno\u015b\u0107 na najwy\u017csz\u0105 +1
     const maxOrder = categories.length > 0 
       ? Math.max(...categories.map(c => c.displayOrder)) + 1
       : 0
@@ -80,17 +80,17 @@ export default function DishCategoriesPage() {
 
   const handleClose = () => {
     setDialogOpen(false)
-    setTimeout(() => resetForm(), 200) // Czekaj na animację zamykania
+    setTimeout(() => resetForm(), 200) // Czekaj na animacj\u0119 zamykania
   }
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.slug) {
-      toast.error('Nazwa i slug są wymagane')
+      toast.error('Nazwa i slug s\u0105 wymagane')
       return
     }
 
     if (formData.displayOrder < 0) {
-      toast.error('Kolejność nie może być ujemna')
+      toast.error('Kolejno\u015b\u0107 nie mo\u017ce by\u0107 ujemna')
       return
     }
 
@@ -102,28 +102,28 @@ export default function DishCategoriesPage() {
       }
       handleClose()
     } catch (error: any) {
-      toast.error(error?.message || 'Wystąpił błąd')
+      toast.error(error?.message || 'Wyst\u0105pi\u0142 b\u0142\u0105d')
     }
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Czy na pewno chcesz usunąć kategorię "${name}"?`)) return
+    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 kategori\u0119 "${name}"?`)) return
 
     try {
       await deleteMutation.mutateAsync(id)
     } catch (error: any) {
-      toast.error(error?.message || 'Nie udało się usunąć kategorii')
+      toast.error(error?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 kategorii')
     }
   }
 
   const colorOptions = [
     { value: 'bg-red-100 text-red-700', label: 'Czerwony' },
-    { value: 'bg-orange-100 text-orange-700', label: 'Pomarańczowy' },
-    { value: 'bg-yellow-100 text-yellow-700', label: 'Żółty' },
+    { value: 'bg-orange-100 text-orange-700', label: 'Pomara\u0144czowy' },
+    { value: 'bg-yellow-100 text-yellow-700', label: '\u017b\u00f3\u0142ty' },
     { value: 'bg-green-100 text-green-700', label: 'Zielony' },
     { value: 'bg-blue-100 text-blue-700', label: 'Niebieski' },
     { value: 'bg-purple-100 text-purple-700', label: 'Fioletowy' },
-    { value: 'bg-pink-100 text-pink-700', label: 'Różowy' },
+    { value: 'bg-pink-100 text-pink-700', label: 'R\u00f3\u017cowy' },
     { value: 'bg-gray-100 text-gray-700', label: 'Szary' },
   ]
 
@@ -137,7 +137,7 @@ export default function DishCategoriesPage() {
           <Link href="/dashboard/menu">
             <Button variant="ghost" className="text-white hover:bg-white/20 mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Powrót do Menu
+              Powr\u00f3t do Menu
             </Button>
           </Link>
           
@@ -147,8 +147,8 @@ export default function DishCategoriesPage() {
                 <Tags className="h-12 w-12" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight">Kategorie Dań</h1>
-                <p className="text-white/90 text-lg mt-1">Zarządzaj kategoriami w systemie</p>
+                <h1 className="text-4xl font-bold tracking-tight">Kategorie Da\u0144</h1>
+                <p className="text-white/90 text-lg mt-1">Zarz\u0105dzaj kategoriami w systemie</p>
               </div>
             </div>
             
@@ -157,7 +157,7 @@ export default function DishCategoriesPage() {
               onClick={handleCreate}
             >
               <Plus className="h-5 w-5 mr-2" />
-              Dodaj Kategorię
+              Dodaj Kategori\u0119
             </Button>
           </div>
         </div>
@@ -169,8 +169,8 @@ export default function DishCategoriesPage() {
           <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
             <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-900 dark:text-blue-100">
-              <p className="font-semibold mb-1">Kolejność wyświetlania</p>
-              <p>Kategorie są sortowane po numerze kolejności (niższa = wcześniej). Kilka kategorii może mieć tę samą kolejność - wtedy są sortowane alfabetycznie.</p>
+              <p className="font-semibold mb-1">Kolejno\u015b\u0107 wy\u015bwietlania</p>
+              <p>Kategorie s\u0105 sortowane po numerze kolejno\u015bci (ni\u017csza = wcze\u015bniej). Kilka kategorii mo\u017ce mie\u0107 t\u0119 sam\u0105 kolejno\u015b\u0107 - wtedy s\u0105 sortowane alfabetycznie.</p>
             </div>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function DishCategoriesPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}
+              {editingCategory ? 'Edytuj Kategori\u0119' : 'Nowa Kategoria'}
             </DialogTitle>
           </DialogHeader>
           
@@ -207,14 +207,14 @@ export default function DishCategoriesPage() {
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })}
                 disabled={!!editingCategory}
               />
-              <p className="text-xs text-muted-foreground">Używany w kodzie - tylko duże litery, bez spacji</p>
+              <p className="text-xs text-muted-foreground">U\u017cywany w kodzie - tylko du\u017ce litery, bez spacji</p>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="icon">Ikona (emoji)</Label>
               <Input
                 id="icon"
-                placeholder="🍜"
+                placeholder="\ud83c\udf5c"
                 value={formData.icon}
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
               />
@@ -239,7 +239,7 @@ export default function DishCategoriesPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="order">Kolejność wyświetlania</Label>
+              <Label htmlFor="order">Kolejno\u015b\u0107 wy\u015bwietlania</Label>
               <Input
                 id="order"
                 type="number"
@@ -251,7 +251,7 @@ export default function DishCategoriesPage() {
                 }}
               />
               <p className="text-xs text-muted-foreground">
-                Obecne kolejności: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}
+                Obecne kolejno\u015bci: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}
               </p>
             </div>
             
@@ -288,14 +288,14 @@ export default function DishCategoriesPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Brak kategorii</h3>
               <p className="text-muted-foreground mb-6">
-                Dodaj pierwszą kategorię dań
+                Dodaj pierwsz\u0105 kategori\u0119 da\u0144
               </p>
               <Button 
                 className="bg-gradient-to-r from-purple-500 to-pink-500"
                 onClick={handleCreate}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Dodaj kategorię
+                Dodaj kategori\u0119
               </Button>
             </CardContent>
           </Card>
@@ -317,7 +317,7 @@ export default function DishCategoriesPage() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-3xl">{category.icon}</div>
                       {!category.isActive && (
-                        <Badge variant="outline" className="border-red-200 text-red-600">
+                        <Badge className="border border-red-200 text-red-600 bg-red-50 dark:bg-red-950/50">
                           Nieaktywna
                         </Badge>
                       )}
@@ -326,14 +326,14 @@ export default function DishCategoriesPage() {
                       {category.name}
                     </CardTitle>
                     <div className="flex flex-col gap-2 text-sm text-muted-foreground mt-2">
-                      <Badge variant="outline" className={`w-fit ${category.color}`}>
+                      <Badge className={`w-fit border ${category.color}`}>
                         {category.name}
                       </Badge>
                       <div className="text-xs">
                         Slug: <span className="font-mono text-muted-foreground/70">{category.slug}</span>
                       </div>
                       <div className="text-xs">
-                        Kolejność: {category.displayOrder}
+                        Kolejno\u015b\u0107: {category.displayOrder}
                       </div>
                     </div>
                   </CardHeader>
