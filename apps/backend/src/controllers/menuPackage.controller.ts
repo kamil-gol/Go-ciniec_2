@@ -1,11 +1,10 @@
 /**
- * Menu Package Controller
- * 
- * HTTP handlers for menu package operations
+ * Menu Package Controller - with userId for audit
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { menuService } from '../services/menu.service';
+import { AppError } from '../utils/AppError';
 import {
   createMenuPackageSchema,
   updateMenuPackageSchema,
@@ -16,15 +15,10 @@ import { z } from 'zod';
 
 export class MenuPackageController {
 
-  /**
-   * GET /api/menu-packages
-   * List all packages (with optional filter by menuTemplateId)
-   */
   async list(req: Request, res: Response, next: NextFunction) {
     try {
       const { menuTemplateId } = req.query;
 
-      // If menuTemplateId provided, filter by template
       if (menuTemplateId && typeof menuTemplateId === 'string') {
         const packages = await menuService.getPackagesByTemplateId(menuTemplateId);
         return res.status(200).json({
@@ -34,7 +28,6 @@ export class MenuPackageController {
         });
       }
 
-      // Otherwise return all packages
       const packages = await menuService.getAllPackages();
 
       return res.status(200).json({
@@ -47,10 +40,6 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * GET /api/menu-packages/event-type/:eventTypeId
-   * List all active packages for a specific event type
-   */
   async listByEventType(req: Request, res: Response, next: NextFunction) {
     try {
       const { eventTypeId } = req.params;
@@ -67,10 +56,6 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * GET /api/menu-packages/template/:templateId
-   * List all packages for a menu template
-   */
   async listByTemplate(req: Request, res: Response, next: NextFunction) {
     try {
       const { templateId } = req.params;
@@ -87,10 +72,6 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * GET /api/menu-packages/:id
-   * Get single package by ID
-   */
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
@@ -112,16 +93,14 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * POST /api/menu-packages
-   * Create new package (ADMIN only)
-   */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validate request body
       const data = createMenuPackageSchema.parse(req.body);
+      const userId = (req as any).user?.id;
 
-      const pkg = await menuService.createPackage(data);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      const pkg = await menuService.createPackage(data, userId);
 
       return res.status(201).json({
         success: true,
@@ -140,18 +119,15 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * PUT /api/menu-packages/:id
-   * Update package (ADMIN only)
-   */
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-
-      // Validate request body
       const data = updateMenuPackageSchema.parse(req.body);
+      const userId = (req as any).user?.id;
 
-      const pkg = await menuService.updatePackage(id, data);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      const pkg = await menuService.updatePackage(id, data, userId);
 
       return res.status(200).json({
         success: true,
@@ -176,15 +152,14 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * DELETE /api/menu-packages/:id
-   * Delete package (ADMIN only)
-   */
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const userId = (req as any).user?.id;
 
-      await menuService.deletePackage(id);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      await menuService.deletePackage(id, userId);
 
       return res.status(200).json({
         success: true,
@@ -207,13 +182,8 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * PUT /api/menu-packages/reorder
-   * Reorder packages (ADMIN only)
-   */
   async reorder(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validate request body
       const data = reorderPackagesSchema.parse(req.body);
 
       const result = await menuService.reorderPackages(data.packageOrders);
@@ -235,15 +205,9 @@ export class MenuPackageController {
     }
   }
 
-  /**
-   * POST /api/menu-packages/:id/options
-   * Assign options to package (ADMIN only)
-   */
   async assignOptions(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-
-      // Validate request body
       const data = assignOptionsToPackageSchema.parse(req.body);
 
       const pkg = await menuService.assignOptionsToPackage(id, data);

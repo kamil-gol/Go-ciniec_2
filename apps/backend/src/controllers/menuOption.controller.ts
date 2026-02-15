@@ -1,68 +1,33 @@
+/**
+ * Menu Option Controller - with userId for audit
+ */
+
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { menuService } from '../services/menu.service';
+import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 
-const prisma = new PrismaClient();
-
-/**
- * Menu Option Categories (strict validation)
- */
 const VALID_CATEGORIES = [
-  'DRINK',
-  'ALCOHOL',
-  'DESSERT',
-  'EXTRA_DISH',
-  'SERVICE',
-  'DECORATION',
-  'ENTERTAINMENT',
-  'OTHER',
+  'DRINK', 'ALCOHOL', 'DESSERT', 'EXTRA_DISH', 'SERVICE',
+  'DECORATION', 'ENTERTAINMENT', 'OTHER',
 ] as const;
 
-/**
- * Price Types
- */
 const VALID_PRICE_TYPES = ['PER_PERSON', 'PER_ITEM', 'FLAT'] as const;
 
 class MenuOptionController {
-  /**
-   * List all menu options with filtering
-   * GET /api/menu-options
-   * Query: category?, priceType?, isActive?, search?
-   */
+
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { category, priceType, isActive, search } = req.query;
+      const { category, isActive, search } = req.query;
 
-      const where: any = {};
+      const filters: any = {};
+      if (category) filters.category = category as string;
+      if (isActive !== undefined) filters.isActive = isActive === 'true';
+      if (search) filters.search = search as string;
 
-      if (category) {
-        where.category = category as string;
-      }
+      const options = await menuService.getOptions(filters);
 
-      if (priceType) {
-        where.priceType = priceType as string;
-      }
-
-      if (isActive !== undefined) {
-        where.isActive = isActive === 'true';
-      }
-
-      if (search) {
-        where.OR = [
-          { name: { contains: search as string, mode: 'insensitive' } },
-          { description: { contains: search as string, mode: 'insensitive' } },
-        ];
-      }
-
-      const options = await prisma.menuOption.findMany({
-        where,
-        orderBy: [
-          { displayOrder: 'asc' },
-          { name: 'asc' },
-        ],
-      });
-
-      logger.info(`[MenuOption] Listed ${options.length} options`, { filters: where });
+      logger.info(`[MenuOption] Listed ${options.length} options`, { filters });
 
       res.json({
         success: true,
@@ -75,25 +40,11 @@ class MenuOptionController {
     }
   }
 
-  /**
-   * Get single menu option by ID
-   * GET /api/menu-options/:id
-   */
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
 
-      const option = await prisma.menuOption.findUnique({
-        where: { id },
-      });
-
-      if (!option) {
-        res.status(404).json({
-          success: false,
-          error: 'Menu option not found',
-        });
-        return;
-      }
+      const option = await menuService.getOptionById(id);
 
       logger.info(`[MenuOption] Retrieved option: ${option.name}`);
 
@@ -102,34 +53,27 @@ class MenuOptionController {
         data: option,
       });
     } catch (error: any) {
+      if (error instanceof Error && error.message === 'Option not found') {
+        res.status(404).json({
+          success: false,
+          error: 'Menu option not found',
+        });
+        return;
+      }
       logger.error('[MenuOption] GetById error:', error);
       next(error);
     }
   }
 
-  /**
-   * Create new menu option
-   * POST /api/menu-options
-   */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const {
-        name,
-        description,
-        shortDescription,
-        category,
-        priceType,
-        priceAmount,
-        allowMultiple,
-        maxQuantity,
-        icon,
-        imageUrl,
-        thumbnailUrl,
-        isActive,
-        displayOrder,
+        name, description, shortDescription, category, priceType, priceAmount,
+        allowMultiple, maxQuantity, icon, imageUrl, thumbnailUrl, isActive, displayOrder,
       } = req.body;
+      const userId = (req as any).user?.id;
 
-      // Validation
+      if (!userId) throw AppError.unauthorized('User not authenticated');
       if (!name || !category || !priceType) {
         res.status(400).json({
           success: false,
@@ -138,7 +82,6 @@ class MenuOptionController {
         return;
       }
 
-      // Validate category
       if (!VALID_CATEGORIES.includes(category)) {
         res.status(400).json({
           success: false,
@@ -147,7 +90,6 @@ class MenuOptionController {
         return;
       }
 
-      // Validate priceType
       if (!VALID_PRICE_TYPES.includes(priceType)) {
         res.status(400).json({
           success: false,
@@ -156,23 +98,15 @@ class MenuOptionController {
         return;
       }
 
-      const option = await prisma.menuOption.create({
-        data: {
-          name,
-          description: description || null,
-          shortDescription: shortDescription || null,
-          category,
-          priceType,
-          priceAmount: priceAmount || 0,
-          allowMultiple: allowMultiple || false,
-          maxQuantity: maxQuantity || 1,
-          icon: icon || null,
-          imageUrl: imageUrl || null,
-          thumbnailUrl: thumbnailUrl || null,
-          isActive: isActive !== undefined ? isActive : true,
-          displayOrder: displayOrder || 0,
-        },
-      });
+      const option = await menuService.createOption({
+        name, description, shortDescription, category, priceType,
+        priceAmount: priceAmount || 0,
+        allowMultiple: allowMultiple || false,
+        maxQuantity: maxQuantity || 1,
+        icon, imageUrl, thumbnailUrl,
+        isActive: isActive !== undefined ? isActive : true,
+        displayOrder: displayOrder || 0,
+      }, userId);
 
       logger.info(`[MenuOption] Created: ${option.name} (${option.id})`);
 
@@ -187,29 +121,14 @@ class MenuOptionController {
     }
   }
 
-  /**
-   * Update menu option
-   * PUT /api/menu-options/:id
-   */
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       const updateData = req.body;
+      const userId = (req as any).user?.id;
 
-      // Check if exists
-      const existing = await prisma.menuOption.findUnique({
-        where: { id },
-      });
+      if (!userId) throw AppError.unauthorized('User not authenticated');
 
-      if (!existing) {
-        res.status(404).json({
-          success: false,
-          error: 'Menu option not found',
-        });
-        return;
-      }
-
-      // Validate category if provided
       if (updateData.category && !VALID_CATEGORIES.includes(updateData.category)) {
         res.status(400).json({
           success: false,
@@ -218,7 +137,6 @@ class MenuOptionController {
         return;
       }
 
-      // Validate priceType if provided
       if (updateData.priceType && !VALID_PRICE_TYPES.includes(updateData.priceType)) {
         res.status(400).json({
           success: false,
@@ -227,10 +145,7 @@ class MenuOptionController {
         return;
       }
 
-      const option = await prisma.menuOption.update({
-        where: { id },
-        data: updateData,
-      });
+      const option = await menuService.updateOption(id, updateData, userId);
 
       logger.info(`[MenuOption] Updated: ${option.name} (${option.id})`);
 
@@ -240,43 +155,41 @@ class MenuOptionController {
         message: 'Menu option updated successfully',
       });
     } catch (error: any) {
-      logger.error('[MenuOption] Update error:', error);
-      next(error);
-    }
-  }
-
-  /**
-   * Delete menu option
-   * DELETE /api/menu-options/:id
-   */
-  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { id } = req.params;
-
-      // Check if exists
-      const existing = await prisma.menuOption.findUnique({
-        where: { id },
-      });
-
-      if (!existing) {
+      if (error instanceof Error && error.message === 'Option not found') {
         res.status(404).json({
           success: false,
           error: 'Menu option not found',
         });
         return;
       }
+      logger.error('[MenuOption] Update error:', error);
+      next(error);
+    }
+  }
 
-      await prisma.menuOption.delete({
-        where: { id },
-      });
+  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user?.id;
 
-      logger.info(`[MenuOption] Deleted: ${existing.name} (${id})`);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      await menuService.deleteOption(id, userId);
+
+      logger.info(`[MenuOption] Deleted: ${id}`);
 
       res.json({
         success: true,
         message: 'Menu option deleted successfully',
       });
     } catch (error: any) {
+      if (error instanceof Error && error.message === 'Option not found') {
+        res.status(404).json({
+          success: false,
+          error: 'Menu option not found',
+        });
+        return;
+      }
       logger.error('[MenuOption] Delete error:', error);
       next(error);
     }
