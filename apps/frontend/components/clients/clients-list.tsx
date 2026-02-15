@@ -47,12 +47,12 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
           <User className="h-8 w-8 text-white" />
         </div>
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-          {searchQuery ? 'Nie znaleziono klient\u00f3w' : 'Brak klient\u00f3w'}
+          {searchQuery ? 'Nie znaleziono klientów' : 'Brak klientów'}
         </h3>
         <p className="text-neutral-500 dark:text-neutral-400">
           {searchQuery
-            ? 'Spr\u00f3buj zmieni\u0107 kryteria wyszukiwania'
-            : 'Dodaj pierwszego klienta, aby rozpocz\u0105\u0107'}
+            ? 'Spróbuj zmienić kryteria wyszukiwania'
+            : 'Dodaj pierwszego klienta, aby rozpocząć'}
         </p>
       </div>
     )

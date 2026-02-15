@@ -28,32 +28,37 @@ export default function AttachmentPanel({
   const [showUpload, setShowUpload] = useState(false)
   const [filter, setFilter] = useState<AttachmentCategory | 'ALL'>('ALL')
   const [showArchived, setShowArchived] = useState(false)
+  const [hasAny, setHasAny] = useState(false)
 
   const fetchAttachments = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await attachmentsApi.getByEntity(
-        entityType,
-        entityId,
-        filter !== 'ALL' ? filter : undefined
-      )
+      // Always fetch ALL attachments — filter client-side
+      const data = await attachmentsApi.getByEntity(entityType, entityId)
       setAttachments(data)
+      if (data.length > 0) setHasAny(true)
     } catch {
       // Handled by apiClient
     } finally {
       setLoading(false)
     }
-  }, [entityType, entityId, filter])
+  }, [entityType, entityId])
 
   useEffect(() => {
     if (entityId) fetchAttachments()
   }, [fetchAttachments, entityId])
 
-  const filtered = showArchived
+  // Client-side filtering by category
+  const categoryFiltered = filter === 'ALL'
     ? attachments
-    : attachments.filter((a) => !a.isArchived)
+    : attachments.filter((a) => a.category === filter)
+
+  const filtered = showArchived
+    ? categoryFiltered
+    : categoryFiltered.filter((a) => !a.isArchived)
 
   const archivedCount = attachments.filter((a) => a.isArchived).length
+  const totalActive = attachments.filter((a) => !a.isArchived).length
 
   return (
     <div className={cn('rounded-2xl border border-neutral-200/80 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80', className)}>
@@ -66,9 +71,9 @@ export default function AttachmentPanel({
           <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
             {title}
           </h3>
-          {attachments.length > 0 && (
+          {totalActive > 0 && (
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-              {filtered.length}
+              {totalActive}
             </span>
           )}
         </div>
@@ -82,8 +87,8 @@ export default function AttachmentPanel({
         </button>
       </div>
 
-      {/* Filters */}
-      {attachments.length > 0 && (
+      {/* Filters — always visible once there were any attachments */}
+      {hasAny && (
         <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700/30 overflow-x-auto">
           <Filter className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
           {FILTER_OPTIONS.map((opt) => (
@@ -126,7 +131,7 @@ export default function AttachmentPanel({
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Paperclip className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mb-2" />
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              {attachments.length === 0 ? 'Brak załączników' : 'Brak pasujących załączników'}
+              {filter !== 'ALL' ? 'Brak załączników w tej kategorii' : 'Brak załączników'}
             </p>
             <button
               onClick={() => setShowUpload(true)}

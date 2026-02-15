@@ -45,8 +45,8 @@ export default function ClientsPage() {
     } catch (error: any) {
       console.error('Error loading clients:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 klient\u00f3w',
+        title: 'Błąd',
+        description: 'Nie udało się załadować klientów',
         variant: 'destructive',
       })
     } finally {
@@ -81,7 +81,7 @@ export default function ClientsPage() {
       <PageHero
         accent={accent}
         title="Klienci"
-        subtitle="Zarz\u0105dzaj baz\u0105 klient\u00f3w"
+        subtitle="Zarządzaj bazą klientów"
         icon={Users}
         action={
           <Button
@@ -97,10 +97,10 @@ export default function ClientsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Wszyscy" value={stats.total} subtitle="\u0141\u0105cznie klient\u00f3w" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.1} />
+        <StatCard label="Wszyscy" value={stats.total} subtitle="Łącznie klientów" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.1} />
         <StatCard label="Z emailem" value={stats.withEmail} subtitle="Dane kontaktowe" icon={Mail} iconGradient="from-blue-500 to-cyan-500" delay={0.2} />
         <StatCard label="Z telefonem" value={stats.withPhone} subtitle="Numer telefonu" icon={Phone} iconGradient="from-emerald-500 to-teal-500" delay={0.3} />
-        <StatCard label="Ten miesi\u0105c" value={stats.thisMonth} subtitle="Nowych klient\u00f3w" icon={TrendingUp} iconGradient="from-rose-500 to-pink-500" delay={0.4} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Nowych klientów" icon={TrendingUp} iconGradient="from-rose-500 to-pink-500" delay={0.4} />
       </div>
 
       {/* Create Form */}
@@ -132,12 +132,12 @@ export default function ClientsPage() {
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <CardTitle>Lista Klient\u00f3w</CardTitle>
+              <CardTitle>Lista Klientów</CardTitle>
             </div>
             <div className="relative w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <Input
-                placeholder="Szukaj klient\u00f3w..."
+                placeholder="Szukaj klientów..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-12 pl-12 text-base"
@@ -147,18 +147,18 @@ export default function ClientsPage() {
         </CardHeader>
         <CardContent className="p-6">
           {loading ? (
-            <LoadingState variant="skeleton" rows={4} message="\u0141adowanie klient\u00f3w..." />
+            <LoadingState variant="skeleton" rows={4} message="Ładowanie klientów..." />
           ) : filteredClients.length === 0 && searchQuery ? (
             <EmptyState
               icon={Users}
-              title="Nie znaleziono klient\u00f3w"
-              description="Spr\u00f3buj innych kryteri\u00f3w wyszukiwania"
+              title="Nie znaleziono klientów"
+              description="Spróbuj innych kryteriów wyszukiwania"
             />
           ) : filteredClients.length === 0 ? (
             <EmptyState
               icon={Users}
-              title="Brak klient\u00f3w"
-              description="Dodaj pierwszego klienta aby zacz\u0105\u0107"
+              title="Brak klientów"
+              description="Dodaj pierwszego klienta aby zacząć"
               actionLabel="Dodaj Klienta"
               onAction={() => setShowCreateForm(true)}
             />
