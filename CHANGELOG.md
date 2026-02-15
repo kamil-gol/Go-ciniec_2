@@ -3,29 +3,34 @@
 ## [1.4.2] - 2026-02-15
 
 ### 🐛 Bugfixy
-- **Fix kodowania UTF-8 w formularzu rezerwacji** — plik `create-reservation-form.tsx` zawierał ~100+ sekwencji Unicode escape (`\uXXXX`) zamiast bezpośrednich polskich znaków. Zamieniono wszystkie na poprawne UTF-8:
-  - `\u0105`→ą, `\u0119`→ę, `\u015b`→ś, `\u0142`→ł, `\u0144`→ń
-  - `\u00f3`→ó, `\u0107`→ć, `\u017c`→ż, `\u017a`→ź, `\u0141`→Ł
-  - `\u2014`→—, `\u00d7`→×, `\u2013`→–, `\u2022`→•, `\u2550`→═
-  - `\ud83d\udca1`→💡
-- Dotyczyło TYLKO jednego pliku — reszta projektu miała poprawne kodowanie
+- **Fix kodowania UTF-8 w formularzu rezerwacji** — plik `create-reservation-form.tsx` zawierał ~100+ Unicode escape sequences (`\uXXXX`) zamiast poprawnych polskich znaków. Wszystkie zamienione na bezpośrednie znaki UTF-8.
+  - `\u0105` → ą (np. "Wyszukaj istniejącego klienta")
+  - `\u0119` → ę (np. "Wybierz salę")
+  - `\u015b` → ś (np. "Goście", "Dorośli")
+  - `\u0142` → ł (np. "dorosłego", "całkowita")
+  - `\u0144` → ń (np. "Zakończenie")
+  - `\u00f3` → ó (np. "Utwórz")
+  - `\u0107` → ć (np. "dostępność")
+  - `\u0141` → Ł (np. "Łącznie")
+  - `\u017c` → ż (np. "każdej")
+  - `\u2014` → — (em dash), `\u00d7` → × (multiplication), `\u2013` → – (en dash)
+  - `\u2022` → • (bullet), `\u2550` → ═ (box drawing), `\ud83d\udca1` → 💡 (emoji)
 
 ### 📦 Zmienione pliki
-- `apps/frontend/components/reservations/create-reservation-form.tsx` — zamiana escape sequences na UTF-8
+- `apps/frontend/components/reservations/create-reservation-form.tsx` — zamiana ~100+ escape sequences na UTF-8
 
-### 🔍 Przeskanowane i OK
-- `reservations-list.tsx` ✅
+### 🔍 Przeskanowane pliki (OK — bez problemów)
 - `ReservationFinancialSummary.tsx` ✅
-- `ReservationDepositsSection.tsx` ✅
-- `ReservationMenuSection.tsx` ✅
 - `editable/EditableEventCard.tsx` ✅
+- `editable/EditableCard.tsx` ✅
 - `editable/EditableGuestsCard.tsx` ✅
 - `editable/EditableHallCard.tsx` ✅
 - `editable/EditableNotesCard.tsx` ✅
 - `editable/StatusChanger.tsx` ✅
-- `reservation-history.tsx` ✅
+- `reservations-list.tsx` ✅
 
 ### 🚀 Deployment
+Komenda wdrożenia:
 ```bash
 cd /home/kamil/rezerwacje && git pull origin main && docker compose exec frontend npm run build && docker compose restart frontend
 ```
