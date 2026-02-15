@@ -1,6 +1,5 @@
 /**
- * Dish Controller
- * MIGRATED: AppError + no try/catch
+ * Dish Controller - with userId for audit
  */
 
 import { Request, Response } from 'express';
@@ -18,10 +17,7 @@ class DishController {
 
     const dishes = await dishService.findAll(filters);
 
-    res.status(200).json({
-      success: true,
-      data: dishes,
-    });
+    res.status(200).json({ success: true, data: dishes });
   }
 
   async getDishById(req: Request, res: Response): Promise<void> {
@@ -30,36 +26,28 @@ class DishController {
 
     if (!dish) throw AppError.notFound('Dish');
 
-    res.status(200).json({
-      success: true,
-      data: dish,
-    });
+    res.status(200).json({ success: true, data: dish });
   }
 
   async getDishesByCategory(req: Request, res: Response): Promise<void> {
     const { categoryId } = req.params;
     const dishes = await dishService.findByCategory(categoryId);
 
-    res.status(200).json({
-      success: true,
-      data: dishes,
-    });
+    res.status(200).json({ success: true, data: dishes });
   }
 
   async createDish(req: Request, res: Response): Promise<void> {
     const { name, description, categoryId, allergens, isActive } = req.body;
+    const userId = (req as any).user?.id;
 
-    if (!name || !categoryId) {
-      throw AppError.badRequest('Name and categoryId are required');
-    }
+    if (!userId) throw AppError.unauthorized('User not authenticated');
+    if (!name || !categoryId) throw AppError.badRequest('Name and categoryId are required');
 
     const dish = await dishService.create({
-      name,
-      description,
-      categoryId,
+      name, description, categoryId,
       allergens: allergens || [],
       isActive: isActive ?? true,
-    });
+    }, userId);
 
     res.status(201).json({
       success: true,
@@ -71,14 +59,13 @@ class DishController {
   async updateDish(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { name, description, categoryId, allergens, isActive } = req.body;
+    const userId = (req as any).user?.id;
+
+    if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const dish = await dishService.update(id, {
-      name,
-      description,
-      categoryId,
-      allergens,
-      isActive,
-    });
+      name, description, categoryId, allergens, isActive,
+    }, userId);
 
     res.status(200).json({
       success: true,
@@ -89,7 +76,11 @@ class DishController {
 
   async deleteDish(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    await dishService.remove(id);
+    const userId = (req as any).user?.id;
+
+    if (!userId) throw AppError.unauthorized('User not authenticated');
+
+    await dishService.remove(id, userId);
 
     res.status(200).json({
       success: true,

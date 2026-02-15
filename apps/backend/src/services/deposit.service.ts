@@ -1,13 +1,6 @@
 /**
- * Deposit Service
+ * Deposit Service - with Audit Logging
  * Full CRUD + business logic for deposit/advance payment management
- *
- * IMPORTANT: The actual DB schema differs from Prisma schema.
- * - dueDate is varchar(10) in DB (not timestamp)
- * - paidAmount column exists in DB (not in Prisma schema)
- * - Extra columns: title, description, receiptNumber, etc.
- * All writes use raw SQL to match the actual DB structure.
- * Reads use Prisma ORM (works fine for SELECT).
  */
 
 import { prisma } from '../lib/prisma';
@@ -16,8 +9,7 @@ import { Prisma } from '@prisma/client';
 import { pdfService } from './pdf.service';
 import emailService from './email.service';
 import logger from '../utils/logger';
-
-// Types
+import { logChange } from '../utils/audit-logger';
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
@@ -57,8 +49,6 @@ export interface DepositFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
-const ACTIVE_STATUSES = ['PENDING', 'PAID', 'OVERDUE', 'PARTIALLY_PAID'];
-
 const DEPOSIT_INCLUDE = {
   reservation: {
     include: {
@@ -70,10 +60,7 @@ const DEPOSIT_INCLUDE = {
 } as const;
 
 const depositService = {
-  /**
-   * Create a new deposit for a reservation
-   */
-  async create(input: CreateDepositInput) {
+  async create(input: CreateDepositInput, userId: string) {
     const { reservationId, amount, dueDate } = input;
 
     const reservation = await prisma.reservation.findUnique({
@@ -81,9 +68,7 @@ const depositService = {
       include: { deposits: true, client: true },
     });
 
-    if (!reservation) {
-      throw AppError.notFound('Reservation');
-    }
+    if (!reservation) throw AppError.notFound('Reservation');
 
     const existingDepositsSum = reservation.deposits
       .filter((d: any) => d.status !== 'CANCELLED')
@@ -98,9 +83,7 @@ const depositService = {
       );
     }
 
-    if (amount <= 0) {
-      throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
-    }
+    if (amount <= 0) throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
 
     const dueDateStr = dueDate.substring(0, 10);
 
@@ -112,10 +95,7 @@ const depositService = {
         gen_random_uuid(), $1::uuid, $2, $3, 0,
         $4, 'PENDING', false, NOW(), NOW()
       ) RETURNING id::text as id`,
-      reservationId,
-      amount,
-      amount,
-      dueDateStr
+      reservationId, amount, amount, dueDateStr
     );
 
     const newId = result[0].id;
@@ -125,45 +105,38 @@ const depositService = {
       include: DEPOSIT_INCLUDE,
     });
 
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CREATE',
+      entityType: 'DEPOSIT',
+      entityId: newId,
+      details: {
+        description: `Utworzono zaliczkę: ${amount} PLN (termin: ${dueDateStr})`,
+        data: { amount, dueDate: dueDateStr, reservationId }
+      }
+    });
+
     return deposit;
   },
 
-  /**
-   * Get single deposit by ID
-   */
   async getById(id: string) {
     const deposit = await prisma.deposit.findUnique({
       where: { id },
       include: DEPOSIT_INCLUDE,
     });
-
-    if (!deposit) {
-      throw AppError.notFound('Deposit');
-    }
-
+    if (!deposit) throw AppError.notFound('Deposit');
     return deposit;
   },
 
-  /**
-   * Get deposits for a specific reservation
-   */
   async getByReservation(reservationId: string) {
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
-    });
-
-    if (!reservation) {
-      throw AppError.notFound('Reservation');
-    }
+    const reservation = await prisma.reservation.findUnique({ where: { id: reservationId } });
+    if (!reservation) throw AppError.notFound('Reservation');
 
     const deposits = await prisma.deposit.findMany({
       where: { reservationId },
       orderBy: { dueDate: 'asc' },
-      include: {
-        reservation: {
-          include: { client: true },
-        },
-      },
+      include: { reservation: { include: { client: true } } },
     });
 
     const totalAmount = deposits
@@ -190,22 +163,10 @@ const depositService = {
     };
   },
 
-  /**
-   * List all deposits with filters
-   */
   async list(filters: DepositFilters) {
     const {
-      reservationId,
-      status,
-      overdue,
-      dateFrom,
-      dateTo,
-      paid,
-      search,
-      page = 1,
-      limit = 20,
-      sortBy = 'dueDate',
-      sortOrder = 'asc',
+      reservationId, status, overdue, dateFrom, dateTo, paid, search,
+      page = 1, limit = 20, sortBy = 'dueDate', sortOrder = 'asc',
     } = filters;
 
     const where: Prisma.DepositWhereInput = {};
@@ -243,9 +204,7 @@ const depositService = {
 
     const [deposits, totalCount] = await Promise.all([
       prisma.deposit.findMany({
-        where,
-        skip,
-        take: limit,
+        where, skip, take: limit,
         orderBy: { [sortBy]: sortOrder },
         include: DEPOSIT_INCLUDE,
       }),
@@ -255,33 +214,23 @@ const depositService = {
     return {
       deposits,
       pagination: {
-        page,
-        limit,
-        totalCount,
+        page, limit, totalCount,
         totalPages: Math.ceil(totalCount / limit),
         hasMore: skip + deposits.length < totalCount,
       },
     };
   },
 
-  /**
-   * Update deposit (amount, dueDate)
-   */
-  async update(id: string, input: UpdateDepositInput) {
+  async update(id: string, input: UpdateDepositInput, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-
     if (!deposit) throw AppError.notFound('Deposit');
 
     if (deposit.paid) {
-      throw AppError.badRequest(
-        'Nie mozna edytowac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.'
-      );
+      throw AppError.badRequest('Nie mozna edytowac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.');
     }
 
     if (input.amount !== undefined) {
-      if (input.amount <= 0) {
-        throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
-      }
+      if (input.amount <= 0) throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
 
       const reservation = await prisma.reservation.findUnique({
         where: { id: deposit.reservationId },
@@ -327,44 +276,51 @@ const depositService = {
       include: DEPOSIT_INCLUDE,
     });
 
+    // Audit log
+    await logChange({
+      userId,
+      action: 'UPDATE',
+      entityType: 'DEPOSIT',
+      entityId: id,
+      details: {
+        description: `Zaktualizowano zaliczkę`,
+        changes: input
+      }
+    });
+
     return updated;
   },
 
-  /**
-   * Delete a deposit
-   */
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-
     if (!deposit) throw AppError.notFound('Deposit');
 
     if (deposit.paid) {
-      throw AppError.badRequest(
-        'Nie mozna usunac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.'
-      );
+      throw AppError.badRequest('Nie mozna usunac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.');
     }
 
-    await prisma.$queryRawUnsafe(
-      `DELETE FROM "Deposit" WHERE id = $1::uuid`,
-      id
-    );
+    await prisma.$queryRawUnsafe(`DELETE FROM "Deposit" WHERE id = $1::uuid`, id);
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'DELETE',
+      entityType: 'DEPOSIT',
+      entityId: id,
+      details: {
+        description: `Usunięto zaliczkę: ${Number(deposit.amount)} PLN`,
+        deletedData: { amount: Number(deposit.amount), dueDate: deposit.dueDate }
+      }
+    });
 
     return { success: true, message: 'Zaliczka zostala usunieta' };
   },
 
-  /**
-   * Mark deposit as paid
-   * Only updates DB status — no auto-email.
-   * Email is sent manually via sendConfirmationEmail().
-   */
-  async markAsPaid(id: string, input: MarkPaidInput) {
+  async markAsPaid(id: string, input: MarkPaidInput, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-
     if (!deposit) throw AppError.notFound('Deposit');
 
-    if (deposit.paid) {
-      throw AppError.badRequest('Ta zaliczka jest juz oznaczona jako oplacona');
-    }
+    if (deposit.paid) throw AppError.badRequest('Ta zaliczka jest juz oznaczona jako oplacona');
 
     const amountPaid = input.amountPaid || Number(deposit.amount);
     const remaining = Number(deposit.amount) - amountPaid;
@@ -382,17 +338,21 @@ const depositService = {
       include: DEPOSIT_INCLUDE,
     });
 
-    if (!updated) {
-      throw AppError.notFound('Updated deposit');
-    }
+    // Audit log
+    await logChange({
+      userId,
+      action: 'MARK_PAID',
+      entityType: 'DEPOSIT',
+      entityId: id,
+      details: {
+        description: `Oznaczono zaliczkę jako opłaconą: ${amountPaid} PLN (${input.paymentMethod})`,
+        data: { amountPaid, paymentMethod: input.paymentMethod, status: newStatus }
+      }
+    });
 
     return updated;
   },
 
-  /**
-   * Send confirmation email with PDF for a paid deposit
-   * Called manually by the user from the UI.
-   */
   async sendConfirmationEmail(id: string) {
     const deposit = await prisma.deposit.findUnique({
       where: { id },
@@ -400,19 +360,13 @@ const depositService = {
     });
 
     if (!deposit) throw AppError.notFound('Deposit');
-
-    if (!deposit.paid) {
-      throw AppError.badRequest('Email potwierdzenia mozna wyslac tylko dla oplaconej zaliczki');
-    }
+    if (!deposit.paid) throw AppError.badRequest('Email potwierdzenia mozna wyslac tylko dla oplaconej zaliczki');
 
     const reservation = deposit.reservation as any;
     const client = reservation?.client;
 
-    if (!client?.email) {
-      throw AppError.badRequest('Klient nie ma przypisanego adresu email');
-    }
+    if (!client?.email) throw AppError.badRequest('Klient nie ma przypisanego adresu email');
 
-    // Generate PDF
     const pdfBuffer = await pdfService.generatePaymentConfirmationPDF({
       depositId: deposit.id,
       amount: Number(deposit.amount),
@@ -436,18 +390,13 @@ const depositService = {
       },
     });
 
-    logger.info(`[Deposit] PDF generated for email, deposit ${id} (${pdfBuffer.length} bytes)`);
-
-    // Send email
     await emailService.sendDepositPaidConfirmation(
       client.email,
       {
         clientName: `${client.firstName} ${client.lastName}`,
         depositAmount: Number(deposit.amount).toFixed(2),
         paidAt: (deposit.paidAt ? new Date(deposit.paidAt) : new Date()).toLocaleDateString('pl-PL', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
+          year: 'numeric', month: 'long', day: 'numeric',
         }),
         paymentMethod: deposit.paymentMethod || 'TRANSFER',
         reservationDate: reservation.date || '',
@@ -462,12 +411,8 @@ const depositService = {
     return { success: true, message: `Email wyslany do ${client.email}` };
   },
 
-  /**
-   * Mark deposit as unpaid (revert payment)
-   */
-  async markAsUnpaid(id: string) {
+  async markAsUnpaid(id: string, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-
     if (!deposit) throw AppError.notFound('Deposit');
 
     if (!deposit.paid && deposit.status === 'PENDING') {
@@ -486,21 +431,28 @@ const depositService = {
       include: DEPOSIT_INCLUDE,
     });
 
+    // Audit log
+    await logChange({
+      userId,
+      action: 'MARK_UNPAID',
+      entityType: 'DEPOSIT',
+      entityId: id,
+      details: {
+        description: `Cofnięto oznaczenie płatności dla zaliczki`,
+        oldStatus: deposit.status,
+        newStatus: 'PENDING'
+      }
+    });
+
     return updated;
   },
 
-  /**
-   * Cancel a deposit
-   */
-  async cancel(id: string) {
+  async cancel(id: string, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-
     if (!deposit) throw AppError.notFound('Deposit');
 
     if (deposit.paid) {
-      throw AppError.badRequest(
-        'Nie mozna anulowac oplaconej zaliczki. Najpierw cofnij platnosc.'
-      );
+      throw AppError.badRequest('Nie mozna anulowac oplaconej zaliczki. Najpierw cofnij platnosc.');
     }
 
     await prisma.$queryRawUnsafe(
@@ -513,12 +465,20 @@ const depositService = {
       include: DEPOSIT_INCLUDE,
     });
 
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CANCEL',
+      entityType: 'DEPOSIT',
+      entityId: id,
+      details: {
+        description: `Anulowano zaliczkę: ${Number(deposit.amount)} PLN`
+      }
+    });
+
     return updated;
   },
 
-  /**
-   * Get global deposit statistics
-   */
   async getStats() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
@@ -560,9 +520,6 @@ const depositService = {
     };
   },
 
-  /**
-   * Get overdue deposits
-   */
   async getOverdue() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
@@ -578,9 +535,6 @@ const depositService = {
     return deposits;
   },
 
-  /**
-   * Auto-mark overdue deposits (called by cron)
-   */
   async autoMarkOverdue() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
@@ -593,9 +547,7 @@ const depositService = {
       todayStr
     );
 
-    return {
-      markedOverdueCount: Number(result[0]?.count || 0),
-    };
+    return { markedOverdueCount: Number(result[0]?.count || 0) };
   },
 };
 
