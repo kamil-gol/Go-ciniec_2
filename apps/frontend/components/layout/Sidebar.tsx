@@ -19,6 +19,7 @@ import {
   Search,
   LogOut,
   UtensilsCrossed,
+  FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -40,6 +41,7 @@ const navigation: NavItem[] = [
   { name: 'Kolejka', href: '/dashboard/queue', icon: Clock, accentKey: 'queue' },
   { name: 'Zaliczki', href: '/dashboard/deposits', icon: DollarSign, accentKey: 'deposits' },
   { name: 'Typy Wydarzeń', href: '/dashboard/event-types', icon: Theater, accentKey: 'eventTypes' },
+  { name: 'Dziennik Audytu', href: '/dashboard/audit-log', icon: FileText, accentKey: 'auditLog' },
   { name: 'Raporty', href: '/dashboard/reports', icon: BarChart3, accentKey: 'reports' },
   { name: 'Ustawienia', href: '/dashboard/settings', icon: Settings, accentKey: 'settings' },
 ]
