@@ -124,6 +124,34 @@ export class ReservationService {
     const packagePrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
     const totalPrice = packagePrice + optionsPrice;
 
+    // ═══ Discount handling (Sprint 7 — applied atomically during creation) ═══
+    let discountTypeVal: string | null = null;
+    let discountValueNum: number | null = null;
+    let discountAmountVal: number | null = null;
+    let discountReasonVal: string | null = null;
+    let priceBeforeDiscountVal: number | null = null;
+    let finalTotalPrice = totalPrice;
+
+    if (data.discountType && data.discountValue && data.discountValue > 0
+        && data.discountReason && data.discountReason.trim().length >= 3) {
+      discountTypeVal = data.discountType;
+      discountValueNum = data.discountValue;
+      discountReasonVal = data.discountReason.trim();
+      priceBeforeDiscountVal = totalPrice;
+
+      if (data.discountType === 'PERCENTAGE') {
+        if (data.discountValue > 100) throw new Error('Rabat procentowy nie może przekroczyć 100%');
+        discountAmountVal = Math.round(totalPrice * data.discountValue / 100 * 100) / 100;
+      } else {
+        discountAmountVal = data.discountValue;
+        if (discountAmountVal > totalPrice) {
+          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie może przekroczyć ceny (${totalPrice} PLN)`);
+        }
+      }
+
+      finalTotalPrice = Math.round((totalPrice - discountAmountVal) * 100) / 100;
+    }
+
     let notes = data.notes || '';
     if (hasNewFormat && data.startDateTime && data.endDateTime) {
       const startDT = new Date(data.startDateTime);
@@ -188,7 +216,12 @@ export class ReservationService {
         date: data.date || null,
         startTime: data.startTime || null,
         endTime: data.endTime || null,
-        guests, totalPrice,
+        guests, totalPrice: finalTotalPrice,
+        discountType: discountTypeVal,
+        discountValue: discountValueNum,
+        discountAmount: discountAmountVal,
+        discountReason: discountReasonVal,
+        priceBeforeDiscount: priceBeforeDiscountVal,
         status: ReservationStatus.PENDING,
         notes: sanitizeString(notes),
         attachments: []
@@ -243,7 +276,9 @@ export class ReservationService {
 
     await this.createHistoryEntry(
       reservation.id, userId, 'CREATED', null, null, null,
-      menuPackage ? `Reservation created with menu package: ${menuPackage.name}` : 'Reservation created'
+      menuPackage
+        ? `Reservation created with menu package: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
+        : `Reservation created${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
     );
 
     // Audit log
@@ -259,7 +294,7 @@ export class ReservationService {
           clientId: data.clientId,
           eventTypeId: data.eventTypeId,
           guests,
-          totalPrice,
+          totalPrice: finalTotalPrice,
           startDateTime: data.startDateTime,
           endDateTime: data.endDateTime
         }
