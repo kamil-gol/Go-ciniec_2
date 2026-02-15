@@ -19,10 +19,10 @@ const PRESET_COLORS = [
   { name: 'Niebieski', value: '3b82f6' },
   { name: 'Zielony', value: '22c55e' },
   { name: 'Fioletowy', value: 'a855f7' },
-  { name: 'Różowy', value: 'ec4899' },
-  { name: 'Pomarańczowy', value: 'f97316' },
+  { name: 'R\u00f3\u017cowy', value: 'ec4899' },
+  { name: 'Pomara\u0144czowy', value: 'f97316' },
   { name: 'Czerwony', value: 'ef4444' },
-  { name: 'Żółty', value: 'eab308' },
+  { name: '\u017b\u00f3\u0142ty', value: 'eab308' },
   { name: 'Turkusowy', value: '06b6d4' },
   { name: 'Indygo', value: '6366f1' },
   { name: 'Szary', value: '6b7280' },
@@ -50,7 +50,7 @@ export default function PackageForm({
     isPopular: initialData?.isPopular || false,
     isRecommended: initialData?.isRecommended || false,
     color: initialData?.color?.replace('#', '') || '3b82f6',
-    icon: initialData?.icon || '🎂',
+    icon: initialData?.icon || '\ud83c\udf82',
     badgeText: initialData?.badgeText || '',
   });
 
@@ -69,23 +69,23 @@ export default function PackageForm({
         isRequired: cs.isRequired,
         isEnabled: cs.isEnabled,
         displayOrder: cs.displayOrder,
-        customLabel: cs.customLabel || null,
+        customLabel: cs.customLabel || undefined,
       }));
       setCategorySettings(settings);
     }
   }, [initialData]);
 
   async function loadCategories() {
-    const loadingToast = toast.loading('📁 Ładowanie kategorii...');
+    const loadingToast = toast.loading('\ud83d\udcc1 \u0141adowanie kategorii...');
     try {
       const data = await getDishCategories();
       setCategories(data);
-      toast.success('✅ Kategorie załadowane', { id: loadingToast });
+      toast.success('\u2705 Kategorie za\u0142adowane', { id: loadingToast });
     } catch (error) {
       console.error('Failed to load categories:', error);
-      toast.error('❌ Błąd ładowania kategorii', { 
+      toast.error('\u274c B\u0142\u0105d \u0142adowania kategorii', { 
         id: loadingToast,
-        description: 'Spróbuj odświeżyć stronę'
+        description: 'Spr\u00f3buj od\u015bwie\u017cy\u0107 stron\u0119'
       });
     }
   }
@@ -107,8 +107,8 @@ export default function PackageForm({
   function validateForm(): boolean {
     // Name validation
     if (!formData.name || formData.name.trim().length < 3) {
-      toast.error('⚠️ Błąd walidacji', {
-        description: 'Nazwa pakietu musi mieć co najmniej 3 znaki',
+      toast.error('\u26a0\ufe0f B\u0142\u0105d walidacji', {
+        description: 'Nazwa pakietu musi mie\u0107 co najmniej 3 znaki',
         duration: 4000,
       });
       return false;
@@ -117,8 +117,8 @@ export default function PackageForm({
     // Price validation
     const adultPrice = parseFloat(formData.pricePerAdult);
     if (isNaN(adultPrice) || adultPrice <= 0) {
-      toast.error('⚠️ Błąd walidacji', {
-        description: 'Cena dla dorosłych musi być większa od 0',
+      toast.error('\u26a0\ufe0f B\u0142\u0105d walidacji', {
+        description: 'Cena dla doros\u0142ych musi by\u0107 wi\u0119ksza od 0',
         duration: 4000,
       });
       return false;
@@ -126,8 +126,8 @@ export default function PackageForm({
 
     const childPrice = parseFloat(formData.pricePerChild);
     if (isNaN(childPrice) || childPrice < 0) {
-      toast.error('⚠️ Błąd walidacji', {
-        description: 'Cena dla dzieci nie może być ujemna',
+      toast.error('\u26a0\ufe0f B\u0142\u0105d walidacji', {
+        description: 'Cena dla dzieci nie mo\u017ce by\u0107 ujemna',
         duration: 4000,
       });
       return false;
@@ -135,8 +135,8 @@ export default function PackageForm({
 
     // Color validation
     if (formData.color && !/^[0-9A-Fa-f]{6}$/.test(formData.color.replace('#', ''))) {
-      toast.warning('⚠️ Nieprawidłowy kolor', {
-        description: 'Kolor musi być w formacie HEX (np. 3b82f6)',
+      toast.warning('\u26a0\ufe0f Nieprawid\u0142owy kolor', {
+        description: 'Kolor musi by\u0107 w formacie HEX (np. 3b82f6)',
         duration: 4000,
       });
       return false;
@@ -145,8 +145,8 @@ export default function PackageForm({
     // Category settings validation
     const enabledCategories = categorySettings.filter((cs) => cs.isEnabled);
     if (enabledCategories.length === 0) {
-      toast.warning('📂 Brak kategorii', {
-        description: 'Dodaj i włącz co najmniej jedną kategorię do pakietu',
+      toast.warning('\ud83d\udcc2 Brak kategorii', {
+        description: 'Dodaj i w\u0142\u0105cz co najmniej jedn\u0105 kategori\u0119 do pakietu',
         duration: 4000,
       });
       return false;
@@ -179,7 +179,7 @@ export default function PackageForm({
 
     setLoading(true);
     const savingToast = toast.loading(
-      initialData ? '💾 Aktualizacja pakietu...' : '✨ Tworzenie pakietu...'
+      initialData ? '\ud83d\udcbe Aktualizacja pakietu...' : '\u2728 Tworzenie pakietu...'
     );
 
     try {
@@ -223,9 +223,9 @@ export default function PackageForm({
         // Update category settings
         await saveCategorySettings(initialData.id);
         
-        toast.success('🎉 Pakiet zaktualizowany!', {
+        toast.success('\ud83c\udf89 Pakiet zaktualizowany!', {
           id: savingToast,
-          description: `Pakiet "${formData.name}" został pomyślnie zaktualizowany`,
+          description: `Pakiet "${formData.name}" zosta\u0142 pomy\u015blnie zaktualizowany`,
           duration: 5000,
         });
       } else {
@@ -235,9 +235,9 @@ export default function PackageForm({
         // Save category settings for newly created package
         await saveCategorySettings(createdOrUpdatedPackage.id);
         
-        toast.success('✨ Pakiet utworzony!', {
+        toast.success('\u2728 Pakiet utworzony!', {
           id: savingToast,
-          description: `Nowy pakiet "${formData.name}" został dodany do menu`,
+          description: `Nowy pakiet "${formData.name}" zosta\u0142 dodany do menu`,
           duration: 5000,
         });
       }
@@ -253,9 +253,9 @@ export default function PackageForm({
     } catch (error: any) {
       console.error('Error saving package:', error);
       
-      const errorMessage = error?.response?.data?.message || error?.message || 'Nieznany błąd';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Nieznany b\u0142\u0105d';
       
-      toast.error('❌ Błąd zapisu', {
+      toast.error('\u274c B\u0142\u0105d zapisu', {
         id: savingToast,
         description: errorMessage,
         duration: 6000,
@@ -298,7 +298,7 @@ export default function PackageForm({
           {/* Short Description */}
           <div>
             <label htmlFor="shortDescription" className="block text-sm font-semibold text-slate-700 mb-2">
-              Krótki opis
+              Kr\u00f3tki opis
             </label>
             <input
               type="text"
@@ -307,16 +307,16 @@ export default function PackageForm({
               value={formData.shortDescription}
               onChange={handleChange}
               maxLength={100}
-              placeholder="Krótki opis wyświetlany na karcie pakietu"
+              placeholder="Kr\u00f3tki opis wy\u015bwietlany na karcie pakietu"
               className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <p className="text-xs text-slate-500 mt-1">{formData.shortDescription.length}/100 znaków</p>
+            <p className="text-xs text-slate-500 mt-1">{formData.shortDescription.length}/100 znak\u00f3w</p>
           </div>
 
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-semibold text-slate-700 mb-2">
-              Pełny opis
+              Pe\u0142ny opis
             </label>
             <textarea
               id="description"
@@ -324,7 +324,7 @@ export default function PackageForm({
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              placeholder="Szczegółowy opis pakietu, co zawiera, dla kogo jest przeznaczony..."
+              placeholder="Szczeg\u00f3\u0142owy opis pakietu, co zawiera, dla kogo jest przeznaczony..."
               className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
             />
           </div>
@@ -343,7 +343,7 @@ export default function PackageForm({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div>
             <label htmlFor="pricePerAdult" className="block text-sm font-semibold text-slate-700 mb-2">
-              Dorośli <span className="text-red-500">*</span>
+              Doro\u015bli <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -357,7 +357,7 @@ export default function PackageForm({
                 pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">z\u0142</span>
             </div>
           </div>
 
@@ -377,7 +377,7 @@ export default function PackageForm({
                 pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">z\u0142</span>
             </div>
           </div>
 
@@ -396,7 +396,7 @@ export default function PackageForm({
                 pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">z\u0142</span>
             </div>
           </div>
         </div>
@@ -415,7 +415,7 @@ export default function PackageForm({
           <div className="p-2 bg-purple-100 rounded-lg">
             <Palette className="w-5 h-5 text-purple-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Wygląd i opcje</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Wygl\u0105d i opcje</h2>
         </div>
 
         <div className="space-y-6">
@@ -432,7 +432,7 @@ export default function PackageForm({
                 />
               </div>
               <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
-                🔥 Popularny
+                \ud83d\udd25 Popularny
               </span>
             </label>
 
@@ -447,7 +447,7 @@ export default function PackageForm({
                 />
               </div>
               <span className="text-sm font-semibold text-slate-700 group-hover:text-green-600 transition-colors">
-                ⭐ Polecany
+                \u2b50 Polecany
               </span>
             </label>
           </div>
@@ -500,7 +500,7 @@ export default function PackageForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <label htmlFor="displayOrder" className="block text-sm font-semibold text-slate-700 mb-2">
-                Kolejność
+                Kolejno\u015b\u0107
               </label>
               <input
                 type="number"
@@ -524,7 +524,7 @@ export default function PackageForm({
                 name="icon"
                 value={formData.icon}
                 onChange={handleChange}
-                placeholder="🎂"
+                placeholder="\ud83c\udf82"
                 maxLength={4}
                 className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-2xl text-center"
               />
@@ -573,7 +573,7 @@ export default function PackageForm({
           ) : (
             <>
               <Save className="w-5 h-5" />
-              {initialData ? 'Zaktualizuj pakiet' : 'Utwórz pakiet'}
+              {initialData ? 'Zaktualizuj pakiet' : 'Utw\u00f3rz pakiet'}
             </>
           )}
         </button>
