@@ -48,8 +48,8 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
 
     try {
       await applyDiscount.mutateAsync({
-        reservationId: reservation.id,
-        data: {
+        id: reservation.id,
+        input: {
           type: discountType,
           value: Number(discountValue),
           reason: discountReason,
@@ -193,7 +193,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
     )
   }
 
-  // STATE 3: Has discount — compact vertical display (no Card wrapper)
+  // STATE 3: Has discount — compact vertical display
   return (
     <div className="p-3 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-xl border border-orange-200 dark:border-orange-800">
       <div className="flex items-center justify-between mb-2">
