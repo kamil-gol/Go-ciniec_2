@@ -285,6 +285,44 @@ export class ReservationController {
       message: 'Reservation cancelled successfully'
     });
   }
+
+  /**
+   * Archive reservation
+   * POST /api/reservations/:id/archive
+   */
+  async archiveReservation(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
+
+    await reservationService.archiveReservation(id, userId, reason);
+
+    res.status(200).json({
+      success: true,
+      message: 'Reservation archived successfully'
+    });
+  }
+
+  /**
+   * Unarchive reservation
+   * POST /api/reservations/:id/unarchive
+   */
+  async unarchiveReservation(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
+
+    await reservationService.unarchiveReservation(id, userId, reason);
+
+    res.status(200).json({
+      success: true,
+      message: 'Reservation restored from archive successfully'
+    });
+  }
 }
 
 export default new ReservationController();
