@@ -27,9 +27,9 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
   
   const [formData, setFormData] = useState({
     name: '',
-    priceAdult: '',
-    priceChild: '',
-    priceToddler: '',
+    pricePerAdult: '',
+    pricePerChild: '',
+    pricePerToddler: '',
     includedItems: [''] as string[],
   })
 
@@ -38,9 +38,9 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
     if (pkg) {
       setFormData({
         name: pkg.name || '',
-        priceAdult: pkg.priceAdult?.toString() || '',
-        priceChild: pkg.priceChild?.toString() || '',
-        priceToddler: pkg.priceToddler?.toString() || '',
+        pricePerAdult: pkg.pricePerAdult?.toString() || '',
+        pricePerChild: pkg.pricePerChild?.toString() || '',
+        pricePerToddler: pkg.pricePerToddler?.toString() || '',
         includedItems: pkg.includedItems && pkg.includedItems.length > 0 ? pkg.includedItems : [''],
       })
     }
@@ -78,17 +78,17 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
         id: pkg.id,
         data: {
           name: formData.name,
-          priceAdult: parseFloat(formData.priceAdult),
-          priceChild: parseFloat(formData.priceChild),
-          priceToddler: parseFloat(formData.priceToddler),
+          pricePerAdult: parseFloat(formData.pricePerAdult),
+          pricePerChild: parseFloat(formData.pricePerChild),
+          pricePerToddler: parseFloat(formData.pricePerToddler),
           includedItems: filteredItems.length > 0 ? filteredItems : undefined,
         },
       })
       
       onOpenChange(false)
-      alert('✅ Pakiet został zaktualizowany!')
+      alert('\u2705 Pakiet zosta\u0142 zaktualizowany!')
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować pakietu'}`)
+      alert(`\u274C B\u0142\u0105d: ${error.error || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 pakietu'}`)
     }
   }
 
@@ -126,47 +126,47 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
 
             {/* Prices */}
             <div className="space-y-3">
-              <Label>Ceny za osobę (zł) *</Label>
+              <Label>Ceny za osob\u0119 (z\u0142) *</Label>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="priceAdult" className="text-xs text-muted-foreground">
-                    Dorosły
+                  <Label htmlFor="pricePerAdult" className="text-xs text-muted-foreground">
+                    Doros\u0142y
                   </Label>
                   <Input
-                    id="priceAdult"
+                    id="pricePerAdult"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.priceAdult}
-                    onChange={(e) => setFormData({ ...formData, priceAdult: e.target.value })}
+                    value={formData.pricePerAdult}
+                    onChange={(e) => setFormData({ ...formData, pricePerAdult: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="priceChild" className="text-xs text-muted-foreground">
+                  <Label htmlFor="pricePerChild" className="text-xs text-muted-foreground">
                     Dziecko
                   </Label>
                   <Input
-                    id="priceChild"
+                    id="pricePerChild"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.priceChild}
-                    onChange={(e) => setFormData({ ...formData, priceChild: e.target.value })}
+                    value={formData.pricePerChild}
+                    onChange={(e) => setFormData({ ...formData, pricePerChild: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="priceToddler" className="text-xs text-muted-foreground">
+                  <Label htmlFor="pricePerToddler" className="text-xs text-muted-foreground">
                     Maluch
                   </Label>
                   <Input
-                    id="priceToddler"
+                    id="pricePerToddler"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.priceToddler}
-                    onChange={(e) => setFormData({ ...formData, priceToddler: e.target.value })}
+                    value={formData.pricePerToddler}
+                    onChange={(e) => setFormData({ ...formData, pricePerToddler: e.target.value })}
                     required
                   />
                 </div>
@@ -192,7 +192,7 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
                 {formData.includedItems.map((item, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
-                      placeholder="np. Przystawki, Zupa, Główne danie"
+                      placeholder="np. Przystawki, Zupa, G\u0142\u00f3wne danie"
                       value={item}
                       onChange={(e) => updateIncludedItem(index, e.target.value)}
                     />
@@ -210,7 +210,7 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Puste elementy zostaną automatycznie pominięte
+                Puste elementy zostan\u0105 automatycznie pomini\u0119te
               </p>
             </div>
           </div>
