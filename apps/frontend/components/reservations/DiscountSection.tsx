@@ -194,6 +194,8 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
   }
 
   // STATE 3: Has discount — compact vertical display
+  const finalPrice = Number(reservation.totalPrice) - Number(reservation.discountAmount || 0)
+
   return (
     <div className="p-3 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-xl border border-orange-200 dark:border-orange-800">
       <div className="flex items-center justify-between mb-2">
@@ -244,7 +246,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
         <div className="flex justify-between font-bold pt-0.5">
           <span>Po rabacie</span>
           <span className="text-emerald-700 dark:text-emerald-400">
-            {formatCurrency(Number(reservation.totalPrice))}
+            {formatCurrency(finalPrice)}
           </span>
         </div>
       </div>
