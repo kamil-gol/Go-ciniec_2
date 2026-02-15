@@ -7,13 +7,35 @@ import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { CreateAttachmentDTO, UpdateAttachmentDTO, AttachmentFilters } from '../types/attachment.types';
 import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../constants/attachmentCategories';
+import { UPLOAD_BASE } from '../middlewares/upload';
 import logger from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
 
-const UPLOAD_BASE = path.join(process.cwd(), 'uploads');
-
 class AttachmentService {
+  /**
+   * Move file from staging to correct entity subdirectory.
+   * Returns the relative storagePath for DB.
+   */
+  private moveToEntityDir(file: Express.Multer.File, entityType: EntityType): string {
+    const subDir = STORAGE_DIRS[entityType] || 'other';
+    const destDir = path.join(UPLOAD_BASE, subDir);
+
+    // Ensure dest dir exists
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    const destPath = path.join(destDir, file.filename);
+
+    // Move file from staging to entity dir
+    fs.renameSync(file.path, destPath);
+
+    logger.info(`File moved: _staging/${file.filename} -> ${subDir}/${file.filename}`);
+
+    return `${subDir}/${file.filename}`;
+  }
+
   /**
    * Create attachment record after file upload
    */
@@ -24,20 +46,19 @@ class AttachmentService {
   ) {
     // Validate entityType
     if (!ENTITY_TYPES.includes(dto.entityType)) {
-      throw AppError.badRequest(`Nieprawidłowy entityType: ${dto.entityType}. Dozwolone: ${ENTITY_TYPES.join(', ')}`);
+      throw AppError.badRequest(`Nieprawid\u0142owy entityType: ${dto.entityType}. Dozwolone: ${ENTITY_TYPES.join(', ')}`);
     }
 
     // Validate category
     if (!isValidCategory(dto.entityType, dto.category)) {
-      throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
+      throw AppError.badRequest(`Nieprawid\u0142owa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
     }
 
     // Validate entity exists
     await this.validateEntityExists(dto.entityType, dto.entityId);
 
-    // Determine storage path (relative)
-    const subDir = STORAGE_DIRS[dto.entityType];
-    const storagePath = `${subDir}/${file.filename}`;
+    // Move file from staging to correct subdirectory
+    const storagePath = this.moveToEntityDir(file, dto.entityType);
 
     const attachment = await prisma.attachment.create({
       data: {
@@ -140,7 +161,7 @@ class AttachmentService {
 
     // If changing category, validate it
     if (dto.category && !isValidCategory(existing.entityType as EntityType, dto.category)) {
-      throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
+      throw AppError.badRequest(`Nieprawid\u0142owa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
     }
 
     const updated = await prisma.attachment.update({
@@ -200,7 +221,6 @@ class AttachmentService {
 
   /**
    * Count attachments by category for an entity
-   * Useful for badges ("brak RODO", "brak umowy")
    */
   async countByCategory(entityType: EntityType, entityId: string) {
     const counts = await prisma.attachment.groupBy({
@@ -221,7 +241,6 @@ class AttachmentService {
 
   /**
    * Check if entity has specific category attachment
-   * e.g., hasAttachment('CLIENT', clientId, 'RODO')
    */
   async hasAttachment(entityType: EntityType, entityId: string, category: string): Promise<boolean> {
     const count = await prisma.attachment.count({
@@ -237,7 +256,6 @@ class AttachmentService {
 
   /**
    * Batch check RODO status for multiple clients
-   * Returns map: clientId -> hasRodo
    */
   async batchCheckRodo(clientIds: string[]): Promise<Record<string, boolean>> {
     const rodoAttachments = await prisma.attachment.findMany({
@@ -261,7 +279,6 @@ class AttachmentService {
 
   /**
    * Batch check contract status for multiple reservations
-   * Returns map: reservationId -> hasContract
    */
   async batchCheckContract(reservationIds: string[]): Promise<Record<string, boolean>> {
     const contractAttachments = await prisma.attachment.findMany({
@@ -300,7 +317,7 @@ class AttachmentService {
         exists = !!(await prisma.deposit.findUnique({ where: { id: entityId }, select: { id: true } }));
         break;
       default:
-        throw AppError.badRequest(`Nieobsługiwany entityType: ${entityType}`);
+        throw AppError.badRequest(`Nieobs\u0142ugiwany entityType: ${entityType}`);
     }
 
     if (!exists) {
