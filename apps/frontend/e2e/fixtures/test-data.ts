@@ -169,6 +169,72 @@ export const testData = {
 };
 
 /**
+ * Test reservations used in reservation E2E tests
+ */
+export const TEST_RESERVATIONS = {
+  pending: {
+    clientId: '',
+    hallId: '',
+    eventTypeId: '',
+    date: getFutureDate(30),
+    startTime: '18:00',
+    endTime: '23:00',
+    adults: 50,
+    children: 10,
+    babies: 5,
+    notes: 'Test pending reservation',
+    birthdayAge: undefined as number | undefined,
+    anniversaryType: undefined as string | undefined,
+    anniversaryYears: undefined as number | undefined,
+  },
+  confirmed: {
+    clientId: '',
+    hallId: '',
+    eventTypeId: '',
+    date: getFutureDate(45),
+    startTime: '17:00',
+    endTime: '00:00',
+    adults: 80,
+    children: 15,
+    babies: 5,
+    notes: 'Test confirmed reservation',
+    birthdayAge: undefined as number | undefined,
+    anniversaryType: undefined as string | undefined,
+    anniversaryYears: undefined as number | undefined,
+  },
+  birthday: {
+    clientId: '',
+    hallId: '',
+    eventTypeId: '',
+    date: getFutureDate(20),
+    startTime: '16:00',
+    endTime: '20:00',
+    adults: 30,
+    children: 15,
+    babies: 5,
+    notes: 'Test birthday reservation',
+    birthdayAge: 30,
+    anniversaryType: undefined as string | undefined,
+    anniversaryYears: undefined as number | undefined,
+  },
+  anniversary: {
+    clientId: '',
+    hallId: '',
+    eventTypeId: '',
+    date: getFutureDate(60),
+    startTime: '19:00',
+    endTime: '01:00',
+    adults: 80,
+    children: 0,
+    babies: 0,
+    notes: 'Test anniversary reservation',
+    birthdayAge: undefined as number | undefined,
+    anniversaryType: '\u015alub',
+    anniversaryYears: 25,
+  },
+};
+
+/**
  * Test queue entries used in queue E2E tests
  */
 export const TEST_QUEUE_ENTRIES = [
