@@ -48,7 +48,7 @@ export default function EditHallPage() {
     } catch (error: any) {
       console.error('Error loading hall:', error)
       toast({
-        title: 'Bł\u0105d',
+        title: 'Błąd',
         description: 'Nie udało się załadować sali',
         variant: 'destructive',
       })
@@ -63,7 +63,7 @@ export default function EditHallPage() {
     
     if (!formData.name || formData.capacity <= 0) {
       toast({
-        title: 'Bł\u0105d walidacji',
+        title: 'Błąd walidacji',
         description: 'Wypełnij wszystkie wymagane pola',
         variant: 'destructive',
       })
@@ -84,7 +84,7 @@ export default function EditHallPage() {
     } catch (error: any) {
       console.error('Error updating hall:', error)
       toast({
-        title: 'Bł\u0105d',
+        title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować sali',
         variant: 'destructive',
       })
