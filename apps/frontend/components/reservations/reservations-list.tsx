@@ -8,7 +8,7 @@ import { useReservations } from '@/hooks/use-reservations'
 import { formatDate, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
 import {
-  Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
+  Eye, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
   Phone, Mail, CheckCircle2, AlertTriangle
 } from 'lucide-react'
@@ -372,19 +372,8 @@ export function ReservationsList() {
 
                             <div className="flex gap-1">
                               <Link href={`/dashboard/reservations/${reservation.id}`}>
-                                <Button size="sm" variant="ghost" title="Zobacz szczegóły" className="rounded-lg">
+                                <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" className="rounded-lg">
                                   <Eye className="w-4 h-4" />
-                                </Button>
-                              </Link>
-                              <Link href={`/dashboard/reservations/${reservation.id}`}>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  title="Edytuj rezerwację (inline)"
-                                  disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-                                  className="rounded-lg"
-                                >
-                                  <Edit className="w-4 h-4" />
                                 </Button>
                               </Link>
                               <Button
