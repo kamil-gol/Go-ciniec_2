@@ -3,6 +3,9 @@ import { Client, CreateClientInput, PaginatedResponse, Reservation } from '@/typ
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+// Re-export types for convenience
+export type { Client, CreateClientInput, Reservation }
+
 export interface ClientsFilters {
   page?: number
   pageSize?: number
