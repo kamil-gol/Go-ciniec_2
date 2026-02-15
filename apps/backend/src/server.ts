@@ -82,6 +82,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 /**
+ * UTF-8 Charset Middleware
+ * Ensures all JSON responses include charset=utf-8
+ */
+app.use((_req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body: any) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return originalJson(body);
+  };
+  next();
+});
+
+/**
  * Request Logging Middleware
  */
 app.use((req, res, next) => {
