@@ -128,6 +128,17 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     badge: 'bg-fuchsia-100 dark:bg-fuchsia-900/30',
     badgeText: 'text-fuchsia-700 dark:text-fuchsia-300',
   },
+  auditLog: {
+    name: 'Dziennik Audytu',
+    gradient: 'from-zinc-700 via-zinc-600 to-slate-700',
+    gradientSubtle: 'from-zinc-500/5 via-slate-500/5 to-zinc-500/5',
+    iconBg: 'from-zinc-600 to-slate-600',
+    text: 'text-zinc-600',
+    textDark: 'dark:text-zinc-400',
+    ring: 'ring-zinc-500/20',
+    badge: 'bg-zinc-100 dark:bg-zinc-900/30',
+    badgeText: 'text-zinc-700 dark:text-zinc-300',
+  },
 } as const
 
 /** Shared spacing & layout constants */
