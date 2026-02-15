@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useReservations } from '@/hooks/use-reservations'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
 import { formatDate, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
 import {
-  Eye, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
+  Eye, Trash2, Archive, ArchiveRestore, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
   Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert
 } from 'lucide-react'
@@ -139,14 +141,20 @@ function RodoBadge({ hasRodo }: { hasRodo: boolean | undefined }) {
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
+  const [showArchived, setShowArchived] = useState(false) // NEW: Archive toggle
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
   const [contractMap, setContractMap] = useState<Record<string, boolean>>({})
   const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
+
+  // NEW: Archive mutations
+  const archiveMutation = useArchiveReservation()
+  const unarchiveMutation = useUnarchiveReservation()
 
   const { data, isLoading, error, refetch } = useReservations({
     page,
     pageSize: 20,
     status: statusFilter === 'ALL' ? undefined : statusFilter,
+    archived: showArchived, // NEW: Pass archived filter
   })
 
   // Fetch all deposits once and group by reservationId
@@ -204,14 +212,26 @@ export function ReservationsList() {
     }
   }
 
+  // NEW: Updated archive handler
   const handleArchive = async (reservationId: string) => {
     if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
     try {
-      await apiClient.patch(`/reservations/${reservationId}`, { archivedAt: new Date().toISOString() })
+      await archiveMutation.mutateAsync({ id: reservationId, reason: 'Zarchiwizowano przez użytkownika' })
       toast.success('Rezerwacja zarchiwizowana')
       refetch()
     } catch (error) {
       toast.error('Błąd podczas archiwizacji')
+    }
+  }
+
+  // NEW: Unarchive handler
+  const handleUnarchive = async (reservationId: string) => {
+    try {
+      await unarchiveMutation.mutateAsync({ id: reservationId, reason: 'Przywrócono z archiwum' })
+      toast.success('Rezerwacja przywrócona z archiwum')
+      refetch()
+    } catch (error) {
+      toast.error('Błąd podczas przywracania')
     }
   }
 
@@ -257,7 +277,7 @@ export function ReservationsList() {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Filters - NEW: Added archive toggle */}
       <div className="flex items-center gap-4">
         <div className="w-64">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
@@ -271,6 +291,19 @@ export function ReservationsList() {
             </SelectContent>
           </Select>
         </div>
+        
+        {/* NEW: Archive Toggle */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+          <Switch
+            id="show-archived"
+            checked={showArchived}
+            onCheckedChange={setShowArchived}
+          />
+          <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm">
+            Pokaż zarchiwizowane
+          </Label>
+        </div>
+        
         <div className="flex-1" />
         <div className="text-sm text-neutral-500 dark:text-neutral-400">
           Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji
@@ -361,6 +394,13 @@ export function ReservationsList() {
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                              {/* NEW: Archive Badge */}
+                              {reservation.archivedAt && (
+                                <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                  <Archive className="h-3 w-3 mr-1" />
+                                  Zarchiwizowane
+                                </Badge>
+                              )}
                               <RodoBadge hasRodo={hasRodo} />
                               <ContractBadge hasContract={hasContract} />
                               <DepositBadge deposits={resDeposits} />
@@ -459,16 +499,29 @@ export function ReservationsList() {
                               >
                                 <FileText className="w-4 h-4" />
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleArchive(reservation.id)}
-                                title="Archiwizuj"
-                                disabled={reservation.status === 'CANCELLED'}
-                                className="rounded-lg"
-                              >
-                                <Archive className="w-4 h-4" />
-                              </Button>
+                              {/* NEW: Archive/Unarchive button */}
+                              {!reservation.archivedAt ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleArchive(reservation.id)}
+                                  title="Zarchiwizuj"
+                                  disabled={reservation.status === 'CANCELLED'}
+                                  className="rounded-lg"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleUnarchive(reservation.id)}
+                                  title="Przywróć z archiwum"
+                                  className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                                >
+                                  <ArchiveRestore className="w-4 h-4" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -502,7 +555,7 @@ export function ReservationsList() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1)))} 
               disabled={page === 1}
               className="rounded-xl border-neutral-200 dark:border-neutral-700"
             >
