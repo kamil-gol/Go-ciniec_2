@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { ClientsList } from '@/components/clients/clients-list'
 import { CreateClientForm } from '@/components/clients/create-client-form'
 import { getClients } from '@/lib/api/clients'
+import { batchCheckRodo } from '@/lib/api/attachments'
 import { useToast } from '@/hooks/use-toast'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -18,6 +19,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
   const accent = moduleAccents.clients
 
   useEffect(() => {
@@ -29,6 +31,17 @@ export default function ClientsPage() {
       setLoading(true)
       const data = await getClients()
       setClients(data)
+
+      // Batch check RODO status for all clients
+      if (data.length > 0) {
+        try {
+          const clientIds = data.map((c: any) => c.id)
+          const rodoResult = await batchCheckRodo(clientIds)
+          setRodoMap(rodoResult)
+        } catch (e) {
+          console.error('Failed to check RODO status:', e)
+        }
+      }
     } catch (error: any) {
       console.error('Error loading clients:', error)
       toast({
@@ -152,6 +165,7 @@ export default function ClientsPage() {
           ) : (
             <ClientsList
               clients={filteredClients}
+              rodoMap={rodoMap}
               onUpdate={loadClients}
             />
           )}

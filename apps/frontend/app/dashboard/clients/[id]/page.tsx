@@ -10,18 +10,34 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getClientById, type Client } from '@/lib/api/clients'
+import { getClientById, deleteClient, type Client } from '@/lib/api/clients'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import AttachmentPanel from '@/components/attachments/attachment-panel'
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Oczekująca',
+  CONFIRMED: 'Potwierdzona',
+  CANCELLED: 'Anulowana',
+  COMPLETED: 'Zakończona',
+}
+
+const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
+  PENDING: { color: 'bg-orange-500', icon: Clock },
+  CONFIRMED: { color: 'bg-green-500', icon: CheckCircle2 },
+  CANCELLED: { color: 'bg-red-500', icon: XCircle },
+  COMPLETED: { color: 'bg-blue-500', icon: CheckCircle2 },
+}
 
 export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
-  const [client, setClient] = useState<Client | null>(null)
+  const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadClient()
@@ -45,6 +61,30 @@ export default function ClientDetailsPage() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!client) return
+    const confirmed = window.confirm(`Czy na pewno chcesz usunąć klienta ${client.firstName} ${client.lastName}?`)
+    if (!confirmed) return
+
+    try {
+      setDeleting(true)
+      await deleteClient(client.id)
+      toast({
+        title: 'Sukces',
+        description: 'Klient został usunięty',
+      })
+      router.push('/dashboard/clients')
+    } catch (error: any) {
+      toast({
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się usunąć klienta',
+        variant: 'destructive',
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -60,15 +100,15 @@ export default function ClientDetailsPage() {
     return null
   }
 
-  // Calculate stats
+  // Calculate stats — use Number() to handle Decimal strings from backend
   const reservations = client.reservations || []
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter(r => r.status === 'CONFIRMED').length,
-    completed: reservations.filter(r => r.status === 'COMPLETED').length,
+    confirmed: reservations.filter((r: any) => r.status === 'CONFIRMED').length,
+    completed: reservations.filter((r: any) => r.status === 'COMPLETED').length,
     totalSpent: reservations
-      .filter(r => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
-      .reduce((sum, r) => sum + (r.totalPrice || 0), 0),
+      .filter((r: any) => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
+      .reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0),
   }
 
   return (
@@ -109,7 +149,7 @@ export default function ClientDetailsPage() {
                   {stats.total > 0 && (
                     <Badge className="bg-green-500 text-white border-0">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                      {stats.total} {stats.total === 1 ? 'rezerwacja' : 'rezerwacje'}
+                      {stats.total} {stats.total === 1 ? 'rezerwacja' : 'rezerwacji'}
                     </Badge>
                   )}
                 </div>
@@ -119,6 +159,7 @@ export default function ClientDetailsPage() {
               <div className="flex gap-3">
                 <Button 
                   size="lg" 
+                  onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
                   className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
                 >
                   <Edit className="mr-2 h-5 w-5" />
@@ -284,25 +325,36 @@ export default function ClientDetailsPage() {
                 <CardTitle className="text-lg">Szybkie akcje</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-2">
-                <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
+                <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
                   <Button variant="outline" className="w-full justify-start" size="lg">
                     <Calendar className="mr-2 h-4 w-4" />
                     Nowa rezerwacja
                   </Button>
                 </Link>
-                <Button variant="outline" className="w-full justify-start" size="lg">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  size="lg"
+                  onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                >
                   <Edit className="mr-2 h-4 w-4" />
                   Edytuj dane
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" size="lg">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-red-600 hover:text-red-700" 
+                  size="lg"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Usuń klienta
+                  {deleting ? 'Usuwanie...' : 'Usuń klienta'}
                 </Button>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Column - Reservations History */}
+          {/* Right Column - Reservations History + Attachments */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-0 shadow-xl">
               <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
@@ -319,7 +371,7 @@ export default function ClientDetailsPage() {
                     <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                     <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
                     <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
-                    <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
+                    <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
                       <Button className="mt-4" size="lg">
                         <Calendar className="mr-2 h-4 w-4" />
                         Utwórz pierwszą rezerwację
@@ -335,14 +387,9 @@ export default function ClientDetailsPage() {
                         ? new Date(reservation.date) 
                         : null
 
-                      const statusConfig: any = {
-                        PENDING: { color: 'bg-orange-500', icon: Clock },
-                        CONFIRMED: { color: 'bg-green-500', icon: CheckCircle2 },
-                        CANCELLED: { color: 'bg-red-500', icon: XCircle },
-                        COMPLETED: { color: 'bg-blue-500', icon: CheckCircle2 },
-                      }
-                      const status = statusConfig[reservation.status] || statusConfig.PENDING
-                      const StatusIcon = status.icon
+                      const statusCfg = STATUS_CONFIG[reservation.status] || STATUS_CONFIG.PENDING
+                      const StatusIcon = statusCfg.icon
+                      const statusLabel = STATUS_LABELS[reservation.status] || reservation.status
 
                       return (
                         <Link key={reservation.id} href={`/dashboard/reservations/${reservation.id}`}>
@@ -351,9 +398,9 @@ export default function ClientDetailsPage() {
                               <div className="flex items-start justify-between">
                                 <div className="space-y-2 flex-1">
                                   <div className="flex items-center gap-2">
-                                    <Badge className={`${status.color} text-white border-0`}>
+                                    <Badge className={`${statusCfg.color} text-white border-0`}>
                                       <StatusIcon className="h-3 w-3 mr-1" />
-                                      {reservation.status}
+                                      {statusLabel}
                                     </Badge>
                                     {eventDate && (
                                       <span className="text-sm text-muted-foreground">
@@ -372,7 +419,7 @@ export default function ClientDetailsPage() {
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-2xl font-bold">{reservation.totalPrice} zł</p>
+                                  <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
                                 </div>
                               </div>
                             </CardContent>
@@ -384,6 +431,14 @@ export default function ClientDetailsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Attachments Panel */}
+            <AttachmentPanel
+              entityType="CLIENT"
+              entityId={client.id}
+              title="Załączniki klienta"
+              className="shadow-xl"
+            />
           </div>
         </div>
       </div>

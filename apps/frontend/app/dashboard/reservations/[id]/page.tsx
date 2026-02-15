@@ -24,6 +24,7 @@ import {
   EditableGuestsCard,
   EditableNotesCard,
 } from '@/components/reservations/editable'
+import AttachmentPanel from '@/components/attachments/attachment-panel'
 
 export default function ReservationDetailsPage() {
   const params = useParams()
@@ -270,6 +271,14 @@ export default function ReservationDetailsPage() {
               confirmationDeadline={reservation.confirmationDeadline}
               startDateTime={reservation.startDateTime}
               onUpdated={handleRefetch}
+            />
+
+            {/* Attachments */}
+            <AttachmentPanel
+              entityType="RESERVATION"
+              entityId={reservation.id}
+              title="Załączniki rezerwacji"
+              className="shadow-xl"
             />
           </div>
 

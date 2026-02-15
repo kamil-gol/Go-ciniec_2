@@ -45,6 +45,27 @@ export function verifyToken(token: string): JwtPayload {
 }
 
 /**
+ * Extract token from request.
+ * Priority: Authorization header > query string ?token=
+ * Query string fallback is needed for file preview/download in new browser tabs.
+ */
+function extractToken(req: AuthenticatedRequest): string | null {
+  // 1. Authorization header (standard)
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  // 2. Query string fallback (for file preview in new tab)
+  const queryToken = req.query.token as string | undefined;
+  if (queryToken) {
+    return queryToken;
+  }
+
+  return null;
+}
+
+/**
  * Authentication middleware
  */
 export const authMiddleware = (
@@ -53,13 +74,12 @@ export const authMiddleware = (
   next: NextFunction
 ): void => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       throw new AppError(401, 'No token provided');
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const payload = verifyToken(token);
 
     req.user = {
