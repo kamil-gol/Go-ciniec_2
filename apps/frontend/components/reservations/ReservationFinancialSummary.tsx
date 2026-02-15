@@ -22,6 +22,7 @@ import type { Deposit, DepositStatus, PaymentMethod } from '@/lib/api/deposits'
 import { useReservationMenu } from '@/hooks/use-menu'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { DiscountSection } from '@/components/reservations/DiscountSection'
 
 // Constants
 const STANDARD_HOURS = 6
@@ -43,6 +44,14 @@ interface ReservationFinancialSummaryProps {
   endDateTime?: string
   /** Cost per extra hour beyond standard 6h (default: 500 PLN) */
   extraHourRate?: number
+  /** Reservation status (needed for discount section) */
+  status?: string
+  /** Discount fields from DB */
+  discountType?: string | null
+  discountValue?: number | string | null
+  discountAmount?: number | string | null
+  discountReason?: string | null
+  priceBeforeDiscount?: number | string | null
 }
 
 // Config
@@ -143,6 +152,12 @@ export function ReservationFinancialSummary({
   startDateTime,
   endDateTime,
   extraHourRate = DEFAULT_EXTRA_HOUR_RATE,
+  status,
+  discountType,
+  discountValue,
+  discountAmount,
+  discountReason,
+  priceBeforeDiscount,
 }: ReservationFinancialSummaryProps) {
   // Menu data
   const { data: menuData } = useReservationMenu(reservationId)
@@ -440,6 +455,24 @@ export function ReservationFinancialSummary({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* DISCOUNT SECTION (Sprint 7) */}
+            {status && (
+              <div className="mb-3">
+                <DiscountSection
+                  reservation={{
+                    id: reservationId,
+                    status,
+                    totalPrice: effectiveTotalPrice,
+                    discountType: discountType || null,
+                    discountValue: discountValue ?? null,
+                    discountAmount: discountAmount ?? null,
+                    discountReason: discountReason || null,
+                    priceBeforeDiscount: priceBeforeDiscount ?? null,
+                  }}
+                />
               </div>
             )}
 
