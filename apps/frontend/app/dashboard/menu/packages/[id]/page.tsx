@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PackageForm from '@/components/menu/PackageForm';
-import { getPackageById } from '@/lib/api/menu-packages-api';
-import type { MenuPackage } from '@/types/menu';
+import { getPackageById, type MenuPackage } from '@/lib/api/menu-packages-api';
 
 export default function EditPackagePage() {
   const params = useParams();
@@ -47,13 +46,13 @@ export default function EditPackagePage() {
     return (
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">Błąd</h2>
+          <h2 className="text-lg font-semibold text-red-800 mb-2">B\u0142\u0105d</h2>
           <p className="text-red-600">{error || 'Nie znaleziono pakietu'}</p>
           <button
             onClick={() => router.back()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           >
-            Wróć
+            Wr\u00f3\u0107
           </button>
         </div>
       </div>
