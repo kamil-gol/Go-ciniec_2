@@ -141,12 +141,11 @@ function RodoBadge({ hasRodo }: { hasRodo: boolean | undefined }) {
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
-  const [showArchived, setShowArchived] = useState(false) // NEW: Archive toggle
+  const [showArchived, setShowArchived] = useState(false)
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
   const [contractMap, setContractMap] = useState<Record<string, boolean>>({})
   const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
 
-  // NEW: Archive mutations
   const archiveMutation = useArchiveReservation()
   const unarchiveMutation = useUnarchiveReservation()
 
@@ -154,10 +153,9 @@ export function ReservationsList() {
     page,
     pageSize: 20,
     status: statusFilter === 'ALL' ? undefined : statusFilter,
-    archived: showArchived, // NEW: Pass archived filter
+    archived: showArchived,
   })
 
-  // Fetch all deposits once and group by reservationId
   useEffect(() => {
     depositsApi.getAll().then(deposits => {
       const map: Record<string, Deposit[]> = {}
@@ -169,20 +167,17 @@ export function ReservationsList() {
     }).catch(console.error)
   }, [])
 
-  // Fetch contract and RODO status for visible reservations
   const allReservations = data?.data || []
   const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
 
   useEffect(() => {
     if (reservations.length === 0) return
 
-    // Contract check — by reservation IDs
     const reservationIds = reservations.map((r: any) => r.id)
     batchCheckContract(reservationIds)
       .then(setContractMap)
       .catch(console.error)
 
-    // RODO check — by unique client IDs
     const clientIds = [...new Set(
       reservations
         .map((r: any) => r.clientId || r.client?.id)
@@ -193,7 +188,7 @@ export function ReservationsList() {
         .then(setRodoMap)
         .catch(console.error)
     }
-  }, [data]) // re-run when page data changes
+  }, [data])
 
   const statusOptions = [
     { value: 'ALL', label: 'Wszystkie statusy' },
@@ -212,27 +207,32 @@ export function ReservationsList() {
     }
   }
 
-  // NEW: Updated archive handler
   const handleArchive = async (reservationId: string) => {
-    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
-    try {
-      await archiveMutation.mutateAsync({ id: reservationId, reason: 'Zarchiwizowano przez użytkownika' })
-      toast.success('Rezerwacja zarchiwizowana')
-      refetch()
-    } catch (error) {
-      toast.error('Błąd podczas archiwizacji')
-    }
+    toast.promise(
+      archiveMutation.mutateAsync({ id: reservationId, reason: 'Zarchiwizowano przez użytkownika' }),
+      {
+        loading: 'Archiwizowanie rezerwacji...',
+        success: () => {
+          refetch()
+          return 'Rezerwacja została zarchiwizowana'
+        },
+        error: 'Błąd podczas archiwizacji rezerwacji',
+      }
+    )
   }
 
-  // NEW: Unarchive handler
   const handleUnarchive = async (reservationId: string) => {
-    try {
-      await unarchiveMutation.mutateAsync({ id: reservationId, reason: 'Przywrócono z archiwum' })
-      toast.success('Rezerwacja przywrócona z archiwum')
-      refetch()
-    } catch (error) {
-      toast.error('Błąd podczas przywracania')
-    }
+    toast.promise(
+      unarchiveMutation.mutateAsync({ id: reservationId, reason: 'Przywrócono z archiwum' }),
+      {
+        loading: 'Przywracanie rezerwacji...',
+        success: () => {
+          refetch()
+          return 'Rezerwacja została przywrócona z archiwum'
+        },
+        error: 'Błąd podczas przywracania rezerwacji',
+      }
+    )
   }
 
   const handleDelete = async (reservationId: string, status: string) => {
@@ -240,7 +240,10 @@ export function ReservationsList() {
       toast.error('Nie można usunąć potwierdzonej rezerwacji. Anuluj ją najpierw.')
       return
     }
-    if (!confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')) return
+    
+    const confirmed = window.confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')
+    if (!confirmed) return
+
     try {
       await apiClient.delete(`/reservations/${reservationId}`)
       toast.success('Rezerwacja anulowana')
@@ -277,7 +280,7 @@ export function ReservationsList() {
 
   return (
     <div className="space-y-6">
-      {/* Filters - NEW: Added archive toggle */}
+      {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="w-64">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
@@ -292,7 +295,7 @@ export function ReservationsList() {
           </Select>
         </div>
         
-        {/* NEW: Archive Toggle */}
+        {/* Archive Toggle */}
         <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
           <Switch
             id="show-archived"
@@ -394,7 +397,6 @@ export function ReservationsList() {
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                              {/* NEW: Archive Badge */}
                               {reservation.archivedAt && (
                                 <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                   <Archive className="h-3 w-3 mr-1" />
@@ -499,7 +501,6 @@ export function ReservationsList() {
                               >
                                 <FileText className="w-4 h-4" />
                               </Button>
-                              {/* NEW: Archive/Unarchive button */}
                               {!reservation.archivedAt ? (
                                 <Button
                                   size="sm"
