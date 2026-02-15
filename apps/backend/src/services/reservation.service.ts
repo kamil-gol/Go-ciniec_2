@@ -21,7 +21,6 @@ import {
 import {
   calculateTotalGuests,
   calculateTotalPrice,
-  generateExtraHoursNote,
   validateConfirmationDeadline,
   validateCustomEventFields,
   detectReservationChanges,
@@ -151,8 +150,7 @@ export class ReservationService {
       // Check whole venue conflict
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
-      const extraHoursNote = generateExtraHoursNote(startDT, endDT);
-      if (extraHoursNote) notes += extraHoursNote;
+      // US-6.3: Removed auto-note about events longer than 6 hours
     }
 
     if (hasLegacyFormat && data.date && data.startTime && data.endTime) {
@@ -626,12 +624,7 @@ export class ReservationService {
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
     if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
 
-    if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
-      const extraHoursNote = generateExtraHoursNote(finalStart, finalEnd);
-      if (extraHoursNote) {
-        updateData.notes = sanitizeString((updateData.notes || existingReservation.notes || '') + extraHoursNote);
-      }
-    }
+    // US-6.3: Removed auto-note about events longer than 6 hours
 
     const reservation = await prisma.reservation.update({
       where: { id },
