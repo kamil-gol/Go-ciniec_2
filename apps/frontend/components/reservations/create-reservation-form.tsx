@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateReservation } from '@/hooks/use-reservations'
-import { useApplyDiscount } from '@/hooks/use-discount'
 import { useHalls } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
@@ -160,7 +159,6 @@ export function CreateReservationForm({
   const { data: clientsData, isLoading: clientsLoading } = useClients()
   const { data: eventTypes } = useEventTypes()
   const createReservation = useCreateReservation()
-  const applyDiscount = useApplyDiscount()
 
   const {
     register,
@@ -457,32 +455,23 @@ export function CreateReservationForm({
       input.pricePerToddler = data.pricePerToddler
     }
 
+    // Sprint 7: Atomowy rabat — wysyłamy pola rabatowe w payloadzie tworzenia
     const shouldApplyDiscount =
       !!data.discountEnabled &&
       Number(data.discountValue) > 0 &&
       (data.discountReason || '').trim().length >= 3
+
+    if (shouldApplyDiscount) {
+      input.discountType = (data.discountType || 'PERCENTAGE') as 'PERCENTAGE' | 'FIXED'
+      input.discountValue = Number(data.discountValue)
+      input.discountReason = (data.discountReason || '').trim()
+    }
 
     try {
       if (onSubmitProp) {
         await onSubmitProp(input)
       } else {
         const result = await createReservation.mutateAsync(input)
-
-        if (result?.id && shouldApplyDiscount) {
-          try {
-            await applyDiscount.mutateAsync({
-              id: result.id,
-              input: {
-                type: (data.discountType || 'PERCENTAGE') as any,
-                value: Number(data.discountValue),
-                reason: (data.discountReason || '').trim(),
-              },
-            })
-          } catch (e) {
-            // Discount failure shouldn't block reservation creation
-          }
-        }
-
         if (result?.id) router.push(`/dashboard/reservations/${result.id}`)
       }
       onSuccess?.()
