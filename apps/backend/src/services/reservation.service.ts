@@ -1,13 +1,11 @@
 /**
- * Reservation Service
+ * Reservation Service - with full Audit Logging
  * Business logic for reservation management with advanced features
- * UPDATED: Phase C — Auto-recalc menu prices when guests change
- * UPDATED: Removed hall pricing references (pricePerPerson/Child removed from Hall model)
- * UPDATED: Whole venue conflict checking — "Cały Obiekt" blocks all halls and vice versa
  */
 
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
+import { logChange, diffObjects } from '../utils/audit-logger';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -28,17 +26,11 @@ import {
 } from '../utils/reservation.utils';
 import reservationMenuService from './reservation-menu.service';
 
-/**
- * Sanitize string by removing null bytes
- */
 function sanitizeString(value: any): string | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
+  if (value === null || value === undefined || value === '') return null;
   return String(value).replace(/\x00/g, '').trim() || null;
 }
 
-/** Default include for reservation queries */
 const RESERVATION_INCLUDE = {
   hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true } },
   client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
@@ -47,9 +39,7 @@ const RESERVATION_INCLUDE = {
 } as const;
 
 export class ReservationService {
-  /**
-   * Create a new reservation
-   */
+
   async createReservation(data: CreateReservationDTO, userId: string): Promise<ReservationResponse> {
     if (!data.hallId || !data.clientId || !data.eventTypeId) {
       throw new Error('Hall, client, and event type are required');
@@ -90,7 +80,6 @@ export class ReservationService {
       throw new Error(`Number of guests (${guests}) exceeds hall capacity (${hall.capacity})`);
     }
 
-    // Menu package integration
     let pricePerAdult: number;
     let pricePerChild: number;
     let pricePerToddler: number;
@@ -143,18 +132,13 @@ export class ReservationService {
       if (startDT < new Date()) throw new Error('Reservation date must be in the future');
       if (startDT >= endDT) throw new Error('End time must be after start time');
 
-      // Check same-hall overlap
       const hasOverlap = await this.checkDateTimeOverlap(data.hallId, startDT, endDT);
       if (hasOverlap) throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
 
-      // Check whole venue conflict
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
-      // US-6.3: Removed auto-note about events longer than 6 hours
-
-      // US-6.6: Auto-note about inflation for next year reservations
       if (startDT.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -169,14 +153,12 @@ export class ReservationService {
       const hasOverlap = await this.checkOverlap(data.hallId, data.date, data.startTime, data.endTime);
       if (hasOverlap) throw new Error('This time slot is already booked for the selected hall');
 
-      // Check whole venue conflict (legacy format)
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
-      // US-6.6: Auto-note about inflation for next year reservations (legacy format)
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -196,12 +178,8 @@ export class ReservationService {
         createdById: userId,
         startDateTime: data.startDateTime ? new Date(data.startDateTime) : null,
         endDateTime: data.endDateTime ? new Date(data.endDateTime) : null,
-        adults,
-        children,
-        toddlers,
-        pricePerAdult,
-        pricePerChild,
-        pricePerToddler,
+        adults, children, toddlers,
+        pricePerAdult, pricePerChild, pricePerToddler,
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
         customEventType: sanitizeString(data.customEventType),
         birthdayAge: data.birthdayAge || null,
@@ -210,8 +188,7 @@ export class ReservationService {
         date: data.date || null,
         startTime: data.startTime || null,
         endTime: data.endTime || null,
-        guests,
-        totalPrice,
+        guests, totalPrice,
         status: ReservationStatus.PENDING,
         notes: sanitizeString(notes),
         attachments: []
@@ -219,7 +196,6 @@ export class ReservationService {
       include: RESERVATION_INCLUDE
     });
 
-    // Create menu snapshot if package was selected
     if (menuPackage) {
       await prisma.reservationMenuSnapshot.create({
         data: {
@@ -235,8 +211,7 @@ export class ReservationService {
             pricePerToddler: Number(menuPackage.pricePerToddler),
             selectedOptions
           },
-          packagePrice,
-          optionsPrice,
+          packagePrice, optionsPrice,
           totalMenuPrice: totalPrice,
           adultsCount: adults,
           childrenCount: children,
@@ -245,7 +220,6 @@ export class ReservationService {
       });
     }
 
-    // Create deposit if specified
     const depositData = data.deposit || (data.depositAmount && data.depositDueDate ? {
       amount: data.depositAmount,
       dueDate: data.depositDueDate
@@ -272,12 +246,29 @@ export class ReservationService {
       menuPackage ? `Reservation created with menu package: ${menuPackage.name}` : 'Reservation created'
     );
 
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CREATE',
+      entityType: 'RESERVATION',
+      entityId: reservation.id,
+      details: {
+        description: `Utworzono rezerwację: ${client.firstName} ${client.lastName} | ${hall.name} | ${eventType.name}`,
+        data: {
+          hallId: data.hallId,
+          clientId: data.clientId,
+          eventTypeId: data.eventTypeId,
+          guests,
+          totalPrice,
+          startDateTime: data.startDateTime,
+          endDateTime: data.endDateTime
+        }
+      }
+    });
+
     return reservation as any;
   }
 
-  /**
-   * Update reservation menu
-   */
   async updateReservationMenu(
     reservationId: string,
     data: UpdateReservationMenuDTO,
@@ -343,14 +334,10 @@ export class ReservationService {
           packageName: menuPackage.name,
           packageDescription: menuPackage.description,
           templateName: menuPackage.menuTemplate.name,
-          pricePerAdult,
-          pricePerChild,
-          pricePerToddler,
+          pricePerAdult, pricePerChild, pricePerToddler,
           selectedOptions
         },
-        packagePrice,
-        optionsPrice,
-        totalMenuPrice,
+        packagePrice, optionsPrice, totalMenuPrice,
         adultsCount: adults,
         childrenCount: children,
         toddlersCount: toddlers
@@ -379,9 +366,6 @@ export class ReservationService {
     throw new Error('Invalid menu update data');
   }
 
-  /**
-   * Process selected options — BATCH query instead of N+1
-   */
   private async processSelectedOptions(
     selections: MenuOptionSelection[],
     totalGuests: number
@@ -424,9 +408,6 @@ export class ReservationService {
     return processed;
   }
 
-  /**
-   * Calculate total price for selected options
-   */
   private calculateOptionsPrice(options: any[], totalGuests: number): number {
     let total = 0;
     for (const option of options) {
@@ -440,9 +421,6 @@ export class ReservationService {
     return total;
   }
 
-  /**
-   * Get all reservations with filters + PAGINATION
-   */
   async getReservations(filters?: ReservationFilters): Promise<ReservationResponse[]> {
     const where: any = {};
 
@@ -492,9 +470,6 @@ export class ReservationService {
     return reservations as any[];
   }
 
-  /**
-   * Get reservation by ID
-   */
   async getReservationById(id: string): Promise<ReservationResponse> {
     const reservation = await prisma.reservation.findUnique({
       where: { id },
@@ -509,23 +484,18 @@ export class ReservationService {
     return reservation as any;
   }
 
-  /**
-   * Update reservation
-   * PHASE C: When guests change and menu exists, auto-recalculate menu prices
-   */
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
 
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { hall: true, eventType: true, menuSnapshot: true }
+      include: { hall: true, eventType: true, menuSnapshot: true, client: true }
     });
 
     if (!existingReservation) throw new Error('Reservation not found');
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error('Cannot update completed reservation');
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error('Cannot update cancelled reservation');
 
-    // Handle menu package updates
     if (data.menuPackageId !== undefined) {
       if (data.menuPackageId === null) {
         await this.updateReservationMenu(id, { menuPackageId: null }, userId);
@@ -568,8 +538,6 @@ export class ReservationService {
     if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
       const hasOverlap = await this.checkDateTimeOverlap(existingReservation.hallId!, finalStart, finalEnd, id);
       if (hasOverlap) throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
-
-      // Check whole venue conflict on time change
       await this.checkWholeVenueConflict(existingReservation.hallId!, finalStart, finalEnd, id);
     }
 
@@ -589,7 +557,6 @@ export class ReservationService {
       }
     }
 
-    // PHASE C: Auto-recalculate menu prices when guests change
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
     const isUsingMenuPackage = hasMenuSnapshot && data.menuPackageId !== null;
     
@@ -634,8 +601,6 @@ export class ReservationService {
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
     if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
 
-    // US-6.3: Removed auto-note about events longer than 6 hours
-
     const reservation = await prisma.reservation.update({
       where: { id },
       data: updateData,
@@ -647,22 +612,33 @@ export class ReservationService {
       await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'various', 'various', `${data.reason}\n\nChanges:\n${changesSummary}`);
     }
 
+    // Audit log
+    const changes = diffObjects(existingReservation, reservation);
+    if (Object.keys(changes).length > 0) {
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'RESERVATION',
+        entityId: id,
+        details: {
+          description: `Zaktualizowano rezerwację: ${existingReservation.client.firstName} ${existingReservation.client.lastName}`,
+          changes,
+          reason: data.reason
+        }
+      });
+    }
+
     return reservation as any;
   }
 
-  /**
-   * Update reservation status
-   * CASCADE: If new status is CANCELLED → auto-cancel pending deposits
-   */
   async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
 
-    const existingReservation = await prisma.reservation.findUnique({ where: { id } });
+    const existingReservation = await prisma.reservation.findUnique({ where: { id }, include: { client: true, hall: true } });
     if (!existingReservation) throw new Error('Reservation not found');
 
     this.validateStatusTransition(existingReservation.status, data.status);
 
-    // US-6.4: Block COMPLETED status before event date
     if (data.status === ReservationStatus.COMPLETED) {
       const eventDate = existingReservation.startDateTime
         ? new Date(existingReservation.startDateTime)
@@ -670,7 +646,7 @@ export class ReservationService {
           ? new Date(existingReservation.date)
           : null;
       if (eventDate && eventDate > new Date()) {
-        throw new Error('Nie mo\u017cna zako\u0144czy\u0107 rezerwacji przed dat\u0105 wydarzenia');
+        throw new Error('Nie można zakończyć rezerwacji przed datą wydarzenia');
       }
     }
 
@@ -701,6 +677,20 @@ export class ReservationService {
         return updatedReservation;
       });
 
+      // Audit log
+      await logChange({
+        userId,
+        action: 'STATUS_CHANGE',
+        entityType: 'RESERVATION',
+        entityId: id,
+        details: {
+          description: `Anulowano rezerwację: ${existingReservation.client.firstName} ${existingReservation.client.lastName} | ${existingReservation.hall.name}`,
+          oldStatus: existingReservation.status,
+          newStatus: data.status,
+          reason: data.reason
+        }
+      });
+
       return reservation as any;
     }
 
@@ -711,17 +701,28 @@ export class ReservationService {
     });
 
     await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Status changed');
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'STATUS_CHANGE',
+      entityType: 'RESERVATION',
+      entityId: id,
+      details: {
+        description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
+        oldStatus: existingReservation.status,
+        newStatus: data.status,
+        reason: data.reason
+      }
+    });
+
     return reservation as any;
   }
 
-  /**
-   * Cancel reservation (soft delete)
-   * CASCADE: Auto-cancels all PENDING and OVERDUE deposits
-   */
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
 
-    const existingReservation = await prisma.reservation.findUnique({ where: { id } });
+    const existingReservation = await prisma.reservation.findUnique({ where: { id }, include: { client: true, hall: true } });
     if (!existingReservation) throw new Error('Reservation not found');
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error('Reservation is already cancelled');
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error('Cannot cancel completed reservation');
@@ -748,11 +749,20 @@ export class ReservationService {
         }
       });
     });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CANCEL',
+      entityType: 'RESERVATION',
+      entityId: id,
+      details: {
+        description: `Anulowano rezerwację: ${existingReservation.client.firstName} ${existingReservation.client.lastName} | ${existingReservation.hall.name}`,
+        reason
+      }
+    });
   }
 
-  /**
-   * CASCADE: Cancel all PENDING and OVERDUE deposits for a reservation
-   */
   private async cascadeCancelDeposits(
     tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
     reservationId: string,
@@ -796,21 +806,6 @@ export class ReservationService {
     return pendingDeposits.length;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 🔒 WHOLE VENUE CONFLICT DETECTION
-  // ═══════════════════════════════════════════════════════════════
-
-  /**
-   * Check for whole venue conflicts.
-   *
-   * Rules:
-   * 1. If booking "Cały Obiekt" (isWholeVenue) → no other hall can have
-   *    a reservation (PENDING/CONFIRMED) in the same time range.
-   * 2. If booking a regular hall → "Cały Obiekt" cannot have a reservation
-   *    in the same time range.
-   *
-   * @throws Error with descriptive Polish message on conflict
-   */
   private async checkWholeVenueConflict(
     hallId: string,
     startDateTime: Date,
@@ -836,7 +831,6 @@ export class ReservationService {
     }
 
     if (hall.isWholeVenue) {
-      // Booking whole venue → check if ANY other hall has a reservation
       const conflict = await prisma.reservation.findFirst({
         where: {
           ...baseWhere,
@@ -858,9 +852,8 @@ export class ReservationService {
         );
       }
     } else {
-      // Booking regular hall → check if "Cały Obiekt" is reserved
       const wholeVenueHall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
-      if (!wholeVenueHall) return; // no whole venue hall configured
+      if (!wholeVenueHall) return;
 
       const conflict = await prisma.reservation.findFirst({
         where: {
@@ -883,14 +876,6 @@ export class ReservationService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // PRIVATE HELPERS
-  // ═══════════════════════════════════════════════════════════════
-
-  /**
-   * Validate that the userId (from JWT) exists in the database.
-   * Throws 401 if user session is stale (e.g. after database reseed).
-   */
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
