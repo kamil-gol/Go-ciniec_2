@@ -49,12 +49,12 @@ export default function ReservationDetailsPage() {
       await downloadReservationPDF(reservation.id)
       toast({
         title: 'Sukces',
-        description: 'PDF zosta\u0142 pobrany',
+        description: 'PDF został pobrany',
       })
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 pobra\u0107 PDF',
+        title: 'Błąd',
+        description: 'Nie udało się pobrać PDF',
         variant: 'destructive',
       })
     } finally {
@@ -65,7 +65,7 @@ export default function ReservationDetailsPage() {
   const handleCancel = async () => {
     if (!reservation) return
     
-    const reason = prompt('Podaj pow\u00f3d anulowania rezerwacji:')
+    const reason = prompt('Podaj powód anulowania rezerwacji:')
     if (!reason) return
 
     try {
@@ -75,12 +75,12 @@ export default function ReservationDetailsPage() {
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja zosta\u0142a anulowana',
+        description: 'Rezerwacja została anulowana',
       })
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 anulowa\u0107 rezerwacji',
+        title: 'Błąd',
+        description: 'Nie udało się anulować rezerwacji',
         variant: 'destructive',
       })
     }
@@ -102,9 +102,9 @@ export default function ReservationDetailsPage() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="text-center space-y-4">
           <XCircle className="h-16 w-16 text-red-400 mx-auto" />
-          <p className="text-muted-foreground">Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji</p>
+          <p className="text-muted-foreground">Nie udało się załadować rezerwacji</p>
           <Link href="/dashboard/reservations">
-            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powr\u00f3t do listy</Button>
+            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
           </Link>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function ReservationDetailsPage() {
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -144,7 +144,7 @@ export default function ReservationDetailsPage() {
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold">Rezerwacja #{reservation.id.slice(0, 8)}</h1>
-                    <p className="text-white/90 text-lg mt-1">Szczeg\u00f3\u0142y rezerwacji</p>
+                    <p className="text-white/90 text-lg mt-1">Szczegóły rezerwacji</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -198,7 +198,7 @@ export default function ReservationDetailsPage() {
                   <div className="flex items-center gap-3">
                     <User className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Imi\u0119 i nazwisko</p>
+                      <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
                       <p className="text-lg font-semibold">
                         {reservation.client?.firstName} {reservation.client?.lastName}
                       </p>
@@ -226,7 +226,7 @@ export default function ReservationDetailsPage() {
               </div>
             </Card>
 
-            {/* Hall Info \u2014 Editable with availability check */}
+            {/* Hall Info — Editable with availability check */}
             <EditableHallCard
               reservationId={reservation.id}
               hallId={reservation.hall?.id || ''}
@@ -238,7 +238,7 @@ export default function ReservationDetailsPage() {
               onUpdated={handleRefetch}
             />
 
-            {/* Event Details \u2014 Editable with DatePicker/TimePicker */}
+            {/* Event Details — Editable with DatePicker/TimePicker */}
             <EditableEventCard
               reservationId={reservation.id}
               eventTypeId={reservation.eventType?.id || ''}
@@ -264,7 +264,7 @@ export default function ReservationDetailsPage() {
               />
             )}
 
-            {/* Notes \u2014 Editable (always visible) */}
+            {/* Notes — Editable (always visible) */}
             <EditableNotesCard
               reservationId={reservation.id}
               notes={reservation.notes ?? null}
@@ -277,14 +277,14 @@ export default function ReservationDetailsPage() {
             <AttachmentPanel
               entityType="RESERVATION"
               entityId={reservation.id}
-              title="Za\u0142\u0105czniki rezerwacji"
+              title="Załączniki rezerwacji"
               className="shadow-xl"
             />
           </div>
 
           {/* Right Column */}
           <div className="space-y-6">
-            {/* Guests \u2014 Editable with capacity validation */}
+            {/* Guests — Editable with capacity validation */}
             <EditableGuestsCard
               reservationId={reservation.id}
               adults={reservation.adults || 0}
@@ -331,7 +331,7 @@ export default function ReservationDetailsPage() {
                     onClick={handleCancel}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwacj\u0119'}
+                    {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
                   </Button>
                 </div>
               </div>
