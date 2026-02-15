@@ -1,6 +1,10 @@
 /**
  * Attachment Service
  * CRUD operations for polymorphic file attachments
+ * 
+ * RODO redirect: When RODO is uploaded via RESERVATION or DEPOSIT,
+ * the attachment is automatically stored under the CLIENT entity.
+ * This ensures all RODO documents are in one place per client.
  */
 
 import { prisma } from '../lib/prisma';
@@ -37,7 +41,44 @@ class AttachmentService {
   }
 
   /**
-   * Create attachment record after file upload
+   * Resolve the clientId from a RESERVATION or DEPOSIT entity.
+   * Used for RODO redirect — always store RODO under CLIENT.
+   */
+  private async resolveClientId(entityType: EntityType, entityId: string): Promise<string | null> {
+    try {
+      if (entityType === 'RESERVATION') {
+        const reservation = await prisma.reservation.findUnique({
+          where: { id: entityId },
+          select: { clientId: true },
+        });
+        return reservation?.clientId || null;
+      }
+
+      if (entityType === 'DEPOSIT') {
+        const deposit = await prisma.deposit.findUnique({
+          where: { id: entityId },
+          include: {
+            reservation: {
+              select: { clientId: true },
+            },
+          },
+        });
+        return deposit?.reservation?.clientId || null;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error(`Failed to resolve clientId for ${entityType}/${entityId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Create attachment record after file upload.
+   * 
+   * RODO REDIRECT: If category is RODO and entityType is RESERVATION or DEPOSIT,
+   * the attachment is automatically redirected to entityType=CLIENT with the
+   * resolved clientId. This ensures RODO is always stored at the client level.
    */
   async createAttachment(
     dto: CreateAttachmentDTO,
@@ -46,24 +87,48 @@ class AttachmentService {
   ) {
     // Validate entityType
     if (!ENTITY_TYPES.includes(dto.entityType)) {
-      throw AppError.badRequest(`Nieprawid\u0142owy entityType: ${dto.entityType}. Dozwolone: ${ENTITY_TYPES.join(', ')}`);
+      throw AppError.badRequest(`Nieprawidłowy entityType: ${dto.entityType}. Dozwolone: ${ENTITY_TYPES.join(', ')}`);
     }
 
     // Validate category
     if (!isValidCategory(dto.entityType, dto.category)) {
-      throw AppError.badRequest(`Nieprawid\u0142owa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
+      throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
     }
 
     // Validate entity exists
     await this.validateEntityExists(dto.entityType, dto.entityId);
 
-    // Move file from staging to correct subdirectory
-    const storagePath = this.moveToEntityDir(file, dto.entityType);
+    // ═══════════════════════════════════════════════════════
+    // RODO REDIRECT: Always store RODO under CLIENT
+    // ═══════════════════════════════════════════════════════
+    let finalEntityType: EntityType = dto.entityType;
+    let finalEntityId: string = dto.entityId;
+
+    if (dto.category === 'RODO' && dto.entityType !== 'CLIENT') {
+      const clientId = await this.resolveClientId(dto.entityType, dto.entityId);
+
+      if (!clientId) {
+        throw AppError.badRequest(
+          `Nie udało się znaleźć klienta powiązanego z ${dto.entityType} ${dto.entityId}. ` +
+          `RODO musi być przypisane do klienta.`
+        );
+      }
+
+      logger.info(
+        `RODO redirect: ${dto.entityType}/${dto.entityId} -> CLIENT/${clientId}`
+      );
+
+      finalEntityType = 'CLIENT';
+      finalEntityId = clientId;
+    }
+
+    // Move file to correct subdirectory (uses FINAL entityType)
+    const storagePath = this.moveToEntityDir(file, finalEntityType);
 
     const attachment = await prisma.attachment.create({
       data: {
-        entityType: dto.entityType,
-        entityId: dto.entityId,
+        entityType: finalEntityType,
+        entityId: finalEntityId,
         category: dto.category,
         label: dto.label || null,
         description: dto.description || null,
@@ -81,7 +146,11 @@ class AttachmentService {
       },
     });
 
-    logger.info(`Attachment created: ${attachment.id} (${dto.entityType}/${dto.entityId}) by user ${uploadedById}`);
+    logger.info(
+      `Attachment created: ${attachment.id} (${finalEntityType}/${finalEntityId}, ` +
+      `category: ${dto.category}) by user ${uploadedById}` +
+      (finalEntityType !== dto.entityType ? ` [redirected from ${dto.entityType}/${dto.entityId}]` : '')
+    );
 
     return attachment;
   }
@@ -115,6 +184,55 @@ class AttachmentService {
         { createdAt: 'desc' },
       ],
     });
+  }
+
+  /**
+   * Get attachments for an entity + cross-referenced RODO from client.
+   * Used by RESERVATION and DEPOSIT views to show RODO stored at client level.
+   */
+  async getAttachmentsWithClientRodo(
+    entityType: EntityType,
+    entityId: string,
+    includeArchived: boolean = false,
+  ) {
+    // Get own attachments
+    const ownAttachments = await this.getAttachments({
+      entityType,
+      entityId,
+      includeArchived,
+    });
+
+    // If already CLIENT, no cross-reference needed
+    if (entityType === 'CLIENT') {
+      return ownAttachments;
+    }
+
+    // Resolve clientId and fetch client's RODO
+    const clientId = await this.resolveClientId(entityType, entityId);
+    if (!clientId) return ownAttachments;
+
+    const clientRodoAttachments = await prisma.attachment.findMany({
+      where: {
+        entityType: 'CLIENT',
+        entityId: clientId,
+        category: 'RODO',
+        isArchived: includeArchived ? undefined : false,
+      },
+      include: {
+        uploadedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Merge: own attachments + client RODO (marked with _fromClient flag)
+    const mergedRodo = clientRodoAttachments.map(att => ({
+      ...att,
+      _fromClient: true,
+    }));
+
+    return [...mergedRodo, ...ownAttachments];
   }
 
   /**
@@ -161,7 +279,7 @@ class AttachmentService {
 
     // If changing category, validate it
     if (dto.category && !isValidCategory(existing.entityType as EntityType, dto.category)) {
-      throw AppError.badRequest(`Nieprawid\u0142owa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
+      throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
     }
 
     const updated = await prisma.attachment.update({
@@ -317,7 +435,7 @@ class AttachmentService {
         exists = !!(await prisma.deposit.findUnique({ where: { id: entityId }, select: { id: true } }));
         break;
       default:
-        throw AppError.badRequest(`Nieobs\u0142ugiwany entityType: ${entityType}`);
+        throw AppError.badRequest(`Nieobsługiwany entityType: ${entityType}`);
     }
 
     if (!exists) {

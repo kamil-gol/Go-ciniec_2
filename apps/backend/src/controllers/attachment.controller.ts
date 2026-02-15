@@ -1,187 +1,207 @@
 /**
  * Attachment Controller
- * Handles HTTP requests for file attachments
+ * Handles HTTP requests for attachment CRUD operations
  */
 
-import { Response } from 'express';
-import { AuthenticatedRequest } from '../types';
+import { Request, Response, NextFunction } from 'express';
 import attachmentService from '../services/attachment.service';
-import { AppError } from '../utils/AppError';
 import { CreateAttachmentDTO, UpdateAttachmentDTO } from '../types/attachment.types';
-import { ENTITY_TYPES, EntityType } from '../constants/attachmentCategories';
+import { EntityType } from '../constants/attachmentCategories';
 import logger from '../utils/logger';
 
-export class AttachmentController {
+class AttachmentController {
   /**
+   * Upload a new attachment
    * POST /api/attachments
-   * Upload a file attachment
    */
-  async upload(req: AuthenticatedRequest, res: Response): Promise<void> {
-    if (!req.file) {
-      throw AppError.badRequest('Nie przesłano pliku');
+  async upload(req: Request, res: Response, next: NextFunction) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'Nie przesłano pliku' });
+      }
+
+      const dto: CreateAttachmentDTO = {
+        entityType: req.body.entityType,
+        entityId: req.body.entityId,
+        category: req.body.category,
+        label: req.body.label || undefined,
+        description: req.body.description || undefined,
+      };
+
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Brak autoryzacji' });
+      }
+
+      const attachment = await attachmentService.createAttachment(dto, file, userId);
+
+      return res.status(201).json({ data: attachment });
+    } catch (error) {
+      next(error);
     }
-
-    const { entityType, entityId, category, label, description } = req.body;
-
-    if (!entityType || !entityId || !category) {
-      throw AppError.badRequest('Wymagane pola: entityType, entityId, category');
-    }
-
-    const dto: CreateAttachmentDTO = {
-      entityType: entityType as EntityType,
-      entityId,
-      category,
-      label,
-      description,
-    };
-
-    const attachment = await attachmentService.createAttachment(dto, req.file, req.user!.id);
-
-    res.status(201).json({
-      success: true,
-      data: attachment,
-      message: 'Plik wgrany pomyślnie',
-    });
   }
 
   /**
-   * GET /api/attachments?entityType=X&entityId=Y&category=Z
-   * List attachments for an entity
+   * Get attachments for an entity
+   * GET /api/attachments?entityType=X&entityId=Y&category=Z&withClientRodo=true
    */
-  async list(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { entityType, entityId, category, includeArchived } = req.query;
+  async getByEntity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { entityType, entityId, category, withClientRodo } = req.query;
 
-    if (!entityType || !entityId) {
-      throw AppError.badRequest('Wymagane parametry: entityType, entityId');
+      if (!entityType || !entityId) {
+        return res.status(400).json({ error: 'entityType i entityId są wymagane' });
+      }
+
+      // If withClientRodo=true, use the cross-reference method
+      if (withClientRodo === 'true' && entityType !== 'CLIENT') {
+        const attachments = await attachmentService.getAttachmentsWithClientRodo(
+          entityType as EntityType,
+          entityId as string,
+        );
+        return res.json({ data: attachments });
+      }
+
+      const attachments = await attachmentService.getAttachments({
+        entityType: entityType as EntityType,
+        entityId: entityId as string,
+        category: category as string | undefined,
+      });
+
+      return res.json({ data: attachments });
+    } catch (error) {
+      next(error);
     }
-
-    if (!ENTITY_TYPES.includes(entityType as EntityType)) {
-      throw AppError.badRequest(`Nieprawidłowy entityType: ${entityType}`);
-    }
-
-    const attachments = await attachmentService.getAttachments({
-      entityType: entityType as EntityType,
-      entityId: entityId as string,
-      category: category as string | undefined,
-      includeArchived: includeArchived === 'true',
-    });
-
-    res.status(200).json({
-      success: true,
-      data: attachments,
-      count: attachments.length,
-    });
   }
 
   /**
+   * Download attachment file
    * GET /api/attachments/:id/download
-   * Download a file
    */
-  async download(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { id } = req.params;
+  async download(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { filePath, attachment } = await attachmentService.getFilePath(id);
 
-    const { filePath, attachment } = await attachmentService.getFilePath(id);
+      res.setHeader('Content-Type', attachment.mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.originalName}"`);
 
-    logger.info(`File download: ${attachment.id} by user ${req.user!.id}`);
-
-    res.setHeader('Content-Type', attachment.mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.originalName)}"`);
-    res.setHeader('Content-Length', attachment.sizeBytes.toString());
-
-    res.sendFile(filePath);
+      return res.sendFile(filePath);
+    } catch (error) {
+      next(error);
+    }
   }
 
   /**
-   * PATCH /api/attachments/:id
    * Update attachment metadata
+   * PATCH /api/attachments/:id
    */
-  async update(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { id } = req.params;
-    const dto: UpdateAttachmentDTO = req.body;
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const dto: UpdateAttachmentDTO = req.body;
 
-    const attachment = await attachmentService.updateAttachment(id, dto);
+      const updated = await attachmentService.updateAttachment(id, dto);
 
-    res.status(200).json({
-      success: true,
-      data: attachment,
-      message: 'Załącznik zaktualizowany',
-    });
+      return res.json({ data: updated });
+    } catch (error) {
+      next(error);
+    }
   }
 
   /**
+   * Soft-delete (archive) attachment
    * DELETE /api/attachments/:id
-   * Soft-delete (archive) an attachment
    */
-  async delete(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { id } = req.params;
+  async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await attachmentService.deleteAttachment(id);
 
-    await attachmentService.deleteAttachment(id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Załącznik usunięty',
-    });
+      return res.json({ message: 'Załącznik zarchiwizowany' });
+    } catch (error) {
+      next(error);
+    }
   }
 
   /**
+   * Archive attachment
+   * PATCH /api/attachments/:id/archive
+   */
+  async archive(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const archived = await attachmentService.deleteAttachment(id);
+
+      return res.json({ data: archived });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Check if entity has specific category
    * GET /api/attachments/check?entityType=X&entityId=Y&category=Z
-   * Check if entity has specific attachment category
    */
-  async check(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { entityType, entityId, category } = req.query;
+  async check(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { entityType, entityId, category } = req.query;
 
-    if (!entityType || !entityId || !category) {
-      throw AppError.badRequest('Wymagane parametry: entityType, entityId, category');
+      if (!entityType || !entityId || !category) {
+        return res.status(400).json({ error: 'entityType, entityId i category są wymagane' });
+      }
+
+      const has = await attachmentService.hasAttachment(
+        entityType as EntityType,
+        entityId as string,
+        category as string,
+      );
+
+      return res.json({ data: { has } });
+    } catch (error) {
+      next(error);
     }
-
-    const has = await attachmentService.hasAttachment(
-      entityType as EntityType,
-      entityId as string,
-      category as string,
-    );
-
-    res.status(200).json({
-      success: true,
-      data: { hasAttachment: has },
-    });
   }
 
   /**
+   * Batch check RODO for multiple clients
    * POST /api/attachments/batch-check-rodo
-   * Batch check RODO status for multiple clients
    */
-  async batchCheckRodo(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { clientIds } = req.body;
+  async batchCheckRodo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { clientIds } = req.body;
 
-    if (!Array.isArray(clientIds) || clientIds.length === 0) {
-      throw AppError.badRequest('Wymagana tablica clientIds');
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ error: 'clientIds musi być niepustą tablicą' });
+      }
+
+      const result = await attachmentService.batchCheckRodo(clientIds);
+
+      return res.json({ data: result });
+    } catch (error) {
+      next(error);
     }
-
-    const result = await attachmentService.batchCheckRodo(clientIds);
-
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
   }
 
   /**
+   * Batch check contracts for multiple reservations
    * POST /api/attachments/batch-check-contract
-   * Batch check contract status for multiple reservations
    */
-  async batchCheckContract(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { reservationIds } = req.body;
+  async batchCheckContract(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { reservationIds } = req.body;
 
-    if (!Array.isArray(reservationIds) || reservationIds.length === 0) {
-      throw AppError.badRequest('Wymagana tablica reservationIds');
+      if (!Array.isArray(reservationIds) || reservationIds.length === 0) {
+        return res.status(400).json({ error: 'reservationIds musi być niepustą tablicą' });
+      }
+
+      const result = await attachmentService.batchCheckContract(reservationIds);
+
+      return res.json({ data: result });
+    } catch (error) {
+      next(error);
     }
-
-    const result = await attachmentService.batchCheckContract(reservationIds);
-
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
   }
 }
 

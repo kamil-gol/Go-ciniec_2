@@ -29,6 +29,8 @@ export interface Attachment {
     firstName: string
     lastName: string
   }
+  /** True when the attachment belongs to the client (cross-referenced from reservation/deposit) */
+  _fromClient?: boolean
 }
 
 export interface UploadAttachmentInput {
@@ -72,9 +74,22 @@ export const formatFileSize = (bytes: number): string => {
 // ═══════════════════════════════════════════════════════════════
 
 export const attachmentsApi = {
-  getByEntity: async (entityType: EntityType, entityId: string, category?: AttachmentCategory): Promise<Attachment[]> => {
+  /**
+   * Get attachments for an entity.
+   * When withClientRodo=true and entityType is RESERVATION/DEPOSIT,
+   * also includes RODO attachments from the linked client.
+   */
+  getByEntity: async (
+    entityType: EntityType,
+    entityId: string,
+    category?: AttachmentCategory,
+    withClientRodo?: boolean,
+  ): Promise<Attachment[]> => {
     const params = new URLSearchParams({ entityType, entityId })
     if (category) params.set('category', category)
+    if (withClientRodo && entityType !== 'CLIENT') {
+      params.set('withClientRodo', 'true')
+    }
     const response = await apiClient.get(`/attachments?${params}`)
     return response.data.data
   },
