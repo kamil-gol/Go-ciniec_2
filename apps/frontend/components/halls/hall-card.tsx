@@ -34,27 +34,27 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
     if (hall.isWholeVenue) {
       toast({
         title: 'Operacja zablokowana',
-        description: 'Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.',
+        description: 'Nie mo\u017cna usun\u0105\u0107 sali "Ca\u0142y Obiekt". Jest wymagana do logiki rezerwacji.',
         variant: 'destructive',
       })
       return
     }
 
-    if (!confirm(`Czy na pewno chcesz usunąć salę "${hall.name}"?`)) return
+    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 sal\u0119 "${hall.name}"?`)) return
 
     try {
       setDeleting(true)
       await deleteHall(hall.id)
       toast({
         title: 'Sukces',
-        description: `Sala "${hall.name}" została usunięta`,
+        description: `Sala "${hall.name}" zosta\u0142a usuni\u0119ta`,
       })
       onUpdate()
     } catch (error: any) {
       console.error('Error deleting hall:', error)
       toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć sali',
+        title: 'B\u0142\u0105d',
+        description: error.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 sali',
         variant: 'destructive',
       })
     } finally {
@@ -91,7 +91,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                 {hall.isWholeVenue && (
                   <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-0 shadow-none">
                     <Building2 className="h-3 w-3 mr-1" />
-                    Cały Obiekt
+                    Ca\u0142y Obiekt
                   </Badge>
                 )}
                 {hall.isActive ? (
@@ -100,7 +100,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                     Aktywna
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="shadow-none">Nieaktywna</Badge>
+                  <Badge variant="default" className="bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 shadow-none">Nieaktywna</Badge>
                 )}
               </div>
             </div>
@@ -127,7 +127,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                   className="cursor-pointer flex items-center px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 rounded-lg"
                 >
                   <Eye className="mr-3 h-4 w-4 text-sky-600 dark:text-sky-400" />
-                  Szczegóły
+                  Szczeg\u00f3\u0142y
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -148,7 +148,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                     className="cursor-pointer flex items-center px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                   >
                     <Trash2 className="mr-3 h-4 w-4" />
-                    {deleting ? 'Usuwanie...' : 'Usuń'}
+                    {deleting ? 'Usuwanie...' : 'Usu\u0144'}
                   </DropdownMenuItem>
                 </>
               )}
@@ -175,8 +175,8 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <Users className="h-4 w-4 text-white" />
           </div>
           <div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Pojemność</div>
-            <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{hall.capacity} osób</div>
+            <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Pojemno\u015b\u0107</div>
+            <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{hall.capacity} os\u00f3b</div>
           </div>
         </div>
 
@@ -208,7 +208,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                   'border-sky-200/50 dark:border-sky-800/50'
                 )}
               >
-                +{hall.amenities.length - 3} więcej
+                +{hall.amenities.length - 3} wi\u0119cej
               </Badge>
             )}
           </div>
