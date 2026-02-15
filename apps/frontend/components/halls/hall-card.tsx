@@ -193,17 +193,17 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             {hall.amenities.slice(0, 3).map((amenity, idx) => (
               <Badge
                 key={idx}
-                variant="outline"
-                className="text-xs border-neutral-200 dark:border-neutral-700 rounded-lg"
+                variant="default"
+                className="text-xs bg-transparent border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-lg"
               >
                 {amenity}
               </Badge>
             ))}
             {hall.amenities.length > 3 && (
               <Badge
-                variant="outline"
+                variant="default"
                 className={cn(
-                  'text-xs rounded-lg',
+                  'text-xs rounded-lg bg-transparent border',
                   accent.badge, accent.badgeText,
                   'border-sky-200/50 dark:border-sky-800/50'
                 )}
