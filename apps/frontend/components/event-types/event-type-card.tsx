@@ -43,11 +43,11 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
       await updateEventType(eventType.id, { isActive: checked })
       toast({
         title: checked ? 'Aktywowany' : 'Dezaktywowany',
-        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
+        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'zosta\u0142 dezaktywowany'}`,
       })
       onUpdate()
     } catch (error: any) {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
+      toast({ title: 'B\u0142\u0105d', description: 'Nie uda\u0142o si\u0119 zmieni\u0107 statusu', variant: 'destructive' })
     } finally {
       setToggling(false)
     }
@@ -88,7 +88,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
                 {eventType.name}
               </h3>
               {!eventType.isActive && (
-                <Badge variant="secondary" className="text-xs mt-0.5">
+                <Badge variant="default" className="text-xs mt-0.5 bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
                   Nieaktywny
                 </Badge>
               )}
@@ -124,7 +124,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
                 onClick={() => onDelete(eventType)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Usuń
+                Usu\u0144
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -149,7 +149,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
               <FileText className="h-4 w-4 shrink-0 text-amber-500" />
               <span className="font-medium">{templateCount}</span>
-              <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
+              <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablon\u00f3w'}</span>
             </div>
           </div>
 
