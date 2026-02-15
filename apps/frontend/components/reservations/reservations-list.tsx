@@ -10,7 +10,7 @@ import { ReservationStatus } from '@/types'
 import {
   Eye, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
-  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX
+  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
@@ -22,7 +22,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 import { LoadingState } from '@/components/shared'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit } from '@/lib/api/deposits'
-import { batchCheckContract } from '@/lib/api/attachments'
+import { batchCheckContract, batchCheckRodo } from '@/lib/api/attachments'
 
 const accent = moduleAccents.reservations
 
@@ -115,11 +115,33 @@ function ContractBadge({ hasContract }: { hasContract: boolean | undefined }) {
   )
 }
 
+// RODO Badge Helper
+function RodoBadge({ hasRodo }: { hasRodo: boolean | undefined }) {
+  if (hasRodo === undefined) return null
+
+  if (hasRodo) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800">
+        <ShieldCheck className="h-3 w-3" />
+        RODO
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+      <ShieldAlert className="h-3 w-3" />
+      Brak RODO
+    </span>
+  )
+}
+
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
   const [contractMap, setContractMap] = useState<Record<string, boolean>>({})
+  const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
 
   const { data, isLoading, error, refetch } = useReservations({
     page,
@@ -139,16 +161,30 @@ export function ReservationsList() {
     }).catch(console.error)
   }, [])
 
-  // Fetch contract status for visible reservations
+  // Fetch contract and RODO status for visible reservations
   const allReservations = data?.data || []
   const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
 
   useEffect(() => {
     if (reservations.length === 0) return
-    const ids = reservations.map((r: any) => r.id)
-    batchCheckContract(ids)
+
+    // Contract check — by reservation IDs
+    const reservationIds = reservations.map((r: any) => r.id)
+    batchCheckContract(reservationIds)
       .then(setContractMap)
       .catch(console.error)
+
+    // RODO check — by unique client IDs
+    const clientIds = [...new Set(
+      reservations
+        .map((r: any) => r.clientId || r.client?.id)
+        .filter(Boolean)
+    )] as string[]
+    if (clientIds.length > 0) {
+      batchCheckRodo(clientIds)
+        .then(setRodoMap)
+        .catch(console.error)
+    }
   }, [data]) // re-run when page data changes
 
   const statusOptions = [
@@ -296,6 +332,8 @@ export function ReservationsList() {
                     const guestInfo = getGuestBreakdown(reservation)
                     const resDeposits = depositMap[reservation.id] || []
                     const hasContract = contractMap[reservation.id]
+                    const clientId = reservation.clientId || reservation.client?.id
+                    const hasRodo = clientId ? rodoMap[clientId] : undefined
 
                     return (
                       <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
@@ -322,7 +360,8 @@ export function ReservationsList() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                              <RodoBadge hasRodo={hasRodo} />
                               <ContractBadge hasContract={hasContract} />
                               <DepositBadge deposits={resDeposits} />
                               <Badge className={getStatusColor(reservation.status)}>
