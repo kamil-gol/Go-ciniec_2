@@ -21,12 +21,12 @@ interface DishAssignmentDialogProps {
 
 const CATEGORY_LABELS: Record<string, string> = {
   'SOUP': 'Zupa',
-  'APPETIZER': 'Przekąska',
-  'MAIN_COURSE': 'Danie główne',
+  'APPETIZER': 'Przek\u0105ska',
+  'MAIN_COURSE': 'Danie g\u0142\u00f3wne',
   'SIDE_DISH': 'Przystawka',
-  'SALAD': 'Sałatka',
+  'SALAD': 'Sa\u0142atka',
   'DESSERT': 'Deser',
-  'BEVERAGE': 'Napój',
+  'BEVERAGE': 'Nap\u00f3j',
   'OTHER': 'Inne'
 }
 
@@ -38,7 +38,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const assignMutation = useAssignDishes()
   const removeMutation = useRemoveDish()
 
-  const assignedDishIds = new Set(course?.options?.map(opt => opt.dish.id) || [])
+  const assignedDishIds = new Set(course?.options?.map(opt => opt.dish?.id).filter(Boolean) || [])
 
   useEffect(() => {
     if (open && course) {
@@ -67,7 +67,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const handleAssign = async () => {
     if (!course || selectedDishes.size === 0) return
 
-    const loadingToast = toast.loading(`Przypisuję ${selectedDishes.size} dań...`)
+    const loadingToast = toast.loading(`Przypisuj\u0119 ${selectedDishes.size} da\u0144...`)
     
     try {
       await assignMutation.mutateAsync({
@@ -80,10 +80,10 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
           }))
         }
       })
-      toast.success('Sukces!', `Przypisano ${selectedDishes.size} dań do kursu`)
+      toast.success('Sukces!', `Przypisano ${selectedDishes.size} da\u0144 do kursu`)
       setSelectedDishes(new Set())
     } catch (error: any) {
-      toast.error('Błąd', error.error || 'Nie udało się przypisać dań')
+      toast.error('B\u0142\u0105d', error.error || 'Nie uda\u0142o si\u0119 przypisa\u0107 da\u0144')
     }
   }
 
@@ -98,9 +98,9 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
         dishId,
         packageId: course.packageId,
       })
-      toast.success('Usunięto!', `Danie "${dishName}" zostało usunięte z kursu`)
+      toast.success('Usuni\u0119to!', `Danie "${dishName}" zosta\u0142o usuni\u0119te z kursu`)
     } catch (error: any) {
-      toast.error('Błąd', error.error || 'Nie udało się usunąć dania')
+      toast.error('B\u0142\u0105d', error.error || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 dania')
     }
   }
 
@@ -115,7 +115,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
               <ChefHat className="h-5 w-5 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-2xl">Zarządzaj Daniami</DialogTitle>
+              <DialogTitle className="text-2xl">Zarz\u0105dzaj Daniami</DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Kurs: <strong>{course?.name}</strong>
               </p>
@@ -142,10 +142,10 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                     <div className="flex-1 min-w-0 pr-2">
                       <div className="flex items-center gap-2 mb-1">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                        <p className="font-semibold truncate">{option.dish.name}</p>
+                        <p className="font-semibold truncate">{option.dish?.name}</p>
                       </div>
-                      {option.dish.category && (
-                        <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs">
+                      {option.dish?.category && (
+                        <Badge variant="default" className="border border-emerald-300 bg-transparent text-emerald-700 text-xs">
                           {CATEGORY_LABELS[option.dish.category] || option.dish.category}
                         </Badge>
                       )}
@@ -154,8 +154,8 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                       size="sm"
                       variant="ghost"
                       className="flex-shrink-0 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 rounded-lg transition-colors"
-                      onClick={() => handleRemove(option.dish.id, option.dish.name)}
-                      disabled={isPending}
+                      onClick={() => option.dish && handleRemove(option.dish.id, option.dish.name)}
+                      disabled={isPending || !option.dish}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -178,7 +178,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Szukaj dań po nazwie lub kategorii..."
+                placeholder="Szukaj da\u0144 po nazwie lub kategorii..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500"
@@ -190,7 +190,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
               <div className="text-center py-12 bg-muted/30 rounded-xl border-2 border-dashed">
                 <ChefHat className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                 <p className="text-muted-foreground">
-                  {searchQuery ? 'Brak wyników wyszukiwania' : 'Wszystkie dania już przypisane'}
+                  {searchQuery ? 'Brak wynik\u00f3w wyszukiwania' : 'Wszystkie dania ju\u017c przypisane'}
                 </p>
               </div>
             ) : (
@@ -227,9 +227,9 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                         </p>
                         {dish.category && (
                           <Badge 
-                            variant="outline" 
+                            variant="default" 
                             className={cn(
-                              "text-xs mb-2",
+                              "text-xs mb-2 bg-transparent border",
                               isSelected 
                                 ? "border-emerald-400 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50" 
                                 : "border-muted-foreground/30"
@@ -272,7 +272,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
             {isPending ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Przypisuję...
+                Przypisuj\u0119...
               </>
             ) : (
               <>
