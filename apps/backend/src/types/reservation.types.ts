@@ -82,6 +82,13 @@ export interface CreateReservationDTO {
   // Legacy deposit fields (for backwards compatibility)
   depositAmount?: number;
   depositDueDate?: string;
+
+  // ═══════════════════════════════════════════════════════════════
+  // DISCOUNT (Sprint 7 - applied during creation)
+  // ═══════════════════════════════════════════════════════════════
+  discountType?: 'PERCENTAGE' | 'FIXED';
+  discountValue?: number;
+  discountReason?: string;
 }
 
 export interface UpdateReservationDTO {
