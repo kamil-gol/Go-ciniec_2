@@ -151,6 +151,11 @@ export class ReservationService {
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       // US-6.3: Removed auto-note about events longer than 6 hours
+
+      // US-6.6: Auto-note about inflation for next year reservations
+      if (startDT.getFullYear() > new Date().getFullYear()) {
+        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+      }
     }
 
     if (hasLegacyFormat && data.date && data.startTime && data.endTime) {
@@ -168,6 +173,11 @@ export class ReservationService {
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
+
+      // US-6.6: Auto-note about inflation for next year reservations (legacy format)
+      if (reservationDate.getFullYear() > new Date().getFullYear()) {
+        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+      }
     }
 
     if (data.confirmationDeadline && data.startDateTime) {
