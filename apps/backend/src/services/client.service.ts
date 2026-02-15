@@ -5,9 +5,10 @@
 
 import { prisma } from '@/lib/prisma';
 import { CreateClientDTO, UpdateClientDTO, ClientFilters, ClientResponse } from '../types/client.types';
+import { logChange, diffObjects } from '../utils/audit-logger';
 
 export class ClientService {
-  async createClient(data: CreateClientDTO): Promise<ClientResponse> {
+  async createClient(data: CreateClientDTO, userId: string): Promise<ClientResponse> {
     if (data.email && !this.isValidEmail(data.email)) {
       throw new Error('Invalid email format');
     }
@@ -30,7 +31,7 @@ export class ClientService {
     });
 
     if (existingClient) {
-      throw new Error(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} ju\u017c istnieje`);
+      throw new Error(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} już istnieje`);
     }
 
     const client = await prisma.client.create({
@@ -40,6 +41,23 @@ export class ClientService {
         email: data.email?.trim() || null,
         phone: data.phone.trim(),
         notes: data.notes?.trim() || null
+      }
+    });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CREATE',
+      entityType: 'CLIENT',
+      entityId: client.id,
+      details: {
+        description: `Utworzono klienta: ${client.firstName} ${client.lastName}`,
+        data: {
+          firstName: client.firstName,
+          lastName: client.lastName,
+          email: client.email,
+          phone: client.phone
+        }
       }
     });
 
@@ -97,7 +115,7 @@ export class ClientService {
     return client as any;
   }
 
-  async updateClient(id: string, data: UpdateClientDTO): Promise<ClientResponse> {
+  async updateClient(id: string, data: UpdateClientDTO, userId: string): Promise<ClientResponse> {
     const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
@@ -127,7 +145,7 @@ export class ClientService {
       });
 
       if (clientWithSameDetails) {
-        throw new Error(`Klient ${firstName} ${lastName} z numerem ${data.phone} ju\u017c istnieje`);
+        throw new Error(`Klient ${firstName} ${lastName} z numerem ${data.phone} już istnieje`);
       }
     }
 
@@ -143,10 +161,25 @@ export class ClientService {
       data: updateData
     });
 
+    // Audit log
+    const changes = diffObjects(existingClient, client);
+    if (Object.keys(changes).length > 0) {
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'CLIENT',
+        entityId: client.id,
+        details: {
+          description: `Zaktualizowano klienta: ${client.firstName} ${client.lastName}`,
+          changes
+        }
+      });
+    }
+
     return client as any;
   }
 
-  async deleteClient(id: string): Promise<void> {
+  async deleteClient(id: string, userId: string): Promise<void> {
     const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
@@ -162,6 +195,23 @@ export class ClientService {
     }
 
     await prisma.client.delete({ where: { id } });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'DELETE',
+      entityType: 'CLIENT',
+      entityId: id,
+      details: {
+        description: `Usunięto klienta: ${existingClient.firstName} ${existingClient.lastName}`,
+        deletedData: {
+          firstName: existingClient.firstName,
+          lastName: existingClient.lastName,
+          email: existingClient.email,
+          phone: existingClient.phone
+        }
+      }
+    });
   }
 
   private isValidEmail(email: string): boolean {
