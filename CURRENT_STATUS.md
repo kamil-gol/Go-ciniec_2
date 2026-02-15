@@ -3,9 +3,23 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 15.02.2026, 13:35 CET  
+**Ostatnia aktualizacja:** 15.02.2026, 13:42 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.4.4 (Fix encoding + attachments API)
+**Wersja:** 1.4.4 (Fix encoding + attachments API)  
+**Następna wersja:** 1.5.0 (Sprint 6 — Quick Wins)
+
+---
+
+## 🗺️ Roadmap
+
+| Sprint | Temat | Estymacja | Wersja | Status |
+|--------|-------|-----------|--------|--------|
+| 6 | Quick Wins & Bugfixy (6 tasków) | ~1 dzień | v1.5.0-v1.5.5 | 🔳 Następny |
+| 7 | System Rabatów (% / PLN) | ~2-3 dni | v1.6.0 | 🔳 Planowany |
+| 8 | Historia Zmian & Archiwum | ~3-5 dni | v1.7.0-v1.7.1 | 🔳 Planowany |
+| 9 | Ujednolicenie UI & Mobile | ~5-7 dni | v1.8.0 | 🔳 Planowany |
+
+📚 **Pełny plan sprintów:** [docs/SPRINTS.md](docs/SPRINTS.md)
 
 ---
 
@@ -27,11 +41,10 @@
 ### 🔤 UTF-8 Encoding Fix (v1.4.2)
 ✅ **Fix kodowania polskich znaków** — zamiana ~100+ Unicode escape sequences (`\uXXXX`) na poprawne znaki UTF-8 w `create-reservation-form.tsx`  
 ✅ **Skan całego systemu** — pozostałe pliki (8 komponentów) sprawdzone i OK  
-✅ **Znaki:** ą, ę, ó, ś, ź, ż, ł, ń, ć + symbole: —, ×, –, •, ═, 💡  
 
 ### 🔧 Build Fixes (v1.4.1)
 ✅ **Fix `menu-selection.ts`** — import `./client` (nieistniejący) → `@/lib/api-client`  
-✅ **Fix NODE_ENV dual-bundle** — wymuszenie `NODE_ENV=production` w build script (eliminacja podwójnego React runtime)  
+✅ **Fix NODE_ENV dual-bundle** — wymuszenie `NODE_ENV=production` w build script  
 ✅ **Fix Pages Router 404** — dodanie `app/not-found.tsx` (App Router custom 404)  
 ✅ **Build 29/29 stron** — kompilacja, linting, generowanie static pages bez błędów  
 
@@ -42,93 +55,88 @@
 ✅ **Krok 4 — Menu i ceny:** Flow Szablon → Pakiet → Ceny (lub ręczne ustalanie)  
 ✅ **Krok 5 — Klient:** Combobox z wyszukiwarką + modal tworzenia nowego klienta  
 ✅ **Krok 6 — Podsumowanie:** Kolorowe karty klikalne, price breakdown, notatki  
-✅ **Nowe komponenty:** Stepper (desktop/mobile), Combobox, DatePicker, TimePicker  
-✅ **Extra hours:** Automatyczna dopłata 500 PLN/h za godziny ponad 6h w Financial Summary  
-✅ **Breadcrumb:** Szablon → Pakiet → Ceny w kroku Menu  
-✅ **Auto-clear:** Zmiana szablonu kasuje pakiet, zmiana event type kasuje szablon  
 📚 **Dokumentacja:** [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md)
 
 ### System Rezerwacji & Kolejki
-✅ **System kolejki rezerwacji** (status RESERVED)  
-✅ **Drag & drop zmiany kolejności** (z loading states)  
-✅ **Awansowanie do pełnej rezerwacji**  
-✅ **Pola warunkowe** (Urodziny, Rocznica, Inne)  
-✅ **Podział gości** na 3 grupy wiekowe  
-✅ **Auto-kalkulacja cen**  
-✅ **Dodatkowe godziny** z automatyczną notą  
-✅ **Row-level locking** (race condition protection)  
-✅ **Retry logic** z exponential backoff  
-✅ **Auto-cancel** (tylko przeszłe daty)  
-✅ **Walidacja pozycji** w kolejce  
-✅ **Nullable constraints** dla queue fields  
-✅ **Batch update API** (atomiczne transakcje)  
-✅ **Detekcja konfliktu "Cała Sala"** — blokada podwójnej rezerwacji gdy isWholeVenue (v1.2.0)  
-✅ **Sanityzacja null bytes** — `sanitizeString()` chroni PostgreSQL przed `\x00` (v1.2.0)  
-✅ **AppError(401) przy braku użytkownika** — czytelny komunikat zamiast generycznego 404 (v1.2.0)
+✅ System kolejki rezerwacji (status RESERVED)  
+✅ Drag & drop zmiany kolejności (z loading states)  
+✅ Awansowanie do pełnej rezerwacji  
+✅ Pola warunkowe (Urodziny, Rocznica, Inne)  
+✅ Podział gości na 3 grupy wiekowe  
+✅ Auto-kalkulacja cen + dodatkowe godziny z automatyczną notą  
+✅ Row-level locking + Retry logic + Auto-cancel  
+✅ Detekcja konfliktu "Cała Sala" (v1.2.0)  
+✅ Sanityzacja null bytes (v1.2.0)  
 
 ### 🍽️ System Menu (KOMPLETNY)
-✅ **Kategorie Dań** — CRUD API + Frontend UI, sortowanie, ikony emoji + kolory  
-✅ **Biblioteka Dań** — CRUD, alergeny, filtrowanie, wyszukiwanie, premium UI  
-✅ **Szablony Menu (MenuTemplate)** — CRUD, warianty, validFrom/validTo, duplikowanie, przypisanie do EventType  
-✅ **Pakiety Menu (MenuPackage)** — CRUD, ceny per adult/child/toddler, includedItems, reorder, isPopular/isRecommended  
-✅ **Opcje Menu (MenuOption)** — CRUD, kategorie (Alkohol, Muzyka itp.), priceType: PER_PERSON/FLAT, przypisanie do pakietów  
-✅ **Grupy Dodatków (AddonGroup)** — CRUD, min/maxSelect, priceType, powiązania z daniami  
-✅ **Ustawienia Kategorii w Pakietach (PackageCategorySettings)** — minSelect/maxSelect per kategoria  
-✅ **Historia Cen (MenuPriceHistory)** — automatyczne śledzenie zmian cen  
-✅ **Karta Menu PDF** — generowanie PDF z pełnymi danymi dań (v1.3.0)  
-✅ **Premium UI/UX Components** — Switch, AlertDialog, DishDialog, loading states
+✅ Kategorie Dań, Biblioteka Dań, Szablony Menu, Pakiety Menu  
+✅ Opcje Menu, Grupy Dodatków, Ustawienia Kategorii  
+✅ Historia Cen, Karta Menu PDF (v1.3.0)  
 
 ### 📎 System Załączników (Attachments)
-✅ **Upload plików** — multipart/form-data z kategoriami (RODO, Umowa, Faktura, Zdjęcie, Korespondencja, Inne)  
-✅ **Panel załączników** — filtrowanie po kategorii, archiwum, cross-reference RODO z klienta  
-✅ **Batch check RODO/Contract** — masowe sprawdzanie statusu dokumentów  
-✅ **Download/Archive/Delete** — pełny CRUD z soft-delete  
-✅ **Backend API** — `GET/POST/PATCH/DELETE /api/attachments` + `/check` + `/batch-check-rodo` + `/batch-check-contract`  
+✅ Upload plików z kategoriami (RODO, Umowa, Faktura, Zdjęcie, Korespondencja, Inne)  
+✅ Panel załączników, Batch check RODO/Contract, Download/Archive/Delete  
 
 ### 🔒 Bezpieczeństwo & Auth (v1.1.0)
-✅ **JWT Authentication** — Bearer token, auto-refresh, secure fallback  
-✅ **Role-Based Access Control** — ADMIN, EMPLOYEE  
-✅ **Auth middleware na WSZYSTKICH endpointach menu** — 45+ endpointów zabezpieczonych  
-✅ **Polityka dostępu:**  
-- GET (odczyt) → Staff (ADMIN + EMPLOYEE)  
-- POST/PUT/DELETE (zapis) → Admin only  
-- Dish categories GET → Publiczne  
-- Menu calculator → Staff  
-✅ **Frontend auto-token** — apiClient dodaje Bearer token automatycznie  
-✅ **Error handling** — 401 → redirect login, 403 → toast "Brak uprawnień"
+✅ JWT Authentication + Role-Based Access Control (ADMIN, EMPLOYEE)  
+✅ Auth middleware na WSZYSTKICH endpointach menu — 45+ endpointów  
 
 ### 🔔 System Powiadomień (v1.2.0)
-✅ **Sonner Toaster** — single source of truth w `components/ui/toaster.tsx`  
-✅ **Stackowanie toastów** — `expand={true}`, `gap={8}`, `visibleToasts={5}`  
-✅ **Przycisk zamknięcia** — `closeButton` na każdym toaście  
-✅ **z-index: 99999** — toasty zawsze nad modali/dialogami  
-✅ **Rich colors** — automatyczne kolory success/error/warning/info
+✅ Sonner Toaster — stackowanie, close button, z-index: 99999  
 
 ### 🔗 Integracja Menu z Rezerwacjami
-✅ **ReservationMenuSnapshot** — zapis wybranego menu w rezerwacji  
-✅ **POST /api/reservations/:id/select-menu** — wybór menu z kalkulacją cen  
-✅ **GET /api/reservations/:id/menu** — pobranie snapshotu z price breakdown  
-✅ **PUT /api/reservations/:id/menu** — aktualizacja (zmiana liczby gości)  
-✅ **DELETE /api/reservations/:id/menu** — usunięcie menu z rezerwacji  
-✅ **Kalkulator cen** — packageCost + optionsCost = totalMenuPrice
+✅ ReservationMenuSnapshot — select/get/update/remove menu, kalkulator cen  
 
 ### 🎭 Typy Wydarzeń
-✅ **Backend API** — pełny CRUD + stats endpoint + filtrowanie isActive  
-✅ **Nowe pola modelu** — `description`, `color` (hex), `isActive`  
-✅ **Frontend** — lista z hero, statystykami, wyszukiwaniem + strona szczegółów  
-✅ **Formularze** — dialog tworzenia/edycji z color picker, dialog usuwania z walidacją  
-✅ **Design System** — accent fuchsia/pink, design tokens
+✅ Backend API (CRUD + stats) + Frontend (lista, szczegóły, formularze)  
 
 ### 💰 System Zaliczek (Deposits)
-✅ **Model Deposit** — amount, remainingAmount, paidAmount, status, paymentMethod  
-✅ **DepositPayment** — częściowe płatności  
-✅ **Backend API** — CRUD + statusy + potwierdzenia
+✅ Model Deposit + DepositPayment — CRUD + statusy + częściowe płatności  
 
 ### 🧪 Testy E2E
-✅ **45 testów** (43 pass, 2 skip) w 3 plikach spec  
-✅ **Playwright** w Docker (Chromium)  
-✅ **Regresja Bug #5-9** — 19 testów  
+✅ 45 testów (43 pass, 2 skip) — Playwright w Docker  
 📚 **Dokumentacja:** [docs/E2E_TESTING_PLAN.md](docs/E2E_TESTING_PLAN.md)
+
+---
+
+## 📋 TODO — Nadchodzące Sprinty
+
+### 🔧 Sprint 6: Quick Wins (v1.5.x) — ~1 dzień
+- [ ] US-6.1: Redirect do szczegółów po utworzeniu rezerwacji (1 linia)
+- [ ] US-6.2: Usunięcie sali z PDF potwierdzenia
+- [ ] US-6.3: Usunięcie automatycznej notatki o >6h
+- [ ] US-6.4: Blokada zmiany statusu na COMPLETED przed datą wydarzenia
+- [ ] US-6.5: Dodawanie nowego klienta w formularzu rezerwacji
+- [ ] US-6.6: Auto-notatka o inflacji (+10%) dla rezerwacji na następny rok
+
+### 💰 Sprint 7: System Rabatów (v1.6.0) — ~2-3 dni
+- [ ] US-7.1: Migracja DB — 5 nowych pól (discountType, discountValue, discountAmount, discountReason, priceBeforeDiscount)
+- [ ] US-7.2: Backend API — `PATCH/DELETE /api/reservations/:id/discount`
+- [ ] US-7.3: Frontend — UI rabatu w Financial Summary (toggle %, input, preview)
+- [ ] US-7.4: Rabat w formularzu nowej rezerwacji (Krok 6)
+
+### 📜 Sprint 8: Historia Zmian & Archiwum (v1.7.x) — ~3-5 dni
+- [ ] US-8.1: Reusable Audit Logger (`logChange()` + `diffObjects()`)
+- [ ] US-8.2: Integracja we WSZYSTKICH modułach (11 serwisów, ~35 akcji)
+- [ ] US-8.3: Activity Log API z paginacją i filtrami
+- [ ] US-8.4: Frontend `<AuditTimeline>` + widok globalny
+- [ ] US-8.5: Moduł Archiwum (strona, API, auto-archiwizacja)
+
+### 🎨 Sprint 9: Ujednolicenie UI & Mobile (v1.8.0) — ~5-7 dni
+- [ ] US-9.1: Design System — `ModuleHero`, `ModuleList`, `ResponsiveTable`, `MobileNav`
+- [ ] US-9.2: Migracja 8 modułów na shared components
+- [ ] US-9.3: Mobile-first responsive (sidebar, formularze, tabele, modale)
+
+### 🔄 Backlog (po Sprint 9)
+- [ ] Backend production mode (kompilacja TS → JS + `npm run start`)
+- [ ] Testy jednostkowe systemu menu
+- [ ] Import/Export menu (CSV/JSON)
+- [ ] Sezonowość dań
+- [ ] Zdjęcia dań (upload + gallery)
+- [ ] Statystyki popularności dań
+- [ ] Multi-language menu (PL/EN)
+- [ ] System emaili (szablony + queue + przypomnienia)
+- [ ] Widok kalendarza rezerwacji
 
 ---
 
@@ -160,11 +168,11 @@ apps/backend/src/routes/
 ├── queue.routes.ts
 ├── deposit.routes.ts
 ├── reservation-deposit.routes.ts
-├── attachment.routes.ts          # Upload/download/archiwum załączników (auth protected)
+├── attachment.routes.ts          # Upload/download/archiwum załączników
 ├── dish-category.routes.ts
 ├── dish.routes.ts
-├── menu.routes.ts              # Templates + Packages + Options (auth protected)
-├── menu-calculator.routes.ts   # Kalkulator cen (auth protected)
+├── menu.routes.ts              # Templates + Packages + Options
+├── menu-calculator.routes.ts   # Kalkulator cen
 ├── stats.routes.ts             # Statystyki dashboard
 └── README_MENU_API.md          # Pełna dokumentacja Menu API
 ```
@@ -176,15 +184,15 @@ apps/backend/src/routes/
 | Dokument | Opis |
 |----------|------|
 | [API.md](API.md) | Dokumentacja API — wszystkie endpointy |
-| [apps/backend/src/routes/README_MENU_API.md](apps/backend/src/routes/README_MENU_API.md) | **Szczegółowa dokumentacja Menu API** z przykładami |
+| [apps/backend/src/routes/README_MENU_API.md](apps/backend/src/routes/README_MENU_API.md) | Szczegółowa dokumentacja Menu API z przykładami |
 | [CHANGELOG.md](CHANGELOG.md) | Historia zmian |
 | [docs/README.md](docs/README.md) | Główny indeks dokumentacji |
-| [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md) | **Dokumentacja 6-krokowego wizarda rezerwacji** |
+| [docs/SPRINTS.md](docs/SPRINTS.md) | **Plan sprintów 6-9 (nowy!)** |
+| [docs/RESERVATION_FORM_WIZARD.md](docs/RESERVATION_FORM_WIZARD.md) | Dokumentacja 6-krokowego wizarda rezerwacji |
 | [docs/E2E_TESTING_PLAN.md](docs/E2E_TESTING_PLAN.md) | Plan testów E2E (45 testów) |
 | [docs/QUEUE.md](docs/QUEUE.md) | Dokumentacja systemu kolejki |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architektura projektu |
 | [docs/DATABASE.md](docs/DATABASE.md) | Struktura bazy danych |
-| [docs/SPRINTS.md](docs/SPRINTS.md) | Plan i postęp sprintów |
 
 ---
 
@@ -231,10 +239,11 @@ docker compose logs -f frontend --tail=50  # sprawdź logi
 ```
 
 ## Przeczytaj na start:
-1. CURRENT_STATUS.md — pełny status + TODO + struktura
+1. CURRENT_STATUS.md — pełny status + roadmap + TODO + struktura
 2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.4)
-3. apps/backend/prisma/schema.prisma — modele bazy danych
-4. docker-compose.yml — konfiguracja kontenerów
+3. docs/SPRINTS.md — plan sprintów 6-9 z user stories
+4. apps/backend/prisma/schema.prisma — modele bazy danych
+5. docker-compose.yml — konfiguracja kontenerów
 
 ## Co jest gotowe (v1.4.4):
 - ✅ Frontend w PRODUCTION MODE (build + start, NODE_ENV=production)
@@ -254,17 +263,13 @@ docker compose logs -f frontend --tail=50  # sprawdź logi
 - ✅ Testy E2E — 45 testów (43 pass, 2 skip)
 - ✅ UTF-8 encoding — polskie znaki poprawione w formularzu + szczegółach rezerwacji
 
-## Znane uwagi:
-- ⚠️ Backend kontener nadal w dev mode (`npm run dev`) — zmiana planowana osobno
-- ⚠️ SWC Minifier warning — informacyjne, zniknie w Next.js 15
-- ⚠️ Każdy restart frontend = rebuild ~30-60s (trade-off za production mode)
+## Roadmap (co dalej):
+- 🔧 Sprint 6: Quick Wins (v1.5.x) — 6 tasków, ~1 dzień
+- 💰 Sprint 7: System Rabatów (v1.6.0) — migracja DB + API + UI
+- 📜 Sprint 8: Historia Zmian & Archiwum (v1.7.x) — audit trail + archiwum
+- 🎨 Sprint 9: Ujednolicenie UI & Mobile (v1.8.0) — design system + responsive
 
-## Co wymaga dalszej pracy:
-- 🔄 Backend production mode (kompilacja TS + npm run start)
-- 🔄 Testy jednostkowe systemu menu
-- 🔄 Import/Export menu (CSV/JSON)
-
-Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych działań.
+Zacznij od przeczytania CURRENT_STATUS.md → docs/SPRINTS.md, potem zacznij od Sprint 6.
 ```
 
 ---
@@ -280,26 +285,13 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 
 ---
 
-## 📋 TODO
-
-### 🔄 Planowane
-- [ ] Backend production mode (kompilacja TS → JS + `npm run start`)
-- [ ] Testy jednostkowe systemu menu
-- [ ] Import/Export menu (CSV/JSON)
-- [ ] Sezonowość dań
-- [ ] Zdjęcia dań (upload + gallery)
-- [ ] Statystyki popularności dań
-- [ ] Multi-language menu (PL/EN)
-
----
-
 ## 📊 Postęp Ogólny
 
 - **Backend:** 99% ✅
 - **Frontend:** 99% ✅ (production mode ✅)
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 80% 🔄 (E2E: 45 testów pass)
-- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:35)
+- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:42)
 - **Deployment:** 85% 🔄 (frontend: production ✅, backend: dev 🔄)
 
 ### Postęp Modułów:
@@ -308,24 +300,19 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 - **Rezerwacje + Kolejka:** 100% ✅
 - **Formularz Rezerwacji (Wizard):** 100% ✅ (v1.4.0)
 - **Typy Wydarzeń:** 100% ✅
-- **Kategorie Dań:** 100% ✅
-- **Biblioteka Dań:** 100% ✅
-- **Szablony Menu:** 100% ✅
-- **Pakiety Menu:** 100% ✅
-- **Opcje Menu:** 100% ✅
-- **Grupy Dodatków:** 100% ✅
+- **System Menu (kompletny):** 100% ✅
 - **Integracja Menu+Rezerwacje:** 100% ✅
 - **System Zaliczek:** 100% ✅
-- **Historia Cen:** 100% ✅
-- **System Załączników:** 100% ✅ (v1.4.4) 🆕
+- **System Załączników:** 100% ✅ (v1.4.4)
 - **Auth Middleware:** 100% ✅ (v1.1.0)
-- **Whole-Venue Conflict:** 100% ✅ (v1.2.0)
-- **Toast Stacking:** 100% ✅ (v1.2.0)
-- **Karta Menu PDF:** 100% ✅ (v1.3.0)
-- **Build Fixes:** 100% ✅ (v1.4.1)
+- **Testy E2E:** 100% ✅ (45 testów)
 - **UTF-8 Encoding Fix:** 100% ✅ (v1.4.2 + v1.4.4)
 - **Production Mode:** 100% ✅ (v1.4.3)
-- **Testy E2E:** 100% ✅ (45 testów)
+- **System Rabatów:** 0% 🔳 (Sprint 7)
+- **Historia Zmian (Audit):** 0% 🔳 (Sprint 8)
+- **Moduł Archiwum:** 0% 🔳 (Sprint 8)
+- **Ujednolicenie UI:** 0% 🔳 (Sprint 9)
+- **Responsywność Mobile:** 0% 🔳 (Sprint 9)
 
 ---
 
@@ -359,7 +346,7 @@ docker compose up -d
 docker compose logs -f frontend --tail=50
 docker compose logs -f backend --tail=50
 
-# Migracje
+# Migracje (wymagane w Sprint 7 i 8!)
 docker compose exec backend npm run prisma:migrate:deploy
 
 # Baza danych
@@ -376,31 +363,23 @@ docker compose exec postgres psql -U rezerwacje -d rezerwacje
 - `Client` — klienci
 - `EventType` — typy wydarzeń (z color, description)
 - `Reservation` — rezerwacje (z kolejką, statusami, isWholeVenue)
-- `ReservationHistory` — audit trail
+- `ReservationHistory` — audit trail rezerwacji
 
 ### Deposits
 - `Deposit` — zaliczki z statusem i terminami
 - `DepositPayment` — częściowe płatności
 
 ### Menu System
-- `DishCategory` — kategorie dań (slug, icon, color)
-- `Dish` — dania (allergens, categoryId)
-- `MenuTemplate` — szablony menu (eventTypeId, variant, validFrom/To)
-- `MenuPackage` — pakiety cenowe (pricePerAdult/Child/Toddler)
-- `MenuOption` — opcje dodatkowe (priceType: PER_PERSON/FLAT)
-- `MenuPackageOption` — junction: pakiet ↔ opcja
-- `PackageCategorySettings` — konfiguracja kategorii w pakietach
-- `AddonGroup` — grupy dodatków
-- `AddonGroupDish` — junction: grupa ↔ danie
-- `ReservationMenuSnapshot` — snapshot menu w rezerwacji (menuData JSON)
-- `MenuPriceHistory` — historia zmian cen
+- `DishCategory`, `Dish`, `MenuTemplate`, `MenuPackage`, `MenuOption`
+- `MenuPackageOption`, `PackageCategorySettings`, `AddonGroup`, `AddonGroupDish`
+- `ReservationMenuSnapshot`, `MenuPriceHistory`
 
 ### Attachments
 - `Attachment` — załączniki (entityType, entityId, category, file metadata, soft-delete)
 
-### Other
-- `ActivityLog` — logi aktywności
+### Audit
+- `ActivityLog` — logi aktywności (action, entityType, entityId, details JSON)
 
 ---
 
-**Status:** Projekt w wersji 1.4.4. Frontend w trybie produkcyjnym (build + start). Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, systemem załączników, detekcją konfliktu "Cała Sala", testami E2E, poprawionym kodowaniem UTF-8. Gotowy do dalszego rozwoju.
+**Status:** Projekt w wersji 1.4.4. Frontend w trybie produkcyjnym. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, systemem załączników. Zaplanowane Sprinty 6-9 (Quick Wins → Rabaty → Audit Trail → UI/Mobile). Gotowy do Sprint 6.
