@@ -1,5 +1,32 @@
 # 📝 Changelog
 
+## [1.4.4] - 2026-02-15
+
+### 🐛 Bugfixy
+- **Fix kodowania UTF-8 w szczegółach rezerwacji** — plik `reservations/[id]/page.tsx` zawierał ~12 Unicode escape sequences. Zamienione na poprawne znaki UTF-8:
+  - `Powr\u00f3t do listy` → Powrót do listy
+  - `Szczeg\u00f3\u0142y rezerwacji` → Szczegóły rezerwacji
+  - `Imi\u0119 i nazwisko` → Imię i nazwisko
+  - `B\u0142\u0105d` → Błąd
+  - `Za\u0142\u0105czniki rezerwacji` → Załączniki rezerwacji
+  - `Anuluj rezerwacj\u0119` → Anuluj rezerwację
+  - i inne (został, udało się, pobrać, załadować, anulować, powód)
+- **Fix API Error 500: `/api/attachments`** — `attachment.routes.ts` wywoływał `attachmentController.list()`, ale kontroler eksportuje tę metodę jako `getByEntity()`. Zmieniono wywołanie na `.getByEntity()`
+  - Eliminacja błędu: `import_attachment.default.list is not a function`
+  - Załączniki na stronie szczegółów rezerwacji teraz ładują się poprawnie
+
+### 📦 Zmienione pliki
+- `apps/frontend/app/dashboard/reservations/[id]/page.tsx` — 12 zamian encoding
+- `apps/backend/src/routes/attachment.routes.ts` — fix nazwy metody `.list()` → `.getByEntity()`
+
+### 🚀 Deployment
+Komenda wdrożenia:
+```bash
+cd /home/kamil/rezerwacje && git pull origin main && docker compose restart backend frontend
+```
+
+---
+
 ## [1.4.3] - 2026-02-15
 
 ### 🚀 Ulepszenia
