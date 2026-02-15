@@ -87,7 +87,7 @@ export default function EditPackagePage() {
       {/* Form */}
       <PackageForm
         menuTemplateId={pkg.menuTemplateId}
-        initialData={pkg}
+        initialData={pkg as any}
         onSuccess={() => {
           router.push(
             `/dashboard/menu/packages?templateId=${pkg.menuTemplateId}`
