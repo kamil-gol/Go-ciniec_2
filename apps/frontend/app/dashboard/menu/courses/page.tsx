@@ -348,7 +348,7 @@ export default function CoursesPage() {
                               {course.options.slice(0, 3).map((option) => (
                                 <div key={option.id} className="flex items-center gap-2 text-sm">
                                   <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                  <span className="line-clamp-1">{option.dish.name}</span>
+                                  <span className="line-clamp-1">{option.dish?.name ?? 'Nieznane danie'}</span>
                                 </div>
                               ))}
                               {course.options.length > 3 && (
