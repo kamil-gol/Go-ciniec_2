@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { 
-  ArrowLeft, Edit, Trash2, CheckCircle2, XCircle, Clock, 
-  Calendar, Users, Building2, User, Mail, Phone,
-  FileText, Download, Sparkles
+  ArrowLeft, Trash2, Clock, 
+  Calendar, Users, User, Mail, Phone,
+  Download, CheckCircle2, XCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useReservation, useCancelReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useToast } from '@/hooks/use-toast'
@@ -17,37 +17,13 @@ import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
-
-const statusConfig = {
-  PENDING: {
-    label: 'Oczekująca',
-    color: 'bg-orange-500',
-    textColor: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    icon: Clock,
-  },
-  CONFIRMED: {
-    label: 'Potwierdzona',
-    color: 'bg-green-500',
-    textColor: 'text-green-600',
-    bgColor: 'bg-green-50 dark:bg-green-950/30',
-    icon: CheckCircle2,
-  },
-  CANCELLED: {
-    label: 'Anulowana',
-    color: 'bg-red-500',
-    textColor: 'text-red-600',
-    bgColor: 'bg-red-50 dark:bg-red-950/30',
-    icon: XCircle,
-  },
-  COMPLETED: {
-    label: 'Zakończona',
-    color: 'bg-blue-500',
-    textColor: 'text-blue-600',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    icon: CheckCircle2,
-  },
-}
+import {
+  StatusChanger,
+  EditableHallCard,
+  EditableEventCard,
+  EditableGuestsCard,
+  EditableNotesCard,
+} from '@/components/reservations/editable'
 
 export default function ReservationDetailsPage() {
   const params = useParams()
@@ -57,8 +33,12 @@ export default function ReservationDetailsPage() {
 
   const reservationId = params.id as string
 
-  const { data: reservation, isLoading, isError } = useReservation(reservationId)
+  const { data: reservation, isLoading, isError, refetch } = useReservation(reservationId)
   const cancelMutation = useCancelReservation()
+
+  const handleRefetch = () => {
+    refetch()
+  }
 
   const handleDownloadPDF = async () => {
     if (!reservation) return
@@ -130,8 +110,6 @@ export default function ReservationDetailsPage() {
     )
   }
 
-  const status = statusConfig[reservation.status as keyof typeof statusConfig]
-  const StatusIcon = status?.icon || Clock
   const eventDate = reservation.startDateTime 
     ? new Date(reservation.startDateTime) 
     : reservation.date 
@@ -139,6 +117,8 @@ export default function ReservationDetailsPage() {
     : null
 
   const isCancellable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
+  const isEditable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
+  const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -167,12 +147,12 @@ export default function ReservationDetailsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {status && (
-                    <Badge className={`${status.color} text-white border-0 px-3 py-1`}>
-                      <StatusIcon className="h-3 w-3 mr-1" />
-                      {status.label}
-                    </Badge>
-                  )}
+                  {/* Inline StatusChanger replaces static badge */}
+                  <StatusChanger
+                    reservationId={reservation.id}
+                    currentStatus={reservation.status}
+                    onStatusChanged={handleRefetch}
+                  />
                   {eventDate && (
                     <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                       <Calendar className="h-3 w-3 mr-1" />
@@ -204,7 +184,7 @@ export default function ReservationDetailsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Client Info */}
+            {/* Client Info (read-only) */}
             <Card className="border-0 shadow-xl">
               <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
                 <div className="flex items-center gap-3 mb-6">
@@ -245,69 +225,33 @@ export default function ReservationDetailsPage() {
               </div>
             </Card>
 
-            {/* Hall Info */}
-            <Card className="border-0 shadow-xl">
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-                    <Building2 className="h-5 w-5 text-white" />
-                  </div>
-                  Sala
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nazwa sali</p>
-                    <p className="text-2xl font-bold">{reservation.hall?.name}</p>
-                  </div>
-                  {reservation.hall?.capacity && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>Pojemność: {reservation.hall.capacity} osób</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Hall Info — Editable with availability check */}
+            <EditableHallCard
+              reservationId={reservation.id}
+              hallId={reservation.hall?.id || ''}
+              hallName={reservation.hall?.name || 'Brak'}
+              hallCapacity={reservation.hall?.capacity || null}
+              startDateTime={reservation.startDateTime}
+              endDateTime={reservation.endDateTime}
+              totalGuests={totalGuests}
+              onUpdated={handleRefetch}
+            />
 
-            {/* Event Details */}
-            <Card className="border-0 shadow-xl">
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
-                    <Sparkles className="h-5 w-5 text-white" />
-                  </div>
-                  Szczegóły wydarzenia
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Typ wydarzenia</p>
-                    <p className="text-lg font-semibold">{reservation.eventType?.name}</p>
-                  </div>
-                  {eventDate && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Data wydarzenia</p>
-                      <p className="text-lg font-semibold">
-                        {format(eventDate, 'EEEE, dd MMMM yyyy', { locale: pl })}
-                      </p>
-                    </div>
-                  )}
-                  {reservation.startDateTime && reservation.endDateTime && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Godziny</p>
-                      <p className="text-lg font-semibold">
-                        {format(new Date(reservation.startDateTime), 'HH:mm')} - {format(new Date(reservation.endDateTime), 'HH:mm')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Event Details — Editable with DatePicker/TimePicker */}
+            <EditableEventCard
+              reservationId={reservation.id}
+              eventTypeId={reservation.eventType?.id || ''}
+              eventTypeName={reservation.eventType?.name || 'Brak'}
+              startDateTime={reservation.startDateTime}
+              endDateTime={reservation.endDateTime}
+              customEventType={reservation.customEventType}
+              birthdayAge={reservation.birthdayAge}
+              anniversaryYear={reservation.anniversaryYear}
+              anniversaryOccasion={reservation.anniversaryOccasion}
+              onUpdated={handleRefetch}
+            />
 
-            {/* Menu Section */}
+            {/* Menu Section (already interactive) */}
             {reservation.eventType?.id && eventDate && (
               <ReservationMenuSection
                 reservationId={reservation.id}
@@ -319,71 +263,29 @@ export default function ReservationDetailsPage() {
               />
             )}
 
-            {/* Notes */}
-            {reservation.notes && (
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg">
-                      <FileText className="h-5 w-5 text-white" />
-                    </div>
-                    Notatki
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <p className="text-muted-foreground leading-relaxed">{reservation.notes}</p>
-                </CardContent>
-              </Card>
-            )}
+            {/* Notes — Editable (always visible) */}
+            <EditableNotesCard
+              reservationId={reservation.id}
+              notes={reservation.notes}
+              confirmationDeadline={reservation.confirmationDeadline}
+              startDateTime={reservation.startDateTime}
+              onUpdated={handleRefetch}
+            />
           </div>
 
-          {/* Right Column - Guests, Financial Summary, Quick Actions */}
+          {/* Right Column */}
           <div className="space-y-6">
-            {/* Guests Breakdown */}
-            <Card className="border-0 shadow-xl overflow-hidden">
-              <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold">Goście</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Dorośli</p>
-                      <p className="text-2xl font-bold">{reservation.adults || 0}</p>
-                    </div>
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Dzieci</p>
-                      <p className="text-2xl font-bold">{reservation.children || 0}</p>
-                    </div>
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Maluchy</p>
-                      <p className="text-2xl font-bold">{reservation.toddlers || 0}</p>
-                    </div>
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border-2 border-purple-200 dark:border-purple-800">
-                    <div>
-                      <p className="text-sm font-semibold">Razem</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        {(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)}
-                      </p>
-                    </div>
-                    <Users className="h-6 w-6 text-purple-600" />
-                  </div>
-                </div>
-              </div>
-            </Card>
+            {/* Guests — Editable with capacity validation */}
+            <EditableGuestsCard
+              reservationId={reservation.id}
+              adults={reservation.adults || 0}
+              children={reservation.children || 0}
+              toddlers={reservation.toddlers || 0}
+              hallCapacity={reservation.hall?.capacity || 0}
+              onUpdated={handleRefetch}
+            />
 
-            {/* UNIFIED FINANCIAL SUMMARY — now with extra hours */}
+            {/* UNIFIED FINANCIAL SUMMARY (already interactive) */}
             <ReservationFinancialSummary
               reservationId={reservation.id}
               adults={reservation.adults || 0}
@@ -399,30 +301,31 @@ export default function ReservationDetailsPage() {
 
             {/* Quick Actions */}
             <Card className="border-0 shadow-xl">
-              <CardHeader className="border-b">
-                <CardTitle className="text-lg">Szybkie akcje</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start" 
-                  size="lg"
-                  onClick={() => router.push(`/dashboard/reservations?edit=${reservation.id}`)}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edytuj rezerwację
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-red-600 hover:text-red-700" 
-                  size="lg"
-                  disabled={!isCancellable || cancelMutation.isPending}
-                  onClick={handleCancel}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
-                </Button>
-              </CardContent>
+              <div className="p-6">
+                <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    size="lg"
+                    onClick={handleDownloadPDF}
+                    disabled={downloading}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-red-600 hover:text-red-700" 
+                    size="lg"
+                    disabled={!isCancellable || cancelMutation.isPending}
+                    onClick={handleCancel}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
+                  </Button>
+                </div>
+              </div>
             </Card>
           </div>
         </div>

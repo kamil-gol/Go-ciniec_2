@@ -8,12 +8,10 @@ import { useReservations } from '@/hooks/use-reservations'
 import { formatDate, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
 import {
-  Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
+  Eye, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
   Phone, Mail, CheckCircle2, AlertTriangle
 } from 'lucide-react'
-import { ReservationDetailsModal } from './reservation-details-modal'
-import { EditReservationModal } from './edit-reservation-modal'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import { format, parseISO, isSameDay } from 'date-fns'
@@ -59,7 +57,7 @@ function getGuestBreakdown(reservation: any): {
   return { adults, children, toddlers, total }
 }
 
-// ═══ Deposit Badge Helper ═══
+// Deposit Badge Helper
 function DepositBadge({ deposits }: { deposits: Deposit[] }) {
   const active = deposits.filter(d => d.status !== 'CANCELLED')
   if (active.length === 0) return null
@@ -87,7 +85,6 @@ function DepositBadge({ deposits }: { deposits: Deposit[] }) {
     )
   }
 
-  // Pending
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
       <Clock className="h-3 w-3" />
@@ -99,8 +96,6 @@ function DepositBadge({ deposits }: { deposits: Deposit[] }) {
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
-  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
-  const [editingReservationId, setEditingReservationId] = useState<string | null>(null)
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
 
   const { data, isLoading, error, refetch } = useReservations({
@@ -128,9 +123,6 @@ export function ReservationsList() {
     { value: 'COMPLETED', label: 'Zakończone' },
     { value: 'CANCELLED', label: 'Anulowane' },
   ]
-
-  const handleEdit = (reservationId: string) => setEditingReservationId(reservationId)
-  const handleEditSuccess = () => refetch()
 
   const handleGeneratePDF = async (reservationId: string) => {
     try {
@@ -380,20 +372,10 @@ export function ReservationsList() {
 
                             <div className="flex gap-1">
                               <Link href={`/dashboard/reservations/${reservation.id}`}>
-                                <Button size="sm" variant="ghost" title="Zobacz szczegóły" className="rounded-lg">
+                                <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" className="rounded-lg">
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </Link>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEdit(reservation.id)}
-                                title="Edytuj rezerwację"
-                                disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-                                className="rounded-lg"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -465,25 +447,6 @@ export function ReservationsList() {
             </Button>
           </div>
         </div>
-      )}
-
-      {/* Details Modal */}
-      {selectedReservationId && (
-        <ReservationDetailsModal
-          reservationId={selectedReservationId}
-          open={!!selectedReservationId}
-          onClose={() => setSelectedReservationId(null)}
-        />
-      )}
-
-      {/* Edit Modal */}
-      {editingReservationId && (
-        <EditReservationModal
-          reservationId={editingReservationId}
-          open={!!editingReservationId}
-          onClose={() => setEditingReservationId(null)}
-          onSuccess={handleEditSuccess}
-        />
       )}
     </div>
   )
