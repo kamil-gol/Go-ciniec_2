@@ -3,15 +3,20 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 15.02.2026, 13:15 CET  
+**Ostatnia aktualizacja:** 15.02.2026, 13:35 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.4.3 (Frontend production mode: build + start)
+**Wersja:** 1.4.4 (Fix encoding + attachments API)
 
 ---
 
 ## 📦 Co Działa
 
-### 🚀 Production Mode (v1.4.3) 🆕
+### 🐛 Reservation Detail Fixes (v1.4.4) 🆕
+✅ **Fix kodowania UTF-8 w szczegółach rezerwacji** — zamiana 12 Unicode escape sequences na poprawne polskie znaki w `reservations/[id]/page.tsx`  
+✅ **Fix API Error 500 `/api/attachments`** — `attachment.routes.ts` wołał `.list()` zamiast `.getByEntity()` (metoda nie istniała w kontrolerze)  
+✅ **Załączniki na stronie rezerwacji** — ładują się poprawnie bez błędów 500  
+
+### 🚀 Production Mode (v1.4.3)
 ✅ **Frontend w trybie produkcyjnym** — `npm run build && npm run start` zamiast `npm run dev`  
 ✅ **NODE_ENV=production** — domyślna wartość w docker-compose.yml  
 ✅ **Szybsze ładowanie stron** — pre-rendered HTML, statyczna optymalizacja  
@@ -72,6 +77,13 @@
 ✅ **Historia Cen (MenuPriceHistory)** — automatyczne śledzenie zmian cen  
 ✅ **Karta Menu PDF** — generowanie PDF z pełnymi danymi dań (v1.3.0)  
 ✅ **Premium UI/UX Components** — Switch, AlertDialog, DishDialog, loading states
+
+### 📎 System Załączników (Attachments)
+✅ **Upload plików** — multipart/form-data z kategoriami (RODO, Umowa, Faktura, Zdjęcie, Korespondencja, Inne)  
+✅ **Panel załączników** — filtrowanie po kategorii, archiwum, cross-reference RODO z klienta  
+✅ **Batch check RODO/Contract** — masowe sprawdzanie statusu dokumentów  
+✅ **Download/Archive/Delete** — pełny CRUD z soft-delete  
+✅ **Backend API** — `GET/POST/PATCH/DELETE /api/attachments` + `/check` + `/batch-check-rodo` + `/batch-check-contract`  
 
 ### 🔒 Bezpieczeństwo & Auth (v1.1.0)
 ✅ **JWT Authentication** — Bearer token, auto-refresh, secure fallback  
@@ -148,10 +160,12 @@ apps/backend/src/routes/
 ├── queue.routes.ts
 ├── deposit.routes.ts
 ├── reservation-deposit.routes.ts
+├── attachment.routes.ts          # Upload/download/archiwum załączników (auth protected)
 ├── dish-category.routes.ts
 ├── dish.routes.ts
 ├── menu.routes.ts              # Templates + Packages + Options (auth protected)
 ├── menu-calculator.routes.ts   # Kalkulator cen (auth protected)
+├── stats.routes.ts             # Statystyki dashboard
 └── README_MENU_API.md          # Pełna dokumentacja Menu API
 ```
 
@@ -218,11 +232,11 @@ docker compose logs -f frontend --tail=50  # sprawdź logi
 
 ## Przeczytaj na start:
 1. CURRENT_STATUS.md — pełny status + TODO + struktura
-2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.3)
+2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.4)
 3. apps/backend/prisma/schema.prisma — modele bazy danych
 4. docker-compose.yml — konfiguracja kontenerów
 
-## Co jest gotowe (v1.4.3):
+## Co jest gotowe (v1.4.4):
 - ✅ Frontend w PRODUCTION MODE (build + start, NODE_ENV=production)
 - ✅ Rezerwacje + kolejka + drag&drop + auto-cancel + row-level locking
 - ✅ Formularz rezerwacji — 6-krokowy Wizard UI (Stepper, Combobox, DatePicker, TimePicker)
@@ -233,11 +247,12 @@ docker compose logs -f frontend --tail=50  # sprawdź logi
 - ✅ Integracja Menu z Rezerwacjami (snapshot + kalkulator cen)
 - ✅ Karta Menu PDF (generowanie + pobieranie)
 - ✅ System zaliczek (Deposits + partial payments)
+- ✅ System załączników (upload, kategorie, RODO cross-ref, batch check)
 - ✅ Auth middleware na WSZYSTKICH endpointach (JWT + RBAC)
 - ✅ Detekcja konfliktu "Cała Sala" (isWholeVenue)
 - ✅ Build 29/29 stron bez błędów (NODE_ENV=production)
 - ✅ Testy E2E — 45 testów (43 pass, 2 skip)
-- ✅ UTF-8 encoding — polskie znaki poprawione w formularzu rezerwacji
+- ✅ UTF-8 encoding — polskie znaki poprawione w formularzu + szczegółach rezerwacji
 
 ## Znane uwagi:
 - ⚠️ Backend kontener nadal w dev mode (`npm run dev`) — zmiana planowana osobno
@@ -284,7 +299,7 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 - **Frontend:** 99% ✅ (production mode ✅)
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 80% 🔄 (E2E: 45 testów pass)
-- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:15)
+- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:35)
 - **Deployment:** 85% 🔄 (frontend: production ✅, backend: dev 🔄)
 
 ### Postęp Modułów:
@@ -302,13 +317,14 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 - **Integracja Menu+Rezerwacje:** 100% ✅
 - **System Zaliczek:** 100% ✅
 - **Historia Cen:** 100% ✅
+- **System Załączników:** 100% ✅ (v1.4.4) 🆕
 - **Auth Middleware:** 100% ✅ (v1.1.0)
 - **Whole-Venue Conflict:** 100% ✅ (v1.2.0)
 - **Toast Stacking:** 100% ✅ (v1.2.0)
 - **Karta Menu PDF:** 100% ✅ (v1.3.0)
 - **Build Fixes:** 100% ✅ (v1.4.1)
-- **UTF-8 Encoding Fix:** 100% ✅ (v1.4.2)
-- **Production Mode:** 100% ✅ (v1.4.3) 🆕
+- **UTF-8 Encoding Fix:** 100% ✅ (v1.4.2 + v1.4.4)
+- **Production Mode:** 100% ✅ (v1.4.3)
 - **Testy E2E:** 100% ✅ (45 testów)
 
 ---
@@ -379,9 +395,12 @@ docker compose exec postgres psql -U rezerwacje -d rezerwacje
 - `ReservationMenuSnapshot` — snapshot menu w rezerwacji (menuData JSON)
 - `MenuPriceHistory` — historia zmian cen
 
+### Attachments
+- `Attachment` — załączniki (entityType, entityId, category, file metadata, soft-delete)
+
 ### Other
 - `ActivityLog` — logi aktywności
 
 ---
 
-**Status:** Projekt w wersji 1.4.3. Frontend w trybie produkcyjnym (build + start). Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E, poprawionym kodowaniem UTF-8. Gotowy do dalszego rozwoju.
+**Status:** Projekt w wersji 1.4.4. Frontend w trybie produkcyjnym (build + start). Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, systemem załączników, detekcją konfliktu "Cała Sala", testami E2E, poprawionym kodowaniem UTF-8. Gotowy do dalszego rozwoju.
