@@ -38,7 +38,7 @@ router.get(
   authMiddleware,
   requireStaff,
   asyncHandler(async (req, res) => {
-    await attachmentController.list(req, res);
+    await attachmentController.getByEntity(req, res);
   })
 );
 
