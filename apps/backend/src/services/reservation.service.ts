@@ -652,6 +652,18 @@ export class ReservationService {
 
     this.validateStatusTransition(existingReservation.status, data.status);
 
+    // US-6.4: Block COMPLETED status before event date
+    if (data.status === ReservationStatus.COMPLETED) {
+      const eventDate = existingReservation.startDateTime
+        ? new Date(existingReservation.startDateTime)
+        : existingReservation.date
+          ? new Date(existingReservation.date)
+          : null;
+      if (eventDate && eventDate > new Date()) {
+        throw new Error('Nie mo\u017cna zako\u0144czy\u0107 rezerwacji przed dat\u0105 wydarzenia');
+      }
+    }
+
     if (data.status === ReservationStatus.CANCELLED) {
       const reservation = await prisma.$transaction(async (tx) => {
         const updatedReservation = await tx.reservation.update({
