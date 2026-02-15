@@ -9,6 +9,8 @@ interface LoadingStateProps {
   message?: string
   /** Number of skeleton rows to render */
   rows?: number
+  /** Alias for rows — number of skeleton items to render */
+  count?: number
   /** Additional className */
   className?: string
 }
@@ -23,13 +25,16 @@ interface LoadingStateProps {
 export function LoadingState({
   variant = 'spinner',
   message = 'Ładowanie...',
-  rows = 3,
+  rows,
+  count,
   className,
 }: LoadingStateProps) {
+  const skeletonCount = rows ?? count ?? 3
+
   if (variant === 'skeleton') {
     return (
       <div className={cn('space-y-4', className)}>
-        {Array.from({ length: rows }).map((_, i) => (
+        {Array.from({ length: skeletonCount }).map((_, i) => (
           <div key={i} className="animate-skeleton space-y-3">
             <div className="flex items-center gap-4 p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800/50">
               {/* Avatar skeleton */}
