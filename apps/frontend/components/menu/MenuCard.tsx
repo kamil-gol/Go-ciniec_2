@@ -27,6 +27,7 @@ interface MenuCardProps {
 
 export function MenuCard({ template, isSelected, onSelect, className }: MenuCardProps) {
   const isActive = template.isActive;
+  const packageCount = template.packages?.length ?? (template as any)._count?.packages;
 
   return (
     <motion.div
@@ -138,13 +139,13 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
           )}
 
           {/* Package Count */}
-          {template._count?.packages !== undefined && (
+          {packageCount !== undefined && (
             <div className="pt-1">
               <Badge className={cn(
                 'border-0 shadow-none',
                 accent.badge, accent.badgeText
               )}>
-                {template._count.packages} {template._count.packages === 1 ? 'pakiet' : 'pakietów'}
+                {packageCount} {packageCount === 1 ? 'pakiet' : 'pakiet\u00f3w'}
               </Badge>
             </div>
           )}
@@ -156,7 +157,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
                 'text-sm font-semibold flex items-center gap-2',
                 accent.text, accent.textDark
               )}>
-                {'Kliknij aby wybrać →'}
+                {'Kliknij aby wybra\u0107 \u2192'}
               </div>
             </div>
           )}
