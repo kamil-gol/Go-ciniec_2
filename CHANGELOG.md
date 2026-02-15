@@ -1,5 +1,42 @@
 # 📝 Changelog
 
+## [1.4.2] - 2026-02-15
+
+### 🐛 Bugfixy
+- **Fix kodowania UTF-8 w formularzu rezerwacji** — plik `create-reservation-form.tsx` zawierał ~100+ Unicode escape sequences (`\uXXXX`) zamiast poprawnych polskich znaków. Wszystkie zamienione na bezpośrednie znaki UTF-8.
+  - `\u0105` → ą (np. "Wyszukaj istniejącego klienta")
+  - `\u0119` → ę (np. "Wybierz salę")
+  - `\u015b` → ś (np. "Goście", "Dorośli")
+  - `\u0142` → ł (np. "dorosłego", "całkowita")
+  - `\u0144` → ń (np. "Zakończenie")
+  - `\u00f3` → ó (np. "Utwórz")
+  - `\u0107` → ć (np. "dostępność")
+  - `\u0141` → Ł (np. "Łącznie")
+  - `\u017c` → ż (np. "każdej")
+  - `\u2014` → — (em dash), `\u00d7` → × (multiplication), `\u2013` → – (en dash)
+  - `\u2022` → • (bullet), `\u2550` → ═ (box drawing), `\ud83d\udca1` → 💡 (emoji)
+
+### 📦 Zmienione pliki
+- `apps/frontend/components/reservations/create-reservation-form.tsx` — zamiana ~100+ escape sequences na UTF-8
+
+### 🔍 Przeskanowane pliki (OK — bez problemów)
+- `ReservationFinancialSummary.tsx` ✅
+- `editable/EditableEventCard.tsx` ✅
+- `editable/EditableCard.tsx` ✅
+- `editable/EditableGuestsCard.tsx` ✅
+- `editable/EditableHallCard.tsx` ✅
+- `editable/EditableNotesCard.tsx` ✅
+- `editable/StatusChanger.tsx` ✅
+- `reservations-list.tsx` ✅
+
+### 🚀 Deployment
+Komenda wdrożenia:
+```bash
+cd /home/kamil/rezerwacje && git pull origin main && docker compose exec frontend npm run build && docker compose restart frontend
+```
+
+---
+
 ## [1.4.1] - 2026-02-15
 
 ### 🐛 Bugfixy

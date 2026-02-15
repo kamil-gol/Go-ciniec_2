@@ -3,15 +3,20 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 15.02.2026, 12:20 CET  
+**Ostatnia aktualizacja:** 15.02.2026, 13:10 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.4.1 (Build Fixes: NODE_ENV, menu-selection import, not-found.tsx)
+**Wersja:** 1.4.2 (UTF-8 encoding fix: polskie znaki w formularzu rezerwacji)
 
 ---
 
 ## 📦 Co Działa
 
-### 🔧 Build Fixes (v1.4.1) 🆕
+### 🔤 UTF-8 Encoding Fix (v1.4.2) 🆕
+✅ **Fix kodowania polskich znaków** — zamiana ~100+ Unicode escape sequences (`\uXXXX`) na poprawne znaki UTF-8 w `create-reservation-form.tsx`  
+✅ **Skan całego systemu** — pozostałe pliki (8 komponentów) sprawdzone i OK  
+✅ **Znaki:** ą, ę, ó, ś, ź, ż, ł, ń, ć + symbole: —, ×, –, •, ═, 💡  
+
+### 🔧 Build Fixes (v1.4.1)
 ✅ **Fix `menu-selection.ts`** — import `./client` (nieistniejący) → `@/lib/api-client`  
 ✅ **Fix NODE_ENV dual-bundle** — wymuszenie `NODE_ENV=production` w build script (eliminacja podwójnego React runtime)  
 ✅ **Fix Pages Router 404** — dodanie `app/not-found.tsx` (App Router custom 404)  
@@ -194,7 +199,7 @@ mcp_tool_github_mcp_direct_get_file_contents → repo: kamil-gol/Go-ciniec_2
 
 # Edycja plików:
 mcp_tool_github_mcp_direct_create_or_update_file → zapisuje bezpośrednio do repo
-mcp_tool_github_mcp_direct_push_files → wiele plików w jednym ucommit
+mcp_tool_github_mcp_direct_push_files → wiele plików w jednym commit
 
 # Po zmianach DAJ MI komendy:
 cd /home/kamil/rezerwacje && git pull origin main
@@ -205,11 +210,11 @@ docker compose logs -f backend --tail=50  # sprawdź logi
 
 ## Przeczytaj na start:
 1. CURRENT_STATUS.md — pełny status + TODO + struktura
-2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.1)
+2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.2)
 3. apps/backend/prisma/schema.prisma — modele bazy danych
 4. docker-compose.yml — konfiguracja kontenerów
 
-## Co jest gotowe (v1.4.1):
+## Co jest gotowe (v1.4.2):
 - ✅ Rezerwacje + kolejka + drag&drop + auto-cancel + row-level locking
 - ✅ Formularz rezerwacji — 6-krokowy Wizard UI (Stepper, Combobox, DatePicker, TimePicker)
 - ✅ Flow: Szablon → Pakiet → Ceny w formularzu rezerwacji
@@ -223,6 +228,7 @@ docker compose logs -f backend --tail=50  # sprawdź logi
 - ✅ Detekcja konfliktu "Cała Sala" (isWholeVenue)
 - ✅ Build 29/29 stron bez błędów (NODE_ENV=production)
 - ✅ Testy E2E — 45 testów (43 pass, 2 skip)
+- ✅ UTF-8 encoding — polskie znaki poprawione w formularzu rezerwacji
 
 ## Znane uwagi:
 - ⚠️ Frontend kontener serwuje przez `npm run dev` — docelowo zmienić na `npm run start`
@@ -267,7 +273,7 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 - **Frontend:** 98% ✅
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 80% 🔄 (E2E: 45 testów pass)
-- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 12:20)
+- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:10)
 - **Deployment:** 70% 🔄
 
 ### Postęp Modułów:
@@ -289,7 +295,8 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 - **Whole-Venue Conflict:** 100% ✅ (v1.2.0)
 - **Toast Stacking:** 100% ✅ (v1.2.0)
 - **Karta Menu PDF:** 100% ✅ (v1.3.0)
-- **Build Fixes:** 100% ✅ (v1.4.1) 🆕
+- **Build Fixes:** 100% ✅ (v1.4.1)
+- **UTF-8 Encoding Fix:** 100% ✅ (v1.4.2) 🆕
 - **Testy E2E:** 100% ✅ (45 testów)
 
 ---
@@ -362,4 +369,4 @@ docker compose exec postgres psql -U rezerwacje -d rezerwacje
 
 ---
 
-**Status:** Projekt w wersji 1.4.1. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E, naprawionym buildem. Gotowy do dalszego rozwoju.
+**Status:** Projekt w wersji 1.4.2. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E, naprawionym buildem, poprawionym kodowaniem UTF-8. Gotowy do dalszego rozwoju.
