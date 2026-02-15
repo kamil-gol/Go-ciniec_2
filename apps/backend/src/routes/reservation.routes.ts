@@ -118,9 +118,9 @@ router.patch(
   })
 );
 
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MENU SELECTION ENDPOINTS
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * @route   POST /api/reservations/:id/menu
@@ -182,9 +182,9 @@ router.delete(
   })
 );
 
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💰 DISCOUNT ENDPOINTS (Sprint 7)
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * @route   PATCH /api/reservations/:id/discount
@@ -216,7 +216,41 @@ router.delete(
   })
 );
 
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🗄️ ARCHIVE ENDPOINTS (Sprint 8)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * @route   POST /api/reservations/:id/archive
+ * @desc    Archive reservation (set archivedAt timestamp)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post(
+  '/:id/archive',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.archiveReservation(req, res);
+  })
+);
+
+/**
+ * @route   POST /api/reservations/:id/unarchive
+ * @desc    Restore reservation from archive (remove archivedAt timestamp)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post(
+  '/:id/unarchive',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.unarchiveReservation(req, res);
+  })
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * @route   DELETE /api/reservations/:id
