@@ -10,7 +10,7 @@ import { ReservationStatus } from '@/types'
 import {
   Eye, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
-  Phone, Mail, CheckCircle2, AlertTriangle
+  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
@@ -22,6 +22,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 import { LoadingState } from '@/components/shared'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit } from '@/lib/api/deposits'
+import { batchCheckContract } from '@/lib/api/attachments'
 
 const accent = moduleAccents.reservations
 
@@ -93,10 +94,32 @@ function DepositBadge({ deposits }: { deposits: Deposit[] }) {
   )
 }
 
+// Contract Badge Helper
+function ContractBadge({ hasContract }: { hasContract: boolean | undefined }) {
+  if (hasContract === undefined) return null
+
+  if (hasContract) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+        <FileCheck className="h-3 w-3" />
+        Umowa
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700">
+      <FileX className="h-3 w-3" />
+      Brak umowy
+    </span>
+  )
+}
+
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
+  const [contractMap, setContractMap] = useState<Record<string, boolean>>({})
 
   const { data, isLoading, error, refetch } = useReservations({
     page,
@@ -115,6 +138,18 @@ export function ReservationsList() {
       setDepositMap(map)
     }).catch(console.error)
   }, [])
+
+  // Fetch contract status for visible reservations
+  const allReservations = data?.data || []
+  const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
+
+  useEffect(() => {
+    if (reservations.length === 0) return
+    const ids = reservations.map((r: any) => r.id)
+    batchCheckContract(ids)
+      .then(setContractMap)
+      .catch(console.error)
+  }, [data]) // re-run when page data changes
 
   const statusOptions = [
     { value: 'ALL', label: 'Wszystkie statusy' },
@@ -171,8 +206,6 @@ export function ReservationsList() {
     )
   }
 
-  const allReservations = data?.data || []
-  const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
   const totalPages = data?.totalPages || 1
 
   const reservationsByDate = reservations.reduce((acc: any, res: any) => {
@@ -262,6 +295,7 @@ export function ReservationsList() {
                   {dateReservations.map((reservation: any) => {
                     const guestInfo = getGuestBreakdown(reservation)
                     const resDeposits = depositMap[reservation.id] || []
+                    const hasContract = contractMap[reservation.id]
 
                     return (
                       <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
@@ -269,7 +303,7 @@ export function ReservationsList() {
                           'p-6',
                           `bg-gradient-to-r ${accent.gradientSubtle}`
                         )}>
-                          {/* Header: Time + Status + Deposit Badge */}
+                          {/* Header: Time + Status + Badges */}
                           <div className="flex items-start justify-between gap-4 mb-4">
                             <div className="flex items-center gap-3">
                               <div className={cn(
@@ -289,6 +323,7 @@ export function ReservationsList() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap justify-end">
+                              <ContractBadge hasContract={hasContract} />
                               <DepositBadge deposits={resDeposits} />
                               <Badge className={getStatusColor(reservation.status)}>
                                 {getStatusLabel(reservation.status)}

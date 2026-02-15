@@ -35,7 +35,7 @@ export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
-  const [client, setClient] = useState<Client | null>(null)
+  const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
@@ -100,15 +100,15 @@ export default function ClientDetailsPage() {
     return null
   }
 
-  // Calculate stats
+  // Calculate stats — use Number() to handle Decimal strings from backend
   const reservations = client.reservations || []
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter(r => r.status === 'CONFIRMED').length,
-    completed: reservations.filter(r => r.status === 'COMPLETED').length,
+    confirmed: reservations.filter((r: any) => r.status === 'CONFIRMED').length,
+    completed: reservations.filter((r: any) => r.status === 'COMPLETED').length,
     totalSpent: reservations
-      .filter(r => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
-      .reduce((sum, r) => sum + (r.totalPrice || 0), 0),
+      .filter((r: any) => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
+      .reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0),
   }
 
   return (
@@ -419,7 +419,7 @@ export default function ClientDetailsPage() {
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-2xl font-bold">{reservation.totalPrice} zł</p>
+                                  <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
                                 </div>
                               </div>
                             </CardContent>
