@@ -530,9 +530,9 @@ export function CreateReservationForm({
     )
   }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage])
 
-  // ═════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════
   // STEP RENDERERS
-  // ═════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════
 
   const renderStep0 = () => (
     <div className="space-y-6">
