@@ -19,6 +19,7 @@ import dishCategoryRoutes from '@/routes/dish-category.routes';
 import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
 import statsRoutes from '@/routes/stats.routes';
 import attachmentRoutes from '@/routes/attachment.routes';
+import auditLogRoutes from '@/routes/audit-log.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -112,6 +113,7 @@ app.use('/api/reservations/:reservationId/deposits', reservationDepositRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/attachments', attachmentRoutes);
+app.use('/api/audit-log', auditLogRoutes);
 
 /**
  * Menu System Routes
