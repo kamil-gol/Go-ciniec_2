@@ -49,13 +49,13 @@ export const testData = {
     },
     {
       firstName: 'Piotr',
-      lastName: 'Wiśniewski',
+      lastName: 'Wi\u015bniewski',
       email: 'piotr.wisniewski@example.com',
       phone: '+48345678901',
     },
     {
       firstName: 'Maria',
-      lastName: 'Wójcik',
+      lastName: 'W\u00f3jcik',
       email: 'maria.wojcik@example.com',
       phone: '+48456789012',
     },
@@ -90,7 +90,7 @@ export const testData = {
       guestsChildren0to3: 5,
       eventType: 'Urodziny',
       birthdayAge: 30,
-      hall: 'Sala Mała',
+      hall: 'Sala Ma\u0142a',
       notes: 'Birthday party test',
     },
     anniversary: {
@@ -102,7 +102,7 @@ export const testData = {
       guestsChildren0to3: 0,
       eventType: 'Rocznica/Jubileusz',
       anniversaryYears: 25,
-      anniversaryType: 'Ślub',
+      anniversaryType: '\u015alub',
       hall: 'Sala Bankietowa',
       notes: '25th wedding anniversary',
     },
@@ -151,7 +151,7 @@ export const testData = {
       capacity: 150,
     },
     {
-      name: 'Sala Mała',
+      name: 'Sala Ma\u0142a',
       capacity: 50,
     },
   ],
@@ -167,6 +167,42 @@ export const testData = {
     'COMPLETED',
   ],
 };
+
+/**
+ * Test queue entries used in queue E2E tests
+ */
+export const TEST_QUEUE_ENTRIES = [
+  {
+    clientId: '',
+    eventTypeId: '',
+    reservationQueueDate: getFutureDate(15),
+    adults: 40,
+    children: 10,
+    babies: 5,
+    notes: 'Test queue entry 1',
+    birthdayAge: undefined as number | undefined,
+  },
+  {
+    clientId: '',
+    eventTypeId: '',
+    reservationQueueDate: getFutureDate(20),
+    adults: 60,
+    children: 15,
+    babies: 3,
+    notes: 'Test queue entry 2',
+    birthdayAge: undefined as number | undefined,
+  },
+  {
+    clientId: '',
+    eventTypeId: '',
+    reservationQueueDate: getFutureDate(30),
+    adults: 25,
+    children: 5,
+    babies: 2,
+    notes: 'Test queue entry 3',
+    birthdayAge: 30,
+  },
+];
 
 /**
  * Helper: Get future date
