@@ -54,7 +54,7 @@ export function CreateReservationDiscountSection({
           </div>
           <div>
             <span className="font-medium text-secondary-800">Rabat</span>
-            <p className="text-xs text-secondary-500">{'Opcjonalnie \u2014 zastosuj rabat do tej rezerwacji'}</p>
+            <p className="text-xs text-secondary-500">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
           </div>
         </div>
         <Controller
@@ -93,7 +93,7 @@ export function CreateReservationDiscountSection({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-secondary-700">{'Warto\u015b\u0107'}</label>
+              <label className="text-xs font-medium text-secondary-700">{'Wartość'}</label>
               <Input
                 type="number"
                 min="0"
@@ -107,9 +107,9 @@ export function CreateReservationDiscountSection({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-secondary-700">{'Pow\u00f3d rabatu'}</label>
+            <label className="text-xs font-medium text-secondary-700">{'Powód rabatu'}</label>
             <Input
-              placeholder={'np. Sta\u0142y klient, promocja...'}
+              placeholder={'np. Stały klient, promocja...'}
               className="h-9 text-sm"
               {...register('discountReason')}
             />
@@ -146,7 +146,7 @@ export function CreateReservationDiscountSection({
           {discountEnabled && discountValue > 0 && discountReason.length < 3 && (
             <p className="text-xs text-amber-600 flex items-center gap-1">
               <Tag className="w-3 h-3" />
-              {'Podaj pow\u00f3d rabatu (min. 3 znaki) aby m\u00f3c go zastosowa\u0107'}
+              {'Podaj powód rabatu (min. 3 znaki) aby móc go zastosować'}
             </p>
           )}
         </motion.div>

@@ -30,15 +30,15 @@ export default function CoursesPage() {
 
   const handleDeleteCourse = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 kurs:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) {
+    if (!confirm(`Czy na pewno chcesz usunąć kurs:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) {
       return
     }
 
     try {
       await deleteCourseMutation.mutateAsync({ id, packageId: selectedPackageId! })
-      alert(`\u2705 Usuni\u0119to kurs: ${name}`)
+      alert(`✅ Usunięto kurs: ${name}`)
     } catch (error: any) {
-      alert(`\u274c B\u0142\u0105d podczas usuwania:\n${error.error || 'Nieznany b\u0142\u0105d'}`)
+      alert(`❌ Błąd podczas usuwania:\n${error.error || 'Nieznany błąd'}`)
     }
   }
 
@@ -82,7 +82,7 @@ export default function CoursesPage() {
                 <Link href="/dashboard/menu">
                   <Button variant="ghost" className="text-white hover:bg-white/20 mb-4">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Powr\u00f3t do Menu
+                    Powrót do Menu
                   </Button>
                 </Link>
                 
@@ -97,7 +97,7 @@ export default function CoursesPage() {
                         ? 'Wybierz szablon menu' 
                         : !selectedPackageId 
                           ? 'Wybierz pakiet' 
-                          : `${selectedTemplate?.name} \u203a ${selectedPackage?.name}`
+                          : `${selectedTemplate?.name} › ${selectedPackage?.name}`
                       }
                     </p>
                   </div>
@@ -154,10 +154,10 @@ export default function CoursesPage() {
                   </div>
                 ) : templates.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">Brak szablon\u00f3w menu</p>
+                    <p className="text-muted-foreground mb-4">Brak szablonów menu</p>
                     <Link href="/dashboard/menu">
                       <Button className="bg-gradient-to-r from-orange-500 to-amber-500">
-                        Utw\u00f3rz szablon
+                        Utwórz szablon
                       </Button>
                     </Link>
                   </div>
@@ -176,7 +176,7 @@ export default function CoursesPage() {
                             </div>
                             {(template as any)._count && (
                               <Badge className="border border-orange-200 text-orange-600 bg-orange-50 dark:bg-orange-950/50">
-                                {(template as any)._count.packages} pakiet\u00f3w
+                                {(template as any)._count.packages} pakietów
                               </Badge>
                             )}
                           </div>
@@ -190,7 +190,7 @@ export default function CoursesPage() {
                           )}
                         </CardHeader>
                         <CardContent>
-                          <p className="text-sm text-muted-foreground">Kliknij, aby wybra\u0107 pakiet</p>
+                          <p className="text-sm text-muted-foreground">Kliknij, aby wybrać pakiet</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -208,7 +208,7 @@ export default function CoursesPage() {
                   onClick={handleBackToTemplates}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Wr\u00f3\u0107 do szablon\u00f3w
+                  Wróć do szablonów
                 </Button>
 
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -225,7 +225,7 @@ export default function CoursesPage() {
                   </div>
                 ) : packages.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">Ten szablon nie ma jeszcze pakiet\u00f3w</p>
+                    <p className="text-muted-foreground mb-4">Ten szablon nie ma jeszcze pakietów</p>
                     <Link href="/dashboard/menu">
                       <Button className="bg-gradient-to-r from-blue-500 to-indigo-500">
                         Dodaj pakiet do szablonu
@@ -251,12 +251,12 @@ export default function CoursesPage() {
                         <CardContent>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Doro\u015bli:</span>
-                              <span className="font-semibold">{pkg.pricePerAdult} z\u0142</span>
+                              <span className="text-muted-foreground">Dorośli:</span>
+                              <span className="font-semibold">{pkg.pricePerAdult} zł</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Dzieci:</span>
-                              <span className="font-semibold">{pkg.pricePerChild} z\u0142</span>
+                              <span className="font-semibold">{pkg.pricePerChild} zł</span>
                             </div>
                           </div>
                         </CardContent>
@@ -280,7 +280,7 @@ export default function CoursesPage() {
                   onClick={handleBackToPackages}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Wr\u00f3\u0107 do pakiet\u00f3w
+                  Wróć do pakietów
                 </Button>
               </div>
 
@@ -290,7 +290,7 @@ export default function CoursesPage() {
                     <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Book className="h-10 w-10 text-blue-600" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">Brak kurs\u00f3w</h3>
+                    <h3 className="text-xl font-semibold mb-2">Brak kursów</h3>
                     <p className="text-muted-foreground mb-6">Dodaj pierwszy kurs do pakietu: <strong>{selectedPackage?.name}</strong></p>
                     <Button 
                       className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
@@ -352,7 +352,7 @@ export default function CoursesPage() {
                                 </div>
                               ))}
                               {course.options.length > 3 && (
-                                <p className="text-xs text-muted-foreground pl-4">+{course.options.length - 3} wi\u0119cej...</p>
+                                <p className="text-xs text-muted-foreground pl-4">+{course.options.length - 3} więcej...</p>
                               )}
                             </div>
                           </div>

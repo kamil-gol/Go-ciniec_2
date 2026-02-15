@@ -21,12 +21,12 @@ interface DishAssignmentDialogProps {
 
 const CATEGORY_LABELS: Record<string, string> = {
   'SOUP': 'Zupa',
-  'APPETIZER': 'Przek\u0105ska',
-  'MAIN_COURSE': 'Danie g\u0142\u00f3wne',
+  'APPETIZER': 'Przekąska',
+  'MAIN_COURSE': 'Danie główne',
   'SIDE_DISH': 'Przystawka',
-  'SALAD': 'Sa\u0142atka',
+  'SALAD': 'Sałatka',
   'DESSERT': 'Deser',
-  'BEVERAGE': 'Nap\u00f3j',
+  'BEVERAGE': 'Napój',
   'OTHER': 'Inne'
 }
 
@@ -67,7 +67,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const handleAssign = async () => {
     if (!course || selectedDishes.size === 0) return
 
-    const loadingToast = toast.loading(`Przypisuj\u0119 ${selectedDishes.size} da\u0144...`)
+    const loadingToast = toast.loading(`Przypisuję ${selectedDishes.size} dań...`)
     
     try {
       await assignMutation.mutateAsync({
@@ -80,10 +80,10 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
           }))
         }
       })
-      toast.success('Sukces!', `Przypisano ${selectedDishes.size} da\u0144 do kursu`)
+      toast.success('Sukces!', `Przypisano ${selectedDishes.size} dań do kursu`)
       setSelectedDishes(new Set())
     } catch (error: any) {
-      toast.error('B\u0142\u0105d', error.error || 'Nie uda\u0142o si\u0119 przypisa\u0107 da\u0144')
+      toast.error('Błąd', error.error || 'Nie udało się przypisać dań')
     }
   }
 
@@ -98,9 +98,9 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
         dishId,
         packageId: course.packageId,
       })
-      toast.success('Usuni\u0119to!', `Danie "${dishName}" zosta\u0142o usuni\u0119te z kursu`)
+      toast.success('Usunięto!', `Danie "${dishName}" zostało usunięte z kursu`)
     } catch (error: any) {
-      toast.error('B\u0142\u0105d', error.error || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 dania')
+      toast.error('Błąd', error.error || 'Nie udało się usunąć dania')
     }
   }
 
@@ -115,7 +115,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
               <ChefHat className="h-5 w-5 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-2xl">Zarz\u0105dzaj Daniami</DialogTitle>
+              <DialogTitle className="text-2xl">Zarządzaj Daniami</DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Kurs: <strong>{course?.name}</strong>
               </p>
@@ -178,7 +178,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Szukaj da\u0144 po nazwie lub kategorii..."
+                placeholder="Szukaj dań po nazwie lub kategorii..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500"
@@ -190,7 +190,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
               <div className="text-center py-12 bg-muted/30 rounded-xl border-2 border-dashed">
                 <ChefHat className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                 <p className="text-muted-foreground">
-                  {searchQuery ? 'Brak wynik\u00f3w wyszukiwania' : 'Wszystkie dania ju\u017c przypisane'}
+                  {searchQuery ? 'Brak wyników wyszukiwania' : 'Wszystkie dania już przypisane'}
                 </p>
               </div>
             ) : (
@@ -272,7 +272,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
             {isPending ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Przypisuj\u0119...
+                Przypisuję...
               </>
             ) : (
               <>

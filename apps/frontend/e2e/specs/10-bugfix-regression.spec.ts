@@ -173,7 +173,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
     const count = await queueItems.count();
     
     if (count > 0) {
-      const moveButton = adminPage.locator('button:has-text("Przenie\u015b")');
+      const moveButton = adminPage.locator('button:has-text("Przenieś")');
       const hasMoveButton = await moveButton.count() > 0;
       
       if (hasMoveButton) {
@@ -186,7 +186,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
         
         await expect(
           adminPage.locator('.error-message, .toast-error')
-        ).toContainText(/Position must be between|Pozycja musi by\u0107/i);
+        ).toContainText(/Position must be between|Pozycja musi być/i);
       }
     }
   });
@@ -207,7 +207,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
     const count = await queueItems.count();
     
     if (count > 0) {
-      const moveButton = adminPage.locator('button:has-text("Przenie\u015b")');
+      const moveButton = adminPage.locator('button:has-text("Przenieś")');
       const hasMoveButton = await moveButton.count() > 0;
       
       if (hasMoveButton) {
