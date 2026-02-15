@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Paperclip, Plus, Filter } from 'lucide-react'
+import { Paperclip, Plus, Filter, User } from 'lucide-react'
 import { attachmentsApi, Attachment, EntityType, AttachmentCategory, getCategoryLabel } from '@/lib/api/attachments'
 import AttachmentRow from './attachment-row'
 import AttachmentUploadDialog from './attachment-upload-dialog'
@@ -33,8 +33,9 @@ export default function AttachmentPanel({
   const fetchAttachments = useCallback(async () => {
     try {
       setLoading(true)
-      // Always fetch ALL attachments — filter client-side
-      const data = await attachmentsApi.getByEntity(entityType, entityId)
+      // For RESERVATION/DEPOSIT, also fetch cross-referenced RODO from client
+      const withClientRodo = entityType !== 'CLIENT'
+      const data = await attachmentsApi.getByEntity(entityType, entityId, undefined, withClientRodo)
       setAttachments(data)
       if (data.length > 0) setHasAny(true)
     } catch {
@@ -151,6 +152,15 @@ export default function AttachmentPanel({
                   exit={{ opacity: 0, scale: 0.95 }}
                   layout
                 >
+                  {/* Show "from client" indicator for cross-referenced RODO */}
+                  {att._fromClient && (
+                    <div className="flex items-center gap-1.5 mb-1 ml-1">
+                      <User className="w-3 h-3 text-teal-500" />
+                      <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">
+                        Z profilu klienta
+                      </span>
+                    </div>
+                  )}
                   <AttachmentRow
                     attachment={att}
                     onDeleted={fetchAttachments}

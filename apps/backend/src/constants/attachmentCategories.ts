@@ -19,12 +19,14 @@ export const ATTACHMENT_CATEGORIES: Record<EntityType, AttachmentCategoryDef[]> 
     { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty klienta' },
   ],
   RESERVATION: [
+    { value: 'RODO', label: 'Zgoda RODO', description: 'Podpisana zgoda RODO — zostanie automatycznie przypisana do klienta' },
     { value: 'CONTRACT', label: 'Umowa', description: 'Podpisana umowa rezerwacji' },
     { value: 'ANNEX', label: 'Aneks', description: 'Aneks do umowy (zmiana warunków)' },
     { value: 'POST_EVENT', label: 'Dokumentacja powykonawcza', description: 'Protokół zdania sali, zdjęcia' },
     { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty rezerwacji' },
   ],
   DEPOSIT: [
+    { value: 'RODO', label: 'Zgoda RODO', description: 'Podpisana zgoda RODO — zostanie automatycznie przypisana do klienta' },
     { value: 'PAYMENT_PROOF', label: 'Potwierdzenie przelewu', description: 'Skan/screenshot operacji bankowej' },
     { value: 'INVOICE', label: 'Faktura zaliczkowa', description: 'Faktura VAT za wpłaconą zaliczkę' },
     { value: 'REFUND_PROOF', label: 'Potwierdzenie zwrotu', description: 'Dokument potwierdzający zwrot' },
