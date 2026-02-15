@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -18,12 +17,35 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, X } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useActions, useEntityTypes } from '@/hooks/use-audit-log';
 import type { AuditLogFilters } from '@/types/audit-log.types';
+
+const actionLabels: Record<string, string> = {
+  ARCHIVE: 'Archiwizacja',
+  UNARCHIVE: 'Przywrócenie',
+  RESTORE: 'Przywrócenie',
+  CREATE: 'Utworzenie',
+  UPDATE: 'Aktualizacja',
+  DELETE: 'Usunięcie',
+  STATUS_CHANGE: 'Zmiana statusu',
+  LOGIN: 'Logowanie',
+  LOGOUT: 'Wylogowanie',
+};
+
+const entityTypeLabels: Record<string, string> = {
+  RESERVATION: 'Rezerwacja',
+  CLIENT: 'Klient',
+  ROOM: 'Sala',
+  HALL: 'Sala',
+  MENU: 'Menu',
+  USER: 'Użytkownik',
+  DEPOSIT: 'Zaliczka',
+  EVENT_TYPE: 'Typ wydarzenia',
+};
 
 interface Props {
   filters: AuditLogFilters;
@@ -71,151 +93,116 @@ export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
     });
   };
 
-  const hasActiveFilters =
-    filters.action ||
-    filters.entityType ||
-    filters.startDate ||
-    filters.endDate;
-
-  const actionLabels: Record<string, string> = {
-    ARCHIVE: 'Archiwizacja',
-    UNARCHIVE: 'Przywrócenie',
-    CREATE: 'Utworzenie',
-    UPDATE: 'Aktualizacja',
-    DELETE: 'Usunięcie',
-  };
-
-  const entityTypeLabels: Record<string, string> = {
-    RESERVATION: 'Rezerwacja',
-    CLIENT: 'Klient',
-    ROOM: 'Sala',
-    MENU: 'Menu',
-    USER: 'Użytkownik',
-  };
-
   return (
-    <div className="space-y-4 rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Filtry</h3>
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onReset}
-            className="h-8 px-2"
-          >
-            <X className="mr-1 h-4 w-4" />
-            Wyczyść
-          </Button>
-        )}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Akcja */}
+      <div className="space-y-1.5">
+        <Label htmlFor="action" className="text-xs font-medium text-muted-foreground">
+          Akcja
+        </Label>
+        <Select
+          value={filters.action || 'all'}
+          onValueChange={handleActionChange}
+        >
+          <SelectTrigger id="action" className="h-9 bg-white dark:bg-neutral-900">
+            <SelectValue placeholder="Wszystkie akcje" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Wszystkie akcje</SelectItem>
+            {actions.map((action) => (
+              <SelectItem key={action} value={action}>
+                {actionLabels[action] || action}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Akcja */}
-        <div className="space-y-2">
-          <Label htmlFor="action">Akcja</Label>
-          <Select
-            value={filters.action || 'all'}
-            onValueChange={handleActionChange}
-          >
-            <SelectTrigger id="action">
-              <SelectValue placeholder="Wszystkie akcje" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie akcje</SelectItem>
-              {actions.map((action) => (
-                <SelectItem key={action} value={action}>
-                  {actionLabels[action] || action}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Typ encji */}
+      <div className="space-y-1.5">
+        <Label htmlFor="entityType" className="text-xs font-medium text-muted-foreground">
+          Typ obiektu
+        </Label>
+        <Select
+          value={filters.entityType || 'all'}
+          onValueChange={handleEntityTypeChange}
+        >
+          <SelectTrigger id="entityType" className="h-9 bg-white dark:bg-neutral-900">
+            <SelectValue placeholder="Wszystkie typy" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Wszystkie typy</SelectItem>
+            {entityTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {entityTypeLabels[type] || type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-        {/* Typ encji */}
-        <div className="space-y-2">
-          <Label htmlFor="entityType">Typ</Label>
-          <Select
-            value={filters.entityType || 'all'}
-            onValueChange={handleEntityTypeChange}
-          >
-            <SelectTrigger id="entityType">
-              <SelectValue placeholder="Wszystkie typy" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie typy</SelectItem>
-              {entityTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {entityTypeLabels[type] || type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Data od */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-muted-foreground">Data od</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full h-9 justify-start text-left font-normal bg-white dark:bg-neutral-900',
+                !startDate && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {startDate ? (
+                format(startDate, 'd MMMM yyyy', { locale: pl })
+              ) : (
+                <span>Wybierz datę</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDate}
+              onSelect={handleStartDateChange}
+              initialFocus
+              locale={pl}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
-        {/* Data od */}
-        <div className="space-y-2">
-          <Label>Data od</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full justify-start text-left font-normal',
-                  !startDate && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? (
-                  format(startDate, 'PPP', { locale: pl })
-                ) : (
-                  <span>Wybierz datę</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={handleStartDateChange}
-                initialFocus
-                locale={pl}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Data do */}
-        <div className="space-y-2">
-          <Label>Data do</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full justify-start text-left font-normal',
-                  !endDate && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? (
-                  format(endDate, 'PPP', { locale: pl })
-                ) : (
-                  <span>Wybierz datę</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={handleEndDateChange}
-                initialFocus
-                locale={pl}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+      {/* Data do */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-muted-foreground">Data do</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full h-9 justify-start text-left font-normal bg-white dark:bg-neutral-900',
+                !endDate && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {endDate ? (
+                format(endDate, 'd MMMM yyyy', { locale: pl })
+              ) : (
+                <span>Wybierz datę</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={endDate}
+              onSelect={handleEndDateChange}
+              initialFocus
+              locale={pl}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
