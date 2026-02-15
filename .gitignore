@@ -67,4 +67,6 @@ temp/
 
 # Backup files
 *.backup
-*.bak
+*.bakapps/backend/uploads/
+apps/frontend/.next/
+*.pdf
