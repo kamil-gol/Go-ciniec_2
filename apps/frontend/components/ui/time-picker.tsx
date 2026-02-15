@@ -14,6 +14,7 @@ interface TimePickerProps {
   error?: string
   disabled?: boolean
   minuteStep?: number
+  defaultScrollHour?: number
   className?: string
 }
 
@@ -23,10 +24,11 @@ export function TimePicker({
   value,
   onChange,
   label,
-  placeholder = 'Godzina...',
+  placeholder = 'Wybierz godzinę...',
   error,
   disabled = false,
-  minuteStep = 15,
+  minuteStep = 30,
+  defaultScrollHour = 12,
   className,
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false)
@@ -44,11 +46,18 @@ export function TimePicker({
   }, [value])
 
   React.useEffect(() => {
-    if (open && scrollRef.current && selectedHour !== null) {
-      const el = scrollRef.current.querySelector(`[data-hour="${selectedHour}"]`)
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    if (open && scrollRef.current) {
+      // Scroll do wybranej godziny lub domyślnie do defaultScrollHour (12:00)
+      const scrollToHour = selectedHour !== null ? selectedHour : defaultScrollHour
+      const el = scrollRef.current.querySelector(`[data-hour="${scrollToHour}"]`)
+      if (el) {
+        // Użyj requestAnimationFrame żeby poczekać na renderowanie popovera
+        requestAnimationFrame(() => {
+          el.scrollIntoView({ block: 'center', behavior: 'instant' })
+        })
+      }
     }
-  }, [open, selectedHour])
+  }, [open, selectedHour, defaultScrollHour])
 
   const handleSelect = (hour: number, minute: number) => {
     const hh = String(hour).padStart(2, '0')
@@ -93,7 +102,10 @@ export function TimePicker({
                     <p className="text-xs font-semibold text-secondary-400 sticky top-0 bg-white py-1 z-10">
                       {String(hour).padStart(2, '0')}:00
                     </p>
-                    <div className="grid grid-cols-4 gap-1 mb-2">
+                    <div className={cn(
+                      'grid gap-1 mb-2',
+                      MINUTES.length <= 2 ? 'grid-cols-2' : 'grid-cols-4'
+                    )}>
                       {MINUTES.map((minute) => {
                         const isSelected = selectedHour === hour && selectedMinute === minute
                         const timeKey = `${String(hour).padStart(2, '0')}${String(minute).padStart(2, '0')}`
