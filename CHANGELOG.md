@@ -1,5 +1,35 @@
 # 📝 Changelog
 
+## [1.5.0] - 2026-02-15
+
+### ✨ Nowe funkcjonalności (Sprint 6 — Quick Wins)
+
+**PR:** [#62](https://github.com/kamil-gol/Go-ciniec_2/pull/62) | **Branch:** `feature/sprint-6-quick-wins`
+
+- **US-6.2: Usunięcie nazwy sali z PDF** — potwierdzenie rezerwacji (PDF) nie zawiera już nazwy sali. Usunięto sekcję `Sala: ${hall.name}` z `pdf-generator.service.ts`
+- **US-6.3: Usunięcie auto-notatki >6h** — zlikwidowano funkcję `generateExtraHoursNote()` w `reservation.service.ts`, która automatycznie dodawała notatkę o dodatkowych godzinach przy rezerwacjach dłuższych niż 6h
+- **US-6.4: Blokada statusu COMPLETED przed datą wydarzenia** — system nie pozwala zmienić statusu na COMPLETED jeśli data rozpoczęcia rezerwacji jest w przyszłości. Zwraca błąd 400: "Nie można zakończyć rezerwacji przed datą wydarzenia"
+- **US-6.6: Auto-notatka o inflacji** — przy tworzeniu rezerwacji na następny rok kalendarzowy, system automatycznie dodaje notatkę: `[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).`
+
+### 📦 Zmienione pliki
+- `apps/backend/src/services/pdf-generator.service.ts` — US-6.2
+- `apps/backend/src/services/reservation.service.ts` — US-6.3, US-6.4, US-6.6
+
+### ✅ Testy (wykonane na serwerze produkcyjnym)
+| Test | Wynik |
+|------|-------|
+| US-6.2: `strings test-pdf.pdf \| grep sala` → pusty | ✅ PASS |
+| US-6.3: Rezerwacja 8h → notes bez extra hours | ✅ PASS |
+| US-6.4: COMPLETED na przyszłą datę → błąd 400 | ✅ PASS |
+| US-6.6: Rezerwacja na 2027 → auto-notatka inflacja | ✅ PASS |
+
+### 🚀 Deployment
+```bash
+cd /home/kamil/rezerwacje && git checkout main && git pull origin main && docker compose restart backend
+```
+
+---
+
 ## [1.4.4] - 2026-02-15
 
 ### 🐛 Bugfixy

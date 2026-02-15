@@ -10,10 +10,63 @@ wersjonowanie zgodnie z [Semantic Versioning](https://semver.org/lang/pl/).
 ## [Unreleased]
 
 ### 🚧 W trakcie
-- Naprawa generowania PDF (problem z fontami na serwerze produkcyjnym)
 - Dokumentacja API dla modułu Rezerwacje
 - Podręcznik użytkownika
 - Testy E2E
+
+---
+
+## [2.3.0] - 2026-02-15 (Sprint 6 — Quick Wins)
+
+### ✨ Added (Nowe funkcjonalności)
+
+**PR:** [#62](https://github.com/kamil-gol/Go-ciniec_2/pull/62) | **Branch:** `feature/sprint-6-quick-wins`
+
+#### US-6.2: Usunięcie nazwy sali z PDF
+- ✅ Potwierdzenie rezerwacji (PDF) nie zawiera już nazwy sali
+- Usunięto sekcję `Sala: ${hall.name}` z generatora PDF
+- Klient otrzymuje PDF bez szczegółów sali (wymóg biznesowy)
+
+**Plik:** `apps/backend/src/services/pdf-generator.service.ts`
+
+#### US-6.6: Auto-notatka o inflacji dla rezerwacji na następny rok
+- ✅ Przy tworzeniu rezerwacji na następny rok kalendarzowy system dodaje auto-notatkę
+- Treść: `[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).`
+- Działa zarówno z formatem `startDateTime` (nowy wizard) jak i `date` (legacy)
+- Rezerwacje na bieżący rok nie otrzymują notatki
+
+**Plik:** `apps/backend/src/services/reservation.service.ts`
+
+### 🔧 Changed (Zmiany)
+
+#### US-6.3: Usunięcie auto-notatki o wydarzeniach >6h
+- 🔄 Usunięto wywołanie `generateExtraHoursNote()` z `createReservation()`
+- System nie dodaje już automatycznej notatki przy rezerwacjach dłuższych niż 6 godzin
+- Extra hours nadal są wyświetlane w podsumowaniu finansowym na frontendzie
+
+**Plik:** `apps/backend/src/services/reservation.service.ts`
+
+#### US-6.4: Blokada statusu COMPLETED przed datą wydarzenia
+- 🔄 Dodano walidację w `updateStatus()` — nie można zmienić statusu na COMPLETED jeśli `startDateTime` jest w przyszłości
+- Obsługuje oba formaty daty: `startDateTime` (nowy) i `date` (legacy)
+- Komunikat błędu: "Nie można zakończyć rezerwacji przed datą wydarzenia"
+- Status HTTP: 400 Bad Request
+
+**Plik:** `apps/backend/src/services/reservation.service.ts`
+
+### ✅ Testy (wykonane na serwerze produkcyjnym 15.02.2026)
+
+| Test | Komenda | Oczekiwany wynik | Status |
+|------|---------|-----------------|--------|
+| US-6.2 | `strings test-pdf.pdf \| grep -i sala` | Pusty output | ✅ PASS |
+| US-6.3 | POST rezerwacja 8h → sprawdź notes | Brak auto-notatki o extra hours | ✅ PASS |
+| US-6.4 | PATCH status=COMPLETED (przyszła data) | Błąd 400 | ✅ PASS |
+| US-6.6 | POST rezerwacja na 2027 → sprawdź notes | Zawiera `[Auto] Rezerwacja na kolejny rok` | ✅ PASS |
+
+### 🚀 Deployment
+```bash
+cd /home/kamil/rezerwacje && git checkout main && git pull origin main && docker compose restart backend
+```
 
 ---
 
@@ -216,7 +269,14 @@ SyntaxError: Unexpected token in edit-reservation-modal.tsx
 
 ## 📊 Statystyki Zmian
 
-### Dzisiejsza sesja (09.02.2026):
+### Sprint 6 Quick Wins (15.02.2026):
+- **Commits:** 4
+- **Plików zmienionych:** 2
+- **Nowe funkcjonalności:** 2 (US-6.2, US-6.6)
+- **Zmiany w logice:** 2 (US-6.3, US-6.4)
+- **PR:** [#62](https://github.com/kamil-gol/Go-ciniec_2/pull/62)
+
+### Sesja 09.02.2026:
 - **Commits:** 8
 - **Plików zmienionych:** 15+
 - **Dodane linie:** ~1,500
@@ -228,7 +288,7 @@ SyntaxError: Unexpected token in edit-reservation-modal.tsx
 ### Moduł Rezerwacje - Status Ogólny:
 - **Kompletność:** ~95% ✅
 - **Testy:** ~60% 🔄
-- **Dokumentacja:** ~40% 🔄
+- **Dokumentacja:** ~50% 🔄
 
 ---
 
@@ -310,29 +370,24 @@ pm2 restart backend
 
 ## 🐛 Znane Problemy
 
-### 1. Generowanie PDF - Status: 🔄 W TRAKCIE
+### 1. Generowanie PDF - Status: ✅ ROZWIĄZANE (v2.3.0)
 **Priorytet:** Wysoki  
-**Zgłoszony:** 2026-02-09
+**Zgłoszony:** 2026-02-09  
+**Rozwiązany:** 2026-02-15
 
 **Opis:**
-- PDF generują się, ale nie pobierają się w przeglądarce
-- Prawdopodobnie problem z fontami na serwerze produkcyjnym
-
-**Obejście:**
-- System używa fontów fallback (Helvetica)
-- Brak polskich znaków w fallback mode
-
-**Plan naprawy:**
-1. Zainstalować fonty DejaVu na serwerze
-2. Zrestartować backend
-3. Przetestować generowanie PDF
-4. Jeśli problem dalej występuje - szczegółowa analiza logów
-
-**Tracking:** Link do issue (do utworzenia)
+- PDF generują się poprawnie z fontami DejaVu w kontenerze Docker
+- Nazwa sali usunięta z PDF (US-6.2)
 
 ---
 
 ## 📅 Historia Wersji
+
+### [2.3.0] - 2026-02-15 (Sprint 6)
+- US-6.2: Usunięcie nazwy sali z PDF
+- US-6.3: Usunięcie auto-notatki o wydarzeniach >6h
+- US-6.4: Blokada COMPLETED przed datą wydarzenia
+- US-6.6: Auto-notatka o inflacji dla rezerwacji na następny rok
 
 ### [2.2.0] - 2026-02-09
 - Integracja z systemem kolejki
@@ -386,6 +441,6 @@ Ten changelog używa formatu [Keep a Changelog](https://keepachangelog.com/pl/1.
 
 ---
 
-**Ostatnia aktualizacja:** 09.02.2026 - 17:00 CET  
-**Wersja dokumentu:** 1.0  
+**Ostatnia aktualizacja:** 15.02.2026 - 15:10 CET  
+**Wersja dokumentu:** 1.1  
 **Autor:** Kamil Gołębiowski
