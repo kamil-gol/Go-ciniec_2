@@ -50,7 +50,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const filteredDishes = allDishes.filter(dish => 
     !assignedDishIds.has(dish.id) && (
       dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (dish.category && dish.category.toLowerCase().includes(searchQuery.toLowerCase()))
+      (dish.category && String(dish.category).toLowerCase().includes(searchQuery.toLowerCase()))
     )
   )
 
@@ -146,7 +146,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                       </div>
                       {option.dish?.category && (
                         <Badge variant="default" className="border border-emerald-300 bg-transparent text-emerald-700 text-xs">
-                          {CATEGORY_LABELS[option.dish.category] || option.dish.category}
+                          {CATEGORY_LABELS[String(option.dish.category)] || String(option.dish.category)}
                         </Badge>
                       )}
                     </div>
@@ -235,7 +235,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                                 : "border-muted-foreground/30"
                             )}
                           >
-                            {CATEGORY_LABELS[dish.category] || dish.category}
+                            {CATEGORY_LABELS[String(dish.category)] || String(dish.category)}
                           </Badge>
                         )}
                         {dish.description && (
