@@ -11,13 +11,18 @@ import { CreateEventTypeDTO, UpdateEventTypeDTO } from '../types/eventType.types
 export class EventTypeController {
   async createEventType(req: Request, res: Response): Promise<void> {
     const { name, description, color, isActive } = req.body;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw AppError.unauthorized('User not authenticated');
+    }
 
     if (!name) {
       throw AppError.badRequest('Event type name is required');
     }
 
     const data: CreateEventTypeDTO = { name, description, color, isActive };
-    const eventType = await eventTypeService.createEventType(data);
+    const eventType = await eventTypeService.createEventType(data, userId);
 
     res.status(201).json({
       success: true,
@@ -52,6 +57,11 @@ export class EventTypeController {
   async updateEventType(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { name, description, color, isActive } = req.body;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw AppError.unauthorized('User not authenticated');
+    }
 
     const data: UpdateEventTypeDTO = {};
     if (name !== undefined) data.name = name;
@@ -59,7 +69,7 @@ export class EventTypeController {
     if (color !== undefined) data.color = color;
     if (isActive !== undefined) data.isActive = isActive;
 
-    const eventType = await eventTypeService.updateEventType(id, data);
+    const eventType = await eventTypeService.updateEventType(id, data, userId);
 
     res.status(200).json({
       success: true,
@@ -70,7 +80,13 @@ export class EventTypeController {
 
   async deleteEventType(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    await eventTypeService.deleteEventType(id);
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw AppError.unauthorized('User not authenticated');
+    }
+
+    await eventTypeService.deleteEventType(id, userId);
 
     res.status(200).json({
       success: true,

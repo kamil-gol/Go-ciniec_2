@@ -5,6 +5,7 @@
 
 import { Dish, DishCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { logChange, diffObjects } from '../utils/audit-logger';
 
 export type DishWithCategory = Dish & { category: DishCategory };
 
@@ -66,14 +67,14 @@ class DishService {
     });
   }
 
-  async create(data: CreateDishInput): Promise<DishWithCategory> {
+  async create(data: CreateDishInput, userId: string): Promise<DishWithCategory> {
     const existing = await prisma.dish.findFirst({ where: { name: data.name } });
     if (existing) throw new Error(`Dish with name "${data.name}" already exists`);
 
     const category = await prisma.dishCategory.findUnique({ where: { id: data.categoryId } });
     if (!category) throw new Error(`Category with ID ${data.categoryId} not found`);
 
-    return prisma.dish.create({
+    const dish = await prisma.dish.create({
       data: {
         name: data.name,
         description: data.description,
@@ -83,9 +84,28 @@ class DishService {
       },
       include: { category: true },
     });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CREATE',
+      entityType: 'DISH',
+      entityId: dish.id,
+      details: {
+        description: `Utworzono danie: ${dish.name}`,
+        data: {
+          name: dish.name,
+          categoryId: dish.categoryId,
+          categoryName: category.name,
+          allergens: dish.allergens
+        }
+      }
+    });
+
+    return dish;
   }
 
-  async update(id: string, data: UpdateDishInput): Promise<DishWithCategory> {
+  async update(id: string, data: UpdateDishInput, userId: string): Promise<DishWithCategory> {
     const existing = await this.findOne(id);
     if (!existing) throw new Error(`Dish with ID ${id} not found`);
 
@@ -101,17 +121,76 @@ class DishService {
       if (!category) throw new Error(`Category with ID ${data.categoryId} not found`);
     }
 
-    return prisma.dish.update({
+    const dish = await prisma.dish.update({
       where: { id },
       data,
       include: { category: true },
     });
+
+    // Audit log
+    const changes = diffObjects(existing, dish);
+    if (Object.keys(changes).length > 0) {
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'DISH',
+        entityId: dish.id,
+        details: {
+          description: `Zaktualizowano danie: ${dish.name}`,
+          changes
+        }
+      });
+    }
+
+    return dish;
   }
 
-  async remove(id: string): Promise<void> {
+  async toggleActive(id: string, userId: string): Promise<DishWithCategory> {
     const existing = await this.findOne(id);
     if (!existing) throw new Error(`Dish with ID ${id} not found`);
+
+    const dish = await prisma.dish.update({
+      where: { id },
+      data: { isActive: !existing.isActive },
+      include: { category: true },
+    });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'TOGGLE_ACTIVE',
+      entityType: 'DISH',
+      entityId: dish.id,
+      details: {
+        description: `${dish.isActive ? 'Aktywowano' : 'Dezaktywowano'} danie: ${dish.name}`,
+        oldValue: existing.isActive,
+        newValue: dish.isActive
+      }
+    });
+
+    return dish;
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const existing = await this.findOne(id);
+    if (!existing) throw new Error(`Dish with ID ${id} not found`);
+
     await prisma.dish.delete({ where: { id } });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'DELETE',
+      entityType: 'DISH',
+      entityId: id,
+      details: {
+        description: `Usunięto danie: ${existing.name}`,
+        deletedData: {
+          name: existing.name,
+          categoryName: existing.category.name
+        }
+      }
+    });
   }
 }
 
