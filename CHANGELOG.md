@@ -1,5 +1,29 @@
 # 📝 Changelog
 
+## [1.4.1] - 2026-02-15
+
+### 🐛 Bugfixy
+- **Fix build error: brakujący moduł `./client` w `menu-selection.ts`** — plik importował `api` z nieistniejącego `./client`. Zmieniono na `import { apiClient } from '@/lib/api-client'` oraz zaktualizowano wszystkie wywołania `api.get/post/put/delete` → `apiClient.get/post/put/delete` (spójne z resztą API w `lib/api/`)
+- **Fix crash buildu: `useContext` null na wszystkich stronach (29/29)** — `NODE_ENV` w kontenerze Docker był ustawiony na `development` (default z `docker-compose.yml`), co powodowało ładowanie dwóch instancji React (prod + dev runtime) jednocześnie. Hooki React (`useContext`, `useState`) wymagają singletonu React — dwa bundla = `null` w kontekście. Naprawiono przez wymuszenie `NODE_ENV=production` w skrypcie build w `package.json`
+- **Fix prerender error: `<Html>` import z `pages/_document`** — Next.js próbował generować fallbackowe strony `/404` i `/500` przez Pages Router (auto-generated `_error`), który importował `<Html>` z `next/document`. Dodano `app/not-found.tsx` z custom stroną 404 dla App Router, eliminując potrzebę Pages Router fallbacku
+
+### 📦 Zmienione pliki
+- `apps/frontend/lib/api/menu-selection.ts` — poprawiony import (z `./client` na `@/lib/api-client`)
+- `apps/frontend/package.json` — build script: `next build` → `NODE_ENV=production next build`
+- `apps/frontend/app/not-found.tsx` — **nowy plik** — custom strona 404 (App Router)
+
+### 🚀 Deployment
+Komenda wdrożenia:
+```bash
+cd /home/kamil/rezerwacje && git pull origin main && docker compose exec frontend npm run build && docker compose restart frontend
+```
+
+### ⚠️ Uwaga
+- Kontener frontend nadal serwuje przez `npm run dev` — dla lepszej wydajności na produkcji zalecana zmiana komendy w `docker-compose.yml` na `npm run start` (serwowanie zbudowanej wersji)
+- Ostrzeżenie "Disabling SWC Minifier" jest informacyjne — zostanie usunięte w Next.js 15
+
+---
+
 ## [1.4.0] - 2026-02-14
 
 ### ✨ Nowe funkcjonalności
