@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import AttachmentPanel from '@/components/attachments/attachment-panel'
 
 export default function ClientDetailsPage() {
   const params = useParams()
@@ -302,7 +303,7 @@ export default function ClientDetailsPage() {
             </Card>
           </div>
 
-          {/* Right Column - Reservations History */}
+          {/* Right Column - Reservations History + Attachments */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-0 shadow-xl">
               <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
@@ -384,6 +385,14 @@ export default function ClientDetailsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Attachments Panel */}
+            <AttachmentPanel
+              entityType="CLIENT"
+              entityId={client.id}
+              title="Załączniki klienta"
+              className="shadow-xl"
+            />
           </div>
         </div>
       </div>
