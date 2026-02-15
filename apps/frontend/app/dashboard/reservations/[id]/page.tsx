@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { 
-  ArrowLeft, Trash2, Clock, 
+  ArrowLeft, Trash2, Clock, Archive, ArchiveRestore,
   Calendar, Users, User, Mail, Phone,
   Download, CheckCircle2, XCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useReservation, useCancelReservation, downloadReservationPDF } from '@/lib/api/reservations'
+import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -36,6 +36,8 @@ export default function ReservationDetailsPage() {
 
   const { data: reservation, isLoading, isError, refetch } = useReservation(reservationId)
   const cancelMutation = useCancelReservation()
+  const archiveMutation = useArchiveReservation() // NEW
+  const unarchiveMutation = useUnarchiveReservation() // NEW
 
   const handleRefetch = () => {
     refetch()
@@ -59,6 +61,54 @@ export default function ReservationDetailsPage() {
       })
     } finally {
       setDownloading(false)
+    }
+  }
+
+  // NEW: Archive handler
+  const handleArchive = async () => {
+    if (!reservation) return
+    
+    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
+
+    try {
+      await archiveMutation.mutateAsync({ 
+        id: reservation.id, 
+        reason: 'Zarchiwizowano przez użytkownika' 
+      })
+      toast({
+        title: 'Sukces',
+        description: 'Rezerwacja została zarchiwizowana',
+      })
+      refetch()
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się zarchiwizować rezerwacji',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // NEW: Unarchive handler
+  const handleUnarchive = async () => {
+    if (!reservation) return
+
+    try {
+      await unarchiveMutation.mutateAsync({ 
+        id: reservation.id, 
+        reason: 'Przywrócono z archiwum' 
+      })
+      toast({
+        title: 'Sukces',
+        description: 'Rezerwacja została przywrócona z archiwum',
+      })
+      refetch()
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się przywrócić rezerwacji',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -120,6 +170,7 @@ export default function ReservationDetailsPage() {
   const isCancellable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
   const isEditable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
   const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
+  const isArchived = !!reservation.archivedAt // NEW
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -148,6 +199,13 @@ export default function ReservationDetailsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {/* NEW: Archive Badge */}
+                  {isArchived && (
+                    <Badge className="bg-gray-200 text-gray-800 border-gray-300">
+                      <Archive className="h-3 w-3 mr-1" />
+                      Zarchiwizowane
+                    </Badge>
+                  )}
                   {/* Inline StatusChanger replaces static badge */}
                   <StatusChanger
                     reservationId={reservation.id}
@@ -329,6 +387,32 @@ export default function ReservationDetailsPage() {
                     <Download className="mr-2 h-4 w-4" />
                     {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
                   </Button>
+                  
+                  {/* NEW: Archive/Unarchive Button */}
+                  {!isArchived ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-gray-600 hover:text-gray-700" 
+                      size="lg"
+                      disabled={archiveMutation.isPending}
+                      onClick={handleArchive}
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-green-600 hover:text-green-700" 
+                      size="lg"
+                      disabled={unarchiveMutation.isPending}
+                      onClick={handleUnarchive}
+                    >
+                      <ArchiveRestore className="mr-2 h-4 w-4" />
+                      {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
+                    </Button>
+                  )}
+                  
                   <Button 
                     variant="outline" 
                     className="w-full justify-start text-red-600 hover:text-red-700" 
