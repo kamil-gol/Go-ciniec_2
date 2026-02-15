@@ -141,7 +141,7 @@ export function ReservationMenuSection({
               <div>
                 <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj menu do rezerwacji aby zobaczy\u0107 szczeg\u00f3\u0142y
+                  {'Dodaj menu do rezerwacji aby zobaczy\u0107 szczeg\u00f3\u0142y'}
                 </p>
               </div>
               <Button
@@ -174,7 +174,7 @@ export function ReservationMenuSection({
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Zmie\u0144
+                  {'Zmie\u0144'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleDeleteMenu} className="text-red-600 hover:text-red-700">
                   <Trash2 className="h-4 w-4" />
@@ -187,12 +187,12 @@ export function ReservationMenuSection({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-orange-600" />
-                  <span className="font-semibold text-sm">Pakiet: {packageName}</span>
+                  <span className="font-semibold text-sm">{'Pakiet: '}{packageName}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>Dor. <strong>{pricePerAdult} z\u0142</strong></span>
-                  <span>Dz. <strong>{pricePerChild} z\u0142</strong></span>
-                  <span>Mal. <strong>{pricePerToddler} z\u0142</strong></span>
+                  <span>{'Dor. '}<strong>{pricePerAdult}{' z\u0142'}</strong></span>
+                  <span>{'Dz. '}<strong>{pricePerChild}{' z\u0142'}</strong></span>
+                  <span>{'Mal. '}<strong>{pricePerToddler}{' z\u0142'}</strong></span>
                 </div>
               </div>
               {packageDescription && (
@@ -227,7 +227,7 @@ export function ReservationMenuSection({
                           >
                             <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
                             {dish.quantity > 1 && (
-                              <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
+                              <span className="text-orange-600 font-bold">{'\u00d7'}{dish.quantity}</span>
                             )}
                           </span>
                         ))}
@@ -243,7 +243,7 @@ export function ReservationMenuSection({
               <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="h-4 w-4 text-amber-600" />
-                  <span className="font-semibold text-sm">Opcje dodatkowe ({selectedOptions.length})</span>
+                  <span className="font-semibold text-sm">{'Opcje dodatkowe ('}{selectedOptions.length}{')'}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedOptions.map((opt: any, idx: number) => (
@@ -253,7 +253,7 @@ export function ReservationMenuSection({
                     >
                       <Sparkles className="h-3 w-3 text-amber-600" />
                       <span className="font-medium">{opt.optionName || opt.name}</span>
-                      <span className="text-amber-700 font-bold">{opt.priceAmount} z\u0142</span>
+                      <span className="text-amber-700 font-bold">{opt.priceAmount}{' z\u0142'}</span>
                     </span>
                   ))}
                 </div>

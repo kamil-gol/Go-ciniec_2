@@ -155,6 +155,13 @@ export interface Reservation {
   pricePerToddler: number // 🆕 NEW! Price per toddler (0-3)
   totalPrice: number
   
+  // Discount fields (Sprint 7) 🆕 NEW!
+  discountType?: string | null       // 'PERCENTAGE' | 'FIXED' | null
+  discountValue?: number | null       // e.g. 10 (for 10%) or 500 (for 500 PLN)
+  discountAmount?: number | null      // Calculated discount amount in PLN
+  discountReason?: string | null      // Reason for the discount
+  priceBeforeDiscount?: number | null // Original price before discount was applied
+  
   // Menu Integration 🆕 NEW!
   menuSnapshot?: MenuSnapshot // Menu snapshot if menu package selected
   

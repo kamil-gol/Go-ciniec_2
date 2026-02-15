@@ -294,7 +294,7 @@ export default function ReservationDetailsPage() {
               onUpdated={handleRefetch}
             />
 
-            {/* UNIFIED FINANCIAL SUMMARY (already interactive) */}
+            {/* UNIFIED FINANCIAL SUMMARY with Discount (Sprint 7) */}
             <ReservationFinancialSummary
               reservationId={reservation.id}
               adults={reservation.adults || 0}
@@ -306,6 +306,12 @@ export default function ReservationDetailsPage() {
               totalPrice={Number(reservation.totalPrice) || 0}
               startDateTime={reservation.startDateTime}
               endDateTime={reservation.endDateTime}
+              status={reservation.status}
+              discountType={reservation.discountType}
+              discountValue={reservation.discountValue}
+              discountAmount={reservation.discountAmount}
+              discountReason={reservation.discountReason}
+              priceBeforeDiscount={reservation.priceBeforeDiscount}
             />
 
             {/* Quick Actions */}
