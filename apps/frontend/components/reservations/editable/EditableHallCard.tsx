@@ -55,24 +55,22 @@ export function EditableHallCard({
   const selectedCapacity = selectedHall?.capacity || 0
   const hallChanged = selectedHallId !== initialHallId
 
-  // Check availability only when hall changed
   const { data: availability, isLoading: availabilityLoading } = useCheckAvailability(
     hallChanged ? selectedHallId : undefined,
     hallChanged ? startDateTime || undefined : undefined,
     hallChanged ? endDateTime || undefined : undefined,
-    reservationId // exclude current reservation from conflicts
+    reservationId
   )
 
-  // Reset when props change
   useEffect(() => {
     setSelectedHallId(initialHallId)
   }, [initialHallId])
 
   const handleSave = async (reason: string) => {
-    if (!selectedHallId) throw new Error('Wybierz sal\u0119')
+    if (!selectedHallId) throw new Error('Wybierz salę')
 
     if (hallChanged && availability && !availability.available) {
-      throw new Error('Wybrana sala nie jest dost\u0119pna w tym terminie')
+      throw new Error('Wybrana sala nie jest dostępna w tym terminie')
     }
 
     await updateMutation.mutateAsync({
@@ -110,26 +108,25 @@ export function EditableHallCard({
               {initialCapacity && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-4 w-4" />
-                  <span>Pojemno\u015b\u0107: {initialCapacity} os\u00f3b</span>
+                  <span>Pojemność: {initialCapacity} osób</span>
                 </div>
               )}
             </div>
           )
         }
 
-        // Edit mode
         return (
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-secondary-700">Sala</label>
               <Select value={selectedHallId} onValueChange={setSelectedHallId}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Wybierz sal\u0119..." />
+                  <SelectValue placeholder="Wybierz salę..." />
                 </SelectTrigger>
                 <SelectContent>
                   {hallsArray.map((hall) => (
                     <SelectItem key={hall.id} value={hall.id}>
-                      {hall.name} (max {hall.capacity} os\u00f3b)
+                      {hall.name} (max {hall.capacity} osób)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -138,16 +135,15 @@ export function EditableHallCard({
 
             {selectedCapacity > 0 && (
               <p className="text-sm text-secondary-600">
-                Pojemno\u015b\u0107: {selectedCapacity} os\u00f3b
+                Pojemność: {selectedCapacity} osób
                 {totalGuests > selectedCapacity && (
                   <span className="text-red-600 font-medium">
-                    {' '}\u2014 Uwaga! Go\u015bci: {totalGuests} (przekroczenie!)
+                    {' '}— Uwaga! Gości: {totalGuests} (przekroczenie!)
                   </span>
                 )}
               </p>
             )}
 
-            {/* Availability check */}
             {hallChanged && startDateTime && endDateTime && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -163,13 +159,13 @@ export function EditableHallCard({
                 {availabilityLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-secondary-600">Sprawdzanie dost\u0119pno\u015bci...</span>
+                    <span className="text-sm text-secondary-600">Sprawdzanie dostępności...</span>
                   </div>
                 ) : availability?.available ? (
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
                     <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                      Sala jest dost\u0119pna w wybranym terminie
+                      Sala jest dostępna w wybranym terminie
                     </span>
                   </div>
                 ) : (
@@ -177,13 +173,13 @@ export function EditableHallCard({
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-red-600" />
                       <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Kolizja z istniej\u0105c\u0105 rezerwacj\u0105!
+                        Kolizja z istniejącą rezerwacją!
                       </span>
                     </div>
                     {availability?.conflicts?.map((c) => (
                       <div key={c.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
-                        \u2022 {c.clientName} \u2014 {c.eventType} (
-                        {new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}\u2013
+                        • {c.clientName} — {c.eventType} (
+                        {new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}–
                         {new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
                       </div>
                     ))}

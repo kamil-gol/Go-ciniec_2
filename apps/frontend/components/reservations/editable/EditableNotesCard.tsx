@@ -31,7 +31,6 @@ export function EditableNotesCard({
 
   const updateMutation = useUpdateReservation()
 
-  // Reset when props change
   useEffect(() => {
     setNotes(initialNotes || '')
     setDeadline(initialDeadline ? new Date(initialDeadline).toISOString().split('T')[0] : '')
@@ -56,8 +55,7 @@ export function EditableNotesCard({
     setDeadline(initialDeadline ? new Date(initialDeadline).toISOString().split('T')[0] : '')
   }
 
-  // Filter extra-hours auto-notes for clean display
-  const displayNotes = (initialNotes || '').replace(/\n\n\u23f0 Dodatkowe godziny:.*/, '').trim()
+  const displayNotes = (initialNotes || '').trim()
 
   return (
     <EditableCard
@@ -92,7 +90,6 @@ export function EditableNotesCard({
           )
         }
 
-        // Edit mode
         return (
           <div className="space-y-4">
             <div>
@@ -111,11 +108,11 @@ export function EditableNotesCard({
                 value={deadline}
                 onChange={setDeadline}
                 label="Termin potwierdzenia (opcjonalnie)"
-                placeholder="Wybierz dat\u0119..."
+                placeholder="Wybierz datę..."
                 minDate={new Date()}
               />
               <p className="mt-1 text-xs text-secondary-500">
-                Musi by\u0107 co najmniej 1 dzie\u0144 przed rozpocz\u0119ciem wydarzenia
+                Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
               </p>
             </div>
           </div>

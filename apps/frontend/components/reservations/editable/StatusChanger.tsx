@@ -66,7 +66,6 @@ const STATUS_CONFIG = {
 
 type StatusKey = keyof typeof STATUS_CONFIG
 
-/** Allowed transitions: from → [to, to, ...] */
 const STATUS_TRANSITIONS: Record<StatusKey, StatusKey[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['COMPLETED', 'CANCELLED'],
@@ -157,7 +156,6 @@ export function StatusChanger({
     setReasonError('')
   }, [currentStatus])
 
-  // View mode: badge + edit button
   if (!editing) {
     return (
       <div className="flex items-center gap-2">
@@ -181,7 +179,6 @@ export function StatusChanger({
     )
   }
 
-  // Edit mode
   return (
     <>
       <motion.div
@@ -189,7 +186,6 @@ export function StatusChanger({
         animate={{ opacity: 1, y: 0 }}
         className="space-y-3"
       >
-        {/* Current → New status visual */}
         <div className="flex items-center gap-2 flex-wrap">
           <Badge className={`${config.color} text-white border-0 px-3 py-1 opacity-60`}>
             <StatusIcon className="h-3 w-3 mr-1" />
@@ -218,7 +214,6 @@ export function StatusChanger({
           </Select>
         </div>
 
-        {/* Reason input */}
         <div className="max-w-md">
           <textarea
             value={reason}
@@ -238,7 +233,6 @@ export function StatusChanger({
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -265,7 +259,6 @@ export function StatusChanger({
         </div>
       </motion.div>
 
-      {/* Confirmation dialog for dangerous transitions */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -31,7 +31,6 @@ export function EditableGuestsCard({
 
   const updateMutation = useUpdateReservation()
 
-  // Reset local state when props change (after save)
   useEffect(() => {
     setAdults(initialAdults)
     setChildren(initialChildren)
@@ -44,7 +43,7 @@ export function EditableGuestsCard({
 
   const handleSave = async (reason: string) => {
     if (adults + children + toddlers < 1) {
-      throw new Error('\u0141\u0105czna liczba go\u015bci musi by\u0107 >= 1')
+      throw new Error('Łączna liczba gości musi być >= 1')
     }
 
     await updateMutation.mutateAsync({
@@ -57,7 +56,7 @@ export function EditableGuestsCard({
       },
     })
 
-    toast.success('Liczba go\u015bci zaktualizowana')
+    toast.success('Liczba gości zaktualizowana')
     onUpdated?.()
   }
 
@@ -69,7 +68,7 @@ export function EditableGuestsCard({
 
   return (
     <EditableCard
-      title="Go\u015bcie"
+      title="Goście"
       icon={<Users className="h-5 w-5 text-white" />}
       iconGradient="from-purple-500 to-pink-500"
       gradientHeader
@@ -79,12 +78,11 @@ export function EditableGuestsCard({
     >
       {(editing) => {
         if (!editing) {
-          // View mode — current display from details page
           return (
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
                 <div>
-                  <p className="text-sm text-muted-foreground">Doro\u015bli</p>
+                  <p className="text-sm text-muted-foreground">Dorośli</p>
                   <p className="text-2xl font-bold">{initialAdults}</p>
                 </div>
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
@@ -116,14 +114,13 @@ export function EditableGuestsCard({
           )
         }
 
-        // Edit mode
         return (
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="p-3 rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-white dark:bg-black/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium">Doro\u015bli</span>
+                  <span className="text-sm font-medium">Dorośli</span>
                 </div>
                 <Input
                   type="number"
@@ -144,7 +141,7 @@ export function EditableGuestsCard({
               <div className="p-3 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-white dark:bg-black/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Smile className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium">Dzieci (4\u201312)</span>
+                  <span className="text-sm font-medium">Dzieci (4–12)</span>
                 </div>
                 <Input
                   type="number"
@@ -152,7 +149,7 @@ export function EditableGuestsCard({
                   value={children}
                   onChange={(e) => setChildren(Math.max(0, parseInt(e.target.value) || 0))}
                   disabled={isChildrenDisabled}
-                  placeholder={isChildrenDisabled ? 'Najpierw doro\u015bli' : '0'}
+                  placeholder={isChildrenDisabled ? 'Najpierw dorośli' : '0'}
                   className="text-center text-xl font-bold h-12"
                 />
               </div>
@@ -160,7 +157,7 @@ export function EditableGuestsCard({
               <div className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-white dark:bg-black/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Baby className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium">Maluchy (0\u20133)</span>
+                  <span className="text-sm font-medium">Maluchy (0–3)</span>
                 </div>
                 <Input
                   type="number"
@@ -168,7 +165,7 @@ export function EditableGuestsCard({
                   value={toddlers}
                   onChange={(e) => setToddlers(Math.max(0, parseInt(e.target.value) || 0))}
                   disabled={isChildrenDisabled}
-                  placeholder={isChildrenDisabled ? 'Najpierw doro\u015bli' : '0'}
+                  placeholder={isChildrenDisabled ? 'Najpierw dorośli' : '0'}
                   className="text-center text-xl font-bold h-12"
                 />
               </div>
@@ -180,7 +177,7 @@ export function EditableGuestsCard({
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex items-center justify-center p-3 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800"
               >
-                <span className="text-sm mr-3">\u0141\u0105cznie:</span>
+                <span className="text-sm mr-3">Łącznie:</span>
                 <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {totalGuests}
                 </span>
@@ -195,13 +192,13 @@ export function EditableGuestsCard({
               >
                 <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                 <span className="text-sm text-red-800 dark:text-red-200">
-                  Liczba go\u015bci ({totalGuests}) przekracza pojemno\u015b\u0107 sali ({hallCapacity})!
+                  Liczba gości ({totalGuests}) przekracza pojemność sali ({hallCapacity})!
                 </span>
               </motion.div>
             )}
 
             {totalGuests < 1 && (
-              <p className="text-xs text-red-600">\u0141\u0105czna liczba go\u015bci musi by\u0107 co najmniej 1</p>
+              <p className="text-xs text-red-600">Łączna liczba gości musi być co najmniej 1</p>
             )}
           </div>
         )
