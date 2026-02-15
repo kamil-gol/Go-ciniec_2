@@ -121,7 +121,7 @@ export default function MenuTemplatesPage() {
           <Link href="/dashboard/menu">
             <Button variant="ghost" className="text-white hover:bg-white/20 mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Powrót do Menu
+              Powr\u00f3t do Menu
             </Button>
           </Link>
           
@@ -132,7 +132,7 @@ export default function MenuTemplatesPage() {
               </div>
               <div>
                 <h1 className="text-5xl font-bold tracking-tight">Szablony Menu</h1>
-                <p className="text-white/90 text-lg mt-2">Konfiguruj szablony menu dla typów wydarzeń</p>
+                <p className="text-white/90 text-lg mt-2">Konfiguruj szablony menu dla typ\u00f3w wydarze\u0144</p>
               </div>
             </div>
 
@@ -214,21 +214,21 @@ export default function MenuTemplatesPage() {
         {/* Templates Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Wczytywanie szablonów...</p>
+            <p className="text-muted-foreground">Wczytywanie szablon\u00f3w...</p>
           </div>
         ) : templates.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Brak szablonów</h3>
+              <h3 className="text-xl font-semibold mb-2">Brak szablon\u00f3w</h3>
               <p className="text-muted-foreground mb-6">
                 {selectedEventType !== 'all'
-                  ? 'Brak szablonów dla wybranego typu wydarzenia'
+                  ? 'Brak szablon\u00f3w dla wybranego typu wydarzenia'
                   : 'Zacznij od stworzenia pierwszego szablonu menu'}
               </p>
               <Button onClick={handleCreate}>
                 <Plus className="h-4 w-4 mr-2" />
-                Utwórz szablon
+                Utw\u00f3rz szablon
               </Button>
             </CardContent>
           </Card>
@@ -253,7 +253,7 @@ export default function MenuTemplatesPage() {
                       )}
                     </div>
                     {!template.isActive && (
-                      <Badge variant="secondary">Nieaktywny</Badge>
+                      <Badge className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">Nieaktywny</Badge>
                     )}
                   </div>
 
@@ -280,7 +280,7 @@ export default function MenuTemplatesPage() {
                   <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Package className="h-4 w-4" />
-                      <span>{getPackageCount(template)} pakietów</span>
+                      <span>{getPackageCount(template)} pakiet\u00f3w</span>
                     </div>
                     {(template.validFrom || template.validTo) && (
                       <div className="flex items-center gap-1">
@@ -306,7 +306,7 @@ export default function MenuTemplatesPage() {
                       variant="outline"
                       onClick={() => handleDownloadPdf(template)}
                       disabled={pdfLoading === template.id}
-                      title="Drukuj kartę menu"
+                      title="Drukuj kart\u0119 menu"
                     >
                       {pdfLoading === template.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -339,16 +339,16 @@ export default function MenuTemplatesPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Czy na pewno chcesz usunąć?</AlertDialogTitle>
+            <AlertDialogTitle>Czy na pewno chcesz usun\u0105\u0107?</AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon "{templateToDelete?.name}" zostanie trwale usunięty.
-              Wszystkie powiązane pakiety również zostaną usunięte.
+              Szablon "{templateToDelete?.name}" zostanie trwale usuni\u0119ty.
+              Wszystkie powi\u0105zane pakiety r\u00f3wnie\u017c zostan\u0105 usuni\u0119te.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
-              Usuń
+              Usu\u0144
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
