@@ -18,9 +18,9 @@ import type {
   ApiResponse,
 } from '@/types/menu.types';
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // QUERY KEYS
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export const menuKeys = {
   all: ['menu'] as const,
@@ -36,9 +36,9 @@ export const menuKeys = {
   reservationMenu: (reservationId: string) => [...menuKeys.all, 'reservation', reservationId] as const,
 };
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MENU TEMPLATES - QUERIES
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useMenuTemplates(filters?: MenuTemplateFilters) {
   return useQuery({
@@ -66,9 +66,9 @@ export function useActiveMenuTemplate(eventTypeId: string | undefined) {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MENU TEMPLATES - MUTATIONS
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useCreateTemplate() {
   const queryClient = useQueryClient();
@@ -105,9 +105,9 @@ export function useDeleteTemplate() {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MENU PACKAGES - QUERIES
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useMenuPackages(templateId: string | undefined | null) {
   return useQuery({
@@ -136,9 +136,9 @@ export function usePackageCategories(packageId: string | undefined) {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MENU PACKAGES - MUTATIONS
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useCreatePackage() {
   const queryClient = useQueryClient();
@@ -146,7 +146,7 @@ export function useCreatePackage() {
   return useMutation({
     mutationFn: (input: any) => menuApi.createPackage(input),
     onSuccess: (response) => {
-      const templateId = response.data.templateId;
+      const templateId = response.data.menuTemplateId;
       queryClient.invalidateQueries({ queryKey: menuKeys.packages(templateId) });
       queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
     },
@@ -160,7 +160,7 @@ export function useUpdatePackage() {
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       menuApi.updatePackage(id, data),
     onSuccess: (response, variables) => {
-      const templateId = response.data.templateId;
+      const templateId = response.data.menuTemplateId;
       queryClient.invalidateQueries({ queryKey: menuKeys.packages(templateId) });
       queryClient.invalidateQueries({ queryKey: menuKeys.package(variables.id) });
     },
@@ -180,9 +180,9 @@ export function useDeletePackage() {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MENU OPTIONS - QUERIES
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useMenuOptions(filters?: MenuOptionFilters) {
   return useQuery({
@@ -201,9 +201,9 @@ export function useMenuOption(id: string | undefined) {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MENU OPTIONS - MUTATIONS
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useCreateOption() {
   const queryClient = useQueryClient();
@@ -240,9 +240,9 @@ export function useDeleteOption() {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // EVENT TYPES
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useEventTypes() {
   return useQuery({
@@ -257,9 +257,9 @@ export function useEventTypes() {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // RESERVATION MENU
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 /**
  * Get reservation menu with price breakdown
@@ -421,9 +421,9 @@ export function useRemoveMenu() {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // HELPER HOOKS
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 
 export function useOptionsGroupedByCategory() {
   return useQuery({
