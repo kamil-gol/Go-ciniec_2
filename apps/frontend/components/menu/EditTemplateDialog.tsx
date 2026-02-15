@@ -51,7 +51,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
         variant: template.variant || '',
         eventTypeId: template.eventTypeId,
         validFrom: template.validFrom.split('T')[0],
-        validTo: template.validTo.split('T')[0],
+        validTo: template.validTo?.split('T')[0] || '',
         isActive: template.isActive,
       })
     }
@@ -69,15 +69,15 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
           variant: formData.variant || undefined,
           eventTypeId: formData.eventTypeId,
           validFrom: formData.validFrom,
-          validTo: formData.validTo,
+          validTo: formData.validTo || undefined,
           isActive: formData.isActive,
         },
       })
       
       onOpenChange(false)
-      alert('✅ Szablon menu został zaktualizowany!')
+      alert('\u2705 Szablon menu zosta\u0142 zaktualizowany!')
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować szablonu'}`)
+      alert(`\u274C B\u0142\u0105d: ${error.error || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 szablonu'}`)
     }
   }
 
@@ -153,7 +153,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="validFrom">Ważny od *</Label>
+                <Label htmlFor="validFrom">Wa\u017cny od *</Label>
                 <Input
                   id="validFrom"
                   type="date"
@@ -163,13 +163,12 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="validTo">Ważny do *</Label>
+                <Label htmlFor="validTo">Wa\u017cny do</Label>
                 <Input
                   id="validTo"
                   type="date"
                   value={formData.validTo}
                   onChange={(e) => setFormData({ ...formData, validTo: e.target.value })}
-                  required
                 />
               </div>
             </div>
@@ -187,7 +186,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
                 htmlFor="isActive"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Aktywny (dostępny do wyboru)
+                Aktywny (dost\u0119pny do wyboru)
               </Label>
             </div>
           </div>
