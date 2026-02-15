@@ -19,7 +19,7 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
           <Utensils className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>Menu nie zostało wybrane</p>
+          <p>Menu nie zosta\u0142o wybrane</p>
         </CardContent>
       </Card>
     )
@@ -51,7 +51,7 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
           </CardTitle>
           {showEdit && onEdit && (
             <Button variant="outline" size="sm" onClick={onEdit}>
-              Zmień
+              Zmie\u0144
             </Button>
           )}
         </CardHeader>
@@ -68,29 +68,29 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 rounded-lg">
               <Users className="h-4 w-4 text-primary mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">Dorośli</p>
-              <p className="font-bold">{pricePerAdult} zł</p>
+              <p className="text-xs text-muted-foreground">Doro\u015bli</p>
+              <p className="font-bold">{pricePerAdult} z\u0142</p>
             </div>
             <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 rounded-lg">
               <Smile className="h-4 w-4 text-blue-600 mx-auto mb-1" />
               <p className="text-xs text-muted-foreground">Dzieci</p>
-              <p className="font-bold">{pricePerChild} zł</p>
+              <p className="font-bold">{pricePerChild} z\u0142</p>
             </div>
             <div className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-lg">
               <Baby className="h-4 w-4 text-green-600 mx-auto mb-1" />
               <p className="text-xs text-muted-foreground">Maluchy</p>
-              <p className="font-bold">{pricePerToddler} zł</p>
+              <p className="font-bold">{pricePerToddler} z\u0142</p>
             </div>
           </div>
 
-          {/* Liczba gości */}
+          {/* Liczba go\u015bci */}
           <div className="border-t pt-4">
-            <h4 className="font-semibold mb-3">Liczba gości</h4>
+            <h4 className="font-semibold mb-3">Liczba go\u015bci</h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Dorośli</p>
+                  <p className="text-xs text-muted-foreground">Doro\u015bli</p>
                   <p className="font-semibold">{adults}</p>
                 </div>
               </div>
@@ -118,8 +118,8 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
                 <ChefHat className="h-5 w-5 text-orange-600" />
                 <h4 className="font-semibold">Wybrane dania</h4>
                 <Badge variant="secondary" className="ml-auto">
-                  {dishSelections.reduce((sum, cat) => 
-                    sum + cat.dishes.reduce((s, d) => s + d.quantity, 0), 0
+                  {dishSelections.reduce((sum: number, cat: any) => 
+                    sum + cat.dishes.reduce((s: number, d: any) => s + d.quantity, 0), 0
                   )} porcji
                 </Badge>
               </div>
@@ -137,19 +137,19 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
                 </div>
                 {priceBreakdown.packageCost.adults.count > 0 && (
                   <div className="flex justify-between">
-                    <span>Dorośli ({priceBreakdown.packageCost.adults.count} × {formatCurrency(priceBreakdown.packageCost.adults.priceEach)})</span>
+                    <span>Doro\u015bli ({priceBreakdown.packageCost.adults.count} \u00d7 {formatCurrency(priceBreakdown.packageCost.adults.priceEach)})</span>
                     <span className="font-medium">{formatCurrency(priceBreakdown.packageCost.adults.total)}</span>
                   </div>
                 )}
                 {priceBreakdown.packageCost.children.count > 0 && (
                   <div className="flex justify-between">
-                    <span>Dzieci ({priceBreakdown.packageCost.children.count} × {formatCurrency(priceBreakdown.packageCost.children.priceEach)})</span>
+                    <span>Dzieci ({priceBreakdown.packageCost.children.count} \u00d7 {formatCurrency(priceBreakdown.packageCost.children.priceEach)})</span>
                     <span className="font-medium">{formatCurrency(priceBreakdown.packageCost.children.total)}</span>
                   </div>
                 )}
                 {priceBreakdown.packageCost.toddlers.count > 0 && (
                   <div className="flex justify-between">
-                    <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} × {formatCurrency(priceBreakdown.packageCost.toddlers.priceEach)})</span>
+                    <span>Maluchy ({priceBreakdown.packageCost.toddlers.count} \u00d7 {formatCurrency(priceBreakdown.packageCost.toddlers.priceEach)})</span>
                     <span className="font-medium">{formatCurrency(priceBreakdown.packageCost.toddlers.total)}</span>
                   </div>
                 )}
