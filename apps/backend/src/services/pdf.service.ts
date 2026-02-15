@@ -441,8 +441,7 @@ export class PDFService {
     this.addStatusBadge(doc, reservation.status);
     doc.moveDown(0.5);
 
-    // US-6.2: Hall removed from PDF — client should not see hall name
-
+    // US-6.2: Hall name removed from PDF — client should not see hall assignment
     const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie okreslono';
     doc.text(`Typ wydarzenia: ${eventTypeName}`);
 
