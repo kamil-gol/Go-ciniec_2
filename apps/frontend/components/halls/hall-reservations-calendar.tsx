@@ -101,8 +101,8 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'CONFIRMED': return 'Potwierdzona'
-      case 'PENDING': return 'Oczekująca'
-      case 'COMPLETED': return 'Zakończona'
+      case 'PENDING': return 'Oczekuj\u0105ca'
+      case 'COMPLETED': return 'Zako\u0144czona'
       case 'CANCELLED': return 'Anulowana'
       default: return status
     }
@@ -139,7 +139,7 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
               onClick={() => setViewMode('day')}
               className={viewMode === 'day' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : ''}
             >
-              Dzień
+              Dzie\u0144
             </Button>
             <Button
               size="sm"
@@ -147,7 +147,7 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
               onClick={() => setViewMode('week')}
               className={viewMode === 'week' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : ''}
             >
-              Tydzień
+              Tydzie\u0144
             </Button>
             <Button
               size="sm"
@@ -155,7 +155,7 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
               onClick={() => setViewMode('month')}
               className={viewMode === 'month' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : ''}
             >
-              Miesiąc
+              Miesi\u0105c
             </Button>
           </div>
 
@@ -176,7 +176,7 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
           <AlertCircle className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800 dark:text-blue-300">
-            <strong>Wiele rezerwacji dziś ({todayReservations.length}):</strong> System automatycznie sprawdza, czy czasy się nie nakładają.
+            <strong>Wiele rezerwacji dzi\u015b ({todayReservations.length}):</strong> System automatycznie sprawdza, czy czasy si\u0119 nie nak\u0142adaj\u0105.
           </AlertDescription>
         </Alert>
       )}
@@ -188,12 +188,12 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
             <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <h3 className="text-lg font-semibold mb-2">Brak rezerwacji</h3>
             <p className="text-muted-foreground mb-4">
-              Nie ma jeszcze żadnych rezerwacji dla tej sali w wybranym okresie.
+              Nie ma jeszcze \u017cadnych rezerwacji dla tej sali w wybranym okresie.
             </p>
             {onCreateReservation && (
               <Button onClick={onCreateReservation} variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
-                Dodaj pierwszą rezerwację
+                Dodaj pierwsz\u0105 rezerwacj\u0119
               </Button>
             )}
           </CardContent>
@@ -225,7 +225,7 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                     </div>
                   </div>
                   {dateReservations.length > 1 && (
-                    <Badge variant="outline" className="border-purple-300 bg-purple-50 dark:bg-purple-950/30">
+                    <Badge variant="default" className="border border-purple-300 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300">
                       {dateReservations.length} rezerwacje
                     </Badge>
                   )}
@@ -300,8 +300,8 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                                   <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
-                                  <div className="text-xs text-muted-foreground">Goście</div>
-                                  <div className="font-medium">{reservation.guests} osób</div>
+                                  <div className="text-xs text-muted-foreground">Go\u015bcie</div>
+                                  <div className="font-medium">{reservation.guests} os\u00f3b</div>
                                 </div>
                               </div>
 
@@ -311,15 +311,15 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                                   <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
                                 </div>
                                 <div>
-                                  <div className="text-xs text-muted-foreground">Wartość</div>
-                                  <div className="font-medium">{reservation.totalPrice} zł</div>
+                                  <div className="text-xs text-muted-foreground">Warto\u015b\u0107</div>
+                                  <div className="font-medium">{reservation.totalPrice} z\u0142</div>
                                 </div>
                               </div>
                             </div>
 
                             {/* View Details */}
                             <div className="mt-3 flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 font-medium">
-                              Zobacz szczegóły
+                              Zobacz szczeg\u00f3\u0142y
                               <ChevronRight className="h-4 w-4" />
                             </div>
                           </div>
