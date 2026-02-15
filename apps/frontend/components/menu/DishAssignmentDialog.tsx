@@ -50,7 +50,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const filteredDishes = allDishes.filter(dish => 
     !assignedDishIds.has(dish.id) && (
       dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dish.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      dish.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     )
   )
 
@@ -146,7 +146,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                       </div>
                       {option.dish?.category && (
                         <Badge variant="default" className="border border-emerald-300 bg-transparent text-emerald-700 text-xs">
-                          {CATEGORY_LABELS[option.dish.category] || option.dish.category}
+                          {CATEGORY_LABELS[option.dish.category.name] || option.dish.category.name}
                         </Badge>
                       )}
                     </div>
@@ -197,6 +197,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2">
                 {filteredDishes.map((dish) => {
                   const isSelected = selectedDishes.has(dish.id)
+                  const categoryName = typeof dish.category === 'string' ? dish.category : dish.category?.name
                   return (
                     <div 
                       key={dish.id}
@@ -225,7 +226,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                         )}>
                           {dish.name}
                         </p>
-                        {dish.category && (
+                        {categoryName && (
                           <Badge 
                             variant="default" 
                             className={cn(
@@ -235,7 +236,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                                 : "border-muted-foreground/30"
                             )}
                           >
-                            {CATEGORY_LABELS[dish.category] || dish.category}
+                            {CATEGORY_LABELS[categoryName] || categoryName}
                           </Badge>
                         )}
                         {dish.description && (
