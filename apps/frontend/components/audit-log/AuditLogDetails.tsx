@@ -55,7 +55,7 @@ interface Props {
 export function AuditLogDetails({ log, open, onClose }: Props) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl !p-0 overflow-hidden" onClose={onClose}>
+      <DialogContent className="max-w-2xl !p-0 overflow-hidden">
         {/* Gradient Header */}
         <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-slate-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-slate-800 px-6 py-5">
           <button
