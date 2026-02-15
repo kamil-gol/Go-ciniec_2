@@ -193,6 +193,9 @@ export default function MenuDemoPage() {
           /* Selection Flow */
           <div className="mx-auto max-w-6xl">
             <MenuSelectionFlow
+              adults={50}
+              children={10}
+              toddlers={5}
               onComplete={(selection) => {
                 console.log('Selection completed:', selection);
                 toast.success('\u2705 Wyb\u00f3r menu zako\u0144czony!', {
