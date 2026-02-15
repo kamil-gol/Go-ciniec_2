@@ -14,6 +14,7 @@ import {
   Smartphone,
   CreditCard,
   Loader2,
+  Paperclip,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -46,6 +47,7 @@ import { Input } from '@/components/ui/input'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
+import AttachmentPanel from '@/components/attachments/attachment-panel'
 
 interface DepositActionsProps {
   deposit: Deposit
@@ -62,6 +64,7 @@ const paymentMethods: { value: PaymentMethod; label: string; icon: React.Element
 export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showPayDialog, setShowPayDialog] = useState(false)
+  const [showAttachments, setShowAttachments] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TRANSFER')
   const [paidAt, setPaidAt] = useState(new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(false)
@@ -232,6 +235,17 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
 
           <DropdownMenuSeparator />
 
+          {/* Attachments */}
+          <DropdownMenuItem
+            onClick={() => setShowAttachments(true)}
+            className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+          >
+            <Paperclip className="mr-2 h-4 w-4 text-violet-600" />
+            Załączniki
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
             className="text-red-600 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
@@ -321,6 +335,32 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               Potwierdź płatność
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attachments Dialog */}
+      <Dialog open={showAttachments} onOpenChange={setShowAttachments}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
+                <Paperclip className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              </div>
+              Załączniki zaliczki
+            </DialogTitle>
+            <DialogDescription>
+              {deposit.reservation?.client
+                ? `${deposit.reservation.client.firstName} ${deposit.reservation.client.lastName} — ${Number(deposit.amount).toLocaleString('pl-PL')} zł`
+                : `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-2 pb-2">
+            <AttachmentPanel
+              entityType="DEPOSIT"
+              entityId={deposit.id}
+              title="Załączniki"
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -24,6 +24,7 @@ model User {
   createdReservations  Reservation[]          @relation("CreatedBy")
   createdHistories     ReservationHistory[]   @relation("ChangedBy")
   activityLogs         ActivityLog[]
+  uploadedAttachments  Attachment[]           @relation("UploadedBy")
 
   @@index([email])
   @@index([role])
@@ -556,4 +557,43 @@ model MenuPriceHistory {
   @@index([packageId])
   @@index([optionId])
   @@index([effectiveFrom])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📎 ATTACHMENT SYSTEM - Polymorphic file attachments
+// ═══════════════════════════════════════════════════════════════
+
+model Attachment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // Polymorphic association
+  entityType    String   @db.VarChar(50)   // "CLIENT" | "RESERVATION" | "DEPOSIT"
+  entityId      String   @db.Uuid
+
+  // Classification
+  category      String   @db.VarChar(50)   // "RODO", "CONTRACT", "PAYMENT_PROOF", etc.
+  label         String?  @db.VarChar(255)  // User-defined label
+
+  // File info
+  originalName  String   @db.VarChar(255)  // Original filename
+  storedName    String   @db.VarChar(255)  // UUID-based name on disk
+  mimeType      String   @db.VarChar(100)  // "application/pdf", "image/jpeg", etc.
+  sizeBytes     Int                        // File size in bytes
+  storagePath   String   @db.Text          // Relative path in /app/uploads
+
+  // Metadata
+  uploadedById  String   @db.Uuid
+  description   String?  @db.Text
+  isArchived    Boolean  @default(false)   // Soft-delete
+  version       Int      @default(1) @db.SmallInt
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  uploadedBy    User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([category])
+  @@index([uploadedById])
+  @@index([createdAt])
 }
