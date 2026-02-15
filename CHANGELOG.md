@@ -1,4 +1,116 @@
-# 📝 Changelog
+# 📋 Changelog
+
+## [1.7.0] - 2026-02-15 ⚠️ W TRAKCIE
+
+### ✨ Nowe funkcjonalności (Sprint 8 — Audit Log)
+
+**PR:** TBD | **Branch:** `feat/audit-log-frontend` | **Dokumentacja:** [AUDIT_LOG_IMPLEMENTATION.md](AUDIT_LOG_IMPLEMENTATION.md)
+
+- **System logowania audytu (Audit Trail)** — pełna historia wszystkich zmian w systemie.
+
+#### Backend
+- 6 nowych endpointów API (`/api/audit-log/*`):
+  - `GET /api/audit-log` — lista logów z filtrami (action, entityType, userId, entityId, daty) i paginacją
+  - `GET /api/audit-log/recent` — ostatnie N logów (dla widgetu dashboard)
+  - `GET /api/audit-log/statistics` — statystyki (podział po typie, akcji, użytkownikach)
+  - `GET /api/audit-log/meta/entity-types` — dostępne typy encji
+  - `GET /api/audit-log/meta/actions` — dostępne akcje
+  - `GET /api/audit-log/entity/:entityType/:entityId` — historia zmian konkretnej encji
+- Service z filtrowaniem, paginacją i agregacją statystyk
+- Controller z pełną walidacją i obsługą błędów
+
+#### Frontend
+- **Nowa strona:** `/dashboard/audit-log`
+- **Komponenty:**
+  - `AuditLogTable` — tabela z pełną historią zmian
+  - `AuditLogFilters` — filtry (akcja, typ encji, zakres dat)
+  - `AuditLogStats` — statystyki i liczniki
+- **Hooks:** React Query integration z 6 custom hooks (`useAuditLogs`, `useRecentAuditLogs`, etc.)
+- **Typy:** Pełne TypeScript definitions dla audit log
+
+#### Funkcjonalności
+- ✅ Filtrowanie po typie akcji (CREATE, UPDATE, DELETE)
+- ✅ Filtrowanie po typie encji (CLIENT, RESERVATION, MENU, itp.)
+- ✅ Filtrowanie po zakresie dat
+- ✅ Paginacja (konfigurowalna ilość rekordów na stronę)
+- ✅ Statystyki (liczniki, wykresy, top 10 użytkowników)
+- ✅ Historia zmian dla konkretnej encji
+- ✅ Widget z ostatnimi logami (gotowy do dashboard)
+
+### 🐛 Bugfixy (Sprint 8)
+
+#### Bug #10: Podwójny `/api/` w URL audit-log
+**Commit:** [`99ebf99`](https://github.com/kamil-gol/Go-ciniec_2/commit/99ebf990e526fbbb1e61ac56130a5779e6d632b5)
+
+**Problem:**  
+Frontend wysyłał requesty do `/api/api/audit-log/*` zamiast `/api/audit-log/*` (404 Not Found).
+
+**Przyczyna:**  
+Hooks w `use-audit-log.ts` używały pełnych ścieżek z `/api/` prefix, ale `api` client już miał base URL z `/api/`.
+
+**Rozwiązanie:**  
+Usunięto `/api/` prefix ze wszystkich endpointów w hooks:
+```typescript
+// ❌ Przed
+await api.get('/api/audit-log/statistics');
+
+// ✅ Po
+await api.get('/audit-log/statistics');
+```
+
+**Status:** ✅ Naprawione (wymaga pull + restart na serwerze)
+
+### 📚 Zmienione/nowe pliki
+
+#### Backend
+- `apps/backend/src/routes/audit-log.routes.ts` — nowe routes
+- `apps/backend/src/controllers/audit-log.controller.ts` — nowy kontroler
+- `apps/backend/src/services/audit-log.service.ts` — nowy service
+- `apps/backend/src/server.ts` — rejestracja routes
+
+#### Frontend
+- `apps/frontend/src/app/dashboard/audit-log/page.tsx` — nowa strona
+- `apps/frontend/src/hooks/use-audit-log.ts` — nowe hooks
+- `apps/frontend/src/components/audit-log/AuditLogTable.tsx` — nowy komponent
+- `apps/frontend/src/components/audit-log/AuditLogFilters.tsx` — nowy komponent
+- `apps/frontend/src/components/audit-log/AuditLogStats.tsx` — nowy komponent
+- `apps/frontend/src/types/audit-log.types.ts` — nowe typy
+
+#### Dokumentacja
+- `AUDIT_LOG_IMPLEMENTATION.md` — pełna dokumentacja implementacji
+- `CHANGELOG.md` — aktualizacja
+
+### 🚀 Deployment (DO WYKONANIA)
+
+```bash
+cd /home/kamil/rezerwacje
+
+# Pull najnowszych zmian
+git pull origin feat/audit-log-frontend
+
+# Zrestartuj frontend
+docker-compose restart frontend
+
+# Sprawdź logi
+docker-compose logs -f frontend
+```
+
+### ✅ Testy (DO WYKONANIA po deploy)
+
+| Test | Oczekiwany wynik |
+|------|------------------|
+| Otwórz `/dashboard/audit-log` | Strona ładuje się bez błędów |
+| Console (F12) | Brak 404 dla `/api/audit-log/*` |
+| Filtry | Działają (akcja, typ, daty) |
+| Paginacja | Można przechodzić między stronami |
+| Statystyki | Wyświetlają się poprawnie |
+
+### ⚠️ Znane problemy
+
+1. **Route Not Found (404)** — wymaga pull + restart na serwerze (nie zastosowano jeszcze fix'a)
+2. **Brak danych testowych** — tabela `ActivityLog` może być pusta
+
+---
 
 ## [1.6.0] - 2026-02-15
 
@@ -31,7 +143,7 @@
 - Fix kalkulacji total bar: użycie `finalTotalPrice` (uwzględnia rabat).
 - Fix layoutu DiscountSection (kompaktowy design, bez card-in-card).
 
-### 📦 Zmienione/nowe pliki (wybrane)
+### 📚 Zmienione/nowe pliki (wybrane)
 - `apps/backend/prisma/schema.prisma` — pola rabatu.
 - `apps/backend/src/services/discount.service.ts` — apply/remove.
 - `apps/backend/src/controllers/discount.controller.ts` — kontroler.
@@ -53,7 +165,7 @@
 - **US-6.4: Blokada statusu COMPLETED przed datą wydarzenia** — zmiana statusu na COMPLETED jest blokowana, jeśli wydarzenie jeszcze się nie zakończyło.
 - **US-6.6: Auto-notatka o inflacji** — przy tworzeniu rezerwacji na następny rok system dopisuje informację o możliwej zmianie cen.
 
-### 📦 Zmienione pliki
+### 📚 Zmienione pliki
 - `apps/backend/src/services/pdf-generator.service.ts` — US-6.2
 - `apps/backend/src/services/reservation.service.ts` — US-6.3, US-6.4, US-6.6
 
@@ -78,7 +190,7 @@ cd /home/kamil/rezerwacje && git checkout main && git pull origin main && docker
 - **Fix kodowania UTF-8 w szczegółach rezerwacji** — zamiana ~12 Unicode escape sequences na poprawne polskie znaki w `reservations/[id]/page.tsx`.
 - **Fix API Error 500: `/api/attachments`** — `attachment.routes.ts` wywoływał `attachmentController.list()`, ale kontroler eksportuje tę metodę jako `getByEntity()`. Zmieniono wywołanie na `.getByEntity()`.
 
-### 📦 Zmienione pliki
+### 📚 Zmienione pliki
 - `apps/frontend/app/dashboard/reservations/[id]/page.tsx`
 - `apps/backend/src/routes/attachment.routes.ts`
 
@@ -95,7 +207,7 @@ cd /home/kamil/rezerwacje && git pull origin main && docker compose restart back
 - **Frontend w trybie produkcyjnym** — przejście na `npm run build && npm run start` oraz `NODE_ENV=production`.
 - **Backend pozostaje w trybie dev** — `npm run dev` (zmiana planowana osobno).
 
-### 📦 Zmienione pliki
+### 📚 Zmienione pliki
 - `docker-compose.yml`
 
 ---
