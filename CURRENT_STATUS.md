@@ -3,15 +3,23 @@
 ## ⚡ Szybki Przegląd
 
 **Branch:** `main`  
-**Ostatnia aktualizacja:** 15.02.2026, 13:10 CET  
+**Ostatnia aktualizacja:** 15.02.2026, 13:15 CET  
 **Status:** ✅ Stabilny - W aktywnym rozwoju  
-**Wersja:** 1.4.2 (UTF-8 encoding fix: polskie znaki w formularzu rezerwacji)
+**Wersja:** 1.4.3 (Frontend production mode: build + start)
 
 ---
 
 ## 📦 Co Działa
 
-### 🔤 UTF-8 Encoding Fix (v1.4.2) 🆕
+### 🚀 Production Mode (v1.4.3) 🆕
+✅ **Frontend w trybie produkcyjnym** — `npm run build && npm run start` zamiast `npm run dev`  
+✅ **NODE_ENV=production** — domyślna wartość w docker-compose.yml  
+✅ **Szybsze ładowanie stron** — pre-rendered HTML, statyczna optymalizacja  
+✅ **Niższe zużycie zasobów** — brak file watchera i kompilacji on-demand  
+✅ **Auto-build przy restarcie** — `docker compose restart frontend` automatycznie buduje i serwuje  
+⚠️ **Backend pozostaje w trybie dev** — `npm run dev` (zmiana planowana osobno)  
+
+### 🔤 UTF-8 Encoding Fix (v1.4.2)
 ✅ **Fix kodowania polskich znaków** — zamiana ~100+ Unicode escape sequences (`\uXXXX`) na poprawne znaki UTF-8 w `create-reservation-form.tsx`  
 ✅ **Skan całego systemu** — pozostałe pliki (8 komponentów) sprawdzone i OK  
 ✅ **Znaki:** ą, ę, ó, ś, ź, ż, ł, ń, ć + symbole: —, ×, –, •, ═, 💡  
@@ -178,9 +186,9 @@ Kontynuuję pracę nad projektem "Gościniec" — system rezerwacji (repo: kamil
 - **Branch:** main
 - **Serwer:** Docker na VPS (cd /home/kamil/rezerwacje)
 - **Baza:** PostgreSQL (serwis: postgres, user: rezerwacje, database: rezerwacje)
-- **Frontend:** Next.js 14 App Router (port 3000, kontener: rezerwacje-web)
-- **Backend:** Node.js + Express + Prisma (port 3001, kontener: rezerwacje-api)
-- **Build:** `NODE_ENV=production next build` (wymuszony w package.json)
+- **Frontend:** Next.js 14 App Router (port 3000, kontener: rezerwacje-web) — PRODUCTION MODE (build + start)
+- **Backend:** Node.js + Express + Prisma (port 3001, kontener: rezerwacje-api) — dev mode
+- **Build:** `NODE_ENV=production next build` (wymuszony w package.json + docker-compose)
 
 ## Zasady pracy — BEZWZGLĘDNE
 1. Masz PEŁNY dostęp do GitHub — czytaj, edytuj, twórz pliki BEZPOŚREDNIO bez pytania o zgodę
@@ -203,18 +211,19 @@ mcp_tool_github_mcp_direct_push_files → wiele plików w jednym commit
 
 # Po zmianach DAJ MI komendy:
 cd /home/kamil/rezerwacje && git pull origin main
-docker compose exec frontend npm run build && docker compose restart frontend  # zmiany frontend
-docker compose restart backend  # zmiany backend
-docker compose logs -f backend --tail=50  # sprawdź logi
+docker compose restart frontend  # auto-build + serve (~30-60s)
+docker compose restart backend   # jeśli zmiany backend
+docker compose logs -f frontend --tail=50  # sprawdź logi
 ```
 
 ## Przeczytaj na start:
 1. CURRENT_STATUS.md — pełny status + TODO + struktura
-2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.2)
+2. CHANGELOG.md — historia zmian (najnowsza wersja: 1.4.3)
 3. apps/backend/prisma/schema.prisma — modele bazy danych
 4. docker-compose.yml — konfiguracja kontenerów
 
-## Co jest gotowe (v1.4.2):
+## Co jest gotowe (v1.4.3):
+- ✅ Frontend w PRODUCTION MODE (build + start, NODE_ENV=production)
 - ✅ Rezerwacje + kolejka + drag&drop + auto-cancel + row-level locking
 - ✅ Formularz rezerwacji — 6-krokowy Wizard UI (Stepper, Combobox, DatePicker, TimePicker)
 - ✅ Flow: Szablon → Pakiet → Ceny w formularzu rezerwacji
@@ -231,12 +240,13 @@ docker compose logs -f backend --tail=50  # sprawdź logi
 - ✅ UTF-8 encoding — polskie znaki poprawione w formularzu rezerwacji
 
 ## Znane uwagi:
-- ⚠️ Frontend kontener serwuje przez `npm run dev` — docelowo zmienić na `npm run start`
+- ⚠️ Backend kontener nadal w dev mode (`npm run dev`) — zmiana planowana osobno
 - ⚠️ SWC Minifier warning — informacyjne, zniknie w Next.js 15
+- ⚠️ Każdy restart frontend = rebuild ~30-60s (trade-off za production mode)
 
 ## Co wymaga dalszej pracy:
+- 🔄 Backend production mode (kompilacja TS + npm run start)
 - 🔄 Testy jednostkowe systemu menu
-- 🔄 Production deployment (zmiana na npm run start)
 - 🔄 Import/Export menu (CSV/JSON)
 
 Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych działań.
@@ -249,15 +259,16 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 **Brak krytycznych bugów** 🎉
 
 ### ⚠️ Uwagi
-- Frontend kontener serwuje przez `npm run dev` — dla produkcji zalecana zmiana na `npm run start` w `docker-compose.yml`
+- Backend kontener nadal w dev mode (`npm run dev`) — zmiana na production planowana osobno
 - Ostrzeżenie "Disabling SWC Minifier" jest informacyjne — zostanie usunięte w Next.js 15
+- Każdy restart frontend = rebuild ~30-60s (trade-off za production performance)
 
 ---
 
 ## 📋 TODO
 
 ### 🔄 Planowane
-- [ ] Zmiana frontend na production mode (`npm run start` w docker-compose.yml)
+- [ ] Backend production mode (kompilacja TS → JS + `npm run start`)
 - [ ] Testy jednostkowe systemu menu
 - [ ] Import/Export menu (CSV/JSON)
 - [ ] Sezonowość dań
@@ -270,11 +281,11 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 ## 📊 Postęp Ogólny
 
 - **Backend:** 99% ✅
-- **Frontend:** 98% ✅
+- **Frontend:** 99% ✅ (production mode ✅)
 - **Bezpieczeństwo:** 95% ✅ (auth na wszystkich endpointach)
 - **Testy:** 80% 🔄 (E2E: 45 testów pass)
-- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:10)
-- **Deployment:** 70% 🔄
+- **Dokumentacja:** 99% ✅ (zaktualizowana 15.02, 13:15)
+- **Deployment:** 85% 🔄 (frontend: production ✅, backend: dev 🔄)
 
 ### Postęp Modułów:
 - **Sale (Halls):** 100% ✅
@@ -296,7 +307,8 @@ Zacznij od przeczytania CURRENT_STATUS.md, potem zaproponuj plan dalszych dział
 - **Toast Stacking:** 100% ✅ (v1.2.0)
 - **Karta Menu PDF:** 100% ✅ (v1.3.0)
 - **Build Fixes:** 100% ✅ (v1.4.1)
-- **UTF-8 Encoding Fix:** 100% ✅ (v1.4.2) 🆕
+- **UTF-8 Encoding Fix:** 100% ✅ (v1.4.2)
+- **Production Mode:** 100% ✅ (v1.4.3) 🆕
 - **Testy E2E:** 100% ✅ (45 testów)
 
 ---
@@ -309,11 +321,14 @@ cd /home/kamil/rezerwacje
 git checkout main
 git pull origin main
 
-# Restart (po pull)
-docker compose restart backend frontend
+# Restart frontend (auto-build + serve, ~30-60s)
+docker compose restart frontend
 
-# Build frontendu (po zmianach w kodzie frontend)
-docker compose exec frontend npm run build && docker compose restart frontend
+# Restart backend
+docker compose restart backend
+
+# Restart obu
+docker compose restart backend frontend
 
 # Rebuild (jeśli zmiany w package.json lub Dockerfile)
 docker compose down
@@ -325,8 +340,8 @@ docker compose build --no-cache frontend
 docker compose up -d
 
 # Logi
-docker compose logs -f backend --tail=50
 docker compose logs -f frontend --tail=50
+docker compose logs -f backend --tail=50
 
 # Migracje
 docker compose exec backend npm run prisma:migrate:deploy
@@ -369,4 +384,4 @@ docker compose exec postgres psql -U rezerwacje -d rezerwacje
 
 ---
 
-**Status:** Projekt w wersji 1.4.2. Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E, naprawionym buildem, poprawionym kodowaniem UTF-8. Gotowy do dalszego rozwoju.
+**Status:** Projekt w wersji 1.4.3. Frontend w trybie produkcyjnym (build + start). Kompletny system rezerwacji z 6-krokowym wizardem, flow Szablon→Pakiet, detekcją konfliktu "Cała Sala", testami E2E, poprawionym kodowaniem UTF-8. Gotowy do dalszego rozwoju.
