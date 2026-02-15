@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "/home/kamil/rezerwacje/apps/frontend/playwright.config.ts",
-    "rootDir": "/home/kamil/rezerwacje/apps/frontend/e2e/specs",
+    "configFile": "/app/playwright.config.ts",
+    "rootDir": "/app/e2e/specs",
     "forbidOnly": false,
     "fullyParallel": true,
     "globalSetup": null,
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/home/kamil/rezerwacje/apps/frontend/test-results",
+        "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,71 +24,7 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/home/kamil/rezerwacje/apps/frontend/e2e/specs",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 30000
-      },
-      {
-        "outputDir": "/home/kamil/rezerwacje/apps/frontend/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 4
-        },
-        "id": "firefox",
-        "name": "firefox",
-        "testDir": "/home/kamil/rezerwacje/apps/frontend/e2e/specs",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 30000
-      },
-      {
-        "outputDir": "/home/kamil/rezerwacje/apps/frontend/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 4
-        },
-        "id": "webkit",
-        "name": "webkit",
-        "testDir": "/home/kamil/rezerwacje/apps/frontend/e2e/specs",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 30000
-      },
-      {
-        "outputDir": "/home/kamil/rezerwacje/apps/frontend/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 4
-        },
-        "id": "mobile-chrome",
-        "name": "mobile-chrome",
-        "testDir": "/home/kamil/rezerwacje/apps/frontend/e2e/specs",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 30000
-      },
-      {
-        "outputDir": "/home/kamil/rezerwacje/apps/frontend/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 4
-        },
-        "id": "mobile-safari",
-        "name": "mobile-safari",
-        "testDir": "/home/kamil/rezerwacje/apps/frontend/e2e/specs",
+        "testDir": "/app/e2e/specs",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -172,12 +108,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6436,
+                      "duration": 13148,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:52:59.663Z",
+                      "startTime": "2026-02-14T22:27:56.763Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -206,12 +142,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 6091,
+                      "duration": 16931,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:52:59.971Z",
+                      "startTime": "2026-02-14T22:27:56.970Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -221,7 +157,7 @@
               ],
               "id": "791b3c4e0869e77b2651-bb2034e58cbde70663a7",
               "file": "01-auth.spec.ts",
-              "line": 35,
+              "line": 36,
               "column": 7
             },
             {
@@ -231,32 +167,50 @@
               "tests": [
                 {
                   "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/e2e/specs/01-auth.spec.ts",
+                        "line": 56,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
                   "projectId": "chromium",
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 6884,
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:52:59.860Z",
-                      "annotations": [],
+                      "startTime": "2026-02-14T22:27:54.424Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/app/e2e/specs/01-auth.spec.ts",
+                            "line": 56,
+                            "column": 8
+                          }
+                        }
+                      ],
                       "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "skipped"
                 }
               ],
               "id": "791b3c4e0869e77b2651-7b362ae82577a77c09c8",
               "file": "01-auth.spec.ts",
-              "line": 55,
-              "column": 7
+              "line": 56,
+              "column": 8
             },
             {
               "title": "should fail login with invalid email",
@@ -271,15 +225,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 2,
                       "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6038,
+                      "duration": 16977,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:00.103Z",
+                      "startTime": "2026-02-14T22:27:56.769Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -289,7 +243,7 @@
               ],
               "id": "791b3c4e0869e77b2651-8685336db8747a046cbf",
               "file": "01-auth.spec.ts",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -305,15 +259,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 4235,
+                      "duration": 16525,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:06.605Z",
+                      "startTime": "2026-02-14T22:27:56.900Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -323,7 +277,7 @@
               ],
               "id": "791b3c4e0869e77b2651-47a67819218f936fc31c",
               "file": "01-auth.spec.ts",
-              "line": 88,
+              "line": 103,
               "column": 7
             },
             {
@@ -342,12 +296,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4382,
+                      "duration": 11778,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:06.611Z",
+                      "startTime": "2026-02-14T22:28:10.869Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -357,7 +311,7 @@
               ],
               "id": "791b3c4e0869e77b2651-72b23f5edcfaf1feba21",
               "file": "01-auth.spec.ts",
-              "line": 106,
+              "line": 132,
               "column": 7
             },
             {
@@ -374,14 +328,14 @@
                   "results": [
                     {
                       "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 4980,
+                      "duration": 21353,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:06.759Z",
+                      "startTime": "2026-02-14T22:28:14.474Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -391,7 +345,7 @@
               ],
               "id": "791b3c4e0869e77b2651-e3054d060c46ee4339bf",
               "file": "01-auth.spec.ts",
-              "line": 125,
+              "line": 147,
               "column": 7
             },
             {
@@ -408,14 +362,14 @@
                   "results": [
                     {
                       "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 3589,
+                      "duration": 14466,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:07.243Z",
+                      "startTime": "2026-02-14T22:28:14.581Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -425,7 +379,7 @@
               ],
               "id": "791b3c4e0869e77b2651-7ef13a46a33500bdb7dc",
               "file": "01-auth.spec.ts",
-              "line": 139,
+              "line": 161,
               "column": 7
             },
             {
@@ -444,12 +398,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 5756,
+                      "duration": 13330,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:10.936Z",
+                      "startTime": "2026-02-14T22:28:15.330Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -459,7 +413,7 @@
               ],
               "id": "791b3c4e0869e77b2651-3d5809f890967840060d",
               "file": "01-auth.spec.ts",
-              "line": 147,
+              "line": 169,
               "column": 7
             },
             {
@@ -478,12 +432,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6591,
+                      "duration": 14458,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:11.052Z",
+                      "startTime": "2026-02-14T22:28:22.751Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -493,7 +447,7 @@
               ],
               "id": "791b3c4e0869e77b2651-d4b1c14e6984f70ff359",
               "file": "01-auth.spec.ts",
-              "line": 155,
+              "line": 177,
               "column": 7
             },
             {
@@ -509,15 +463,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 7013,
+                      "duration": 20523,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:11.110Z",
+                      "startTime": "2026-02-14T22:28:28.771Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -527,11 +481,11 @@
               ],
               "id": "791b3c4e0869e77b2651-9e84933a423622095480",
               "file": "01-auth.spec.ts",
-              "line": 163,
+              "line": 185,
               "column": 7
             },
             {
-              "title": "should show user info in menu",
+              "title": "should show user info in sidebar",
               "ok": true,
               "tags": [],
               "tests": [
@@ -543,15 +497,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 2,
                       "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6661,
+                      "duration": 17961,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:11.866Z",
+                      "startTime": "2026-02-14T22:28:29.147Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -559,9 +513,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "791b3c4e0869e77b2651-5839426fd1b48ee8de75",
+              "id": "791b3c4e0869e77b2651-c69b197eb108126cec23",
               "file": "01-auth.spec.ts",
-              "line": 175,
+              "line": 199,
               "column": 7
             }
           ]
@@ -569,7 +523,7 @@
         {
           "title": "Autentykacja - Security",
           "file": "01-auth.spec.ts",
-          "line": 190,
+          "line": 215,
           "column": 6,
           "specs": [
             {
@@ -585,15 +539,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 2878,
+                      "duration": 14879,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:16.841Z",
+                      "startTime": "2026-02-14T22:28:35.953Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -603,7 +557,7 @@
               ],
               "id": "791b3c4e0869e77b2651-509e3319d8034cc3e95d",
               "file": "01-auth.spec.ts",
-              "line": 191,
+              "line": 216,
               "column": 7
             },
             {
@@ -622,12 +576,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4213,
+                      "duration": 12553,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:17.857Z",
+                      "startTime": "2026-02-14T22:28:37.390Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -637,7 +591,7 @@
               ],
               "id": "791b3c4e0869e77b2651-bec785ffaec3c8dda8be",
               "file": "01-auth.spec.ts",
-              "line": 206,
+              "line": 231,
               "column": 7
             }
           ]
@@ -671,14 +625,14 @@
                   "results": [
                     {
                       "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6097,
+                      "duration": 12262,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:18.360Z",
+                      "startTime": "2026-02-14T22:28:47.217Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -704,15 +658,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 5876,
+                      "duration": 15027,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:18.732Z",
+                      "startTime": "2026-02-14T22:28:49.381Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -738,15 +692,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6468,
+                      "duration": 14527,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:19.815Z",
+                      "startTime": "2026-02-14T22:28:50.127Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -778,7 +732,7 @@
                     {
                       "type": "skip",
                       "location": {
-                        "file": "/home/kamil/rezerwacje/apps/frontend/e2e/specs/04-queue-drag-drop.spec.ts",
+                        "file": "/app/e2e/specs/04-queue-drag-drop.spec.ts",
                         "line": 60,
                         "column": 8
                       }
@@ -797,12 +751,12 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:22.180Z",
+                      "startTime": "2026-02-14T22:28:50.965Z",
                       "annotations": [
                         {
                           "type": "skip",
                           "location": {
-                            "file": "/home/kamil/rezerwacje/apps/frontend/e2e/specs/04-queue-drag-drop.spec.ts",
+                            "file": "/app/e2e/specs/04-queue-drag-drop.spec.ts",
                             "line": 60,
                             "column": 8
                           }
@@ -840,15 +794,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 6769,
+                      "duration": 13684,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:22.246Z",
+                      "startTime": "2026-02-14T22:28:51.138Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -875,14 +829,14 @@
                   "results": [
                     {
                       "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6236,
+                      "duration": 12812,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:24.663Z",
+                      "startTime": "2026-02-14T22:28:59.645Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -916,15 +870,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 10767,
+                      "duration": 26384,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:24.755Z",
+                      "startTime": "2026-02-14T22:29:04.520Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -950,15 +904,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5307,
+                      "duration": 13027,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:26.383Z",
+                      "startTime": "2026-02-14T22:29:04.780Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -984,15 +938,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 5341,
+                      "duration": 12182,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:29.182Z",
+                      "startTime": "2026-02-14T22:29:04.975Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1027,14 +981,14 @@
                   "results": [
                     {
                       "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 5366,
+                      "duration": 13757,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:30.980Z",
+                      "startTime": "2026-02-14T22:29:12.614Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1060,15 +1014,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 6576,
+                      "duration": 15399,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:31.882Z",
+                      "startTime": "2026-02-14T22:29:17.296Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1105,12 +1059,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6343,
+                      "duration": 14485,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:34.601Z",
+                      "startTime": "2026-02-14T22:29:17.918Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1153,15 +1107,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 2,
                       "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 9599,
+                      "duration": 24558,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:35.741Z",
+                      "startTime": "2026-02-14T22:29:26.458Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1187,15 +1141,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 5730,
+                      "duration": 15022,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:36.474Z",
+                      "startTime": "2026-02-14T22:29:31.112Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1205,7 +1159,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-bd717ccdebe27fa9f43d",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 53,
+              "line": 50,
               "column": 7
             },
             {
@@ -1221,15 +1175,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5740,
+                      "duration": 15314,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:38.591Z",
+                      "startTime": "2026-02-14T22:29:32.530Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1239,7 +1193,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-2ad191b910b4dc4dd05b",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 73,
+              "line": 65,
               "column": 7
             }
           ]
@@ -1247,7 +1201,7 @@
         {
           "title": "Bug #6 Regression - Loading States",
           "file": "10-bugfix-regression.spec.ts",
-          "line": 99,
+          "line": 82,
           "column": 6,
           "specs": [
             {
@@ -1263,15 +1217,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 5527,
+                      "duration": 15393,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:41.025Z",
+                      "startTime": "2026-02-14T22:29:32.897Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1281,7 +1235,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-bcc809e6558c8fd969dc",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 100,
+              "line": 83,
               "column": 7
             },
             {
@@ -1297,15 +1251,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 6335,
+                      "duration": 15147,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:42.277Z",
+                      "startTime": "2026-02-14T22:29:46.290Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1315,7 +1269,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-c419c969604d214bd1b1",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 118,
+              "line": 99,
               "column": 7
             },
             {
@@ -1331,15 +1285,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6583,
+                      "duration": 16414,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:44.431Z",
+                      "startTime": "2026-02-14T22:29:48.000Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1349,7 +1303,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-7f4c54d78f8cd7522c5a",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 135,
+              "line": 112,
               "column": 7
             }
           ]
@@ -1357,7 +1311,7 @@
         {
           "title": "Bug #7 Regression - Auto-Cancel Logic",
           "file": "10-bugfix-regression.spec.ts",
-          "line": 155,
+          "line": 130,
           "column": 6,
           "specs": [
             {
@@ -1374,14 +1328,14 @@
                   "results": [
                     {
                       "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 6368,
+                      "duration": 13336,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:45.434Z",
+                      "startTime": "2026-02-14T22:29:48.397Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1391,7 +1345,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-992b8d17f88102251f34",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 156,
+              "line": 131,
               "column": 7
             },
             {
@@ -1407,15 +1361,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6623,
+                      "duration": 13964,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:46.636Z",
+                      "startTime": "2026-02-14T22:29:51.134Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1425,7 +1379,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-1f34870db9ff026b77b6",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 183,
+              "line": 147,
               "column": 7
             },
             {
@@ -1441,15 +1395,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 3358,
+                      "duration": 15549,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:48.714Z",
+                      "startTime": "2026-02-14T22:30:01.615Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1459,7 +1413,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-b592e70c6cc9fa0becfb",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 208,
+              "line": 163,
               "column": 7
             }
           ]
@@ -1467,7 +1421,7 @@
         {
           "title": "Bug #8 Regression - Position Validation",
           "file": "10-bugfix-regression.spec.ts",
-          "line": 220,
+          "line": 168,
           "column": 6,
           "specs": [
             {
@@ -1483,15 +1437,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 6288,
+                      "duration": 17869,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:51.233Z",
+                      "startTime": "2026-02-14T22:30:01.887Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1501,7 +1455,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-2b3083c89b568fde0d98",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 221,
+              "line": 169,
               "column": 7
             },
             {
@@ -1517,15 +1471,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6889,
+                      "duration": 14769,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:52.023Z",
+                      "startTime": "2026-02-14T22:30:04.578Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1535,7 +1489,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-f8cf9634abf95435d825",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 253,
+              "line": 194,
               "column": 7
             },
             {
@@ -1552,14 +1506,14 @@
                   "results": [
                     {
                       "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6164,
+                      "duration": 13808,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:52.204Z",
+                      "startTime": "2026-02-14T22:30:05.290Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1569,7 +1523,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-1609dc78b2a77ce8af76",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 269,
+              "line": 203,
               "column": 7
             }
           ]
@@ -1577,7 +1531,7 @@
         {
           "title": "Bug #9 Regression - Nullable Constraints",
           "file": "10-bugfix-regression.spec.ts",
-          "line": 293,
+          "line": 225,
           "column": 6,
           "specs": [
             {
@@ -1593,15 +1547,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 5492,
+                      "duration": 13891,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:53.487Z",
+                      "startTime": "2026-02-14T22:30:17.340Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1611,7 +1565,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-618a7d1f8c957c185e4f",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 294,
+              "line": 226,
               "column": 7
             },
             {
@@ -1627,15 +1581,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 2,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 5675,
+                      "duration": 16763,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:57.884Z",
+                      "startTime": "2026-02-14T22:30:19.257Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1645,7 +1599,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-bbe93a25e43ac302a2d0",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 317,
+              "line": 238,
               "column": 7
             },
             {
@@ -1661,15 +1615,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4400,
+                      "duration": 15798,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:58.510Z",
+                      "startTime": "2026-02-14T22:30:19.530Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1679,7 +1633,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-888a61340b561f268a78",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 337,
+              "line": 252,
               "column": 7
             },
             {
@@ -1696,14 +1650,14 @@
                   "results": [
                     {
                       "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 4400,
+                      "duration": 15820,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:59.084Z",
+                      "startTime": "2026-02-14T22:30:19.964Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1713,7 +1667,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-2dcf67cc4e6de3a737c8",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 347,
+              "line": 256,
               "column": 7
             }
           ]
@@ -1721,7 +1675,7 @@
         {
           "title": "All Bugs - Final Verification",
           "file": "10-bugfix-regression.spec.ts",
-          "line": 359,
+          "line": 261,
           "column": 6,
           "specs": [
             {
@@ -1737,15 +1691,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 10435,
+                      "duration": 18408,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:53:59.289Z",
+                      "startTime": "2026-02-14T22:30:31.420Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1755,7 +1709,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-3461b22a8c3961e1cc79",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 360,
+              "line": 262,
               "column": 7
             },
             {
@@ -1771,15 +1725,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7502,
+                      "duration": 14806,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:54:03.081Z",
+                      "startTime": "2026-02-14T22:30:35.472Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1789,7 +1743,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-31a5648bb263f4e944ec",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 379,
+              "line": 279,
               "column": 7
             },
             {
@@ -1806,14 +1760,14 @@
                   "results": [
                     {
                       "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 10896,
+                      "duration": 18730,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-08T01:54:03.718Z",
+                      "startTime": "2026-02-14T22:30:35.955Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1823,7 +1777,7 @@
               ],
               "id": "bd80cbac6c2fbc159bae-d4a45a646b105e4c88d9",
               "file": "10-bugfix-regression.spec.ts",
-              "line": 402,
+              "line": 301,
               "column": 7
             }
           ]
@@ -1833,10 +1787,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-02-08T01:52:56.489Z",
-    "duration": 78306.794,
-    "expected": 44,
-    "skipped": 1,
+    "startTime": "2026-02-14T22:27:54.031Z",
+    "duration": 180986.412,
+    "expected": 43,
+    "skipped": 2,
     "unexpected": 0,
     "flaky": 0
   }
