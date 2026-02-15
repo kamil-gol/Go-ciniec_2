@@ -58,14 +58,14 @@ services:
       - rezerwacje-network
     command: npm run dev
 
-  # Frontend
+  # Frontend (Production Mode: build + serve)
   frontend:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile.dev
     container_name: rezerwacje-web
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://62.171.189.172:3001/api}
       NEXT_PUBLIC_APP_NAME: 'Rezerwacje Gosciniec Rodzinny'
     ports:
@@ -77,7 +77,7 @@ services:
       - /app/.next
     networks:
       - rezerwacje-network
-    command: npm run dev
+    command: sh -c "npm run build && npm run start"
 
   # Redis (for caching, session management, task queue)
   redis:

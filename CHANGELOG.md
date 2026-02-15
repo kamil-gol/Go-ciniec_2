@@ -1,5 +1,31 @@
 # 📝 Changelog
 
+## [1.4.3] - 2026-02-15
+
+### 🚀 Ulepszenia
+- **Frontend w trybie produkcyjnym** — kontener przeszedł z `npm run dev` (dev server z hot reload) na `npm run build && npm run start` (zbudowana, zoptymalizowana wersja)
+  - Strony ładują się 2-5x szybciej (pre-rendered HTML, statyczna optymalizacja)
+  - Niższe zużycie CPU/RAM (brak file watchera i kompilacji on-demand)
+  - Poprawny SSR + static generation
+  - `NODE_ENV` frontend domyślnie `production` (wcześniej `development`)
+- **Backend pozostaje w trybie dev** — `npm run dev` z hot reload (zmiana na produkcję planowana osobno)
+
+### 📦 Zmienione pliki
+- `docker-compose.yml` — frontend: `command: npm run dev` → `command: sh -c "npm run build && npm run start"`, `NODE_ENV: development` → `production`
+
+### ⚠️ Uwaga
+- Każdy restart kontenera frontend (`docker compose restart frontend`) teraz zawiera krok budowania (~30-60s)
+- Po `git pull` wystarczy: `docker compose restart frontend` (build wykona się automatycznie)
+- Nie trzeba już ręcznie wywoływać `docker compose exec frontend npm run build`
+
+### 🚀 Deployment
+Komenda wdrożenia:
+```bash
+cd /home/kamil/rezerwacje && git pull origin main && docker compose restart frontend
+```
+
+---
+
 ## [1.4.2] - 2026-02-15
 
 ### 🐛 Bugfixy
