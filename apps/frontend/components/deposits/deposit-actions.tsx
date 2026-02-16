@@ -42,6 +42,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { depositsApi } from '@/lib/api/deposits'
@@ -160,6 +167,9 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
   const isPaid = deposit.status === 'PAID'
   const isCancelled = deposit.status === 'CANCELLED'
   const clientEmail = deposit.reservation?.client?.email
+  const clientName = deposit.reservation?.client
+    ? `${deposit.reservation.client.firstName} ${deposit.reservation.client.lastName}`
+    : null
 
   return (
     <>
@@ -235,7 +245,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
 
           <DropdownMenuSeparator />
 
-          {/* Attachments */}
+          {/* Attachments — opens Sheet */}
           <DropdownMenuItem
             onClick={() => setShowAttachments(true)}
             className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
@@ -277,9 +287,9 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                 {Number(deposit.amount).toLocaleString('pl-PL')} zł
               </p>
-              {deposit.reservation?.client && (
+              {clientName && (
                 <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-                  {deposit.reservation.client.firstName} {deposit.reservation.client.lastName}
+                  {clientName}
                 </p>
               )}
             </div>
@@ -338,31 +348,31 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Attachments Dialog */}
-      <Dialog open={showAttachments} onOpenChange={setShowAttachments}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto p-0">
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle className="flex items-center gap-2">
+      {/* Attachments Sheet — slides in from right */}
+      <Sheet open={showAttachments} onOpenChange={setShowAttachments}>
+        <SheetContent side="right" className="sm:max-w-xl w-full p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-200 dark:border-neutral-700 flex-shrink-0">
+            <SheetTitle className="flex items-center gap-2">
               <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                 <Paperclip className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
               Załączniki zaliczki
-            </DialogTitle>
-            <DialogDescription>
-              {deposit.reservation?.client
-                ? `${deposit.reservation.client.firstName} ${deposit.reservation.client.lastName} — ${Number(deposit.amount).toLocaleString('pl-PL')} zł`
+            </SheetTitle>
+            <SheetDescription>
+              {clientName
+                ? `${clientName} — ${Number(deposit.amount).toLocaleString('pl-PL')} zł`
                 : `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="px-2 pb-2">
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-2 pb-2">
             <AttachmentPanel
               entityType="DEPOSIT"
               entityId={deposit.id}
               title="Załączniki"
             />
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Delete Confirm */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

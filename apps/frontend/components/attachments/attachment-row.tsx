@@ -11,6 +11,7 @@ interface AttachmentRowProps {
   attachment: Attachment
   onDeleted: () => void
   onArchived: () => void
+  onPreview?: () => void
 }
 
 const MIME_ICONS: Record<string, typeof FileText> = {
@@ -23,15 +24,19 @@ const MIME_ICONS: Record<string, typeof FileText> = {
 const CATEGORY_COLORS: Record<string, string> = {
   RODO: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   CONTRACT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  INVOICE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  PHOTO: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  ANNEX: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  POST_EVENT: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   CORRESPONDENCE: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  PAYMENT_PROOF: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  INVOICE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  REFUND_PROOF: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   OTHER: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300',
 }
 
-export default function AttachmentRow({ attachment, onDeleted, onArchived }: AttachmentRowProps) {
+export default function AttachmentRow({ attachment, onDeleted, onArchived, onPreview }: AttachmentRowProps) {
   const Icon = MIME_ICONS[attachment.mimeType] || FileText
   const isImage = attachment.mimeType.startsWith('image/')
+  const canPreview = isImage || attachment.mimeType === 'application/pdf'
 
   const handleDownload = async () => {
     try {
@@ -43,9 +48,14 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived }: Att
   }
 
   const handlePreview = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-    const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
-    window.open(`${API_URL}/attachments/${attachment.id}/download?token=${token}`, '_blank')
+    if (onPreview) {
+      onPreview()
+    } else {
+      // Fallback: open in new tab
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
+      window.open(`${API_URL}/attachments/${attachment.id}/download?token=${token}`, '_blank')
+    }
   }
 
   const handleArchive = async () => {
@@ -113,7 +123,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived }: Att
 
       {/* Actions */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        {(isImage || attachment.mimeType === 'application/pdf') && (
+        {canPreview && (
           <button
             onClick={handlePreview}
             className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"

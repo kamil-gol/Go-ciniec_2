@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Paperclip, Plus, Filter, User } from 'lucide-react'
-import { attachmentsApi, Attachment, EntityType, AttachmentCategory, getCategoryLabel } from '@/lib/api/attachments'
+import { Attachment, AttachmentCategory, EntityType, getCategoryLabel, getCategoriesForEntity } from '@/lib/api/attachments'
+import { useAttachments } from '@/hooks/use-attachments'
 import AttachmentRow from './attachment-row'
 import AttachmentUploadDialog from './attachment-upload-dialog'
+import AttachmentPreview from './attachment-preview'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const FILTER_OPTIONS: (AttachmentCategory | 'ALL')[] = ['ALL', 'RODO', 'CONTRACT', 'INVOICE', 'PHOTO', 'CORRESPONDENCE', 'OTHER']
 
 interface AttachmentPanelProps {
   entityType: EntityType
@@ -23,31 +23,15 @@ export default function AttachmentPanel({
   title = 'Załączniki',
   className,
 }: AttachmentPanelProps) {
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: attachments = [], isLoading, refetch } = useAttachments(entityType, entityId)
   const [showUpload, setShowUpload] = useState(false)
   const [filter, setFilter] = useState<AttachmentCategory | 'ALL'>('ALL')
   const [showArchived, setShowArchived] = useState(false)
-  const [hasAny, setHasAny] = useState(false)
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null)
 
-  const fetchAttachments = useCallback(async () => {
-    try {
-      setLoading(true)
-      // For RESERVATION/DEPOSIT, also fetch cross-referenced RODO from client
-      const withClientRodo = entityType !== 'CLIENT'
-      const data = await attachmentsApi.getByEntity(entityType, entityId, undefined, withClientRodo)
-      setAttachments(data)
-      if (data.length > 0) setHasAny(true)
-    } catch {
-      // Handled by apiClient
-    } finally {
-      setLoading(false)
-    }
-  }, [entityType, entityId])
-
-  useEffect(() => {
-    if (entityId) fetchAttachments()
-  }, [fetchAttachments, entityId])
+  // Dynamic categories based on entity type
+  const categories = getCategoriesForEntity(entityType)
+  const filterOptions: (AttachmentCategory | 'ALL')[] = ['ALL', ...categories.map((c) => c.value)]
 
   // Client-side filtering by category
   const categoryFiltered = filter === 'ALL'
@@ -60,6 +44,11 @@ export default function AttachmentPanel({
 
   const archivedCount = attachments.filter((a) => a.isArchived).length
   const totalActive = attachments.filter((a) => !a.isArchived).length
+  const hasAny = attachments.length > 0
+
+  const handleRefresh = () => {
+    refetch()
+  }
 
   return (
     <div className={cn('rounded-2xl border border-neutral-200/80 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80', className)}>
@@ -88,11 +77,11 @@ export default function AttachmentPanel({
         </button>
       </div>
 
-      {/* Filters — always visible once there were any attachments */}
+      {/* Filters — dynamic per entity type */}
       {hasAny && (
         <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700/30 overflow-x-auto">
           <Filter className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-          {FILTER_OPTIONS.map((opt) => (
+          {filterOptions.map((opt) => (
             <button
               key={opt}
               onClick={() => setFilter(opt)}
@@ -124,7 +113,7 @@ export default function AttachmentPanel({
 
       {/* Content */}
       <div className="p-4">
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-6 h-6 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
           </div>
@@ -163,8 +152,9 @@ export default function AttachmentPanel({
                   )}
                   <AttachmentRow
                     attachment={att}
-                    onDeleted={fetchAttachments}
-                    onArchived={fetchAttachments}
+                    onDeleted={handleRefresh}
+                    onArchived={handleRefresh}
+                    onPreview={() => setPreviewAttachment(att)}
                   />
                 </motion.div>
               ))}
@@ -179,7 +169,14 @@ export default function AttachmentPanel({
         onClose={() => setShowUpload(false)}
         entityType={entityType}
         entityId={entityId}
-        onUploaded={fetchAttachments}
+        onUploaded={handleRefresh}
+      />
+
+      {/* Preview Modal */}
+      <AttachmentPreview
+        attachment={previewAttachment}
+        open={!!previewAttachment}
+        onClose={() => setPreviewAttachment(null)}
       />
     </div>
   )
