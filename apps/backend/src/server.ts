@@ -20,6 +20,7 @@ import menuCalculatorRoutes from '@/routes/menu-calculator.routes';
 import statsRoutes from '@/routes/stats.routes';
 import attachmentRoutes from '@/routes/attachment.routes';
 import auditLogRoutes from '@/routes/audit-log.routes';
+import reportsRoutes from '@/routes/reports.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -127,6 +128,7 @@ app.use('/api/queue', queueRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/audit-log', auditLogRoutes);
+app.use('/api/reports', reportsRoutes);
 
 /**
  * Menu System Routes
