@@ -25,22 +25,44 @@ import { useActions, useEntityTypes } from '@/hooks/use-audit-log';
 import type { AuditLogFilters } from '@/types/audit-log.types';
 
 const actionLabels: Record<string, string> = {
-  ARCHIVE: 'Archiwizacja',
-  UNARCHIVE: 'Przywrócenie',
-  RESTORE: 'Przywrócenie',
+  // Basic CRUD
   CREATE: 'Utworzenie',
   UPDATE: 'Aktualizacja',
-  DELETE: 'Usunięcie',
+  DELETE: 'Usuni\u0119cie',
+  TOGGLE: 'Prze\u0142\u0105czenie',
+  // Status
   STATUS_CHANGE: 'Zmiana statusu',
+  ARCHIVE: 'Archiwizacja',
+  UNARCHIVE: 'Przywr\u00f3cenie',
+  RESTORE: 'Przywr\u00f3cenie',
+  // Menu
+  MENU_UPDATE: 'Aktualizacja menu',
+  MENU_REMOVE: 'Usuni\u0119cie menu',
+  MENU_SELECTED: 'Wyb\u00f3r menu',
+  MENU_RECALCULATED: 'Przeliczenie menu',
+  MENU_DIRECT_REMOVED: 'Bezpo\u015brednie usuni\u0119cie menu',
+  // Payment
+  PAYMENT_UPDATE: 'Aktualizacja p\u0142atno\u015bci',
+  MARK_PAID: 'Oznaczenie p\u0142atno\u015bci',
+  // Queue
+  QUEUE_ADD: 'Dodanie do kolejki',
+  QUEUE_UPDATE: 'Aktualizacja w kolejce',
+  QUEUE_REMOVE: 'Usuni\u0119cie z kolejki',
+  QUEUE_SWAP: 'Zamiana pozycji',
+  QUEUE_MOVE: 'Przeniesienie w kolejce',
+  QUEUE_REORDER: 'Zmiana kolejno\u015bci',
+  QUEUE_REBUILD: 'Przebudowa kolejki',
+  QUEUE_PROMOTE: 'Awans z kolejki',
+  QUEUE_AUTO_CANCEL: 'Auto-anulowanie z kolejki',
+  // Attachments
+  ATTACHMENT_UPLOAD: 'Wgranie za\u0142\u0105cznika',
+  ATTACHMENT_ADD: 'Dodanie za\u0142\u0105cznika',
+  ATTACHMENT_UPDATE: 'Aktualizacja za\u0142\u0105cznika',
+  ATTACHMENT_ARCHIVE: 'Archiwizacja za\u0142\u0105cznika',
+  ATTACHMENT_DELETE: 'Usuni\u0119cie za\u0142\u0105cznika',
+  // Auth
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
-  QUEUE_ADD: 'Dodanie do kolejki',
-  QUEUE_REMOVE: 'Usunięcie z kolejki',
-  QUEUE_SWAP: 'Zamiana pozycji',
-  QUEUE_MOVE: 'Przeniesienie',
-  MARK_PAID: 'Oznaczenie płatności',
-  ATTACHMENT_ADD: 'Dodanie załącznika',
-  ATTACHMENT_DELETE: 'Usunięcie załącznika',
 };
 
 const entityTypeLabels: Record<string, string> = {
@@ -49,9 +71,13 @@ const entityTypeLabels: Record<string, string> = {
   ROOM: 'Sala',
   HALL: 'Sala',
   MENU: 'Menu',
-  USER: 'Użytkownik',
+  USER: 'U\u017cytkownik',
   DEPOSIT: 'Zaliczka',
   EVENT_TYPE: 'Typ wydarzenia',
+  ATTACHMENT: 'Za\u0142\u0105cznik',
+  QUEUE: 'Kolejka',
+  DISH: 'Danie',
+  MENU_TEMPLATE: 'Szablon menu',
 };
 
 interface Props {
@@ -164,7 +190,7 @@ export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
               {startDate ? (
                 format(startDate, 'd MMMM yyyy', { locale: pl })
               ) : (
-                <span>Wybierz datę</span>
+                <span>Wybierz dat\u0119</span>
               )}
             </Button>
           </PopoverTrigger>
@@ -196,7 +222,7 @@ export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
               {endDate ? (
                 format(endDate, 'd MMMM yyyy', { locale: pl })
               ) : (
-                <span>Wybierz datę</span>
+                <span>Wybierz dat\u0119</span>
               )}
             </Button>
           </PopoverTrigger>

@@ -29,41 +29,85 @@ interface Props {
 }
 
 const actionColors: Record<string, string> = {
-  ARCHIVE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
-  UNARCHIVE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  RESTORE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  // Basic CRUD
   CREATE: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   UPDATE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
   DELETE: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  TOGGLE: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800',
+  // Status
   STATUS_CHANGE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
-  LOGIN: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
-  LOGOUT: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-800',
+  ARCHIVE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
+  UNARCHIVE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  RESTORE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  // Menu
+  MENU_UPDATE: 'bg-lime-100 text-lime-700 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800',
+  MENU_REMOVE: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  MENU_SELECTED: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  MENU_RECALCULATED: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  MENU_DIRECT_REMOVED: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+  // Payment
+  PAYMENT_UPDATE: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+  MARK_PAID: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+  // Queue
   QUEUE_ADD: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
+  QUEUE_UPDATE: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
   QUEUE_REMOVE: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
   QUEUE_SWAP: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
   QUEUE_MOVE: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
-  MARK_PAID: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+  QUEUE_REORDER: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
+  QUEUE_REBUILD: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
+  QUEUE_PROMOTE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  QUEUE_AUTO_CANCEL: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  // Attachments
+  ATTACHMENT_UPLOAD: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
   ATTACHMENT_ADD: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
+  ATTACHMENT_UPDATE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  ATTACHMENT_ARCHIVE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
   ATTACHMENT_DELETE: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
+  // Auth
+  LOGIN: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
+  LOGOUT: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-800',
 };
 
 const actionLabels: Record<string, string> = {
-  ARCHIVE: 'Archiwizacja',
-  UNARCHIVE: 'Przywrócenie',
-  RESTORE: 'Przywrócenie',
+  // Basic CRUD
   CREATE: 'Utworzenie',
   UPDATE: 'Aktualizacja',
-  DELETE: 'Usunięcie',
+  DELETE: 'Usuni\u0119cie',
+  TOGGLE: 'Prze\u0142\u0105czenie',
+  // Status
   STATUS_CHANGE: 'Zmiana statusu',
+  ARCHIVE: 'Archiwizacja',
+  UNARCHIVE: 'Przywr\u00f3cenie',
+  RESTORE: 'Przywr\u00f3cenie',
+  // Menu
+  MENU_UPDATE: 'Aktualizacja menu',
+  MENU_REMOVE: 'Usuni\u0119cie menu',
+  MENU_SELECTED: 'Wyb\u00f3r menu',
+  MENU_RECALCULATED: 'Przeliczenie menu',
+  MENU_DIRECT_REMOVED: 'Bezpo\u015brednie usuni\u0119cie menu',
+  // Payment
+  PAYMENT_UPDATE: 'Aktualizacja p\u0142atno\u015bci',
+  MARK_PAID: 'Oznaczenie p\u0142atno\u015bci',
+  // Queue
+  QUEUE_ADD: 'Dodanie do kolejki',
+  QUEUE_UPDATE: 'Aktualizacja w kolejce',
+  QUEUE_REMOVE: 'Usuni\u0119cie z kolejki',
+  QUEUE_SWAP: 'Zamiana pozycji',
+  QUEUE_MOVE: 'Przeniesienie w kolejce',
+  QUEUE_REORDER: 'Zmiana kolejno\u015bci',
+  QUEUE_REBUILD: 'Przebudowa kolejki',
+  QUEUE_PROMOTE: 'Awans z kolejki',
+  QUEUE_AUTO_CANCEL: 'Auto-anulowanie z kolejki',
+  // Attachments
+  ATTACHMENT_UPLOAD: 'Wgranie za\u0142\u0105cznika',
+  ATTACHMENT_ADD: 'Dodanie za\u0142\u0105cznika',
+  ATTACHMENT_UPDATE: 'Aktualizacja za\u0142\u0105cznika',
+  ATTACHMENT_ARCHIVE: 'Archiwizacja za\u0142\u0105cznika',
+  ATTACHMENT_DELETE: 'Usuni\u0119cie za\u0142\u0105cznika',
+  // Auth
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
-  QUEUE_ADD: 'Dodanie do kolejki',
-  QUEUE_REMOVE: 'Usunięcie z kolejki',
-  QUEUE_SWAP: 'Zamiana pozycji',
-  QUEUE_MOVE: 'Przeniesienie',
-  MARK_PAID: 'Oznaczenie płatności',
-  ATTACHMENT_ADD: 'Dodanie załącznika',
-  ATTACHMENT_DELETE: 'Usunięcie załącznika',
 };
 
 const entityLabels: Record<string, string> = {
@@ -72,9 +116,13 @@ const entityLabels: Record<string, string> = {
   ROOM: 'Sala',
   HALL: 'Sala',
   MENU: 'Menu',
-  USER: 'Użytkownik',
+  USER: 'U\u017cytkownik',
   DEPOSIT: 'Zaliczka',
   EVENT_TYPE: 'Typ wydarzenia',
+  ATTACHMENT: 'Za\u0142\u0105cznik',
+  QUEUE: 'Kolejka',
+  DISH: 'Danie',
+  MENU_TEMPLATE: 'Szablon menu',
 };
 
 export function AuditLogTable({
@@ -95,7 +143,7 @@ export function AuditLogTable({
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-[160px] font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Użytkownik</TableHead>
+              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">U\u017cytkownik</TableHead>
               <TableHead className="w-[150px] font-semibold text-neutral-700 dark:text-neutral-300">Akcja</TableHead>
               <TableHead className="w-[130px] font-semibold text-neutral-700 dark:text-neutral-300">Typ</TableHead>
               <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Opis</TableHead>
@@ -149,7 +197,7 @@ export function AuditLogTable({
                 </TableCell>
                 <TableCell className="max-w-md">
                   <p className="truncate text-sm text-neutral-600 dark:text-neutral-400">
-                    {log.details?.description || log.details?.reason || '—'}
+                    {log.details?.description || log.details?.reason || '\u2014'}
                   </p>
                 </TableCell>
                 <TableCell>
@@ -178,7 +226,7 @@ export function AuditLogTable({
             Strona <span className="font-medium text-neutral-900 dark:text-neutral-100">{page}</span> z{' '}
             <span className="font-medium text-neutral-900 dark:text-neutral-100">{totalPages}</span>
             {total && (
-              <span className="ml-2">· {total} {total === 1 ? 'wpis' : total < 5 ? 'wpisy' : 'wpisów'} łącznie</span>
+              <span className="ml-2">\u00b7 {total} {total === 1 ? 'wpis' : total < 5 ? 'wpisy' : 'wpis\u00f3w'} \u0142\u0105cznie</span>
             )}
           </p>
           <div className="flex gap-2">
@@ -199,14 +247,14 @@ export function AuditLogTable({
               disabled={page >= totalPages}
               className="h-8"
             >
-              Następna
+              Nast\u0119pna
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* Modal szczegółów */}
+      {/* Modal szczeg\u00f3\u0142\u00f3w */}
       {selectedLog && (
         <AuditLogDetails
           log={selectedLog}
