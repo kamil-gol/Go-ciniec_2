@@ -114,10 +114,10 @@ export default function MenuTemplatesPage() {
       <PageHero
         accent={accent}
         title="Szablony Menu"
-        subtitle="Konfiguruj szablony menu dla typ\u00f3w wydarze\u0144"
+        subtitle="Konfiguruj szablony menu dla typów wydarzeń"
         icon={FileText}
         backHref="/dashboard/menu"
-        backLabel="Powr\u00f3t do Menu"
+        backLabel="Powrót do Menu"
         action={
           <Button
             size="lg"
@@ -133,8 +133,8 @@ export default function MenuTemplatesPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
         <StatCard label="Wszystkie" value={stats.total} subtitle="Szablony w systemie" icon={FileText} iconGradient="from-blue-500 to-indigo-500" delay={0.1} />
-        <StatCard label="Aktywne" value={stats.active} subtitle="Gotowe do u\u017cycia" icon={Eye} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Nieaktywne" value={stats.inactive} subtitle="Wy\u0142\u0105czone" icon={EyeOff} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Aktywne" value={stats.active} subtitle="Gotowe do użycia" icon={Eye} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
+        <StatCard label="Nieaktywne" value={stats.inactive} subtitle="Wyłączone" icon={EyeOff} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
       </div>
 
       {/* Filters */}
@@ -169,13 +169,13 @@ export default function MenuTemplatesPage() {
 
       {/* Templates Grid */}
       {isLoading ? (
-        <LoadingState variant="skeleton" rows={6} message="Wczytywanie szablon\u00f3w..." />
+        <LoadingState variant="skeleton" rows={6} message="Wczytywanie szablonów..." />
       ) : templates.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="Brak szablon\u00f3w"
-          description={selectedEventType !== 'all' ? 'Brak szablon\u00f3w dla wybranego typu wydarzenia' : 'Zacznij od stworzenia pierwszego szablonu menu'}
-          actionLabel="Utw\u00f3rz szablon"
+          title="Brak szablonów"
+          description={selectedEventType !== 'all' ? 'Brak szablonów dla wybranego typu wydarzenia' : 'Zacznij od stworzenia pierwszego szablonu menu'}
+          actionLabel="Utwórz szablon"
           onAction={handleCreate}
         />
       ) : (
@@ -215,7 +215,7 @@ export default function MenuTemplatesPage() {
                 <div className="flex items-center gap-3 sm:gap-4 mb-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Package className="h-4 w-4 flex-shrink-0" />
-                    <span>{getPackageCount(template)} pakiet\u00f3w</span>
+                    <span>{getPackageCount(template)} pakietów</span>
                   </div>
                   {(template.validFrom || template.validTo) && (
                     <div className="flex items-center gap-1">
@@ -230,7 +230,7 @@ export default function MenuTemplatesPage() {
                     <Edit className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">Edytuj</span>
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kart\u0119 menu">
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kartę menu">
                     {pdfLoading === template.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => handleDelete(template)}>
@@ -249,14 +249,14 @@ export default function MenuTemplatesPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Czy na pewno chcesz usun\u0105\u0107?</AlertDialogTitle>
+            <AlertDialogTitle>Czy na pewno chcesz usunąć?</AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon "{templateToDelete?.name}" zostanie trwale usuni\u0119ty. Wszystkie powi\u0105zane pakiety r\u00f3wnie\u017c zostan\u0105 usuni\u0119te.
+              Szablon "{templateToDelete?.name}" zostanie trwale usunięty. Wszystkie powiązane pakiety również zostaną usunięte.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">Usu\u0144</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">Usuń</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

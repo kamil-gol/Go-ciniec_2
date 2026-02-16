@@ -17,10 +17,10 @@ export default function MenuOptionsPage() {
       <PageHero
         accent={accent}
         title="Opcje Menu"
-        subtitle="Dodatkowe opcje do pakiet\u00f3w (napoje, desery, us\u0142ugi)"
+        subtitle="Dodatkowe opcje do pakietów (napoje, desery, usługi)"
         icon={Sparkles}
         backHref="/dashboard/menu"
-        backLabel="Powr\u00f3t do Menu"
+        backLabel="Powrót do Menu"
         stats={[
           { icon: Sparkles, label: 'Wszystkie opcje', value: options.length },
           { icon: CheckCircle, label: 'Aktywne', value: options.filter(o => o.isActive).length },
