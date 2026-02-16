@@ -2,10 +2,12 @@
  * Discount Service
  * Business logic for reservation discount management
  * Sprint 7: System Rabatów
+ * Updated: Phase 1 Audit — logChange() for ActivityLog
  */
 
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
+import { logChange } from '../utils/audit-logger';
 
 const RESERVATION_INCLUDE = {
   hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true } },
@@ -77,7 +79,7 @@ export class DiscountService {
       include: RESERVATION_INCLUDE,
     });
 
-    // History entry
+    // History entry (per-reservation history)
     const oldDiscount = reservation.discountType
       ? `${reservation.discountType} ${Number(reservation.discountValue)}`
       : 'Brak';
@@ -91,6 +93,31 @@ export class DiscountService {
         oldValue: oldDiscount,
         newValue: `${data.type} ${data.value}${data.type === 'PERCENTAGE' ? '%' : ' PLN'} = -${discountAmount} PLN`,
         reason: `Rabat: ${data.reason}`,
+      },
+    });
+
+    // Audit log (global ActivityLog)
+    const clientName = reservation.client
+      ? `${reservation.client.firstName} ${reservation.client.lastName}`
+      : 'N/A';
+    await logChange({
+      userId,
+      action: 'DISCOUNT_APPLIED',
+      entityType: 'RESERVATION',
+      entityId: id,
+      details: {
+        description: `Rabat ${reservation.discountType ? 'zmieniony' : 'dodany'}: ${data.type} ${data.value}${data.type === 'PERCENTAGE' ? '%' : ' PLN'} = -${discountAmount} PLN | ${clientName}`,
+        discountType: data.type,
+        discountValue: data.value,
+        discountAmount,
+        reason: data.reason,
+        oldDiscount: reservation.discountType ? {
+          type: reservation.discountType,
+          value: Number(reservation.discountValue),
+          amount: Number(reservation.discountAmount),
+        } : null,
+        priceBeforeDiscount: basePrice,
+        priceAfterDiscount: newTotalPrice,
       },
     });
 
@@ -116,6 +143,14 @@ export class DiscountService {
 
     const originalPrice = Number(reservation.priceBeforeDiscount) || Number(reservation.totalPrice);
 
+    // Save old discount info before removal
+    const removedDiscount = {
+      type: reservation.discountType,
+      value: Number(reservation.discountValue),
+      amount: Number(reservation.discountAmount),
+      reason: reservation.discountReason,
+    };
+
     const updated = await prisma.reservation.update({
       where: { id },
       data: {
@@ -129,6 +164,7 @@ export class DiscountService {
       include: RESERVATION_INCLUDE,
     });
 
+    // History entry (per-reservation history)
     await prisma.reservationHistory.create({
       data: {
         reservationId: id,
@@ -138,6 +174,22 @@ export class DiscountService {
         oldValue: `${reservation.discountType} ${Number(reservation.discountValue)}`,
         newValue: 'Brak',
         reason: `Rabat usunięty. Przywrócono cenę: ${originalPrice} PLN`,
+      },
+    });
+
+    // Audit log (global ActivityLog)
+    const clientName = reservation.client
+      ? `${reservation.client.firstName} ${reservation.client.lastName}`
+      : 'N/A';
+    await logChange({
+      userId,
+      action: 'DISCOUNT_REMOVED',
+      entityType: 'RESERVATION',
+      entityId: id,
+      details: {
+        description: `Rabat usunięty: ${removedDiscount.type} ${removedDiscount.value}${removedDiscount.type === 'PERCENTAGE' ? '%' : ' PLN'} (-${removedDiscount.amount} PLN) | ${clientName}`,
+        removedDiscount,
+        restoredPrice: originalPrice,
       },
     });
 
