@@ -613,9 +613,7 @@ export class PDFService {
     doc.text(`Numer rezerwacji: ${data.reservation.id}`);
     doc.text(`Data: ${data.reservation.date}`);
     doc.text(`Godzina: ${data.reservation.startTime} - ${data.reservation.endTime}`);
-    if (data.reservation.hall) {
-      doc.text(`Sala: ${data.reservation.hall}`);
-    }
+    // US-6.2: Hall name removed from payment confirmation PDF — client should not see hall assignment
     if (data.reservation.eventType) {
       doc.text(`Typ wydarzenia: ${data.reservation.eventType}`);
     }
