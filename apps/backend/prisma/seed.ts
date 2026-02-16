@@ -3,6 +3,7 @@ import { seedDishCategories } from './seeds/dish-categories.seed';
 import { seedComprehensiveDishes } from './seeds/menu-comprehensive.seed';
 import { seedMenuTemplatesAndPackages } from './seeds/menu-templates.seed';
 import { seedE2ETestData } from './seeds/e2e-test-data.seed';
+import { seedRBAC } from './seeds/rbac.seed';
 
 const prisma = new PrismaClient();
 
@@ -11,26 +12,31 @@ async function main() {
   console.log('='.repeat(60));
 
   try {
-    // 0. Seed dish categories first (SOUP, MAIN_COURSE, etc.)
-    console.log('\n\ud83c\udff7\ufe0f  STEP 0: Seeding dish categories...');
+    // 0. Seed RBAC first (permissions, roles, user migration, company settings)
+    console.log('\n\ud83d\udd10 STEP 0: Seeding RBAC (roles, permissions, company settings)...');
+    const rbacResult = await seedRBAC();
+    console.log(`\u2705 RBAC seeded: ${rbacResult.permissionsCount} permissions, ${rbacResult.rolesCount} roles`);
+
+    // 1. Seed dish categories (SOUP, MAIN_COURSE, etc.)
+    console.log('\n\ud83c\udff7\ufe0f  STEP 1: Seeding dish categories...');
     await seedDishCategories();
 
-    // 1. Seed dishes (100+)
-    console.log('\n\ud83c\udf7d\ufe0f STEP 1: Seeding dishes...');
+    // 2. Seed dishes (100+)
+    console.log('\n\ud83c\udf7d\ufe0f STEP 2: Seeding dishes...');
     const dishCount = await seedComprehensiveDishes();
     console.log(`\u2705 Seeded ${dishCount} dishes`);
 
-    // 2. Seed menu templates and packages
-    console.log('\n\ud83d\udcdd STEP 2: Seeding menu templates & packages...');
+    // 3. Seed menu templates and packages
+    console.log('\n\ud83d\udcdd STEP 3: Seeding menu templates & packages...');
     await seedMenuTemplatesAndPackages();
     console.log('\u2705 Seeded templates and packages');
 
-    // 3. Seed E2E test data (halls, users, clients, reservations)
-    console.log('\n\ud83e\uddea STEP 3: Seeding E2E test data...');
+    // 4. Seed E2E test data (halls, users, clients, reservations)
+    console.log('\n\ud83e\uddea STEP 4: Seeding E2E test data...');
     await seedE2ETestData();
     console.log('\u2705 Seeded E2E test data');
 
-    // 4. Summary
+    // 5. Summary
     console.log('\n' + '='.repeat(60));
     console.log('\ud83c\udf89 Database seeding completed successfully!');
     console.log('='.repeat(60));
@@ -38,6 +44,9 @@ async function main() {
     // Print stats
     const stats = await getStats();
     console.log('\n\ud83d\udcca Database Statistics:');
+    console.log(`  \ud83d\udd11 Permissions: ${stats.permissions}`);
+    console.log(`  \ud83d\udee1\ufe0f  Roles: ${stats.roles}`);
+    console.log(`  \ud83c\udfe2 Company Settings: ${stats.companySettings}`);
     console.log(`  \ud83c\udf7d\ufe0f Dishes: ${stats.dishes}`);
     console.log(`  \ud83d\udd16 Event Types: ${stats.eventTypes}`);
     console.log(`  \ud83d\udcdd Menu Templates: ${stats.templates}`);
@@ -59,6 +68,9 @@ async function main() {
 
 async function getStats() {
   const [
+    permissions,
+    roles,
+    companySettings,
     dishes,
     eventTypes,
     templates,
@@ -71,6 +83,9 @@ async function getStats() {
     deposits,
     dishCategories,
   ] = await Promise.all([
+    prisma.permission.count(),
+    prisma.role.count(),
+    prisma.companySettings.count(),
     prisma.dish.count(),
     prisma.eventType.count(),
     prisma.menuTemplate.count(),
@@ -85,6 +100,9 @@ async function getStats() {
   ]);
 
   return {
+    permissions,
+    roles,
+    companySettings,
     dishes,
     eventTypes,
     templates,

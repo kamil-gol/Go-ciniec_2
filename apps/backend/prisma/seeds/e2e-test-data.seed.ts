@@ -15,8 +15,14 @@ export async function seedE2ETestData() {
   await prisma.reservation.deleteMany({});
   await prisma.client.deleteMany({});
   await prisma.hall.deleteMany({});
+  // Delete attachments BEFORE users (Attachment.uploadedById → User.id)
+  await prisma.attachment.deleteMany({});
   await prisma.user.deleteMany({});
   console.log('   \u2705 Cleanup complete');
+
+  // Look up RBAC roles (created by rbac.seed.ts which runs before this)
+  const adminRole = await prisma.role.findUnique({ where: { slug: 'admin' } });
+  const employeeRole = await prisma.role.findUnique({ where: { slug: 'employee' } });
 
   // 1. HALLS
   console.log('\n\ud83c\udfdb\ufe0f  Seeding Halls...');
@@ -36,14 +42,15 @@ export async function seedE2ETestData() {
 
   // 2. USERS
   console.log('\n\ud83d\udc65 Seeding Users...');
-  
-  const users = [
+
+  const usersData = [
     {
       email: 'admin@gosciniecrodzinny.pl',
       password: await bcrypt.hash('Admin123!@#', 10),
       firstName: 'Admin',
       lastName: 'G\u0142\u00f3wny',
-      role: 'ADMIN',
+      legacyRole: 'ADMIN',
+      roleId: adminRole?.id ?? null,
       isActive: true,
     },
     {
@@ -51,7 +58,8 @@ export async function seedE2ETestData() {
       password: await bcrypt.hash('Pracownik123!', 10),
       firstName: 'Anna',
       lastName: 'Kowalska',
-      role: 'EMPLOYEE',
+      legacyRole: 'EMPLOYEE',
+      roleId: employeeRole?.id ?? null,
       isActive: true,
     },
     {
@@ -59,19 +67,25 @@ export async function seedE2ETestData() {
       password: await bcrypt.hash('Pracownik123!', 10),
       firstName: 'Jan',
       lastName: 'Nowak',
-      role: 'EMPLOYEE',
+      legacyRole: 'EMPLOYEE',
+      roleId: employeeRole?.id ?? null,
       isActive: true,
     },
   ];
 
   const createdUsers = await Promise.all(
-    users.map(user => prisma.user.create({ data: user }))
+    usersData.map(user => prisma.user.create({ data: user }))
   );
   console.log(`   \u2705 Created ${createdUsers.length} users`);
+  if (adminRole) {
+    console.log(`   \ud83d\udee1\ufe0f  Roles assigned: admin=${adminRole.name}, employee=${employeeRole?.name}`);
+  } else {
+    console.log('   \u26a0\ufe0f  RBAC roles not found \u2014 users created without roleId (run rbac seed first)');
+  }
 
   // 3. CLIENTS
   console.log('\n\ud83d\udc64 Seeding Clients...');
-  
+
   const clients = [
     {
       firstName: 'Marek',
@@ -117,7 +131,7 @@ export async function seedE2ETestData() {
 
   // 4. RESERVATIONS
   console.log('\n\ud83d\udcc5 Seeding Reservations...');
-  
+
   const adminUser = createdUsers[0];
   const weselleEvent = await prisma.eventType.findFirst({ where: { name: 'Wesele' } });
   const komuniaEvent = await prisma.eventType.findFirst({ where: { name: 'Komunia' } });
@@ -252,9 +266,9 @@ export async function seedE2ETestData() {
   );
   console.log(`   \u2705 Created ${createdReservations.length} reservations`);
 
-  // 5. DEPOSITS (with remainingAmount and paidAmount)
+  // 5. DEPOSITS
   console.log('\n\ud83d\udcb0 Seeding Deposits...');
-  
+
   const deposits = [
     {
       reservationId: createdReservations[0].id,
@@ -330,7 +344,7 @@ export async function seedE2ETestData() {
   console.log(`   \u2705 Created ${createdDeposits.length} deposits`);
 
   console.log('\n\u2705 E2E test data seeding completed!\n');
-  
+
   console.log('\ud83d\udcca Summary:');
   console.log(`   \ud83c\udfdb\ufe0f  Halls: ${createdHalls.length}`);
   console.log(`   \ud83d\udc65 Users: ${createdUsers.length}`);
@@ -338,7 +352,7 @@ export async function seedE2ETestData() {
   console.log(`   \ud83d\udcc5 Reservations: ${createdReservations.length}`);
   console.log(`   \ud83d\udcb0 Deposits: ${createdDeposits.length}`);
   console.log('');
-  
+
   return {
     halls: createdHalls,
     users: createdUsers,

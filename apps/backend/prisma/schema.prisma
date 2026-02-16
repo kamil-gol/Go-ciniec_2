@@ -10,14 +10,98 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🔐 RBAC SYSTEM — Roles & Granular Permissions
+// ═══════════════════════════════════════════════════════════════
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(50)
+  slug        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  color       String?  @db.VarChar(20)
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  module      String   @db.VarChar(50)
+  action      String   @db.VarChar(50)
+  slug        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  roles       RolePermission[]
+
+  @@unique([module, action])
+  @@index([module])
+}
+
+model RolePermission {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  createdAt    DateTime   @default(now())
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model CompanySettings {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyName     String   @db.VarChar(255)
+  nip             String?  @db.VarChar(20)
+  regon           String?  @db.VarChar(20)
+  address         String?  @db.Text
+  city            String?  @db.VarChar(100)
+  postalCode      String?  @db.VarChar(10)
+  phone           String?  @db.VarChar(20)
+  email           String?  @db.VarChar(255)
+  website         String?  @db.VarChar(255)
+  logoUrl         String?  @db.Text
+  defaultCurrency String   @default("PLN") @db.VarChar(3)
+  timezone        String   @default("Europe/Warsaw") @db.VarChar(50)
+  invoicePrefix   String?  @db.VarChar(20)
+  receiptPrefix   String?  @db.VarChar(20)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 👤 USER
+// ═══════════════════════════════════════════════════════════════
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String   @unique @db.VarChar(255)
   password  String   @db.VarChar(255)
   firstName String   @db.VarChar(100)
   lastName  String   @db.VarChar(100)
-  role      String   @default("EMPLOYEE") @db.VarChar(20)
+
+  // Legacy role field — kept for backward compatibility during migration
+  // Will be removed after full RBAC migration is complete
+  legacyRole String?  @map("role") @db.VarChar(20)
+
+  // New RBAC role relation
+  roleId    String?  @db.Uuid
+  assignedRole Role?  @relation(fields: [roleId], references: [id])
+
   isActive  Boolean  @default(true)
+  lastLoginAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -27,7 +111,7 @@ model User {
   uploadedAttachments  Attachment[]           @relation("UploadedBy")
 
   @@index([email])
-  @@index([role])
+  @@index([roleId])
 }
 
 model Hall {
@@ -120,12 +204,11 @@ model Reservation {
   pricePerToddler Decimal  @default(0) @db.Decimal(10, 2)
   totalPrice      Decimal  @db.Decimal(10, 2)
 
-  // 💰 Discount system (Sprint 7)
-  discountType        String?   @db.VarChar(20)    // PERCENTAGE | FIXED
-  discountValue       Decimal?  @db.Decimal(10, 2) // np. 10 (=10%) lub 500 (=500 PLN)
-  discountAmount      Decimal?  @db.Decimal(10, 2) // wyliczona kwota rabatu w PLN
-  discountReason      String?   @db.Text           // powód rabatu
-  priceBeforeDiscount Decimal?  @db.Decimal(10, 2) // oryginalna cena przed rabatem
+  discountType        String?   @db.VarChar(20)
+  discountValue       Decimal?  @db.Decimal(10, 2)
+  discountAmount      Decimal?  @db.Decimal(10, 2)
+  discountReason      String?   @db.Text
+  priceBeforeDiscount Decimal?  @db.Decimal(10, 2)
   
   status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime?
@@ -186,7 +269,7 @@ model ReservationHistory {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 💰 DEPOSIT SYSTEM - synced with actual DB structure
+// 💰 DEPOSIT SYSTEM
 // ═══════════════════════════════════════════════════════════════
 
 model Deposit {
@@ -567,31 +650,27 @@ model MenuPriceHistory {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📎 ATTACHMENT SYSTEM - Polymorphic file attachments
+// 📎 ATTACHMENT SYSTEM
 // ═══════════════════════════════════════════════════════════════
 
 model Attachment {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  // Polymorphic association
-  entityType    String   @db.VarChar(50)   // "CLIENT" | "RESERVATION" | "DEPOSIT"
+  entityType    String   @db.VarChar(50)
   entityId      String   @db.Uuid
 
-  // Classification
-  category      String   @db.VarChar(50)   // "RODO", "CONTRACT", "PAYMENT_PROOF", etc.
-  label         String?  @db.VarChar(255)  // User-defined label
+  category      String   @db.VarChar(50)
+  label         String?  @db.VarChar(255)
 
-  // File info
-  originalName  String   @db.VarChar(255)  // Original filename
-  storedName    String   @db.VarChar(255)  // UUID-based name on disk
-  mimeType      String   @db.VarChar(100)  // "application/pdf", "image/jpeg", etc.
-  sizeBytes     Int                        // File size in bytes
-  storagePath   String   @db.Text          // Relative path in /app/uploads
+  originalName  String   @db.VarChar(255)
+  storedName    String   @db.VarChar(255)
+  mimeType      String   @db.VarChar(100)
+  sizeBytes     Int
+  storagePath   String   @db.Text
 
-  // Metadata
   uploadedById  String   @db.Uuid
   description   String?  @db.Text
-  isArchived    Boolean  @default(false)   // Soft-delete
+  isArchived    Boolean  @default(false)
   version       Int      @default(1) @db.SmallInt
 
   createdAt     DateTime @default(now())

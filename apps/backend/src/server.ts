@@ -21,6 +21,7 @@ import statsRoutes from '@/routes/stats.routes';
 import attachmentRoutes from '@/routes/attachment.routes';
 import auditLogRoutes from '@/routes/audit-log.routes';
 import reportsRoutes from '@/routes/reports.routes';
+import settingsRoutes from '@/routes/settings.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -34,8 +35,6 @@ const PORT = process.env.PORT || 3001;
 
 /**
  * CORS Allowed Origins
- * In production, set CORS_ORIGIN env var (comma-separated for multiple).
- * In development, localhost origins are allowed by default.
  */
 const defaultDevOrigins = [
   'http://localhost:3000',
@@ -57,10 +56,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, Postman, curl)
       if (!origin) return callback(null, true);
-      
-      // Check if origin is in allowed list
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
@@ -72,7 +68,7 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 600, // 10 minutes
+    maxAge: 600,
   })
 );
 
@@ -84,7 +80,6 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 /**
  * UTF-8 Charset Middleware
- * Ensures all JSON responses include charset=utf-8
  */
 app.use((_req, res, next) => {
   const originalJson = res.json.bind(res);
@@ -129,6 +124,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/audit-log', auditLogRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 /**
  * Menu System Routes
@@ -171,27 +167,24 @@ app.use(errorHandler);
 const server = app.listen(PORT, () => {
   logger.info(`Server running on http://localhost:${PORT}`);
   logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
-  
+
   // Setup cron jobs
   setupAutoCancelCron();
   setupDepositOverdueCron();
   setupDepositReminderCron();
-  
+
   // Verify email on startup
   emailService.verify();
 });
 
 /**
  * Setup Auto-Cancel Cron Job
- * Runs daily at 00:01 AM to cancel expired RESERVED reservations
  */
 function setupAutoCancelCron() {
   cron.schedule('1 0 * * *', async () => {
     logger.info('[CRON] Running auto-cancel for expired RESERVED reservations...');
-    
     try {
       const result = await queueService.autoCancelExpired();
-      
       if (result.cancelledCount > 0) {
         logger.info(
           `[CRON] Auto-cancel completed: ${result.cancelledCount} reservations cancelled`,
@@ -204,21 +197,17 @@ function setupAutoCancelCron() {
       logger.error('[CRON] Auto-cancel failed:', error.message);
     }
   });
-  
   logger.info('Auto-cancel cron job scheduled for 00:01 AM daily');
 }
 
 /**
  * Setup Deposit Overdue Cron Job
- * Runs daily at 06:00 AM to mark overdue deposits
  */
 function setupDepositOverdueCron() {
   cron.schedule('0 6 * * *', async () => {
     logger.info('[CRON] Running deposit overdue check...');
-    
     try {
       const result = await depositService.autoMarkOverdue();
-      
       if (result.markedOverdueCount > 0) {
         logger.info(
           `[CRON] Deposit overdue check completed: ${result.markedOverdueCount} deposits marked as overdue`
@@ -230,25 +219,17 @@ function setupDepositOverdueCron() {
       logger.error('[CRON] Deposit overdue check failed:', error.message);
     }
   });
-  
   logger.info('Deposit overdue cron job scheduled for 06:00 AM daily');
 }
 
 /**
  * Setup Deposit Reminder Cron Job
- * Runs daily at 08:00 AM to send email reminders
- * - 7 days before due → first reminder
- * - 3 days before due → second reminder  
- * - 1 day before due → final reminder
- * - After due date → overdue notices
  */
 function setupDepositReminderCron() {
   cron.schedule('0 8 * * *', async () => {
     logger.info('[CRON] Running deposit email reminders...');
-    
     try {
       const result = await depositReminderService.runReminders();
-      
       logger.info(
         `[CRON] Deposit reminders completed: ${result.upcomingSent} upcoming, ${result.overdueSent} overdue, ${result.errors} errors`
       );
@@ -256,7 +237,6 @@ function setupDepositReminderCron() {
       logger.error('[CRON] Deposit reminders failed:', error.message);
     }
   });
-  
   logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
 }
 

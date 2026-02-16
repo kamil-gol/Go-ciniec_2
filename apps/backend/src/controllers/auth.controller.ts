@@ -1,7 +1,6 @@
 /**
  * Auth Controller
- * MIGRATED: updated import paths for new AppError location
- * asyncHandler still imported from errorHandler (re-exported for compat)
+ * Updated for RBAC — returns role + permissions on login and /me
  */
 import { Response } from 'express';
 import { AuthenticatedRequest, ApiResponse } from '@types/index';
@@ -9,7 +8,6 @@ import { authService } from '@services/auth.service';
 import { AppError } from '@utils/AppError';
 import { asyncHandler } from '@middlewares/asyncHandler';
 import { getPasswordRequirements } from '@utils/password';
-import logger from '@utils/logger';
 
 export const authController = {
   register: asyncHandler(async (req, res) => {
@@ -67,9 +65,11 @@ export const authController = {
       throw AppError.unauthorized('User not authenticated');
     }
 
+    const userData = await authService.getMe(req.user.id);
+
     const response: ApiResponse = {
       success: true,
-      data: { user: req.user },
+      data: { user: userData },
     };
 
     res.json(response);
