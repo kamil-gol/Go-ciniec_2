@@ -16,11 +16,11 @@ export default function DishesPage() {
     <PageLayout>
       <PageHero
         accent={accent}
-        title="Biblioteka Da\u0144"
-        subtitle="Zarz\u0105dzaj wszystkimi daniami w systemie"
+        title="Biblioteka Dań"
+        subtitle="Zarządzaj wszystkimi daniami w systemie"
         icon={ChefHat}
         backHref="/dashboard/menu"
-        backLabel="Powr\u00f3t do Menu"
+        backLabel="Powrót do Menu"
         stats={[
           { icon: ChefHat, label: 'Wszystkie dania', value: dishes.length },
         ]}

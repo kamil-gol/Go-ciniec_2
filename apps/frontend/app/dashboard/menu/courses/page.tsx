@@ -33,12 +33,12 @@ export default function CoursesPage() {
 
   const handleDeleteCourse = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 kurs:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) return
+    if (!confirm(`Czy na pewno chcesz usunąć kurs:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) return
     try {
       await deleteCourseMutation.mutateAsync({ id, packageId: selectedPackageId! })
-      alert(`\u2705 Usuni\u0119to kurs: ${name}`)
+      alert(`\u2705 Usunięto kurs: ${name}`)
     } catch (error: any) {
-      alert(`\u274c B\u0142\u0105d podczas usuwania:\n${error.error || 'Nieznany b\u0142\u0105d'}`)
+      alert(`\u274c Błąd podczas usuwania:\n${error.error || 'Nieznany błąd'}`)
     }
   }
 
@@ -74,7 +74,7 @@ export default function CoursesPage() {
           subtitle={heroSubtitle}
           icon={Book}
           backHref="/dashboard/menu"
-          backLabel="Powr\u00f3t do Menu"
+          backLabel="Powrót do Menu"
           stats={[
             { icon: Book, label: 'Kursy', value: selectedPackageId ? courses.length : 0 },
           ]}
@@ -103,9 +103,9 @@ export default function CoursesPage() {
               <p className="text-muted-foreground mb-6 text-center text-sm sm:text-base">Najpierw wybierz szablon, potem pakiet</p>
 
               {loadingTemplates ? (
-                <LoadingState variant="skeleton" rows={3} message="\u0141adowanie szablon\u00f3w..." />
+                <LoadingState variant="skeleton" rows={3} message="Ładowanie szablonów..." />
               ) : templates.length === 0 ? (
-                <EmptyState icon={Package} title="Brak szablon\u00f3w menu" description="Utw\u00f3rz szablon aby zacz\u0105\u0107" actionLabel="Utw\u00f3rz szablon" actionHref="/dashboard/menu" />
+                <EmptyState icon={Package} title="Brak szablonów menu" description="Utwórz szablon aby zacząć" actionLabel="Utwórz szablon" actionHref="/dashboard/menu" />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 sm:mt-8">
                   {templates.map((template) => (
@@ -131,7 +131,7 @@ export default function CoursesPage() {
                         )}
                       </CardHeader>
                       <CardContent className="p-4 sm:p-6 pt-0">
-                        <p className="text-sm text-muted-foreground">Kliknij, aby wybra\u0107 pakiet</p>
+                        <p className="text-sm text-muted-foreground">Kliknij, aby wybrać pakiet</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -144,7 +144,7 @@ export default function CoursesPage() {
           <Card className="border-0 shadow-xl">
             <CardContent className="p-6 sm:p-12">
               <Button variant="ghost" className="mb-6" onClick={() => { setSelectedTemplateId(null); setSelectedPackageId(null) }}>
-                <ArrowLeft className="h-4 w-4 mr-2" /> Wr\u00f3\u0107 do szablon\u00f3w
+                <ArrowLeft className="h-4 w-4 mr-2" /> Wróć do szablonów
               </Button>
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Book className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
@@ -153,9 +153,9 @@ export default function CoursesPage() {
               <p className="text-muted-foreground mb-6 text-center text-sm sm:text-base">Szablon: <strong>{selectedTemplate?.name}</strong></p>
 
               {loadingPackages ? (
-                <LoadingState variant="skeleton" rows={3} message="\u0141adowanie pakiet\u00f3w..." />
+                <LoadingState variant="skeleton" rows={3} message="Ładowanie pakietów..." />
               ) : packages.length === 0 ? (
-                <EmptyState icon={Book} title="Brak pakiet\u00f3w" description="Ten szablon nie ma jeszcze pakiet\u00f3w" actionLabel="Dodaj pakiet" actionHref="/dashboard/menu" />
+                <EmptyState icon={Book} title="Brak pakietów" description="Ten szablon nie ma jeszcze pakietów" actionLabel="Dodaj pakiet" actionHref="/dashboard/menu" />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 sm:mt-8">
                   {packages.map((pkg) => (
@@ -173,12 +173,12 @@ export default function CoursesPage() {
                       <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Doro\u015bli:</span>
-                            <span className="font-semibold">{pkg.pricePerAdult} z\u0142</span>
+                            <span className="text-muted-foreground">Dorośli:</span>
+                            <span className="font-semibold">{pkg.pricePerAdult} zł</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Dzieci:</span>
-                            <span className="font-semibold">{pkg.pricePerChild} z\u0142</span>
+                            <span className="font-semibold">{pkg.pricePerChild} zł</span>
                           </div>
                         </div>
                       </CardContent>
@@ -189,20 +189,20 @@ export default function CoursesPage() {
             </CardContent>
           </Card>
         ) : loadingCourses ? (
-          <LoadingState variant="skeleton" rows={6} message="\u0141adowanie kurs\u00f3w..." />
+          <LoadingState variant="skeleton" rows={6} message="Ładowanie kursów..." />
         ) : (
           /* Step 3: Courses List */
           <>
             <div className="mb-4 sm:mb-6">
               <Button variant="ghost" onClick={() => setSelectedPackageId(null)}>
-                <ArrowLeft className="h-4 w-4 mr-2" /> Wr\u00f3\u0107 do pakiet\u00f3w
+                <ArrowLeft className="h-4 w-4 mr-2" /> Wróć do pakietów
               </Button>
             </div>
 
             {courses.length === 0 ? (
               <EmptyState
                 icon={Book}
-                title="Brak kurs\u00f3w"
+                title="Brak kursów"
                 description={`Dodaj pierwszy kurs do pakietu: ${selectedPackage?.name}`}
                 actionLabel="Dodaj kurs"
                 onAction={() => { setEditingCourse(null); setCourseDialogOpen(true) }}
@@ -248,7 +248,7 @@ export default function CoursesPage() {
                               </div>
                             ))}
                             {course.options.length > 3 && (
-                              <p className="text-xs text-muted-foreground pl-4">+{course.options.length - 3} wi\u0119cej...</p>
+                              <p className="text-xs text-muted-foreground pl-4">+{course.options.length - 3} więcej...</p>
                             )}
                           </div>
                         </div>

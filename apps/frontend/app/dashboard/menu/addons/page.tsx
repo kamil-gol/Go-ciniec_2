@@ -55,8 +55,8 @@ export default function AddonGroupsPage() {
       }
     } catch (error) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 pobra\u0107 grup dodatk\u00f3w',
+        title: 'Błąd',
+        description: 'Nie udało się pobrać grup dodatków',
         variant: 'destructive',
       });
     } finally {
@@ -108,7 +108,7 @@ export default function AddonGroupsPage() {
       if (data.success) {
         toast({
           title: 'Sukces',
-          description: data.message || 'Grupa dodatk\u00f3w zosta\u0142a zapisana',
+          description: data.message || 'Grupa dodatków została zapisana',
         });
         fetchGroups();
         handleCancel();
@@ -117,15 +117,15 @@ export default function AddonGroupsPage() {
       }
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 grupy dodatk\u00f3w',
+        title: 'Błąd',
+        description: error.message || 'Nie udało się zapisać grupy dodatków',
         variant: 'destructive',
       });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Czy na pewno chcesz usun\u0105\u0107 t\u0119 grup\u0119 dodatk\u00f3w?')) return;
+    if (!confirm('Czy na pewno chcesz usunąć tę grupę dodatków?')) return;
 
     try {
       const res = await fetch(`${API_URL}/api/addon-groups/${id}`, {
@@ -137,7 +137,7 @@ export default function AddonGroupsPage() {
       if (data.success) {
         toast({
           title: 'Sukces',
-          description: 'Grupa dodatk\u00f3w zosta\u0142a usuni\u0119ta',
+          description: 'Grupa dodatków została usunięta',
         });
         fetchGroups();
       } else {
@@ -145,8 +145,8 @@ export default function AddonGroupsPage() {
       }
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 grupy dodatk\u00f3w',
+        title: 'Błąd',
+        description: error.message || 'Nie udało się usunąć grupy dodatków',
         variant: 'destructive',
       });
     }
@@ -156,15 +156,15 @@ export default function AddonGroupsPage() {
     <PageLayout>
       <PageHero
         accent={accent}
-        title="Grupy dodatk\u00f3w"
-        subtitle="Zarz\u0105dzaj grupami dodatk\u00f3w do pakiet\u00f3w menu"
+        title="Grupy dodatków"
+        subtitle="Zarządzaj grupami dodatków do pakietów menu"
         icon={PackagePlus}
         backHref="/dashboard/menu"
-        backLabel="Powr\u00f3t do Menu"
+        backLabel="Powrót do Menu"
         action={
           <Button onClick={handleCreate} className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
             <Plus className="h-5 w-5 sm:mr-2" />
-            <span className="hidden sm:inline">Dodaj grup\u0119</span>
+            <span className="hidden sm:inline">Dodaj grupę</span>
           </Button>
         }
       />
@@ -172,7 +172,7 @@ export default function AddonGroupsPage() {
       {editingId && (
         <Card className="p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">
-            {editingId === 'new' ? 'Nowa grupa dodatk\u00f3w' : 'Edytuj grup\u0119 dodatk\u00f3w'}
+            {editingId === 'new' ? 'Nowa grupa dodatków' : 'Edytuj grupę dodatków'}
           </h2>
           <div className="grid gap-4">
             <div className="grid gap-2">
@@ -191,14 +191,14 @@ export default function AddonGroupsPage() {
                 id="description"
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Kr\u00f3tki opis grupy dodatk\u00f3w"
+                placeholder="Krótki opis grupy dodatków"
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="minSelect">Min wyb\u00f3r</Label>
+                <Label htmlFor="minSelect">Min wybór</Label>
                 <Input
                   id="minSelect"
                   type="number"
@@ -208,7 +208,7 @@ export default function AddonGroupsPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="maxSelect">Max wyb\u00f3r</Label>
+                <Label htmlFor="maxSelect">Max wybór</Label>
                 <Input
                   id="maxSelect"
                   type="number"
@@ -231,14 +231,14 @@ export default function AddonGroupsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="FREE">Gratis</SelectItem>
-                    <SelectItem value="PER_ITEM">Za sztuk\u0119</SelectItem>
-                    <SelectItem value="PER_GROUP">Za grup\u0119</SelectItem>
-                    <SelectItem value="PER_PERSON">Za osob\u0119</SelectItem>
+                    <SelectItem value="PER_ITEM">Za sztukę</SelectItem>
+                    <SelectItem value="PER_GROUP">Za grupę</SelectItem>
+                    <SelectItem value="PER_PERSON">Za osobę</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="basePrice">Cena bazowa (z\u0142)</Label>
+                <Label htmlFor="basePrice">Cena bazowa (zł)</Label>
                 <Input
                   id="basePrice"
                   type="number"
@@ -261,7 +261,7 @@ export default function AddonGroupsPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="displayOrder">Kolejno\u015b\u0107</Label>
+                <Label htmlFor="displayOrder">Kolejność</Label>
                 <Input
                   id="displayOrder"
                   type="number"
@@ -299,9 +299,9 @@ export default function AddonGroupsPage() {
         {!loading && groups.length === 0 ? (
           <EmptyState
             icon={PackagePlus}
-            title="Brak grup dodatk\u00f3w"
-            description='Kliknij "Dodaj grup\u0119" aby utworzy\u0107 pierwsz\u0105.'
-            actionLabel="Dodaj grup\u0119"
+            title="Brak grup dodatków"
+            description='Kliknij "Dodaj grupę" aby utworzyć pierwszą.'
+            actionLabel="Dodaj grupę"
             onAction={handleCreate}
           />
         ) : (
@@ -314,9 +314,9 @@ export default function AddonGroupsPage() {
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{group.description}</p>
                   )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-muted-foreground">
-                    <span>Wyb\u00f3r: {group.minSelect}-{group.maxSelect}</span>
+                    <span>Wybór: {group.minSelect}-{group.maxSelect}</span>
                     <span>Typ: {group.priceType}</span>
-                    <span>Cena: {group.basePrice} z\u0142</span>
+                    <span>Cena: {group.basePrice} zł</span>
                     <span className={group.isActive ? 'text-green-600' : 'text-red-600'}>
                       {group.isActive ? 'Aktywna' : 'Nieaktywna'}
                     </span>

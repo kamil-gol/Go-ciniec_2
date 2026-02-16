@@ -39,14 +39,14 @@ export default function PackagesListPage() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 pakiet "${name}"?`)) return;
+    if (!confirm(`Czy na pewno chcesz usunąć pakiet "${name}"?`)) return;
     try {
       setDeletingId(id);
       await deletePackage(id);
       await loadPackages();
     } catch (error: any) {
       console.error('Failed to delete package:', error);
-      alert(`B\u0142\u0105d: ${error.message}`);
+      alert(`Błąd: ${error.message}`);
     } finally {
       setDeletingId(null);
     }
@@ -55,7 +55,7 @@ export default function PackagesListPage() {
   if (loading) {
     return (
       <PageLayout>
-        <LoadingState variant="skeleton" rows={6} message="\u0141adowanie pakiet\u00f3w..." />
+        <LoadingState variant="skeleton" rows={6} message="Ładowanie pakietów..." />
       </PageLayout>
     );
   }
@@ -65,10 +65,10 @@ export default function PackagesListPage() {
       <PageHero
         accent={accent}
         title="Pakiety Menu"
-        subtitle={templateId ? 'Pakiety dla wybranego szablonu' : 'Zarz\u0105dzaj wszystkimi pakietami menu'}
+        subtitle={templateId ? 'Pakiety dla wybranego szablonu' : 'Zarządzaj wszystkimi pakietami menu'}
         icon={Package}
         backHref="/dashboard/menu"
-        backLabel="Powr\u00f3t do Menu"
+        backLabel="Powrót do Menu"
         action={
           <Link href="/dashboard/menu/packages/new">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
@@ -82,8 +82,8 @@ export default function PackagesListPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
         <StatCard label="Wszystkie" value={packages.length} subtitle="Pakiety w systemie" icon={Package} iconGradient="from-blue-500 to-indigo-500" delay={0.1} />
-        <StatCard label="Polecane" value={packages.filter(p => p.isRecommended).length} subtitle="Oznaczone gwiazdk\u0105" icon={Star} iconGradient="from-green-500 to-emerald-500" delay={0.2} />
-        <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najcz\u0119\u015bciej wybierane" icon={TrendingUp} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Polecane" value={packages.filter(p => p.isRecommended).length} subtitle="Oznaczone gwiazdką" icon={Star} iconGradient="from-green-500 to-emerald-500" delay={0.2} />
+        <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
       </div>
 
       {/* Packages Grid */}
@@ -91,9 +91,9 @@ export default function PackagesListPage() {
         {packages.length === 0 ? (
           <EmptyState
             icon={Package}
-            title="Brak pakiet\u00f3w"
-            description="Utw\u00f3rz pierwszy pakiet menu, aby rozpocz\u0105\u0107 zarz\u0105dzanie ofert\u0105 dla go\u015bci."
-            actionLabel="Utw\u00f3rz pierwszy pakiet"
+            title="Brak pakietów"
+            description="Utwórz pierwszy pakiet menu, aby rozpocząć zarządzanie ofertą dla gości."
+            actionLabel="Utwórz pierwszy pakiet"
             actionHref="/dashboard/menu/packages/new"
           />
         ) : (
@@ -166,11 +166,11 @@ export default function PackagesListPage() {
                           <div className="p-1 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md sm:rounded-lg">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[10px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400">Doro\u015bli</span>
+                          <span className="text-[10px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400">Dorośli</span>
                         </div>
                         <div className="flex items-baseline gap-0.5 sm:gap-1">
                           <span className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{pkg.pricePerAdult}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-500">z\u0142</span>
+                          <span className="text-[10px] sm:text-xs text-neutral-500">zł</span>
                         </div>
                       </div>
                       <div className="bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-sm">
@@ -182,7 +182,7 @@ export default function PackagesListPage() {
                         </div>
                         <div className="flex items-baseline gap-0.5 sm:gap-1">
                           <span className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-500">z\u0142</span>
+                          <span className="text-[10px] sm:text-xs text-neutral-500">zł</span>
                         </div>
                       </div>
                       <div className="bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-sm">
@@ -194,7 +194,7 @@ export default function PackagesListPage() {
                         </div>
                         <div className="flex items-baseline gap-0.5 sm:gap-1">
                           <span className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-500">z\u0142</span>
+                          <span className="text-[10px] sm:text-xs text-neutral-500">zł</span>
                         </div>
                       </div>
                     </div>
@@ -231,7 +231,7 @@ export default function PackagesListPage() {
                       onClick={() => handleDelete(pkg.id, pkg.name)}
                       disabled={deletingId === pkg.id}
                       className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/50 transition-all disabled:opacity-50"
-                      title="Usu\u0144 pakiet"
+                      title="Usuń pakiet"
                     >
                       {deletingId === pkg.id ? (
                         <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />

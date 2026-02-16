@@ -68,7 +68,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
             className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors mb-3"
           >
             <ArrowLeft className="h-4 w-4" />
-            {backLabel || 'Powr\u00f3t'}
+            {backLabel || 'Powrót'}
           </Link>
         )}
 

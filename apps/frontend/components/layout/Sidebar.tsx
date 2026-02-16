@@ -96,7 +96,7 @@ function SidebarUser({
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-              {user?.role === 'ADMIN' ? 'Administrator' : 'U\u017cytkownik'}
+              {user?.role === 'ADMIN' ? 'Administrator' : 'Użytkownik'}
             </p>
           </div>
         )}
@@ -155,9 +155,9 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
                 </div>
                 <div>
                   <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                    Go\u015bciniec
+                    Gościniec
                   </h1>
-                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarz\u0105dzania</p>
+                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
                 </div>
               </div>
             )}
@@ -192,9 +192,9 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
               </div>
               <div>
                 <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  Go\u015bciniec
+                  Gościniec
                 </h1>
-                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarz\u0105dzania</p>
+                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
               </div>
             </div>
 
