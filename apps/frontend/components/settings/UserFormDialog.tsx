@@ -35,7 +35,7 @@ export function UserFormDialog({ open, onOpenChange, user, roles, onSaved }: Pro
         password: '',
         firstName: user.firstName,
         lastName: user.lastName,
-        roleId: user.roleId || '',
+        roleId: user.role?.id || '',
       })
     } else {
       setForm({ email: '', password: '', firstName: '', lastName: '', roleId: '' })
