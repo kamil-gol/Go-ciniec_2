@@ -3,9 +3,10 @@
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { type ModuleAccent } from '@/lib/design-tokens'
-import { type LucideIcon } from 'lucide-react'
+import { type LucideIcon, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
-interface PageHeroProps {
+export interface PageHeroProps {
   /** Module accent colors from design-tokens */
   accent: ModuleAccent
   /** Main page title */
@@ -22,20 +23,25 @@ interface PageHeroProps {
     label: string
     value: string | number
   }>
+  /** Optional back navigation link */
+  backHref?: string
+  /** Optional back navigation label */
+  backLabel?: string
 }
 
 /**
- * PageHero — Premium hero section used at the top of every dashboard page.
+ * PageHero \u2014 Premium hero section used at the top of every dashboard page.
  * 
  * Provides:
  * - Gradient background per module
  * - Consistent layout (icon + title + subtitle)
  * - Optional CTA button on the right
  * - Optional inline stats row
+ * - Optional back navigation link
  * - Framer Motion entrance animation
  * - Full dark mode support
  */
-export function PageHero({ accent, title, subtitle, icon: Icon, action, stats }: PageHeroProps) {
+export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, backHref, backLabel }: PageHeroProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -12 }}
@@ -54,36 +60,47 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats }:
       <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-white/5 rounded-full blur-3xl" />
 
-      <div className="relative z-10 p-8">
-        <div className="flex items-start justify-between gap-6">
+      <div className="relative z-10 p-4 sm:p-8">
+        {/* Back navigation */}
+        {backHref && (
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors mb-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {backLabel || 'Powr\u00f3t'}
+          </Link>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           {/* Left: Icon + Title */}
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3.5 bg-white/15 backdrop-blur-sm rounded-2xl shadow-lg">
-                <Icon className="h-9 w-9" />
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3.5 bg-white/15 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg">
+                <Icon className="h-7 w-7 sm:h-9 sm:w-9" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+                <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">{title}</h1>
                 {subtitle && (
-                  <p className="text-white/85 text-lg mt-1">{subtitle}</p>
+                  <p className="text-white/85 text-sm sm:text-lg mt-1">{subtitle}</p>
                 )}
               </div>
             </div>
 
             {/* Inline stats */}
             {stats && stats.length > 0 && (
-              <div className="flex flex-wrap gap-4 mt-6">
+              <div className="flex flex-wrap gap-3 sm:gap-4 mt-4 sm:mt-6">
                 {stats.map((stat) => {
                   const StatIcon = stat.icon
                   return (
                     <div
                       key={stat.label}
-                      className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/15 hover:bg-white/15 transition-colors"
+                      className="flex items-center gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm px-3 sm:px-5 py-2 sm:py-3 rounded-xl border border-white/15 hover:bg-white/15 transition-colors"
                     >
-                      <StatIcon className="h-5 w-5 text-white/80" />
+                      <StatIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
                       <div>
-                        <p className="text-xs text-white/70 leading-none">{stat.label}</p>
-                        <p className="text-xl font-bold leading-tight mt-0.5">{stat.value}</p>
+                        <p className="text-[10px] sm:text-xs text-white/70 leading-none">{stat.label}</p>
+                        <p className="text-base sm:text-xl font-bold leading-tight mt-0.5">{stat.value}</p>
                       </div>
                     </div>
                   )
@@ -94,7 +111,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats }:
 
           {/* Right: Action button */}
           {action && (
-            <div className="flex-shrink-0 pt-1">
+            <div className="flex-shrink-0 self-end sm:self-auto sm:pt-1">
               {action}
             </div>
           )}
