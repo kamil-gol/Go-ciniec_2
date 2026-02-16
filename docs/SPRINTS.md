@@ -23,10 +23,11 @@ SPRINT 7 (15.02 - 16.02)   → UTF-8 Cleanup + Attachments       ✅ DONE
 SPRINT 8 (15.02 - 16.02)   → System Rabatów                    ✅ DONE
 SPRINT 9 (16.02 - 21.02)   → Historia Zmian & Archiwum         ✅ DONE
   Phase 1: Audit Logging (16.02)                                ✅ DONE
-  Phase 2: UI Viewer (17.02-21.02)                              ✅ DONE
+  Phase 2: UI Viewer (16.02)                                    ✅ DONE
     US-9.8: Activity Timeline                                   ✅ DONE (16.02)
     US-9.9: Archiwum — Soft Delete                              ✅ DONE (16.02)
     US-9.10: Archiwum — Archive Page                            ✅ DONE (16.02)
+    US-9.11: Dziennik Audytu — Global Dashboard                 ✅ DONE (16.02)
 SPRINT 10 (27.02 - 05.03)  → Ujednolicenie UI & Mobile         🔳 TODO
 ```
 
@@ -40,7 +41,7 @@ Szczegóły zakończonych sprintów → patrz [CHANGELOG.md](../CHANGELOG.md)
 - ✅ Pełna infrastruktura (Docker, PostgreSQL, JWT Auth, RBAC)
 - ✅ System rezerwacji + kolejka + 6-krokowy wizard
 - ✅ System menu (kategorie, dania, szablony, pakiety, opcje, dodatki)
-- ✅ System zaliczek, załączników, typów wydarzeń
+- ✅ System zadatków, załączników, typów wydarzeń
 - ✅ Frontend production mode (build + start)
 - ✅ 45 testów E2E (Playwright) + 38 unit tests (Jest)
 - ✅ Pełna dokumentacja API (~70 endpointów)
@@ -402,7 +403,7 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 **Estymacja:** ~3-5 dni (zrealizowano w 1 dzień)  
 **Wersje:** v1.8.0 - v1.8.1  
-**Branches:** `feature/audit-logging`, `feature/audit-phase2-queue`, `feature/audit-phase3-attachments-menu`, `feature/us-9.8-entity-timeline`, `feature/us-9.10-archive-page`  
+**Branches:** `feature/audit-logging`, `feature/audit-phase2-queue`, `feature/audit-phase3-attachments-menu`, `feature/us-9.8-entity-timeline`, `feature/us-9.10-archive-page`, `feature/us-9.11-audit-dashboard`  
 **Status**: ✅ DONE (16.02.2026)
 
 ---
@@ -527,7 +528,7 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 **Status**: ✅ COMPLETED  
 **Wersja**: v1.7.1 - v1.8.1  
-**Czas realizacji**: ~3 godziny
+**Czas realizacji**: ~4 godziny
 
 ### US-9.8: Activity Timeline — Per Entity
 **Priority**: 🟡 MEDIUM  
@@ -611,7 +612,7 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
   - Hero z gradientem + przycisk "Wróć do rezerwacji"
   - 3 stat cards (łącznie, zakończone, anulowane)
   - Lista kart z danymi: klient, typ, sala, data, goście, wartość
-  - Badge statusu + data archiwizacji
+  - Badge statusu + data archivizacji
   - Przycisk "Przywróć" (ArchiveRestore icon, zielony)
   - Link do szczegółów rezerwacji (Eye icon)
   - Paginacja (20/stronę)
@@ -621,8 +622,66 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 ---
 
+### US-9.11: Dziennik Audytu — Global Dashboard
+**Priority**: 🟡 HIGH  
+**Points**: 8  
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #79  
+**Branch**: `feature/us-9.11-audit-dashboard`  
+**Wersja**: v1.8.1
+
+**Subtasks**:
+- [x] Backend: endpoint `/api/audit-log` + `/api/audit-log/statistics`
+- [x] Backend: filtry (action, entityType, dateFrom, dateTo, page, pageSize)
+- [x] Backend: meta endpoints `/meta/entity-types`, `/meta/actions`
+- [x] Frontend: strona `/dashboard/audit-log`
+- [x] Frontend: 4 stat cards (total logs, most frequent action/entity, active users)
+- [x] Frontend: filtry (action, entityType, date range)
+- [x] Frontend: tabelka z paginacją (20/stronę)
+- [x] Frontend: modal z pełną historią zmian (old/new values)
+- [x] Frontend: 30+ polskich labelów dla akcji (QUEUE_REORDER, MENU_RECALCULATED, etc.)
+- [x] Frontend: 12 typów encji (RESERVATION, CLIENT, ATTACHMENT, QUEUE, etc.)
+- [x] Frontend: obsługa `user: null` (akcje systemowe) — fallback "System"
+- [x] Frontend: kolorowe badge akcji (32 kolory dla 32 typów akcji)
+- [x] Framer-motion animations (StatCard stagger, modal fade-in)
+
+**Implementacja**:
+- **Backend**: `audit-log.service.ts`, `audit-log.controller.ts`, `audit-log.routes.ts`
+  - `GET /api/audit-log` — paginacja, filtry, sorting
+  - `GET /api/audit-log/statistics` — 3 wykresy (byAction, byEntityType, byUser)
+  - `GET /api/audit-log/meta/entity-types` — lista unikalnych encji
+  - `GET /api/audit-log/meta/actions` — lista unikalnych akcji
+  - `GET /api/audit-log/entity/:entityType/:entityId` — logi per encja (już używane w US-9.8)
+- **Frontend**: `app/dashboard/audit-log/page.tsx` + komponenty
+  - `AuditLogStats.tsx` — 4 karty statystyk z `framer-motion` stagger
+  - `AuditLogFilters.tsx` — 4 filtry (action, entityType, dateFrom, dateTo)
+  - `AuditLogTable.tsx` — tabelka z kolumnami: data, użytkownik, akcja, typ, opis
+  - `AuditLogDetails.tsx` — modal z pełnym diff (old/new values)
+  - Polskie etykiety dla 30+ akcji (wszystkie typy z backend)
+  - Polskie etykiety dla 12 typów encji
+  - 32 kolory badgeów (actionColors map) — każda akcja unikalna
+  - Optional chaining `log.user?.firstName` — obsługa null ("System", "Akcja automatyczna")
+- **Framer Motion**: 
+  - StatCard: `initial={{ opacity: 0, y: 16 }}` → `animate={{ opacity: 1, y: 0 }}` z delay 0.1s/0.2s/0.3s/0.4s
+  - Modal: fade-in animacja
+  - Hover effects na kartach
+- **Fixes**:
+  - `TypeError: Cannot read properties of null (reading 'firstName')` — dodano optional chaining + fallback labels
+  - Pełna polonizacja wszystkich 30+ akcji (QUEUE_REORDER → "Zmiana kolejności", MENU_RECALCULATED → "Przeliczenie menu")
+
+**Przykłady polskich labelów**:
+- BASIC: CREATE → "Utworzenie", UPDATE → "Aktualizacja", DELETE → "Usunięcie", TOGGLE → "Przełączenie"
+- STATUS: ARCHIVE → "Archiwizacja", UNARCHIVE → "Przywrócenie", STATUS_CHANGE → "Zmiana statusu"
+- MENU: MENU_SELECTED → "Wybór menu", MENU_RECALCULATED → "Przeliczenie menu", MENU_DIRECT_REMOVED → "Bezpośrednie usunięcie menu"
+- QUEUE: QUEUE_REORDER → "Zmiana kolejności", QUEUE_REBUILD → "Przebudowa kolejki", QUEUE_AUTO_CANCEL → "Auto-anulowanie z kolejki"
+- PAYMENT: MARK_PAID → "Oznaczenie płatności", PAYMENT_UPDATE → "Aktualizacja płatności"
+- ATTACHMENTS: ATTACHMENT_UPLOAD → "Wgranie załącznika", ATTACHMENT_ARCHIVE → "Archiwizacja załącznika"
+- AUTH: LOGIN → "Logowanie", LOGOUT → "Wylogowanie"
+
+---
+
 ## 📊 Summary Sprint 9
-- **Total Points**: 34 (Phase 1: 28, Phase 2: 11 — zrealizowano 6 zamiast 24)
+- **Total Points**: 42 (Phase 1: 28, Phase 2: 19 [5+3+3+8] — zrealizowano wszystkie 4 US z Phase 2)
 - **Deliverables**: 
   - 22 typy eventów w `ActivityLog`
   - Utility `audit-logger.ts` — centralne API
@@ -633,18 +692,27 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
   - Archiwum: backend API (archive/unarchive) + frontend page
   - Design token `archive` + sidebar link
   - Stat cards + lista kart + paginacja
-- **Testy**: Wszystkie manualne testy zaliczone (archiwizacja, przywracanie, timeline)
+  - **Globalny dashboard audytu** — `/dashboard/audit-log`
+  - **4 karty statystyk** (total, action, entity, users)
+  - **Filtry** (action, entity, date range)
+  - **Tabelka paginowana** (20/stronę)
+  - **Modal szczegółów** (old/new diff)
+  - **30+ polskich labelów akcji** + 12 typów encji
+  - **32 kolory badgeów** (actionColors)
+  - **Obsługa `user: null`** (akcje systemowe)
+  - **Framer-motion** (stagger animations)
+- **Testy**: Wszystkie manualne testy zaliczone (archiwizacja, przywróć, timeline, audit dashboard)
 - **Migracja DB**: ✅ 0002_queue_sql_functions
 - **Restart wymagany**: backend (kod + migracja) + frontend
-- **Risk**: Niski (zakończone przed terminem)
-- **PR**: #74 (reservation audit), #75 (queue audit), #76 (attachments+menu audit), #77 (timeline), #78 (archive)
+- **Risk**: Niski (zakończono przed terminem)
+- **PR**: #74 (reservation audit), #75 (queue audit), #76 (attachments+menu audit), #77 (timeline), #78 (archive), #79 (audit dashboard)
 
 ---
 
 # 🎨 SPRINT 10: Ujednolicenie UI & Mobile (27.02 - 05.03.2026)
 
 ## Cel
-Spójny wygląd wszystkich modułów + pełna responsywność mobilna.
+Spójny wygląd wszystkich modułów + pełna responswność mobilna.
 
 **Estymacja:** ~5-7 dni  
 **Wersja:** v1.9.0  
@@ -661,12 +729,12 @@ Spójny wygląd wszystkich modułów + pełna responsywność mobilna.
 | 7 | UTF-8 Cleanup + Attachments | 25 | ~2 dni | v1.6.1-v1.6.2 | ✅ DONE |
 | 8 | System Rabatów | 26 | ~1 dzień | v1.7.0 | ✅ DONE |
 | 9.1 | Audit Logging Backend | 28 | ~1 dzień | v1.8.0 | ✅ DONE |
-| 9.2 | Audit UI + Archive | 11 | ~3h | v1.8.1 | ✅ DONE |
+| 9.2 | Audit UI + Archive + Dashboard | 19 | ~4h | v1.8.1 | ✅ DONE |
 | 10 | Ujednolicenie UI & Mobile | 47 | ~5-7 dni | v1.9.0 | 🔳 TODO |
-| **RAZEM** | | **153** | **~13-18 dni** | | **5/6 DONE** |
+| **RAZEM** | | **161** | **~13-18 dni** | | **5/6 DONE** |
 
 ---
 
-**Last Updated**: 16.02.2026, 18:17 CET  
-**Project Status**: ✅ Sprint 9 COMPLETE — Archive Page & Timeline done  
-**Version**: v1.8.1 (Archive functionality + Activity Timeline)
+**Last Updated**: 16.02.2026, 19:05 CET  
+**Project Status**: ✅ Sprint 9 COMPLETE — Archive, Timeline & Global Audit Dashboard done  
+**Version**: v1.8.1 (Audit Log Module + Archive functionality)
