@@ -20,6 +20,7 @@ import {
   LogOut,
   UtensilsCrossed,
   FileText,
+  Archive,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -35,6 +36,7 @@ interface NavItem {
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, accentKey: 'dashboard' },
   { name: 'Rezerwacje', href: '/dashboard/reservations', icon: Calendar, accentKey: 'reservations' },
+  { name: 'Archiwum', href: '/dashboard/archive', icon: Archive, accentKey: 'archive' },
   { name: 'Klienci', href: '/dashboard/clients', icon: Users, accentKey: 'clients' },
   { name: 'Sale', href: '/dashboard/halls', icon: Building2, accentKey: 'halls' },
   { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed, accentKey: 'menu' },
