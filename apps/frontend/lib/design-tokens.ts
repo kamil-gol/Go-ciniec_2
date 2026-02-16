@@ -139,6 +139,17 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     badge: 'bg-zinc-100 dark:bg-zinc-900/30',
     badgeText: 'text-zinc-700 dark:text-zinc-300',
   },
+  archive: {
+    name: 'Archiwum',
+    gradient: 'from-gray-600 via-gray-500 to-slate-600',
+    gradientSubtle: 'from-gray-500/5 via-slate-500/5 to-gray-500/5',
+    iconBg: 'from-gray-500 to-slate-500',
+    text: 'text-gray-600',
+    textDark: 'dark:text-gray-400',
+    ring: 'ring-gray-500/20',
+    badge: 'bg-gray-100 dark:bg-gray-900/30',
+    badgeText: 'text-gray-700 dark:text-gray-300',
+  },
 } as const
 
 /** Shared spacing & layout constants */
