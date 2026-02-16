@@ -18,8 +18,8 @@ import {
   History,
   UtensilsCrossed,
   Clock,
+  LogOut,
 } from 'lucide-react'
-import { useAuth } from '@/components/providers/auth-provider'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -75,9 +75,15 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
 /* ============================
    Shared user footer component
    ============================ */
-function SidebarUser({ collapsed }: { collapsed: boolean }) {
-  const { user } = useAuth()
-
+function SidebarUser({
+  collapsed,
+  user,
+  onLogout,
+}: {
+  collapsed: boolean
+  user: { firstName: string; lastName: string; role: string; email?: string } | null
+  onLogout: () => void
+}) {
   return (
     <div className="border-t border-neutral-200 dark:border-neutral-700 p-4">
       <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
@@ -85,14 +91,23 @@ function SidebarUser({ collapsed }: { collapsed: boolean }) {
           {user?.firstName?.[0]}{user?.lastName?.[0]}
         </div>
         {!collapsed && (
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-              {user?.role === 'ADMIN' ? 'Administrator' : 'Użytkownik'}
+              {user?.role === 'ADMIN' ? 'Administrator' : 'U\u017cytkownik'}
             </p>
           </div>
+        )}
+        {!collapsed && (
+          <button
+            onClick={onLogout}
+            className="rounded-lg p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            aria-label="Wyloguj"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         )}
       </div>
     </div>
@@ -100,21 +115,25 @@ function SidebarUser({ collapsed }: { collapsed: boolean }) {
 }
 
 /* ============================
-   Main Sidebar export
+   Props matching DashboardLayout
    ============================ */
-export function Sidebar({
-  sidebarOpen,
-  onSidebarOpenChange,
-}: {
-  sidebarOpen: boolean
-  onSidebarOpenChange: (open: boolean) => void
-}) {
+interface SidebarProps {
+  user: { firstName: string; lastName: string; role: string; email?: string } | null
+  onLogout: () => void
+  mobileOpen: boolean
+  onMobileClose: () => void
+}
+
+/* ============================
+   Main Sidebar — default export
+   ============================ */
+export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
   // Auto-close mobile sheet on navigation
   useEffect(() => {
-    onSidebarOpenChange(false)
+    onMobileClose()
   }, [pathname])
 
   return (
@@ -136,9 +155,9 @@ export function Sidebar({
                 </div>
                 <div>
                   <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                    Gościniec
+                    Go\u015bciniec
                   </h1>
-                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
+                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarz\u0105dzania</p>
                 </div>
               </div>
             )}
@@ -153,12 +172,12 @@ export function Sidebar({
           </div>
 
           <SidebarNav collapsed={collapsed} />
-          <SidebarUser collapsed={collapsed} />
+          <SidebarUser collapsed={collapsed} user={user} onLogout={onLogout} />
         </div>
       </aside>
 
       {/* ====== MOBILE SIDEBAR (Sheet, <lg) ====== */}
-      <Sheet open={sidebarOpen} onOpenChange={onSidebarOpenChange}>
+      <Sheet open={mobileOpen} onOpenChange={(open) => { if (!open) onMobileClose() }}>
         <SheetContent
           side="left"
           className="w-[280px] p-0 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
@@ -173,15 +192,15 @@ export function Sidebar({
               </div>
               <div>
                 <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  Gościniec
+                  Go\u015bciniec
                 </h1>
-                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
+                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarz\u0105dzania</p>
               </div>
             </div>
 
             {/* Nav — always expanded on mobile, close sheet on click */}
-            <SidebarNav collapsed={false} onNavigate={() => onSidebarOpenChange(false)} />
-            <SidebarUser collapsed={false} />
+            <SidebarNav collapsed={false} onNavigate={onMobileClose} />
+            <SidebarUser collapsed={false} user={user} onLogout={onLogout} />
           </div>
         </SheetContent>
       </Sheet>
