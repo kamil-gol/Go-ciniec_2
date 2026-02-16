@@ -135,6 +135,11 @@ interface CreateReservationFormProps {
   defaultHallId?: string
 }
 
+// ═══ HELPER: Select all text on focus for number inputs ═══
+const selectAllOnFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.target.select()
+}
+
 // ═══ COMPONENT ═══
 
 export function CreateReservationForm({
@@ -326,7 +331,6 @@ export function CreateReservationForm({
   // Clear template + package when event type changes
   useEffect(() => {
     if (selectedEventTypeId) {
-      // Check if current template belongs to selected event type
       if (menuTemplateId && menuTemplatesArray.length > 0) {
         const isValid = menuTemplatesArray.some((t) => t.id === menuTemplateId)
         if (!isValid) {
@@ -346,13 +350,6 @@ export function CreateReservationForm({
       }
     }
   }, [menuTemplateId, menuPackageId, templatePackagesArray, setValue])
-
-  // Clear template/package when toggling off menu
-  useEffect(() => {
-    if (!useMenuPackage) {
-      // Don't clear — user might toggle back on
-    }
-  }, [useMenuPackage])
 
   useEffect(() => {
     if (!useMenuPackage && pricePerAdult > 0 && !childPriceManuallySet) {
@@ -455,7 +452,7 @@ export function CreateReservationForm({
       input.pricePerToddler = data.pricePerToddler
     }
 
-    // Sprint 7: Atomowy rabat — wysyłamy pola rabatowe w payloadzie tworzenia
+    // Sprint 7: Atomowy rabat
     const shouldApplyDiscount =
       !!data.discountEnabled &&
       Number(data.discountValue) > 0 &&
@@ -569,9 +566,9 @@ export function CreateReservationForm({
     )
   }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage])
 
-  // ═════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════
   // STEP RENDERERS
-  // ═════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════
 
   const renderStep0 = () => (
     <div className="space-y-6">
@@ -606,7 +603,7 @@ export function CreateReservationForm({
 
       {isBirthday && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-          <Input type="number" label="Które urodziny" placeholder="np. 18" error={errors.birthdayAge?.message} {...register('birthdayAge')} />
+          <Input type="number" label="Które urodziny" placeholder="np. 18" error={errors.birthdayAge?.message} onFocus={selectAllOnFocus} {...register('birthdayAge')} />
         </motion.div>
       )}
 
@@ -618,7 +615,7 @@ export function CreateReservationForm({
 
       {isAnniversary && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input type="number" label="Która rocznica" placeholder="np. 25" error={errors.anniversaryYear?.message} {...register('anniversaryYear')} />
+          <Input type="number" label="Która rocznica" placeholder="np. 25" error={errors.anniversaryYear?.message} onFocus={selectAllOnFocus} {...register('anniversaryYear')} />
           <Input label="Jaka okazja" placeholder="np. Srebrne wesele" error={errors.anniversaryOccasion?.message} {...register('anniversaryOccasion')} />
         </motion.div>
       )}
@@ -751,15 +748,44 @@ export function CreateReservationForm({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-primary-300 transition-colors">
           <div className="flex items-center gap-2 mb-3"><Users className="w-5 h-5 text-primary-600" /><span className="font-medium text-secondary-700">Dorośli</span></div>
-          <Input type="number" placeholder="0" error={errors.adults?.message} className="text-center text-2xl font-bold h-14" {...register('adults')} />
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="0"
+            error={errors.adults?.message}
+            className="text-center text-2xl font-bold h-14"
+            onFocus={selectAllOnFocus}
+            {...register('adults')}
+          />
         </div>
         <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-blue-300 transition-colors">
           <div className="flex items-center gap-2 mb-3"><Smile className="w-5 h-5 text-blue-600" /><span className="font-medium text-secondary-700">Dzieci (4–12)</span></div>
-          <Input type="number" placeholder="0" error={errors.children?.message} disabled={adults === 0} className="text-center text-2xl font-bold h-14" {...register('children')} />
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="0"
+            error={errors.children?.message}
+            disabled={adults === 0}
+            className="text-center text-2xl font-bold h-14"
+            onFocus={selectAllOnFocus}
+            {...register('children')}
+          />
         </div>
         <div className="p-4 rounded-xl border-2 border-secondary-200 hover:border-green-300 transition-colors">
           <div className="flex items-center gap-2 mb-3"><Baby className="w-5 h-5 text-green-600" /><span className="font-medium text-secondary-700">Maluchy (0–3)</span></div>
-          <Input type="number" placeholder="0" error={errors.toddlers?.message} disabled={adults === 0} className="text-center text-2xl font-bold h-14" {...register('toddlers')} />
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="0"
+            error={errors.toddlers?.message}
+            disabled={adults === 0}
+            className="text-center text-2xl font-bold h-14"
+            onFocus={selectAllOnFocus}
+            {...register('toddlers')}
+          />
         </div>
       </div>
 
@@ -831,7 +857,6 @@ export function CreateReservationForm({
             <Controller name="menuTemplateId" control={control} render={({ field }) => (
               <Select value={field.value || ''} onValueChange={(val) => {
                 field.onChange(val)
-                // Clear package when template changes
                 setValue('menuPackageId', '')
               }}>
                 <SelectTrigger className="h-11 bg-white">
@@ -900,26 +925,26 @@ export function CreateReservationForm({
                 )} />
               )}
 
-              {/* Package details card */}
+              {/* Package details card — RESPONSIVE grid */}
               {selectedPackage && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white rounded-lg border border-emerald-300">
                   <div className="flex items-start gap-3">
                     <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-1" />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-secondary-900">{selectedPackage.name}</h4>
                       {selectedPackage.shortDescription && <p className="text-sm text-secondary-600 mt-1">{selectedPackage.shortDescription}</p>}
-                      <div className="grid grid-cols-3 gap-4 mt-3">
-                        <div>
+                      <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-3">
+                        <div className="text-center sm:text-left">
                           <p className="text-xs text-secondary-500">Dorosły</p>
-                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
+                          <p className="text-base sm:text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
                         </div>
-                        <div>
+                        <div className="text-center sm:text-left">
                           <p className="text-xs text-secondary-500">Dziecko 4–12</p>
-                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
+                          <p className="text-base sm:text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
                         </div>
-                        <div>
+                        <div className="text-center sm:text-left">
                           <p className="text-xs text-secondary-500">Dziecko 0–3</p>
-                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
+                          <p className="text-base sm:text-lg font-bold text-emerald-600">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
                         </div>
                       </div>
                     </div>
@@ -942,21 +967,21 @@ export function CreateReservationForm({
         </motion.div>
       )}
 
-      {/* ═══ MANUAL PRICING ═══ */}
+      {/* ═══ MANUAL PRICING — responsive ═══ */}
       {!useMenuPackage && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-secondary-500" />
-              <Input type="number" label="Cena za dorosłego (PLN)" placeholder="0.00" error={errors.pricePerAdult?.message} {...register('pricePerAdult')} />
+              <DollarSign className="w-5 h-5 text-secondary-500 flex-shrink-0" />
+              <Input type="number" label="Cena za dorosłego (PLN)" placeholder="0.00" error={errors.pricePerAdult?.message} onFocus={selectAllOnFocus} {...register('pricePerAdult')} />
             </div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-secondary-500" />
-              <Input type="number" label="Cena za dziecko 4–12 (PLN)" placeholder="0.00" error={errors.pricePerChild?.message} disabled={pricePerAdult === 0} {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })} />
+              <DollarSign className="w-5 h-5 text-secondary-500 flex-shrink-0" />
+              <Input type="number" label="Cena za dziecko 4–12 (PLN)" placeholder="0.00" error={errors.pricePerChild?.message} disabled={pricePerAdult === 0} onFocus={selectAllOnFocus} {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })} />
             </div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-secondary-500" />
-              <Input type="number" label="Cena za dziecko 0–3 (PLN)" placeholder="0.00" error={errors.pricePerToddler?.message} disabled={pricePerAdult === 0} {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })} />
+              <DollarSign className="w-5 h-5 text-secondary-500 flex-shrink-0" />
+              <Input type="number" label="Cena za dziecko 0–3 (PLN)" placeholder="0.00" error={errors.pricePerToddler?.message} disabled={pricePerAdult === 0} onFocus={selectAllOnFocus} {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })} />
             </div>
           </div>
           {pricePerAdult > 0 && !childPriceManuallySet && (
@@ -1154,7 +1179,7 @@ export function CreateReservationForm({
 
         <div>
           <div className="flex items-center gap-2 mb-1"><FileText className="w-5 h-5 text-secondary-500" /><label className="block text-sm font-medium text-secondary-700">Notatki</label></div>
-          <textarea className="w-full rounded-xl border border-secondary-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-400 transition-colors resize-none" rows={3} placeholder="Dodatkowe informacje..." {...register('notes')} />
+          <textarea className="w-full rounded-xl border border-secondary-300 bg-white text-neutral-900 dark:text-neutral-100 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-400 transition-colors resize-none" rows={3} placeholder="Dodatkowe informacje..." {...register('notes')} />
         </div>
       </div>
 
@@ -1168,7 +1193,6 @@ export function CreateReservationForm({
     </div>
   )
 
-  // Map step index to renderer
   const stepRenderers = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5]
 
   // ═══ RENDER ═══

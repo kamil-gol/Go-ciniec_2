@@ -106,7 +106,7 @@ export default function AuditLogPage() {
 
       {/* Statystyki */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
             label="Wszystkie wpisy"
             value={stats.totalLogs}
@@ -143,9 +143,9 @@ export default function AuditLogPage() {
       )}
 
       {statsLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="p-6">
+            <Card key={i} className="p-4 sm:p-6">
               <LoadingState variant="skeleton" rows={2} />
             </Card>
           ))}
@@ -207,11 +207,11 @@ export default function AuditLogPage() {
 
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <LoadingState variant="skeleton" rows={8} message="Ładowanie dziennika audytu..." />
             </div>
           ) : !data || data.data.length === 0 ? (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <EmptyState
                 icon={FileText}
                 title="Brak wpisów w dzienniku"

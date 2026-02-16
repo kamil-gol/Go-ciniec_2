@@ -72,17 +72,17 @@ export default function HallsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient="from-sky-500 to-blue-500" delay={0.1} />
         <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Całkowita pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.3} />
-        <StatCard label="Średnia pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
+        <StatCard label="Całk. pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.3} />
+        <StatCard label="Śr. pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
       </div>
 
       {/* Filters */}
       <Card>
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
               <Input
