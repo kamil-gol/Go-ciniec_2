@@ -125,10 +125,12 @@ export function AuditLogTable({
                 <TableCell>
                   <div>
                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                      {log.user.firstName} {log.user.lastName}
+                      {log.user?.firstName && log.user?.lastName
+                        ? `${log.user.firstName} ${log.user.lastName}`
+                        : 'System'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {log.user.email}
+                      {log.user?.email || 'Akcja automatyczna'}
                     </p>
                   </div>
                 </TableCell>
