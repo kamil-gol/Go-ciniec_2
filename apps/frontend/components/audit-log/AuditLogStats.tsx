@@ -16,6 +16,15 @@ const actionLabelsGenitive: Record<string, string> = {
   DELETE: 'Usunięć',
   STATUS_CHANGE: 'Zmian statusu',
   RESTORE: 'Przywróceń',
+  LOGIN: 'Logowań',
+  LOGOUT: 'Wylogowań',
+  QUEUE_ADD: 'Dodań do kolejki',
+  QUEUE_REMOVE: 'Usunięć z kolejki',
+  QUEUE_SWAP: 'Zamian pozycji',
+  QUEUE_MOVE: 'Przeniesień',
+  MARK_PAID: 'Oznaczeń płatności',
+  ATTACHMENT_ADD: 'Dodań załączników',
+  ATTACHMENT_DELETE: 'Usunięć załączników',
 };
 
 const entityLabelsPlural: Record<string, string> = {
@@ -26,6 +35,7 @@ const entityLabelsPlural: Record<string, string> = {
   MENU: 'Menu',
   USER: 'Użytkownicy',
   DEPOSIT: 'Zaliczki',
+  EVENT_TYPE: 'Typy wydarzeń',
 };
 
 export function AuditLogStats() {

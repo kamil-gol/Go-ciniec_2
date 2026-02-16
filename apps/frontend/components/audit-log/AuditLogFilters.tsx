@@ -34,6 +34,13 @@ const actionLabels: Record<string, string> = {
   STATUS_CHANGE: 'Zmiana statusu',
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
+  QUEUE_ADD: 'Dodanie do kolejki',
+  QUEUE_REMOVE: 'Usunięcie z kolejki',
+  QUEUE_SWAP: 'Zamiana pozycji',
+  QUEUE_MOVE: 'Przeniesienie',
+  MARK_PAID: 'Oznaczenie płatności',
+  ATTACHMENT_ADD: 'Dodanie załącznika',
+  ATTACHMENT_DELETE: 'Usunięcie załącznika',
 };
 
 const entityTypeLabels: Record<string, string> = {

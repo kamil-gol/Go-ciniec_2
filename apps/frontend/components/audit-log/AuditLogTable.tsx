@@ -38,6 +38,13 @@ const actionColors: Record<string, string> = {
   STATUS_CHANGE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
   LOGIN: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
   LOGOUT: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-800',
+  QUEUE_ADD: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
+  QUEUE_REMOVE: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+  QUEUE_SWAP: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
+  QUEUE_MOVE: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
+  MARK_PAID: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+  ATTACHMENT_ADD: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
+  ATTACHMENT_DELETE: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
 };
 
 const actionLabels: Record<string, string> = {
@@ -50,6 +57,13 @@ const actionLabels: Record<string, string> = {
   STATUS_CHANGE: 'Zmiana statusu',
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
+  QUEUE_ADD: 'Dodanie do kolejki',
+  QUEUE_REMOVE: 'Usunięcie z kolejki',
+  QUEUE_SWAP: 'Zamiana pozycji',
+  QUEUE_MOVE: 'Przeniesienie',
+  MARK_PAID: 'Oznaczenie płatności',
+  ATTACHMENT_ADD: 'Dodanie załącznika',
+  ATTACHMENT_DELETE: 'Usunięcie załącznika',
 };
 
 const entityLabels: Record<string, string> = {
