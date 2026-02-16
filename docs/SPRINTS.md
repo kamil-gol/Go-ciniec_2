@@ -3,7 +3,7 @@
 **Status**: 🔧 W budowie  
 **Okres**: Ciągły rozwój  
 **Start projektu**: 06.02.2026  
-**Aktualna wersja**: 1.8.0  
+**Aktualna wersja**: 1.7.1  
 
 ---
 
@@ -23,7 +23,8 @@ SPRINT 7 (15.02 - 16.02)   → UTF-8 Cleanup + Attachments       ✅ DONE
 SPRINT 8 (15.02 - 16.02)   → System Rabatów                    ✅ DONE
 SPRINT 9 (16.02 - 21.02)   → Historia Zmian & Archiwum         🔄 IN PROGRESS
   Phase 1: Audit Logging (16.02)                                ✅ DONE
-  Phase 2: UI Viewer (17.02-21.02)                              🔳 TODO
+  Phase 2: UI Viewer (17.02-21.02)                              🔄 IN PROGRESS
+    US-9.8: Activity Timeline                                   ✅ DONE (16.02)
 SPRINT 10 (27.02 - 05.03)  → Ujednolicenie UI & Mobile         🔳 TODO
 ```
 
@@ -536,11 +537,11 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 ---
 
-## 🔳 Phase 2: Audit UI Viewer (17.02 - 21.02.2026)
+## 🔄 Phase 2: Audit UI Viewer (17.02 - 21.02.2026)
 
-**Status**: 🔳 TODO  
+**Status**: 🔄 IN PROGRESS  
 **Estymacja**: ~2-3 dni  
-**Wersja**: v1.8.1
+**Wersja**: v1.7.1 - v1.8.1
 
 ### US-9.6: Activity Log Viewer — Backend API
 **Priority**: 🔴 CRITICAL  
@@ -574,14 +575,30 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 ### US-9.8: Activity Timeline — Per Entity
 **Priority**: 🟡 MEDIUM  
 **Points**: 5  
-**Status**: 🔳 TODO
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #77  
+**Branch**: `feature/us-9.8-entity-timeline`  
+**Wersja**: v1.7.1
 
 **Subtasks**:
-- [ ] Komponent `ActivityTimeline` — chronologiczna lista zmian
-- [ ] Integracja w reservation detail view (zakładka "Historia")
-- [ ] Integracja w client detail view (zakładka "Logi")
-- [ ] Icon mapping dla action types (🆕 CREATE, ✏️ UPDATE, 🗑️ DELETE, etc.)
-- [ ] Relative timestamps ("2 godziny temu", "wczoraj")
+- [x] Komponent `EntityActivityTimeline` — chronologiczna lista zmian
+- [x] Integracja w reservation detail view (zakładka "Historia")
+- [x] Integracja w client detail view (zakładka "Historia zmian")
+- [x] Icon mapping dla action types (🆕 CREATE, ✏️ UPDATE, 🗑️ DELETE, etc.)
+- [x] Polish labels (22 typy akcji + 35+ pól)
+- [x] Rozwijalne szczegóły zmian (old → new diff)
+- [x] Smart formatting (obiekty, daty, ceny, statusy)
+- [x] Auto-refresh (React Query 30s)
+- [x] Framer-motion animations
+
+**Implementacja**:
+- `lib/api/audit-log.ts` — hook `useEntityActivityLog(entityType, entityId)`
+- `components/audit-log/EntityActivityTimeline.tsx` — reużywalny timeline
+- Polskie labele dla 22 typów akcji (CREATE, UPDATE, DELETE, STATUS_CHANGE, MENU_RECALCULATED, etc.)
+- Polskie nazwy pól (hall → Sala, client → Klient, guests → Goście łącznie)
+- Ukryte pola techniczne (`menuSnapshot`, `createdBy`, `*Id`)
+- Formatowanie: daty (`dd.MM.yyyy HH:mm`), ceny (`6 825 zł`), statusy ("Potwierdzona")
+- Fix: `[object Object]` → smart extraction (hall.name, firstName+lastName, eventType.name)
 
 ---
 
@@ -615,9 +632,10 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 ## 📊 Estimated Summary Sprint 9 Phase 2
 - **Total Points**: 24 (5 + 8 + 5 + 3 + 3)
+- **Progress**: 5/24 points done (US-9.8)
 - **Deliverables**: 
   - Viewer `/activity-log` z filtrowaniem i searchem
-  - Timeline per entity (rezerwacja, klient)
+  - Timeline per entity (rezerwacja, klient) ✅ DONE
   - Archive page z restore functionality
   - 2 nowe endpointy (activity-log, archive)
 - **Migracja DB**: ❌ Brak (archivedAt już istnieje)
@@ -646,12 +664,12 @@ Spójny wygląd wszystkich modułów + pełna responsywność mobilna.
 | 7 | UTF-8 Cleanup + Attachments | 25 | ~2 dni | v1.6.1-v1.6.2 | ✅ DONE |
 | 8 | System Rabatów | 26 | ~1 dzień | v1.7.0 | ✅ DONE |
 | 9.1 | Audit Logging Backend | 28 | ~1 dzień | v1.8.0 | ✅ DONE |
-| 9.2 | Audit UI + Archive | 24 | ~2-3 dni | v1.8.1 | 🔳 TODO |
+| 9.2 | Audit UI + Archive | 24 | ~2-3 dni | v1.8.1 | 🔄 IN PROGRESS (5/24) |
 | 10 | Ujednolicenie UI & Mobile | 47 | ~5-7 dni | v1.9.0 | 🔳 TODO |
 | **RAZEM** | | **166** | **~13-18 dni** | | **4/6 DONE** |
 
 ---
 
-**Last Updated**: 16.02.2026, 16:30 CET  
-**Project Status**: 🔄 Sprint 9 Phase 1 ✅ complete, Phase 2 (UI) 🔳 next  
-**Version**: v1.8.0 (Audit Logging Backend)
+**Last Updated**: 16.02.2026, 17:55 CET  
+**Project Status**: 🔄 Sprint 9 Phase 2 — US-9.8 ✅ DONE, US-9.10 🔳 NEXT  
+**Version**: v1.7.1 (Activity Timeline per Entity)
