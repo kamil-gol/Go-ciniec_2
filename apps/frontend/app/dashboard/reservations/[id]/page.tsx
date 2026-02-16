@@ -55,12 +55,12 @@ export default function ReservationDetailsPage() {
       await downloadReservationPDF(reservation.id)
       toast({
         title: 'Sukces',
-        description: 'PDF został pobrany',
+        description: 'PDF zosta\u0142 pobrany',
       })
     } catch {
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się pobrać PDF',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 pobra\u0107 PDF',
         variant: 'destructive',
       })
     } finally {
@@ -71,22 +71,22 @@ export default function ReservationDetailsPage() {
   const handleArchive = async () => {
     if (!reservation) return
     
-    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
+    if (!confirm('Czy na pewno chcesz zarchiwizowa\u0107 t\u0119 rezerwacj\u0119?')) return
 
     try {
       await archiveMutation.mutateAsync({ 
         id: reservation.id, 
-        reason: 'Zarchiwizowano przez użytkownika' 
+        reason: 'Zarchiwizowano przez u\u017cytkownika' 
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja została zarchiwizowana',
+        description: 'Rezerwacja zosta\u0142a zarchiwizowana',
       })
       refetch()
     } catch {
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się zarchiwizować rezerwacji',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 zarchiwizowa\u0107 rezerwacji',
         variant: 'destructive',
       })
     }
@@ -98,17 +98,17 @@ export default function ReservationDetailsPage() {
     try {
       await unarchiveMutation.mutateAsync({ 
         id: reservation.id, 
-        reason: 'Przywrócono z archiwum' 
+        reason: 'Przywr\u00f3cono z archiwum' 
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja została przywrócona z archiwum',
+        description: 'Rezerwacja zosta\u0142a przywr\u00f3cona z archiwum',
       })
       refetch()
     } catch {
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się przywrócić rezerwacji',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 przywr\u00f3ci\u0107 rezerwacji',
         variant: 'destructive',
       })
     }
@@ -117,7 +117,7 @@ export default function ReservationDetailsPage() {
   const handleCancel = async () => {
     if (!reservation) return
     
-    const reason = prompt('Podaj powód anulowania rezerwacji:')
+    const reason = prompt('Podaj pow\u00f3d anulowania rezerwacji:')
     if (!reason) return
 
     try {
@@ -127,12 +127,12 @@ export default function ReservationDetailsPage() {
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja została anulowana',
+        description: 'Rezerwacja zosta\u0142a anulowana',
       })
     } catch {
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się anulować rezerwacji',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 anulowa\u0107 rezerwacji',
         variant: 'destructive',
       })
     }
@@ -154,9 +154,9 @@ export default function ReservationDetailsPage() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="text-center space-y-4">
           <XCircle className="h-16 w-16 text-red-400 mx-auto" />
-          <p className="text-muted-foreground">Nie udało się załadować rezerwacji</p>
+          <p className="text-muted-foreground">Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji</p>
           <Link href="/dashboard/reservations">
-            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
+            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powr\u00f3t do listy</Button>
           </Link>
         </div>
       </div>
@@ -176,31 +176,31 @@ export default function ReservationDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto py-8 px-4 space-y-8">
+      <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
         {/* Premium Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 p-8 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 p-5 sm:p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
-          <div className="relative z-10 space-y-6">
+          <div className="relative z-10 space-y-4 sm:space-y-6">
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <Calendar className="h-8 w-8" />
+                  <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
                   </div>
                   <div>
-                    <h1 className="text-4xl font-bold">Rezerwacja #{reservation.id.slice(0, 8)}</h1>
-                    <p className="text-white/90 text-lg mt-1">Szczegóły rezerwacji</p>
+                    <h1 className="text-2xl sm:text-4xl font-bold">Rezerwacja #{reservation.id.slice(0, 8)}</h1>
+                    <p className="text-white/90 text-base sm:text-lg mt-1">Szczeg\u00f3\u0142y rezerwacji</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   {isArchived && (
                     <Badge className="bg-gray-200 text-gray-800 border-gray-300">
                       <Archive className="h-3 w-3 mr-1" />
@@ -221,15 +221,15 @@ export default function ReservationDetailsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <Button 
                   size="lg" 
                   onClick={handleDownloadPDF}
                   disabled={downloading}
                   className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
                 >
-                  <Download className="mr-2 h-5 w-5" />
-                  {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
+                  <Download className="h-5 w-5 sm:mr-2" />
+                  <span className="hidden sm:inline">{downloading ? 'Pobieranie...' : 'Pobierz PDF'}</span>
                 </Button>
               </div>
             </div>
@@ -243,18 +243,18 @@ export default function ReservationDetailsPage() {
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'details'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
                 : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <Calendar className="h-4 w-4" />
-            Szczegóły
+            Szczeg\u00f3\u0142y
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
                 : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
@@ -265,45 +265,45 @@ export default function ReservationDetailsPage() {
           </button>
         </div>
 
-        {/* Tab: Szczegóły */}
+        {/* Tab: Szczeg\u00f3\u0142y */}
         {activeTab === 'details' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Client Info (read-only) */}
               <Card className="border-0 shadow-xl">
-                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-5 sm:p-6">
+                  <div className="flex items-center gap-3 mb-5 sm:mb-6">
                     <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
                       <User className="h-5 w-5 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold">Klient</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold">Klient</h2>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <User className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
-                        <p className="text-lg font-semibold">
+                      <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-muted-foreground">Imi\u0119 i nazwisko</p>
+                        <p className="text-base sm:text-lg font-semibold truncate">
                           {reservation.client?.firstName} {reservation.client?.lastName}
                         </p>
                       </div>
                     </div>
                     {reservation.client?.email && (
                       <div className="flex items-center gap-3">
-                        <Mail className="h-5 w-5 text-muted-foreground" />
-                        <div>
+                        <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="text-lg font-semibold">{reservation.client.email}</p>
+                          <p className="text-base sm:text-lg font-semibold truncate">{reservation.client.email}</p>
                         </div>
                       </div>
                     )}
                     {reservation.client?.phone && (
                       <div className="flex items-center gap-3">
-                        <Phone className="h-5 w-5 text-muted-foreground" />
-                        <div>
+                        <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-sm text-muted-foreground">Telefon</p>
-                          <p className="text-lg font-semibold">{reservation.client.phone}</p>
+                          <p className="text-base sm:text-lg font-semibold">{reservation.client.phone}</p>
                         </div>
                       </div>
                     )}
@@ -362,7 +362,7 @@ export default function ReservationDetailsPage() {
               <AttachmentPanel
                 entityType="RESERVATION"
                 entityId={reservation.id}
-                title="Załączniki rezerwacji"
+                title="Za\u0142\u0105czniki rezerwacji"
                 className="shadow-xl"
               />
             </div>
@@ -401,7 +401,7 @@ export default function ReservationDetailsPage() {
 
               {/* Quick Actions */}
               <Card className="border-0 shadow-xl">
-                <div className="p-6">
+                <div className="p-5 sm:p-6">
                   <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
                   <div className="space-y-2">
                     <Button 
@@ -424,7 +424,7 @@ export default function ReservationDetailsPage() {
                         onClick={handleArchive}
                       >
                         <Archive className="mr-2 h-4 w-4" />
-                        {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
+                        {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwacj\u0119'}
                       </Button>
                     ) : (
                       <Button 
@@ -435,7 +435,7 @@ export default function ReservationDetailsPage() {
                         onClick={handleUnarchive}
                       >
                         <ArchiveRestore className="mr-2 h-4 w-4" />
-                        {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
+                        {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywr\u00f3\u0107 z archiwum'}
                       </Button>
                     )}
                     
@@ -447,7 +447,7 @@ export default function ReservationDetailsPage() {
                       onClick={handleCancel}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
+                      {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwacj\u0119'}
                     </Button>
                   </div>
                 </div>

@@ -208,7 +208,6 @@ export function ReservationsList() {
         responseType: 'blob',
       })
 
-      // Verify response is actually a PDF (not a JSON error with 200 status)
       const contentType = response.headers?.['content-type'] || ''
       if (contentType.includes('application/json')) {
         const text = await new Blob([response.data]).text()
@@ -223,7 +222,6 @@ export function ReservationsList() {
       link.download = `rezerwacja_${reservationId.slice(0, 8)}.pdf`
       document.body.appendChild(link)
       link.click()
-      // Delay cleanup to allow browser to initiate the download
       setTimeout(() => {
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
@@ -231,7 +229,6 @@ export function ReservationsList() {
       toast.success('PDF wygenerowany pomyślnie')
     } catch (error: any) {
       console.error('PDF generation error:', error)
-      // Handle blob error responses (responseType: 'blob' returns Blob even on errors)
       if (error?.response?.data instanceof Blob) {
         try {
           const text = await error.response.data.text()
@@ -321,9 +318,9 @@ export function ReservationsList() {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="w-64">
+      {/* Filters — responsive wrap */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-64">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
             <SelectTrigger className="h-11 rounded-xl border-neutral-200 dark:border-neutral-700">
               <SelectValue placeholder="Filtruj po statusie" />
@@ -344,12 +341,13 @@ export function ReservationsList() {
             onCheckedChange={setShowArchived}
           />
           <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm">
-            Pokaż zarchiwizowane
+            <span className="hidden sm:inline">Pokaż zarchiwizowane</span>
+            <span className="sm:hidden">Archiwum</span>
           </Label>
         </div>
         
         <div className="flex-1" />
-        <div className="text-sm text-neutral-500 dark:text-neutral-400">
+        <div className="text-sm text-neutral-500 dark:text-neutral-400 w-full sm:w-auto">
           Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji
         </div>
       </div>
@@ -414,13 +412,13 @@ export function ReservationsList() {
                     const isPdfGenerating = generatingPdfId === reservation.id
 
                     return (
-                      <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+                      <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden active:scale-[0.99]">
                         <div className={cn(
-                          'p-6',
+                          'p-4 sm:p-6',
                           `bg-gradient-to-r ${accent.gradientSubtle}`
                         )}>
-                          {/* Header: Time + Status + Badges */}
-                          <div className="flex items-start justify-between gap-4 mb-4">
+                          {/* Header: Time + Status + Badges — stacks on mobile */}
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-4">
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 'p-2 rounded-xl bg-gradient-to-br shadow-sm',
@@ -438,7 +436,7 @@ export function ReservationsList() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               {reservation.archivedAt && (
                                 <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                   <Archive className="h-3 w-3 mr-1" />
@@ -511,10 +509,10 @@ export function ReservationsList() {
                             </div>
                           </div>
 
-                          {/* Actions Bar */}
-                          <div className="flex items-center justify-between pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
+                          {/* Actions Bar — stacks on mobile */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
                             {reservation.client && (
-                              <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
                                 {reservation.client.phone && (
                                   <div className="flex items-center gap-1">
                                     <Phone className="h-3 w-3" />{reservation.client.phone}
@@ -522,13 +520,14 @@ export function ReservationsList() {
                                 )}
                                 {reservation.client.email && (
                                   <div className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />{reservation.client.email}
+                                    <Mail className="h-3 w-3" />
+                                    <span className="truncate max-w-[180px] sm:max-w-none">{reservation.client.email}</span>
                                   </div>
                                 )}
                               </div>
                             )}
 
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 self-end sm:self-auto">
                               <Link href={`/dashboard/reservations/${reservation.id}`}>
                                 <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" className="rounded-lg">
                                   <Eye className="w-4 h-4" />
@@ -593,9 +592,9 @@ export function ReservationsList() {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination — responsive */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Strona <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> z <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong>
           </p>

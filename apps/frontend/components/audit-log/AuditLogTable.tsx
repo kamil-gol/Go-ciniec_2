@@ -29,26 +29,21 @@ interface Props {
 }
 
 const actionColors: Record<string, string> = {
-  // Basic CRUD
   CREATE: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   UPDATE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
   DELETE: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
   TOGGLE: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800',
-  // Status
   STATUS_CHANGE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
   ARCHIVE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
   UNARCHIVE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
   RESTORE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  // Menu
   MENU_UPDATE: 'bg-lime-100 text-lime-700 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800',
   MENU_REMOVE: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
   MENU_SELECTED: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
   MENU_RECALCULATED: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
   MENU_DIRECT_REMOVED: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-  // Payment
   PAYMENT_UPDATE: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
   MARK_PAID: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
-  // Queue
   QUEUE_ADD: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
   QUEUE_UPDATE: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
   QUEUE_REMOVE: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
@@ -58,38 +53,31 @@ const actionColors: Record<string, string> = {
   QUEUE_REBUILD: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
   QUEUE_PROMOTE: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
   QUEUE_AUTO_CANCEL: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-  // Attachments
   ATTACHMENT_UPLOAD: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
   ATTACHMENT_ADD: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
   ATTACHMENT_UPDATE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
   ATTACHMENT_ARCHIVE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
   ATTACHMENT_DELETE: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
-  // Auth
   LOGIN: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
   LOGOUT: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-800',
 };
 
 const actionLabels: Record<string, string> = {
-  // Basic CRUD
   CREATE: 'Utworzenie',
   UPDATE: 'Aktualizacja',
   DELETE: 'Usunięcie',
   TOGGLE: 'Przełączenie',
-  // Status
   STATUS_CHANGE: 'Zmiana statusu',
   ARCHIVE: 'Archiwizacja',
   UNARCHIVE: 'Przywrócenie',
   RESTORE: 'Przywrócenie',
-  // Menu
   MENU_UPDATE: 'Aktualizacja menu',
   MENU_REMOVE: 'Usunięcie menu',
   MENU_SELECTED: 'Wybór menu',
   MENU_RECALCULATED: 'Przeliczenie menu',
   MENU_DIRECT_REMOVED: 'Bezpośrednie usunięcie menu',
-  // Payment
   PAYMENT_UPDATE: 'Aktualizacja płatności',
   MARK_PAID: 'Oznaczenie płatności',
-  // Queue
   QUEUE_ADD: 'Dodanie do kolejki',
   QUEUE_UPDATE: 'Aktualizacja w kolejce',
   QUEUE_REMOVE: 'Usunięcie z kolejki',
@@ -99,13 +87,11 @@ const actionLabels: Record<string, string> = {
   QUEUE_REBUILD: 'Przebudowa kolejki',
   QUEUE_PROMOTE: 'Awans z kolejki',
   QUEUE_AUTO_CANCEL: 'Auto-anulowanie z kolejki',
-  // Attachments
   ATTACHMENT_UPLOAD: 'Wgranie załącznika',
   ATTACHMENT_ADD: 'Dodanie załącznika',
   ATTACHMENT_UPDATE: 'Aktualizacja załącznika',
   ATTACHMENT_ARCHIVE: 'Archiwizacja załącznika',
   ATTACHMENT_DELETE: 'Usunięcie załącznika',
-  // Auth
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
 };
@@ -138,7 +124,57 @@ export function AuditLogTable({
 
   return (
     <>
-      <div className="overflow-x-auto">
+      {/* ===== MOBILE CARD VIEW ===== */}
+      <div className="md:hidden divide-y divide-neutral-200/80 dark:divide-neutral-700/50">
+        {data.map((log) => (
+          <div
+            key={log.id}
+            onClick={() => setSelectedLog(log)}
+            className="p-4 cursor-pointer hover:bg-muted/50 active:scale-[0.98] transition-all duration-150"
+          >
+            {/* Row 1: Date + Action Badge */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                  {format(new Date(log.createdAt), 'dd.MM.yyyy', { locale: pl })}
+                </span>
+                <span className="text-xs">
+                  {format(new Date(log.createdAt), 'HH:mm', { locale: pl })}
+                </span>
+              </div>
+              <Badge
+                variant="outline"
+                className={`text-[10px] font-medium whitespace-nowrap ${actionColors[log.action] || 'bg-neutral-100 text-neutral-700 border-neutral-200'}`}
+              >
+                {actionLabels[log.action] || log.action}
+              </Badge>
+            </div>
+
+            {/* Row 2: User + Entity Type */}
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+                {log.user?.firstName && log.user?.lastName
+                  ? `${log.user.firstName} ${log.user.lastName}`
+                  : 'System'}
+              </p>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-shrink-0">
+                {entityLabels[log.entityType] || log.entityType}
+              </span>
+            </div>
+
+            {/* Row 3: Description */}
+            {(log.details?.description || log.details?.reason) && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
+                {log.details?.description || log.details?.reason}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ===== DESKTOP TABLE VIEW ===== */}
+      <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -151,7 +187,7 @@ export function AuditLogTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((log, index) => (
+            {data.map((log) => (
               <TableRow
                 key={log.id}
                 className="group cursor-pointer transition-colors hover:bg-muted/50"
@@ -221,7 +257,7 @@ export function AuditLogTable({
 
       {/* Paginacja */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/20">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t bg-muted/20">
           <p className="text-sm text-muted-foreground">
             Strona <span className="font-medium text-neutral-900 dark:text-neutral-100">{page}</span> z{' '}
             <span className="font-medium text-neutral-900 dark:text-neutral-100">{totalPages}</span>

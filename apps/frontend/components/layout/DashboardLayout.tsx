@@ -15,6 +15,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token')
@@ -55,13 +56,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-100/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800">
-      {/* Sidebar */}
-      <Sidebar user={user} onLogout={handleLogout} />
+      {/* Sidebar — desktop: fixed 280px, mobile: Sheet */}
+      <Sidebar
+        user={user}
+        onLogout={handleLogout}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+      />
 
-      {/* Main Content Area */}
-      <div className="pl-[280px] transition-all duration-300">
-        {/* Header */}
-        <Header user={user} />
+      {/* Main Content Area — no left padding on mobile */}
+      <div className="pl-0 lg:pl-[280px] transition-all duration-300">
+        {/* Header with hamburger on mobile */}
+        <Header user={user} onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Page Content */}
         <main className="min-h-[calc(100vh-4rem)]">
