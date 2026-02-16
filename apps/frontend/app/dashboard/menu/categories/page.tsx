@@ -7,18 +7,17 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Edit, Trash2, Loader2, Tags, ArrowLeft, Info } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Edit, Trash2, Loader2, Tags, Info } from 'lucide-react'
 import { useDishCategories, useCreateDishCategory, useUpdateDishCategory, useDeleteDishCategory } from '@/hooks/use-dish-categories'
 import { toast } from 'sonner'
 import type { DishCategory } from '@/types'
-import { PageLayout, PageHero, EmptyState } from '@/components/shared'
+import { PageLayout, PageHero, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 
 export default function DishCategoriesPage() {
-  const accent = moduleAccents.menu
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DishCategory | null>(null)
+  const accent = moduleAccents.menu
 
   const { data: categories = [], isLoading } = useDishCategories()
   const createMutation = useCreateDishCategory()
@@ -26,9 +25,7 @@ export default function DishCategoriesPage() {
   const deleteMutation = useDeleteDishCategory()
 
   const sortedCategories = [...categories].sort((a, b) => {
-    if (a.displayOrder !== b.displayOrder) {
-      return a.displayOrder - b.displayOrder
-    }
+    if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder
     return a.name.localeCompare(b.name)
   })
 
@@ -53,13 +50,7 @@ export default function DishCategoriesPage() {
   }, [editingCategory])
 
   const resetForm = () => {
-    setFormData({
-      slug: '',
-      name: '',
-      icon: '',
-      color: 'bg-gray-100 text-gray-700',
-      displayOrder: 0,
-    })
+    setFormData({ slug: '', name: '', icon: '', color: 'bg-gray-100 text-gray-700', displayOrder: 0 })
     setEditingCategory(null)
   }
 
@@ -69,9 +60,7 @@ export default function DishCategoriesPage() {
   }
 
   const handleCreate = () => {
-    const maxOrder = categories.length > 0
-      ? Math.max(...categories.map(c => c.displayOrder)) + 1
-      : 0
+    const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => c.displayOrder)) + 1 : 0
     resetForm()
     setFormData(prev => ({ ...prev, displayOrder: maxOrder }))
     setDialogOpen(true)
@@ -104,7 +93,7 @@ export default function DishCategoriesPage() {
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 kategori\u0119 \"${name}\"?`)) return
+    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 kategori\u0119 "${name}"?`)) return
     try {
       await deleteMutation.mutateAsync(id)
     } catch (error: any) {
@@ -130,23 +119,17 @@ export default function DishCategoriesPage() {
         title="Kategorie Da\u0144"
         subtitle="Zarz\u0105dzaj kategoriami w systemie"
         icon={Tags}
+        backHref="/dashboard/menu"
+        backLabel="Powr\u00f3t do Menu"
         action={
-          <div className="flex flex-wrap gap-2">
-            <Link href="/dashboard/menu">
-              <Button className="bg-white/15 hover:bg-white/25 text-white border-0">
-                <ArrowLeft className="h-4 w-4 mr-1.5 sm:mr-2" />
-                <span className="hidden sm:inline">Powr\u00f3t do Menu</span>
-                <span className="sm:hidden">Menu</span>
-              </Button>
-            </Link>
-            <Button
-              onClick={handleCreate}
-              className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
-            >
-              <Plus className="h-5 w-5 sm:mr-2" />
-              <span className="hidden sm:inline">Dodaj Kategori\u0119</span>
-            </Button>
-          </div>
+          <Button
+            size="lg"
+            onClick={handleCreate}
+            className="bg-white text-purple-600 hover:bg-white/90 shadow-xl"
+          >
+            <Plus className="h-5 w-5 sm:mr-2" />
+            <span className="hidden sm:inline">Dodaj Kategori\u0119</span>
+          </Button>
         }
       />
 
@@ -162,49 +145,25 @@ export default function DishCategoriesPage() {
       )}
 
       {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        if (!open) handleClose()
-      }}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? 'Edytuj Kategori\u0119' : 'Nowa Kategoria'}
-            </DialogTitle>
+            <DialogTitle>{editingCategory ? 'Edytuj Kategori\u0119' : 'Nowa Kategoria'}</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nazwa (polska)</Label>
-              <Input
-                id="name"
-                placeholder="Zupy"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+              <Input id="name" placeholder="Zupy" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="slug">Slug (unikalny identyfikator)</Label>
-              <Input
-                id="slug"
-                placeholder="SOUP"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })}
-                disabled={!!editingCategory}
-              />
+              <Input id="slug" placeholder="SOUP" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })} disabled={!!editingCategory} />
               <p className="text-xs text-muted-foreground">U\u017cywany w kodzie - tylko du\u017ce litery, bez spacji</p>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="icon">Ikona (emoji)</Label>
-              <Input
-                id="icon"
-                placeholder="\ud83c\udf5c"
-                value={formData.icon}
-                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-              />
+              <Input id="icon" placeholder="\ud83c\udf5c" value={formData.icon} onChange={(e) => setFormData({ ...formData, icon: e.target.value })} />
             </div>
-
             <div className="space-y-2">
               <Label>Kolor</Label>
               <div className="grid grid-cols-4 gap-2">
@@ -213,47 +172,24 @@ export default function DishCategoriesPage() {
                     key={color.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, color: color.value })}
-                    className={`px-3 py-2 rounded-lg border-2 ${
-                      formData.color === color.value ? 'border-purple-500' : 'border-transparent'
-                    } ${color.value} font-semibold`}
+                    className={`px-3 py-2 rounded-lg border-2 ${formData.color === color.value ? 'border-purple-500' : 'border-transparent'} ${color.value} font-semibold`}
                   >
                     {color.label.charAt(0)}
                   </button>
                 ))}
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="order">Kolejno\u015b\u0107 wy\u015bwietlania</Label>
-              <Input
-                id="order"
-                type="number"
-                min="0"
-                value={formData.displayOrder}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0
-                  setFormData({ ...formData, displayOrder: Math.max(0, value) })
-                }}
-              />
-              <p className="text-xs text-muted-foreground">
-                Obecne kolejno\u015bci: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}
-              </p>
+              <Input id="order" type="number" min="0" value={formData.displayOrder} onChange={(e) => setFormData({ ...formData, displayOrder: Math.max(0, parseInt(e.target.value) || 0) })} />
+              <p className="text-xs text-muted-foreground">Obecne kolejno\u015bci: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}</p>
             </div>
-
             <div className="flex gap-2 pt-4">
-              <Button
-                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )}
+              <Button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {editingCategory ? 'Zapisz zmiany' : 'Dodaj'}
               </Button>
-              <Button variant="outline" onClick={handleClose}>
-                Anuluj
-              </Button>
+              <Button variant="outline" onClick={handleClose}>Anuluj</Button>
             </div>
           </div>
         </DialogContent>
@@ -261,9 +197,7 @@ export default function DishCategoriesPage() {
 
       {/* Content */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <LoadingState variant="skeleton" rows={6} message="\u0141adowanie kategorii..." />
       ) : categories.length === 0 ? (
         <EmptyState
           icon={Tags}
@@ -275,65 +209,35 @@ export default function DishCategoriesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {sortedCategories.map((category, index) => (
-            <Card key={category.id} className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+            <Card key={category.id} className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden group">
               <div className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 group-hover:from-purple-500/20 group-hover:via-pink-500/20 group-hover:to-rose-500/20 transition-all" />
-
                 <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
-                  <Badge className="bg-purple-600 text-white font-bold">
-                    #{index + 1}
-                  </Badge>
+                  <Badge className="bg-purple-600 text-white font-bold">#{index + 1}</Badge>
                 </div>
-
-                <CardHeader className="relative">
+                <CardHeader className="relative p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-3xl">{category.icon}</div>
+                    <div className="text-2xl sm:text-3xl">{category.icon}</div>
                     {!category.isActive && (
-                      <Badge className="border border-red-200 text-red-600 bg-red-50 dark:bg-red-950/50">
-                        Nieaktywna
-                      </Badge>
+                      <Badge className="border border-red-200 text-red-600 bg-red-50 dark:bg-red-950/50">Nieaktywna</Badge>
                     )}
                   </div>
-                  <CardTitle className="text-lg sm:text-xl group-hover:text-purple-600 transition-colors">
-                    {category.name}
-                  </CardTitle>
+                  <CardTitle className="text-lg sm:text-xl group-hover:text-purple-600 transition-colors">{category.name}</CardTitle>
                   <div className="flex flex-col gap-2 text-sm text-muted-foreground mt-2">
-                    <Badge className={`w-fit border ${category.color}`}>
-                      {category.name}
-                    </Badge>
-                    <div className="text-xs">
-                      Slug: <span className="font-mono text-muted-foreground/70">{category.slug}</span>
-                    </div>
-                    <div className="text-xs">
-                      Kolejno\u015b\u0107: {category.displayOrder}
-                    </div>
+                    <Badge className={`w-fit border ${category.color}`}>{category.name}</Badge>
+                    <div className="text-xs">Slug: <span className="font-mono text-muted-foreground/70">{category.slug}</span></div>
+                    <div className="text-xs">Kolejno\u015b\u0107: {category.displayOrder}</div>
                   </div>
                 </CardHeader>
               </div>
-
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 p-4 sm:p-6 pt-0 sm:pt-0">
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-colors"
-                    onClick={() => handleEdit(category)}
-                  >
+                  <Button size="sm" variant="outline" className="flex-1 border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-colors" onClick={() => handleEdit(category)}>
                     <Edit className="h-4 w-4 mr-1" />
                     Edytuj
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
-                    onClick={() => handleDelete(category.id, category.name)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    {deleteMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
+                  <Button size="sm" variant="outline" className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors" onClick={() => handleDelete(category.id, category.name)} disabled={deleteMutation.isPending}>
+                    {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   </Button>
                 </div>
               </CardContent>
