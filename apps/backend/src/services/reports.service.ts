@@ -13,6 +13,11 @@ import type {
   RevenueByHallItem,
   RevenueByEventTypeItem,
   GroupByPeriod,
+  OccupancyReportFilters,
+  OccupancyReport,
+  OccupancyByHallItem,
+  PeakHourItem,
+  PeakDayOfWeekItem,
 } from '@/types/reports.types';
 
 class ReportsService {
@@ -296,6 +301,161 @@ class ReportsService {
         avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
       }))
       .sort((a, b) => b.revenue - a.revenue); // Sort by revenue DESC
+  }
+
+  // ============================================
+  // OCCUPANCY REPORTS
+  // ============================================
+
+  /**
+   * Get comprehensive occupancy report
+   * @param filters - date range, optional hallId
+   * @returns Occupancy report with summary, hall rankings, peak times
+   */
+  async getOccupancyReport(filters: OccupancyReportFilters): Promise<OccupancyReport> {
+    const { dateFrom, dateTo, hallId } = filters;
+
+    // Build where clause
+    const whereClause: any = {
+      date: { gte: dateFrom, lte: dateTo },
+      status: { not: 'CANCELLED' },
+    };
+
+    if (hallId) whereClause.hallId = hallId;
+
+    // Get all reservations in period
+    const reservations = await prisma.reservation.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        date: true,
+        startTime: true,
+        guestCount: true,
+        hall: { select: { id: true, name: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    // Calculate total days in period
+    const from = new Date(dateFrom);
+    const to = new Date(dateTo);
+    const totalDaysInPeriod = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Get unique dates with reservations
+    const uniqueDates = new Set(reservations.map(r => r.date));
+    const daysWithReservations = uniqueDates.size;
+
+    // Calculate avg occupancy %
+    const avgOccupancy = totalDaysInPeriod > 0
+      ? Math.round((daysWithReservations / totalDaysInPeriod) * 100 * 10) / 10
+      : 0;
+
+    // Peak day of week analysis
+    const peakDaysOfWeek = this.analyzePeakDaysOfWeek(reservations);
+    const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'N/A';
+
+    // Peak hour analysis
+    const peakHours = this.analyzePeakHours(reservations);
+
+    // Occupancy by hall
+    const hallsData = this.analyzeOccupancyByHall(reservations, totalDaysInPeriod);
+    const peakHall = hallsData.sort((a, b) => b.reservations - a.reservations)[0] || null;
+
+    return {
+      summary: {
+        avgOccupancy,
+        peakDay,
+        peakHall: peakHall?.hallName || null,
+        peakHallId: peakHall?.hallId || null,
+        totalReservations: reservations.length,
+        totalDaysInPeriod,
+      },
+      halls: hallsData,
+      peakHours: peakHours.slice(0, 10), // Top 10 hours
+      peakDaysOfWeek,
+      filters,
+    };
+  }
+
+  /**
+   * Analyze peak days of week
+   */
+  private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const counts = new Map<number, number>();
+
+    reservations.forEach(r => {
+      const date = new Date(r.date);
+      const dayOfWeek = date.getDay(); // 0-6
+      counts.set(dayOfWeek, (counts.get(dayOfWeek) || 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .map(([dayOfWeekNum, count]) => ({
+        dayOfWeek: dayNames[dayOfWeekNum],
+        dayOfWeekNum,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Analyze peak hours (0-23)
+   */
+  private analyzePeakHours(reservations: any[]): PeakHourItem[] {
+    const counts = new Map<number, number>();
+
+    reservations.forEach(r => {
+      if (!r.startTime) return;
+      const hour = parseInt(r.startTime.split(':')[0], 10);
+      if (isNaN(hour)) return;
+      counts.set(hour, (counts.get(hour) || 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .map(([hour, count]) => ({ hour, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Analyze occupancy by hall
+   */
+  private analyzeOccupancyByHall(
+    reservations: any[],
+    totalDaysInPeriod: number
+  ): OccupancyByHallItem[] {
+    const hallData = new Map<string, {
+      name: string;
+      dates: Set<string>;
+      reservations: number;
+      totalGuests: number;
+    }>();
+
+    reservations.forEach(r => {
+      if (!r.hall) return;
+      const existing = hallData.get(r.hall.id) || {
+        name: r.hall.name,
+        dates: new Set<string>(),
+        reservations: 0,
+        totalGuests: 0,
+      };
+      existing.dates.add(r.date);
+      existing.reservations += 1;
+      existing.totalGuests += r.guestCount || 0;
+      hallData.set(r.hall.id, existing);
+    });
+
+    return Array.from(hallData.entries())
+      .map(([hallId, data]) => ({
+        hallId,
+        hallName: data.name,
+        occupancy: Math.round((data.dates.size / totalDaysInPeriod) * 100 * 10) / 10,
+        reservations: data.reservations,
+        avgGuestsPerReservation: data.reservations > 0
+          ? Math.round((data.totalGuests / data.reservations) * 10) / 10
+          : 0,
+      }))
+      .sort((a, b) => b.occupancy - a.occupancy);
   }
 }
 
