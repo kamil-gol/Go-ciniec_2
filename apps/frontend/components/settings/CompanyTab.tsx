@@ -7,7 +7,6 @@ import { settingsApi, CompanySettings, UpdateCompanyInput } from '@/lib/api/sett
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { LoadingState } from '@/components/shared'
 
 export function CompanyTab() {
@@ -22,16 +21,15 @@ export function CompanyTab() {
       const data = await settingsApi.getCompanySettings()
       setSettings(data)
       setForm({
-        name: data.name || '',
+        companyName: data.companyName || '',
         address: data.address || '',
+        city: data.city || '',
+        postalCode: data.postalCode || '',
         phone: data.phone || '',
         email: data.email || '',
         nip: data.nip || '',
         regon: data.regon || '',
-        bankAccount: data.bankAccount || '',
-        bankName: data.bankName || '',
         website: data.website || '',
-        description: data.description || '',
       })
     } catch { /* handled */ } finally {
       setLoading(false)
@@ -67,14 +65,14 @@ export function CompanyTab() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic */}
+        {/* Podstawowe */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="companyName">Nazwa firmy</Label>
             <Input
               id="companyName"
-              value={form.name || ''}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              value={form.companyName || ''}
+              onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
               required
             />
           </div>
@@ -106,16 +104,40 @@ export function CompanyTab() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="companyAddress">Adres</Label>
-          <Input
-            id="companyAddress"
-            value={form.address || ''}
-            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-          />
+        {/* Adres */}
+        <div className="border-t border-neutral-100 dark:border-neutral-700/50 pt-6">
+          <h4 className="font-medium mb-4">Adres</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2 md:col-span-3">
+              <Label htmlFor="companyAddress">Ulica i numer</Label>
+              <Input
+                id="companyAddress"
+                value={form.address || ''}
+                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="ul. Weselna 1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="companyPostalCode">Kod pocztowy</Label>
+              <Input
+                id="companyPostalCode"
+                value={form.postalCode || ''}
+                onChange={e => setForm(f => ({ ...f, postalCode: e.target.value }))}
+                placeholder="00-000"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="companyCity">Miasto</Label>
+              <Input
+                id="companyCity"
+                value={form.city || ''}
+                onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Tax info */}
+        {/* Dane podatkowe */}
         <div className="border-t border-neutral-100 dark:border-neutral-700/50 pt-6">
           <h4 className="font-medium mb-4">Dane podatkowe</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,44 +158,6 @@ export function CompanyTab() {
                 onChange={e => setForm(f => ({ ...f, regon: e.target.value }))}
               />
             </div>
-          </div>
-        </div>
-
-        {/* Bank */}
-        <div className="border-t border-neutral-100 dark:border-neutral-700/50 pt-6">
-          <h4 className="font-medium mb-4">Dane bankowe</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="companyBank">Nazwa banku</Label>
-              <Input
-                id="companyBank"
-                value={form.bankName || ''}
-                onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="companyAccount">Nr konta</Label>
-              <Input
-                id="companyAccount"
-                value={form.bankAccount || ''}
-                onChange={e => setForm(f => ({ ...f, bankAccount: e.target.value }))}
-                placeholder="00 0000 0000 0000 0000 0000 0000"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="border-t border-neutral-100 dark:border-neutral-700/50 pt-6">
-          <div className="space-y-2">
-            <Label htmlFor="companyDesc">Opis / notatki</Label>
-            <Textarea
-              id="companyDesc"
-              value={form.description || ''}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              rows={3}
-              placeholder="Dodatkowe informacje o firmie..."
-            />
           </div>
         </div>
 

@@ -12,17 +12,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { RoleFormDialog } from './RoleFormDialog'
 
 const MODULE_LABELS: Record<string, string> = {
-  dashboard: 'Panel główny',
-  reservations: 'Rezerwacje',
+  archive: 'Archiwum',
+  attachments: 'Załączniki',
+  audit_log: 'Dziennik audytu',
   clients: 'Klienci',
+  dashboard: 'Panel główny',
+  deposits: 'Zaliczki',
+  event_types: 'Typy wydarzeń',
   halls: 'Sale',
   menu: 'Menu',
   queue: 'Kolejka',
-  deposits: 'Zaliczki',
-  event_types: 'Typy wydarzeń',
-  attachments: 'Załączniki',
   reports: 'Raporty',
-  audit_log: 'Log audytu',
+  reservations: 'Rezerwacje',
   settings: 'Ustawienia',
 }
 
@@ -149,7 +150,7 @@ export function RolesTab() {
                 <div className="flex items-center gap-3 text-sm text-neutral-500">
                   <div className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
-                    {role._count?.users ?? 0}
+                    {role.usersCount ?? 0}
                   </div>
                   <span>{role.permissions.length} uprawnień</span>
                 </div>
@@ -196,7 +197,7 @@ export function RolesTab() {
                               disabled={saving === role.id}
                             />
                             <span className="font-medium text-sm">
-                              {MODULE_LABELS[group.module] || group.module}
+                              {MODULE_LABELS[group.module] || group.moduleLabel || group.module}
                             </span>
                             <span className="text-xs text-neutral-400">
                               {checkedCount}/{modulePermIds2.length}

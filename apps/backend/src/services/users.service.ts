@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { validatePassword } from '@utils/password';
 import { AppError } from '@utils/AppError';
-import { logActivity } from '@utils/audit-logger';
+import { logChange } from '@utils/audit-logger';
 import { invalidatePermissionCache } from '@middlewares/permissions';
 import logger from '@utils/logger';
 
@@ -160,7 +160,7 @@ class UsersService {
       },
     });
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'USER_CREATED',
       entityType: 'User',
@@ -191,13 +191,11 @@ class UsersService {
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) throw AppError.notFound('Użytkownik');
 
-    // If changing email, check uniqueness
     if (data.email && data.email !== existing.email) {
       const emailTaken = await prisma.user.findUnique({ where: { email: data.email } });
       if (emailTaken) throw AppError.conflict('Ten adres email jest już zajęty');
     }
 
-    // If changing role, verify it exists
     if (data.roleId) {
       const role = await prisma.role.findUnique({ where: { id: data.roleId } });
       if (!role) throw AppError.notFound('Rola');
@@ -220,12 +218,11 @@ class UsersService {
       },
     });
 
-    // Invalidate permission cache if role changed
     if (data.roleId) {
       invalidatePermissionCache(id);
     }
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'USER_UPDATED',
       entityType: 'User',
@@ -256,7 +253,7 @@ class UsersService {
       data: { password: hashedPassword },
     });
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'USER_PASSWORD_CHANGED',
       entityType: 'User',
@@ -271,7 +268,6 @@ class UsersService {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) throw AppError.notFound('Użytkownik');
 
-    // Prevent deactivating yourself
     if (id === actorId) {
       throw AppError.badRequest('Nie możesz dezaktywować własnego konta');
     }
@@ -286,7 +282,7 @@ class UsersService {
       },
     });
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: updated.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
       entityType: 'User',
@@ -310,7 +306,6 @@ class UsersService {
       throw AppError.badRequest('Nie możesz usunąć własnego konta');
     }
 
-    // Soft delete — deactivate instead of removing
     await prisma.user.update({
       where: { id },
       data: { isActive: false },
@@ -318,7 +313,7 @@ class UsersService {
 
     invalidatePermissionCache(id);
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'USER_DELETED',
       entityType: 'User',

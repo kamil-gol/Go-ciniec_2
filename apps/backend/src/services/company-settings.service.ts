@@ -3,7 +3,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@utils/AppError';
-import { logActivity } from '@utils/audit-logger';
+import { logChange } from '@utils/audit-logger';
 import logger from '@utils/logger';
 
 class CompanySettingsService {
@@ -11,7 +11,6 @@ class CompanySettingsService {
     const settings = await prisma.companySettings.findFirst();
 
     if (!settings) {
-      // Create default settings if none exist
       return prisma.companySettings.create({
         data: {
           companyName: 'Gościniec Rodzinny',
@@ -51,7 +50,7 @@ class CompanySettingsService {
       data,
     });
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'COMPANY_SETTINGS_UPDATED',
       entityType: 'CompanySettings',

@@ -1,8 +1,42 @@
-import { apiClient } from '../api-client'
+/**
+ * Settings API client — Users, Roles, Permissions, Company Settings
+ */
+import { apiClient } from '@/lib/api-client'
 
-// ═══════════════════════════════════════════════════════
-// Types
-// ═══════════════════════════════════════════════════════
+// ─── Types ──────────────────────────────────────────────
+
+export interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  isActive: boolean
+  lastLoginAt: string | null
+  role: {
+    id: string
+    name: string
+    slug: string
+    color: string
+  } | null
+  legacyRole?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Permission {
+  id: string
+  module: string
+  action: string
+  slug: string
+  name: string
+  description: string
+}
+
+export interface PermissionGroup {
+  module: string
+  moduleLabel: string
+  permissions: Permission[]
+}
 
 export interface Role {
   id: string
@@ -12,55 +46,42 @@ export interface Role {
   color: string
   isSystem: boolean
   isActive: boolean
+  usersCount: number
+  permissions: Permission[]
   createdAt: string
   updatedAt: string
-  permissions: Permission[]
-  _count?: { users: number }
-}
-
-export interface Permission {
-  id: string
-  code: string
-  name: string
-  description: string | null
-  module: string
-  createdAt: string
-}
-
-export interface PermissionGroup {
-  module: string
-  label: string
-  permissions: Permission[]
-}
-
-export interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  legacyRole: string
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  lastLoginAt: string | null
-  role: Role | null
-  roleId: string | null
 }
 
 export interface CompanySettings {
   id: string
-  name: string
-  address: string | null
-  phone: string | null
-  email: string | null
+  companyName: string
   nip: string | null
   regon: string | null
-  bankAccount: string | null
-  bankName: string | null
-  logoUrl: string | null
+  address: string | null
+  city: string | null
+  postalCode: string | null
+  phone: string | null
+  email: string | null
   website: string | null
-  description: string | null
+  logoUrl: string | null
+  defaultCurrency: string
+  timezone: string
+  invoicePrefix: string | null
+  receiptPrefix: string | null
+  createdAt: string
   updatedAt: string
+}
+
+export interface UpdateCompanyInput {
+  companyName?: string
+  nip?: string
+  regon?: string
+  address?: string
+  city?: string
+  postalCode?: string
+  phone?: string
+  email?: string
+  website?: string
 }
 
 export interface CreateUserInput {
@@ -69,7 +90,6 @@ export interface CreateUserInput {
   firstName: string
   lastName: string
   roleId: string
-  isActive?: boolean
 }
 
 export interface UpdateUserInput {
@@ -84,8 +104,8 @@ export interface CreateRoleInput {
   name: string
   slug: string
   description?: string
-  color?: string
-  permissionIds: string[]
+  color: string
+  permissionIds?: string[]
 }
 
 export interface UpdateRoleInput {
@@ -94,107 +114,82 @@ export interface UpdateRoleInput {
   color?: string
 }
 
-export interface UpdateCompanyInput {
-  name?: string
-  address?: string
-  phone?: string
-  email?: string
-  nip?: string
-  regon?: string
-  bankAccount?: string
-  bankName?: string
-  website?: string
-  description?: string
-}
-
-// ═══════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════
+// ─── API ────────────────────────────────────────────────
 
 export const settingsApi = {
-  // ── Users ────────────────────────────────────────────
-  async getUsers(): Promise<User[]> {
-    const { data } = await apiClient.get('/settings/users')
-    return data.data || data
+  // ── Users ──
+  getUsers: async (): Promise<User[]> => {
+    const { data } = await apiClient.get('/api/settings/users')
+    return data.data
   },
 
-  async getUserById(id: string): Promise<User> {
-    const { data } = await apiClient.get(`/settings/users/${id}`)
-    return data.data || data
+  createUser: async (input: CreateUserInput): Promise<User> => {
+    const { data } = await apiClient.post('/api/settings/users', input)
+    return data.data
   },
 
-  async createUser(input: CreateUserInput): Promise<User> {
-    const { data } = await apiClient.post('/settings/users', input)
-    return data.data || data
+  updateUser: async (id: string, input: UpdateUserInput): Promise<User> => {
+    const { data } = await apiClient.put(`/api/settings/users/${id}`, input)
+    return data.data
   },
 
-  async updateUser(id: string, input: UpdateUserInput): Promise<User> {
-    const { data } = await apiClient.put(`/settings/users/${id}`, input)
-    return data.data || data
+  changePassword: async (id: string, newPassword: string): Promise<void> => {
+    await apiClient.patch(`/api/settings/users/${id}/password`, { newPassword })
   },
 
-  async changePassword(id: string, password: string): Promise<void> {
-    await apiClient.patch(`/settings/users/${id}/password`, { password })
+  toggleActive: async (id: string): Promise<User> => {
+    const { data } = await apiClient.patch(`/api/settings/users/${id}/toggle-active`)
+    return data.data
   },
 
-  async toggleActive(id: string): Promise<User> {
-    const { data } = await apiClient.patch(`/settings/users/${id}/toggle-active`)
-    return data.data || data
+  deleteUser: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/settings/users/${id}`)
   },
 
-  async deleteUser(id: string): Promise<void> {
-    await apiClient.delete(`/settings/users/${id}`)
+  // ── Roles ──
+  getRoles: async (): Promise<Role[]> => {
+    const { data } = await apiClient.get('/api/settings/roles')
+    return data.data
   },
 
-  // ── Roles ────────────────────────────────────────────
-  async getRoles(): Promise<Role[]> {
-    const { data } = await apiClient.get('/settings/roles')
-    return data.data || data
+  createRole: async (input: CreateRoleInput): Promise<Role> => {
+    const { data } = await apiClient.post('/api/settings/roles', input)
+    return data.data
   },
 
-  async getRoleById(id: string): Promise<Role> {
-    const { data } = await apiClient.get(`/settings/roles/${id}`)
-    return data.data || data
+  updateRole: async (id: string, input: UpdateRoleInput): Promise<Role> => {
+    const { data } = await apiClient.put(`/api/settings/roles/${id}`, input)
+    return data.data
   },
 
-  async createRole(input: CreateRoleInput): Promise<Role> {
-    const { data } = await apiClient.post('/settings/roles', input)
-    return data.data || data
+  updateRolePermissions: async (id: string, permissionIds: string[]): Promise<Role> => {
+    const { data } = await apiClient.put(`/api/settings/roles/${id}/permissions`, { permissionIds })
+    return data.data
   },
 
-  async updateRole(id: string, input: UpdateRoleInput): Promise<Role> {
-    const { data } = await apiClient.put(`/settings/roles/${id}`, input)
-    return data.data || data
+  deleteRole: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/settings/roles/${id}`)
   },
 
-  async updateRolePermissions(id: string, permissionIds: string[]): Promise<Role> {
-    const { data } = await apiClient.put(`/settings/roles/${id}/permissions`, { permissionIds })
-    return data.data || data
+  // ── Permissions ──
+  getPermissions: async (): Promise<Permission[]> => {
+    const { data } = await apiClient.get('/api/settings/permissions')
+    return data.data
   },
 
-  async deleteRole(id: string): Promise<void> {
-    await apiClient.delete(`/settings/roles/${id}`)
+  getPermissionsGrouped: async (): Promise<PermissionGroup[]> => {
+    const { data } = await apiClient.get('/api/settings/permissions/grouped')
+    return data.data
   },
 
-  // ── Permissions ──────────────────────────────────────
-  async getPermissions(): Promise<Permission[]> {
-    const { data } = await apiClient.get('/settings/permissions')
-    return data.data || data
+  // ── Company Settings ──
+  getCompanySettings: async (): Promise<CompanySettings> => {
+    const { data } = await apiClient.get('/api/settings/company')
+    return data.data
   },
 
-  async getPermissionsGrouped(): Promise<PermissionGroup[]> {
-    const { data } = await apiClient.get('/settings/permissions/grouped')
-    return data.data || data
-  },
-
-  // ── Company ─────────────────────────────────────────
-  async getCompanySettings(): Promise<CompanySettings> {
-    const { data } = await apiClient.get('/settings/company')
-    return data.data || data
-  },
-
-  async updateCompanySettings(input: UpdateCompanyInput): Promise<CompanySettings> {
-    const { data } = await apiClient.put('/settings/company', input)
-    return data.data || data
+  updateCompanySettings: async (input: UpdateCompanyInput): Promise<CompanySettings> => {
+    const { data } = await apiClient.put('/api/settings/company', input)
+    return data.data
   },
 }
