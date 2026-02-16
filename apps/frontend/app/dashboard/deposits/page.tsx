@@ -106,7 +106,7 @@ export default function DepositsPage() {
       />
 
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
             label="Oczekujące"
             value={stats.counts.pending}
@@ -144,12 +144,12 @@ export default function DepositsPage() {
 
       {showCreateForm && (
         <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
-          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
+          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
             <div className="flex items-center gap-3 mb-6">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
                 <DollarSign className="h-5 w-5 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                 Nowa Zaliczka
               </h2>
             </div>
@@ -207,11 +207,11 @@ export default function DepositsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <LoadingState variant="skeleton" rows={5} message="Ładowanie zaliczek..." />
             </div>
           ) : filteredDeposits.length === 0 && (searchQuery || statusFilter !== 'ALL') ? (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <EmptyState
                 icon={DollarSign}
                 title="Nie znaleziono zaliczek"
@@ -219,7 +219,7 @@ export default function DepositsPage() {
               />
             </div>
           ) : filteredDeposits.length === 0 ? (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <EmptyState
                 icon={DollarSign}
                 title="Brak zaliczek"

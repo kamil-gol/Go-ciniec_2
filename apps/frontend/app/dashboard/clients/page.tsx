@@ -96,7 +96,7 @@ export default function ClientsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard label="Wszyscy" value={stats.total} subtitle="Łącznie klientów" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.1} />
         <StatCard label="Z emailem" value={stats.withEmail} subtitle="Dane kontaktowe" icon={Mail} iconGradient="from-blue-500 to-cyan-500" delay={0.2} />
         <StatCard label="Z telefonem" value={stats.withPhone} subtitle="Numer telefonu" icon={Phone} iconGradient="from-emerald-500 to-teal-500" delay={0.3} />
@@ -106,12 +106,12 @@ export default function ClientsPage() {
       {/* Create Form */}
       {showCreateForm && (
         <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
-          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
+          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
             <div className="flex items-center gap-3 mb-6">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
                 <UserPlus className="h-5 w-5 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj Nowego Klienta</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj Nowego Klienta</h2>
             </div>
             <CreateClientForm
               onSuccess={() => {

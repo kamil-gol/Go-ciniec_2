@@ -83,7 +83,7 @@ export default function ArchivePage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         <StatCard
           label="Zarchiwizowane"
           value={stats.total}
@@ -112,7 +112,7 @@ export default function ArchivePage() {
 
       {/* Archive List */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           {isLoading ? (
             <LoadingState variant="skeleton" count={5} />
           ) : error ? (
@@ -169,7 +169,7 @@ export default function ArchivePage() {
                   >
                     <div
                       className={cn(
-                        'p-6',
+                        'p-4 sm:p-6',
                         `bg-gradient-to-r ${accent.gradientSubtle}`
                       )}
                     >
@@ -184,27 +184,27 @@ export default function ArchivePage() {
                           >
                             <Archive className="h-5 w-5 text-white" />
                           </div>
-                          <div>
-                            <div className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">
+                          <div className="min-w-0">
+                            <div className="font-semibold text-base sm:text-lg text-neutral-900 dark:text-neutral-100 truncate">
                               {reservation.client
                                 ? `${reservation.client.firstName} ${reservation.client.lastName}`
                                 : 'Nieznany klient'}
                             </div>
-                            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                            <div className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
                               {reservation.eventType?.name || 'Wydarzenie'}
                               {reservation.hall?.name &&
                                 ` · ${reservation.hall.name}`}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
                           <Badge
                             className={getStatusColor(reservation.status)}
                           >
                             {getStatusLabel(reservation.status)}
                           </Badge>
                           {reservation.archivedAt && (
-                            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                            <span className="text-xs text-neutral-400 dark:text-neutral-500 hidden sm:inline">
                               Zarchiwizowano:{' '}
                               {format(
                                 new Date(reservation.archivedAt),
@@ -219,16 +219,16 @@ export default function ArchivePage() {
                       <div className="my-4 border-t border-neutral-200/50 dark:border-neutral-700/30" />
 
                       {/* Details Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                            <Calendar className="h-3 w-3" /> Data wydarzenia
+                            <Calendar className="h-3 w-3" /> Data
                           </div>
-                          <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                          <div className="font-medium text-sm sm:text-base text-neutral-900 dark:text-neutral-100">
                             {reservation.startDateTime
                               ? format(
                                   new Date(reservation.startDateTime),
-                                  'd MMMM yyyy',
+                                  'd MMM yyyy',
                                   { locale: pl }
                                 )
                               : reservation.date || 'N/A'}
@@ -238,7 +238,7 @@ export default function ArchivePage() {
                           <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                             <Users className="h-3 w-3" /> Goście
                           </div>
-                          <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                          <div className="font-medium text-sm sm:text-base text-neutral-900 dark:text-neutral-100">
                             {guestCount} osób
                           </div>
                         </div>
@@ -246,7 +246,7 @@ export default function ArchivePage() {
                           <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                             <DollarSign className="h-3 w-3" /> Wartość
                           </div>
-                          <div className="font-bold text-lg text-green-600 dark:text-green-400">
+                          <div className="font-bold text-sm sm:text-lg text-green-600 dark:text-green-400">
                             {reservation.totalPrice
                               ? formatCurrency(reservation.totalPrice)
                               : 'N/A'}
@@ -272,8 +272,8 @@ export default function ArchivePage() {
                             title="Przywróć z archiwum"
                             className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
                           >
-                            <ArchiveRestore className="w-4 h-4 mr-1" />
-                            Przywróć
+                            <ArchiveRestore className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Przywróć</span>
                           </Button>
                         </div>
                       </div>
@@ -304,7 +304,7 @@ export default function ArchivePage() {
                       className="rounded-xl border-neutral-200 dark:border-neutral-700"
                     >
                       <ChevronLeft className="w-4 h-4 mr-1" />
-                      Poprzednia
+                      <span className="hidden sm:inline">Poprzednia</span>
                     </Button>
                     <Button
                       variant="outline"
@@ -315,7 +315,7 @@ export default function ArchivePage() {
                       disabled={page === totalPages}
                       className="rounded-xl border-neutral-200 dark:border-neutral-700"
                     >
-                      Następna
+                      <span className="hidden sm:inline">Następna</span>
                       <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
