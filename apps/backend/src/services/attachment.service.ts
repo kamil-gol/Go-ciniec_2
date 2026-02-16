@@ -5,10 +5,13 @@
  * RODO redirect: When RODO is uploaded via RESERVATION or DEPOSIT,
  * the attachment is automatically stored under the CLIENT entity.
  * This ensures all RODO documents are in one place per client.
+ * 
+ * Updated: Phase 3 Audit — logChange() for all CRUD operations
  */
 
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
+import { logChange } from '../utils/audit-logger';
 import { CreateAttachmentDTO, UpdateAttachmentDTO, AttachmentFilters } from '../types/attachment.types';
 import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../constants/attachmentCategories';
 import { UPLOAD_BASE } from '../middlewares/upload';
@@ -98,9 +101,9 @@ class AttachmentService {
     // Validate entity exists
     await this.validateEntityExists(dto.entityType, dto.entityId);
 
-    // ═══════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     // RODO REDIRECT: Always store RODO under CLIENT
-    // ═══════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     let finalEntityType: EntityType = dto.entityType;
     let finalEntityId: string = dto.entityId;
 
@@ -151,6 +154,26 @@ class AttachmentService {
       `category: ${dto.category}) by user ${uploadedById}` +
       (finalEntityType !== dto.entityType ? ` [redirected from ${dto.entityType}/${dto.entityId}]` : '')
     );
+
+    // Audit log — ATTACHMENT_UPLOAD
+    await logChange({
+      userId: uploadedById,
+      action: 'ATTACHMENT_UPLOAD',
+      entityType: finalEntityType,
+      entityId: finalEntityId,
+      details: {
+        description: `Załącznik dodany: ${file.originalname} | ${dto.category} | ${finalEntityType}/${finalEntityId}`,
+        attachmentId: attachment.id,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        category: dto.category,
+        label: dto.label || null,
+        redirected: finalEntityType !== dto.entityType
+          ? { from: `${dto.entityType}/${dto.entityId}`, to: `${finalEntityType}/${finalEntityId}` }
+          : null,
+      },
+    });
 
     return attachment;
   }
@@ -274,12 +297,24 @@ class AttachmentService {
   /**
    * Update attachment metadata
    */
-  async updateAttachment(id: string, dto: UpdateAttachmentDTO) {
+  async updateAttachment(id: string, dto: UpdateAttachmentDTO, userId?: string) {
     const existing = await this.getAttachmentById(id);
 
     // If changing category, validate it
     if (dto.category && !isValidCategory(existing.entityType as EntityType, dto.category)) {
       throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
+    }
+
+    // Track changes for audit
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (dto.label !== undefined && dto.label !== existing.label) {
+      changes.label = { old: existing.label, new: dto.label };
+    }
+    if (dto.description !== undefined && dto.description !== existing.description) {
+      changes.description = { old: existing.description, new: dto.description };
+    }
+    if (dto.category !== undefined && dto.category !== existing.category) {
+      changes.category = { old: existing.category, new: dto.category };
     }
 
     const updated = await prisma.attachment.update({
@@ -298,14 +333,30 @@ class AttachmentService {
 
     logger.info(`Attachment updated: ${id}`);
 
+    // Audit log — ATTACHMENT_UPDATE
+    if (Object.keys(changes).length > 0) {
+      await logChange({
+        userId: userId || null,
+        action: 'ATTACHMENT_UPDATE',
+        entityType: existing.entityType,
+        entityId: existing.entityId,
+        details: {
+          description: `Załącznik zaktualizowany: ${existing.originalName} | ${Object.keys(changes).join(', ')}`,
+          attachmentId: id,
+          originalName: existing.originalName,
+          changes,
+        },
+      });
+    }
+
     return updated;
   }
 
   /**
    * Soft-delete attachment (set isArchived=true)
    */
-  async deleteAttachment(id: string) {
-    await this.getAttachmentById(id); // Verify exists
+  async deleteAttachment(id: string, userId?: string) {
+    const existing = await this.getAttachmentById(id); // Verify exists
 
     const archived = await prisma.attachment.update({
       where: { id },
@@ -314,6 +365,20 @@ class AttachmentService {
 
     logger.info(`Attachment archived: ${id}`);
 
+    // Audit log — ATTACHMENT_ARCHIVE
+    await logChange({
+      userId: userId || null,
+      action: 'ATTACHMENT_ARCHIVE',
+      entityType: existing.entityType,
+      entityId: existing.entityId,
+      details: {
+        description: `Załącznik zarchiwizowany: ${existing.originalName} | ${existing.category} | ${existing.entityType}/${existing.entityId}`,
+        attachmentId: id,
+        originalName: existing.originalName,
+        category: existing.category,
+      },
+    });
+
     return archived;
   }
 
@@ -321,8 +386,18 @@ class AttachmentService {
    * Hard-delete attachment (remove file + DB record)
    * Only for admin cleanup
    */
-  async hardDeleteAttachment(id: string) {
+  async hardDeleteAttachment(id: string, userId?: string) {
     const attachment = await this.getAttachmentById(id);
+
+    // Save info for audit before deletion
+    const auditData = {
+      originalName: attachment.originalName,
+      category: attachment.category,
+      entityType: attachment.entityType,
+      entityId: attachment.entityId,
+      sizeBytes: attachment.sizeBytes,
+      storagePath: attachment.storagePath,
+    };
 
     // Delete file from disk
     const filePath = path.join(UPLOAD_BASE, attachment.storagePath);
@@ -335,6 +410,22 @@ class AttachmentService {
     await prisma.attachment.delete({ where: { id } });
 
     logger.info(`Attachment hard-deleted: ${id}`);
+
+    // Audit log — ATTACHMENT_DELETE (permanent)
+    await logChange({
+      userId: userId || null,
+      action: 'ATTACHMENT_DELETE',
+      entityType: auditData.entityType,
+      entityId: auditData.entityId,
+      details: {
+        description: `Załącznik trwale usunięty: ${auditData.originalName} | ${auditData.category} | ${auditData.entityType}/${auditData.entityId}`,
+        attachmentId: id,
+        originalName: auditData.originalName,
+        category: auditData.category,
+        sizeBytes: auditData.sizeBytes,
+        storagePath: auditData.storagePath,
+      },
+    });
   }
 
   /**
