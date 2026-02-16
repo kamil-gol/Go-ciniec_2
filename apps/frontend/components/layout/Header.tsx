@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Search, Moon, Sun } from 'lucide-react'
+import { Bell, Search, Moon, Sun, Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
@@ -13,9 +13,10 @@ interface HeaderProps {
     email: string
     role: string
   }
+  onMenuClick?: () => void
 }
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter()
   const [isDark, setIsDark] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -46,27 +47,39 @@ export default function Header({ user }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-neutral-200/80 dark:border-neutral-700/50 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl">
-      <div className="flex h-full items-center justify-between px-6">
-        {/* Welcome Message */}
-        <div>
-          <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-            Witaj, {user?.firstName}! 👋
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            {new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
+      <div className="flex h-full items-center justify-between px-4 lg:px-6">
+        {/* Left side: Hamburger (mobile) + Welcome */}
+        <div className="flex items-center gap-3">
+          {/* Hamburger Menu — visible only on mobile (below lg) */}
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 active:scale-[0.95]"
+            aria-label="Otwórz menu nawigacji"
+          >
+            <Menu className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+          </button>
+
+          {/* Welcome Message — responsive */}
+          <div>
+            <h1 className="text-lg lg:text-xl font-bold text-neutral-900 dark:text-neutral-100">
+              Witaj, {user?.firstName}! 👋
+            </h1>
+            <p className="hidden sm:block text-sm text-neutral-500 dark:text-neutral-400">
+              {new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
         </div>
 
-        {/* Actions */}
+        {/* Right side: Actions */}
         <div className="flex items-center gap-2">
-          {/* Search */}
+          {/* Search — hidden on small mobile */}
           <button
-            className="flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 px-4 py-2 text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
+            className="hidden sm:flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 px-4 py-2 text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
             aria-label="Szukaj"
           >
             <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">Szukaj...</span>
-            <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md bg-neutral-200/80 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+            <span className="hidden md:inline">Szukaj...</span>
+            <kbd className="hidden md:inline-flex items-center gap-1 rounded-md bg-neutral-200/80 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
               ⌘K
             </kbd>
           </button>
@@ -135,7 +148,7 @@ export default function Header({ user }: HeaderProps) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-2 w-80 rounded-2xl bg-white dark:bg-neutral-800 shadow-xl border border-neutral-200/80 dark:border-neutral-700/50 overflow-hidden z-50"
+                    className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-neutral-800 shadow-xl border border-neutral-200/80 dark:border-neutral-700/50 overflow-hidden z-50"
                   >
                     <div className="p-4 border-b border-neutral-100 dark:border-neutral-700/50">
                       <div className="flex items-center justify-between">
