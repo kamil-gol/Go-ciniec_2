@@ -8,6 +8,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import reportsService from '../services/reports.service';
+import reportsExportService from '../services/reports-export.service';
 import type {
   RevenueReportFilters,
   OccupancyReportFilters,
@@ -137,6 +138,210 @@ export class ReportsController {
       res.status(500).json({
         success: false,
         message: 'Failed to generate occupancy report',
+        error: error.message,
+      });
+    }
+  }
+
+  // ============================================
+  // EXPORT ENDPOINTS
+  // ============================================
+
+  /**
+   * GET /api/reports/export/revenue/excel
+   * Export revenue report to Excel (XLSX)
+   * @query Same as getRevenueReport
+   */
+  async exportRevenueExcel(req: Request, res: Response): Promise<void> {
+    try {
+      // Validate query params
+      const validation = revenueQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as RevenueReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      // Get report data
+      const report = await reportsService.getRevenueReport(filters);
+
+      // Generate Excel file
+      const buffer = await reportsExportService.exportRevenueToExcel(report);
+
+      // Set headers for file download
+      const filename = `raport_przychody_${filters.dateFrom}_${filters.dateTo}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportRevenueExcel:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export revenue report to Excel',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /api/reports/export/revenue/pdf
+   * Export revenue report to PDF
+   * @query Same as getRevenueReport
+   */
+  async exportRevenuePDF(req: Request, res: Response): Promise<void> {
+    try {
+      // Validate query params
+      const validation = revenueQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as RevenueReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      // Get report data
+      const report = await reportsService.getRevenueReport(filters);
+
+      // Generate PDF file
+      const buffer = await reportsExportService.exportRevenueToPDF(report);
+
+      // Set headers for file download
+      const filename = `raport_przychody_${filters.dateFrom}_${filters.dateTo}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportRevenuePDF:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export revenue report to PDF',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /api/reports/export/occupancy/excel
+   * Export occupancy report to Excel (XLSX)
+   * @query Same as getOccupancyReport
+   */
+  async exportOccupancyExcel(req: Request, res: Response): Promise<void> {
+    try {
+      // Validate query params
+      const validation = occupancyQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as OccupancyReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      // Get report data
+      const report = await reportsService.getOccupancyReport(filters);
+
+      // Generate Excel file
+      const buffer = await reportsExportService.exportOccupancyToExcel(report);
+
+      // Set headers for file download
+      const filename = `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportOccupancyExcel:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export occupancy report to Excel',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /api/reports/export/occupancy/pdf
+   * Export occupancy report to PDF
+   * @query Same as getOccupancyReport
+   */
+  async exportOccupancyPDF(req: Request, res: Response): Promise<void> {
+    try {
+      // Validate query params
+      const validation = occupancyQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as OccupancyReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      // Get report data
+      const report = await reportsService.getOccupancyReport(filters);
+
+      // Generate PDF file
+      const buffer = await reportsExportService.exportOccupancyToPDF(report);
+
+      // Set headers for file download
+      const filename = `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportOccupancyPDF:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export occupancy report to PDF',
         error: error.message,
       });
     }
