@@ -1,0 +1,302 @@
+// apps/backend/src/services/reports.service.ts
+
+/**
+ * Reports Service
+ * Business logic for revenue, occupancy, and other reports
+ */
+
+import { prisma } from '@/lib/prisma';
+import type {
+  RevenueReportFilters,
+  RevenueReport,
+  RevenueBreakdownItem,
+  RevenueByHallItem,
+  RevenueByEventTypeItem,
+  GroupByPeriod,
+} from '@/types/reports.types';
+
+class ReportsService {
+  // ============================================
+  // REVENUE REPORTS
+  // ============================================
+
+  /**
+   * Get comprehensive revenue report with breakdown
+   * @param filters - date range, groupBy, hall, eventType
+   * @returns Revenue report with summary, breakdown, rankings
+   */
+  async getRevenueReport(filters: RevenueReportFilters): Promise<RevenueReport> {
+    const {
+      dateFrom,
+      dateTo,
+      groupBy = 'month',
+      hallId,
+      eventTypeId,
+      status,
+    } = filters;
+
+    // Build where clause
+    const whereClause: any = {
+      date: { gte: dateFrom, lte: dateTo },
+      status: { not: 'CANCELLED' },
+    };
+
+    if (hallId) whereClause.hallId = hallId;
+    if (eventTypeId) whereClause.eventTypeId = eventTypeId;
+    if (status) whereClause.status = status;
+
+    // Parallel queries for performance
+    const [
+      reservations,
+      completedReservations,
+      previousPeriodRevenue,
+    ] = await Promise.all([
+      // All reservations in period
+      prisma.reservation.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          date: true,
+          startTime: true,
+          totalPrice: true,
+          status: true,
+          guestCount: true,
+          hall: { select: { id: true, name: true } },
+          eventType: { select: { id: true, name: true } },
+        },
+        orderBy: { date: 'asc' },
+      }),
+
+      // Completed reservations count
+      prisma.reservation.count({
+        where: { ...whereClause, status: 'COMPLETED' },
+      }),
+
+      // Previous period revenue for growth calculation
+      this.getPreviousPeriodRevenue(dateFrom, dateTo, whereClause),
+    ]);
+
+    // Calculate summary
+    const totalRevenue = reservations.reduce(
+      (sum, r) => sum + Number(r.totalPrice || 0),
+      0
+    );
+    const totalReservations = reservations.length;
+    const avgRevenuePerReservation = totalReservations > 0
+      ? totalRevenue / totalReservations
+      : 0;
+
+    // Find max revenue day
+    const revenueByDay = this.groupRevenueByDay(reservations);
+    const maxRevenueDay = revenueByDay.sort((a, b) => b.revenue - a.revenue)[0];
+
+    // Completed vs pending revenue
+    const completedRevenue = reservations
+      .filter(r => r.status === 'COMPLETED')
+      .reduce((sum, r) => sum + Number(r.totalPrice || 0), 0);
+    const pendingRevenue = totalRevenue - completedRevenue;
+
+    // Growth % vs previous period
+    const growthPercent = previousPeriodRevenue > 0
+      ? Math.round(((totalRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100)
+      : 0;
+
+    // Breakdown by period
+    const breakdown = this.groupRevenueByPeriod(reservations, groupBy);
+
+    // Revenue by hall
+    const byHall = this.groupRevenueByHall(reservations);
+
+    // Revenue by event type
+    const byEventType = this.groupRevenueByEventType(reservations);
+
+    return {
+      summary: {
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        avgRevenuePerReservation: Math.round(avgRevenuePerReservation * 100) / 100,
+        maxRevenueDay: maxRevenueDay?.period || null,
+        maxRevenueDayAmount: Math.round((maxRevenueDay?.revenue || 0) * 100) / 100,
+        growthPercent,
+        totalReservations,
+        completedReservations,
+        pendingRevenue: Math.round(pendingRevenue * 100) / 100,
+      },
+      breakdown,
+      byHall,
+      byEventType,
+      filters,
+    };
+  }
+
+  /**
+   * Get revenue for previous period (for growth calculation)
+   */
+  private async getPreviousPeriodRevenue(
+    dateFrom: string,
+    dateTo: string,
+    whereClause: any
+  ): Promise<number> {
+    const from = new Date(dateFrom);
+    const to = new Date(dateTo);
+    const periodDays = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+
+    const prevFrom = new Date(from);
+    prevFrom.setDate(prevFrom.getDate() - periodDays);
+    const prevTo = new Date(from);
+    prevTo.setDate(prevTo.getDate() - 1);
+
+    const prevFromStr = prevFrom.toISOString().split('T')[0];
+    const prevToStr = prevTo.toISOString().split('T')[0];
+
+    const result = await prisma.reservation.aggregate({
+      _sum: { totalPrice: true },
+      where: {
+        ...whereClause,
+        date: { gte: prevFromStr, lte: prevToStr },
+      },
+    });
+
+    return Number(result._sum.totalPrice || 0);
+  }
+
+  /**
+   * Group revenue by day (for finding max revenue day)
+   */
+  private groupRevenueByDay(reservations: any[]): RevenueBreakdownItem[] {
+    const grouped = new Map<string, { revenue: number; count: number }>();
+
+    reservations.forEach(r => {
+      const period = r.date; // "2026-02-16"
+      const existing = grouped.get(period) || { revenue: 0, count: 0 };
+      grouped.set(period, {
+        revenue: existing.revenue + Number(r.totalPrice || 0),
+        count: existing.count + 1,
+      });
+    });
+
+    return Array.from(grouped.entries())
+      .map(([period, data]) => ({
+        period,
+        revenue: Math.round(data.revenue * 100) / 100,
+        count: data.count,
+        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
+      }));
+  }
+
+  /**
+   * Group revenue by period (day/week/month/year)
+   */
+  private groupRevenueByPeriod(
+    reservations: any[],
+    groupBy: GroupByPeriod
+  ): RevenueBreakdownItem[] {
+    const grouped = new Map<string, { revenue: number; count: number }>();
+
+    reservations.forEach(r => {
+      const date = new Date(r.date);
+      let period: string;
+
+      switch (groupBy) {
+        case 'day':
+          period = r.date; // "2026-02-16"
+          break;
+        case 'week':
+          const weekNum = this.getWeekNumber(date);
+          period = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+          break;
+        case 'month':
+          period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+        case 'year':
+          period = `${date.getFullYear()}`;
+          break;
+      }
+
+      const existing = grouped.get(period) || { revenue: 0, count: 0 };
+      grouped.set(period, {
+        revenue: existing.revenue + Number(r.totalPrice || 0),
+        count: existing.count + 1,
+      });
+    });
+
+    return Array.from(grouped.entries())
+      .map(([period, data]) => ({
+        period,
+        revenue: Math.round(data.revenue * 100) / 100,
+        count: data.count,
+        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
+      }))
+      .sort((a, b) => a.period.localeCompare(b.period));
+  }
+
+  /**
+   * Get ISO week number (1-53)
+   */
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
+  /**
+   * Group revenue by hall
+   */
+  private groupRevenueByHall(reservations: any[]): RevenueByHallItem[] {
+    const grouped = new Map<string, { name: string; revenue: number; count: number }>();
+
+    reservations.forEach(r => {
+      if (!r.hall) return;
+      const existing = grouped.get(r.hall.id) || { name: r.hall.name, revenue: 0, count: 0 };
+      grouped.set(r.hall.id, {
+        name: r.hall.name,
+        revenue: existing.revenue + Number(r.totalPrice || 0),
+        count: existing.count + 1,
+      });
+    });
+
+    return Array.from(grouped.entries())
+      .map(([hallId, data]) => ({
+        hallId,
+        hallName: data.name,
+        revenue: Math.round(data.revenue * 100) / 100,
+        count: data.count,
+        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
+      }))
+      .sort((a, b) => b.revenue - a.revenue); // Sort by revenue DESC
+  }
+
+  /**
+   * Group revenue by event type
+   */
+  private groupRevenueByEventType(reservations: any[]): RevenueByEventTypeItem[] {
+    const grouped = new Map<string, { name: string; revenue: number; count: number }>();
+
+    reservations.forEach(r => {
+      if (!r.eventType) return;
+      const existing = grouped.get(r.eventType.id) || {
+        name: r.eventType.name,
+        revenue: 0,
+        count: 0,
+      };
+      grouped.set(r.eventType.id, {
+        name: r.eventType.name,
+        revenue: existing.revenue + Number(r.totalPrice || 0),
+        count: existing.count + 1,
+      });
+    });
+
+    return Array.from(grouped.entries())
+      .map(([eventTypeId, data]) => ({
+        eventTypeId,
+        eventTypeName: data.name,
+        revenue: Math.round(data.revenue * 100) / 100,
+        count: data.count,
+        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
+      }))
+      .sort((a, b) => b.revenue - a.revenue); // Sort by revenue DESC
+  }
+}
+
+export default new ReportsService();
