@@ -5,7 +5,17 @@ import { apiClient } from '../api-client'
 // ═══════════════════════════════════════════════════════════════
 
 export type EntityType = 'CLIENT' | 'RESERVATION' | 'DEPOSIT'
-export type AttachmentCategory = 'RODO' | 'CONTRACT' | 'INVOICE' | 'PHOTO' | 'CORRESPONDENCE' | 'OTHER'
+
+export type AttachmentCategory =
+  | 'RODO'
+  | 'CONTRACT'
+  | 'ANNEX'
+  | 'POST_EVENT'
+  | 'CORRESPONDENCE'
+  | 'PAYMENT_PROOF'
+  | 'INVOICE'
+  | 'REFUND_PROOF'
+  | 'OTHER'
 
 export interface Attachment {
   id: string
@@ -49,25 +59,75 @@ export interface UpdateAttachmentInput {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Category Definitions (synced with backend attachmentCategories.ts)
+// ═══════════════════════════════════════════════════════════════
+
+export interface AttachmentCategoryDef {
+  value: AttachmentCategory
+  label: string
+  description?: string
+}
+
+export const ATTACHMENT_CATEGORIES: Record<EntityType, AttachmentCategoryDef[]> = {
+  CLIENT: [
+    { value: 'RODO', label: 'Zgoda RODO', description: 'Podpisana zgoda na przetwarzanie danych osobowych' },
+    { value: 'CORRESPONDENCE', label: 'Korespondencja', description: 'Skany ustaleń mailowych, SMS, screenshots' },
+    { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty klienta' },
+  ],
+  RESERVATION: [
+    { value: 'RODO', label: 'Zgoda RODO', description: 'Podpisana zgoda RODO' },
+    { value: 'CONTRACT', label: 'Umowa', description: 'Podpisana umowa rezerwacji' },
+    { value: 'ANNEX', label: 'Aneks', description: 'Aneks do umowy (zmiana warunków)' },
+    { value: 'POST_EVENT', label: 'Dok. powykonawcza', description: 'Protokół zdania sali, zdjęcia' },
+    { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty rezerwacji' },
+  ],
+  DEPOSIT: [
+    { value: 'RODO', label: 'Zgoda RODO', description: 'Podpisana zgoda RODO' },
+    { value: 'PAYMENT_PROOF', label: 'Potw. przelewu', description: 'Skan/screenshot operacji bankowej' },
+    { value: 'INVOICE', label: 'Faktura zaliczkowa', description: 'Faktura VAT za wpłaconą zaliczkę' },
+    { value: 'REFUND_PROOF', label: 'Potw. zwrotu', description: 'Dokument potwierdzający zwrot' },
+    { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty zaliczki' },
+  ],
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════
 
-const CATEGORY_LABELS: Record<AttachmentCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   RODO: 'RODO',
   CONTRACT: 'Umowa',
-  INVOICE: 'Faktura',
-  PHOTO: 'Zdjęcie',
+  ANNEX: 'Aneks',
+  POST_EVENT: 'Dok. powykonawcza',
   CORRESPONDENCE: 'Korespondencja',
+  PAYMENT_PROOF: 'Potw. przelewu',
+  INVOICE: 'Faktura',
+  REFUND_PROOF: 'Potw. zwrotu',
   OTHER: 'Inne',
 }
 
-export const getCategoryLabel = (cat: AttachmentCategory) => CATEGORY_LABELS[cat] || cat
+export const getCategoryLabel = (cat: string) => CATEGORY_LABELS[cat] || cat
+
+export const getCategoriesForEntity = (entityType: EntityType): AttachmentCategoryDef[] => {
+  return ATTACHMENT_CATEGORIES[entityType] || []
+}
 
 export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+export const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const
+
+export type AllowedMimeType = typeof ALLOWED_MIME_TYPES[number]
+
+export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
 // ═══════════════════════════════════════════════════════════════
 // API Functions
