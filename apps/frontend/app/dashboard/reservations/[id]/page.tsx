@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft, Trash2, Clock, Archive, ArchiveRestore,
   Calendar, Users, User, Mail, Phone,
-  Download, CheckCircle2, XCircle
+  Download, CheckCircle2, XCircle, History
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -25,19 +25,23 @@ import {
   EditableNotesCard,
 } from '@/components/reservations/editable'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
+import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
+
+type TabType = 'details' | 'history'
 
 export default function ReservationDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
   const [downloading, setDownloading] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabType>('details')
 
   const reservationId = params.id as string
 
   const { data: reservation, isLoading, isError, refetch } = useReservation(reservationId)
   const cancelMutation = useCancelReservation()
-  const archiveMutation = useArchiveReservation() // NEW
-  const unarchiveMutation = useUnarchiveReservation() // NEW
+  const archiveMutation = useArchiveReservation()
+  const unarchiveMutation = useUnarchiveReservation()
 
   const handleRefetch = () => {
     refetch()
@@ -64,7 +68,6 @@ export default function ReservationDetailsPage() {
     }
   }
 
-  // NEW: Archive handler
   const handleArchive = async () => {
     if (!reservation) return
     
@@ -89,7 +92,6 @@ export default function ReservationDetailsPage() {
     }
   }
 
-  // NEW: Unarchive handler
   const handleUnarchive = async () => {
     if (!reservation) return
 
@@ -170,7 +172,7 @@ export default function ReservationDetailsPage() {
   const isCancellable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
   const isEditable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
   const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
-  const isArchived = !!reservation.archivedAt // NEW
+  const isArchived = !!reservation.archivedAt
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -199,14 +201,12 @@ export default function ReservationDetailsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {/* NEW: Archive Badge */}
                   {isArchived && (
                     <Badge className="bg-gray-200 text-gray-800 border-gray-300">
                       <Archive className="h-3 w-3 mr-1" />
                       Zarchiwizowane
                     </Badge>
                   )}
-                  {/* Inline StatusChanger replaces static badge */}
                   <StatusChanger
                     reservationId={reservation.id}
                     currentStatus={reservation.status}
@@ -239,195 +239,232 @@ export default function ReservationDetailsPage() {
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Client Info (read-only) */}
-            <Card className="border-0 shadow-xl">
-              <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold">Klient</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
-                      <p className="text-lg font-semibold">
-                        {reservation.client?.firstName} {reservation.client?.lastName}
-                      </p>
+        {/* US-9.8: Tab bar */}
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+          <button
+            onClick={() => setActiveTab('details')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'details'
+                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            Szczegóły
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'history'
+                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+            }`}
+          >
+            <History className="h-4 w-4" />
+            Historia
+          </button>
+        </div>
+
+        {/* Tab: Szczegóły */}
+        {activeTab === 'details' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Main Info */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Client Info (read-only) */}
+              <Card className="border-0 shadow-xl">
+                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
+                      <User className="h-5 w-5 text-white" />
                     </div>
+                    <h2 className="text-2xl font-bold">Klient</h2>
                   </div>
-                  {reservation.client?.email && (
+                  <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <Mail className="h-5 w-5 text-muted-foreground" />
+                      <User className="h-5 w-5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p className="text-lg font-semibold">{reservation.client.email}</p>
+                        <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
+                        <p className="text-lg font-semibold">
+                          {reservation.client?.firstName} {reservation.client?.lastName}
+                        </p>
                       </div>
                     </div>
-                  )}
-                  {reservation.client?.phone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Telefon</p>
-                        <p className="text-lg font-semibold">{reservation.client.phone}</p>
+                    {reservation.client?.email && (
+                      <div className="flex items-center gap-3">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="text-lg font-semibold">{reservation.client.email}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {reservation.client?.phone && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Telefon</p>
+                          <p className="text-lg font-semibold">{reservation.client.phone}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
 
-            {/* Hall Info — Editable with availability check */}
-            <EditableHallCard
-              reservationId={reservation.id}
-              hallId={reservation.hall?.id || ''}
-              hallName={reservation.hall?.name || 'Brak'}
-              hallCapacity={reservation.hall?.capacity || null}
-              startDateTime={reservation.startDateTime}
-              endDateTime={reservation.endDateTime}
-              totalGuests={totalGuests}
-              onUpdated={handleRefetch}
-            />
-
-            {/* Event Details — Editable with DatePicker/TimePicker */}
-            <EditableEventCard
-              reservationId={reservation.id}
-              eventTypeId={reservation.eventType?.id || ''}
-              eventTypeName={reservation.eventType?.name || 'Brak'}
-              startDateTime={reservation.startDateTime}
-              endDateTime={reservation.endDateTime}
-              customEventType={reservation.customEventType}
-              birthdayAge={reservation.birthdayAge}
-              anniversaryYear={reservation.anniversaryYear}
-              anniversaryOccasion={reservation.anniversaryOccasion}
-              onUpdated={handleRefetch}
-            />
-
-            {/* Menu Section (already interactive) */}
-            {reservation.eventType?.id && eventDate && (
-              <ReservationMenuSection
+              {/* Hall Info */}
+              <EditableHallCard
                 reservationId={reservation.id}
-                eventTypeId={reservation.eventType.id}
-                eventDate={eventDate}
+                hallId={reservation.hall?.id || ''}
+                hallName={reservation.hall?.name || 'Brak'}
+                hallCapacity={reservation.hall?.capacity || null}
+                startDateTime={reservation.startDateTime}
+                endDateTime={reservation.endDateTime}
+                totalGuests={totalGuests}
+                onUpdated={handleRefetch}
+              />
+
+              {/* Event Details */}
+              <EditableEventCard
+                reservationId={reservation.id}
+                eventTypeId={reservation.eventType?.id || ''}
+                eventTypeName={reservation.eventType?.name || 'Brak'}
+                startDateTime={reservation.startDateTime}
+                endDateTime={reservation.endDateTime}
+                customEventType={reservation.customEventType}
+                birthdayAge={reservation.birthdayAge}
+                anniversaryYear={reservation.anniversaryYear}
+                anniversaryOccasion={reservation.anniversaryOccasion}
+                onUpdated={handleRefetch}
+              />
+
+              {/* Menu Section */}
+              {reservation.eventType?.id && eventDate && (
+                <ReservationMenuSection
+                  reservationId={reservation.id}
+                  eventTypeId={reservation.eventType.id}
+                  eventDate={eventDate}
+                  adults={reservation.adults || 0}
+                  children={reservation.children || 0}
+                  toddlers={reservation.toddlers || 0}
+                />
+              )}
+
+              {/* Notes */}
+              <EditableNotesCard
+                reservationId={reservation.id}
+                notes={reservation.notes ?? null}
+                confirmationDeadline={reservation.confirmationDeadline ?? null}
+                startDateTime={reservation.startDateTime ?? null}
+                onUpdated={handleRefetch}
+              />
+
+              {/* Attachments */}
+              <AttachmentPanel
+                entityType="RESERVATION"
+                entityId={reservation.id}
+                title="Załączniki rezerwacji"
+                className="shadow-xl"
+              />
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Guests */}
+              <EditableGuestsCard
+                reservationId={reservation.id}
                 adults={reservation.adults || 0}
                 children={reservation.children || 0}
                 toddlers={reservation.toddlers || 0}
+                hallCapacity={reservation.hall?.capacity || 0}
+                onUpdated={handleRefetch}
               />
-            )}
 
-            {/* Notes — Editable (always visible) */}
-            <EditableNotesCard
-              reservationId={reservation.id}
-              notes={reservation.notes ?? null}
-              confirmationDeadline={reservation.confirmationDeadline ?? null}
-              startDateTime={reservation.startDateTime ?? null}
-              onUpdated={handleRefetch}
-            />
+              {/* Financial Summary */}
+              <ReservationFinancialSummary
+                reservationId={reservation.id}
+                adults={reservation.adults || 0}
+                children={reservation.children || 0}
+                toddlers={reservation.toddlers || 0}
+                pricePerAdult={Number(reservation.pricePerAdult) || 0}
+                pricePerChild={Number(reservation.pricePerChild) || 0}
+                pricePerToddler={Number(reservation.pricePerToddler) || 0}
+                totalPrice={Number(reservation.totalPrice) || 0}
+                startDateTime={reservation.startDateTime}
+                endDateTime={reservation.endDateTime}
+                status={reservation.status}
+                discountType={reservation.discountType}
+                discountValue={reservation.discountValue}
+                discountAmount={reservation.discountAmount}
+                discountReason={reservation.discountReason}
+                priceBeforeDiscount={reservation.priceBeforeDiscount}
+              />
 
-            {/* Attachments */}
-            <AttachmentPanel
-              entityType="RESERVATION"
-              entityId={reservation.id}
-              title="Załączniki rezerwacji"
-              className="shadow-xl"
-            />
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Guests — Editable with capacity validation */}
-            <EditableGuestsCard
-              reservationId={reservation.id}
-              adults={reservation.adults || 0}
-              children={reservation.children || 0}
-              toddlers={reservation.toddlers || 0}
-              hallCapacity={reservation.hall?.capacity || 0}
-              onUpdated={handleRefetch}
-            />
-
-            {/* UNIFIED FINANCIAL SUMMARY with Discount (Sprint 7) */}
-            <ReservationFinancialSummary
-              reservationId={reservation.id}
-              adults={reservation.adults || 0}
-              children={reservation.children || 0}
-              toddlers={reservation.toddlers || 0}
-              pricePerAdult={Number(reservation.pricePerAdult) || 0}
-              pricePerChild={Number(reservation.pricePerChild) || 0}
-              pricePerToddler={Number(reservation.pricePerToddler) || 0}
-              totalPrice={Number(reservation.totalPrice) || 0}
-              startDateTime={reservation.startDateTime}
-              endDateTime={reservation.endDateTime}
-              status={reservation.status}
-              discountType={reservation.discountType}
-              discountValue={reservation.discountValue}
-              discountAmount={reservation.discountAmount}
-              discountReason={reservation.discountReason}
-              priceBeforeDiscount={reservation.priceBeforeDiscount}
-            />
-
-            {/* Quick Actions */}
-            <Card className="border-0 shadow-xl">
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    size="lg"
-                    onClick={handleDownloadPDF}
-                    disabled={downloading}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
-                  </Button>
-                  
-                  {/* NEW: Archive/Unarchive Button */}
-                  {!isArchived ? (
+              {/* Quick Actions */}
+              <Card className="border-0 shadow-xl">
+                <div className="p-6">
+                  <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
+                  <div className="space-y-2">
                     <Button 
                       variant="outline" 
-                      className="w-full justify-start text-gray-600 hover:text-gray-700" 
+                      className="w-full justify-start" 
                       size="lg"
-                      disabled={archiveMutation.isPending}
-                      onClick={handleArchive}
+                      onClick={handleDownloadPDF}
+                      disabled={downloading}
                     >
-                      <Archive className="mr-2 h-4 w-4" />
-                      {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
+                      <Download className="mr-2 h-4 w-4" />
+                      {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
                     </Button>
-                  ) : (
+                    
+                    {!isArchived ? (
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start text-gray-600 hover:text-gray-700" 
+                        size="lg"
+                        disabled={archiveMutation.isPending}
+                        onClick={handleArchive}
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start text-green-600 hover:text-green-700" 
+                        size="lg"
+                        disabled={unarchiveMutation.isPending}
+                        onClick={handleUnarchive}
+                      >
+                        <ArchiveRestore className="mr-2 h-4 w-4" />
+                        {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
+                      </Button>
+                    )}
+                    
                     <Button 
                       variant="outline" 
-                      className="w-full justify-start text-green-600 hover:text-green-700" 
+                      className="w-full justify-start text-red-600 hover:text-red-700" 
                       size="lg"
-                      disabled={unarchiveMutation.isPending}
-                      onClick={handleUnarchive}
+                      disabled={!isCancellable || cancelMutation.isPending}
+                      onClick={handleCancel}
                     >
-                      <ArchiveRestore className="mr-2 h-4 w-4" />
-                      {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
                     </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start text-red-600 hover:text-red-700" 
-                    size="lg"
-                    disabled={!isCancellable || cancelMutation.isPending}
-                    onClick={handleCancel}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
-                  </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Tab: Historia (US-9.8) */}
+        {activeTab === 'history' && (
+          <div className="max-w-4xl">
+            <EntityActivityTimeline
+              entityType="RESERVATION"
+              entityId={reservationId}
+            />
+          </div>
+        )}
       </div>
     </div>
   )
