@@ -15,43 +15,43 @@ import { moduleAccents } from '@/lib/design-tokens';
 
 const actionLabelsGenitive: Record<string, string> = {
   // Basic CRUD
-  CREATE: 'Utworze\u0144',
+  CREATE: 'Utworzeń',
   UPDATE: 'Aktualizacji',
-  DELETE: 'Usuni\u0119\u0107',
-  TOGGLE: 'Prze\u0142\u0105cze\u0144',
+  DELETE: 'Usunięć',
+  TOGGLE: 'Przełączeń',
   // Status
   STATUS_CHANGE: 'Zmian statusu',
   ARCHIVE: 'Archiwizacji',
-  UNARCHIVE: 'Przywr\u00f3ce\u0144',
-  RESTORE: 'Przywr\u00f3ce\u0144',
+  UNARCHIVE: 'Przywróceń',
+  RESTORE: 'Przywróceń',
   // Menu
   MENU_UPDATE: 'Aktualizacji menu',
-  MENU_REMOVE: 'Usuni\u0119\u0107 menu',
-  MENU_SELECTED: 'Wybor\u00f3w menu',
-  MENU_RECALCULATED: 'Przelicze\u0144 menu',
-  MENU_DIRECT_REMOVED: 'Bezpo\u015brednich usuni\u0119\u0107 menu',
+  MENU_REMOVE: 'Usunięć menu',
+  MENU_SELECTED: 'Wyborów menu',
+  MENU_RECALCULATED: 'Przeliczeń menu',
+  MENU_DIRECT_REMOVED: 'Bezpośrednich usunięć menu',
   // Payment
-  PAYMENT_UPDATE: 'Aktualizacji p\u0142atno\u015bci',
-  MARK_PAID: 'Oznacze\u0144 p\u0142atno\u015bci',
+  PAYMENT_UPDATE: 'Aktualizacji płatności',
+  MARK_PAID: 'Oznaczeń płatności',
   // Queue
-  QUEUE_ADD: 'Doda\u0144 do kolejki',
+  QUEUE_ADD: 'Dodań do kolejki',
   QUEUE_UPDATE: 'Aktualizacji w kolejce',
-  QUEUE_REMOVE: 'Usuni\u0119\u0107 z kolejki',
+  QUEUE_REMOVE: 'Usunięć z kolejki',
   QUEUE_SWAP: 'Zamian pozycji',
-  QUEUE_MOVE: 'Przeniesie\u0144',
-  QUEUE_REORDER: 'Zmian kolejno\u015bci',
+  QUEUE_MOVE: 'Przeniesień',
+  QUEUE_REORDER: 'Zmian kolejności',
   QUEUE_REBUILD: 'Przebudow kolejki',
-  QUEUE_PROMOTE: 'Awans\u00f3w z kolejki',
-  QUEUE_AUTO_CANCEL: 'Auto-anulowa\u0144',
+  QUEUE_PROMOTE: 'Awansów z kolejki',
+  QUEUE_AUTO_CANCEL: 'Auto-anulowań',
   // Attachments
-  ATTACHMENT_UPLOAD: 'Wgra\u0144 za\u0142\u0105cznik\u00f3w',
-  ATTACHMENT_ADD: 'Doda\u0144 za\u0142\u0105cznik\u00f3w',
-  ATTACHMENT_UPDATE: 'Aktualizacji za\u0142\u0105cznik\u00f3w',
-  ATTACHMENT_ARCHIVE: 'Archiwizacji za\u0142\u0105cznik\u00f3w',
-  ATTACHMENT_DELETE: 'Usuni\u0119\u0107 za\u0142\u0105cznik\u00f3w',
+  ATTACHMENT_UPLOAD: 'Wgrań załączników',
+  ATTACHMENT_ADD: 'Dodań załączników',
+  ATTACHMENT_UPDATE: 'Aktualizacji załączników',
+  ATTACHMENT_ARCHIVE: 'Archiwizacji załączników',
+  ATTACHMENT_DELETE: 'Usunięć załączników',
   // Auth
-  LOGIN: 'Logowa\u0144',
-  LOGOUT: 'Wylogowa\u0144',
+  LOGIN: 'Logowań',
+  LOGOUT: 'Wylogowań',
 };
 
 const entityLabelsPlural: Record<string, string> = {
@@ -60,10 +60,10 @@ const entityLabelsPlural: Record<string, string> = {
   ROOM: 'Sale',
   HALL: 'Sale',
   MENU: 'Menu',
-  USER: 'U\u017cytkownicy',
+  USER: 'Użytkownicy',
   DEPOSIT: 'Zaliczki',
-  EVENT_TYPE: 'Typy wydarze\u0144',
-  ATTACHMENT: 'Za\u0142\u0105czniki',
+  EVENT_TYPE: 'Typy wydarzeń',
+  ATTACHMENT: 'Załączniki',
   QUEUE: 'Kolejka',
   DISH: 'Dania',
   MENU_TEMPLATE: 'Szablony menu',
@@ -110,13 +110,13 @@ export default function AuditLogPage() {
           <StatCard
             label="Wszystkie wpisy"
             value={stats.totalLogs}
-            subtitle="\u0141\u0105czna liczba zmian"
+            subtitle="Łączna liczba zmian"
             icon={Activity}
             iconGradient="from-zinc-600 to-slate-600"
             delay={0.1}
           />
           <StatCard
-            label="Najcz\u0119stsza akcja"
+            label="Najczęstsza akcja"
             value={stats.byAction.length > 0 ? stats.byAction[0].count : 0}
             subtitle={stats.byAction.length > 0 ? (actionLabelsGenitive[stats.byAction[0].action] || stats.byAction[0].action) : 'Brak danych'}
             icon={Archive}
@@ -124,7 +124,7 @@ export default function AuditLogPage() {
             delay={0.2}
           />
           <StatCard
-            label="Najcz\u0119stszy typ"
+            label="Najczęstszy typ"
             value={stats.byEntityType.length > 0 ? stats.byEntityType[0].count : 0}
             subtitle={stats.byEntityType.length > 0 ? (entityLabelsPlural[stats.byEntityType[0].entityType] || stats.byEntityType[0].entityType) : 'Brak danych'}
             icon={Layers}
@@ -132,9 +132,9 @@ export default function AuditLogPage() {
             delay={0.3}
           />
           <StatCard
-            label="Aktywni u\u017cytkownicy"
+            label="Aktywni użytkownicy"
             value={stats.byUser.length}
-            subtitle="Wykona\u0142o zmiany"
+            subtitle="Wykonało zmiany"
             icon={Users}
             iconGradient="from-violet-500 to-purple-500"
             delay={0.4}
@@ -152,7 +152,7 @@ export default function AuditLogPage() {
         </div>
       )}
 
-      {/* Lista log\u00f3w */}
+      {/* Lista logów */}
       <Card className="overflow-hidden">
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -164,7 +164,7 @@ export default function AuditLogPage() {
                 <CardTitle>Historia zmian</CardTitle>
                 {data && (
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {data.total} {data.total === 1 ? 'wpis' : data.total < 5 ? 'wpisy' : 'wpis\u00f3w'}
+                    {data.total} {data.total === 1 ? 'wpis' : data.total < 5 ? 'wpisy' : 'wpisów'}
                   </p>
                 )}
               </div>
@@ -187,7 +187,7 @@ export default function AuditLogPage() {
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" onClick={handleResetFilters}>
                   <X className="mr-1 h-4 w-4" />
-                  Wyczy\u015b\u0107
+                  Wyczyść
                 </Button>
               )}
             </div>
@@ -208,14 +208,14 @@ export default function AuditLogPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-6">
-              <LoadingState variant="skeleton" rows={8} message="\u0141adowanie dziennika audytu..." />
+              <LoadingState variant="skeleton" rows={8} message="Ładowanie dziennika audytu..." />
             </div>
           ) : !data || data.data.length === 0 ? (
             <div className="p-6">
               <EmptyState
                 icon={FileText}
-                title="Brak wpis\u00f3w w dzienniku"
-                description={hasActiveFilters ? 'Spr\u00f3buj zmieni\u0107 kryteria filtrowania' : 'System jeszcze nie zarejestrowa\u0142 \u017cadnych zmian'}
+                title="Brak wpisów w dzienniku"
+                description={hasActiveFilters ? 'Spróbuj zmienić kryteria filtrowania' : 'System jeszcze nie zarejestrował żadnych zmian'}
               />
             </div>
           ) : (
