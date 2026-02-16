@@ -7,13 +7,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Upload, X, FileText, Image, Loader2 } from 'lucide-react'
-import { attachmentsApi, EntityType, AttachmentCategory, getCategoryLabel } from '@/lib/api/attachments'
+import {
+  attachmentsApi,
+  EntityType,
+  AttachmentCategory,
+  getCategoryLabel,
+  getCategoriesForEntity,
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_SIZE,
+} from '@/lib/api/attachments'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-const CATEGORIES: AttachmentCategory[] = ['RODO', 'CONTRACT', 'INVOICE', 'PHOTO', 'CORRESPONDENCE', 'OTHER']
 const ACCEPTED = '.pdf,.jpg,.jpeg,.png,.webp'
-const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
 interface AttachmentUploadDialogProps {
   open: boolean
@@ -26,8 +32,12 @@ interface AttachmentUploadDialogProps {
 export default function AttachmentUploadDialog({
   open, onClose, entityType, entityId, onUploaded,
 }: AttachmentUploadDialogProps) {
+  // Dynamic categories based on entity type
+  const categories = getCategoriesForEntity(entityType)
+  const defaultCategory = categories.find((c) => c.value === 'OTHER')?.value || categories[0]?.value || 'OTHER'
+
   const [file, setFile] = useState<File | null>(null)
-  const [category, setCategory] = useState<AttachmentCategory>('OTHER')
+  const [category, setCategory] = useState<AttachmentCategory>(defaultCategory)
   const [label, setLabel] = useState('')
   const [description, setDescription] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -36,7 +46,7 @@ export default function AttachmentUploadDialog({
 
   const reset = () => {
     setFile(null)
-    setCategory('OTHER')
+    setCategory(defaultCategory)
     setLabel('')
     setDescription('')
     setDragOver(false)
@@ -50,12 +60,11 @@ export default function AttachmentUploadDialog({
   }
 
   const validateFile = (f: File): boolean => {
-    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
-    if (!allowed.includes(f.type)) {
+    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(f.type)) {
       toast.error(`Niedozwolony typ: ${f.type}. Dozwolone: PDF, JPG, PNG, WebP`)
       return false
     }
-    if (f.size > MAX_SIZE) {
+    if (f.size > MAX_FILE_SIZE) {
       toast.error(`Plik za duży (${(f.size / 1024 / 1024).toFixed(1)} MB). Max: 10 MB`)
       return false
     }
@@ -159,22 +168,23 @@ export default function AttachmentUploadDialog({
             </div>
           )}
 
-          {/* Category */}
+          {/* Category — dynamic per entity type */}
           <div>
             <Label className="text-sm font-medium mb-1.5 block">Kategoria</Label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
+              {categories.map((cat) => (
                 <button
-                  key={cat}
-                  onClick={() => setCategory(cat)}
+                  key={cat.value}
+                  onClick={() => setCategory(cat.value)}
+                  title={cat.description}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
-                    category === cat
+                    category === cat.value
                       ? 'bg-violet-600 text-white border-violet-600'
                       : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700 hover:border-violet-300'
                   )}
                 >
-                  {getCategoryLabel(cat)}
+                  {cat.label}
                 </button>
               ))}
             </div>
