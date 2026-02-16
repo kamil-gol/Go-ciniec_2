@@ -1,24 +1,24 @@
-# 🏗️ Architektura Systemu - Rezerwacje Sal
+# 🏭️ Architektura Systemu - Rezerwacje Sal
 
 ## Przegląd Architektury
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     CLIENT LAYER                             │
-│  ┌────────────────────────────────────────────────────┐   │
+│  ┌──────────────────────────────────────────────────┐   │
 │  │  Next.js Frontend (React + TypeScript)              │   │
 │  │  - Dashboard                                         │   │
 │  │  - Rezerwacje                                        │   │
 │  │  - Klienci                                           │   │
 │  │  - Admin Panel                                       │   │
 │  │  - Analytics                                         │   │
-│  └────────────────────────────────────────────────────┘   │
-└─────────────────┬──────────────────────────────────────────┘
+│  └──────────────────────────────────────────────────┘   │
+└─────────────────┬────────────────────────────────────────────┘
                   │ HTTPS/REST API
                   │
-┌─────────────────▼──────────────────────────────────────────┐
+┌─────────────────┴────────────────────────────────────────────┐
 │                     API LAYER (Backend)                     │
-│  ┌────────────────────────────────────────────────────┐   │
+│  ┌──────────────────────────────────────────────────┐   │
 │  │  Express.js + TypeScript                             │   │
 │  │  ┌────────────┬──────────────┬───────────────────┐  │   │
 │  │  │ Auth       │ Reservations │ Clients           │  │   │
@@ -31,11 +31,12 @@
 │  │  │ Validation │ Price        │ Email             │  │   │
 │  │  │ Middleware │ Calculator   │ Service           │  │   │
 │  │  │ JWT Auth   │ PDF Generator│ Backup Service    │  │   │
+│  │  │            │ Attachments  │ Attachment Srv    │  │   │
 │  │  └────────────┴──────────────┴───────────────────┘  │   │
-│  └────────────────────────────────────────────────────┘   │
-└─────────────────┬──────────────────────────────────────────┘
+│  └──────────────────────────────────────────────────┘   │
+└─────────────────┬────────────────────────────────────────────┘
                   │
-        ┌─────────┼─────────┐
+        ┌─────────┴─────────┐
         │         │         │
         ▼         ▼         ▼
     ┌───────┐ ┌──────┐ ┌───────┐
@@ -53,7 +54,7 @@
 - React 18
 - TypeScript
 - Tailwind CSS + Framer Motion
-- React Query / TanStack Query
+- TanStack Query (React Query) 🆕
 
 **Struktura**:
 ```
@@ -87,9 +88,10 @@ frontend/
 │   │   ├── Select.tsx
 │   │   ├── DatePicker.tsx
 │   │   ├── TimePicker.tsx
+│   │   ├── Sheet.tsx                  # 🆕 Drawer/Sheet component
 │   │   └── ...
 │   ├── reservations/
-│   │   ├── editable/                  # 🆕 Inline editing (PR #54)
+│   │   ├── editable/                  # Inline editing (PR #54)
 │   │   │   ├── EditableCard.tsx       # Generyczny wrapper view/edit
 │   │   │   ├── StatusChanger.tsx      # Zmiana statusu w hero
 │   │   │   ├── EditableHallCard.tsx   # Sala + availability check
@@ -103,6 +105,13 @@ frontend/
 │   │   ├── ReservationFinancialSummary.tsx  # Finanse
 │   │   ├── ReservationDepositsSection.tsx   # Zaliczki
 │   │   └── reservation-history.tsx     # Historia zmian
+│   ├── attachments/                   # 🆕 Moduł załączników (PR #71)
+│   │   ├── attachment-panel.tsx       # Lista + filtry + liczniki
+│   │   ├── attachment-upload-dialog.tsx  # Drag & drop upload
+│   │   ├── attachment-preview.tsx     # Modal: PDF iframe, image zoom
+│   │   └── attachment-row.tsx         # Wiersz z badge, menu, preview
+│   ├── deposits/
+│   │   └── deposit-actions.tsx        # Dropdown z załącznikami
 │   ├── forms/
 │   │   ├── LoginForm.tsx
 │   │   ├── ReservationForm.tsx
@@ -116,8 +125,15 @@ frontend/
 │   ├── useAuth.ts
 │   ├── useReservations.ts
 │   ├── useCheckAvailability.ts         # Sprawdzanie dostępności sali
+│   ├── use-attachments.ts              # 🆕 TanStack Query hooks (PR #71)
 │   ├── useForm.ts
 │   └── ...
+├── lib/
+│   ├── api/
+│   │   ├── reservations.ts
+│   │   ├── attachments.ts              # 🆕 API client + getCategoriesForEntity()
+│   │   └── ...
+│   └── utils.ts
 ├── utils/
 │   ├── api.ts
 │   ├── validation.ts
@@ -142,8 +158,9 @@ frontend/
 - Inline editing rezerwacji (EditableCard pattern)
 - Form validation (client-side)
 - API communication
-- State management (React Query)
+- State management (TanStack Query) 🆕
 - Authentication handling
+- File upload & preview (attachments) 🆕
 
 ---
 
@@ -154,6 +171,7 @@ frontend/
 - TypeScript
 - Prisma ORM
 - JWT Authentication
+- Multer (file uploads) 🆕
 
 **Struktura**:
 ```
@@ -166,6 +184,7 @@ backend/
 │   │   ├── userController.ts
 │   │   ├── hallController.ts
 │   │   ├── analyticsController.ts
+│   │   ├── attachmentController.ts     # 🆕 Upload, download, batch-check (PR #71)
 │   │   └── adminController.ts
 │   ├── services/
 │   │   ├── authService.ts
@@ -177,6 +196,7 @@ backend/
 │   │   ├── pdfService.ts
 │   │   ├── backupService.ts
 │   │   ├── analyticsService.ts
+│   │   ├── attachmentService.ts        # 🆕 CRUD + RODO redirect + batch-check
 │   │   └── userService.ts
 │   ├── models/
 │   │   ├── schemas.ts
@@ -187,6 +207,7 @@ backend/
 │   │   ├── validation.ts
 │   │   ├── logger.ts
 │   │   ├── cors.ts
+│   │   ├── upload.ts                   # 🆕 Multer config (MIME validation, 10MB limit)
 │   │   └── rateLimit.ts
 │   ├── routes/
 │   │   ├── auth.routes.ts
@@ -195,8 +216,15 @@ backend/
 │   │   ├── users.routes.ts
 │   │   ├── halls.routes.ts
 │   │   ├── analytics.routes.ts
+│   │   ├── attachment.routes.ts        # 🆕 8 REST endpoints
 │   │   ├── admin.routes.ts
 │   │   └── health.routes.ts
+│   ├── constants/
+│   │   ├── attachmentCategories.ts     # 🆕 Kategorie per entityType, MIME types
+│   │   └── ...
+│   ├── types/
+│   │   ├── attachment.types.ts         # 🆕 DTO, filters, response types
+│   │   └── ...
 │   ├── utils/
 │   │   ├── constants.ts
 │   │   ├── helpers.ts
@@ -209,15 +237,22 @@ backend/
 │   ├── tests/
 │   │   ├── unit/
 │   │   ├── integration/
-│   │   └── fixtures/
+│   │   ├── fixtures/
+│   │   ├── setup.ts                   # 🆕 Jest + Prisma mock setup
+│   │   └── attachment.service.test.ts  # 🆕 38 unit tests (11 grup)
 │   ├── app.ts
 │   └── server.ts
 ├── prisma/
 │   ├── schema.prisma
 │   └── migrations/
+├── uploads/                           # 🆕 File storage (Docker volume)
+│   ├── clients/
+│   ├── reservations/
+│   └── deposits/
 ├── scripts/
 │   ├── init-db.sql
 │   └── seed.ts
+├── jest.config.js                     # 🆕 Jest configuration
 └── Dockerfile
 ```
 
@@ -230,6 +265,8 @@ backend/
 - Error handling
 - Email sending
 - PDF generation
+- File upload & storage (attachments) 🆕
+- RODO redirect logic 🆕
 - Reporting
 
 ---
@@ -251,6 +288,7 @@ Main Tables:
 - reservation_history
 - clients
 - deposits
+- attachments              🆕 (polymorphic: CLIENT | RESERVATION | DEPOSIT)
 - activity_logs
 ```
 
@@ -275,27 +313,43 @@ Main Tables:
 - Services handle database operations
 - Easy testing and reusability
 
-### 3. **EditableCard Pattern** 🆕
+### 3. **EditableCard Pattern**
 - Generyczny wrapper dla inline editing
 - View mode → Edit mode z animacją framer-motion
 - Wymagany powód zmiany (audit trail)
 - Walidacja przed zapisem
 - Używany przez: StatusChanger, EditableHallCard, EditableEventCard, EditableGuestsCard, EditableNotesCard
 
-### 4. **Middleware Pattern**
+### 4. **TanStack Query Pattern** 🆕
+- Centralized data fetching & caching
+- Query factory pattern (`attachmentKeys`)
+- Automatic cache invalidation po mutacjach
+- Optimistic updates
+- Background refetching
+- Eliminacja `useState` + `useEffect` boilerplate
+- Używany w: attachments module (useAttachments, useBatchCheckRodo, useBatchCheckContract)
+
+### 5. **Middleware Pattern**
 - Authentication middleware
 - Error handling
 - Request logging
 - Validation
 - CORS
+- File upload (Multer) 🆕
 
-### 5. **Repository Pattern (via Prisma)**
+### 6. **Repository Pattern (via Prisma)**
 - Centralized data access
 - Abstraction from database
 
-### 6. **Factory Pattern**
+### 7. **Factory Pattern**
 - Email service factory
 - PDF generator factory
+
+### 8. **RODO Redirect Pattern** 🆕
+- Automatic attachment redirection based on category
+- RODO category zawsze przypisywane do CLIENT (niezależnie od źródła uploadu)
+- Cross-reference w widokach RESERVATION/DEPOSIT
+- Polymorphic file storage per entityType
 
 ---
 
@@ -442,6 +496,7 @@ interface ReservationHistory {
 - Server-side validation (all inputs)
 - Sanitization to prevent XSS
 - Rate limiting
+- File upload validation (MIME type, size) 🆕
 
 ### 4. **API Security**
 - CORS configured
@@ -453,6 +508,13 @@ interface ReservationHistory {
 - Parameterized queries (Prisma)
 - SQL injection prevention
 - Connection pooling
+
+### 6. **File Security** 🆕
+- MIME type whitelist (PDF, JPEG, PNG, WEBP)
+- File size limit (10 MB)
+- UUID-based filenames (prevent path traversal)
+- Separate storage per entityType
+- Soft-delete (archivization)
 
 ---
 
@@ -476,13 +538,18 @@ interface ReservationHistory {
 │      │               │             │
 │      └───────┬───────┘             │
 │              │                     │
-│    ┌─────────┼──────────┐         │
+│    ┌─────────┴──────────┐         │
 │    │         │          │         │
 │    ▼         ▼          ▼         │
 │  ┌────┐  ┌────────┐  ┌──────┐    │
 │  │PG  │  │Redis   │  │Mailer│   │
 │  │DB  │  │Cache   │  │Queue │   │
 │  └────┘  └────────┘  └──────┘    │
+│                                   │
+│  🆕 Persistent Volumes:            │
+│  - postgres_data                   │
+│  - redis_data                      │
+│  - uploads/ (attachments storage)  │
 └─────────────────────────────────────┘
 ```
 
@@ -495,6 +562,7 @@ interface ReservationHistory {
 - Redis for distributed sessions
 - Database read replicas
 - Load balancer (Nginx)
+- Shared file storage (NFS/S3 for uploads) 🆕
 
 ### Vertical Scaling
 - Database indexing optimization
@@ -520,6 +588,8 @@ interface ReservationHistory {
 - Email delivery rate
 - Backup success/failure
 - User activity
+- File upload success/failure 🆕
+- Storage usage 🆕
 
 ---
 
@@ -531,6 +601,7 @@ interface ReservationHistory {
 - Lazy loading
 - Minification
 - Compression (gzip)
+- TanStack Query caching 🆕
 
 ### Backend
 - Query optimization with indexes
@@ -538,13 +609,15 @@ interface ReservationHistory {
 - Caching with Redis
 - Pagination
 - Rate limiting
+- Batch API endpoints (batch-check) 🆕
 
 ### Database
 - Indexes on frequently queried columns
 - Query analysis
 - Connection pooling
 - Archiving old data
+- Composite indexes for polymorphic queries 🆕
 
 ---
 
-**Last Updated**: 15.02.2026
+**Last Updated**: 16.02.2026, 15:35 CET
