@@ -65,7 +65,7 @@ class ReportsService {
           startTime: true,
           totalPrice: true,
           status: true,
-          guestCount: true,
+          guests: true,
           hall: { select: { id: true, name: true } },
           eventType: { select: { id: true, name: true } },
         },
@@ -330,7 +330,7 @@ class ReportsService {
         id: true,
         date: true,
         startTime: true,
-        guestCount: true,
+        guests: true,
         hall: { select: { id: true, name: true } },
       },
       orderBy: { date: 'asc' },
@@ -441,7 +441,7 @@ class ReportsService {
       };
       existing.dates.add(r.date);
       existing.reservations += 1;
-      existing.totalGuests += r.guestCount || 0;
+      existing.totalGuests += r.guests || 0;
       hallData.set(r.hall.id, existing);
     });
 
