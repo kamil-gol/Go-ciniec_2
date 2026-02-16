@@ -26,6 +26,47 @@
 - **Clients** - baza klientów
 - **Halls** - zarządzanie salami
 - **🆕 Audit Log** - dziennik audytu wszystkich zmian w systemie 📑
+- **🆕 Reports** - moduł raportowania i analityki 📊
+
+### 🆕 Reports Module (COMPLETED - 16.02.2026)
+
+**Status: ✅ W pełni funkcjonalne**
+
+**Funkcje:**
+- ✅ **Raport przychodów** - analiza finansowa rezerwacji
+  - Grupowanie po: dzień, tydzień, miesiąc, rok
+  - Filtry: zakres dat, sala, typ wydarzenia
+  - Metryki: łączny przychód, średnia/rezerwację, wzrost %, oczekujący przychód
+  - Ranking sal i typów wydarzeń
+  - Wykres breakdown po okresach
+- ✅ **Raport zajętości** - analiza wykorzystania sal
+  - Średnia zajętość, najpopularniejsza sala, najlepszy dzień tygodnia
+  - Peak hours (popularne godziny)
+  - Peak days (popularne dni tygodnia)
+  - Ranking sal z progressbarami
+- ✅ **Eksport Excel** - generowanie plików .xlsx z pełnymi danymi
+- ✅ **Eksport PDF** - raporty w formacie PDF do druku
+- ✅ **Presety dat** - Ten miesiąc, Poprzedni miesiąc, Ten rok, Poprzedni rok
+- ✅ **Pełna polonizacja** - wszystkie etykiety i formaty w języku polskim
+
+**Endpointy:**
+```
+GET    /api/reports/revenue
+GET    /api/reports/revenue/excel
+GET    /api/reports/revenue/pdf
+GET    /api/reports/occupancy
+GET    /api/reports/occupancy/excel
+GET    /api/reports/occupancy/pdf
+```
+
+**Query params:**
+```typescript
+// Revenue
+?dateFrom=2026-01-01&dateTo=2026-12-31&groupBy=month&hallId=uuid&eventTypeId=uuid
+
+// Occupancy
+?dateFrom=2026-01-01&dateTo=2026-12-31&hallId=uuid
+```
 
 ### 🆕 Audit Log Module (COMPLETED - 16.02.2026)
 
@@ -175,6 +216,7 @@ GET /api/reservations/:id/menu
 - Docker
 - **PDFKit** - generowanie PDF
 - **Multer** - file uploads 🆕
+- **ExcelJS** - generowanie Excel 🆕
 
 **Frontend:**
 - Next.js 14 (App Router)
@@ -187,6 +229,16 @@ GET /api/reservations/:id/menu
 - Docker
 
 ## 📏 API Endpoints
+
+### Reports 🆕
+```http
+GET    /api/reports/revenue                # Raport przychodów
+GET    /api/reports/revenue/excel          # Export Excel przychodów
+GET    /api/reports/revenue/pdf            # Export PDF przychodów
+GET    /api/reports/occupancy              # Raport zajętości
+GET    /api/reports/occupancy/excel        # Export Excel zajętości
+GET    /api/reports/occupancy/pdf          # Export PDF zajętości
+```
 
 ### Reservations
 ```http
@@ -393,6 +445,53 @@ const getAuditLog = async (filters) => {
   return response.json();
   // Returns: { data: [...], total, page, pageSize, totalPages }
 };
+
+// Pobieranie raportów
+const getRevenueReport = async (filters) => {
+  const params = new URLSearchParams({
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    groupBy: filters.groupBy || 'month',
+    hallId: filters.hallId || '',
+    eventTypeId: filters.eventTypeId || ''
+  });
+  
+  const response = await fetch(
+    `http://localhost:3001/api/reports/revenue?${params}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  return response.json();
+};
+
+// Eksport raportu do Excel
+const exportRevenueExcel = async (filters) => {
+  const params = new URLSearchParams({
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    groupBy: filters.groupBy || 'month'
+  });
+  
+  const response = await fetch(
+    `http://localhost:3001/api/reports/revenue/excel?${params}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `raport_przychody_${new Date().toISOString().split('T')[0]}.xlsx`;
+  a.click();
+};
 ```
 
 ## 📊 Struktura Projektu
@@ -406,15 +505,18 @@ Go-ciniec_2/
 │   │   │   │   ├── reservation.controller.ts         🔄 Updated
 │   │   │   │   ├── reservation-menu.controller.ts   ✅ Fixed (12.02.2026)
 │   │   │   │   ├── attachment.controller.ts         🆕 NEW (15.02.2026)
-│   │   │   │   └── audit-log.controller.ts          🆕 NEW (16.02.2026)
+│   │   │   │   ├── audit-log.controller.ts          🆕 NEW (16.02.2026)
+│   │   │   │   └── reports.controller.ts            🆕 NEW (16.02.2026)
 │   │   │   ├── routes/
 │   │   │   ├── services/
 │   │   │   │   ├── reservation.service.ts           🔄 Updated
 │   │   │   │   ├── pdf.service.ts
 │   │   │   │   ├── attachment.service.ts            🆕 NEW (15.02.2026)
-│   │   │   │   └── audit-log.service.ts             🆕 NEW (16.02.2026)
+│   │   │   │   ├── audit-log.service.ts             🆕 NEW (16.02.2026)
+│   │   │   │   └── reports.service.ts               🆕 NEW (16.02.2026)
 │   │   │   ├── types/
-│   │   │   │   └── reservation.types.ts             🔄 Updated
+│   │   │   │   ├── reservation.types.ts             🔄 Updated
+│   │   │   │   └── reports.types.ts                 🆕 NEW (16.02.2026)
 │   │   │   ├── utils/
 │   │   │   │   └── audit-logger.ts                  🆕 NEW (16.02.2026)
 │   │   │   └── ...
@@ -424,6 +526,8 @@ Go-ciniec_2/
 │       ├── app/
 │       │   └── dashboard/
 │       │       ├── audit-log/                      🆕 NEW (16.02.2026)
+│       │       │   └── page.tsx
+│       │       ├── reports/                        🆕 NEW (16.02.2026)
 │       │       │   └── page.tsx
 │       │       ├── reservations/
 │       │       └── menu/
@@ -447,9 +551,11 @@ Go-ciniec_2/
 │       ├── hooks/
 │       │   ├── use-menu.ts                         ✅ Working
 │       │   ├── use-attachments.ts                  🆕 NEW (15.02.2026)
-│       │   └── use-audit-log.ts                    🆕 NEW (16.02.2026)
+│       │   ├── use-audit-log.ts                    🆕 NEW (16.02.2026)
+│       │   └── use-reports.ts                      🆕 NEW (16.02.2026)
 │       └── types/
-│           └── audit-log.types.ts                  🆕 NEW (16.02.2026)
+│           ├── audit-log.types.ts                  🆕 NEW (16.02.2026)
+│           └── reports.types.ts                    🆕 NEW (16.02.2026)
 │
 ├── docs/                # 📚 Dokumentacja
 │   ├── ATTACHMENTS_MODULE_2026-02-15.md            🆕 NEW!
@@ -483,6 +589,13 @@ Go-ciniec_2/
 
 ## 🐛 Recent Fixes
 
+### 16.02.2026 20:09 CET - Global Unicode Fix
+- **Problem:** Unicode escape sequences (`\u0105`, `\u0119`, etc.) w całym frontendzie
+- **Dotknięte moduły:** Reports, Audit Log, wszystkie pliki .tsx/.ts
+- **Rozwiązanie:** Globalna zamiana przez `sed` - wszystkie `\uXXXX` → polskie znaki UTF-8
+- **Status:** ✅ Naprawione - 19 polskich znaków we wszystkich plikach frontendowych
+- **Lekcja:** GitHub API escapuje non-ASCII → używać `cat << 'ENDOFFILE'` + git push
+
 ### 16.02.2026 - Audit Log Null User Fix
 - **Problem:** Crash przy wyświetlaniu wpisów gdzie `user: null` (akcje systemowe)
 - **Błąd:** `TypeError: Cannot read properties of null (reading 'firstName')`
@@ -505,4 +618,4 @@ Private project
 
 ---
 
-**Ostatnia aktualizacja:** 16.02.2026, 19:00 CET - Audit Log Module COMPLETED 📑
+**Ostatnia aktualizacja:** 16.02.2026, 20:10 CET - Reports Module COMPLETED + Global Unicode Fix 📊✅
