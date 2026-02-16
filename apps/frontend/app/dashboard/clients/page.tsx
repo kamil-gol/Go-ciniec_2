@@ -127,14 +127,14 @@ export default function ClientsPage() {
       {/* Clients List */}
       <Card>
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <CardTitle>Lista Klientów</CardTitle>
             </div>
-            <div className="relative w-96">
+            <div className="relative w-full sm:w-80 lg:w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <Input
                 placeholder="Szukaj klientów..."
@@ -145,7 +145,7 @@ export default function ClientsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           {loading ? (
             <LoadingState variant="skeleton" rows={4} message="Ładowanie klientów..." />
           ) : filteredClients.length === 0 && searchQuery ? (

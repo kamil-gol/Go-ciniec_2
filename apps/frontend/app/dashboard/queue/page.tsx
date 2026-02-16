@@ -193,22 +193,24 @@ export default function QueuePage() {
         subtitle="Zarządzaj kolejką oczekujących klientów"
         icon={Clock}
         action={
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <Button
               variant="ghost"
               onClick={() => setShowRebuildDialog(true)}
               disabled={queues.length === 0}
-              className="bg-white/15 hover:bg-white/25 text-white border-0"
+              className="bg-white/15 hover:bg-white/25 text-white border-0 text-sm"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Przebuduj numerację
+              <RefreshCw className="h-4 w-4 mr-1.5 sm:mr-2" />
+              <span className="hidden sm:inline">Przebuduj numerację</span>
+              <span className="sm:hidden">Przebuduj</span>
             </Button>
             <Button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl"
+              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl text-sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Dodaj do kolejki
+              <Plus className="h-4 w-4 mr-1.5 sm:mr-2" />
+              <span className="hidden sm:inline">Dodaj do kolejki</span>
+              <span className="sm:hidden">Dodaj</span>
             </Button>
           </div>
         }
@@ -216,7 +218,7 @@ export default function QueuePage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
           <StatCard label="W kolejce" value={stats.totalQueued} subtitle={`${stats.queuesByDate.length} ${stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}`} icon={CalendarDays} iconGradient="from-amber-500 to-orange-500" delay={0.1} />
           <StatCard label="Najstarsza data" value={stats.oldestQueueDate ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl }) : 'Brak'} subtitle="Najwcześniejszy termin" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
           <StatCard label="Ręczne kolejności" value={stats.manualOrderCount} subtitle="Zmodyfikowanych pozycji" icon={RefreshCw} iconGradient="from-rose-500 to-pink-500" delay={0.3} />
@@ -227,14 +229,14 @@ export default function QueuePage() {
       {/* Add Form */}
       {showAddForm && (
         <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
-          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
+          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
             <div className="flex items-center gap-3 mb-6">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
                 <Plus className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj do kolejki</h2>
-                <p className="text-neutral-500 dark:text-neutral-400">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj do kolejki</h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 hidden sm:block">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
               </div>
             </div>
             <AddToQueueForm
@@ -249,14 +251,14 @@ export default function QueuePage() {
 
       {/* Queue List */}
       <Card>
-        <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-8`}>
+        <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
           <div className="flex items-center gap-3 mb-6">
             <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
               <Clock className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kolejka</h2>
-              <p className="text-neutral-500 dark:text-neutral-400">
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kolejka</h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 hidden sm:block">
                 {selectedDate === 'all'
                   ? 'Wybierz konkretną datę aby zarządzać kolejnością i awansować klientów'
                   : 'Przeciągnij karty aby zmienić kolejność lub kliknij "Awansuj" aby utworzyć rezerwację'
@@ -265,12 +267,12 @@ export default function QueuePage() {
             </div>
           </div>
 
-          {/* Date Tabs */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          {/* Date Tabs — horizontal scroll on mobile */}
+          <div className="flex flex-nowrap sm:flex-wrap gap-2 mb-6 overflow-x-auto pb-2 sm:pb-0 -mx-1 px-1 scrollbar-thin">
             <Button
               variant={selectedDate === 'all' ? 'default' : 'outline'}
               onClick={() => setSelectedDate('all')}
-              className={selectedDate === 'all' ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}
+              className={`flex-shrink-0 ${selectedDate === 'all' ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}`}
             >
               Wszystkie ({queues.filter(q => q.queueDate).length})
             </Button>
@@ -279,7 +281,7 @@ export default function QueuePage() {
                 key={date}
                 variant={selectedDate === date ? 'default' : 'outline'}
                 onClick={() => setSelectedDate(date)}
-                className={selectedDate === date ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}
+                className={`flex-shrink-0 ${selectedDate === date ? `bg-gradient-to-r ${accent.gradient} text-white shadow-lg` : ''}`}
               >
                 {format(parseISO(date), 'd MMM', { locale: pl })} ({queuesByDate[date].length})
               </Button>
@@ -290,7 +292,7 @@ export default function QueuePage() {
           {isDragDropDisabled && queues.length > 0 && (
             <Alert className="mb-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
               <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <AlertDescription className="text-blue-800 dark:text-blue-300">
+              <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
                 Zmiana kolejności dostępna tylko w widoku pojedynczej daty. Wybierz konkretną datę aby przeciągać karty.
               </AlertDescription>
             </Alert>
