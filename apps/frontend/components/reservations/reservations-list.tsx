@@ -207,6 +207,15 @@ export function ReservationsList() {
       const response = await apiClient.get(`/reservations/${reservationId}/pdf`, {
         responseType: 'blob',
       })
+
+      // Verify response is actually a PDF (not a JSON error with 200 status)
+      const contentType = response.headers?.['content-type'] || ''
+      if (contentType.includes('application/json')) {
+        const text = await new Blob([response.data]).text()
+        const errorData = JSON.parse(text)
+        throw new Error(errorData.error || 'Serwer zwrócił błąd zamiast PDF')
+      }
+
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -214,12 +223,26 @@ export function ReservationsList() {
       link.download = `rezerwacja_${reservationId.slice(0, 8)}.pdf`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      // Delay cleanup to allow browser to initiate the download
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }, 150)
       toast.success('PDF wygenerowany pomyślnie')
     } catch (error: any) {
       console.error('PDF generation error:', error)
-      toast.error(error?.response?.data?.error || 'Błąd podczas generowania PDF')
+      // Handle blob error responses (responseType: 'blob' returns Blob even on errors)
+      if (error?.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text()
+          const errorData = JSON.parse(text)
+          toast.error(errorData.error || 'Błąd podczas generowania PDF')
+        } catch {
+          toast.error('Błąd podczas generowania PDF')
+        }
+      } else {
+        toast.error(error?.response?.data?.error || error?.message || 'Błąd podczas generowania PDF')
+      }
     } finally {
       setGeneratingPdfId(null)
     }
