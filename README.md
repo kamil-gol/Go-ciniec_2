@@ -25,6 +25,54 @@
 - **Event Types** - typy eventów
 - **Clients** - baza klientów
 - **Halls** - zarządzanie salami
+- **🆕 Audit Log** - dziennik audytu wszystkich zmian w systemie 📑
+
+### 🆕 Audit Log Module (COMPLETED - 16.02.2026)
+
+**Status: ✅ W pełni funkcjonalne**
+
+**Funkcje:**
+- ✅ **Historia zmian** - pełny tracking wszystkich akcji w systemie
+- ✅ **30+ typów akcji** - CRUD, archiwizacja, menu, płatności, kolejka, załączniki
+- ✅ **12 typów encji** - Rezerwacje, Klienci, Sale, Menu, Użytkownicy, etc.
+- ✅ **Statystyki** - dashboard z 4 kartami (całkowite wpisy, najczęstsza akcja, typ, aktywni użytkownicy)
+- ✅ **Filtry** - po akcji, typie encji, użytkowniku, zakresie dat
+- ✅ **Paginacja** - strony po 20 wpisów
+- ✅ **Szczegóły zmian** - modal z pełną historią (old/new values)
+- ✅ **Akcje systemowe** - obsługa wpisów bez użytkownika (system actions)
+- ✅ **Pełna polonizacja** - wszystkie etykiety po polsku
+- ✅ **IP & User Agent** - tracking źródła akcji
+
+**Typy akcji:**
+```
+# Basic CRUD
+CREATE, UPDATE, DELETE, TOGGLE
+
+# Status
+STATUS_CHANGE, ARCHIVE, UNARCHIVE, RESTORE
+
+# Menu
+MENU_UPDATE, MENU_REMOVE, MENU_SELECTED, MENU_RECALCULATED, MENU_DIRECT_REMOVED
+
+# Payment
+PAYMENT_UPDATE, MARK_PAID
+
+# Queue
+QUEUE_ADD, QUEUE_UPDATE, QUEUE_REMOVE, QUEUE_SWAP, QUEUE_MOVE,
+QUEUE_REORDER, QUEUE_REBUILD, QUEUE_PROMOTE, QUEUE_AUTO_CANCEL
+
+# Attachments
+ATTACHMENT_UPLOAD, ATTACHMENT_ADD, ATTACHMENT_UPDATE, ATTACHMENT_ARCHIVE, ATTACHMENT_DELETE
+
+# Auth
+LOGIN, LOGOUT
+```
+
+**Typy encji:**
+```
+RESERVATION, CLIENT, ROOM, HALL, MENU, USER, DEPOSIT, EVENT_TYPE,
+ATTACHMENT, QUEUE, DISH, MENU_TEMPLATE
+```
 
 ### 🆕 Attachments Module (COMPLETED - 15-16.02.2026)
 
@@ -135,6 +183,7 @@ GET /api/reservations/:id/menu
 - Tailwind CSS
 - Shadcn/ui components
 - TanStack Query (React Query) 🆕
+- Framer Motion 🆕
 - Docker
 
 ## 📏 API Endpoints
@@ -165,6 +214,26 @@ DELETE /api/attachments/:id                # Soft delete
 POST   /api/attachments/batch-check-rodo   # Batch check hasRodo
 POST   /api/attachments/batch-check-contract  # Batch check hasContract
 GET    /api/attachments/categories/:entityType  # Get categories for entity
+```
+
+### Audit Log 🆕
+```http
+GET    /api/audit-log                      # Get logs (with filters)
+GET    /api/audit-log/recent               # Recent activity (last N logs)
+GET    /api/audit-log/statistics           # Statistics dashboard
+GET    /api/audit-log/meta/entity-types    # Available entity types
+GET    /api/audit-log/meta/actions         # Available actions
+GET    /api/audit-log/entity/:entityType/:entityId  # Entity-specific logs
+
+# Query params for GET /api/audit-log:
+# - entityType: string (optional) - RESERVATION, CLIENT, etc.
+# - action: string (optional) - CREATE, UPDATE, DELETE, etc.
+# - userId: string (optional)
+# - entityId: string (optional)
+# - dateFrom: ISO string (optional)
+# - dateTo: ISO string (optional)
+# - page: number (default: 1)
+# - pageSize: number (default: 50)
 ```
 
 ### Menu Packages
@@ -302,6 +371,28 @@ const getMenu = async (reservationId) => {
   return response.json();
   // Returns: { success: true, data: { snapshot, priceBreakdown } }
 };
+
+// Pobieranie dziennika audytu
+const getAuditLog = async (filters) => {
+  const params = new URLSearchParams({
+    entityType: filters.entityType || '',
+    action: filters.action || '',
+    page: String(filters.page || 1),
+    pageSize: String(filters.pageSize || 50)
+  });
+  
+  const response = await fetch(
+    `http://localhost:3001/api/audit-log?${params}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  return response.json();
+  // Returns: { data: [...], total, page, pageSize, totalPages }
+};
 ```
 
 ## 📊 Struktura Projektu
@@ -314,24 +405,35 @@ Go-ciniec_2/
 │   │   │   ├── controllers/
 │   │   │   │   ├── reservation.controller.ts         🔄 Updated
 │   │   │   │   ├── reservation-menu.controller.ts   ✅ Fixed (12.02.2026)
-│   │   │   │   └── attachment.controller.ts         🆕 NEW (15.02.2026)
+│   │   │   │   ├── attachment.controller.ts         🆕 NEW (15.02.2026)
+│   │   │   │   └── audit-log.controller.ts          🆕 NEW (16.02.2026)
 │   │   │   ├── routes/
 │   │   │   ├── services/
 │   │   │   │   ├── reservation.service.ts           🔄 Updated
 │   │   │   │   ├── pdf.service.ts
-│   │   │   │   └── attachment.service.ts            🆕 NEW (15.02.2026)
+│   │   │   │   ├── attachment.service.ts            🆕 NEW (15.02.2026)
+│   │   │   │   └── audit-log.service.ts             🆕 NEW (16.02.2026)
 │   │   │   ├── types/
 │   │   │   │   └── reservation.types.ts             🔄 Updated
+│   │   │   ├── utils/
+│   │   │   │   └── audit-logger.ts                  🆕 NEW (16.02.2026)
 │   │   │   └── ...
 │   │   └── prisma/schema.prisma
 │   │
 │   └── frontend/         # Next.js 14
 │       ├── app/
 │       │   └── dashboard/
+│       │       ├── audit-log/                      🆕 NEW (16.02.2026)
+│       │       │   └── page.tsx
 │       │       ├── reservations/
 │       │       └── menu/
 │       │           └── packages/
 │       ├── components/
+│       │   ├── audit-log/                      🆕 NEW (16.02.2026)
+│       │   │   ├── AuditLogTable.tsx
+│       │   │   ├── AuditLogFilters.tsx
+│       │   │   ├── AuditLogStats.tsx
+│       │   │   └── AuditLogDetails.tsx
 │       │   ├── menu/
 │       │   ├── reservations/
 │       │   │   └── ReservationMenuSection.tsx      ✅ Working
@@ -344,8 +446,10 @@ Go-ciniec_2/
 │       │   └── api/
 │       ├── hooks/
 │       │   ├── use-menu.ts                         ✅ Working
-│       │   └── use-attachments.ts                  🆕 NEW (15.02.2026)
+│       │   ├── use-attachments.ts                  🆕 NEW (15.02.2026)
+│       │   └── use-audit-log.ts                    🆕 NEW (16.02.2026)
 │       └── types/
+│           └── audit-log.types.ts                  🆕 NEW (16.02.2026)
 │
 ├── docs/                # 📚 Dokumentacja
 │   ├── ATTACHMENTS_MODULE_2026-02-15.md            🆕 NEW!
@@ -379,6 +483,12 @@ Go-ciniec_2/
 
 ## 🐛 Recent Fixes
 
+### 16.02.2026 - Audit Log Null User Fix
+- **Problem:** Crash przy wyświetlaniu wpisów gdzie `user: null` (akcje systemowe)
+- **Błąd:** `TypeError: Cannot read properties of null (reading 'firstName')`
+- **Rozwiązanie:** Dodano optional chaining `log.user?.firstName` + fallback "System"
+- **Status:** ✅ Naprawione - obsługa akcji systemowych
+
 ### 12.02.2026 - Menu Display Fix
 - **Problem:** Frontend wyświetlał "Brak wybranego menu" mimo że dane były w bazie
 - **Przyczyna:** Endpoint `GET /api/reservations/:id/menu` zwracał tylko `snapshot` bez `priceBreakdown`
@@ -395,4 +505,4 @@ Private project
 
 ---
 
-**Ostatnia aktualizacja:** 16.02.2026, 15:35 CET - Attachments Module COMPLETED 📎
+**Ostatnia aktualizacja:** 16.02.2026, 19:00 CET - Audit Log Module COMPLETED 📑
