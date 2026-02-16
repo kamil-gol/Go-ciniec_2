@@ -5,6 +5,10 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: string;
+    /** New RBAC: Role UUID from the roles table */
+    roleId?: string;
+    /** New RBAC: Role slug, e.g. 'admin', 'employee', 'manager' */
+    roleSlug?: string;
   };
   // RBAC extensions (populated by permission middleware)
   userPermissions?: Set<string>;
@@ -22,6 +26,8 @@ export interface JwtPayload {
   // New RBAC fields (added after migration)
   roleId?: string;
   roleSlug?: string;
+  iat?: number;
+  exp?: number;
 }
 
 export interface PasswordValidationResult {
