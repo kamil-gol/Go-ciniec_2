@@ -39,27 +39,84 @@ export function AuditLogTable({
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
 
   const actionColors: Record<string, string> = {
-    ARCHIVE: 'bg-orange-500/10 text-orange-700 border-orange-500/20',
-    UNARCHIVE: 'bg-green-500/10 text-green-700 border-green-500/20',
+    // Podstawowe
     CREATE: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
     UPDATE: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
     DELETE: 'bg-red-500/10 text-red-700 border-red-500/20',
+    ARCHIVE: 'bg-orange-500/10 text-orange-700 border-orange-500/20',
+    UNARCHIVE: 'bg-green-500/10 text-green-700 border-green-500/20',
+    // Status
+    STATUS_CHANGE: 'bg-purple-500/10 text-purple-700 border-purple-500/20',
+    AUTO_CONFIRM: 'bg-green-500/10 text-green-700 border-green-500/20',
+    // Kolejka
+    QUEUE_ADD: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+    QUEUE_UPDATE: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
+    QUEUE_SWAP: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20',
+    QUEUE_MOVE: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20',
+    QUEUE_REORDER: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20',
+    QUEUE_REBUILD: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+    QUEUE_PROMOTE: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+    QUEUE_AUTO_CANCEL: 'bg-red-500/10 text-red-700 border-red-500/20',
+    // Menu
+    MENU_UPDATE: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
+    MENU_REMOVE: 'bg-red-500/10 text-red-700 border-red-500/20',
+    MENU_SELECTED: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+    MENU_RECALCULATED: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
+    MENU_DIRECT_REMOVED: 'bg-red-500/10 text-red-700 border-red-500/20',
+    // Płatności
+    PAYMENT_UPDATE: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
+    MARK_PAID: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+    // Załączniki
+    ATTACHMENT_UPLOAD: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+    ATTACHMENT_UPDATE: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
+    ATTACHMENT_ARCHIVE: 'bg-orange-500/10 text-orange-700 border-orange-500/20',
+    ATTACHMENT_DELETE: 'bg-red-500/10 text-red-700 border-red-500/20',
   };
 
   const actionLabels: Record<string, string> = {
-    ARCHIVE: 'Archiwizacja',
-    UNARCHIVE: 'Przywrócenie',
+    // Podstawowe
     CREATE: 'Utworzenie',
     UPDATE: 'Aktualizacja',
     DELETE: 'Usunięcie',
+    ARCHIVE: 'Archiwizacja',
+    UNARCHIVE: 'Przywrócenie',
+    // Rezerwacje
+    STATUS_CHANGE: 'Zmiana statusu',
+    AUTO_CONFIRM: 'Auto-potwierdzenie',
+    // Kolejka
+    QUEUE_ADD: 'Dodanie do kolejki',
+    QUEUE_UPDATE: 'Aktualizacja kolejki',
+    QUEUE_SWAP: 'Zamiana pozycji',
+    QUEUE_MOVE: 'Przeniesienie',
+    QUEUE_REORDER: 'Zmiana kolejności',
+    QUEUE_REBUILD: 'Przebudowa kolejki',
+    QUEUE_PROMOTE: 'Promowanie',
+    QUEUE_AUTO_CANCEL: 'Auto-anulowanie',
+    // Menu
+    MENU_UPDATE: 'Zmiana menu',
+    MENU_REMOVE: 'Usunięcie menu',
+    MENU_SELECTED: 'Wybór menu',
+    MENU_RECALCULATED: 'Przeliczenie menu',
+    MENU_DIRECT_REMOVED: 'Usunięcie menu',
+    // Płatności
+    PAYMENT_UPDATE: 'Zmiana płatności',
+    MARK_PAID: 'Oznaczenie wpłaty',
+    // Załączniki
+    ATTACHMENT_UPLOAD: 'Dodanie załącznika',
+    ATTACHMENT_UPDATE: 'Zmiana załącznika',
+    ATTACHMENT_ARCHIVE: 'Archiwizacja załącznika',
+    ATTACHMENT_DELETE: 'Usunięcie załącznika',
   };
 
   const entityLabels: Record<string, string> = {
     RESERVATION: 'Rezerwacja',
     CLIENT: 'Klient',
     ROOM: 'Sala',
+    HALL: 'Sala',
     MENU: 'Menu',
     USER: 'Użytkownik',
+    DEPOSIT: 'Zaliczka',
+    ATTACHMENT: 'Załącznik',
   };
 
   if (isLoading) {
@@ -119,7 +176,7 @@ export function AuditLogTable({
                 <TableCell>
                   <Badge
                     variant="outline"
-                    className={actionColors[log.action] || ''}
+                    className={actionColors[log.action] || 'bg-gray-500/10 text-gray-700 border-gray-500/20'}
                   >
                     {actionLabels[log.action] || log.action}
                   </Badge>

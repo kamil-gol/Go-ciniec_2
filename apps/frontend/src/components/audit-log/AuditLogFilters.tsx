@@ -78,19 +78,49 @@ export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
     filters.endDate;
 
   const actionLabels: Record<string, string> = {
-    ARCHIVE: 'Archiwizacja',
-    UNARCHIVE: 'Przywrócenie',
+    // Podstawowe
     CREATE: 'Utworzenie',
     UPDATE: 'Aktualizacja',
     DELETE: 'Usunięcie',
+    ARCHIVE: 'Archiwizacja',
+    UNARCHIVE: 'Przywrócenie',
+    // Rezerwacje
+    STATUS_CHANGE: 'Zmiana statusu',
+    AUTO_CONFIRM: 'Auto-potwierdzenie',
+    // Kolejka
+    QUEUE_ADD: 'Dodanie do kolejki',
+    QUEUE_UPDATE: 'Aktualizacja kolejki',
+    QUEUE_SWAP: 'Zamiana pozycji',
+    QUEUE_MOVE: 'Przeniesienie',
+    QUEUE_REORDER: 'Zmiana kolejności',
+    QUEUE_REBUILD: 'Przebudowa kolejki',
+    QUEUE_PROMOTE: 'Promowanie',
+    QUEUE_AUTO_CANCEL: 'Auto-anulowanie',
+    // Menu
+    MENU_UPDATE: 'Zmiana menu',
+    MENU_REMOVE: 'Usunięcie menu',
+    MENU_SELECTED: 'Wybór menu',
+    MENU_RECALCULATED: 'Przeliczenie menu',
+    MENU_DIRECT_REMOVED: 'Usunięcie menu',
+    // Płatności
+    PAYMENT_UPDATE: 'Zmiana płatności',
+    MARK_PAID: 'Oznaczenie wpłaty',
+    // Załączniki
+    ATTACHMENT_UPLOAD: 'Dodanie załącznika',
+    ATTACHMENT_UPDATE: 'Zmiana załącznika',
+    ATTACHMENT_ARCHIVE: 'Archiwizacja załącznika',
+    ATTACHMENT_DELETE: 'Usunięcie załącznika',
   };
 
   const entityTypeLabels: Record<string, string> = {
     RESERVATION: 'Rezerwacja',
     CLIENT: 'Klient',
     ROOM: 'Sala',
+    HALL: 'Sala',
     MENU: 'Menu',
     USER: 'Użytkownik',
+    DEPOSIT: 'Zaliczka',
+    ATTACHMENT: 'Załącznik',
   };
 
   return (
