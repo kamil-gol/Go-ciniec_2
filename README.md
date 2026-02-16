@@ -27,6 +27,79 @@
 - **Halls** - zarządzanie salami
 - **🆕 Audit Log** - dziennik audytu wszystkich zmian w systemie 📑
 - **🆕 Reports** - moduł raportowania i analityki 📊
+- **🆕 RBAC & Settings** - system uprawnień i ustawień 🔐
+
+### 🆕 RBAC & Settings Module (COMPLETED - 16.02.2026)
+
+**Status: ✅ W pełni funkcjonalne**
+
+**Funkcje:**
+- ✅ **System uprawnień (RBAC)** - Role-Based Access Control
+  - 5 systemowych ról: Administrator, Kierownik, Pracownik, Podgląd, Koordynator
+  - 49 uprawnień pogrupowanych w 13 modułów
+  - Permission middleware z cache (5min TTL)
+  - Walidacja uprawnień per endpoint
+- ✅ **Zarządzanie użytkownikami**
+  - Tabela z filtrowaniem i wyszukiwaniem
+  - CRUD: tworzenie, edycja, usuwanie użytkowników
+  - Zmiana hasła (przez admina lub własnego)
+  - Toggle aktywności (soft-delete)
+  - Przypisywanie ról
+- ✅ **Role i uprawnienia**
+  - Tworzenie custom ról z dowolnymi uprawnieniami
+  - Macierz uprawnień: checkboxy per moduł
+  - Bulk select/deselect per moduł
+  - Liczę użytkowników na rolę
+  - Kolory ról (hex)
+  - Ochrona systemowych ról
+- ✅ **Dane firmy**
+  - Formularz: nazwa, NIP, REGON, adres, kontakt
+  - Singleton (jedna firma w systemie)
+  - Ustawienia waluty i strefy czasowej
+  - Logo URL (przygotowane pod upload)
+
+**Moduły uprawnień:**
+```
+archive, attachments, audit_log, clients, dashboard, deposits,
+event_types, halls, menu, queue, reports, reservations, settings
+```
+
+**Przykładowe uprawnienia:**
+```typescript
+// Rezerwacje
+reservations:view, reservations:create, reservations:update,
+reservations:delete, reservations:manage_menu, reservations:view_financial
+
+// Menu
+menu:view, menu:create, menu:update, menu:delete,
+menu:manage_categories, menu:manage_options
+
+// Ustawienia
+settings:view, settings:manage_users, settings:manage_roles,
+settings:manage_company
+```
+
+**Endpointy:**
+```
+GET    /api/settings/users
+POST   /api/settings/users
+PUT    /api/settings/users/:id
+PATCH  /api/settings/users/:id/password
+PATCH  /api/settings/users/:id/toggle-active
+DELETE /api/settings/users/:id
+
+GET    /api/settings/roles
+POST   /api/settings/roles
+PUT    /api/settings/roles/:id
+PUT    /api/settings/roles/:id/permissions
+DELETE /api/settings/roles/:id
+
+GET    /api/settings/permissions
+GET    /api/settings/permissions/grouped
+
+GET    /api/settings/company
+PUT    /api/settings/company
+```
 
 ### 🆕 Reports Module (COMPLETED - 16.02.2026)
 
@@ -230,6 +303,32 @@ GET /api/reservations/:id/menu
 
 ## 📏 API Endpoints
 
+### Settings & RBAC 🆕
+```http
+# Users
+GET    /api/settings/users                 # Lista użytkowników
+POST   /api/settings/users                 # Utwórz użytkownika
+PUT    /api/settings/users/:id             # Edytuj użytkownika
+PATCH  /api/settings/users/:id/password    # Zmień hasło
+PATCH  /api/settings/users/:id/toggle-active  # Aktywuj/dezaktywuj
+DELETE /api/settings/users/:id             # Usuń użytkownika
+
+# Roles
+GET    /api/settings/roles                 # Lista ról
+POST   /api/settings/roles                 # Utwórz rolę
+PUT    /api/settings/roles/:id             # Edytuj rolę
+PUT    /api/settings/roles/:id/permissions # Zaktualizuj uprawnienia roli
+DELETE /api/settings/roles/:id             # Usuń rolę
+
+# Permissions
+GET    /api/settings/permissions           # Wszystkie uprawnienia
+GET    /api/settings/permissions/grouped   # Pogrupowane po modułach
+
+# Company
+GET    /api/settings/company               # Dane firmy
+PUT    /api/settings/company               # Zaktualizuj dane firmy
+```
+
 ### Reports 🆕
 ```http
 GET    /api/reports/revenue                # Raport przychodów
@@ -311,6 +410,9 @@ GET    /api/event-types
 
 ## 📚 Dokumentacja
 
+### RBAC & Settings
+- **[RBAC System Guide](./docs/RBAC_SYSTEM.md)** - kompletna dokumentacja systemu uprawnień 🆕
+
 ### Menu & Reservations
 - **[Attachments Module Guide](./docs/ATTACHMENTS_MODULE_2026-02-15.md)** - kompletna dokumentacja załączników 🆕
 - **[Menu Integration Guide](./docs/MENU_INTEGRATION.md)** - kompletna dokumentacja integracji menu
@@ -340,12 +442,16 @@ docker compose up -d
 # Run database migrations
 docker-compose exec backend npx prisma migrate deploy
 
-# Seed database (optional)
+# Seed database (with RBAC roles & permissions)
 docker-compose exec backend npm run db:seed
 
 # Access
 Frontend: http://localhost:3000
 Backend:  http://localhost:3001
+
+# Login credentials (po seedzie):
+Email: admin@gosciniecrodzinny.pl
+Password: Admin123!@#
 ```
 
 ## 📝 Przykład użycia - Rezerwacja z menu
@@ -492,6 +598,42 @@ const exportRevenueExcel = async (filters) => {
   a.download = `raport_przychody_${new Date().toISOString().split('T')[0]}.xlsx`;
   a.click();
 };
+
+// Zarządzanie użytkownikami
+const getUsers = async () => {
+  const response = await fetch(
+    'http://localhost:3001/api/settings/users',
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  return response.json();
+};
+
+const createUser = async (userData) => {
+  const response = await fetch(
+    'http://localhost:3001/api/settings/users',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        roleId: userData.roleId
+      })
+    }
+  );
+  
+  return response.json();
+};
 ```
 
 ## 📊 Struktura Projektu
@@ -506,21 +648,39 @@ Go-ciniec_2/
 │   │   │   │   ├── reservation-menu.controller.ts   ✅ Fixed (12.02.2026)
 │   │   │   │   ├── attachment.controller.ts         🆕 NEW (15.02.2026)
 │   │   │   │   ├── audit-log.controller.ts          🆕 NEW (16.02.2026)
-│   │   │   │   └── reports.controller.ts            🆕 NEW (16.02.2026)
+│   │   │   │   ├── reports.controller.ts            🆕 NEW (16.02.2026)
+│   │   │   │   ├── users.controller.ts              🆕 NEW (16.02.2026)
+│   │   │   │   ├── roles.controller.ts              🆕 NEW (16.02.2026)
+│   │   │   │   ├── permissions.controller.ts        🆕 NEW (16.02.2026)
+│   │   │   │   └── company-settings.controller.ts   🆕 NEW (16.02.2026)
 │   │   │   ├── routes/
+│   │   │   │   └── settings.routes.ts               🆕 NEW (16.02.2026)
 │   │   │   ├── services/
 │   │   │   │   ├── reservation.service.ts           🔄 Updated
 │   │   │   │   ├── pdf.service.ts
 │   │   │   │   ├── attachment.service.ts            🆕 NEW (15.02.2026)
 │   │   │   │   ├── audit-log.service.ts             🆕 NEW (16.02.2026)
-│   │   │   │   └── reports.service.ts               🆕 NEW (16.02.2026)
+│   │   │   │   ├── reports.service.ts               🆕 NEW (16.02.2026)
+│   │   │   │   ├── users.service.ts                 🆕 NEW (16.02.2026)
+│   │   │   │   ├── roles.service.ts                 🆕 NEW (16.02.2026)
+│   │   │   │   ├── permissions.service.ts           🆕 NEW (16.02.2026)
+│   │   │   │   └── company-settings.service.ts      🆕 NEW (16.02.2026)
+│   │   │   ├── middlewares/
+│   │   │   │   └── permissions.ts                   🆕 NEW (16.02.2026)
+│   │   │   ├── constants/
+│   │   │   │   └── permissions.ts                   🆕 NEW (16.02.2026)
 │   │   │   ├── types/
 │   │   │   │   ├── reservation.types.ts             🔄 Updated
-│   │   │   │   └── reports.types.ts                 🆕 NEW (16.02.2026)
+│   │   │   │   ├── reports.types.ts                 🆕 NEW (16.02.2026)
+│   │   │   │   └── settings.types.ts                🆕 NEW (16.02.2026)
 │   │   │   ├── utils/
 │   │   │   │   └── audit-logger.ts                  🆕 NEW (16.02.2026)
 │   │   │   └── ...
-│   │   └── prisma/schema.prisma
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma                    🔄 Updated (Role, Permission, RolePermission)
+│   │   │   └── seeds/
+│   │   │       └── rbac.seed.ts                     🆕 NEW (16.02.2026)
+│   │   └── ...
 │   │
 │   └── frontend/         # Next.js 14
 │       ├── app/
@@ -529,10 +689,19 @@ Go-ciniec_2/
 │       │       │   └── page.tsx
 │       │       ├── reports/                        🆕 NEW (16.02.2026)
 │       │       │   └── page.tsx
+│       │       ├── settings/                       🆕 NEW (16.02.2026)
+│       │       │   └── page.tsx
 │       │       ├── reservations/
 │       │       └── menu/
 │       │           └── packages/
 │       ├── components/
+│       │   ├── settings/                       🆕 NEW (16.02.2026)
+│       │   │   ├── UsersTab.tsx
+│       │   │   ├── UserFormDialog.tsx
+│       │   │   ├── ChangePasswordDialog.tsx
+│       │   │   ├── RolesTab.tsx
+│       │   │   ├── RoleFormDialog.tsx
+│       │   │   └── CompanyTab.tsx
 │       │   ├── audit-log/                      🆕 NEW (16.02.2026)
 │       │   │   ├── AuditLogTable.tsx
 │       │   │   ├── AuditLogFilters.tsx
@@ -541,13 +710,14 @@ Go-ciniec_2/
 │       │   ├── menu/
 │       │   ├── reservations/
 │       │   │   └── ReservationMenuSection.tsx      ✅ Working
-│       │   └── attachments/                        🆕 NEW (15.02.2026)
+│       │   └── attachments/                    🆕 NEW (15.02.2026)
 │       │       ├── attachment-panel.tsx
 │       │       ├── attachment-upload-dialog.tsx
 │       │       ├── attachment-preview.tsx
 │       │       └── attachment-row.tsx
 │       ├── lib/
 │       │   └── api/
+│       │       └── settings.ts                     🆕 NEW (16.02.2026)
 │       ├── hooks/
 │       │   ├── use-menu.ts                         ✅ Working
 │       │   ├── use-attachments.ts                  🆕 NEW (15.02.2026)
@@ -558,6 +728,8 @@ Go-ciniec_2/
 │           └── reports.types.ts                    🆕 NEW (16.02.2026)
 │
 ├── docs/                # 📚 Dokumentacja
+│   ├── RBAC_SYSTEM.md                              🆕 NEW!
+│   ├── REPORTS_MODULE_2026-02-16.md                🆕 NEW!
 │   ├── ATTACHMENTS_MODULE_2026-02-15.md            🆕 NEW!
 │   ├── MENU_INTEGRATION.md
 │   ├── PDF_ENHANCEMENT_SESSION_2026-02-11.md
@@ -589,6 +761,26 @@ Go-ciniec_2/
 
 ## 🐛 Recent Fixes
 
+### 16.02.2026 21:19 CET - RBAC System Complete
+- **Sprint 6:** System uprawnień + moduł Ustawienia
+- **Backend:**
+  - Prisma models: Role, Permission, RolePermission, CompanySettings
+  - 5 systemowych ról z 49 uprawnieniami
+  - Permission middleware z cache (5min)
+  - Settings API: users, roles, permissions, company
+  - Seed script dla ról i uprawnień
+- **Frontend:**
+  - Strona Ustawienia z 3 tabami
+  - CRUD użytkowników, ról
+  - Macierz uprawnień z checkboxami
+  - Formularz danych firmy
+- **Fixes:**
+  - `logActivity` → `logChange` w backend services
+  - Frontend typy dopasowane do API (companyName, usersCount, city, postalCode)
+  - Usunięty podwójny prefix `/api/api/settings`
+  - `user.roleId` → `user.role?.id`
+- **Status:** ✅ Merged do main, działa produkcyjnie
+
 ### 16.02.2026 20:09 CET - Global Unicode Fix
 - **Problem:** Unicode escape sequences (`\u0105`, `\u0119`, etc.) w całym frontendzie
 - **Dotknięte moduły:** Reports, Audit Log, wszystkie pliki .tsx/.ts
@@ -618,4 +810,4 @@ Private project
 
 ---
 
-**Ostatnia aktualizacja:** 16.02.2026, 20:10 CET - Reports Module COMPLETED + Global Unicode Fix 📊✅
+**Ostatnia aktualizacja:** 16.02.2026, 21:22 CET - RBAC & Settings Module COMPLETED 🔐✅
