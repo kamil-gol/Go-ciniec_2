@@ -1,6 +1,8 @@
 /**
  * Deposit Service - with Audit Logging
  * Full CRUD + business logic for deposit/advance payment management
+ * Phase 4.2: Auto-confirm reservation when all deposits are paid
+ * Phase 4.3: Block cancellation of reservations with paid deposits
  */
 
 import { prisma } from '../lib/prisma';
@@ -350,7 +352,95 @@ const depositService = {
       }
     });
 
+    // ═══ Phase 4.2: Auto-confirm reservation when all deposits are paid ═══
+    if (isPaid) {
+      await depositService.checkAndAutoConfirmReservation(deposit.reservationId, userId);
+    }
+
     return updated;
+  },
+
+  /**
+   * Phase 4.2: Check if all active deposits for a reservation are paid.
+   * If yes and reservation is PENDING → auto-confirm it.
+   */
+  async checkAndAutoConfirmReservation(reservationId: string, userId: string) {
+    try {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId },
+        include: { deposits: true, client: true },
+      });
+
+      if (!reservation) return;
+      // Only auto-confirm PENDING reservations
+      if (reservation.status !== 'PENDING') return;
+
+      const activeDeposits = reservation.deposits.filter(
+        (d: any) => d.status !== 'CANCELLED'
+      );
+
+      // Need at least one active deposit
+      if (activeDeposits.length === 0) return;
+
+      const allPaid = activeDeposits.every((d: any) => d.status === 'PAID');
+
+      if (allPaid) {
+        await prisma.reservation.update({
+          where: { id: reservationId },
+          data: { status: 'CONFIRMED' },
+        });
+
+        // Create reservation history entry
+        await prisma.reservationHistory.create({
+          data: {
+            reservationId,
+            changedByUserId: userId,
+            changeType: 'STATUS_CHANGED',
+            fieldName: 'status',
+            oldValue: 'PENDING',
+            newValue: 'CONFIRMED',
+            reason: 'Automatyczne potwierdzenie — wszystkie zaliczki opłacone',
+          },
+        });
+
+        const clientName = reservation.client
+          ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}`
+          : 'N/A';
+
+        // Audit log
+        await logChange({
+          userId,
+          action: 'AUTO_CONFIRM',
+          entityType: 'RESERVATION',
+          entityId: reservationId,
+          details: {
+            description: `Rezerwacja automatycznie potwierdzona po opłaceniu wszystkich zaliczek (${clientName})`,
+            depositsCount: activeDeposits.length,
+            totalPaid: activeDeposits.reduce((s: number, d: any) => s + Number(d.amount), 0),
+          },
+        });
+
+        logger.info(`[Deposit] Auto-confirmed reservation ${reservationId} — all ${activeDeposits.length} deposits paid`);
+      }
+    } catch (error) {
+      // Don't fail the payment operation if auto-confirm fails
+      logger.error(`[Deposit] Error in auto-confirm check for reservation ${reservationId}:`, error);
+    }
+  },
+
+  /**
+   * Phase 4.3: Check if a reservation has paid deposits (used before cancel/delete).
+   * Returns info about paid deposits for the guard check.
+   */
+  async checkPaidDepositsBeforeCancel(reservationId: string): Promise<{ hasPaidDeposits: boolean; paidCount: number; paidTotal: number }> {
+    const deposits = await prisma.deposit.findMany({
+      where: { reservationId, status: 'PAID' },
+    });
+
+    const paidCount = deposits.length;
+    const paidTotal = deposits.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+
+    return { hasPaidDeposits: paidCount > 0, paidCount, paidTotal };
   },
 
   async sendConfirmationEmail(id: string) {
