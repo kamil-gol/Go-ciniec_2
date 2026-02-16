@@ -4,8 +4,9 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { type LucideIcon, Inbox } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   /** Lucide icon (defaults to Inbox) */
   icon?: LucideIcon
   /** Main title */
@@ -16,17 +17,19 @@ interface EmptyStateProps {
   actionLabel?: string
   /** Optional CTA onClick */
   onAction?: () => void
+  /** Optional CTA link href (alternative to onAction) */
+  actionHref?: string
   /** Additional className */
   className?: string
 }
 
 /**
- * EmptyState — Shown when a list or table has no data.
+ * EmptyState \u2014 Shown when a list or table has no data.
  * 
  * Provides:
  * - Soft icon with gradient background
  * - Title + description
- * - Optional action button
+ * - Optional action button (onClick) or link (href)
  * - Entrance animation
  */
 export function EmptyState({
@@ -35,6 +38,7 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  actionHref,
   className,
 }: EmptyStateProps) {
   return (
@@ -63,7 +67,14 @@ export function EmptyState({
           {description}
         </p>
       )}
-      {actionLabel && onAction && (
+      {actionLabel && actionHref && (
+        <Link href={actionHref}>
+          <Button className="shadow-lg">
+            {actionLabel}
+          </Button>
+        </Link>
+      )}
+      {actionLabel && onAction && !actionHref && (
         <Button onClick={onAction} className="shadow-lg">
           {actionLabel}
         </Button>
