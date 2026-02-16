@@ -10,14 +10,14 @@ import {
   Plus, Edit, Trash2, RefreshCw, Archive, ArchiveRestore,
   LogIn, LogOut, ListPlus, ListMinus, ArrowLeftRight, ArrowUpDown,
   CreditCard, Paperclip, FileX, Clock, ChevronDown, ChevronUp,
-  History, AlertCircle
+  History, AlertCircle, Calculator
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { useEntityActivityLog } from '@/lib/api/audit-log'
 import type { AuditLogEntry } from '@/types/audit-log.types'
 
-// ─── Polskie labele akcji (zsynchronizowane z AuditLogTable.tsx) ───
+// ─── Polskie labele akcji ───
 const actionLabels: Record<string, string> = {
   ARCHIVE: 'Archiwizacja',
   UNARCHIVE: 'Przywrócenie z archiwum',
@@ -35,6 +35,13 @@ const actionLabels: Record<string, string> = {
   MARK_PAID: 'Oznaczenie płatności',
   ATTACHMENT_ADD: 'Dodanie załącznika',
   ATTACHMENT_DELETE: 'Usunięcie załącznika',
+  MENU_RECALCULATED: 'Przeliczenie menu',
+  MENU_CHANGE: 'Zmiana menu',
+  DEPOSIT_ADD: 'Dodanie zaliczki',
+  DEPOSIT_UPDATE: 'Aktualizacja zaliczki',
+  DEPOSIT_DELETE: 'Usunięcie zaliczki',
+  PRICE_CHANGE: 'Zmiana ceny',
+  DISCOUNT_CHANGE: 'Zmiana rabatu',
 }
 
 const actionColors: Record<string, string> = {
@@ -54,9 +61,16 @@ const actionColors: Record<string, string> = {
   MARK_PAID: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
   ATTACHMENT_ADD: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
   ATTACHMENT_DELETE: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
+  MENU_RECALCULATED: 'bg-lime-100 text-lime-700 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800',
+  MENU_CHANGE: 'bg-lime-100 text-lime-700 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800',
+  DEPOSIT_ADD: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+  DEPOSIT_UPDATE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  DEPOSIT_DELETE: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  PRICE_CHANGE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  DISCOUNT_CHANGE: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
 }
 
-// Polskie nazwy pól w szczegółach zmian
+// Polskie nazwy pól
 const fieldLabels: Record<string, string> = {
   status: 'Status',
   firstName: 'Imię',
@@ -68,8 +82,13 @@ const fieldLabels: Record<string, string> = {
   adults: 'Dorośli',
   children: 'Dzieci',
   toddlers: 'Maluszki',
+  guests: 'Goście łącznie',
+  hall: 'Sala',
   hallId: 'Sala',
   hallName: 'Nazwa sali',
+  client: 'Klient',
+  clientId: 'Klient',
+  eventType: 'Typ wydarzenia',
   eventTypeId: 'Typ wydarzenia',
   eventTypeName: 'Nazwa wydarzenia',
   startDateTime: 'Data rozpoczęcia',
@@ -97,6 +116,122 @@ const fieldLabels: Record<string, string> = {
   amount: 'Kwota',
   paidAt: 'Data płatności',
   method: 'Metoda płatności',
+  reason: 'Powód',
+  createdAt: 'Data utworzenia',
+  updatedAt: 'Data aktualizacji',
+}
+
+// Pola do ukrycia — zbyt techniczne / nieczytelne dla użytkownika
+const HIDDEN_FIELDS = new Set([
+  'menuSnapshot',
+  'createdBy',
+  'updatedBy',
+  'deletedAt',
+  'deletedBy',
+  'id',
+  'reservationId',
+  'clientId',
+  'hallId',
+  'eventTypeId',
+  'userId',
+  'menuSelections',
+  'menuPackageId',
+  'menuTemplateId',
+])
+
+/**
+ * Próbuje wydobyć czytelny tekst z obiektu.
+ * Np. hall → hall.name, client → "firstName lastName", eventType → name
+ */
+function formatObjectValue(value: any): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value !== 'object') return String(value)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '(pusta lista)'
+    if (value[0]?.name) return value.map((v: any) => v.name).join(', ')
+    return `(${value.length} elementów)`
+  }
+
+  // Próbuj wyciągnąć czytelne pole
+  if (value.name) return value.name
+  if (value.firstName && value.lastName) return `${value.firstName} ${value.lastName}`
+  if (value.firstName) return value.firstName
+  if (value.email) return value.email
+  if (value.title) return value.title
+  if (value.label) return value.label
+  if (value.status) return value.status
+
+  // Ostateczność — nie pokazuj [object Object]
+  const keys = Object.keys(value)
+  if (keys.length === 0) return '(pusty)'
+  if (keys.length <= 3) {
+    const parts = keys
+      .filter(k => typeof value[k] !== 'object' || value[k] === null)
+      .map(k => {
+        const label = fieldLabels[k] || k
+        return `${label}: ${value[k]}`
+      })
+    if (parts.length > 0) return parts.join(', ')
+  }
+
+  return null
+}
+
+/** Formatuje status na polską nazwę */
+function formatStatusValue(value: string): string {
+  const statusMap: Record<string, string> = {
+    PENDING: 'Oczekująca',
+    CONFIRMED: 'Potwierdzona',
+    CANCELLED: 'Anulowana',
+    COMPLETED: 'Zakończona',
+    DRAFT: 'Szkic',
+    ACTIVE: 'Aktywna',
+    INACTIVE: 'Nieaktywna',
+    ARCHIVED: 'Zarchiwizowana',
+  }
+  return statusMap[value] || value
+}
+
+/** Formatuje dowolną wartość pola do czytelnego stringa */
+function formatFieldValue(field: string, value: any): string | null {
+  if (value === null || value === undefined) return null
+  if (value === '') return '(puste)'
+
+  // Statusy
+  if (field === 'status') return formatStatusValue(String(value))
+
+  // Daty
+  if (
+    field.includes('Date') || field.includes('date') ||
+    field === 'createdAt' || field === 'updatedAt' ||
+    field === 'archivedAt' || field === 'paidAt' ||
+    field === 'confirmationDeadline'
+  ) {
+    try {
+      const d = new Date(value)
+      if (!isNaN(d.getTime())) {
+        return format(d, 'dd.MM.yyyy HH:mm', { locale: pl })
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Ceny
+  if (
+    (field.toLowerCase().includes('price') ||
+     field.toLowerCase().includes('amount') ||
+     field === 'totalPrice' || field === 'priceBeforeDiscount') &&
+    !isNaN(Number(value))
+  ) {
+    return `${Number(value).toLocaleString('pl-PL')} zł`
+  }
+
+  // Obiekty
+  if (typeof value === 'object') return formatObjectValue(value)
+
+  // Boolean
+  if (typeof value === 'boolean') return value ? 'Tak' : 'Nie'
+
+  return String(value)
 }
 
 function getActionIcon(action: string) {
@@ -116,6 +251,9 @@ function getActionIcon(action: string) {
     case 'MARK_PAID': return <CreditCard className="w-4 h-4" />
     case 'ATTACHMENT_ADD': return <Paperclip className="w-4 h-4" />
     case 'ATTACHMENT_DELETE': return <FileX className="w-4 h-4" />
+    case 'MENU_RECALCULATED': case 'MENU_CHANGE': return <Calculator className="w-4 h-4" />
+    case 'DEPOSIT_ADD': case 'DEPOSIT_UPDATE': case 'DEPOSIT_DELETE': return <CreditCard className="w-4 h-4" />
+    case 'PRICE_CHANGE': case 'DISCOUNT_CHANGE': return <Calculator className="w-4 h-4" />
     default: return <AlertCircle className="w-4 h-4" />
   }
 }
@@ -135,6 +273,11 @@ function getIconBgColor(action: string): string {
     case 'QUEUE_REMOVE': return 'bg-rose-500'
     case 'QUEUE_SWAP': return 'bg-purple-500'
     case 'QUEUE_MOVE': return 'bg-indigo-500'
+    case 'MENU_RECALCULATED': case 'MENU_CHANGE': return 'bg-lime-600'
+    case 'DEPOSIT_ADD': return 'bg-green-500'
+    case 'DEPOSIT_UPDATE': return 'bg-amber-500'
+    case 'DEPOSIT_DELETE': return 'bg-red-500'
+    case 'PRICE_CHANGE': case 'DISCOUNT_CHANGE': return 'bg-amber-600'
     default: return 'bg-neutral-500'
   }
 }
@@ -146,28 +289,36 @@ function ChangeDetails({ details }: { details: AuditLogEntry['details'] }) {
   const changes = details.changes
   if (!changes || Object.keys(changes).length === 0) return null
 
+  const visibleEntries = Object.entries(changes).filter(([field]) => !HIDDEN_FIELDS.has(field))
+  if (visibleEntries.length === 0) return null
+
   return (
-    <div className="mt-2 space-y-1.5">
-      {Object.entries(changes).map(([field, value]) => {
+    <div className="mt-2 space-y-2.5">
+      {visibleEntries.map(([field, value]) => {
         const label = fieldLabels[field] || field
 
         // Obiekt z wartościami old/new
         if (value && typeof value === 'object' && ('old' in value || 'new' in value)) {
+          const oldFormatted = formatFieldValue(field, value.old)
+          const newFormatted = formatFieldValue(field, value.new)
+
+          if (oldFormatted === null && newFormatted === null) return null
+
           return (
-            <div key={field} className="flex flex-col gap-0.5 text-xs">
-              <span className="font-medium text-neutral-700 dark:text-neutral-300">{label}:</span>
-              <div className="flex items-center gap-2 pl-3">
-                {value.old !== undefined && value.old !== null && (
-                  <span className="text-red-600 dark:text-red-400 line-through">
-                    {String(value.old)}
+            <div key={field} className="flex flex-col gap-1 text-xs">
+              <span className="font-semibold text-neutral-700 dark:text-neutral-300">{label}:</span>
+              <div className="flex items-center gap-2 pl-3 flex-wrap">
+                {oldFormatted !== null && (
+                  <span className="text-red-600 dark:text-red-400 line-through bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded">
+                    {oldFormatted}
                   </span>
                 )}
-                {value.old !== undefined && value.new !== undefined && (
+                {oldFormatted !== null && newFormatted !== null && (
                   <span className="text-neutral-400">→</span>
                 )}
-                {value.new !== undefined && value.new !== null && (
-                  <span className="text-green-600 dark:text-green-400 font-medium">
-                    {String(value.new)}
+                {newFormatted !== null && (
+                  <span className="text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-950/20 px-1.5 py-0.5 rounded">
+                    {newFormatted}
                   </span>
                 )}
               </div>
@@ -176,10 +327,13 @@ function ChangeDetails({ details }: { details: AuditLogEntry['details'] }) {
         }
 
         // Prosta wartość
+        const formatted = formatFieldValue(field, value)
+        if (formatted === null) return null
+
         return (
           <div key={field} className="text-xs">
-            <span className="font-medium text-neutral-700 dark:text-neutral-300">{label}:</span>{' '}
-            <span className="text-neutral-600 dark:text-neutral-400">{String(value)}</span>
+            <span className="font-semibold text-neutral-700 dark:text-neutral-300">{label}:</span>{' '}
+            <span className="text-neutral-600 dark:text-neutral-400">{formatted}</span>
           </div>
         )
       })}
@@ -190,7 +344,12 @@ function ChangeDetails({ details }: { details: AuditLogEntry['details'] }) {
 // ─── Pojedynczy element timeline ───
 function TimelineItem({ log, index, isLast }: { log: AuditLogEntry; index: number; isLast: boolean }) {
   const [expanded, setExpanded] = useState(false)
-  const hasDetails = log.details?.changes && Object.keys(log.details.changes).length > 0
+
+  const hasDetails = (() => {
+    if (!log.details?.changes) return false
+    const visibleKeys = Object.keys(log.details.changes).filter(k => !HIDDEN_FIELDS.has(k))
+    return visibleKeys.length > 0
+  })()
 
   return (
     <motion.div
@@ -266,7 +425,7 @@ function TimelineItem({ log, index, isLast }: { log: AuditLogEntry; index: numbe
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="mt-2 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg p-3 border border-neutral-200/50 dark:border-neutral-700/30">
+              <div className="mt-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg p-4 border border-neutral-200/50 dark:border-neutral-700/30">
                 <ChangeDetails details={log.details} />
               </div>
             </motion.div>
