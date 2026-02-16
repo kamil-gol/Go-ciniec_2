@@ -1,33 +1,55 @@
 'use client'
 
-import { Settings } from 'lucide-react'
-import { PageLayout, PageHero, EmptyState } from '@/components/shared'
+import { useState } from 'react'
+import { Settings, Users, Shield, Building2 } from 'lucide-react'
+import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { UsersTab } from '@/components/settings/UsersTab'
+import { RolesTab } from '@/components/settings/RolesTab'
+import { CompanyTab } from '@/components/settings/CompanyTab'
 
 export default function SettingsPage() {
   const accent = moduleAccents.settings
+  const [activeTab, setActiveTab] = useState('users')
 
   return (
     <PageLayout>
       <PageHero
         accent={accent}
         title="Ustawienia"
-        subtitle="Konfiguracja systemu i preferencje"
+        subtitle="Zarządzanie użytkownikami, rolami, uprawnieniami i danymi firmy"
         icon={Settings}
       />
 
-      <div className="rounded-2xl bg-white dark:bg-neutral-800/80 p-8 shadow-soft border border-neutral-100 dark:border-neutral-700/50">
-        <EmptyState
-          icon={Settings}
-          title="Moduł Ustawień"
-          description="Panel ustawień w przygotowaniu — dane firmy, użytkownicy i uprawnienia, powiadomienia email/SMS, integracje zewnętrzne."
-        />
-        <div className="flex justify-center mt-4">
-          <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${accent.badge} ${accent.badgeText}`}>
-            ✨ Nowy moduł — Sprint 6
-          </span>
-        </div>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="users" className="gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Użytkownicy</span>
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Role i uprawnienia</span>
+          </TabsTrigger>
+          <TabsTrigger value="company" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Dane firmy</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
+          <UsersTab />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RolesTab />
+        </TabsContent>
+
+        <TabsContent value="company">
+          <CompanyTab />
+        </TabsContent>
+      </Tabs>
     </PageLayout>
   )
 }
