@@ -19,6 +19,9 @@ import {
   UtensilsCrossed,
   Clock,
   LogOut,
+  BarChart3,
+  Archive,
+  PartyPopper,
 } from 'lucide-react'
 
 const navItems = [
@@ -27,9 +30,12 @@ const navItems = [
   { name: 'Klienci', href: '/dashboard/clients', icon: Users },
   { name: 'Sale', href: '/dashboard/halls', icon: Building2 },
   { name: 'Zaliczki', href: '/dashboard/deposits', icon: CreditCard },
+  { name: 'Typy wydarze\u0144', href: '/dashboard/event-types', icon: PartyPopper },
   { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed },
   { name: 'Kolejka', href: '/dashboard/queue', icon: Clock },
-  { name: 'Dziennik zmian', href: '/dashboard/audit-log', icon: History },
+  { name: 'Raporty', href: '/dashboard/reports', icon: BarChart3 },
+  { name: 'Archiwum', href: '/dashboard/archive', icon: Archive },
+  { name: 'Dziennik audytu', href: '/dashboard/audit-log', icon: History },
   { name: 'Ustawienia', href: '/dashboard/settings', icon: Settings },
 ]
 
@@ -96,7 +102,7 @@ function SidebarUser({
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-              {user?.role === 'ADMIN' ? 'Administrator' : 'Użytkownik'}
+              {user?.role === 'ADMIN' ? 'Administrator' : 'U\u017cytkownik'}
             </p>
           </div>
         )}
@@ -125,7 +131,7 @@ interface SidebarProps {
 }
 
 /* ============================
-   Main Sidebar — default export
+   Main Sidebar \u2014 default export
    ============================ */
 export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
@@ -155,9 +161,9 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
                 </div>
                 <div>
                   <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                    Gościniec
+                    Go\u015bciniec
                   </h1>
-                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
+                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarz\u0105dzania</p>
                 </div>
               </div>
             )}
@@ -192,13 +198,13 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
               </div>
               <div>
                 <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  Gościniec
+                  Go\u015bciniec
                 </h1>
-                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
+                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarz\u0105dzania</p>
               </div>
             </div>
 
-            {/* Nav — always expanded on mobile, close sheet on click */}
+            {/* Nav \u2014 always expanded on mobile, close sheet on click */}
             <SidebarNav collapsed={false} onNavigate={onMobileClose} />
             <SidebarUser collapsed={false} user={user} onLogout={onLogout} />
           </div>
