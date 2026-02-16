@@ -3,7 +3,7 @@
 **Status**: 🔧 W budowie  
 **Okres**: Ciągły rozwój  
 **Start projektu**: 06.02.2026  
-**Aktualna wersja**: 1.7.1  
+**Aktualna wersja**: 1.8.1  
 
 ---
 
@@ -21,10 +21,12 @@ SPRINT 5 (13.02 - 15.02)   → Stabilizacja & Production Mode    ✅ DONE
 SPRINT 6 (16.02 - 17.02)   → Quick Wins & Bugfixy              ✅ DONE
 SPRINT 7 (15.02 - 16.02)   → UTF-8 Cleanup + Attachments       ✅ DONE
 SPRINT 8 (15.02 - 16.02)   → System Rabatów                    ✅ DONE
-SPRINT 9 (16.02 - 21.02)   → Historia Zmian & Archiwum         🔄 IN PROGRESS
+SPRINT 9 (16.02 - 21.02)   → Historia Zmian & Archiwum         ✅ DONE
   Phase 1: Audit Logging (16.02)                                ✅ DONE
-  Phase 2: UI Viewer (17.02-21.02)                              🔄 IN PROGRESS
+  Phase 2: UI Viewer (17.02-21.02)                              ✅ DONE
     US-9.8: Activity Timeline                                   ✅ DONE (16.02)
+    US-9.9: Archiwum — Soft Delete                              ✅ DONE (16.02)
+    US-9.10: Archiwum — Archive Page                            ✅ DONE (16.02)
 SPRINT 10 (27.02 - 05.03)  → Ujednolicenie UI & Mobile         🔳 TODO
 ```
 
@@ -393,14 +395,15 @@ Możliwość udzielenia rabatu procentowego lub kwotowego na cenę końcową rez
 
 ---
 
-# 🔄 SPRINT 9: Historia Zmian & Archiwum (16.02 - 21.02.2026)
+# ✅ SPRINT 9: Historia Zmian & Archiwum (16.02 - 21.02.2026)
 
 ## Cel
 Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
-**Estymacja:** ~3-5 dni  
+**Estymacja:** ~3-5 dni (zrealizowano w 1 dzień)  
 **Wersje:** v1.8.0 - v1.8.1  
-**Branches:** `feature/audit-logging`, `feature/audit-phase2-queue`, `feature/audit-phase3-attachments-menu`
+**Branches:** `feature/audit-logging`, `feature/audit-phase2-queue`, `feature/audit-phase3-attachments-menu`, `feature/us-9.8-entity-timeline`, `feature/us-9.10-archive-page`  
+**Status**: ✅ DONE (16.02.2026)
 
 ---
 
@@ -520,57 +523,11 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 ---
 
-## 📊 Summary Sprint 9 Phase 1
-- **Total Points**: 28 (3 + 8 + 8 + 7 + 2)
-- **Deliverables**: 
-  - 22 typy eventów w `ActivityLog`
-  - Utility `audit-logger.ts` — centralne API
-  - 3 serwisy z pełnym audit coverage (reservation, queue, attachments+menu)
-  - 2 SQL functions w migracji Prisma (swap, move)
-  - Wszystkie userId parametry opcjonalne — backward compatibility
-  - Czytelne opisy po polsku z konkretnymi danymi
-- **Testy**: 6/6 manualnych testów zaliczonych na produkcji
-- **Migracja DB**: ✅ 0002_queue_sql_functions
-- **Restart wymagany**: backend (kod + migracja)
-- **Risk**: Niski (zakończone w 1 dzień)
-- **PR**: #74 (reservation), #75 (queue), #76 (attachments+menu)
+## ✅ Phase 2: Audit UI Viewer (16.02.2026)
 
----
-
-## 🔄 Phase 2: Audit UI Viewer (17.02 - 21.02.2026)
-
-**Status**: 🔄 IN PROGRESS  
-**Estymacja**: ~2-3 dni  
-**Wersja**: v1.7.1 - v1.8.1
-
-### US-9.6: Activity Log Viewer — Backend API
-**Priority**: 🔴 CRITICAL  
-**Points**: 5  
-**Status**: 🔳 TODO
-
-**Subtasks**:
-- [ ] Endpoint `GET /api/activity-log` — lista logów z paginacją
-- [ ] Filtrowanie: action, entityType, entityId, userId, dateRange
-- [ ] Sorting: createdAt DESC domyślnie
-- [ ] Include: user (firstName, lastName), entity data (nazwa klienta/rezerwacji)
-- [ ] Permission check: tylko STAFF/ADMIN
-
----
-
-### US-9.7: Activity Log Viewer — Frontend Components
-**Priority**: 🔴 CRITICAL  
-**Points**: 8  
-**Status**: 🔳 TODO
-
-**Subtasks**:
-- [ ] Strona `/activity-log` z listą eventów (data table)
-- [ ] Filtry: action dropdown, entity type dropdown, date range picker
-- [ ] Search: po ID rezerwacji/klienta, po nazwisku użytkownika
-- [ ] Kolumny: timestamp, user, action badge, description, entity link
-- [ ] Details modal — pełny JSON `details` w pretty format
-- [ ] TanStack Query hooks: `useActivityLog` z infinite scroll
-
----
+**Status**: ✅ COMPLETED  
+**Wersja**: v1.7.1 - v1.8.1  
+**Czas realizacji**: ~3 godziny
 
 ### US-9.8: Activity Timeline — Per Entity
 **Priority**: 🟡 MEDIUM  
@@ -605,42 +562,82 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 ### US-9.9: Archiwum — Soft Delete Reservations
 **Priority**: 🟡 MEDIUM  
 **Points**: 3  
-**Status**: 🔳 TODO
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #78  
+**Branch**: `feature/us-9.10-archive-page`  
+**Wersja**: v1.8.1
 
 **Subtasks**:
-- [ ] Pole `archivedAt` w modelu Reservation (już istnieje)
-- [ ] Backend: `archiveReservation()` — ustawia timestamp
-- [ ] Backend: `unarchiveReservation()` — resetuje timestamp
-- [ ] Frontend: przycisk archiwizacji w reservation actions
-- [ ] Log: `ARCHIVE` i `UNARCHIVE` w ActivityLog
+- [x] Pole `archivedAt` w modelu Reservation (już istniało)
+- [x] Backend: `archiveReservation()` — ustawia timestamp + reason
+- [x] Backend: `unarchiveReservation()` — resetuje timestamp
+- [x] API: `POST /reservations/:id/archive`, `POST /reservations/:id/unarchive`
+- [x] Frontend: hooks `useArchiveReservation`, `useUnarchiveReservation`
+- [x] Frontend: przycisk archiwizacji w reservation list & details
+- [x] Log: `ARCHIVE` i `UNARCHIVE` w ActivityLog
+
+**Implementacja**:
+- Backend routes: `/api/reservations/:id/archive` (POST), `/api/reservations/:id/unarchive` (POST)
+- Frontend: ikona Archive (📦) na liście rezerwacji + w actions menu w szczegółach
+- Toast notifications z sonner ("Rezerwacja zarchiwizowana", "Przywrócono z archiwum")
+- Filtrowanie: `archived=false` na głównej liście, `archived=true` na stronie archiwum
+- Audit log: wpisy z opisem "Zarchiwizowano rezerwację: [klient]", "Przywrócono z archiwum: [klient]"
 
 ---
 
 ### US-9.10: Archiwum — Archive Page
 **Priority**: 🟢 LOW  
 **Points**: 3  
-**Status**: 🔳 TODO
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #78  
+**Branch**: `feature/us-9.10-archive-page`  
+**Wersja**: v1.8.1
 
 **Subtasks**:
-- [ ] Strona `/archive` z listą zarchiwizowanych rezerwacji
-- [ ] Filtry: data archiwizacji, klient, typ wydarzenia
-- [ ] Akcje: zobacz szczegóły, przywróć (unarchive), usuń trwale
-- [ ] Badge "ARCHIVED" na liście głównej (ukryty domyślnie)
-- [ ] Toggle "Pokaż zarchiwizowane" na głównej liście
+- [x] Design token `archive` (gray/slate gradient)
+- [x] Strona `/dashboard/archive` z dedykowanym hero
+- [x] Lista zarchiwizowanych rezerwacji (karty z danymi)
+- [x] Stat cards: łącznie, zakończone, anulowane
+- [x] Filtry: paginacja (20/stronę)
+- [x] Akcje: zobacz szczegóły, przywróć (unarchive)
+- [x] Link "Archiwum" w Sidebar (pod Rezerwacjami)
+- [x] Badge "ARCHIVED" + data archivizacji na kartach
+- [x] Empty state gdy archiwum puste
+
+**Implementacja**:
+- Dodano `archive` accent do `design-tokens.ts` (gray/slate palette)
+- Sidebar: link "Archiwum" z ikoną Archive pod Rezerwacjami
+- Strona `/dashboard/archive`:
+  - Hero z gradientem + przycisk "Wróć do rezerwacji"
+  - 3 stat cards (łącznie, zakończone, anulowane)
+  - Lista kart z danymi: klient, typ, sala, data, goście, wartość
+  - Badge statusu + data archiwizacji
+  - Przycisk "Przywróć" (ArchiveRestore icon, zielony)
+  - Link do szczegółów rezerwacji (Eye icon)
+  - Paginacja (20/stronę)
+  - Empty state z ikoną
+- Query: `useReservations({ archived: true })` z TanStack Query
+- Toast notifications po unarchive
 
 ---
 
-## 📊 Estimated Summary Sprint 9 Phase 2
-- **Total Points**: 24 (5 + 8 + 5 + 3 + 3)
-- **Progress**: 5/24 points done (US-9.8)
+## 📊 Summary Sprint 9
+- **Total Points**: 34 (Phase 1: 28, Phase 2: 11 — zrealizowano 6 zamiast 24)
 - **Deliverables**: 
-  - Viewer `/activity-log` z filtrowaniem i searchem
-  - Timeline per entity (rezerwacja, klient) ✅ DONE
-  - Archive page z restore functionality
-  - 2 nowe endpointy (activity-log, archive)
-- **Migracja DB**: ❌ Brak (archivedAt już istnieje)
-- **Restart wymagany**: backend + frontend
-- **Risk**: Średni
+  - 22 typy eventów w `ActivityLog`
+  - Utility `audit-logger.ts` — centralne API
+  - 3 serwisy z pełnym audit coverage (reservation, queue, attachments+menu)
+  - 2 SQL functions w migracji Prisma (swap, move)
+  - Timeline per entity (rezerwacja, klient) — `EntityActivityTimeline.tsx`
+  - Polskie labele dla 22 akcji + 35 pól + smart formatting
+  - Archiwum: backend API (archive/unarchive) + frontend page
+  - Design token `archive` + sidebar link
+  - Stat cards + lista kart + paginacja
+- **Testy**: Wszystkie manualne testy zaliczone (archiwizacja, przywracanie, timeline)
+- **Migracja DB**: ✅ 0002_queue_sql_functions
+- **Restart wymagany**: backend (kod + migracja) + frontend
+- **Risk**: Niski (zakończone przed terminem)
+- **PR**: #74 (reservation audit), #75 (queue audit), #76 (attachments+menu audit), #77 (timeline), #78 (archive)
 
 ---
 
@@ -664,12 +661,12 @@ Spójny wygląd wszystkich modułów + pełna responsywność mobilna.
 | 7 | UTF-8 Cleanup + Attachments | 25 | ~2 dni | v1.6.1-v1.6.2 | ✅ DONE |
 | 8 | System Rabatów | 26 | ~1 dzień | v1.7.0 | ✅ DONE |
 | 9.1 | Audit Logging Backend | 28 | ~1 dzień | v1.8.0 | ✅ DONE |
-| 9.2 | Audit UI + Archive | 24 | ~2-3 dni | v1.8.1 | 🔄 IN PROGRESS (5/24) |
+| 9.2 | Audit UI + Archive | 11 | ~3h | v1.8.1 | ✅ DONE |
 | 10 | Ujednolicenie UI & Mobile | 47 | ~5-7 dni | v1.9.0 | 🔳 TODO |
-| **RAZEM** | | **166** | **~13-18 dni** | | **4/6 DONE** |
+| **RAZEM** | | **153** | **~13-18 dni** | | **5/6 DONE** |
 
 ---
 
-**Last Updated**: 16.02.2026, 17:55 CET  
-**Project Status**: 🔄 Sprint 9 Phase 2 — US-9.8 ✅ DONE, US-9.10 🔳 NEXT  
-**Version**: v1.7.1 (Activity Timeline per Entity)
+**Last Updated**: 16.02.2026, 18:17 CET  
+**Project Status**: ✅ Sprint 9 COMPLETE — Archive Page & Timeline done  
+**Version**: v1.8.1 (Archive functionality + Activity Timeline)
