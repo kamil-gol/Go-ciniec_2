@@ -1,6 +1,7 @@
 /**
  * Attachment Controller
  * Handles HTTP requests for attachment CRUD operations
+ * Updated: Phase 3 Audit — pass userId to mutating service methods
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -101,8 +102,9 @@ class AttachmentController {
     try {
       const { id } = req.params;
       const dto: UpdateAttachmentDTO = req.body;
+      const userId = (req as any).user?.id;
 
-      const updated = await attachmentService.updateAttachment(id, dto);
+      const updated = await attachmentService.updateAttachment(id, dto, userId);
 
       return res.json({ data: updated });
     } catch (error) {
@@ -117,7 +119,9 @@ class AttachmentController {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      await attachmentService.deleteAttachment(id);
+      const userId = (req as any).user?.id;
+
+      await attachmentService.deleteAttachment(id, userId);
 
       return res.json({ message: 'Załącznik zarchiwizowany' });
     } catch (error) {
@@ -132,7 +136,9 @@ class AttachmentController {
   async archive(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const archived = await attachmentService.deleteAttachment(id);
+      const userId = (req as any).user?.id;
+
+      const archived = await attachmentService.deleteAttachment(id, userId);
 
       return res.json({ data: archived });
     } catch (error) {
