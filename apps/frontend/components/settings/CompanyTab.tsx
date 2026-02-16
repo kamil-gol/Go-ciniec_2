@@ -52,7 +52,7 @@ export function CompanyTab() {
     }
   }
 
-  if (loading) return <LoadingState text="Ładowanie ustawień firmy..." />
+  if (loading) return <LoadingState message="Ładowanie ustawień firmy..." />
 
   return (
     <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 p-6 lg:p-8">

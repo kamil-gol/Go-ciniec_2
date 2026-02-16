@@ -47,7 +47,7 @@ export function UsersTab() {
       u.firstName.toLowerCase().includes(q) ||
       u.lastName.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
-      u.role?.name.toLowerCase().includes(q)
+      (u.role?.name || '').toLowerCase().includes(q)
     )
   })
 
@@ -75,7 +75,7 @@ export function UsersTab() {
     fetchData()
   }
 
-  if (loading) return <LoadingState text="Ładowanie użytkowników..." />
+  if (loading) return <LoadingState message="Ładowanie użytkowników..." />
 
   return (
     <div className="space-y-4">

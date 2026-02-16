@@ -11,7 +11,6 @@ import { LoadingState } from '@/components/shared'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { RoleFormDialog } from './RoleFormDialog'
 
-// Polish module labels
 const MODULE_LABELS: Record<string, string> = {
   dashboard: 'Panel główny',
   reservations: 'Rezerwacje',
@@ -106,7 +105,7 @@ export function RolesTab() {
     fetchData()
   }
 
-  if (loading) return <LoadingState text="Ładowanie ról i uprawnień..." />
+  if (loading) return <LoadingState message="Ładowanie ról i uprawnień..." />
 
   return (
     <div className="space-y-6">
