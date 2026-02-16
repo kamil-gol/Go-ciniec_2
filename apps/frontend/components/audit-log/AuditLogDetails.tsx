@@ -104,9 +104,9 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
               <div className="min-w-0">
                 <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Użytkownik</p>
                 <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
-                  {log.user.firstName} {log.user.lastName}
+                  {log.user?.firstName || 'System'} {log.user?.lastName || ''}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{log.user.email}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{log.user?.email || 'Akcja automatyczna'}</p>
               </div>
             </div>
 
