@@ -1,5 +1,130 @@
 # 📋 Changelog
 
+## [1.7.1] - 2026-02-16
+
+### ✨ Nowe funkcjonalności (Sprint 8 — Audit Log UI)
+
+**PR:** [#77](https://github.com/kamil-gol/Go-ciniec_2/pull/77) | **Branch:** `feature/us-9.8-entity-timeline` | **Status:** ✅ ZDEPLOYOWANE
+
+#### US-9.8: Zakładka Historia w rezerwacji i kliencie
+
+**Wymaganie biznesowe:**  
+Użytkownicy systemu muszą mieć łatwy dostęp do pełnej historii zmian danej rezerwacji lub klienta bezpośrednio w widoku szczegółowym encji.
+
+**Rozwiązanie:**  
+Dodano zakładkę **Historia** (rezerwacja) oraz **Historia zmian** (klient) w widokach szczegółowych. Zakładka wyświetla chronologiczny timeline wszystkich akcji z audit logu związanych z konkretną encją.
+
+##### Backend
+- **Endpoint już istnieje:** `GET /api/audit-log/entity/:entityType/:entityId`
+  - Został wdrożony w sprincie 7 (audit log system)
+  - Zwraca posortowane wpisy audit log dla podanej encji (RESERVATION, CLIENT, itp.)
+
+##### Frontend — Nowe pliki
+
+| Plik | Opis |
+|------|------|
+| `lib/api/audit-log.ts` | React Query hook `useEntityActivityLog(entityType, entityId)` z auto-refresh 30s |
+| `components/audit-log/EntityActivityTimeline.tsx` | Reużywalny timeline z framer-motion, polskimi labelami, rozwijalnymi szczegółami zmian |
+
+##### Frontend — Zmodyfikowane pliki
+
+| Plik | Zmiana |
+|------|--------|
+| `app/dashboard/reservations/[id]/page.tsx` | Tab bar **Szczegóły** / **Historia** pod hero section |
+| `app/dashboard/clients/[id]/page.tsx` | Tab bar **Dane klienta** / **Historia zmian** pod stats grid |
+
+##### Funkcjonalności UI
+
+- 🎨 **Timeline design** — pionowa oś czasu z kolorowymi ikonami per typ akcji (CREATE, UPDATE, DELETE, STATUS_CHANGE, ARCHIVE, ATTACHMENT_ADD, MENU_RECALCULATED, itp.)
+- 🇵🇱 **Polskie labele** — 22 typy akcji z polskimi nazwami (CREATE → Utworzenie, UPDATE → Aktualizacja, MENU_RECALCULATED → Przeliczenie menu)
+- 📝 **Polskie nazwy pól** — 35+ pól (hall → Sala, client → Klient, guests → Goście łącznie, eventType → Typ wydarzenia, totalPrice → Cena całkowita)
+- 📋 **Rozwijalne szczegóły** — diff zmian (stara → nowa wartość) z kolorowym stylingiem (czerwony przekreślony / zielony bold)
+- 🔍 **Smart formatting:**
+  - **Obiekty:** `hall` → wyświetla `hall.name`, `client` → `firstName + lastName`, `eventType` → `eventType.name`
+  - **Statusy:** po polsku (CONFIRMED → Potwierdzona, PENDING → Oczekująca)
+  - **Daty:** format `dd.MM.yyyy HH:mm`
+  - **Ceny:** format `6 825 zł` z separatorem tysięcy
+  - **Boolean:** Tak / Nie
+- ⏳ **Stany UI** — skeleton loading (4 placeholders), empty state ("Brak historii zmian"), error state
+- 🔄 **Auto-refresh** — React Query `refetchInterval: 30s` (automatyczne odświeżanie timeline)
+- 🎭 **framer-motion** — animacje wejścia elementów timeline + smooth collapse/expand szczegółów
+- 🔒 **Ukryte pola techniczne** — `menuSnapshot`, `createdBy`, `updatedBy`, `*Id` (clientId, hallId, eventTypeId), `menuSelections`, itp. nie są wyświetlane w diff
+
+##### Bug #11: [object Object] w szczegółach zmian
+
+**Commit:** [`fb76c4c`](https://github.com/kamil-gol/Go-ciniec_2/commit/fb76c4c7bd6417df90a70d4e5d7d95f9beae594f)
+
+**Problem:**  
+Pola typu `hall`, `client`, `eventType` wyświetlały `[object Object]` zamiast czytelnej wartości.
+
+**Przyczyna:**  
+Brak obsługi zagnieżdżonych obiektów w funkcji `formatFieldValue()`.
+
+**Rozwiązanie:**  
+Dodano funkcję `formatObjectValue()`, która inteligentnie wyciąga czytelne pola:
+```typescript
+function formatObjectValue(value: any): string | null {
+  if (value.name) return value.name  // hall, eventType
+  if (value.firstName && value.lastName) return `${value.firstName} ${value.lastName}`  // client
+  // ... + fallbacki dla email, title, label, status
+}
+```
+
+##### Obsługiwane typy akcji (22)
+
+| Akcja | Label | Ikona | Kolor |
+|-------|-------|-------|-------|
+| CREATE | Utworzenie | Plus | Niebieski |
+| UPDATE | Aktualizacja | Edit | Bursztynowy |
+| DELETE | Usunięcie | Trash | Czerwony |
+| STATUS_CHANGE | Zmiana statusu | RefreshCw | Fioletowy |
+| ARCHIVE | Archiwizacja | Archive | Pomarańczowy |
+| UNARCHIVE | Przywrócenie z archiwum | ArchiveRestore | Zielony |
+| RESTORE | Przywrócenie | ArchiveRestore | Zielony |
+| LOGIN | Logowanie | LogIn | Niebieski (sky) |
+| LOGOUT | Wylogowanie | LogOut | Szary (slate) |
+| QUEUE_ADD | Dodanie do kolejki | ListPlus | Teal |
+| QUEUE_REMOVE | Usunięcie z kolejki | ListMinus | Różowy (rose) |
+| QUEUE_SWAP | Zamiana pozycji | ArrowLeftRight | Fioletowy (purple) |
+| QUEUE_MOVE | Przeniesienie | ArrowUpDown | Indygo |
+| MARK_PAID | Oznaczenie płatności | CreditCard | Zielony |
+| ATTACHMENT_ADD | Dodanie załącznika | Paperclip | Cyjan |
+| ATTACHMENT_DELETE | Usunięcie załącznika | FileX | Różowy (pink) |
+| MENU_RECALCULATED | Przeliczenie menu | Calculator | Limonkowy (lime) |
+| MENU_CHANGE | Zmiana menu | Calculator | Limonkowy (lime) |
+| DEPOSIT_ADD | Dodanie zaliczki | CreditCard | Zielony |
+| DEPOSIT_UPDATE | Aktualizacja zaliczki | Edit | Bursztynowy |
+| DEPOSIT_DELETE | Usunięcie zaliczki | Trash | Czerwony |
+| PRICE_CHANGE | Zmiana ceny | Calculator | Bursztynowy |
+| DISCOUNT_CHANGE | Zmiana rabatu | Calculator | Fioletowy (purple) |
+
+### 🚀 Deployment
+
+```bash
+cd /home/kamil/rezerwacje
+git checkout main
+git pull origin main
+docker compose restart frontend
+```
+
+**Status:** ✅ WYKONANE 2026-02-16 17:49 CET
+
+### ✅ Testy (PASS)
+
+| Test | Wynik |
+|------|-------|
+| Otwórz `/dashboard/reservations/:id` → kliknij **Historia** | ✅ Timeline wyświetla się, brak `[object Object]` |
+| Otwórz `/dashboard/clients/:id` → kliknij **Historia zmian** | ✅ Timeline wyświetla się |
+| Pole "hall" w diff | ✅ Wyświetla nazwę sali (np. "Sala Bankietowa") |
+| Pole "client" w diff | ✅ Wyświetla imię i nazwisko (np. "Katarzyna Dąbrowska") |
+| Pole "totalPrice" w diff | ✅ Format `6 825 zł` z separatorem |
+| Pole "status" w diff | ✅ Po polsku ("Potwierdzona", "Oczekująca") |
+| Akcja MENU_RECALCULATED | ✅ Label "Przeliczenie menu" + ikona kalkulatora + limonkowy badge |
+| Kliknięcie "Szczegóły" | ✅ Rozwija diff zmian z kolorowaniem czerwony/zielony |
+| Auto-refresh po 30s | ✅ React Query automatycznie odpytuje endpoint |
+
+---
+
 ## [1.7.0] - 2026-02-15 ⚠️ W TRAKCIE
 
 ### ✨ Nowe funkcjonalności (Sprint 8 — Audit Log)
@@ -245,7 +370,7 @@ cd /home/kamil/rezerwacje && git pull origin main && docker compose restart back
 ## [1.2.0] - 2026-02-14
 
 ### ✨ Nowe funkcjonalności
-- **Detekcja konfliktu "Cała Sala"**.
+- **Detekcja konfliktu \"Cała Sala\"**.
 
 ---
 
