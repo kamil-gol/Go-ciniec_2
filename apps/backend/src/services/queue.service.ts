@@ -1,10 +1,12 @@
 /**
  * Queue Service
  * Business logic for reservation queue management
+ * Updated: Phase 2 Audit — logChange() for all queue operations
  */
 
 import { ReservationStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { logChange } from '../utils/audit-logger';
 import {
   CreateReservedDTO,
   PromoteReservationDTO,
@@ -83,6 +85,23 @@ export class QueueService {
           createdBy: { select: { id: true, firstName: true, lastName: true } }
         }
       });
+
+      // Audit log — QUEUE_ADD
+      await logChange({
+        userId: createdById,
+        action: 'QUEUE_ADD',
+        entityType: 'RESERVATION',
+        entityId: reservation.id,
+        details: {
+          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} gości`,
+          clientId: data.clientId,
+          clientName: `${client.firstName} ${client.lastName}`,
+          queueDate: queueDate.toISOString().split('T')[0],
+          position: nextPosition,
+          guests: data.guests,
+        },
+      });
+
       return this.formatQueueItem(reservation);
     } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -92,8 +111,11 @@ export class QueueService {
     }
   }
 
-  async updateQueueReservation(reservationId: string, data: Partial<CreateReservedDTO>): Promise<QueueItemResponse> {
-    const existing = await prisma.reservation.findUnique({ where: { id: reservationId } });
+  async updateQueueReservation(reservationId: string, data: Partial<CreateReservedDTO>, userId: string): Promise<QueueItemResponse> {
+    const existing = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { client: true },
+    });
     if (!existing) throw new Error('Reservation not found');
     if (existing.status !== ReservationStatus.RESERVED) throw new Error('Can only update RESERVED reservations');
 
@@ -101,10 +123,14 @@ export class QueueService {
     const oldPosition = existing.reservationQueuePosition;
     const updateData: any = {};
     let dateChanged = false;
+    const changes: Record<string, { old: any; new: any }> = {};
 
     if (data.clientId) {
       const client = await prisma.client.findUnique({ where: { id: data.clientId } });
       if (!client) throw new Error('Client not found');
+      if (data.clientId !== existing.clientId) {
+        changes.clientId = { old: existing.clientId, new: data.clientId };
+      }
       updateData.clientId = data.clientId;
     }
 
@@ -120,6 +146,10 @@ export class QueueService {
       dateChanged = !oldDateNormalized || oldDateNormalized.getTime() !== newDateNormalized.getTime();
 
       if (dateChanged) {
+        changes.queueDate = {
+          old: oldDate?.toISOString().split('T')[0] || null,
+          new: queueDate.toISOString().split('T')[0],
+        };
         const startOfDay = new Date(queueDate); startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(queueDate); endOfDay.setHours(23, 59, 59, 999);
         const maxPosition = await prisma.reservation.aggregate({
@@ -134,12 +164,18 @@ export class QueueService {
 
     if (data.guests !== undefined) {
       if (data.guests < 1) throw new Error('Number of guests must be at least 1');
+      if (data.guests !== existing.guests) {
+        changes.guests = { old: existing.guests, new: data.guests };
+      }
       updateData.guests = data.guests;
       updateData.adults = data.adults || data.guests;
       updateData.children = data.children || 0;
       updateData.toddlers = data.toddlers || 0;
     }
 
+    if (data.notes !== undefined && data.notes !== existing.notes) {
+      changes.notes = { old: existing.notes, new: data.notes || null };
+    }
     if (data.notes !== undefined) updateData.notes = data.notes || null;
 
     const updated = await prisma.reservation.update({
@@ -157,6 +193,23 @@ export class QueueService {
           reservationQueuePosition: { gt: oldPosition }
         },
         data: { reservationQueuePosition: { decrement: 1 } }
+      });
+    }
+
+    // Audit log — QUEUE_UPDATE
+    if (Object.keys(changes).length > 0) {
+      const clientName = (existing.client as any)
+        ? `${(existing.client as any).firstName} ${(existing.client as any).lastName}`
+        : 'N/A';
+      await logChange({
+        userId,
+        action: 'QUEUE_UPDATE',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Zaktualizowano wpis w kolejce: ${clientName} | ${Object.keys(changes).join(', ')}`,
+          changes,
+        },
       });
     }
 
@@ -189,13 +242,13 @@ export class QueueService {
     return reservations.map(r => this.formatQueueItem(r));
   }
 
-  async swapPositions(id1: string, id2: string): Promise<void> {
+  async swapPositions(id1: string, id2: string, userId: string): Promise<void> {
     if (!id1 || !id2) throw new Error('Both reservation IDs are required');
     if (id1 === id2) throw new Error('Cannot swap reservation with itself');
 
     const [res1, res2] = await Promise.all([
-      prisma.reservation.findUnique({ where: { id: id1 } }),
-      prisma.reservation.findUnique({ where: { id: id2 } })
+      prisma.reservation.findUnique({ where: { id: id1 }, include: { client: true } }),
+      prisma.reservation.findUnique({ where: { id: id2 }, include: { client: true } })
     ]);
     if (!res1 || !res2) throw new Error('One or both reservations not found');
     if (res1.status !== ReservationStatus.RESERVED || res2.status !== ReservationStatus.RESERVED) {
@@ -204,6 +257,9 @@ export class QueueService {
     if (res1.reservationQueueDate?.toDateString() !== res2.reservationQueueDate?.toDateString()) {
       throw new Error('Can only swap reservations on the same date');
     }
+
+    const pos1 = res1.reservationQueuePosition;
+    const pos2 = res2.reservationQueuePosition;
 
     try {
       await withRetry(async () => {
@@ -216,9 +272,30 @@ export class QueueService {
       if (error.code === 'P2002') throw new Error('Position conflict detected. Please refresh and try again.');
       throw error;
     }
+
+    // Audit log — QUEUE_SWAP
+    const client1Name = (res1 as any).client
+      ? `${(res1 as any).client.firstName} ${(res1 as any).client.lastName}`
+      : 'N/A';
+    const client2Name = (res2 as any).client
+      ? `${(res2 as any).client.firstName} ${(res2 as any).client.lastName}`
+      : 'N/A';
+    const queueDate = res1.reservationQueueDate?.toISOString().split('T')[0] || 'N/A';
+    await logChange({
+      userId,
+      action: 'QUEUE_SWAP',
+      entityType: 'RESERVATION',
+      entityId: id1,
+      details: {
+        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) ↔ ${client2Name} (#${pos2}) | ${queueDate}`,
+        reservation1: { id: id1, clientName: client1Name, oldPosition: pos1 },
+        reservation2: { id: id2, clientName: client2Name, oldPosition: pos2 },
+        queueDate,
+      },
+    });
   }
 
-  async moveToPosition(reservationId: string, newPosition: number): Promise<void> {
+  async moveToPosition(reservationId: string, newPosition: number, userId: string): Promise<void> {
     if (!reservationId) throw new Error('Reservation ID is required');
     if (!newPosition || !Number.isInteger(newPosition) || newPosition < 1) {
       throw new Error('Position must be a positive integer (>= 1)');
@@ -226,11 +303,13 @@ export class QueueService {
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
-      select: { id: true, status: true, reservationQueueDate: true, reservationQueuePosition: true }
+      select: { id: true, status: true, reservationQueueDate: true, reservationQueuePosition: true, clientId: true }
     });
     if (!reservation) throw new Error('Reservation not found');
     if (reservation.status !== ReservationStatus.RESERVED) throw new Error('Can only move RESERVED reservations');
     if (!reservation.reservationQueueDate) throw new Error('Reservation has no queue date');
+
+    const oldPosition = reservation.reservationQueuePosition;
 
     const startOfDay = new Date(reservation.reservationQueueDate); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(reservation.reservationQueueDate); endOfDay.setHours(23, 59, 59, 999);
@@ -255,9 +334,27 @@ export class QueueService {
       }
       throw error;
     }
+
+    // Audit log — QUEUE_MOVE
+    const client = await prisma.client.findUnique({ where: { id: reservation.clientId } });
+    const clientName = client ? `${client.firstName} ${client.lastName}` : 'N/A';
+    const queueDate = reservation.reservationQueueDate.toISOString().split('T')[0];
+    await logChange({
+      userId,
+      action: 'QUEUE_MOVE',
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      details: {
+        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} → #${newPosition} | ${queueDate}`,
+        clientName,
+        oldPosition,
+        newPosition,
+        queueDate,
+      },
+    });
   }
 
-  async batchUpdatePositions(updates: Array<{ id: string; position: number }>): Promise<{ updatedCount: number }> {
+  async batchUpdatePositions(updates: Array<{ id: string; position: number }>, userId: string): Promise<{ updatedCount: number }> {
     if (!updates || updates.length === 0) throw new Error('At least one update is required');
     for (const update of updates) {
       if (!update.id) throw new Error('Each update must have a reservation ID');
@@ -266,7 +363,7 @@ export class QueueService {
       }
     }
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const reservationIds = updates.map(u => u.id);
       const reservations = await tx.reservation.findMany({
         where: { id: { in: reservationIds } },
@@ -287,6 +384,9 @@ export class QueueService {
       const positions = updates.map(u => u.position);
       if (positions.length !== new Set(positions).size) throw new Error('Duplicate positions detected in updates');
 
+      // Save old positions for audit
+      const oldPositions = new Map(reservations.map(r => [r.id, r.reservationQueuePosition]));
+
       const TEMP_OFFSET = 1000;
       for (let i = 0; i < updates.length; i++) {
         await tx.reservation.update({ where: { id: updates[i].id }, data: { reservationQueuePosition: TEMP_OFFSET + i } });
@@ -296,11 +396,33 @@ export class QueueService {
         await tx.reservation.update({ where: { id: update.id }, data: { reservationQueuePosition: update.position, queueOrderManual: true } });
         updatedCount++;
       }
-      return { updatedCount };
+      return { updatedCount, oldPositions, queueDate: reservations[0].reservationQueueDate };
     });
+
+    // Audit log — QUEUE_REORDER (outside transaction)
+    const queueDate = result.queueDate?.toISOString().split('T')[0] || 'N/A';
+    const positionChanges = updates.map(u => ({
+      reservationId: u.id,
+      oldPosition: result.oldPositions.get(u.id),
+      newPosition: u.position,
+    }));
+    await logChange({
+      userId,
+      action: 'QUEUE_REORDER',
+      entityType: 'RESERVATION',
+      entityId: updates[0]?.id || 'batch',
+      details: {
+        description: `Zmieniono kolejność ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
+        queueDate,
+        updatedCount: result.updatedCount,
+        positionChanges,
+      },
+    });
+
+    return { updatedCount: result.updatedCount };
   }
 
-  async rebuildPositions(): Promise<{ updatedCount: number; dateCount: number }> {
+  async rebuildPositions(userId: string): Promise<{ updatedCount: number; dateCount: number }> {
     const reservations = await prisma.reservation.findMany({
       where: { status: ReservationStatus.RESERVED },
       select: { id: true, reservationQueueDate: true, createdAt: true },
@@ -328,11 +450,29 @@ export class QueueService {
         updatedCount++;
       }
     }
+
+    // Audit log — QUEUE_REBUILD
+    await logChange({
+      userId,
+      action: 'QUEUE_REBUILD',
+      entityType: 'RESERVATION',
+      entityId: 'system',
+      details: {
+        description: `Przebudowano pozycje kolejki: ${updatedCount} rezerwacji w ${byDate.size} datach`,
+        updatedCount,
+        dateCount: byDate.size,
+        dates: Array.from(byDate.keys()),
+      },
+    });
+
     return { updatedCount, dateCount: byDate.size };
   }
 
-  async promoteReservation(reservationId: string, data: PromoteReservationDTO): Promise<any> {
-    const reservation = await prisma.reservation.findUnique({ where: { id: reservationId } });
+  async promoteReservation(reservationId: string, data: PromoteReservationDTO, userId: string): Promise<any> {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { client: true },
+    });
     if (!reservation) throw new Error('Reservation not found');
     if (reservation.status !== ReservationStatus.RESERVED) throw new Error('Can only promote RESERVED reservations');
 
@@ -361,12 +501,16 @@ export class QueueService {
     });
     if (conflictingReservation) throw new Error('Hall is already booked for this time slot');
 
+    const hall = await prisma.hall.findUnique({ where: { id: data.hallId }, select: { name: true } });
+    const eventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId }, select: { name: true } });
+
     const totalPrice = data.adults * data.pricePerAdult + (data.children || 0) * (data.pricePerChild || 0) + (data.toddlers || 0) * (data.pricePerToddler || 0);
+    const newStatus = data.status === 'CONFIRMED' ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING;
 
     const updated = await prisma.reservation.update({
       where: { id: reservationId },
       data: {
-        status: data.status === 'CONFIRMED' ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING,
+        status: newStatus,
         hallId: data.hallId, eventTypeId: data.eventTypeId, startDateTime, endDateTime,
         adults: data.adults, children: data.children || 0, toddlers: data.toddlers || 0,
         guests: data.adults + (data.children || 0) + (data.toddlers || 0),
@@ -395,6 +539,34 @@ export class QueueService {
         data: { reservationQueuePosition: { decrement: 1 } }
       });
     }
+
+    // Audit log — QUEUE_PROMOTE
+    const clientName = (reservation.client as any)
+      ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}`
+      : 'N/A';
+    await logChange({
+      userId,
+      action: 'QUEUE_PROMOTE',
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      details: {
+        description: `Awansowano z kolejki: ${clientName} | ${hall?.name || 'N/A'} | ${eventType?.name || 'N/A'} | ${newStatus}`,
+        clientName,
+        fromQueue: {
+          date: oldQueueDate?.toISOString().split('T')[0] || null,
+          position: oldPosition,
+        },
+        toReservation: {
+          hallName: hall?.name || null,
+          eventTypeName: eventType?.name || null,
+          status: newStatus,
+          startDateTime: startDateTime.toISOString(),
+          endDateTime: endDateTime.toISOString(),
+          guests: data.adults + (data.children || 0) + (data.toddlers || 0),
+          totalPrice,
+        },
+      },
+    });
 
     return updated;
   }
@@ -427,12 +599,31 @@ export class QueueService {
     };
   }
 
-  async autoCancelExpired(): Promise<AutoCancelResult> {
+  async autoCancelExpired(userId?: string): Promise<AutoCancelResult> {
     const result = await prisma.$queryRaw<Array<{ cancelled_count: number; cancelled_ids: string[] }>>`
       SELECT * FROM auto_cancel_expired_reserved()
     `;
-    if (result && result.length > 0) return { cancelledCount: result[0].cancelled_count, cancelledIds: result[0].cancelled_ids || [] };
-    return { cancelledCount: 0, cancelledIds: [] };
+
+    const cancelledCount = result?.[0]?.cancelled_count || 0;
+    const cancelledIds = result?.[0]?.cancelled_ids || [];
+
+    // Audit log — QUEUE_AUTO_CANCEL (only if something was cancelled)
+    if (cancelledCount > 0) {
+      await logChange({
+        userId: userId || null,
+        action: 'QUEUE_AUTO_CANCEL',
+        entityType: 'RESERVATION',
+        entityId: 'system',
+        details: {
+          description: `Auto-anulowano ${cancelledCount} przeterminowanych rezerwacji z kolejki`,
+          cancelledCount,
+          cancelledIds,
+          triggeredBy: userId ? 'manual' : 'system',
+        },
+      });
+    }
+
+    return { cancelledCount, cancelledIds };
   }
 
   private formatQueueItem(reservation: any): QueueItemResponse {
