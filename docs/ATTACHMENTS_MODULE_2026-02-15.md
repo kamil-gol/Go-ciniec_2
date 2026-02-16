@@ -1,14 +1,47 @@
 # Moduł Załączników (Attachments)
 
-**Data implementacji:** 15 lutego 2026  
-**Branch:** `feature/attachments` → zmergowany do `main`  
-**Status:** ✅ Kompletny
+**Data rozpoczęcia:** 15 lutego 2026  
+**Data zakończenia:** 16 lutego 2026  
+**Branch:** `feature/55-attachments-frontend` (PR #71) → zmergowany do `main`  
+**Status:** ✅ Kompletny (Fazy 1-5)
 
 ---
 
 ## Przegląd
 
 Uniwersalny system zarządzania załącznikami (dokumenty, zdjęcia, umowy, RODO) powiązany z trzema typami encji: **Klient**, **Rezerwacja**, **Zaliczka**. System obsługuje upload via drag & drop, kategoryzację, archiwizację, wersjonowanie, batch-check statusów RODO/Umowa oraz **automatyczny RODO redirect** — RODO wgrane z dowolnego modułu jest zawsze przypisywane do klienta.
+
+### Funkcjonalności
+
+- ✅ **Phase 1 — Backend API** (15.02.2026)
+  - 8 REST endpoints (upload, list, download, archive, batch-check)
+  - RODO redirect logic
+  - Polymorphic entity support
+  - Multer file upload
+  - Category validation
+
+- ✅ **Phase 2 — Frontend Components** (16.02.2026)
+  - TanStack Query hooks (`useAttachments`, mutations)
+  - AttachmentPanel with filters
+  - AttachmentUploadDialog (drag & drop)
+  - AttachmentPreview modal (PDF iframe, image zoom/rotate)
+  - AttachmentRow with action menu
+
+- ✅ **Phase 3 — Sheet Integration** (16.02.2026)
+  - Client detail view integration
+  - Reservation detail view integration
+  - Deposit sheet integration
+
+- ✅ **Phase 4 — Badges** (16.02.2026)
+  - RODO badge on client/reservation lists
+  - Contract badge on reservation list
+  - Deposit status badge
+  - Batch-check hooks for efficient loading
+
+- ✅ **Phase 5 — Testing** (16.02.2026)
+  - Jest + ts-jest setup
+  - 38 unit tests for AttachmentService
+  - Coverage: CRUD, RODO redirect, batch checks, file ops
 
 ---
 
@@ -153,19 +186,49 @@ Zwraca załączniki rezerwacji **+ RODO z powiązanego klienta** (z flagą `_fro
 
 ---
 
-## Komponenty Frontend
+## Phase 2: Frontend Components 🆕
+
+### TanStack Query Hooks
+
+**Ścieżka:** `hooks/use-attachments.ts`
+
+Zentralizowane hooki React Query dla zarządzania załącznikami:
+
+```typescript
+// Query factory
+export const attachmentKeys = {
+  all: ['attachments'] as const,
+  lists: () => [...attachmentKeys.all, 'list'] as const,
+  list: (entityType: EntityType, entityId: string, category?: string) => 
+    [...attachmentKeys.lists(), { entityType, entityId, category }] as const,
+}
+
+// Lista załączników
+const { data, isLoading } = useAttachments(entityType, entityId, category?)
+
+// Mutations z auto-invalidation
+const upload = useUploadAttachment()
+const update = useUpdateAttachment()
+const archive = useArchiveAttachment()
+const del = useDeleteAttachment()
+
+// Batch checks
+const { data: rodoMap } = useBatchCheckRodo(clientIds)
+const { data: contractMap } = useBatchCheckContract(reservationIds)
+```
+
+**Zalety:**
+- Automatyczne cache'owanie
+- Optimistic updates
+- Background refetch
+- Eliminacja `useState` + `useEffect` + `useCallback` boilerplate
+- Centralna invalidacja cache po mutacjach
 
 ### AttachmentPanel
 
 **Ścieżka:** `components/attachments/attachment-panel.tsx`
 
-Uniwersalny panel wyświetlający listę załączników z:
-- Filtrowaniem po kategoriach (badge'y)
-- Licznikiem plików per kategoria
-- Przyciskiem "Wgraj załącznik"
-- Przełącznikiem archiwum
-- Responsywnym układem
-- **Cross-reference RODO** — dla RESERVATION/DEPOSIT automatycznie pobiera RODO klienta z etykietą "Z profilu klienta"
+Uniwersalny panel z filtrowaniem, licznikami, przyciskami akcji.
 
 **Props:**
 ```tsx
@@ -177,27 +240,442 @@ interface AttachmentPanelProps {
 }
 ```
 
-### AttachmentUploadDialog
+**Funkcje:**
+- ✅ Lista załączników z `useAttachments()`
+- ✅ Filtry kategorii (badge buttons) — **dynamiczne per entityType**
+- ✅ Licznik plików per kategoria
+- ✅ Przycisk "Wgraj załącznik" → `AttachmentUploadDialog`
+- ✅ Cross-reference RODO (dla RESERVATION/DEPOSIT)
+- ✅ Przełącznik archiwum
+- ✅ Responsywny layout
+
+**Dynamiczne kategorie:**
+```typescript
+import { getCategoriesForEntity } from '@/lib/api/attachments'
+
+const categories = getCategoriesForEntity(entityType)
+// CLIENT → [RODO, CORRESPONDENCE, OTHER]
+// RESERVATION → [RODO, CONTRACT, ANNEX, POST_EVENT, OTHER]
+// DEPOSIT → [RODO, PAYMENT_PROOF, INVOICE, REFUND_PROOF, OTHER]
+```
+
+### AttachmentUploadDialog 🆕
 
 **Ścieżka:** `components/attachments/attachment-upload-dialog.tsx`
 
-Dialog z:
-- Drop zone (drag & drop)
-- Walidacją MIME type i rozmiaru
-- Wyborem kategorii (pill buttons) — **RODO dostępne we wszystkich modułach**
-- Polami label i description (opcjonalne)
-- Stanem uploadu z loaderem
+Dialog z drag & drop, walidacją, kategoriami.
+
+**Props:**
+```tsx
+interface AttachmentUploadDialogProps {
+  entityType: EntityType
+  entityId: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+}
+```
+
+**Funkcje:**
+- ✅ Drop zone (click + drag & drop)
+- ✅ Walidacja MIME type przed uploadem
+- ✅ Walidacja rozmiaru (10 MB limit)
+- ✅ **Dynamiczne kategorie** z `getCategoriesForEntity()`
+- ✅ Pill buttons do wyboru kategorii
+- ✅ Label i description (opcjonalne)
+- ✅ Upload progress z loader
+- ✅ Toast success/error
+- ✅ Auto-refetch po sukcesie (query invalidation)
+
+**Walidacja:**
+```typescript
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp'
+] as const
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+```
+
+### AttachmentPreview 🆕
+
+**Ścieżka:** `components/attachments/attachment-preview.tsx`
+
+**Modal podglądu załącznika w aplikacji** — bez otwierania w nowej karcie.
+
+**Props:**
+```tsx
+interface AttachmentPreviewProps {
+  attachment: Attachment | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+```
+
+**Funkcje:**
+- ✅ **PDF:** Iframe z blob URL (natywny podgląd przeglądarki)
+- ✅ **Obrazy:** `<img>` z zoom (hover: scale 150%) + rotacja (przyciski 90°)
+- ✅ **Blob fetch:** Download z `/api/attachments/:id/download`
+- ✅ **Cleanup:** `URL.revokeObjectURL()` w `useEffect` cleanup
+- ✅ **Przycisk pobierania:** Download w nowej karcie
+- ✅ **Loading state:** Skeleton podczas pobierania blob
+- ✅ **Error handling:** Komunikat + fallback do window.open
+
+**Implementacja zoom:**
+```tsx
+<div className="group relative overflow-auto">
+  <img 
+    src={blobUrl} 
+    className="w-full transition-transform group-hover:scale-150"
+    style={{ transformOrigin: 'center' }}
+  />
+</div>
+```
+
+**Rotacja:**
+```tsx
+const [rotation, setRotation] = useState(0)
+
+<img 
+  style={{ transform: `rotate(${rotation}deg)` }}
+/>
+
+<Button onClick={() => setRotation(r => r + 90)}>
+  <RotateCw /> Obróć
+</Button>
+```
+
+**Backward compatible:** `AttachmentRow` ma prop `onPreview?` — jeśli nie podany, fallback na `window.open()`.
 
 ### AttachmentRow
 
 **Ścieżka:** `components/attachments/attachment-row.tsx`
 
-Pojedynczy wiersz załącznika z:
-- Ikoną MIME type (PDF/obraz/inne)
-- Badge kategorii
-- Info o uploaderze i dacie
-- Rozmiar pliku
-- Dropdown menu: pobierz / edytuj / archiwizuj / usuń
+Pojedynczy wiersz załącznika z ikoną, badge, menu.
+
+**Props:**
+```tsx
+interface AttachmentRowProps {
+  attachment: Attachment
+  onUpdate?: () => void
+  onDelete?: () => void
+  onPreview?: (attachment: Attachment) => void  // 🆕 opcjonalny preview callback
+}
+```
+
+**Funkcje:**
+- ✅ Ikona MIME type (`FileText`, `Image`, `File`)
+- ✅ Badge kategorii z kolorem (np. RODO → teal, CONTRACT → blue)
+- ✅ **Nowe kolory badge'ów:**
+  - `ANNEX` → purple
+  - `POST_EVENT` → orange
+  - `PAYMENT_PROOF` → green
+  - `REFUND_PROOF` → yellow
+- ✅ Info uploader + data
+- ✅ Rozmiar pliku (formatowany)
+- ✅ Dropdown menu: **Podgląd** / Pobierz / Edytuj / Archiwizuj / Usuń
+- ✅ "Z profilu klienta" tag (dla cross-ref RODO)
+
+**Preview integration:**
+```tsx
+<DropdownMenuItem onClick={() => 
+  onPreview ? onPreview(attachment) : window.open(downloadUrl)
+}>
+  <Eye className="h-4 w-4" /> Podgląd
+</DropdownMenuItem>
+```
+
+---
+
+## Phase 3: Sheet Integration 🆕
+
+### 1. Client Detail View
+
+**Plik:** `app/dashboard/clients/[id]/page.tsx`
+
+```tsx
+<AttachmentPanel 
+  entityType="CLIENT" 
+  entityId={client.id}
+  title="Załączniki klienta"
+/>
+```
+
+**Lokalizacja:** Pod sekcją kontaktów, w głównej kolumnie  
+**Cross-ref:** Nie ma (to źródło RODO)  
+**Kategorie:** RODO, Korespondencja, Inne
+
+### 2. Reservation Detail View
+
+**Plik:** `app/dashboard/reservations/[id]/page.tsx`
+
+```tsx
+<AttachmentPanel 
+  entityType="RESERVATION" 
+  entityId={reservation.id}
+  title="Załączniki rezerwacji"
+/>
+```
+
+**Lokalizacja:** Lewa kolumna, pod notatkami  
+**Cross-ref:** RODO z profilu klienta widoczne z tagiem "Z profilu klienta"  
+**Kategorie:** RODO (→ redirect), Umowa, Aneks, Dok. powykonawcza, Inne
+
+### 3. Deposit Sheet Dialog
+
+**Plik:** `components/deposits/deposit-actions.tsx`
+
+```tsx
+<DropdownMenuItem onClick={handleOpenAttachments}>
+  <Paperclip /> Załączniki
+</DropdownMenuItem>
+
+<Dialog open={attachmentsOpen} onOpenChange={setAttachmentsOpen}>
+  <DialogContent className="sm:max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>
+        {deposit.reservation.client.firstName} {deposit.reservation.client.lastName} — 
+        {formatCurrency(deposit.amount)}
+      </DialogTitle>
+    </DialogHeader>
+    <AttachmentPanel 
+      entityType="DEPOSIT" 
+      entityId={deposit.id}
+    />
+  </DialogContent>
+</Dialog>
+```
+
+**Lokalizacja:** Dialog z dropdown menu zaliczki (lista zaliczek)  
+**Cross-ref:** RODO z profilu klienta widoczne  
+**Kategorie:** RODO (→ redirect), Potw. przelewu, Faktura, Potw. zwrotu, Inne
+
+---
+
+## Phase 4: Badges 🆕
+
+### RODO Badge — Lista Klientów
+
+**Plik:** `components/clients/clients-list.tsx`
+
+```tsx
+import { useBatchCheckRodo } from '@/hooks/use-attachments'
+
+const clientIds = clients.map(c => c.id)
+const { data: rodoMap } = useBatchCheckRodo(clientIds)
+
+{rodoMap?.[client.id] ? (
+  <Badge variant="outline" className="text-teal-600 border-teal-600">
+    <ShieldCheck className="h-3 w-3" /> RODO
+  </Badge>
+) : (
+  <Badge variant="outline" className="text-orange-500 border-orange-500">
+    <ShieldAlert className="h-3 w-3" /> Brak RODO
+  </Badge>
+)}
+```
+
+**Efektywność:** Jeden request dla wszystkich klientów na stronie (batch API)
+
+### RODO Badge — Lista Rezerwacji
+
+**Plik:** `components/reservations/reservations-list.tsx`
+
+```tsx
+const clientIds = [...new Set(reservations.map(r => r.client.id))]
+const { data: rodoMap } = useBatchCheckRodo(clientIds)
+
+{rodoMap?.[reservation.client.id] ? (
+  <Badge variant="outline" className="text-teal-600 border-teal-600">
+    <ShieldCheck className="h-3 w-3" /> RODO
+  </Badge>
+) : (
+  <Badge variant="outline" className="text-orange-500 border-orange-500">
+    <ShieldAlert className="h-3 w-3" /> Brak RODO
+  </Badge>
+)}
+```
+
+**Deduplikacja:** `Set()` dla unikalnych `clientId` (rezerwacje tego samego klienta dzielą RODO)
+
+### Contract Badge — Lista Rezerwacji
+
+**Plik:** `components/reservations/reservations-list.tsx`
+
+```tsx
+const reservationIds = reservations.map(r => r.id)
+const { data: contractMap } = useBatchCheckContract(reservationIds)
+
+{contractMap?.[reservation.id] ? (
+  <Badge variant="outline" className="text-blue-600 border-blue-600">
+    <FileCheck className="h-3 w-3" /> Umowa
+  </Badge>
+) : (
+  <Badge variant="outline" className="text-gray-400 border-gray-400">
+    <FileX className="h-3 w-3" /> Brak umowy
+  </Badge>
+)}
+```
+
+### Deposit Status Badge
+
+**Plik:** `components/reservations/reservations-list.tsx`
+
+```tsx
+const totalPaid = reservation.deposits
+  .filter(d => d.status === 'PAID')
+  .reduce((sum, d) => sum + Number(d.amount), 0)
+
+const statusColor = totalPaid > 0 ? 'text-green-600' : 'text-gray-400'
+
+<Badge variant="outline" className={statusColor}>
+  <Banknote className="h-3 w-3" /> 
+  {formatCurrency(totalPaid)} / {formatCurrency(reservation.totalPrice)}
+</Badge>
+```
+
+### Badge Order
+
+```
+[RODO] [Umowa] [Zaliczka: X/Y zł] [Status: CONFIRMED]
+```
+
+---
+
+## Phase 5: Testing 🆕
+
+### Jest Configuration
+
+**Plik:** `apps/backend/jest.config.js`
+
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/*.test.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1'
+  },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/types/**'
+  ]
+}
+```
+
+**Package.json scripts:**
+```json
+{
+  "test": "jest",
+  "test:watch": "jest --watch",
+  "test:coverage": "jest --coverage"
+}
+```
+
+### Test Setup
+
+**Plik:** `apps/backend/src/tests/setup.ts`
+
+```typescript
+import { PrismaClient } from '@prisma/client'
+import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended'
+
+export const prismaMock = mockDeep<PrismaClient>() as unknown as DeepMockProxy<PrismaClient>
+
+beforeEach(() => {
+  mockReset(prismaMock)
+})
+```
+
+### Unit Tests — AttachmentService
+
+**Plik:** `apps/backend/src/tests/attachment.service.test.ts`
+
+**38 testów w 11 grupach:**
+
+#### 1. `createAttachment()` — 9 testów
+- ✅ Poprawne utworzenie załącznika CLIENT
+- ✅ Poprawne utworzenie załącznika RESERVATION
+- ✅ RODO redirect: RESERVATION → CLIENT
+- ✅ RODO redirect: DEPOSIT → CLIENT (przez reservation)
+- ✅ Error: nieistniejący CLIENT
+- ✅ Error: nieistniejąca RESERVATION
+- ✅ Error: nieprawidłowa kategoria dla CLIENT
+- ✅ Error: nieprawidłowa kategoria dla RESERVATION
+- ✅ Error: brak `clientId` w rezerwacji (RODO redirect fail)
+
+#### 2. `getAttachments()` — 4 testy
+- ✅ Pobranie załączników dla CLIENT
+- ✅ Filtrowanie po kategorii
+- ✅ Wykluczenie zarchiwizowanych (default)
+- ✅ Włączenie zarchiwizowanych (`includeArchived: true`)
+
+#### 3. `getAttachmentsWithClientRodo()` — 3 testy
+- ✅ Cross-reference RODO dla RESERVATION
+- ✅ Cross-reference RODO dla DEPOSIT
+- ✅ Brak cross-ref dla CLIENT (zwraca tylko własne)
+
+#### 4. `updateAttachment()` — 3 testy
+- ✅ Aktualizacja label i description
+- ✅ Zmiana kategorii (walidacja per entityType)
+- ✅ Error: nieprawidłowa kategoria dla entityType
+
+#### 5. `deleteAttachment()` — 2 testy
+- ✅ Soft-delete (ustawienie `isArchived=true`)
+- ✅ Error: załącznik nie istnieje
+
+#### 6. `hardDeleteAttachment()` — 2 testy
+- ✅ Usunięcie pliku z dysku + rekord z DB
+- ✅ Error: plik nie istnieje na dysku
+
+#### 7. `batchCheckRodo()` — 4 testy
+- ✅ Zwraca mapę `{ clientId: boolean }`
+- ✅ `true` dla klientów z RODO
+- ✅ `false` dla klientów bez RODO
+- ✅ Działa dla pustej tablicy
+
+#### 8. `batchCheckContract()` — 3 testy
+- ✅ Zwraca mapę `{ reservationId: boolean }`
+- ✅ `true` dla rezerwacji z umową
+- ✅ `false` dla rezerwacji bez umowy
+
+#### 9. `hasAttachment()` — 3 testy
+- ✅ `true` gdy kategoria istnieje
+- ✅ `false` gdy kategoria nie istnieje
+- ✅ Ignoruje zarchiwizowane
+
+#### 10. `countByCategory()` — 2 testy
+- ✅ Zwraca mapę `{ category: count }`
+- ✅ Ignoruje zarchiwizowane
+
+#### 11. `getFilePath()` — 2 testy
+- ✅ Zwraca pełną ścieżkę do pliku
+- ✅ Error: plik nie istnieje na dysku
+
+### Running Tests
+
+```bash
+# W kontenerze backend
+docker compose run --rm backend npm test
+
+# Watch mode
+docker compose run --rm backend npm run test:watch
+
+# Coverage report
+docker compose run --rm backend npm run test:coverage
+```
+
+**Wynik:**
+```
+Test Suites: 1 passed, 1 total
+Tests:       38 passed, 38 total
+Snapshots:   0 total
+Time:        2.456 s
+```
 
 ---
 
@@ -292,26 +770,32 @@ Pojedynczy wiersz załącznika z:
 - `apps/backend/src/routes/attachment.routes.ts` — REST endpoints
 - `apps/backend/src/middlewares/upload.ts` — multer config (UUID nazwy, walidacja MIME, 10MB)
 - `apps/backend/src/types/attachment.types.ts` — DTO, filtry, response types
+- `apps/backend/jest.config.js` — Jest configuration 🆕
+- `apps/backend/src/tests/setup.ts` — Prisma mock setup 🆕
+- `apps/backend/src/tests/attachment.service.test.ts` — 38 unit tests 🆕
 - `apps/backend/uploads/` — katalog storage (volume Docker)
 
 ### Frontend — Nowe komponenty
-- `apps/frontend/components/attachments/attachment-panel.tsx` — panel z cross-ref RODO
-- `apps/frontend/components/attachments/attachment-upload-dialog.tsx` — drag & drop upload
-- `apps/frontend/components/attachments/attachment-row.tsx` — wiersz załącznika
-- `apps/frontend/lib/api/attachments.ts` — API client z `withClientRodo` param
+- `apps/frontend/components/attachments/attachment-panel.tsx` — panel z cross-ref RODO, TanStack Query
+- `apps/frontend/components/attachments/attachment-upload-dialog.tsx` — drag & drop upload, dynamiczne kategorie
+- `apps/frontend/components/attachments/attachment-preview.tsx` — modal podglądu PDF/obrazy 🆕
+- `apps/frontend/components/attachments/attachment-row.tsx` — wiersz załącznika, nowe badge kolory
+- `apps/frontend/hooks/use-attachments.ts` — TanStack Query hooks 🆕
+- `apps/frontend/lib/api/attachments.ts` — API client + `getCategoriesForEntity()`, `ALLOWED_MIME_TYPES`
 
 ### Frontend — Zmodyfikowane
 - `apps/frontend/app/dashboard/clients/[id]/page.tsx` — AttachmentPanel + fix Wydano
 - `apps/frontend/app/dashboard/reservations/[id]/page.tsx` — AttachmentPanel
 - `apps/frontend/components/deposits/deposit-actions.tsx` — dialog Załączniki
-- `apps/frontend/components/reservations/reservations-list.tsx` — RodoBadge + ContractBadge
+- `apps/frontend/components/reservations/reservations-list.tsx` — RodoBadge + ContractBadge + DepositBadge 🆕
+- `apps/frontend/components/clients/clients-list.tsx` — RodoBadge 🆕
 
 ---
 
 ## Kolejność badge'y na liście rezerwacji
 
 ```
-[RODO] [Umowa] [Zaliczka] [Status]
+[RODO] [Umowa] [Zaliczka: X/Y zł] [Status]
 ```
 
 Każdy badge jest niezależny i ładowany via batch API przy zmianie strony/filtra.
@@ -350,3 +834,25 @@ Każdy badge jest niezależny i ładowany via batch API przy zmianie strony/filt
 │  • batchCheckRodo → szuka CLIENT attachments ✅          │
 └─────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Podsumowanie implementacji
+
+| Faza | Status | Czas | Pliki | Testy |
+|------|--------|------|-------|-------|
+| **1. Backend API** | ✅ | ~4h | 8 | 38 unit tests |
+| **2. Frontend Components** | ✅ | ~3h | 5 | Manual |
+| **3. Sheet Integration** | ✅ | ~1h | 3 | Manual |
+| **4. Badges** | ✅ | ~2h | 2 | Manual |
+| **5. Testing** | ✅ | ~2h | 3 | 38 passing |
+| **Łącznie** | ✅ | ~12h | 21 | 38 unit |
+
+---
+
+## Linki
+
+- **Issue:** [#55 — Moduł załączników](https://github.com/kamil-gol/Go-ciniec_2/issues/55)
+- **Pull Request:** [#71 — Attachments frontend + tests](https://github.com/kamil-gol/Go-ciniec_2/pull/71)
+- **API Documentation:** [docs/API_DOCUMENTATION.md](./API_DOCUMENTATION.md#attachments-api)
+- **Sprint 7 Summary:** [docs/SPRINTS.md](./SPRINTS.md)
