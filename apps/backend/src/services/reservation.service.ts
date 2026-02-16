@@ -1,6 +1,7 @@
 /**
  * Reservation Service - with full Audit Logging
  * Business logic for reservation management with advanced features
+ * Updated: Phase 1 Audit — logChange() for menu updates + cascade cancel
  */
 
 import { prisma } from '@/lib/prisma';
@@ -313,7 +314,7 @@ export class ReservationService {
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { menuSnapshot: true }
+      include: { menuSnapshot: true, client: true, hall: true }
     });
 
     if (!reservation) throw new Error('Reservation not found');
@@ -321,16 +322,43 @@ export class ReservationService {
       throw new Error('Cannot update menu for completed or cancelled reservations');
     }
 
+    const clientName = reservation.client
+      ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}`
+      : 'N/A';
+    const hallName = (reservation.hall as any)?.name || 'N/A';
+
     const adults = data.adultsCount ?? reservation.adults;
     const children = data.childrenCount ?? reservation.children;
     const toddlers = data.toddlersCount ?? reservation.toddlers;
     const guests = calculateTotalGuests(adults, children, toddlers);
 
     if (data.menuPackageId === null) {
+      // Get old package name before removal
+      const oldPackageName = reservation.menuSnapshot
+        ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || 'Nieznany pakiet'
+        : 'Brak';
+      const oldTotalPrice = reservation.menuSnapshot
+        ? Number((reservation.menuSnapshot as any).totalMenuPrice)
+        : 0;
+
       if (reservation.menuSnapshot) {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
       }
       await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Menu package', 'None', 'Menu removed from reservation');
+
+      // Audit log — MENU_REMOVED
+      await logChange({
+        userId,
+        action: 'MENU_REMOVED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Menu usunięte z rezerwacji: ${oldPackageName} (-${oldTotalPrice} PLN) | ${clientName}`,
+          removedPackage: oldPackageName,
+          removedPrice: oldTotalPrice,
+        },
+      });
+
       return { message: 'Menu removed successfully' };
     }
 
@@ -360,6 +388,14 @@ export class ReservationService {
       const pricePerToddler = Number(menuPackage.pricePerToddler);
       const packagePrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
       const totalMenuPrice = packagePrice + optionsPrice;
+
+      // Save old info for audit
+      const oldPackageName = reservation.menuSnapshot
+        ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || null
+        : null;
+      const oldTotalPrice = reservation.menuSnapshot
+        ? Number((reservation.menuSnapshot as any).totalMenuPrice)
+        : 0;
 
       const snapshotData = {
         reservationId,
@@ -394,6 +430,25 @@ export class ReservationService {
         reservation.menuSnapshot ? 'Previous package' : 'None',
         menuPackage.name, `Menu updated to: ${menuPackage.name}`
       );
+
+      // Audit log — MENU_UPDATED
+      await logChange({
+        userId,
+        action: 'MENU_UPDATED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Menu ${oldPackageName ? 'zmienione' : 'dodane'}: ${menuPackage.name} (${totalMenuPrice} PLN) | ${clientName}`,
+          oldPackage: oldPackageName,
+          newPackage: menuPackage.name,
+          oldPrice: oldTotalPrice,
+          newPrice: totalMenuPrice,
+          packagePrice,
+          optionsPrice,
+          optionsCount: selectedOptions.length,
+          guests: { adults, children, toddlers },
+        },
+      });
 
       return { message: 'Menu updated successfully', totalPrice: totalMenuPrice };
     }
@@ -900,6 +955,10 @@ export class ReservationService {
       }
     });
 
+    const totalCancelledAmount = pendingDeposits.reduce(
+      (sum: number, d: any) => sum + Number(d.amount), 0
+    );
+
     for (const deposit of pendingDeposits) {
       await tx.reservationHistory.create({
         data: {
@@ -913,6 +972,28 @@ export class ReservationService {
         }
       });
     }
+
+    // Audit log — DEPOSIT_CASCADE_CANCELLED (outside transaction, fire-and-forget)
+    // Note: logChange is non-blocking, so it's safe to call after transaction
+    setTimeout(async () => {
+      try {
+        await logChange({
+          userId,
+          action: 'DEPOSIT_CASCADE_CANCELLED',
+          entityType: 'RESERVATION',
+          entityId: reservationId,
+          details: {
+            description: `Auto-anulowano ${pendingDeposits.length} zaliczek (${totalCancelledAmount.toFixed(2)} PLN) przy anulowaniu rezerwacji`,
+            cancelledCount: pendingDeposits.length,
+            totalCancelledAmount,
+            depositIds: pendingDeposits.map((d: any) => d.id),
+            reason,
+          },
+        });
+      } catch (e) {
+        console.error('[Audit] Failed to log DEPOSIT_CASCADE_CANCELLED:', e);
+      }
+    }, 0);
 
     return pendingDeposits.length;
   }
