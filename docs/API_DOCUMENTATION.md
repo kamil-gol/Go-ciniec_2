@@ -1,8 +1,8 @@
 # 📚 Menu System API Documentation
 
-**Version:** 1.2.0  
+**Version:** 1.3.0  
 **Created:** 2026-02-10  
-**Updated:** 2026-02-15 🆕 - Dodano Calendar API  
+**Updated:** 2026-02-16 🆕 - Dodano Attachments API  
 **Status:** ✅ Production Ready  
 
 ---
@@ -18,7 +18,8 @@
    - [Menu Options](#menu-options)
    - [Reservation Menu](#reservation-menu-selection)
    - [PDF Generation](#pdf-generation)
-   - **[Calendar API](#calendar-api)** 🆕
+   - [Calendar API](#calendar-api)
+   - **[Attachments API](#attachments-api)** 🆕
 5. [Architecture](#architecture)
 6. [Data Models](#data-models)
 
@@ -34,7 +35,8 @@ Menu System API provides complete restaurant menu management with:
 - ✅ **Immutable Snapshots** - Price protection for reservations
 - ✅ **Price History** - Complete audit trail of price changes
 - ✅ **PDF Generator** - Detailed reservation confirmations
-- ✅ **Calendar API** - Monthly reservation calendar data 🆕
+- ✅ **Calendar API** - Monthly reservation calendar data
+- ✅ **Attachments API** - Polymorphic file attachments with RODO redirect 🆕
 
 ### Key Features
 
@@ -45,7 +47,9 @@ Menu System API provides complete restaurant menu management with:
 - **Event-Specific:** Different menus for different event types
 - **Date-Based Activation:** Seasonal menus with validity periods
 - **PDF Downloads:** Professional reservation confirmations with menu details
-- **Calendar View:** Monthly reservation data with hall filtering 🆕
+- **Calendar View:** Monthly reservation data with hall filtering
+- **File Attachments:** Upload, download, archive files per entity (Client, Reservation, Deposit) 🆕
+- **RODO Redirect:** RODO documents auto-stored at client level regardless of upload context 🆕
 
 ---
 
@@ -81,11 +85,12 @@ curl -X GET 'http://localhost:3001/api/reservations/{id}/pdf' \
   -H "Authorization: Bearer {token}" \
   -o reservation.pdf
 
-# Calendar reservations 🆕
+# Calendar reservations
 curl 'http://localhost:3001/api/calendar/reservations?year=2026&month=2' | jq
 
-# Calendar halls 🆕
-curl 'http://localhost:3001/api/calendar/halls' | jq
+# List attachments for a client 🆕
+curl 'http://localhost:3001/api/attachments?entityType=CLIENT&entityId={clientId}' \
+  -H "Authorization: Bearer {token}" | jq
 ```
 
 ---
@@ -107,7 +112,7 @@ https://raw.githubusercontent.com/kamil-gol/Go-ciniec_2/main/docs/postman/Menu_S
 4. Click **Import**
 
 **Includes:**
-- 23 ready-to-use requests (+1 PDF endpoint, +2 Calendar endpoints 🆕)
+- 23 ready-to-use requests (+1 PDF endpoint, +2 Calendar endpoints, +8 Attachment endpoints 🆕)
 - Pre-filled variables with real IDs
 - Example payloads
 - Testing scenarios
@@ -131,8 +136,9 @@ http://localhost:3001/api
 | **Options** | 5 | Admin for CUD |
 | **Reservations** | 4 | User/Admin |
 | **PDF Generation** | 1 | User/Admin |
-| **Calendar** 🆕 | 2 | User/Admin |
-| **Total** | **26** | Mixed |
+| **Calendar** | 2 | User/Admin |
+| **Attachments** 🆕 | 8 | Staff+ |
+| **Total** | **34** | Mixed |
 
 ---
 
@@ -492,7 +498,7 @@ router.get('/reservations/:id/pdf', downloadReservationPDF);
 
 ---
 
-## 📅 Calendar API 🆕
+## 📅 Calendar API
 
 Dedykowane endpointy do widoku kalendarza rezerwacji.
 
@@ -592,6 +598,267 @@ apps/backend/src/calendar/
 
 ---
 
+## 📎 Attachments API 🆕
+
+Polymorphic file management — upload, download, archive files attached to Client, Reservation, or Deposit entities.
+
+**Dokumentacja modułu:** [Attachments Module 2026-02-15](./ATTACHMENTS_MODULE_2026-02-15.md)
+
+### Key Concepts
+
+- **Polymorphic:** One table, multiple entity types (`CLIENT`, `RESERVATION`, `DEPOSIT`)
+- **RODO Redirect:** RODO uploaded from Reservation/Deposit is automatically stored under CLIENT
+- **Soft Delete:** Files are archived (`isArchived=true`), not physically removed
+- **Category Validation:** Each entity type has its own valid categories
+- **Batch Checks:** Efficiently verify RODO/Contract status for multiple entities
+
+### Categories per Entity Type
+
+| Entity | Categories |
+|---|---|
+| **CLIENT** | `RODO`, `CORRESPONDENCE`, `OTHER` |
+| **RESERVATION** | `RODO`, `CONTRACT`, `ANNEX`, `POST_EVENT`, `OTHER` |
+| **DEPOSIT** | `RODO`, `PAYMENT_PROOF`, `INVOICE`, `REFUND_PROOF`, `OTHER` |
+
+### POST `/api/attachments`
+
+Upload a file (multipart/form-data). Requires `Staff+` role.
+
+```http
+POST /api/attachments
+Content-Type: multipart/form-data
+Authorization: Bearer {token}
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="umowa.pdf"
+Content-Type: application/pdf
+
+[Binary file data]
+--boundary
+Content-Disposition: form-data; name="entityType"
+
+RESERVATION
+--boundary
+Content-Disposition: form-data; name="entityId"
+
+550e8400-e29b-41d4-a716-446655440000
+--boundary
+Content-Disposition: form-data; name="category"
+
+CONTRACT
+--boundary
+Content-Disposition: form-data; name="label"
+
+Umowa główna
+--boundary--
+```
+
+**Response (201):**
+```json
+{
+  "id": "uuid",
+  "entityType": "RESERVATION",
+  "entityId": "uuid",
+  "category": "CONTRACT",
+  "label": "Umowa główna",
+  "description": null,
+  "originalName": "umowa.pdf",
+  "storedName": "abc123-umowa.pdf",
+  "mimeType": "application/pdf",
+  "sizeBytes": 245632,
+  "storagePath": "reservations/abc123-umowa.pdf",
+  "isArchived": false,
+  "createdAt": "2026-02-16T12:00:00.000Z",
+  "uploadedBy": {
+    "id": "uuid",
+    "firstName": "Jan",
+    "lastName": "Kowalski"
+  }
+}
+```
+
+> **RODO Redirect:** If `category=RODO` and `entityType` is `RESERVATION` or `DEPOSIT`, the file is automatically redirected to `entityType=CLIENT` with the resolved `clientId`.
+
+### GET `/api/attachments`
+
+List attachments for an entity.
+
+```http
+GET /api/attachments?entityType=CLIENT&entityId={id}&category=RODO
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `entityType` | string | ✅ | `CLIENT`, `RESERVATION`, `DEPOSIT` |
+| `entityId` | string | ✅ | UUID of the entity |
+| `category` | string | ❌ | Filter by category |
+
+**Response:** Array of attachment objects (same shape as upload response).
+
+### GET `/api/attachments/check`
+
+Check if entity has a specific attachment category.
+
+```http
+GET /api/attachments/check?entityType=CLIENT&entityId={id}&category=RODO
+```
+
+**Response:**
+```json
+{
+  "hasAttachment": true
+}
+```
+
+### POST `/api/attachments/batch-check-rodo`
+
+Batch check RODO status for multiple clients.
+
+```http
+POST /api/attachments/batch-check-rodo
+Content-Type: application/json
+
+{
+  "clientIds": ["uuid-1", "uuid-2", "uuid-3"]
+}
+```
+
+**Response:**
+```json
+{
+  "uuid-1": true,
+  "uuid-2": false,
+  "uuid-3": true
+}
+```
+
+### POST `/api/attachments/batch-check-contract`
+
+Batch check contract status for multiple reservations.
+
+```http
+POST /api/attachments/batch-check-contract
+Content-Type: application/json
+
+{
+  "reservationIds": ["uuid-1", "uuid-2"]
+}
+```
+
+**Response:**
+```json
+{
+  "uuid-1": true,
+  "uuid-2": false
+}
+```
+
+### GET `/api/attachments/:id/download`
+
+Download/stream a file.
+
+```http
+GET /api/attachments/{uuid}/download
+Authorization: Bearer {token}
+```
+
+**Response:**
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="umowa.pdf"
+
+[Binary file data]
+```
+
+### PATCH `/api/attachments/:id`
+
+Update attachment metadata.
+
+```http
+PATCH /api/attachments/{uuid}
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+  "label": "Umowa - wersja poprawiona",
+  "description": "Po korekcie prawnej",
+  "category": "CONTRACT"
+}
+```
+
+### DELETE `/api/attachments/:id`
+
+Soft-delete (archive) an attachment.
+
+```http
+DELETE /api/attachments/{uuid}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "id": "uuid",
+  "isArchived": true
+}
+```
+
+### Frontend Hooks
+
+Attachments korzystają z TanStack Query hooków w `hooks/use-attachments.ts`:
+
+```typescript
+// List attachments for entity
+const { data, isLoading } = useAttachments('RESERVATION', reservationId)
+
+// Upload mutation
+const upload = useUploadAttachment()
+await upload.mutateAsync({ file, entityType, entityId, category })
+
+// Batch RODO check
+const { data: rodoMap } = useBatchCheckRodo(clientIds)
+
+// Batch contract check
+const { data: contractMap } = useBatchCheckContract(reservationIds)
+```
+
+### Backend Location
+
+```
+apps/backend/src/
+├── routes/attachment.routes.ts       # 8 endpoints
+├── controllers/attachment.controller.ts
+├── services/attachment.service.ts     # CRUD + RODO redirect
+├── constants/attachmentCategories.ts  # Category validation
+├── types/attachment.types.ts          # DTOs
+├── middlewares/upload.ts              # Multer config
+└── tests/attachment.service.test.ts   # 38 unit tests ✅
+```
+
+### Error Responses
+
+```json
+// 400 - Invalid entityType
+{ "error": "Nieprawidłowy entityType: INVALID. Dozwolone: CLIENT, RESERVATION, DEPOSIT" }
+
+// 400 - Invalid category
+{ "error": "Nieprawidłowa kategoria \"PHOTO\" dla typu \"CLIENT\"" }
+
+// 400 - RODO redirect failed
+{ "error": "Nie udało się znaleźć klienta powiązanego z RESERVATION {id}" }
+
+// 404 - Attachment not found
+{ "error": "Attachment not found" }
+
+// 404 - File missing on disk
+{ "error": "Plik nie istnieje na dysku" }
+```
+
+---
+
 ## 🏡 Architecture
 
 ### Stack
@@ -602,7 +869,9 @@ apps/backend/src/calendar/
 - **ORM:** Prisma
 - **Validation:** Zod
 - **PDF Generation:** PDFKit
-- **Frontend:** Next.js 14 + React Query
+- **File Upload:** Multer 🆕
+- **Frontend:** Next.js 14 + TanStack Query
+- **Testing:** Jest + ts-jest 🆕
 - **Container:** Docker
 
 ### Project Structure
@@ -614,8 +883,9 @@ apps/backend/src/
 │   ├── menuPackage.controller.ts
 │   ├── menuOption.controller.ts
 │   ├── reservation.controller.ts
-│   └── reservationMenu.controller.ts
-├── calendar/           # Calendar module 🆕
+│   ├── reservationMenu.controller.ts
+│   └── attachment.controller.ts     🆕
+├── calendar/           # Calendar module
 │   ├── calendar.module.ts
 │   ├── calendar.controller.ts
 │   └── calendar.service.ts
@@ -623,14 +893,35 @@ apps/backend/src/
 │   ├── menu.service.ts
 │   ├── reservation.service.ts
 │   ├── reservationMenu.service.ts
-│   └── pdf.service.ts
+│   ├── pdf.service.ts
+│   └── attachment.service.ts        🆕
 ├── routes/            # API routes
 │   ├── menu.routes.ts
-│   └── reservation.routes.ts
+│   ├── reservation.routes.ts
+│   └── attachment.routes.ts         🆕
+├── constants/         # Constants
+│   └── attachmentCategories.ts      🆕
+├── middlewares/       # Middleware
+│   └── upload.ts                    🆕
 ├── validation/        # Zod schemas
 │   └── menu.validation.ts
-└── types/             # TypeScript types
-    └── menu.types.ts
+├── types/             # TypeScript types
+│   ├── menu.types.ts
+│   └── attachment.types.ts          🆕
+└── tests/             # Unit tests    🆕
+    ├── setup.ts
+    └── attachment.service.test.ts
+
+apps/frontend/
+├── components/attachments/           🆕
+│   ├── attachment-panel.tsx
+│   ├── attachment-row.tsx
+│   ├── attachment-upload-dialog.tsx
+│   └── attachment-preview.tsx
+├── hooks/
+│   └── use-attachments.ts            🆕
+└── lib/api/
+    └── attachments.ts                🆕
 ```
 
 ### Database Schema
@@ -645,6 +936,10 @@ erDiagram
     MenuPackage ||--o{ MenuPriceHistory : tracks
     MenuOption ||--o{ MenuPriceHistory : tracks
     Reservation ||--o{ Deposit : has
+    Reservation ||--o{ Attachment : has
+    Client ||--o{ Attachment : has
+    Deposit ||--o{ Attachment : has
+    User ||--o{ Attachment : uploaded_by
 ```
 
 ---
@@ -703,7 +998,7 @@ erDiagram
 }
 ```
 
-### CalendarReservation 🆕
+### CalendarReservation
 
 ```typescript
 {
@@ -715,20 +1010,36 @@ erDiagram
   guests: number;
   totalPrice: number;
   customEventType: string | null;
-  client: {
+  client: { id: string; firstName: string; lastName: string };
+  hall: { id: string; name: string } | null;
+  eventType: { id: string; name: string; color: string } | null;
+}
+```
+
+### Attachment 🆕
+
+```typescript
+{
+  id: string;                // UUID
+  entityType: 'CLIENT' | 'RESERVATION' | 'DEPOSIT';
+  entityId: string;          // UUID of related entity
+  category: string;          // e.g. 'RODO', 'CONTRACT', 'INVOICE'
+  label: string | null;      // User-defined label
+  description: string | null;
+  originalName: string;      // Original filename
+  storedName: string;        // UUID-prefixed stored filename
+  mimeType: string;          // e.g. 'application/pdf'
+  sizeBytes: number;
+  storagePath: string;       // Relative path: 'clients/abc123.pdf'
+  isArchived: boolean;       // Soft-delete flag
+  uploadedById: string;      // User who uploaded
+  createdAt: Date;
+  updatedAt: Date;
+  uploadedBy: {
     id: string;
     firstName: string;
     lastName: string;
   };
-  hall: {
-    id: string;
-    name: string;
-  } | null;
-  eventType: {
-    id: string;
-    name: string;
-    color: string;
-  } | null;
 }
 ```
 
@@ -764,11 +1075,39 @@ erDiagram
 
 - ⚠️ Most endpoints are public
 - ⚠️ No authentication required
+- 🔒 Attachment endpoints require `Staff+` role ✅
 - 🔒 To be implemented in Phase 3
 
 ---
 
 ## 🧪 Testing
+
+### Unit Tests (Jest) 🆕
+
+```bash
+# Run all tests
+docker compose run --rm backend npm test
+
+# Watch mode
+docker compose run --rm backend npm run test:watch
+
+# Coverage report
+docker compose run --rm backend npm run test:coverage
+```
+
+**Current coverage:**
+- ✅ `attachment.service.ts` — **38 tests passing**
+  - `createAttachment()` — 9 tests (RODO redirect, validation)
+  - `getAttachments()` — 4 tests (filtering, archived)
+  - `getAttachmentsWithClientRodo()` — 3 tests (cross-reference)
+  - `updateAttachment()` — 3 tests (metadata, validation)
+  - `deleteAttachment()` — 2 tests (soft-delete)
+  - `hardDeleteAttachment()` — 2 tests (file + DB)
+  - `batchCheckRodo()` — 4 tests (batch status)
+  - `batchCheckContract()` — 3 tests (batch status)
+  - `hasAttachment()` — 3 tests (existence check)
+  - `countByCategory()` — 2 tests (grouping)
+  - `getFilePath()` — 2 tests (file resolution)
 
 ### Manual Testing with Postman
 
@@ -779,10 +1118,10 @@ erDiagram
 
 ### Automated Testing (TODO)
 
-- [ ] Jest unit tests
-- [ ] Integration tests
-- [ ] E2E tests with Supertest
-- [ ] PDF generation tests
+- [x] Jest unit tests ✅
+- [ ] Integration tests (supertest)
+- [ ] E2E tests
+- [ ] Frontend component tests
 
 ---
 
@@ -811,6 +1150,10 @@ docker compose logs backend | grep ERROR
 
 # PDF generation logs
 docker compose logs backend | grep "PDF Service"
+
+# Attachment logs 🆕
+docker compose logs backend | grep "Attachment"
+docker compose logs backend | grep "RODO redirect"
 ```
 
 ---
@@ -825,14 +1168,25 @@ All issues from Phase 2 have been resolved:
 - ✅ Seed data loaded
 - ✅ Type safety complete
 - ✅ PDF generation with menu & prices
-- ✅ Calendar view with monthly grid 🆕
+- ✅ Calendar view with monthly grid
+- ✅ Attachment upload/download/archive 🆕
+- ✅ 38 unit tests passing 🆕
 
 ---
 
 ## 🚀 Roadmap
 
+### Completed ✅
+- [x] Menu Templates, Packages, Options
+- [x] Reservation Menu Selection
+- [x] PDF Generation
+- [x] Calendar API
+- [x] Attachments API (backend + frontend + tests) 🆕
+
 ### Phase 3 - Frontend (Next)
-- [x] Calendar view for reservations 🆕
+- [x] Calendar view for reservations
+- [x] Attachment panel in detail views 🆕
+- [x] RODO/Contract badge indicators 🆕
 - [ ] React components for menu browsing
 - [ ] Admin panel for menu management
 - [ ] Reservation menu selection UI
@@ -842,7 +1196,6 @@ All issues from Phase 2 have been resolved:
 ### Phase 4 - Enhancement
 - [ ] JWT authentication
 - [ ] Role-based access control
-- [ ] Automated tests
 - [ ] Performance optimization
 - [ ] PDF email attachments
 - [ ] Multilingual PDFs (EN/PL/DE)
@@ -854,11 +1207,13 @@ All issues from Phase 2 have been resolved:
 - **Postman Collection:** [Download JSON](./postman/Menu_System_API.postman_collection.json)
 - **Postman Guide:** [README](./postman/README.md)
 - **PDF Documentation:** [PDF Enhancement Session](./PDF_ENHANCEMENT_SESSION_2026-02-11.md)
-- **Calendar Documentation:** [Calendar View 2026-02-15](./CALENDAR_VIEW_2026-02-15.md) 🆕
+- **Calendar Documentation:** [Calendar View 2026-02-15](./CALENDAR_VIEW_2026-02-15.md)
+- **Attachments Documentation:** [Attachments Module 2026-02-15](./ATTACHMENTS_MODULE_2026-02-15.md) 🆕
 - **Prisma Schema:** [schema.prisma](../prisma/schema.prisma)
 - **TypeScript Types:** [menu.types.ts](../apps/backend/src/types/menu.types.ts)
 - **Validation:** [menu.validation.ts](../apps/backend/src/validation/menu.validation.ts)
 - **PDF Service:** [pdf.service.ts](../apps/backend/src/services/pdf.service.ts)
+- **Attachment Service:** [attachment.service.ts](../apps/backend/src/services/attachment.service.ts) 🆕
 
 ---
 
@@ -869,10 +1224,11 @@ All issues from Phase 2 have been resolved:
 2. Backend logs: `docker compose logs backend`
 3. Database connection: `docker compose ps`
 4. PDF generation logs: `docker compose logs backend | grep "PDF Service"`
+5. Attachment logs: `docker compose logs backend | grep "Attachment"` 🆕
 
 ---
 
-**Last Updated:** 2026-02-15 🆕  
+**Last Updated:** 2026-02-16 🆕  
 **Status:** ✅ Production Ready  
-**Version:** 1.2.0  
-**New Features:** Calendar API + Monthly View 🚀
+**Version:** 1.3.0  
+**New Features:** Attachments API — upload, download, archive, RODO redirect, batch checks 🚀
