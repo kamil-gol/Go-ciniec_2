@@ -6,14 +6,22 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
   };
+  // RBAC extensions (populated by permission middleware)
+  userPermissions?: Set<string>;
+  userRoleName?: string;
+  permissionResults?: Record<string, boolean>;
 }
 
+// Legacy role type — kept for backward compatibility
 export type UserRole = 'ADMIN' | 'EMPLOYEE' | 'CLIENT';
 
 export interface JwtPayload {
   id: string;
   email: string;
   role: UserRole;
+  // New RBAC fields (added after migration)
+  roleId?: string;
+  roleSlug?: string;
 }
 
 export interface PasswordValidationResult {
