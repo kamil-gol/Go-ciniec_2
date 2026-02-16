@@ -11,6 +11,7 @@
   - Podział gości (dorośli, dzieci 4-12, maluchy 0-3)
   - **🆕 Menu Integration** - wybór pakietu menu podczas rezerwacji
   - **PDF Generator** - szczegółowe potwierdzenia z menu i cenami
+  - **🆕 Attachments Module** - załączniki do rezerwacji, klientów i zadatków 🎯
 - **Menu Templates** - szablony menu dla różnych typów eventów
 - **Menu Packages** - pakiety z kategoriami dań
   - Wybór kategorii dań dla pakietu
@@ -24,6 +25,25 @@
 - **Event Types** - typy eventów
 - **Clients** - baza klientów
 - **Halls** - zarządzanie salami
+
+### 🆕 Attachments Module (COMPLETED - 15-16.02.2026)
+
+**Status: ✅ W pełni funkcjonalne**
+
+**Funkcje:**
+- ✅ **Upload plików** - PDF, JPG, PNG, WEBP (max 10MB)
+- ✅ **Kategorie** - RODO, Umowa, Faktura, Paragon, Inne (dynamiczne per entity)
+- ✅ **Polymorphic architecture** - wspólny model dla CLIENT/RESERVATION/DEPOSIT
+- ✅ **RODO redirect** - RODO zawsze do klienta (niezależnie od źródła uploadu)
+- ✅ **Preview modal** - PDF iframe + image zoom
+- ✅ **Drag & drop** - intuicyjny upload
+- ✅ **Badges** - liczniki załączników w deposit-actions dropdown
+- ✅ **Soft-delete** - archivization zamiast usuwania
+- ✅ **Batch API** - sprawdzanie wielokrotne (hasRodo, hasContract)
+- ✅ **TanStack Query** - cache + optimistic updates
+- ✅ **38 unit tests** - pełne pokrycie service layer
+
+**Dokumentacja:** **[Attachments Module Guide](./docs/ATTACHMENTS_MODULE_2026-02-15.md)** 📎
 
 ### 🆕 Menu Integration (COMPLETED - 12.02.2026)
 
@@ -106,6 +126,7 @@ GET /api/reservations/:id/menu
 - PostgreSQL
 - Docker
 - **PDFKit** - generowanie PDF
+- **Multer** - file uploads 🆕
 
 **Frontend:**
 - Next.js 14 (App Router)
@@ -113,7 +134,7 @@ GET /api/reservations/:id/menu
 - TypeScript
 - Tailwind CSS
 - Shadcn/ui components
-- React Query (TanStack Query)
+- TanStack Query (React Query) 🆕
 - Docker
 
 ## 📏 API Endpoints
@@ -132,6 +153,18 @@ POST   /api/reservations/:id/menu          # Wybierz menu
 GET    /api/reservations/:id/menu          # Pobierz menu (z priceBreakdown)
 PUT    /api/reservations/:id/menu          # Aktualizuj menu
 DELETE /api/reservations/:id/menu          # Usuń menu
+```
+
+### Attachments 🆕
+```http
+POST   /api/attachments                    # Upload (multipart/form-data)
+GET    /api/attachments                    # List (z filtrami)
+GET    /api/attachments/:id                # Get single
+GET    /api/attachments/:id/download       # Download
+DELETE /api/attachments/:id                # Soft delete
+POST   /api/attachments/batch-check-rodo   # Batch check hasRodo
+POST   /api/attachments/batch-check-contract  # Batch check hasContract
+GET    /api/attachments/categories/:entityType  # Get categories for entity
 ```
 
 ### Menu Packages
@@ -158,7 +191,8 @@ GET    /api/event-types
 ## 📚 Dokumentacja
 
 ### Menu & Reservations
-- **[Menu Integration Guide](./docs/MENU_INTEGRATION.md)** - kompletna dokumentacja integracji menu 🆕
+- **[Attachments Module Guide](./docs/ATTACHMENTS_MODULE_2026-02-15.md)** - kompletna dokumentacja załączników 🆕
+- **[Menu Integration Guide](./docs/MENU_INTEGRATION.md)** - kompletna dokumentacja integracji menu
 - **[PDF Enhancement Session](./docs/PDF_ENHANCEMENT_SESSION_2026-02-11.md)** - szczegóły PDF generator
 - **[Menu Packages Guide](./docs/MENU_PACKAGES_GUIDE.md)** - kompletna dokumentacja
 - **[Quick Start](./docs/MENU_PACKAGES_QUICKSTART.md)** - szybki start (30 sekund)
@@ -167,6 +201,7 @@ GET    /api/event-types
 ### Development & Deployment
 - **[API Documentation](./docs/API_DOCUMENTATION.md)** - pełna dokumentacja API
 - **[Architecture](./docs/ARCHITECTURE.md)** - architektura systemu
+- **[Sprints Overview](./docs/SPRINTS.md)** - mapa sprintów 🆕
 - **[Database Schema](./docs/DATABASE.md)** - schemat bazy danych
 - **[Docker Commands](./docs/DOCKER_COMMANDS.md)** - komendy Docker
 - **[Deployment](./docs/DEPLOYMENT.md)** - wdrożenie produkcyjne
@@ -278,11 +313,13 @@ Go-ciniec_2/
 │   │   ├── src/
 │   │   │   ├── controllers/
 │   │   │   │   ├── reservation.controller.ts         🔄 Updated
-│   │   │   │   └── reservation-menu.controller.ts   ✅ Fixed (12.02.2026)
+│   │   │   │   ├── reservation-menu.controller.ts   ✅ Fixed (12.02.2026)
+│   │   │   │   └── attachment.controller.ts         🆕 NEW (15.02.2026)
 │   │   │   ├── routes/
 │   │   │   ├── services/
 │   │   │   │   ├── reservation.service.ts           🔄 Updated
-│   │   │   │   └── pdf.service.ts
+│   │   │   │   ├── pdf.service.ts
+│   │   │   │   └── attachment.service.ts            🆕 NEW (15.02.2026)
 │   │   │   ├── types/
 │   │   │   │   └── reservation.types.ts             🔄 Updated
 │   │   │   └── ...
@@ -296,16 +333,23 @@ Go-ciniec_2/
 │       │           └── packages/
 │       ├── components/
 │       │   ├── menu/
-│       │   └── reservations/
-│       │       └── ReservationMenuSection.tsx      ✅ Working
+│       │   ├── reservations/
+│       │   │   └── ReservationMenuSection.tsx      ✅ Working
+│       │   └── attachments/                        🆕 NEW (15.02.2026)
+│       │       ├── attachment-panel.tsx
+│       │       ├── attachment-upload-dialog.tsx
+│       │       ├── attachment-preview.tsx
+│       │       └── attachment-row.tsx
 │       ├── lib/
 │       │   └── api/
 │       ├── hooks/
-│       │   └── use-menu.ts                         ✅ Working
+│       │   ├── use-menu.ts                         ✅ Working
+│       │   └── use-attachments.ts                  🆕 NEW (15.02.2026)
 │       └── types/
 │
 ├── docs/                # 📚 Dokumentacja
-│   ├── MENU_INTEGRATION.md                          🆕 NEW!
+│   ├── ATTACHMENTS_MODULE_2026-02-15.md            🆕 NEW!
+│   ├── MENU_INTEGRATION.md
 │   ├── PDF_ENHANCEMENT_SESSION_2026-02-11.md
 │   ├── MENU_PACKAGES_GUIDE.md
 │   ├── API_DOCUMENTATION.md
@@ -351,4 +395,4 @@ Private project
 
 ---
 
-**Ostatnia aktualizacja:** 12.02.2026, 00:29 CET - Menu Integration COMPLETED ✅
+**Ostatnia aktualizacja:** 16.02.2026, 15:35 CET - Attachments Module COMPLETED 📎
