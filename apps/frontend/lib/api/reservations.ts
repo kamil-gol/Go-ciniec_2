@@ -140,8 +140,11 @@ export const downloadReservationPDF = async (id: string): Promise<void> => {
   link.download = `rezerwacja-${id}.pdf`
   document.body.appendChild(link)
   link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
+  // Delay cleanup to allow browser to initiate the download
+  setTimeout(() => {
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }, 150)
 }
 
 // React Query Hooks
