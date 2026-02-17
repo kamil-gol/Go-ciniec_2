@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { Bell, Search, Moon, Sun, Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -18,7 +19,8 @@ interface HeaderProps {
 
 export default function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter()
-  const [isDark, setIsDark] = useState(false)
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications] = useState([
     { id: 1, title: 'Nowa rezerwacja', message: 'Jan Kowalski - Wesele 15.02', time: '5 min temu', unread: true, link: '/dashboard/reservations' },
@@ -27,10 +29,13 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
   ])
 
   const unreadCount = notifications.filter(n => n.unread).length
+  const isDark = resolvedTheme === 'dark'
+
+  // Prevent hydration mismatch — render theme icon only after client mount
+  useEffect(() => setMounted(true), [])
 
   const toggleTheme = () => {
-    setIsDark(!isDark)
-    document.documentElement.classList.toggle('dark')
+    setTheme(isDark ? 'light' : 'dark')
   }
 
   const handleNotificationClick = (notif: typeof notifications[0]) => {
@@ -84,35 +89,39 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
             </kbd>
           </button>
 
-          {/* Theme Toggle */}
+          {/* Theme Toggle — persistent via next-themes */}
           <button
             onClick={toggleTheme}
             className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
-            aria-label="Przełącz motyw"
+            aria-label={isDark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw'}
           >
-            <AnimatePresence mode="wait">
-              {isDark ? (
-                <motion.div
-                  key="sun"
-                  initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
-                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                  exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Sun className="h-[18px] w-[18px] text-amber-500" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="moon"
-                  initial={{ rotate: 90, opacity: 0, scale: 0.5 }}
-                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                  exit={{ rotate: -90, opacity: 0, scale: 0.5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Moon className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-400" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {mounted ? (
+              <AnimatePresence mode="wait">
+                {isDark ? (
+                  <motion.div
+                    key="sun"
+                    initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Sun className="h-[18px] w-[18px] text-amber-500" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="moon"
+                    initial={{ rotate: 90, opacity: 0, scale: 0.5 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: -90, opacity: 0, scale: 0.5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Moon className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-400" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            ) : (
+              <div className="h-[18px] w-[18px]" />
+            )}
           </button>
 
           {/* Notifications */}
