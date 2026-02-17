@@ -74,6 +74,7 @@ services:
       - backend
     volumes:
       - ./apps/frontend:/app
+      - /app/node_modules
       - /app/.next
     networks:
       - rezerwacje-network
