@@ -10,11 +10,6 @@ import { cn } from '@/lib/utils';
 import { PageLayout } from '@/components/shared';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
 
-const breadcrumbItems = [
-  { label: 'Menu', href: '/dashboard/menu' },
-  { label: 'Pakiety', href: '/dashboard/menu/packages' },
-];
-
 export default function NewPackagePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -52,7 +47,7 @@ export default function NewPackagePage() {
   if (selectedTemplate) {
     return (
       <PageLayout narrowContent>
-        <Breadcrumb items={[...breadcrumbItems, { label: 'Nowy pakiet' }]} />
+        <Breadcrumb />
 
         {/* Header */}
         <div>
@@ -102,7 +97,7 @@ export default function NewPackagePage() {
 
   return (
     <PageLayout narrowContent>
-      <Breadcrumb items={[...breadcrumbItems, { label: 'Wybierz szablon' }]} />
+      <Breadcrumb />
 
       {/* Header */}
       <div>
