@@ -104,20 +104,20 @@ export default function CategorySettingsSection({
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-            <span className="text-2xl">{"\uD83C\uDF7D\uFE0F"}</span>
+            <span className="text-2xl">{'🍽️'}</span>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100">Kategorie da\u0144 w pakiecie</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100">Kategorie dań w pakiecie</h2>
         </div>
         <p className="text-sm text-slate-600 dark:text-neutral-400">
-          Wybierz z jakich kategorii go\u015Bcie b\u0119d\u0105 mogli wybiera\u0107 dania oraz okre\u015Bl
-          minimaln\u0105 i maksymaln\u0105 liczb\u0119 wybor\u00F3w.
+          Wybierz z jakich kategorii goście będą mogli wybierać dania oraz określ
+          minimalną i maksymalną liczbę wyborów.
         </p>
       </div>
 
       {categories.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 dark:bg-neutral-800 rounded-xl">
           <p className="text-slate-500 dark:text-neutral-400">
-            Brak dost\u0119pnych kategorii da\u0144. Najpierw stw\u00F3rz kategorie w systemie.
+            Brak dostępnych kategorii dań. Najpierw stwórz kategorie w systemie.
           </p>
         </div>
       ) : (
@@ -173,7 +173,7 @@ export default function CategorySettingsSection({
                       {/* Min Select */}
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-2">
-                          Min wybor\u00F3w
+                          Min wyborów
                         </label>
                         <input
                           type="number"
@@ -198,7 +198,7 @@ export default function CategorySettingsSection({
                       {/* Max Select */}
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-2">
-                          Max wybor\u00F3w
+                          Max wyborów
                         </label>
                         <input
                           type="number"
@@ -240,7 +240,7 @@ export default function CategorySettingsSection({
                       {/* Custom Label */}
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-2">
-                          W\u0142asna etykieta
+                          Własna etykieta
                         </label>
                         <input
                           type="text"
@@ -259,7 +259,7 @@ export default function CategorySettingsSection({
                       <div className="mt-3 flex items-start gap-2 text-red-700 dark:text-red-400 text-xs bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-lg p-3">
                         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         <div>
-                          <strong>B\u0142\u0105d walidacji:</strong> Minimalna warto\u015B\u0107 ({setting.minSelect}) nie mo\u017Ce by\u0107 wi\u0119ksza ni\u017C maksymalna ({setting.maxSelect}).
+                          <strong>Błąd walidacji:</strong> Minimalna wartość ({setting.minSelect}) nie może być większa niż maksymalna ({setting.maxSelect}).
                         </div>
                       </div>
                     )}
@@ -275,7 +275,7 @@ export default function CategorySettingsSection({
       {localSettings.filter((s) => s.isEnabled).length > 0 && (
         <div className="mt-6 pt-6 border-t border-slate-200 dark:border-neutral-700">
           <h3 className="text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-3">
-            {"\uD83D\uDCCA"} Podsumowanie:
+            {'📊'} Podsumowanie:
           </h3>
           <ul className="text-sm text-slate-600 dark:text-neutral-400 space-y-2">
             {localSettings
@@ -285,10 +285,10 @@ export default function CategorySettingsSection({
                 const error = hasValidationError(s);
                 return (
                   <li key={s.categoryId} className={error ? 'text-red-700 dark:text-red-400 font-medium' : ''}>
-                    {error && '\u26A0\uFE0F '}
-                    \u2022 <strong>{cat?.name}</strong>: {s.minSelect}\u2013{s.maxSelect} wybor\u00F3w
+                    {error && '⚠️ '}
+                    {'•'} <strong>{cat?.name}</strong>: {s.minSelect}{'–'}{s.maxSelect} wyborów
                     {s.isRequired && ' (wymagane)'}
-                    {error && ' - NIEPRAWID\u0141OWE!'}
+                    {error && ' - NIEPRAWIDŁOWE!'}
                   </li>
                 );
               })}
