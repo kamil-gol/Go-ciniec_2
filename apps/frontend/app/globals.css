@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* === Synced with tailwind.config.ts Indigo palette === */
+    /* === Core — Synced with tailwind.config.ts Indigo palette === */
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
@@ -39,16 +39,40 @@
     /* === Premium Design Tokens === */
     --shadow-color: 220 40% 2%;
     --premium-glow: 239 84% 67%;
+
+    /* === Semantic Status Colors === */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    /* === Sidebar === */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+
+    /* === Chart Colors (Data Visualization) === */
+    --chart-1: 239 84% 67%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 270 50% 60%;
+    --chart-5: 0 84% 60%;
   }
 
   .dark {
+    /* === Core Dark === */
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
 
-    --card: 224 71% 4%;
+    /* Card slightly lighter than background for visual separation */
+    --card: 222 47% 7%;
     --card-foreground: 213 31% 91%;
 
-    --popover: 224 71% 4%;
+    --popover: 222 47% 7%;
     --popover-foreground: 213 31% 91%;
 
     --primary: 239 84% 67%;
@@ -69,6 +93,32 @@
     --border: 216 34% 17%;
     --input: 216 34% 17%;
     --ring: 239 84% 67%;
+
+    /* === Premium Design Tokens (Dark) === */
+    --shadow-color: 0 0% 0%;
+    --premium-glow: 239 84% 67%;
+
+    /* === Semantic Status Colors (Dark — slightly brighter for readability) === */
+    --success: 160 73% 46%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 56%;
+    --warning-foreground: 0 0% 0%;
+    --info: 217 91% 65%;
+    --info-foreground: 0 0% 100%;
+
+    /* === Sidebar (Dark) === */
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-border: 216 34% 17%;
+    --sidebar-accent: 223 47% 11%;
+    --sidebar-accent-foreground: 213 31% 91%;
+
+    /* === Chart Colors (Dark — brighter for contrast) === */
+    --chart-1: 239 84% 72%;
+    --chart-2: 160 73% 50%;
+    --chart-3: 38 92% 60%;
+    --chart-4: 270 50% 65%;
+    --chart-5: 0 84% 65%;
   }
 }
 
