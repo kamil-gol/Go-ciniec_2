@@ -1,13 +1,18 @@
 # ========================================
-# Docker Compose for Test Environment
+# Docker Compose — Test Environment
 # ========================================
-# Usage:
-#   docker compose -f docker-compose.test.yml up -d
-#   npm run test:integration --prefix apps/backend
-#   docker compose -f docker-compose.test.yml down -v
+# Uruchamianie:
+#   make test-unit          # unit testy backend
+#   make test-integration   # integration testy backend (z bazą)
+#   make test-frontend      # component testy frontend
+#   make test-all           # wszystko
+#   make test-down          # zatrzymaj kontenery testowe
 # ========================================
 
 services:
+  # ----------------------------------------
+  # Testowa baza PostgreSQL (port 5433)
+  # ----------------------------------------
   postgres-test:
     image: postgres:16-alpine
     container_name: rezerwacje-db-test
@@ -18,16 +23,73 @@ services:
       POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
     ports:
       - '5433:5432'
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U test -d rezerwacje_test']
       interval: 5s
       timeout: 3s
       retries: 5
     tmpfs:
-      - /var/lib/postgresql/data  # RAM disk for speed
+      - /var/lib/postgresql/data  # RAM disk — szybsze testy
+    networks:
+      - test-network
 
-volumes:
-  postgres_test_data:
-    driver: local
+  # ----------------------------------------
+  # Backend Test Runner
+  # ----------------------------------------
+  backend-test:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: rezerwacje-backend-test
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@postgres-test:5432/rezerwacje_test
+      JWT_SECRET: test-secret-key-do-not-use-in-production
+      JWT_REFRESH_SECRET: test-refresh-secret-key
+      PORT: 0
+      LOG_LEVEL: silent
+      RESTAURANT_NAME: Test Restaurant
+      RESTAURANT_ADDRESS: ul. Testowa 1, 00-000 Test
+      RESTAURANT_PHONE: +48 000 000 000
+      RESTAURANT_EMAIL: test@test.pl
+      RESTAURANT_WEBSITE: www.test.pl
+      RESTAURANT_NIP: 000-000-00-00
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      SMTP_USER: test
+      SMTP_PASS: test
+      SMTP_FROM: test@test.pl
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    networks:
+      - test-network
+    # Domyślna komenda: unit testy (nadpisywana w Makefile)
+    command: sh -c "npx prisma generate && npm run test:unit"
+
+  # ----------------------------------------
+  # Frontend Test Runner
+  # ----------------------------------------
+  frontend-test:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile.dev
+    container_name: rezerwacje-frontend-test
+    environment:
+      NODE_ENV: test
+      NEXT_PUBLIC_API_URL: http://backend-test:3001/api
+      NEXT_PUBLIC_APP_NAME: Rezerwacje Test
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - test-network
+    command: npx vitest run --reporter=verbose
+
+networks:
+  test-network:
+    driver: bridge
