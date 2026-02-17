@@ -42,7 +42,7 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Overlay - no onClick, dialog only closes via X button or Escape */}
-      <div className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70" />
       <div className="relative z-50 w-full flex items-center justify-center">{children}</div>
     </div>
   )
@@ -69,17 +69,18 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full',
+      'relative bg-white dark:bg-neutral-900 rounded-lg shadow-xl dark:shadow-black/30 w-full',
+      'border border-neutral-200/80 dark:border-neutral-700/50',
       'max-h-[85vh] flex flex-col',
       className
     )}
     {...props}
   >
     {onClose && (
-      <div className="sticky top-0 z-50 flex justify-end p-2 bg-white dark:bg-gray-900 rounded-t-lg">
+      <div className="sticky top-0 z-50 flex justify-end p-2 bg-white dark:bg-neutral-900 rounded-t-lg">
         <button
           onClick={onClose}
-          className="rounded-sm p-1 opacity-70 hover:opacity-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          className="rounded-sm p-1 opacity-70 hover:opacity-100 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
           aria-label="Zamknij"
         >
           <X className="h-5 w-5" />
@@ -104,14 +105,14 @@ const DialogTitle = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h2 className={cn('text-xl font-semibold', className)} {...props} />
+  <h2 className={cn('text-xl font-semibold text-neutral-900 dark:text-neutral-100', className)} {...props} />
 )
 
 const DialogDescription = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={cn('text-sm text-secondary-600', className)} {...props} />
+  <p className={cn('text-sm text-neutral-500 dark:text-neutral-400', className)} {...props} />
 )
 
 const DialogFooter = ({

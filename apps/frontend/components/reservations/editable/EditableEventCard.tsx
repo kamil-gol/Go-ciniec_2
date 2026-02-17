@@ -207,7 +207,7 @@ export function EditableEventCard({
         return (
           <div className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-secondary-700">Typ wydarzenia</label>
+              <label className="text-sm font-medium text-secondary-700 dark:text-neutral-300">Typ wydarzenia</label>
               <Select value={eventTypeId} onValueChange={setEventTypeId}>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Wybierz typ wydarzenia..." />
@@ -271,7 +271,7 @@ export function EditableEventCard({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-secondary-800 flex items-center gap-2">
+                <p className="text-sm font-semibold text-secondary-800 dark:text-neutral-200 flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> Rozpoczęcie
                 </p>
                 <DatePicker
@@ -288,7 +288,7 @@ export function EditableEventCard({
                 />
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-secondary-800 flex items-center gap-2">
+                <p className="text-sm font-semibold text-secondary-800 dark:text-neutral-200 flex items-center gap-2">
                   <Clock className="w-4 h-4" /> Zakończenie
                 </p>
                 <DatePicker
@@ -330,7 +330,7 @@ export function EditableEventCard({
             )}
 
             {durationHours < 0 && (
-              <p className="text-xs text-red-600 flex items-center gap-1">
+              <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 Czas zakończenia musi być po czasie rozpoczęcia
               </p>
