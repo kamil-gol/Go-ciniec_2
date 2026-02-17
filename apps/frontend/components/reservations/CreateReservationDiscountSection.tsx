@@ -99,11 +99,9 @@ export function CreateReservationDiscountSection({
                 min="0"
                 max={discountType === 'PERCENTAGE' ? 100 : totalPrice}
                 step={discountType === 'PERCENTAGE' ? 1 : 10}
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
                 placeholder={discountType === 'PERCENTAGE' ? 'np. 10' : 'np. 500'}
                 className="h-9 text-sm"
-                {...register('discountValue')}
+                {...register('discountValue', { valueAsNumber: true })}
               />
             </div>
           </div>
@@ -111,8 +109,6 @@ export function CreateReservationDiscountSection({
           <div className="space-y-1">
             <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">{'Powód rabatu'}</label>
             <Input
-              value={discountReason}
-              onChange={(e) => setDiscountReason(e.target.value)}
               placeholder={'np. Stały klient, promocja...'}
               className="h-9 text-sm"
               {...register('discountReason')}
