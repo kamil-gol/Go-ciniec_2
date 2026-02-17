@@ -118,7 +118,7 @@ export function EditableHallCard({
         return (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-secondary-700">Sala</label>
+              <label className="text-sm font-medium text-secondary-700 dark:text-neutral-300">Sala</label>
               <Select value={selectedHallId} onValueChange={setSelectedHallId}>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Wybierz salę..." />
@@ -134,10 +134,10 @@ export function EditableHallCard({
             </div>
 
             {selectedCapacity > 0 && (
-              <p className="text-sm text-secondary-600">
+              <p className="text-sm text-secondary-600 dark:text-neutral-400">
                 Pojemność: {selectedCapacity} osób
                 {totalGuests > selectedCapacity && (
-                  <span className="text-red-600 font-medium">
+                  <span className="text-red-600 dark:text-red-400 font-medium">
                     {' '}— Uwaga! Gości: {totalGuests} (przekroczenie!)
                   </span>
                 )}
@@ -159,11 +159,11 @@ export function EditableHallCard({
                 {availabilityLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-secondary-600">Sprawdzanie dostępności...</span>
+                    <span className="text-sm text-secondary-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
                   </div>
                 ) : availability?.available ? (
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                     <span className="text-sm font-medium text-green-800 dark:text-green-200">
                       Sala jest dostępna w wybranym terminie
                     </span>
@@ -171,7 +171,7 @@ export function EditableHallCard({
                 ) : (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-medium text-red-800 dark:text-red-200">
                         Kolizja z istniejącą rezerwacją!
                       </span>
