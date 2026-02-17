@@ -97,7 +97,7 @@ export function EditableCard({
                 placeholder="np. Klient zmienił liczbę gości po rozmowie telefonicznej"
               />
               {reasonError && (
-                <p className="mt-1 text-xs text-red-600">{reasonError}</p>
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{reasonError}</p>
               )}
             </div>
           </div>

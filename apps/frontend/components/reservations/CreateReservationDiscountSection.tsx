@@ -47,14 +47,14 @@ export function CreateReservationDiscountSection({
   return (
     <div className="space-y-4 mt-4">
       {/* Toggle */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-xl border border-orange-200 dark:border-orange-800">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
             <Tag className="w-5 h-5 text-orange-600" />
           </div>
           <div>
-            <span className="font-medium text-secondary-800">Rabat</span>
-            <p className="text-xs text-secondary-500">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
+            <span className="font-medium text-secondary-800 dark:text-neutral-200">Rabat</span>
+            <p className="text-xs text-secondary-500 dark:text-neutral-400">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
           </div>
         </div>
         <Controller
@@ -71,17 +71,17 @@ export function CreateReservationDiscountSection({
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="space-y-3 p-4 bg-orange-50 border border-orange-200 rounded-xl"
+          className="space-y-3 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl"
         >
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-secondary-700">Typ rabatu</label>
+              <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">Typ rabatu</label>
               <Controller
                 name="discountType"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm bg-white">
+                    <SelectTrigger className="h-9 text-sm bg-white dark:bg-neutral-900">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -93,12 +93,14 @@ export function CreateReservationDiscountSection({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-secondary-700">{'Wartość'}</label>
+              <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">{'Wartość'}</label>
               <Input
                 type="number"
                 min="0"
                 max={discountType === 'PERCENTAGE' ? 100 : totalPrice}
                 step={discountType === 'PERCENTAGE' ? 1 : 10}
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
                 placeholder={discountType === 'PERCENTAGE' ? 'np. 10' : 'np. 500'}
                 className="h-9 text-sm"
                 {...register('discountValue')}
@@ -107,13 +109,15 @@ export function CreateReservationDiscountSection({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-secondary-700">{'Powód rabatu'}</label>
+            <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">{'Powód rabatu'}</label>
             <Input
+              value={discountReason}
+              onChange={(e) => setDiscountReason(e.target.value)}
               placeholder={'np. Stały klient, promocja...'}
               className="h-9 text-sm"
               {...register('discountReason')}
             />
-            <p className="text-[10px] text-secondary-400">Min. 3 znaki</p>
+            <p className="text-[10px] text-secondary-400 dark:text-neutral-500">Min. 3 znaki</p>
           </div>
 
           {/* Live Preview */}
@@ -121,9 +125,9 @@ export function CreateReservationDiscountSection({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="p-3 bg-white rounded-lg border border-orange-200 space-y-1 text-sm"
+              className="p-3 bg-white dark:bg-black/20 rounded-lg border border-orange-200 dark:border-orange-800 space-y-1 text-sm"
             >
-              <div className="flex justify-between text-secondary-600">
+              <div className="flex justify-between text-secondary-600 dark:text-neutral-400">
                 <span>Cena bazowa</span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>
@@ -133,18 +137,18 @@ export function CreateReservationDiscountSection({
                 </span>
                 <span>-{formatCurrency(discountAmount)}</span>
               </div>
-              <div className="flex justify-between font-bold border-t pt-1">
+              <div className="flex justify-between font-bold border-t border-orange-200/50 dark:border-neutral-700 pt-1">
                 <span>Po rabacie</span>
-                <span className="text-emerald-600">{formatCurrency(finalPrice)}</span>
+                <span className="text-emerald-600 dark:text-emerald-400">{formatCurrency(finalPrice)}</span>
               </div>
               {discountReason.length >= 3 && (
-                <p className="text-xs text-orange-500 italic pt-1">{discountReason}</p>
+                <p className="text-xs text-orange-500 dark:text-orange-400 italic pt-1">{discountReason}</p>
               )}
             </motion.div>
           )}
 
           {discountEnabled && discountValue > 0 && discountReason.length < 3 && (
-            <p className="text-xs text-amber-600 flex items-center gap-1">
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
               <Tag className="w-3 h-3" />
               {'Podaj powód rabatu (min. 3 znaki) aby móc go zastosować'}
             </p>

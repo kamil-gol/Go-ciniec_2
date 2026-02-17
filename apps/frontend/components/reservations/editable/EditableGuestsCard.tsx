@@ -190,7 +190,7 @@ export function EditableGuestsCard({
                 animate={{ opacity: 1 }}
                 className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2"
               >
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                 <span className="text-sm text-red-800 dark:text-red-200">
                   Liczba gości ({totalGuests}) przekracza pojemność sali ({hallCapacity})!
                 </span>
@@ -198,7 +198,7 @@ export function EditableGuestsCard({
             )}
 
             {totalGuests < 1 && (
-              <p className="text-xs text-red-600">Łączna liczba gości musi być co najmniej 1</p>
+              <p className="text-xs text-red-600 dark:text-red-400">Łączna liczba gości musi być co najmniej 1</p>
             )}
           </div>
         )
