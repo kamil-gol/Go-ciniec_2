@@ -1,0 +1,33 @@
+# ========================================
+# Docker Compose for Test Environment
+# ========================================
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d
+#   npm run test:integration --prefix apps/backend
+#   docker compose -f docker-compose.test.yml down -v
+# ========================================
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: rezerwacje-db-test
+    environment:
+      POSTGRES_DB: rezerwacje_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test -d rezerwacje_test']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data  # RAM disk for speed
+
+volumes:
+  postgres_test_data:
+    driver: local
