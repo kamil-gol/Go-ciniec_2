@@ -44,9 +44,9 @@ export function UsersTab() {
   const filteredUsers = users.filter(u => {
     const q = search.toLowerCase()
     return (
-      u.firstName.toLowerCase().includes(q) ||
-      u.lastName.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
+      (u.firstName || '').toLowerCase().includes(q) ||
+      (u.lastName || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
       (u.role?.name || '').toLowerCase().includes(q)
     )
   })
@@ -54,7 +54,8 @@ export function UsersTab() {
   const handleToggleActive = async (user: User) => {
     try {
       const updated = await settingsApi.toggleActive(user.id)
-      setUsers(prev => prev.map(u => u.id === user.id ? updated : u))
+      // Defensive merge — spread existing data, then overwrite with API response
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...updated } : u))
       toast.success(`${updated.isActive ? 'Aktywowano' : 'Dezaktywowano'} użytkownika ${user.firstName}`)
     } catch { /* handled */ }
   }
@@ -122,7 +123,7 @@ export function UsersTab() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <div className="h-9 w-9 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center text-sm font-semibold text-neutral-600 dark:text-neutral-300">
-                        {user.firstName[0]}{user.lastName[0]}
+                        {(user.firstName?.[0] || '')}{(user.lastName?.[0] || '')}
                       </div>
                       <span>{user.firstName} {user.lastName}</span>
                     </div>
