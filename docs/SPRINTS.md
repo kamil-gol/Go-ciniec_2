@@ -28,7 +28,11 @@ SPRINT 9 (16.02 - 21.02)   → Historia Zmian & Archiwum         ✅ DONE
     US-9.9: Archiwum — Soft Delete                              ✅ DONE (16.02)
     US-9.10: Archiwum — Archive Page                            ✅ DONE (16.02)
     US-9.11: Dziennik Audytu — Global Dashboard                 ✅ DONE (16.02)
-SPRINT 10 (27.02 - 05.03)  → Ujednolicenie UI & Mobile         🔳 TODO
+SPRINT 10A (16.02)         → Mobile MVP                         ✅ DONE
+  US-10.2: Mobile Navigation                                    ✅ DONE (16.02)
+  US-10.3: Responsive Tables → Card Views                       ✅ DONE (16.02)
+  Full Mobile Audit (16 modules)                                ✅ DONE (16.02)
+SPRINT 10B (TBD)           → UI Unification                     🔳 TODO
 SPRINT 11 (16.02)          → Reports Module (Analytics)        ✅ DONE
 SPRINT 12 (16.02)          → RBAC + Settings UI                ✅ DONE
 ```
@@ -169,7 +173,7 @@ Globalny fix Unicode w projekcie + kompletna implementacja frontendu modułu za�
 
 **Subtasks**:
 - [x] Globalny fix Unicode w 29 plikach frontendowych (625 zamian)
-- [x] Obsługa emoji surrogate pairs (\uD83C\uDF89 → 🎉)
+- [x] Obsługa emoji surrogate pairs (\\uD83C\\uDF89 → 🎉)
 - [x] Usunięcie zduplikowanych stron `/queue` i `/reservations`
 - [x] Wymuszenie `charset=utf-8` w backend response headers
 - [x] Domyślny widok listy rezerwacji (zamiast kalendarza)
@@ -711,15 +715,232 @@ Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
 ---
 
-# 🎨 SPRINT 10: Ujednolicenie UI & Mobile (27.02 - 05.03.2026)
+# ✅ SPRINT 10A: Mobile MVP (16.02.2026)
 
 ## Cel
-Spójny wygląd wszystkich modułów + pełna responswność mobilna.
+Pełna responsywność mobilna dla wszystkich 16 modułów systemu + mobilna nawigacja.
 
-**Estymacja:** ~5-7 dni  
+**Estymacja:** ~3-5 dni (zrealizowano w ~6 godzin)  
 **Wersja:** v1.9.0  
+**Branch:** `feature/sprint-10a-mobile-mvp`  
+**PR**: #82  
+**Status**: ✅ DONE (16.02.2026)  
+**Czas realizacji**: ~6 godzin
+
+---
+
+### US-10.2: Mobile Navigation (Hamburger + Sheet Sidebar)
+**Priority**: 🔴 CRITICAL  
+**Points**: 10  
+**Status**: ✅ DONE (16.02.2026)
+
+**Subtasks**:
+- [x] DashboardLayout: responsive padding (`pl-0 lg:pl-[280px]`)
+- [x] Sidebar: `hidden lg:flex` desktop + Sheet overlay mobile
+- [x] Header: hamburger button (`lg:hidden`) z Sheet trigger
+- [x] Auto-close mobile sidebar on navigation (usePathname listener)
+- [x] Responsive welcome header (text-2xl → text-xl sm:text-2xl)
+- [x] Wszystkie 12 modułów w mobilnym menu (Dashboard, Rezerwacje, Archiwum, Klienci, Sale, Menu, Kolejka, Zaliczki, Typy wydarzeń, Dziennik audytu, Raporty, Ustawienia)
+
+**Implementacja**:
+- **DashboardLayout** (`apps/frontend/app/dashboard/layout.tsx`):
+  - State: `sidebarOpen` + `setSidebarOpen`
+  - Responsive padding: `pl-0 lg:pl-[280px]` — brak paddingu na mobile, 280px na desktop
+  - Przekazanie `sidebarOpen` + `setSidebarOpen` do Header
+- **Sidebar** (`apps/frontend/components/layout/Sidebar.tsx`):
+  - Desktop: `hidden lg:flex fixed left-0 top-0 h-screen w-[280px]`
+  - Mobile: Sheet component z pełnym sidebarem wewnątrz
+  - Wszystkie 12 nav items z ikonami + badges
+  - Fix kolejności i ikon (commit 238ff85):
+    1. Dashboard, 2. Rezerwacje, 3. Archiwum, 4. Klienci, 5. Sale
+    6. Menu, 7. Kolejka, 8. Zaliczki (DollarSign), 9. Typy Wydarzeń (Theater)
+    10. Dziennik Audytu (FileText), 11. Raporty, 12. Ustawienia
+- **Header** (`apps/frontend/components/layout/Header.tsx`):
+  - Hamburger button: `lg:hidden` — widoczny tylko na mobile
+  - Sheet trigger w hamburger button
+  - Responsive welcome: `text-2xl → text-xl sm:text-2xl`
+- **Auto-close**: `usePathname()` listener — zamyka Sheet po kliknięciu w link
+- **Post-merge fixes** (commits po #82):
+  - commit b184336: dodano brakujące nav items (Raporty, Archiwum, Typy wydarzeń)
+  - commit 238ff85: przywrócono oryginalną kolejność i ikony (12 modułów)
+  - commit fc0a92a: fix PageHero (backHref/backLabel props dla menu subpages)
+  - commit 20fbbb3: fix EmptyState (actionHref prop dla link-based CTA)
+
+**Files changed**:
+- `apps/frontend/app/dashboard/layout.tsx` — responsive padding + state
+- `apps/frontend/components/layout/Sidebar.tsx` — Sheet mobile + hidden lg:flex desktop
+- `apps/frontend/components/layout/Header.tsx` — hamburger button + Sheet trigger
+- `apps/frontend/components/ui/sheet.tsx` — Shadcn Sheet component (nowy)
+
+---
+
+### US-10.3: Responsive Tables → Card Views
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE (16.02.2026)
+
+**Subtasks**:
+- [x] AuditLogTable: `hidden md:block` table + `md:hidden` mobile cards
+- [x] DepositsList: `hidden md:block` table + `md:hidden` mobile cards
+- [x] ReservationsList: już card-based, refined responsive (text sizes, spacing)
+- [x] ClientsList: już card-based, refined responsive (text sizes, spacing)
+- [x] Queue: już card-based, refined responsive
+- [x] Archive: już card-based, refined responsive
+
+**Implementacja**:
+- **AuditLogTable** (`apps/frontend/app/dashboard/audit-log/page.tsx`):
+  - Table: `hidden md:block` — ukryta na mobile
+  - Mobile cards: `md:hidden` — widoczne tylko na mobile
+  - Card layout: avatar, użytkownik, akcja badge, opis, data
+  - Action button: "Zobacz szczegóły" → otwiera modal
+- **DepositsList** (`apps/frontend/components/deposits/DepositsList.tsx`):
+  - Table: `hidden md:block` — ukryta na mobile
+  - Mobile cards: `md:hidden` — widoczne tylko na mobile
+  - Card layout: kwota (duża), status badge, typ, termin, actions
+  - Action dropdown: "Oznacz jako zapłacona", "Zobacz rezerwację"
+- **ReservationsList** — już card-based, drobne poprawki:
+  - Status badge: responsive sizing
+  - Actions: mobile-friendly spacing
+- **ClientsList** — już card-based, drobne poprawki:
+  - RODO badge: responsive positioning
+  - Contact info: responsive text sizes
+- **Queue** — już card-based, refined
+- **Archive** — już card-based, refined
+
+**Files changed**:
+- `apps/frontend/app/dashboard/audit-log/page.tsx` — dual render (table + cards)
+- `apps/frontend/components/deposits/DepositsList.tsx` — dual render (table + cards)
+- `apps/frontend/components/reservations/ReservationsList.tsx` — responsive refinement
+- `apps/frontend/components/clients/ClientsList.tsx` — responsive refinement
+
+---
+
+### Full Mobile Audit (16 Modules)
+**Priority**: 🟡 HIGH  
+**Points**: 12  
+**Status**: ✅ DONE (16.02.2026)
+
+**Audytowane moduły**:
+1. ✅ Dashboard — stat cards grid (grid-cols-1 → grid-cols-2 md:grid-cols-4)
+2. ✅ Rezerwacje (lista + szczegóły) — już responsive
+3. ✅ Archiwum — stat cards grid + cards list
+4. ✅ Klienci (lista + szczegóły) — już responsive
+5. ✅ Sale — stat cards grid + form headings (text-xl sm:text-2xl)
+6. ✅ Menu — wszystkie subpages (pakiety, kategorie, dania, dodatki, opcje)
+7. ✅ Kolejka — cards list + filters (flex-col sm:flex-row)
+8. ✅ Zaliczki — dual render (table + cards)
+9. ✅ Typy wydarzeń — form headings + padding (p-4 sm:p-6)
+10. ✅ Załączniki — attachment panel responsive
+11. ✅ Dziennik audytu — dual render (table + cards)
+12. ✅ Raporty — tabs + filters responsive
+13. ✅ Ustawienia — 3 tabs responsive (users table, roles, company form)
+14. ✅ Create Reservation Wizard — wszystkie 6 kroków responsive
+15. ✅ Dialogi — wszystkie modals responsive (max-w-[95vw] sm:max-w-lg)
+16. ✅ PDF Generator — bez zmian (backend only)
+
+**Zmiany globalne (wszystkie moduły)**:
+- **Stats grids**: `grid-cols-1 → grid-cols-2 md:grid-cols-4`
+  - 1 kolumna na xs, 2 na small, 4 na md+
+  - Moduły: Dashboard, Halls, Archive, Reports
+- **Padding**: `p-6/p-8 → p-4 sm:p-6 / p-4 sm:p-8`
+  - Mniejsze padddingi na mobile
+  - Moduły: wszystkie pages (16 total)
+- **Form headings**: `text-2xl → text-xl sm:text-2xl`
+  - Mniejsze nagłówki na mobile
+  - Moduły: Halls, EventTypes, Settings, Forms
+- **Filter flex**: `md:flex-row → sm:flex-row`
+  - Wcześniejsze przejście do row layout
+  - Moduły: Queue, Reservations, Clients, Archive, AuditLog
+- **Dialogs**: `max-w-lg → max-w-[95vw] sm:max-w-lg`
+  - Pełna szerokość na mobile z małym marginesem
+  - Wszystkie Dialog components (20+ total)
+
+**Files changed** (ponad 30 plików):
+- Layout: `DashboardLayout.tsx`, `Sidebar.tsx`, `Header.tsx`
+- Pages: 12 main pages + 15 subpages
+- Components: wszystkie forms, dialogs, cards, tables
+
+---
+
+### Post-Merge UTF-8 Fixes
+**Priority**: 🔴 CRITICAL  
+**Points**: 3  
+**Status**: ✅ DONE (16.02.2026)
+
+**Commity**:
+- `690bc58` (16.02, 23:23) — fix: replace all Unicode escapes with UTF-8 Polish characters across frontend
+- `8be9866` (16.02, 23:06) — fix: replace all Unicode escapes with UTF-8 Polish characters across frontend
+- `3fb61f5` (16.02, 19:05) — fix: replace all Unicode escapes with UTF-8 Polish characters across frontend
+
+**Problem**:
+- Unicode escape sequences (`\u0105` dla ą, `\u0119` dla ę, etc.) pojawiły się ponownie po niektórych merge
+- Emoji surrogate pairs (`\uD83C\uDF89` zamiast 🎉)
+
+**Rozwiązanie**:
+- Globalny fix we WSZYSTKICH plikach frontendowych
+- Zamiana escape sequences na właściwe znaki UTF-8
+- Razem ~625 zamian w 29 plikach
+- Pełna lista plików w commit 690bc58
+
+**Files fixed** (29 total):
+- Reports: `page.tsx` (przywrócony z UTF-8)
+- Menu: wszystkie subpages (categories, dishes, packages, options, add-ons)
+- Forms: CreateReservationForm, wszystkie dialogi
+- Components: PageHero, EmptyState, Sidebar, inne
+
+---
+
+## 📊 Summary Sprint 10A
+- **Total Points**: 33 (10 + 8 + 12 + 3)
+- **Deliverables**: 
+  - **Mobile Navigation**:
+    - Hamburger menu z Sheet overlay
+    - Desktop sidebar `hidden lg:flex`
+    - Auto-close on navigate
+    - Wszystkie 12 modułów w menu
+  - **Responsive Tables**:
+    - AuditLogTable: dual render (table desktop + cards mobile)
+    - DepositsList: dual render (table desktop + cards mobile)
+    - Pozostałe listy: refined responsive
+  - **Full Mobile Audit**:
+    - 16 modułów audytowanych
+    - Stats grids: 1 → 2 → 4 kolumny
+    - Responsive padding (p-4 sm:p-6)
+    - Responsive headings (text-xl sm:text-2xl)
+    - Responsive filters (flex-col sm:flex-row)
+    - Responsive dialogs (max-w-[95vw] sm:max-w-lg)
+  - **UTF-8 Fixes**:
+    - Globalny fix w 29 plikach (625 zamian)
+    - Emoji surrogate pairs → proper UTF-8
+  - **Post-merge fixes**:
+    - Dodano brakujące nav items (Raporty, Archiwum, Typy)
+    - Przywrócono oryginalną kolejność i ikony (12 modułów)
+    - Fix PageHero (backHref prop)
+    - Fix EmptyState (actionHref prop)
+- **Migracja DB**: ❌ Brak
+- **Restart wymagany**: frontend only
+- **Risk**: Niski (zrealizowano przed terminem w 6h)
+- **PR**: #82
+- **Post-merge commits**: 5 commits (b184336, 238ff85, fc0a92a, 20fbbb3, 690bc58)
+
+---
+
+# 🎨 SPRINT 10B: UI Unification (TBD)
+
+## Cel
+Spójny wygląd wszystkich modułów (kolory, typography, spacing, shadows) + dark mode support.
+
+**Estymacja:** ~3-5 dni  
+**Wersja:** v1.10.0  
 **Branch:** `feature/ui-unification`  
 **Status**: 🔳 TODO
+
+**Zakres**:
+- Design system refinement (colors, typography, spacing scale)
+- Component library unification (buttons, badges, cards)
+- Dark mode support (Tailwind + CSS variables)
+- Animation consistency (Framer Motion presets)
+- Accessibility audit (ARIA labels, keyboard navigation)
 
 ---
 
@@ -1106,19 +1327,21 @@ System kontroli dostępu oparty na rolach z UI zarządzania użytkownikami, rola
 | 8 | System Rabatów | 26 | ~2-3 dni | ~1 dzień | v1.7.0 | ✅ DONE |
 | 9.1 | Audit Logging Backend | 28 | ~1 dzień | ~4h | v1.8.0 | ✅ DONE |
 | 9.2 | Audit UI + Archive + Dashboard | 19 | ~1 dzień | ~4h | v1.8.1 | ✅ DONE |
-| 10 | Ujednolicenie UI & Mobile | 47 | ~5-7 dni | — | v1.9.0 | 🔳 TODO |
+| 10A | Mobile MVP | 33 | ~3-5 dni | ~6h | v1.9.0 | ✅ DONE |
+| 10B | UI Unification | TBD | ~3-5 dni | — | v1.10.0 | 🔳 TODO |
 | 11 | Reports Module | 45 | ~3-4 dni | ~5h | Reports v1.0.0 | ✅ DONE |
 | 12 | RBAC + Settings UI | 45 | ~4-5 dni | ~3h | RBAC v1.0.0 | ✅ DONE |
-| **RAZEM** | | **251** | **~21-31 dni** | **~3.5 dni** | | **7/8 DONE** |
+| **RAZEM** | | **237** | **~20-29 dni** | **~3 dni** | | **8/9 DONE** |
 
-**Velocity Sprint 11 & 12:**
+**Velocity Sprint 10A-12:**
+- Sprint 10A: 33 punkty / 6h = **5.5 pkt/h** 🚀
 - Sprint 11: 45 punktów / 5h = **9 pkt/h** 🚀
 - Sprint 12: 45 punktów / 3h = **15 pkt/h** 🚀🚀
-- Średnia Sprinty 11-12: **12 pkt/h** (ponad 3x szybciej niż estymacja)
+- Średnia Sprinty 10A-12: **9.8 pkt/h** (ponad 3x szybciej niż estymacja)
 
 ---
 
-**Last Updated**: 16.02.2026, 21:45 CET  
-**Project Status**: ✅ Sprinty 11-12 COMPLETE — Reports Analytics + RBAC System done  
-**Version**: v1.9.0 (Reports Module + RBAC Module)  
-**Next Sprint**: Sprint 10 — Ujednolicenie UI & Mobile (47 pts, ~5-7 dni)
+**Last Updated**: 17.02.2026, 19:41 CET  
+**Project Status**: ✅ Sprinty 6-12 (poza 10B) COMPLETE — Full Mobile MVP + Reports + RBAC done  
+**Version**: v1.9.0 (Mobile MVP + Reports Module + RBAC Module)  
+**Next Sprint**: Sprint 10B — UI Unification (TBD pts, ~3-5 dni)
