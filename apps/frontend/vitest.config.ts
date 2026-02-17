@@ -11,12 +11,12 @@ export default defineConfig({
     // ========================================
     environment: 'jsdom',
     globals: true,
-    
+
     // ========================================
     // Setup
     // ========================================
     setupFiles: ['./__tests__/setup.ts'],
-    
+
     // ========================================
     // Test matching
     // ========================================
@@ -26,10 +26,15 @@ export default defineConfig({
     ],
     exclude: [
       'node_modules',
-      'e2e/**',  // E2E tests use Playwright, not Vitest
+      'e2e/**', // E2E tests use Playwright, not Vitest
       '.next',
     ],
-    
+
+    // ========================================
+    // Behavior
+    // ========================================
+    passWithNoTests: true,
+
     // ========================================
     // Coverage
     // ========================================
@@ -56,14 +61,14 @@ export default defineConfig({
         statements: 60,
       },
     },
-    
+
     // ========================================
     // Performance
     // ========================================
     pool: 'forks',
     testTimeout: 10000,
   },
-  
+
   // ========================================
   // Path aliases (match tsconfig/next.config)
   // ========================================
