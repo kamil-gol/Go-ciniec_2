@@ -179,3 +179,125 @@ export const layout = {
   /** Detail grid — 2col mobile, 4col desktop */
   detailGrid: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4',
 } as const
+
+/**
+ * Typography Scale — Unified type system
+ *
+ * Hierarchy:
+ *   1. pageTitle     — main h1 on each dashboard page (inside PageHero)
+ *   2. sectionTitle  — section headings within a page
+ *   3. cardTitle     — card/panel headers
+ *   4. body          — default body text
+ *   5. muted         — secondary/helper text
+ *   6. label         — form labels
+ *
+ * Rules:
+ *   - Always use `text-foreground` / `text-muted-foreground` (semantic)
+ *   - Never hardcode gray-500, neutral-500 etc. for text
+ *   - PageHero titles are white (on gradient) — handled separately
+ */
+export const typography = {
+  /** Page title — used in PageHero h1 (white on gradient) */
+  pageTitle: 'text-2xl sm:text-4xl font-bold tracking-tight',
+  /** Page title — standalone (non-hero) pages */
+  pageTitleStandalone: 'text-2xl sm:text-3xl font-bold text-foreground',
+  /** Section title — e.g. "Szczegóły rezerwacji", "Podsumowanie" */
+  sectionTitle: 'text-lg sm:text-xl font-semibold text-foreground',
+  /** Card title — inside Card headers */
+  cardTitle: 'text-base font-semibold text-foreground',
+  /** Body text — default readable text */
+  body: 'text-sm text-foreground',
+  /** Muted text — descriptions, helper text, timestamps */
+  muted: 'text-sm text-muted-foreground',
+  /** Small muted — compact secondary info */
+  smallMuted: 'text-xs text-muted-foreground',
+  /** Label — form field labels */
+  label: 'text-sm font-medium text-foreground',
+  /** Hero subtitle — white text on gradient background */
+  heroSubtitle: 'text-white/85 text-sm sm:text-lg',
+  /** Stat value — large numbers in stat cards */
+  statValue: 'text-xl sm:text-2xl font-bold text-foreground',
+  /** Stat label — stat card descriptions */
+  statLabel: 'text-xs sm:text-sm text-muted-foreground',
+} as const
+
+/**
+ * Button Variant Tokens — Unified CTA system
+ *
+ * Variant usage guide:
+ *   - primary (default): Main CTA — "Utwórz rezerwację", "Zapisz", "Dodaj"
+ *   - secondary:         Secondary action — "Anuluj", "Wróć"
+ *   - destructive:       Danger — "Usuń", "Anuluj rezerwację"
+ *   - ghost:             Toolbar/inline — icon buttons, filters, toggles
+ *   - outline:           Bordered — filter chips, toggles, secondary nav
+ *   - link:              Inline links — "Zobacz więcej", "Edytuj"
+ *   - gradient:          Premium CTA — hero action buttons only
+ *
+ * Size usage guide:
+ *   - sm:      Toolbar buttons, table row actions, compact UI
+ *   - default: Form submit, dialog actions, card CTAs
+ *   - lg:      Hero CTA, landing page, onboarding
+ *   - icon:    Icon-only buttons (toggle, close, menu)
+ *
+ * Color system:
+ *   - Primary CTA: indigo-600 (via CSS --primary) — consistent across all modules
+ *   - Destructive: red-600 — universal danger color
+ *   - Secondary/Ghost/Outline: neutral palette — theme-aware
+ *   - Focus ring: ring-ring (CSS variable) — accessible focus indicator
+ *
+ * Dark mode:
+ *   - All variants auto-adapt via Tailwind dark: prefixes
+ *   - Ghost/outline use neutral-800 hover in dark mode
+ *   - Focus ring uses ring-offset-background for proper contrast
+ */
+export const buttonTokens = {
+  /** Primary CTA color — indigo across all modules */
+  primaryColor: 'bg-primary-600 hover:bg-primary-700',
+  primaryColorDark: 'dark:bg-primary-500 dark:hover:bg-primary-600',
+  /** Destructive color */
+  destructiveColor: 'bg-red-600 hover:bg-red-700',
+  destructiveColorDark: 'dark:bg-red-600 dark:hover:bg-red-700',
+  /** Secondary — neutral palette */
+  secondaryColor: 'bg-neutral-100 hover:bg-neutral-200',
+  secondaryColorDark: 'dark:bg-neutral-800 dark:hover:bg-neutral-700',
+  /** Ghost — transparent with hover */
+  ghostColor: 'hover:bg-neutral-100',
+  ghostColorDark: 'dark:hover:bg-neutral-800',
+  /** Outline — bordered */
+  outlineColor: 'border-2 border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50',
+  outlineColorDark: 'dark:border-neutral-700 dark:hover:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700/50',
+  /** Shared focus ring */
+  focusRing: 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background',
+  /** Shared transition */
+  transition: 'transition-all duration-200 active:scale-[0.98]',
+} as const
+
+/**
+ * Border Radius Scale — Unified rounding system
+ *
+ *   - Containers (Card, Dialog, Sheet, Hero): rounded-2xl
+ *   - Interactive (Button, Input, Select, Textarea): rounded-xl
+ *   - Pills (Badge, Tag, Chip): rounded-full
+ */
+export const radius = {
+  container: 'rounded-2xl',
+  interactive: 'rounded-xl',
+  pill: 'rounded-full',
+} as const
+
+/**
+ * Shadow Scale — Unified elevation system
+ *
+ *   - card:    Default card resting state
+ *   - cardHover: Card on hover
+ *   - modal:   Dialog/Sheet overlay
+ *   - none:    Hero sections (gradient bg)
+ *
+ * Dark mode strategy: shadows → ring borders
+ */
+export const shadows = {
+  card: 'shadow-sm dark:shadow-none dark:ring-1 dark:ring-neutral-700/50',
+  cardHover: 'hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/30',
+  modal: 'shadow-lg dark:shadow-2xl dark:shadow-black/40',
+  hero: 'shadow-none',
+} as const
