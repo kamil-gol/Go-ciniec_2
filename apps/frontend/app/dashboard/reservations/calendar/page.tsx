@@ -56,8 +56,8 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: 
   },
   COMPLETED: {
     label: 'Zakończone',
-    dotClass: 'bg-slate-400',
-    bgClass: 'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400',
+    dotClass: 'bg-neutral-400',
+    bgClass: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400',
   },
   CANCELLED: {
     label: 'Anulowane',
@@ -122,7 +122,7 @@ function ReservationPill({ reservation, onClick }: { reservation: CalendarReserv
       style={{ backgroundColor: `${color}18`, color, borderLeft: `3px solid ${color}` }}
       title={`${reservation.eventType?.name || 'Wydarzenie'} \u2014 ${reservation.client?.firstName} ${reservation.client?.lastName} (${reservation.startTime || ''})`}
     >
-      <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-gray-400')} />
+      <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-neutral-400')} />
       {reservation.startTime && <span className="opacity-70">{reservation.startTime} </span>}
       {name}
     </button>

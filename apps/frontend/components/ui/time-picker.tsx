@@ -73,7 +73,7 @@ export function TimePicker({
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
-        <label className="text-sm font-medium text-secondary-700">{label}</label>
+        <label className="text-sm font-medium text-neutral-700">{label}</label>
       )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -85,7 +85,7 @@ export function TimePicker({
               'border-secondary-300 bg-white hover:border-primary-400 hover:bg-primary-50/50',
               'focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
               'transition-all duration-200',
-              !value && 'text-secondary-400',
+              !value && 'text-neutral-400',
               error && 'border-red-400 focus:ring-red-400',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
@@ -96,7 +96,7 @@ export function TimePicker({
         </PopoverTrigger>
         <PopoverContent className="w-[220px] p-0 bg-white" align="start">
           <div className="px-3 pt-3 pb-1">
-            <p className="text-[11px] font-medium text-secondary-400 uppercase tracking-wider">
+            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
               Wybierz godzinę
             </p>
           </div>
@@ -123,8 +123,8 @@ export function TimePicker({
                       isSelected
                         ? 'bg-primary-600 text-white font-semibold hover:bg-primary-700 hover:text-white'
                         : isDimmed
-                          ? 'text-secondary-400'
-                          : 'text-secondary-700'
+                          ? 'text-neutral-400'
+                          : 'text-neutral-700'
                     )}
                   >
                     {time}

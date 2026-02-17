@@ -43,7 +43,7 @@ const statusLabels: Record<string, { label: string; emoji: string; classes: stri
   COMPLETED: {
     label: 'Zakończone',
     emoji: '🏁',
-    classes: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+    classes: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   },
 }
 

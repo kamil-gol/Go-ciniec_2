@@ -307,7 +307,7 @@ export function MenuSelectionFlow({
                     !isClickable && 'cursor-not-allowed opacity-60',
                     isCompleted && 'border-green-500 bg-gradient-to-br from-green-500 to-emerald-500 text-white',
                     isActive && `border-white bg-gradient-to-br ${step.gradient} text-white shadow-xl`,
-                    !isActive && !isCompleted && 'border-gray-300 bg-white text-gray-400 dark:bg-gray-800 dark:border-gray-600'
+                    !isActive && !isCompleted && 'border-neutral-300 bg-white text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600'
                   )}
                 >
                   {isCompleted ? <Check className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}
@@ -319,7 +319,7 @@ export function MenuSelectionFlow({
                   isClickable && 'cursor-pointer',
                   isActive && 'text-transparent bg-clip-text bg-gradient-to-r ' + step.gradient,
                   isCompleted && 'text-green-600',
-                  !isActive && !isCompleted && 'text-gray-500'
+                  !isActive && !isCompleted && 'text-neutral-500'
                 )}>{step.label}</span>
               </div>
             );

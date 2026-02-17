@@ -100,23 +100,23 @@ export default function CategorySettingsSection({
   }
 
   return (
-    <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 dark:border-neutral-700/60 p-8">
+    <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/60 dark:border-neutral-700/60 p-8">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
             <span className="text-2xl">{'🍽️'}</span>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100">Kategorie dań w pakiecie</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kategorie dań w pakiecie</h2>
         </div>
-        <p className="text-sm text-slate-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
           Wybierz z jakich kategorii goście będą mogli wybierać dania oraz określ
           minimalną i maksymalną liczbę wyborów.
         </p>
       </div>
 
       {categories.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 dark:bg-neutral-800 rounded-xl">
-          <p className="text-slate-500 dark:text-neutral-400">
+        <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+          <p className="text-neutral-500 dark:text-neutral-400">
             Brak dostępnych kategorii dań. Najpierw stwórz kategorie w systemie.
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function CategorySettingsSection({
                     ? hasError
                       ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
                       : 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20'
-                    : 'border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 hover:border-slate-300 dark:hover:border-neutral-600'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 hover:border-neutral-300 dark:hover:border-neutral-600'
                 }`}
               >
                 {/* Header with checkbox */}
@@ -145,14 +145,14 @@ export default function CategorySettingsSection({
                       type="checkbox"
                       checked={enabled}
                       onChange={(e) => handleToggle(category.id, e.target.checked)}
-                      className="mr-3 w-5 h-5 rounded border-slate-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      className="mr-3 w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     />
                     <div>
-                      <div className="font-semibold text-slate-900 dark:text-neutral-100">
+                      <div className="font-semibold text-neutral-900 dark:text-neutral-100">
                         {category.icon && <span className="mr-2 text-lg">{category.icon}</span>}
                         {category.name}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">{category.slug}</div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{category.slug}</div>
                     </div>
                   </label>
 
@@ -172,7 +172,7 @@ export default function CategorySettingsSection({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Min Select */}
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+                        <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                           Min wyborów
                         </label>
                         <input
@@ -190,14 +190,14 @@ export default function CategorySettingsSection({
                           className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 ${
                             hasError
                               ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
-                              : 'border-slate-300 dark:border-neutral-600 focus:ring-blue-500'
+                              : 'border-neutral-300 dark:border-neutral-600 focus:ring-blue-500'
                           }`}
                         />
                       </div>
 
                       {/* Max Select */}
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+                        <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                           Max wyborów
                         </label>
                         <input
@@ -215,7 +215,7 @@ export default function CategorySettingsSection({
                           className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 ${
                             hasError
                               ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
-                              : 'border-slate-300 dark:border-neutral-600 focus:ring-blue-500'
+                              : 'border-neutral-300 dark:border-neutral-600 focus:ring-blue-500'
                           }`}
                         />
                       </div>
@@ -229,9 +229,9 @@ export default function CategorySettingsSection({
                             onChange={(e) =>
                               handleChange(category.id, 'isRequired', e.target.checked)
                             }
-                            className="mr-2 w-4 h-4 rounded border-slate-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            className="mr-2 w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
                           />
-                          <span className="text-xs font-semibold text-slate-700 dark:text-neutral-300">
+                          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                             Wymagana
                           </span>
                         </label>
@@ -239,7 +239,7 @@ export default function CategorySettingsSection({
 
                       {/* Custom Label */}
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+                        <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                           Własna etykieta
                         </label>
                         <input
@@ -249,7 +249,7 @@ export default function CategorySettingsSection({
                             handleChange(category.id, 'customLabel', e.target.value || null)
                           }
                           placeholder={category.name}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -273,11 +273,11 @@ export default function CategorySettingsSection({
 
       {/* Summary */}
       {localSettings.filter((s) => s.isEnabled).length > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-neutral-700">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-3">
+        <div className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
             {'📊'} Podsumowanie:
           </h3>
-          <ul className="text-sm text-slate-600 dark:text-neutral-400 space-y-2">
+          <ul className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
             {localSettings
               .filter((s) => s.isEnabled)
               .map((s) => {

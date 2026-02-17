@@ -46,7 +46,7 @@ export default function NewPackagePage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-8">
         <div className="max-w-4xl mx-auto">
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-2 text-sm text-slate-600 mb-6">
+          <nav className="flex items-center gap-2 text-sm text-neutral-600 mb-6">
             <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
               Dashboard
             </Link>
@@ -62,7 +62,7 @@ export default function NewPackagePage() {
               Pakiety
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-slate-900 font-medium">Nowy pakiet</span>
+            <span className="text-neutral-900 font-medium">Nowy pakiet</span>
           </nav>
 
           {/* Header */}
@@ -72,8 +72,8 @@ export default function NewPackagePage() {
                 <Package className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Nowy pakiet menu</h1>
-                <p className="text-slate-600">Szablon: {selectedTemplate.name}</p>
+                <h1 className="text-3xl font-bold text-neutral-900">Nowy pakiet menu</h1>
+                <p className="text-neutral-600">Szablon: {selectedTemplate.name}</p>
               </div>
             </div>
             <button
@@ -118,7 +118,7 @@ export default function NewPackagePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-8">
       <div className="max-w-5xl mx-auto">
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm text-slate-600 mb-8">
+        <nav className="flex items-center gap-2 text-sm text-neutral-600 mb-8">
           <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
             Dashboard
           </Link>
@@ -134,7 +134,7 @@ export default function NewPackagePage() {
             Pakiety
           </Link>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-slate-900 font-medium">Wybierz szablon</span>
+          <span className="text-neutral-900 font-medium">Wybierz szablon</span>
         </nav>
 
         {/* Header */}
@@ -147,7 +147,7 @@ export default function NewPackagePage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 bg-clip-text text-transparent">
                 Wybierz szablon menu
               </h1>
-              <p className="text-slate-600 text-lg mt-1">
+              <p className="text-neutral-600 text-lg mt-1">
                 Wybierz szablon, dla którego chcesz utworzyć nowy pakiet
               </p>
             </div>
@@ -156,15 +156,15 @@ export default function NewPackagePage() {
 
         {/* Templates Grid */}
         {templates.length === 0 ? (
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200/60 p-16 text-center">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-neutral-200/60 p-16 text-center">
             <div className="max-w-md mx-auto">
               <div className="inline-flex p-6 bg-blue-50 rounded-full mb-6">
                 <Calendar className="w-12 h-12 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">
+              <h3 className="text-2xl font-bold text-neutral-900 mb-3">
                 Brak aktywnych szablonów
               </h3>
-              <p className="text-slate-600 mb-6">
+              <p className="text-neutral-600 mb-6">
                 Przed utworzeniem pakietu musisz utworzyć szablon menu.
               </p>
               <Link
@@ -182,15 +182,15 @@ export default function NewPackagePage() {
               <button
                 key={template.id}
                 onClick={() => setSelectedTemplate(template)}
-                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 hover:shadow-2xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 p-6 text-left"
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/60 hover:shadow-2xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 p-6 text-left"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-xl font-bold text-neutral-900 mb-2 group-hover:text-blue-600 transition-colors">
                       {template.name}
                     </h3>
                     {template.description && (
-                      <p className="text-sm text-slate-600 line-clamp-2">
+                      <p className="text-sm text-neutral-600 line-clamp-2">
                         {template.description}
                       </p>
                     )}
@@ -201,20 +201,20 @@ export default function NewPackagePage() {
                 </div>
 
                 {/* Template Info */}
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-neutral-100">
                   {template.eventType && (
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: template.eventType.color || '#3b82f6' }}
                       ></div>
-                      <span className="text-sm text-slate-600">
+                      <span className="text-sm text-neutral-600">
                         {template.eventType.name}
                       </span>
                     </div>
                   )}
                   {template._count && (
-                    <span className="text-sm text-slate-500">
+                    <span className="text-sm text-neutral-500">
                       {template._count.packages} pakietów
                     </span>
                   )}

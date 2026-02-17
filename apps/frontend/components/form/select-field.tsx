@@ -29,7 +29,7 @@ export const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>
     return (
       <div className="space-y-1">
         {label && (
-          <label className="block text-sm font-medium text-secondary-700 dark:text-neutral-300">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
             {label}
           </label>
         )}

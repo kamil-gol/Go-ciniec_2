@@ -55,8 +55,8 @@ export function MenuDishesPreview({ dishSelections, className }: MenuDishesPrevi
     return (
       <Card className={cn('border-dashed', className)}>
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-            <UtensilsCrossed className="h-8 w-8 text-gray-400" />
+          <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4">
+            <UtensilsCrossed className="h-8 w-8 text-neutral-400" />
           </div>
           <p className="text-sm text-muted-foreground">Brak wybranych dań</p>
         </CardContent>
@@ -88,7 +88,7 @@ export function MenuDishesPreview({ dishSelections, className }: MenuDishesPrevi
                     key={dish.dishId}
                     className={cn(
                       'flex items-start gap-3 p-3 rounded-lg transition-colors',
-                      'hover:bg-gray-50 dark:hover:bg-gray-800',
+                      'hover:bg-neutral-50 dark:hover:bg-neutral-800',
                       idx !== category.dishes.length - 1 && 'border-b'
                     )}
                   >
@@ -162,7 +162,7 @@ export function MenuDishesPreviewCompact({ dishSelections, className }: MenuDish
         {dishSelections.map((category) => (
           <div
             key={category.categoryId}
-            className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+            className="flex items-center gap-2 p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
           >
             <span className="text-lg">{CATEGORY_ICONS[category.categoryName] || '🍽️'}</span>
             <div className="flex-1 min-w-0">

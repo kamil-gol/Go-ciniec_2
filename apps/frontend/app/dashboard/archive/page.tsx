@@ -73,7 +73,7 @@ export default function ArchivePage() {
           <Link href="/dashboard/reservations">
             <Button
               size="lg"
-              className="bg-white text-gray-600 hover:bg-white/90 shadow-xl"
+              className="bg-white text-neutral-600 hover:bg-white/90 shadow-xl"
             >
               <ArrowLeft className="mr-2 h-5 w-5" />
               Wróć do rezerwacji
