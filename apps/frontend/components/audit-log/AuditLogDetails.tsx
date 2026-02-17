@@ -32,7 +32,7 @@ const actionColors: Record<string, string> = {
   DELETE: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
   STATUS_CHANGE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
   LOGIN: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
-  LOGOUT: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-800',
+  LOGOUT: 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-900/30 dark:text-neutral-300 dark:border-neutral-800',
 };
 
 const entityLabels: Record<string, string> = {
@@ -57,7 +57,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl !p-0 overflow-hidden">
         {/* Gradient Header */}
-        <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-slate-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-slate-800 px-6 py-5">
+        <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-neutral-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-neutral-800 px-6 py-5">
           <button
             onClick={onClose}
             className="absolute top-3.5 right-3.5 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-200"

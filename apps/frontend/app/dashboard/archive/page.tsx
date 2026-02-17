@@ -73,7 +73,7 @@ export default function ArchivePage() {
           <Link href="/dashboard/reservations">
             <Button
               size="lg"
-              className="bg-white text-gray-600 hover:bg-white/90 shadow-xl"
+              className="bg-white text-neutral-600 hover:bg-white/90 shadow-xl"
             >
               <ArrowLeft className="mr-2 h-5 w-5" />
               Wróć do rezerwacji
@@ -89,7 +89,7 @@ export default function ArchivePage() {
           value={stats.total}
           subtitle="Łącznie w archiwum"
           icon={Archive}
-          iconGradient="from-gray-500 to-slate-500"
+          iconGradient="from-neutral-500 to-neutral-600"
           delay={0.1}
         />
         <StatCard

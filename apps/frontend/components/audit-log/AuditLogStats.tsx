@@ -88,7 +88,7 @@ export function AuditLogStats() {
         value={stats.totalLogs}
         subtitle="Łączna liczba zmian"
         icon={Activity}
-        iconGradient="from-zinc-600 to-slate-600"
+        iconGradient="from-zinc-600 to-neutral-600"
         delay={0.1}
       />
       <StatCard

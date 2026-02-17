@@ -69,7 +69,7 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'relative bg-white dark:bg-neutral-900 rounded-lg shadow-xl dark:shadow-black/30 w-full',
+      'relative bg-white dark:bg-neutral-900 rounded-2xl shadow-xl dark:shadow-black/30 w-full',
       'border border-neutral-200/80 dark:border-neutral-700/50',
       'max-h-[85vh] flex flex-col',
       className
@@ -77,7 +77,7 @@ const DialogContent = React.forwardRef<
     {...props}
   >
     {onClose && (
-      <div className="sticky top-0 z-50 flex justify-end p-2 bg-white dark:bg-neutral-900 rounded-t-lg">
+      <div className="sticky top-0 z-50 flex justify-end p-2 bg-white dark:bg-neutral-900 rounded-t-2xl">
         <button
           onClick={onClose}
           className="rounded-sm p-1 opacity-70 hover:opacity-100 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"

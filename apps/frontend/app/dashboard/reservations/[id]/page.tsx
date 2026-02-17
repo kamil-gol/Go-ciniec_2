@@ -202,7 +202,7 @@ export default function ReservationDetailsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {isArchived && (
-                    <Badge className="bg-gray-200 text-gray-800 border-gray-300">
+                    <Badge className="bg-neutral-200 text-neutral-800 border-neutral-300">
                       <Archive className="h-3 w-3 mr-1" />
                       Zarchiwizowane
                     </Badge>
@@ -418,7 +418,7 @@ export default function ReservationDetailsPage() {
                     {!isArchived ? (
                       <Button 
                         variant="outline" 
-                        className="w-full justify-start text-gray-600 hover:text-gray-700" 
+                        className="w-full justify-start text-neutral-600 hover:text-neutral-700" 
                         size="lg"
                         disabled={archiveMutation.isPending}
                         onClick={handleArchive}

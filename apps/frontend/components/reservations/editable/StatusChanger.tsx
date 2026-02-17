@@ -280,7 +280,7 @@ export function StatusChanger({
                   Klient zostanie poinformowany o anulowaniu.
                 </div>
               )}
-              <div className="p-3 bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm">
+              <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm">
                 <strong>Powód:</strong> {reason}
               </div>
             </AlertDialogDescription>

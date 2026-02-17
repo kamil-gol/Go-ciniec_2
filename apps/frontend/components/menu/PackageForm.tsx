@@ -268,18 +268,18 @@ export default function PackageForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* BASIC INFO */}
-      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 dark:border-neutral-700/60 p-8">
+      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/60 dark:border-neutral-700/60 p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100">Podstawowe informacje</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Podstawowe informacje</h2>
         </div>
 
         <div className="space-y-5">
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="name" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               Nazwa pakietu <span className="text-red-500">*</span>
             </label>
             <input
@@ -291,13 +291,13 @@ export default function PackageForm({
               required
               minLength={3}
               placeholder="np. Pakiet Komunijny Elegancki"
-              className="w-full px-4 py-3 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
           {/* Short Description */}
           <div>
-            <label htmlFor="shortDescription" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="shortDescription" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               Krótki opis
             </label>
             <input
@@ -308,14 +308,14 @@ export default function PackageForm({
               onChange={handleChange}
               maxLength={100}
               placeholder="Krótki opis wyświetlany na karcie pakietu"
-              className="w-full px-4 py-3 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">{formData.shortDescription.length}/100 znaków</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{formData.shortDescription.length}/100 znaków</p>
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="description" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               Pełny opis
             </label>
             <textarea
@@ -325,24 +325,24 @@ export default function PackageForm({
               onChange={handleChange}
               rows={4}
               placeholder="Szczegółowy opis pakietu, co zawiera, dla kogo jest przeznaczony..."
-              className="w-full px-4 py-3 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+              className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
             />
           </div>
         </div>
       </div>
 
       {/* PRICING */}
-      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 dark:border-neutral-700/60 p-8">
+      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/60 dark:border-neutral-700/60 p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
             <Save className="w-5 h-5 text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100">Ceny</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Ceny</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div>
-            <label htmlFor="pricePerAdult" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="pricePerAdult" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               Dorośli <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -355,14 +355,14 @@ export default function PackageForm({
                 required
                 placeholder="180.00"
                 pattern="[0-9]+\.?[0-9]*"
-                className="w-full px-4 py-3 pr-12 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 pr-12 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-neutral-400 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 font-medium">zł</span>
             </div>
           </div>
 
           <div>
-            <label htmlFor="pricePerChild" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="pricePerChild" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               Dzieci (4-12 lat) <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -375,14 +375,14 @@ export default function PackageForm({
                 required
                 placeholder="90.00"
                 pattern="[0-9]+\.?[0-9]*"
-                className="w-full px-4 py-3 pr-12 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 pr-12 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-neutral-400 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 font-medium">zł</span>
             </div>
           </div>
 
           <div>
-            <label htmlFor="pricePerToddler" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="pricePerToddler" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               Maluchy (0-3 lata)
             </label>
             <div className="relative">
@@ -394,9 +394,9 @@ export default function PackageForm({
                 onChange={handleChange}
                 placeholder="0.00"
                 pattern="[0-9]+\.?[0-9]*"
-                className="w-full px-4 py-3 pr-12 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 pr-12 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-neutral-400 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 font-medium">zł</span>
             </div>
           </div>
         </div>
@@ -410,12 +410,12 @@ export default function PackageForm({
       />
 
       {/* DISPLAY OPTIONS */}
-      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 dark:border-neutral-700/60 p-8">
+      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/60 dark:border-neutral-700/60 p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
             <Palette className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100">Wygląd i opcje</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Wygląd i opcje</h2>
         </div>
 
         <div className="space-y-6">
@@ -428,10 +428,10 @@ export default function PackageForm({
                   name="isPopular"
                   checked={formData.isPopular}
                   onChange={handleChange}
-                  className="w-5 h-5 rounded border-slate-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 />
               </div>
-              <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 🔥 Popularny
               </span>
             </label>
@@ -443,10 +443,10 @@ export default function PackageForm({
                   name="isRecommended"
                   checked={formData.isRecommended}
                   onChange={handleChange}
-                  className="w-5 h-5 rounded border-slate-300 dark:border-neutral-600 text-green-600 focus:ring-2 focus:ring-green-500 cursor-pointer"
+                  className="w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 text-green-600 focus:ring-2 focus:ring-green-500 cursor-pointer"
                 />
               </div>
-              <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+              <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                 ⭐ Polecany
               </span>
             </label>
@@ -454,7 +454,7 @@ export default function PackageForm({
 
           {/* Color Picker */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-3">
+            <label className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
               Kolor pakietu
             </label>
             <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
@@ -466,7 +466,7 @@ export default function PackageForm({
                   className={`group relative w-full aspect-square rounded-xl transition-all ${
                     formData.color === preset.value
                       ? 'ring-4 ring-blue-500 ring-offset-2 dark:ring-offset-neutral-900 scale-110'
-                      : 'hover:scale-105 hover:ring-2 hover:ring-slate-300 dark:hover:ring-neutral-600'
+                      : 'hover:scale-105 hover:ring-2 hover:ring-neutral-300 dark:hover:ring-neutral-600'
                   }`}
                   style={{ backgroundColor: `#${preset.value}` }}
                   title={preset.name}
@@ -487,10 +487,10 @@ export default function PackageForm({
                 onChange={handleChange}
                 placeholder="3b82f6"
                 maxLength={7}
-                className="flex-1 px-4 py-2.5 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
+                className="flex-1 px-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
               />
               <div 
-                className="w-12 h-12 rounded-xl border-2 border-slate-300 dark:border-neutral-600 shadow-sm"
+                className="w-12 h-12 rounded-xl border-2 border-neutral-300 dark:border-neutral-600 shadow-sm"
                 style={{ backgroundColor: `#${formData.color.replace('#', '')}` }}
               ></div>
             </div>
@@ -499,7 +499,7 @@ export default function PackageForm({
           {/* Display inputs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label htmlFor="displayOrder" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+              <label htmlFor="displayOrder" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                 Kolejność
               </label>
               <input
@@ -510,12 +510,12 @@ export default function PackageForm({
                 onChange={handleChange}
                 min="0"
                 placeholder="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label htmlFor="icon" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+              <label htmlFor="icon" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                 Emoji
               </label>
               <input
@@ -526,12 +526,12 @@ export default function PackageForm({
                 onChange={handleChange}
                 placeholder="🎂"
                 maxLength={4}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-2xl text-center"
+                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-2xl text-center"
               />
             </div>
 
             <div>
-              <label htmlFor="badgeText" className="block text-sm font-semibold text-slate-700 dark:text-neutral-300 mb-2">
+              <label htmlFor="badgeText" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                 Tekst odznaki
               </label>
               <input
@@ -542,7 +542,7 @@ export default function PackageForm({
                 onChange={handleChange}
                 placeholder="BESTSELLER"
                 maxLength={20}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all uppercase"
+                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all uppercase"
               />
             </div>
           </div>
@@ -554,7 +554,7 @@ export default function PackageForm({
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-8 py-3.5 bg-white dark:bg-neutral-800 border-2 border-slate-300 dark:border-neutral-600 rounded-xl text-slate-700 dark:text-neutral-300 font-semibold hover:bg-slate-50 dark:hover:bg-neutral-700 hover:border-slate-400 dark:hover:border-neutral-500 transition-all flex items-center gap-2 shadow-sm"
+          className="px-8 py-3.5 bg-white dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-600 rounded-xl text-neutral-700 dark:text-neutral-300 font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-all flex items-center gap-2 shadow-sm"
           disabled={loading}
         >
           <X className="w-5 h-5" />

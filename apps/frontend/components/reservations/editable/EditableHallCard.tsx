@@ -118,7 +118,7 @@ export function EditableHallCard({
         return (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-secondary-700 dark:text-neutral-300">Sala</label>
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sala</label>
               <Select value={selectedHallId} onValueChange={setSelectedHallId}>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Wybierz salę..." />
@@ -134,7 +134,7 @@ export function EditableHallCard({
             </div>
 
             {selectedCapacity > 0 && (
-              <p className="text-sm text-secondary-600 dark:text-neutral-400">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Pojemność: {selectedCapacity} osób
                 {totalGuests > selectedCapacity && (
                   <span className="text-red-600 dark:text-red-400 font-medium">
@@ -150,7 +150,7 @@ export function EditableHallCard({
                 animate={{ opacity: 1 }}
                 className={`p-4 rounded-lg border ${
                   availabilityLoading
-                    ? 'bg-gray-50 dark:bg-gray-950/30 border-gray-200 dark:border-gray-800'
+                    ? 'bg-neutral-50 dark:bg-neutral-950/30 border-neutral-200 dark:border-neutral-800'
                     : availability?.available
                     ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
                     : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
@@ -159,7 +159,7 @@ export function EditableHallCard({
                 {availabilityLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-secondary-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
                   </div>
                 ) : availability?.available ? (
                   <div className="flex items-center gap-2">

@@ -35,8 +35,8 @@ export default function EditPackagePage() {
     return (
       <div className="p-8">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-neutral-200 rounded w-1/4"></div>
+          <div className="h-64 bg-neutral-200 rounded"></div>
         </div>
       </div>
     );
@@ -62,26 +62,26 @@ export default function EditPackagePage() {
   return (
     <div className="p-8">
       {/* Breadcrumbs */}
-      <nav className="text-sm text-gray-600 mb-6">
-        <a href="/dashboard" className="hover:text-gray-900">
+      <nav className="text-sm text-neutral-600 mb-6">
+        <a href="/dashboard" className="hover:text-neutral-900">
           Dashboard
         </a>
         {' > '}
-        <a href="/dashboard/menu" className="hover:text-gray-900">
+        <a href="/dashboard/menu" className="hover:text-neutral-900">
           Menu
         </a>
         {' > '}
-        <a href="/dashboard/menu/packages" className="hover:text-gray-900">
+        <a href="/dashboard/menu/packages" className="hover:text-neutral-900">
           Pakiety
         </a>
         {' > '}
-        <span className="text-gray-900">{pkg.name}</span>
+        <span className="text-neutral-900">{pkg.name}</span>
       </nav>
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Edytuj pakiet</h1>
-        <p className="text-gray-600 mt-2">{pkg.name}</p>
+        <h1 className="text-3xl font-bold text-neutral-900">Edytuj pakiet</h1>
+        <p className="text-neutral-600 mt-2">{pkg.name}</p>
       </div>
 
       {/* Form */}

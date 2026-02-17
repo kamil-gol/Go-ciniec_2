@@ -53,8 +53,8 @@ export function CreateReservationDiscountSection({
             <Tag className="w-5 h-5 text-orange-600" />
           </div>
           <div>
-            <span className="font-medium text-secondary-800 dark:text-neutral-200">Rabat</span>
-            <p className="text-xs text-secondary-500 dark:text-neutral-400">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">Rabat</span>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
           </div>
         </div>
         <Controller
@@ -75,7 +75,7 @@ export function CreateReservationDiscountSection({
         >
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">Typ rabatu</label>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Typ rabatu</label>
               <Controller
                 name="discountType"
                 control={control}
@@ -93,7 +93,7 @@ export function CreateReservationDiscountSection({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">{'Wartość'}</label>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{'Wartość'}</label>
               <Input
                 type="number"
                 min="0"
@@ -107,13 +107,13 @@ export function CreateReservationDiscountSection({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-secondary-700 dark:text-neutral-300">{'Powód rabatu'}</label>
+            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{'Powód rabatu'}</label>
             <Input
               placeholder={'np. Stały klient, promocja...'}
               className="h-9 text-sm"
               {...register('discountReason')}
             />
-            <p className="text-[10px] text-secondary-400 dark:text-neutral-500">Min. 3 znaki</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Min. 3 znaki</p>
           </div>
 
           {/* Live Preview */}
@@ -123,7 +123,7 @@ export function CreateReservationDiscountSection({
               animate={{ opacity: 1 }}
               className="p-3 bg-white dark:bg-black/20 rounded-lg border border-orange-200 dark:border-orange-800 space-y-1 text-sm"
             >
-              <div className="flex justify-between text-secondary-600 dark:text-neutral-400">
+              <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                 <span>Cena bazowa</span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>
