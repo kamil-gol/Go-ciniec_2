@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies for Playwright (system Chromium on Alpine)
+# Install system dependencies for Playwright (system Chromium on Alpine)
 RUN apk add --no-cache \
   libc6-compat \
   chromium \
@@ -20,8 +20,11 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies with --legacy-peer-deps to resolve sonner/react-dom peer conflict
-RUN npm install --legacy-peer-deps
+# CRITICAL: Install ALL dependencies (including devDependencies like tailwindcss,
+# autoprefixer, typescript, etc.) which are needed for `next build`.
+# We force NODE_ENV=development here because docker-compose passes
+# NODE_ENV=production which would skip devDependencies.
+RUN NODE_ENV=development npm install --legacy-peer-deps
 
 # Copy application code
 COPY . .
@@ -29,5 +32,6 @@ COPY . .
 # Expose port
 EXPOSE 3000
 
-# Start development server
+# Start: build in production mode, then serve
+# (NODE_ENV is set by docker-compose to production)
 CMD ["npm", "run", "dev"]
