@@ -293,8 +293,14 @@ class UsersService {
     return {
       id: updated.id,
       email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
       isActive: updated.isActive,
+      lastLoginAt: updated.lastLoginAt,
       role: updated.assignedRole,
+      legacyRole: updated.legacyRole,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
     };
   }
 
