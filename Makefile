@@ -12,7 +12,9 @@
 #   make dev                → uruchom dev environment
 # ========================================
 
-.PHONY: test-unit test-integration test-frontend test-e2e test-all test-coverage test-down dev
+.PHONY: test-unit test-integration test-frontend test-e2e test-all test-coverage test-down dev help
+
+COMPOSE_TEST = docker compose -f docker-compose.test.yml -p rezerwacje-test
 
 # ========================================
 # Development
@@ -26,7 +28,7 @@ dev:
 # ========================================
 
 test-unit:
-	docker compose -f docker-compose.test.yml run --rm \
+	$(COMPOSE_TEST) run --rm \
 		backend-test \
 		sh -c "npx prisma generate && npm run test:unit"
 
@@ -35,25 +37,25 @@ test-unit:
 # ========================================
 
 test-integration:
-	docker compose -f docker-compose.test.yml run --rm \
+	$(COMPOSE_TEST) run --rm \
 		backend-test \
-		sh -c "npx prisma generate && npx prisma migrate deploy && npm run test:integration"
+		sh -c "npx prisma generate && npx prisma db push --force-reset --accept-data-loss && npm run test:integration"
 
 # ========================================
 # Backend — Wszystkie testy z pokryciem
 # ========================================
 
 test-coverage:
-	docker compose -f docker-compose.test.yml run --rm \
+	$(COMPOSE_TEST) run --rm \
 		backend-test \
-		sh -c "npx prisma generate && npx prisma migrate deploy && npm run test:ci"
+		sh -c "npx prisma generate && npx prisma db push --force-reset --accept-data-loss && npm run test:ci"
 
 # ========================================
 # Frontend — Component Tests (Vitest + RTL)
 # ========================================
 
 test-frontend:
-	docker compose -f docker-compose.test.yml run --rm \
+	$(COMPOSE_TEST) run --rm \
 		frontend-test \
 		npx vitest run --reporter=verbose
 
@@ -62,7 +64,7 @@ test-frontend:
 # ========================================
 
 test-frontend-coverage:
-	docker compose -f docker-compose.test.yml run --rm \
+	$(COMPOSE_TEST) run --rm \
 		frontend-test \
 		npx vitest run --coverage --reporter=verbose
 
@@ -91,7 +93,7 @@ test-all: test-unit test-integration test-frontend
 # ========================================
 
 test-down:
-	docker compose -f docker-compose.test.yml down -v --remove-orphans
+	$(COMPOSE_TEST) down -v --remove-orphans
 
 # ========================================
 # Pomoc
@@ -100,7 +102,7 @@ test-down:
 help:
 	@echo ""
 	@echo "  Go-ciniec_2 — Komendy testowe"
-	@echo "  ════════════════════════════════════════"
+	@echo "  ========================================"
 	@echo ""
 	@echo "  make test-unit              Unit testy backend (w Dockerze)"
 	@echo "  make test-integration       Integration testy backend (z PostgreSQL)"
