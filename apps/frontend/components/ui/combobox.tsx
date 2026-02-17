@@ -110,7 +110,7 @@ export function Combobox({
   return (
     <div className={cn('w-full', className)}>
       {label && (
-        <label className="block text-sm font-medium text-secondary-700 mb-1">
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
           {label}
         </label>
       )}
@@ -136,7 +136,7 @@ export function Combobox({
             <span
               className={cn(
                 'truncate text-left flex-1',
-                !selectedOption && 'text-secondary-400'
+                !selectedOption && 'text-neutral-400'
               )}
             >
               {selectedOption ? (
@@ -144,7 +144,7 @@ export function Combobox({
                   {selectedOption.icon}
                   <span>{selectedOption.label}</span>
                   {selectedOption.secondaryLabel && (
-                    <span className="text-secondary-400 text-xs">
+                    <span className="text-neutral-400 text-xs">
                       {selectedOption.secondaryLabel}
                     </span>
                   )}
@@ -162,10 +162,10 @@ export function Combobox({
                   role="button"
                   aria-label="Wyczyść"
                 >
-                  <X className="h-3.5 w-3.5 text-secondary-400" />
+                  <X className="h-3.5 w-3.5 text-neutral-400" />
                 </span>
               )}
-              <ChevronsUpDown className="h-4 w-4 text-secondary-400" />
+              <ChevronsUpDown className="h-4 w-4 text-neutral-400" />
             </div>
           </button>
         </PopoverTrigger>
@@ -180,10 +180,10 @@ export function Combobox({
             <CommandList>
               <CommandEmpty>
                 <div className="py-4 text-center">
-                  <Search className="w-8 h-8 text-secondary-300 mx-auto mb-2" />
-                  <p className="text-sm text-secondary-500">{emptyMessage}</p>
+                  <Search className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
+                  <p className="text-sm text-neutral-500">{emptyMessage}</p>
                   {searchQuery && (
-                    <p className="text-xs text-secondary-400 mt-1">
+                    <p className="text-xs text-neutral-400 mt-1">
                       Spróbuj zmienić frazę wyszukiwania
                     </p>
                   )}
@@ -214,13 +214,13 @@ export function Combobox({
                         </span>
                       </div>
                       {option.description && (
-                        <p className="text-xs text-secondary-500 truncate mt-0.5">
+                        <p className="text-xs text-neutral-500 truncate mt-0.5">
                           {option.description}
                         </p>
                       )}
                     </div>
                     {option.secondaryLabel && (
-                      <span className="text-xs text-secondary-400 flex-shrink-0">
+                      <span className="text-xs text-neutral-400 flex-shrink-0">
                         {option.secondaryLabel}
                       </span>
                     )}
@@ -230,7 +230,7 @@ export function Combobox({
 
               {totalMatches > maxDisplayed && (
                 <div className="px-3 py-2 text-center">
-                  <p className="text-xs text-secondary-400">
+                  <p className="text-xs text-neutral-400">
                     Pokazano {filteredOptions.length} z {totalMatches} wyników.
                     Wpisz więcej aby zawęzić.
                   </p>

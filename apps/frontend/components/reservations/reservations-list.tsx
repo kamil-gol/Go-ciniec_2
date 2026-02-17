@@ -438,7 +438,7 @@ export function ReservationsList() {
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {reservation.archivedAt && (
-                                <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                <Badge variant="secondary" className="bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
                                   <Archive className="h-3 w-3 mr-1" />
                                   Zarchiwizowane
                                 </Badge>

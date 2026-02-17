@@ -33,7 +33,7 @@ export default function DishCategoriesPage() {
     slug: '',
     name: '',
     icon: '',
-    color: 'bg-gray-100 text-gray-700',
+    color: 'bg-neutral-100 text-neutral-700',
     displayOrder: 0,
   })
 
@@ -43,14 +43,14 @@ export default function DishCategoriesPage() {
         slug: editingCategory.slug,
         name: editingCategory.name,
         icon: editingCategory.icon || '',
-        color: editingCategory.color || 'bg-gray-100 text-gray-700',
+        color: editingCategory.color || 'bg-neutral-100 text-neutral-700',
         displayOrder: editingCategory.displayOrder,
       })
     }
   }, [editingCategory])
 
   const resetForm = () => {
-    setFormData({ slug: '', name: '', icon: '', color: 'bg-gray-100 text-gray-700', displayOrder: 0 })
+    setFormData({ slug: '', name: '', icon: '', color: 'bg-neutral-100 text-neutral-700', displayOrder: 0 })
     setEditingCategory(null)
   }
 
@@ -109,7 +109,7 @@ export default function DishCategoriesPage() {
     { value: 'bg-blue-100 text-blue-700', label: 'Niebieski' },
     { value: 'bg-purple-100 text-purple-700', label: 'Fioletowy' },
     { value: 'bg-pink-100 text-pink-700', label: 'Różowy' },
-    { value: 'bg-gray-100 text-gray-700', label: 'Szary' },
+    { value: 'bg-neutral-100 text-neutral-700', label: 'Szary' },
   ]
 
   return (

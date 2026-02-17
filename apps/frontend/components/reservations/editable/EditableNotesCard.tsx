@@ -93,7 +93,7 @@ export function EditableNotesCard({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 dark:text-neutral-300 mb-1">Notatki</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Notatki</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -111,7 +111,7 @@ export function EditableNotesCard({
                 placeholder="Wybierz datę..."
                 minDate={new Date()}
               />
-              <p className="mt-1 text-xs text-secondary-500 dark:text-neutral-400">
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                 Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
               </p>
             </div>
