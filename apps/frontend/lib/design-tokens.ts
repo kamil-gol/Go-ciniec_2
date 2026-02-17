@@ -152,14 +152,30 @@ export const moduleAccents: Record<string, ModuleAccent> = {
   },
 } as const
 
-/** Shared spacing & layout constants */
+/**
+ * Shared spacing & layout constants — mobile-first responsive
+ *
+ * Spacing scale:
+ *   - Section gap: space-y-6 → sm:space-y-8
+ *   - Container:   py-6 px-4 → sm:py-8 sm:px-6
+ *   - Card padding: p-4 → sm:p-6
+ *   - Grid gap:     gap-4 → sm:gap-6
+ */
 export const layout = {
-  /** Standard page container padding */
-  containerClass: 'container mx-auto py-8 px-6 space-y-8',
-  /** Max content width */
+  /** Standard page container padding — mobile-first */
+  containerClass: 'container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8',
+  /** Max content width — full dashboard pages */
   maxWidth: 'max-w-7xl',
+  /** Max content width — form/detail pages */
+  narrowWidth: 'max-w-5xl',
   /** Standard card hover effect */
   cardHover: 'hover:shadow-md hover:-translate-y-1 transition-all duration-300',
-  /** Standard section gap */
-  sectionGap: 'space-y-8',
+  /** Standard section gap — responsive */
+  sectionGap: 'space-y-6 sm:space-y-8',
+  /** Stats grid — 2col mobile, 4col desktop */
+  statGrid: 'grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6',
+  /** Card inner padding — responsive */
+  cardPadding: 'p-4 sm:p-6',
+  /** Detail grid — 2col mobile, 4col desktop */
+  detailGrid: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4',
 } as const
