@@ -75,14 +75,14 @@ export const moduleAccents: Record<string, ModuleAccent> = {
   },
   settings: {
     name: 'Ustawienia',
-    gradient: 'from-slate-600 via-slate-500 to-gray-600',
-    gradientSubtle: 'from-slate-500/5 via-gray-500/5 to-slate-500/5',
-    iconBg: 'from-slate-500 to-gray-500',
-    text: 'text-slate-600',
-    textDark: 'dark:text-slate-400',
-    ring: 'ring-slate-500/20',
-    badge: 'bg-slate-100 dark:bg-slate-900/30',
-    badgeText: 'text-slate-700 dark:text-slate-300',
+    gradient: 'from-neutral-600 via-neutral-500 to-neutral-600',
+    gradientSubtle: 'from-neutral-500/5 via-neutral-500/5 to-neutral-500/5',
+    iconBg: 'from-neutral-500 to-neutral-500',
+    text: 'text-neutral-600',
+    textDark: 'dark:text-neutral-400',
+    ring: 'ring-neutral-500/20',
+    badge: 'bg-neutral-100 dark:bg-neutral-900/30',
+    badgeText: 'text-neutral-700 dark:text-neutral-300',
   },
   deposits: {
     name: 'Zaliczki',
@@ -130,9 +130,9 @@ export const moduleAccents: Record<string, ModuleAccent> = {
   },
   auditLog: {
     name: 'Dziennik Audytu',
-    gradient: 'from-zinc-700 via-zinc-600 to-slate-700',
-    gradientSubtle: 'from-zinc-500/5 via-slate-500/5 to-zinc-500/5',
-    iconBg: 'from-zinc-600 to-slate-600',
+    gradient: 'from-zinc-700 via-zinc-600 to-neutral-700',
+    gradientSubtle: 'from-zinc-500/5 via-neutral-500/5 to-zinc-500/5',
+    iconBg: 'from-zinc-600 to-neutral-600',
     text: 'text-zinc-600',
     textDark: 'dark:text-zinc-400',
     ring: 'ring-zinc-500/20',
@@ -141,14 +141,14 @@ export const moduleAccents: Record<string, ModuleAccent> = {
   },
   archive: {
     name: 'Archiwum',
-    gradient: 'from-gray-600 via-gray-500 to-slate-600',
-    gradientSubtle: 'from-gray-500/5 via-slate-500/5 to-gray-500/5',
-    iconBg: 'from-gray-500 to-slate-500',
-    text: 'text-gray-600',
-    textDark: 'dark:text-gray-400',
-    ring: 'ring-gray-500/20',
-    badge: 'bg-gray-100 dark:bg-gray-900/30',
-    badgeText: 'text-gray-700 dark:text-gray-300',
+    gradient: 'from-neutral-600 via-neutral-500 to-neutral-600',
+    gradientSubtle: 'from-neutral-500/5 via-neutral-500/5 to-neutral-500/5',
+    iconBg: 'from-neutral-500 to-neutral-600',
+    text: 'text-neutral-600',
+    textDark: 'dark:text-neutral-400',
+    ring: 'ring-neutral-500/20',
+    badge: 'bg-neutral-100 dark:bg-neutral-900/30',
+    badgeText: 'text-neutral-700 dark:text-neutral-300',
   },
 } as const
 
@@ -159,7 +159,7 @@ export const layout = {
   /** Max content width */
   maxWidth: 'max-w-7xl',
   /** Standard card hover effect */
-  cardHover: 'hover:shadow-medium hover:-translate-y-1 transition-all duration-300',
+  cardHover: 'hover:shadow-md hover:-translate-y-1 transition-all duration-300',
   /** Standard section gap */
   sectionGap: 'space-y-8',
 } as const
