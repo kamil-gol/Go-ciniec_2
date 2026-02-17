@@ -57,7 +57,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl !p-0 overflow-hidden">
         {/* Gradient Header */}
-        <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-slate-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-slate-800 px-6 py-5">
+        <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-neutral-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-neutral-800 px-6 py-5">
           <button
             onClick={onClose}
             className="absolute top-3.5 right-3.5 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-200"

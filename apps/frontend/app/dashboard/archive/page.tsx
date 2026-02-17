@@ -89,7 +89,7 @@ export default function ArchivePage() {
           value={stats.total}
           subtitle="Łącznie w archiwum"
           icon={Archive}
-          iconGradient="from-gray-500 to-slate-500"
+          iconGradient="from-neutral-500 to-neutral-600"
           delay={0.1}
         />
         <StatCard

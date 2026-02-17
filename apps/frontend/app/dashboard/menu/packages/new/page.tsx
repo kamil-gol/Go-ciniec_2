@@ -43,7 +43,7 @@ export default function NewPackagePage() {
   // If template is selected, show the form
   if (selectedTemplate) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/30 to-neutral-100 p-8">
         <div className="max-w-4xl mx-auto">
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-2 text-sm text-neutral-600 mb-6">
@@ -99,7 +99,7 @@ export default function NewPackagePage() {
   // Template selection view
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/30 to-neutral-100 p-8">
         <div className="max-w-5xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-12 bg-white/60 rounded-xl w-1/3"></div>
@@ -115,7 +115,7 @@ export default function NewPackagePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/30 to-neutral-100 p-8">
       <div className="max-w-5xl mx-auto">
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-sm text-neutral-600 mb-8">
@@ -144,7 +144,7 @@ export default function NewPackagePage() {
               <Package className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-neutral-900 to-blue-900 bg-clip-text text-transparent">
                 Wybierz szablon menu
               </h1>
               <p className="text-neutral-600 text-lg mt-1">

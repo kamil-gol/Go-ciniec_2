@@ -72,7 +72,7 @@ export function MenuDishesPreview({ dishSelections, className }: MenuDishesPrevi
 
         return (
           <Card key={category.categoryId} className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 pb-3">
+            <CardHeader className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900 pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <span className="text-2xl">{icon}</span>
                 <span>{category.categoryName}</span>
