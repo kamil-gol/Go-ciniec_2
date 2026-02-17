@@ -32,7 +32,7 @@ SPRINT 10A (16.02)         → Mobile MVP                         ✅ DONE
   US-10.2: Mobile Navigation                                    ✅ DONE (16.02)
   US-10.3: Responsive Tables → Card Views                       ✅ DONE (16.02)
   Full Mobile Audit (16 modules)                                ✅ DONE (16.02)
-SPRINT 10B (TBD)           → UI Unification                     🔳 TODO
+SPRINT 10B (17.02)          → UI Unification                    🔄 IN PROGRESS
 SPRINT 11 (16.02)          → Reports Module (Analytics)        ✅ DONE
 SPRINT 12 (16.02)          → RBAC + Settings UI                ✅ DONE
 ```
@@ -925,7 +925,7 @@ Pełna responsywność mobilna dla wszystkich 16 modułów systemu + mobilna naw
 
 ---
 
-# 🎨 SPRINT 10B: UI Unification (TBD)
+# 🔄 SPRINT 10B: UI Unification (17.02.2026 →)
 
 ## Cel
 Spójny wygląd wszystkich modułów (kolory, typography, spacing, shadows) + dark mode support.
@@ -933,7 +933,7 @@ Spójny wygląd wszystkich modułów (kolory, typography, spacing, shadows) + da
 **Estymacja:** ~3-5 dni  
 **Wersja:** v1.10.0  
 **Branch:** `feature/ui-unification`  
-**Status**: 🔳 TODO
+**Status**: 🔄 IN PROGRESS (2/5 faz ukończonych)
 
 **Zakres**:
 - Design system refinement (colors, typography, spacing scale)
@@ -1328,7 +1328,7 @@ System kontroli dostępu oparty na rolach z UI zarządzania użytkownikami, rola
 | 9.1 | Audit Logging Backend | 28 | ~1 dzień | ~4h | v1.8.0 | ✅ DONE |
 | 9.2 | Audit UI + Archive + Dashboard | 19 | ~1 dzień | ~4h | v1.8.1 | ✅ DONE |
 | 10A | Mobile MVP | 33 | ~3-5 dni | ~6h | v1.9.0 | ✅ DONE |
-| 10B | UI Unification | TBD | ~3-5 dni | — | v1.10.0 | 🔳 TODO |
+| 10B | UI Unification | TBD | ~3-5 dni | ~4h (2/5 faz) | v1.10.0 | 🔄 IN PROGRESS |
 | 11 | Reports Module | 45 | ~3-4 dni | ~5h | Reports v1.0.0 | ✅ DONE |
 | 12 | RBAC + Settings UI | 45 | ~4-5 dni | ~3h | RBAC v1.0.0 | ✅ DONE |
 | **RAZEM** | | **237** | **~20-29 dni** | **~3 dni** | | **8/9 DONE** |
@@ -1341,7 +1341,7 @@ System kontroli dostępu oparty na rolach z UI zarządzania użytkownikami, rola
 
 ---
 
-**Last Updated**: 17.02.2026, 19:41 CET  
-**Project Status**: ✅ Sprinty 6-12 (poza 10B) COMPLETE — Full Mobile MVP + Reports + RBAC done  
-**Version**: v1.9.0 (Mobile MVP + Reports Module + RBAC Module)  
-**Next Sprint**: Sprint 10B — UI Unification (TBD pts, ~3-5 dni)
+**Last Updated**: 17.02.2026, 22:45 CET  
+**Project Status**: 🔄 Sprint 10B IN PROGRESS (2/5 faz) — Fazy 1+3 Dark Mode DONE, Fazy 2/4/5 TODO  
+**Version**: v1.9.0 → v1.10.0 (UI Unification in progress)  
+**Remaining**: Faza 2 (Design Tokens v2), Faza 4 (Animacje), Faza 5 (Accessibility)
