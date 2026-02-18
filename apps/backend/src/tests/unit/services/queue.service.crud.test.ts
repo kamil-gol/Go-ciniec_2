@@ -117,11 +117,19 @@ describe('QueueService', () => {
       } as any, TEST_USER_ID)).rejects.toThrow('Client, queue date, and guests are required');
     });
 
-    it('should throw when guests < 1', async () => {
+    it('should throw when guests is 0 (falsy — caught by required check)', async () => {
       await expect(service.addToQueue({
         clientId: TEST_CLIENT.id,
         reservationQueueDate: FUTURE_DATE,
         guests: 0,
+      } as any, TEST_USER_ID)).rejects.toThrow('Client, queue date, and guests are required');
+    });
+
+    it('should throw when guests < 1 (negative)', async () => {
+      await expect(service.addToQueue({
+        clientId: TEST_CLIENT.id,
+        reservationQueueDate: FUTURE_DATE,
+        guests: -1,
       } as any, TEST_USER_ID)).rejects.toThrow('Number of guests must be at least 1');
     });
 
@@ -155,11 +163,8 @@ describe('QueueService', () => {
       const prismaError = new Error('Unique constraint failed');
       (prismaError as any).code = 'P2002';
       Object.setPrototypeOf(prismaError, Error.prototype);
-      // Simulate Prisma known request error
       mockPrisma.reservation.create.mockRejectedValue(prismaError);
 
-      // This won't match PrismaClientKnownRequestError instanceof check,
-      // so it will just rethrow the original error
       await expect(service.addToQueue({
         clientId: TEST_CLIENT.id,
         reservationQueueDate: FUTURE_DATE,
