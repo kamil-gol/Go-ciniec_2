@@ -1,7 +1,6 @@
 /**
  * ReservationService — Branch Coverage
  * Lines 979-994: checkWholeVenueConflict (non-whole-venue blocked by whole-venue reservation)
- * Line 1022: checkOverlap with excludeId
  * Lines 593, 631: updateReservation guest change with/without menu
  */
 jest.mock('../../../lib/prisma', () => {
@@ -58,46 +57,41 @@ jest.mock('../../../services/reservation-menu.service', () => ({
 import { prisma } from '../../../lib/prisma';
 const mockPrisma = prisma as any;
 
-// Import after mocks
-let ReservationService: any;
 let service: any;
 
 beforeAll(() => {
   const mod = require('../../../services/reservation.service');
   service = mod.default;
-  ReservationService = mod.ReservationService;
 });
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Default: user exists
   mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'test@test.pl' });
 });
 
 describe('ReservationService — checkWholeVenueConflict (lines 979-994)', () => {
 
   it('should throw when booking regular hall but whole venue already reserved', async () => {
-    // Setup: creating a reservation for a regular hall
+    // Hall lookup in createReservation + in checkWholeVenueConflict
     mockPrisma.hall.findUnique
-      .mockResolvedValueOnce({ id: 'h1', name: 'Sala A', capacity: 100, isActive: true, isWholeVenue: false })  // main query
-      .mockResolvedValueOnce({ id: 'h1', name: 'Sala A', capacity: 100, isWholeVenue: false });  // wholeVenueConflict check
+      .mockResolvedValueOnce({ id: 'h1', name: 'Sala A', capacity: 100, isActive: true, isWholeVenue: false })
+      .mockResolvedValueOnce({ id: 'h1', name: 'Sala A', capacity: 100, isWholeVenue: false });
 
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'Jan', lastName: 'K' });
     mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wesele' });
-    mockPrisma.reservation.findFirst
-      .mockResolvedValueOnce(null)  // checkDateTimeOverlap - no overlap
-      .mockResolvedValueOnce(null); // first call in wholeVenueConflict
 
-    // Whole venue hall exists
-    mockPrisma.hall.findFirst.mockResolvedValue({ id: 'h-whole', isWholeVenue: true });
-
-    // Whole venue has a conflicting reservation
+    // reservation.findFirst is called:
+    // 1. checkDateTimeOverlap → null (no overlap)
+    // 2. checkWholeVenueConflict → conflict!
     mockPrisma.reservation.findFirst
-      .mockResolvedValueOnce(null)   // checkDateTimeOverlap
-      .mockResolvedValueOnce({       // wholeVenueConflict — conflict found!
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
         id: 'r-conflict', hallId: 'h-whole',
         client: { firstName: 'Anna', lastName: 'N' },
       });
+
+    // In else branch: hall.findFirst finds the whole-venue hall
+    mockPrisma.hall.findFirst.mockResolvedValue({ id: 'h-whole', isWholeVenue: true });
 
     await expect(
       service.createReservation({
@@ -118,9 +112,11 @@ describe('ReservationService — checkWholeVenueConflict (lines 979-994)', () =>
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'Jan', lastName: 'K' });
     mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wesele' });
 
+    // 1. checkDateTimeOverlap → null
+    // 2. checkWholeVenueConflict (isWholeVenue=true branch) → conflict
     mockPrisma.reservation.findFirst
-      .mockResolvedValueOnce(null)  // checkDateTimeOverlap
-      .mockResolvedValueOnce({      // wholeVenueConflict — regular hall conflict!
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
         id: 'r-conflict', hallId: 'h1',
         hall: { name: 'Sala A' },
         client: { firstName: 'Jan', lastName: 'K' },
@@ -135,6 +131,35 @@ describe('ReservationService — checkWholeVenueConflict (lines 979-994)', () =>
         pricePerAdult: 100, pricePerChild: 50, pricePerToddler: 0,
       }, 'u1')
     ).rejects.toThrow('Nie można zarezerwować całego obiektu');
+  });
+
+  it('should pass when non-whole-venue hall has no whole-venue hall configured', async () => {
+    mockPrisma.hall.findUnique
+      .mockResolvedValueOnce({ id: 'h1', name: 'Sala A', capacity: 100, isActive: true, isWholeVenue: false })
+      .mockResolvedValueOnce({ id: 'h1', name: 'Sala A', capacity: 100, isWholeVenue: false });
+
+    mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'Jan', lastName: 'K' });
+    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wesele' });
+    mockPrisma.reservation.findFirst.mockResolvedValue(null);  // no overlap, no conflict
+    mockPrisma.hall.findFirst.mockResolvedValue(null);  // no whole-venue hall exists
+
+    mockPrisma.reservation.create.mockResolvedValue({
+      id: 'r-new', status: 'PENDING', hallId: 'h1',
+      hall: { id: 'h1', name: 'Sala A' },
+      client: { id: 'c1', firstName: 'Jan', lastName: 'K' },
+      eventType: { id: 'e1', name: 'Wesele' },
+      createdBy: { id: 'u1', email: 'test@test.pl' },
+    });
+
+    const result = await service.createReservation({
+      hallId: 'h1', clientId: 'c1', eventTypeId: 'e1',
+      startDateTime: new Date(Date.now() + 86400000 * 30).toISOString(),
+      endDateTime: new Date(Date.now() + 86400000 * 30 + 3600000 * 8).toISOString(),
+      adults: 50, children: 10, toddlers: 5,
+      pricePerAdult: 100, pricePerChild: 50, pricePerToddler: 0,
+    }, 'u1');
+
+    expect(result.id).toBe('r-new');
   });
 });
 
@@ -156,7 +181,7 @@ describe('ReservationService — updateReservation guest change branches', () =>
 
   it('should recalculate price when guests change WITHOUT menu package', async () => {
     mockPrisma.reservation.findUnique.mockResolvedValue(makeExisting());
-    mockPrisma.reservation.findFirst.mockResolvedValue(null); // no overlap
+    mockPrisma.reservation.findFirst.mockResolvedValue(null);
     mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isWholeVenue: false });
     mockPrisma.hall.findFirst.mockResolvedValue(null);
     mockPrisma.reservation.update.mockResolvedValue(makeExisting({ adults: 20 }));
