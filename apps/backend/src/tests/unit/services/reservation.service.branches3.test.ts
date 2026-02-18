@@ -58,7 +58,7 @@ let service: ReservationService;
 const UID = 'user-1';
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  jest.clearAllMocks();
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
