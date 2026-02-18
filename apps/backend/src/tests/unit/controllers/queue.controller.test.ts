@@ -111,6 +111,18 @@ describe('QueueController', () => {
   // ═══════════════════════════════════════
 
   describe('getQueueForDate()', () => {
+    it('should throw 400 when date param is missing', async () => {
+      const r = req({ params: {} });
+      await expect(controller.getQueueForDate(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when date param is empty string', async () => {
+      const r = req({ params: { date: '' } });
+      await expect(controller.getQueueForDate(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
     it('should return 200 with data and count', async () => {
       svc.getQueueForDate.mockResolvedValue([{ id: 'q-1' }, { id: 'q-2' }]);
       const r = req({ params: { date: '2026-03-15' } });
@@ -177,14 +189,26 @@ describe('QueueController', () => {
         .rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it('should throw 400 when newPosition missing', async () => {
+    it('should throw 400 when newPosition is undefined', async () => {
       const r = req({ params: { id: 'q-1' }, body: {} });
+      await expect(controller.moveToPosition(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when newPosition is null', async () => {
+      const r = req({ params: { id: 'q-1' }, body: { newPosition: null } });
       await expect(controller.moveToPosition(r, res()))
         .rejects.toMatchObject({ statusCode: 400 });
     });
 
     it('should throw 400 when position is not integer', async () => {
       const r = req({ params: { id: 'q-1' }, body: { newPosition: 'abc' } });
+      await expect(controller.moveToPosition(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when position is float', async () => {
+      const r = req({ params: { id: 'q-1' }, body: { newPosition: 2.5 } });
       await expect(controller.moveToPosition(r, res()))
         .rejects.toMatchObject({ statusCode: 400 });
     });
@@ -235,6 +259,12 @@ describe('QueueController', () => {
         .rejects.toMatchObject({ statusCode: 400 });
     });
 
+    it('should throw 400 when updates is not an array', async () => {
+      const r = req({ body: { updates: 'not-array' } });
+      await expect(controller.batchUpdatePositions(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
     it('should throw 400 when updates is empty array', async () => {
       const r = req({ body: { updates: [] } });
       await expect(controller.batchUpdatePositions(r, res()))
@@ -247,8 +277,20 @@ describe('QueueController', () => {
         .rejects.toMatchObject({ statusCode: 400 });
     });
 
+    it('should throw 400 when update has missing id', async () => {
+      const r = req({ body: { updates: [{ position: 1 }] } });
+      await expect(controller.batchUpdatePositions(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
     it('should throw 400 when update has position < 1', async () => {
       const r = req({ body: { updates: [{ id: 'q-1', position: 0 }] } });
+      await expect(controller.batchUpdatePositions(r, res()))
+        .rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when update has non-integer position', async () => {
+      const r = req({ body: { updates: [{ id: 'q-1', position: 1.5 }] } });
       await expect(controller.batchUpdatePositions(r, res()))
         .rejects.toMatchObject({ statusCode: 400 });
     });
@@ -296,8 +338,36 @@ describe('QueueController', () => {
       )).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    it('should throw 400 when pricePerAdult missing', async () => {
+    it('should throw 400 when startDateTime missing', async () => {
+      const body = { ...VALID_PROMOTE, startDateTime: undefined };
+      await expect(controller.promoteReservation(
+        req({ params: { id: 'q-1' }, body }), res()
+      )).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when endDateTime missing', async () => {
+      const body = { ...VALID_PROMOTE, endDateTime: undefined };
+      await expect(controller.promoteReservation(
+        req({ params: { id: 'q-1' }, body }), res()
+      )).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when pricePerAdult is 0', async () => {
       const body = { ...VALID_PROMOTE, pricePerAdult: 0 };
+      await expect(controller.promoteReservation(
+        req({ params: { id: 'q-1' }, body }), res()
+      )).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when adults is 0 but pricePerAdult valid', async () => {
+      const body = { ...VALID_PROMOTE, adults: 0 };
+      await expect(controller.promoteReservation(
+        req({ params: { id: 'q-1' }, body }), res()
+      )).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when adults is negative', async () => {
+      const body = { ...VALID_PROMOTE, adults: -1 };
       await expect(controller.promoteReservation(
         req({ params: { id: 'q-1' }, body }), res()
       )).rejects.toMatchObject({ statusCode: 400 });
