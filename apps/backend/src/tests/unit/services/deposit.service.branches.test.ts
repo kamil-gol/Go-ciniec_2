@@ -58,7 +58,8 @@ const makeDeposit = (o: any = {}) => ({
   ...o,
 });
 
-beforeEach(() => jest.clearAllMocks());
+// resetAllMocks clears mockResolvedValueOnce queues (clearAllMocks does NOT)
+beforeEach(() => jest.resetAllMocks());
 
 describe('DepositService — branches', () => {
 
@@ -78,7 +79,6 @@ describe('DepositService — branches', () => {
       const dep = makeDeposit();
       setupUpdate(dep, { ...dep.reservation, deposits: [dep] });
       await depositService.update('dep-1', { amount: 600, dueDate: '2027-07-01' }, 'user-1');
-      // $queryRawUnsafe called with SET amount + dueDate
       expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
         expect.stringContaining('amount'),
         600, 600, '2027-07-01', 'dep-1'
@@ -133,7 +133,7 @@ describe('DepositService — branches', () => {
         .rejects.toThrow('przekracza');
     });
 
-    it('should not throw when deposit not found', async () => {
+    it('should throw when deposit not found', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(null);
       await expect(depositService.update('bad', { amount: 100 }, 'user-1'))
         .rejects.toThrow();
@@ -205,7 +205,6 @@ describe('DepositService — branches', () => {
 
     it('should catch errors and not throw', async () => {
       db.reservation.findUnique.mockRejectedValueOnce(new Error('DB'));
-      // Should NOT throw
       await depositService.checkAndAutoConfirmReservation('res-1', 'user-1');
     });
   });
@@ -310,11 +309,10 @@ describe('DepositService — branches', () => {
         .mockResolvedValueOnce(dep)
         .mockResolvedValueOnce({ ...dep, status: 'PARTIALLY_PAID', paid: false });
       db.$queryRawUnsafe.mockResolvedValue([]);
-      db.reservation.findUnique.mockResolvedValueOnce(null); // for autoConfirm
-      const result = await depositService.markAsPaid('dep-1', {
+      // isPaid=false → checkAndAutoConfirmReservation NOT called → no reservation mock needed
+      await depositService.markAsPaid('dep-1', {
         paymentMethod: 'CASH', paidAt: '2027-06-15', amountPaid: 200,
       }, 'user-1');
-      // Should NOT call autoConfirm (isPaid=false)
       const updateCall = db.$queryRawUnsafe.mock.calls[0];
       expect(updateCall[1]).toBe(false); // isPaid = false
       expect(updateCall[2]).toBe('PARTIALLY_PAID');
@@ -326,7 +324,8 @@ describe('DepositService — branches', () => {
         .mockResolvedValueOnce(dep)
         .mockResolvedValueOnce({ ...dep, status: 'PAID', paid: true });
       db.$queryRawUnsafe.mockResolvedValue([]);
-      db.reservation.findUnique.mockResolvedValueOnce(null);
+      // isPaid=true → checkAndAutoConfirmReservation called → needs reservation mock
+      db.reservation.findUnique.mockResolvedValueOnce(null); // autoConfirm early return
       await depositService.markAsPaid('dep-1', {
         paymentMethod: 'TRANSFER', paidAt: '2027-06-15',
       }, 'user-1');
