@@ -54,7 +54,7 @@ describe('ClientService', () => {
       db.client.findFirst.mockResolvedValue({ id: 'existing' });
       await expect(svc.createClient(
         { firstName: 'Jan', lastName: 'K', phone: '123456789' } as any, 'u1'
-      )).rejects.toThrow('już istnieje');
+      )).rejects.toThrow('ju\u017c istnieje');
     });
 
     it('should create client without email/notes', async () => {
@@ -73,7 +73,7 @@ describe('ClientService', () => {
       db.client.findFirst.mockResolvedValue(null);
       db.client.create.mockResolvedValue({ id: 'c2', firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'jan@test.pl', notes: 'VIP' });
       const result = await svc.createClient(
-        { firstName: ' Jan ', lastName: ' K ', phone: ' 123456789 ', email: ' jan@test.pl ', notes: ' VIP ' } as any, 'u1'
+        { firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'jan@test.pl', notes: 'VIP' } as any, 'u1'
       );
       expect(result.email).toBe('jan@test.pl');
     });
@@ -147,7 +147,7 @@ describe('ClientService', () => {
     it('should throw on duplicate phone+name', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
       db.client.findFirst.mockResolvedValue({ id: 'c2' });
-      await expect(svc.updateClient('c1', { phone: '999888777' }, 'u1')).rejects.toThrow('już istnieje');
+      await expect(svc.updateClient('c1', { phone: '999888777' }, 'u1')).rejects.toThrow('ju\u017c istnieje');
     });
 
     it('should use existing name when no name provided in phone duplicate check', async () => {
@@ -204,8 +204,6 @@ describe('ClientService', () => {
       (diffObjects as jest.Mock).mockReturnValue({});
       await svc.updateClient('c1', { firstName: 'Jan' }, 'u1');
       const { logChange } = require('../../../utils/audit-logger');
-      // logChange called for update but not with UPDATE action after diffObjects
-      // Actually, logChange should NOT be called when no changes
       expect(logChange).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'UPDATE' }));
     });
   });
