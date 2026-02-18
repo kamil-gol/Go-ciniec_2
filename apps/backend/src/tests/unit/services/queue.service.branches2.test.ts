@@ -64,7 +64,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
       .mockResolvedValueOnce(res1)
       .mockResolvedValueOnce(res2);
 
-    // First attempt: lock error → retry, Second attempt: success
+    // First attempt: lock error -> retry, Second attempt: success
     const lockError = new Error('lock_not_available');
     mockPrisma.$executeRaw
       .mockRejectedValueOnce(lockError)
@@ -73,7 +73,6 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
     // Speed up setTimeout
     jest.useFakeTimers();
     const promise = service.swapPositions('r1', 'r2', 'u1');
-    // Fast-forward retry delay (100ms * 2^0 = 100ms)
     jest.advanceTimersByTime(200);
     jest.useRealTimers();
 
@@ -82,7 +81,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
   });
 
-  it('should throw after max retries on persistent lock error', async () => {
+  it('should throw user-friendly message after max retries on persistent lock error', async () => {
     const res1 = {
       id: 'r1', status: 'RESERVED',
       reservationQueueDate: new Date('2026-06-15'),
@@ -104,7 +103,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
     mockPrisma.$executeRaw.mockRejectedValue(lockError);
 
     await expect(service.swapPositions('r1', 'r2', 'u1'))
-      .rejects.toThrow('lock_not_available');
+      .rejects.toThrow('Another user is modifying the queue. Please refresh and try again.');
   });
 });
 
