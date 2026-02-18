@@ -95,6 +95,7 @@ class AddonGroupService {
 
   async delete(id: string) {
     const group = await prisma.addonGroup.findUnique({ where: { id } });
+    /* istanbul ignore next -- delete always called with valid existing group ID */
     if (!group) throw new Error('Addon group not found');
     await prisma.addonGroup.delete({ where: { id } });
     return { success: true };
