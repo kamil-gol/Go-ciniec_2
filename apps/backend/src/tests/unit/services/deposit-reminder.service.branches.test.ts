@@ -36,6 +36,13 @@ import emailService from '../../../services/email.service';
 const db = prisma as any;
 const emailSvc = emailService as any;
 
+/** Helper: return YYYY-MM-DD for N days ago */
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().substring(0, 10);
+}
+
 const makeDeposit = (overrides: any = {}) => ({
   id: 'dep-1',
   amount: 1000,
@@ -115,48 +122,48 @@ describe('DepositReminderService — branches', () => {
 
   // ═══ sendOverdueNotices ═══
   describe('sendOverdueNotices()', () => {
-    it('should send overdue notice', async () => {
-      db.deposit.findMany.mockResolvedValue([makeDeposit()]);
+    it('should send overdue notice (1 day overdue — within daily limit)', async () => {
+      // daysOverdue=1, which is ≤ OVERDUE_DAILY_LIMIT(3), so no throttle
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(1) })]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(1);
     });
 
     it('should skip when no client email', async () => {
-      db.deposit.findMany.mockResolvedValue([makeDeposit({ reservation: { client: null, hall: null, eventType: null, date: null } })]);
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(1), reservation: { client: null, hall: null, eventType: null, date: null } })]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(0);
     });
 
     it('should throttle overdue notices (>3 days, not multiple of 3)', async () => {
-      // daysOverdue > 3 && daysOverdue % 3 !== 0 → skip
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 5); // 5 days overdue: >3 and 5%3 = 2 ≠ 0
-      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: pastDate.toISOString().substring(0, 10) })]);
+      // daysOverdue=5: >3 and 5%3=2 ≠ 0 → skip
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(5) })]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(0);
     });
 
     it('should send overdue on day 6 (multiple of 3)', async () => {
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 6); // 6 days overdue: >3 and 6%3 = 0
-      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: pastDate.toISOString().substring(0, 10) })]);
+      // daysOverdue=6: >3 and 6%3=0 → send
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(6) })]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(1);
     });
 
     it('should send overdue on day 2 (≤ 3 daily limit)', async () => {
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 2); // 2 days overdue: ≤ 3 → send daily
-      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: pastDate.toISOString().substring(0, 10) })]);
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(2) })]);
+      const count = await depositReminderService.sendOverdueNotices();
+      expect(count).toBe(1);
+    });
+
+    it('should send overdue on day 3 (≤ 3 daily limit)', async () => {
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(3) })]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(1);
     });
 
     it('should use fallback values for missing reservation fields', async () => {
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
       db.deposit.findMany.mockResolvedValue([makeDeposit({
-        dueDate: pastDate.toISOString().substring(0, 10),
+        dueDate: daysAgo(1),
         reservation: {
           client: { firstName: 'X', lastName: 'Y', email: 'x@y.pl' },
           hall: null, eventType: null, date: null,
@@ -171,9 +178,7 @@ describe('DepositReminderService — branches', () => {
 
     it('should not count failed sends', async () => {
       emailSvc.sendDepositOverdueNotice.mockResolvedValue(false);
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
-      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: pastDate.toISOString().substring(0, 10) })]);
+      db.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(1) })]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(0);
     });
