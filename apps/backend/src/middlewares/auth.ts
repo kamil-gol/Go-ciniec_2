@@ -24,6 +24,7 @@ if (!JWT_SECRET) {
   );
 }
 
+/* istanbul ignore next -- env-dependent: JWT_SECRET always falsy in test */
 const secret = JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
 
 /**
