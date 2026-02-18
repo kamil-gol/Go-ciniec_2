@@ -70,15 +70,15 @@ beforeEach(() => {
   mockPrisma.$executeRaw.mockResolvedValue(undefined);
   mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
   mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
-  mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala Główna' });
+  mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala G\u0142\u00f3wna' });
   mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
   mockPrisma.$transaction.mockImplementation((fn: any) => fn(mockPrisma));
 });
 
-describe('QueueService — branch coverage', () => {
+describe('QueueService \u2014 branch coverage', () => {
 
-  // ── addToQueue: default values for adults/children/toddlers ──
-  describe('addToQueue — defaults', () => {
+  // \u2500\u2500 addToQueue: default values for adults/children/toddlers \u2500\u2500
+  describe('addToQueue \u2014 defaults', () => {
 
     it('should default adults to guests when adults not provided', async () => {
       mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 0 } });
@@ -160,8 +160,8 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // ── swapPositions: lock and P2002 error branches ─────────────
-  describe('swapPositions — error branches', () => {
+  // \u2500\u2500 swapPositions: lock and P2002 error branches \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  describe('swapPositions \u2014 error branches', () => {
 
     it('should throw user-friendly message on lock error from $executeRaw', async () => {
       mockPrisma.reservation.findUnique
@@ -219,14 +219,14 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // ── moveToPosition: lock and P2002 error branches ────────────
-  describe('moveToPosition — error branches', () => {
+  // \u2500\u2500 moveToPosition: lock and P2002 error branches \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  describe('moveToPosition \u2014 error branches', () => {
 
     it('should throw on lock error during move', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       mockPrisma.reservation.count.mockResolvedValue(5);
       mockPrisma.$executeRaw.mockRejectedValue(
-        Object.assign(new Error('55P03'), { code: undefined })
+        Object.assign(new Error('lock_not_available'), { code: undefined })
       );
 
       await expect(service.moveToPosition('res-001', 3, TEST_USER_ID))
@@ -277,8 +277,8 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // ── updateQueueReservation: edge cases ───────────────────────
-  describe('updateQueueReservation — branches', () => {
+  // \u2500\u2500 updateQueueReservation: edge cases \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  describe('updateQueueReservation \u2014 branches', () => {
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
@@ -361,8 +361,8 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // ── batchUpdatePositions: extra branches ─────────────────────
-  describe('batchUpdatePositions — extra branches', () => {
+  // \u2500\u2500 batchUpdatePositions: extra branches \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  describe('batchUpdatePositions \u2014 extra branches', () => {
 
     it('should throw when update has no ID', async () => {
       await expect(service.batchUpdatePositions([
@@ -395,8 +395,8 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // ── getQueueStats: edge cases ────────────────────────────────
-  describe('getQueueStats — branches', () => {
+  // \u2500\u2500 getQueueStats: edge cases \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  describe('getQueueStats \u2014 branches', () => {
 
     it('should count manual orders and find oldest date', async () => {
       mockPrisma.reservation.findMany.mockResolvedValue([
@@ -421,8 +421,8 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // ── promoteReservation: extra error branches ─────────────────
-  describe('promoteReservation — extra branches', () => {
+  // \u2500\u2500 promoteReservation: extra error branches \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  describe('promoteReservation \u2014 extra branches', () => {
 
     it('should throw on invalid date format', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
