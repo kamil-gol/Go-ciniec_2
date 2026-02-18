@@ -21,25 +21,26 @@ jest.mock('../../../utils/audit-logger', () => ({
 import { MenuService } from '../../../services/menu.service';
 import { prisma } from '../../../lib/prisma';
 const mockPrisma = prisma as any;
-const service = new MenuService();
 const USER = 'u1';
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => jest.resetAllMocks());
+
+const makeCurrentPkg = () => ({
+  name: 'Gold',
+  pricePerAdult: { toNumber: () => 200 },
+  pricePerChild: { toNumber: () => 100 },
+  pricePerToddler: { toNumber: () => 0 },
+});
+
+const updatedPkg = { id: 'p1', name: 'Gold', menuTemplate: {}, packageOptions: [], categorySettings: [] };
 
 describe('MenuService — updatePackage pricePerChild/pricePerToddler branches', () => {
 
-  const currentPkg = {
-    name: 'Gold',
-    pricePerAdult: { toNumber: () => 200 },
-    pricePerChild: { toNumber: () => 100 },
-    pricePerToddler: { toNumber: () => 0 },
-  };
-
   it('should detect pricePerChild change and create price history', async () => {
-    mockPrisma.menuPackage.findUnique
-      .mockResolvedValueOnce(currentPkg)
-      .mockResolvedValueOnce({ ...currentPkg, id: 'p1', menuTemplate: {}, packageOptions: [], categorySettings: [] });
-    mockPrisma.menuPackage.update.mockResolvedValue({ id: 'p1', name: 'Gold', menuTemplate: {}, packageOptions: [], categorySettings: [] });
+    const service = new MenuService();
+    mockPrisma.menuPackage.findUnique.mockResolvedValueOnce(makeCurrentPkg());
+    mockPrisma.menuPackage.update.mockResolvedValue(updatedPkg);
+    mockPrisma.menuPriceHistory.create.mockResolvedValue({});
 
     await service.updatePackage('p1', { pricePerChild: 150 } as any, USER);
 
@@ -51,10 +52,10 @@ describe('MenuService — updatePackage pricePerChild/pricePerToddler branches',
   });
 
   it('should detect pricePerToddler change and create price history', async () => {
-    mockPrisma.menuPackage.findUnique
-      .mockResolvedValueOnce(currentPkg)
-      .mockResolvedValueOnce({ id: 'p1', menuTemplate: {}, packageOptions: [], categorySettings: [] });
-    mockPrisma.menuPackage.update.mockResolvedValue({ id: 'p1', name: 'Gold', menuTemplate: {}, packageOptions: [], categorySettings: [] });
+    const service = new MenuService();
+    mockPrisma.menuPackage.findUnique.mockResolvedValueOnce(makeCurrentPkg());
+    mockPrisma.menuPackage.update.mockResolvedValue(updatedPkg);
+    mockPrisma.menuPriceHistory.create.mockResolvedValue({});
 
     await service.updatePackage('p1', { pricePerToddler: 50 } as any, USER);
 
@@ -66,10 +67,10 @@ describe('MenuService — updatePackage pricePerChild/pricePerToddler branches',
   });
 
   it('should detect all three price changes at once', async () => {
-    mockPrisma.menuPackage.findUnique
-      .mockResolvedValueOnce(currentPkg)
-      .mockResolvedValueOnce({ id: 'p1', menuTemplate: {}, packageOptions: [], categorySettings: [] });
-    mockPrisma.menuPackage.update.mockResolvedValue({ id: 'p1', name: 'Gold', menuTemplate: {}, packageOptions: [], categorySettings: [] });
+    const service = new MenuService();
+    mockPrisma.menuPackage.findUnique.mockResolvedValueOnce(makeCurrentPkg());
+    mockPrisma.menuPackage.update.mockResolvedValue(updatedPkg);
+    mockPrisma.menuPriceHistory.create.mockResolvedValue({});
 
     await service.updatePackage('p1', {
       pricePerAdult: 250, pricePerChild: 130, pricePerToddler: 20,
@@ -79,12 +80,14 @@ describe('MenuService — updatePackage pricePerChild/pricePerToddler branches',
   });
 
   it('should NOT create price history when prices unchanged', async () => {
-    mockPrisma.menuPackage.findUnique
-      .mockResolvedValueOnce(currentPkg)
-      .mockResolvedValueOnce({ id: 'p1', menuTemplate: {}, packageOptions: [], categorySettings: [] });
-    mockPrisma.menuPackage.update.mockResolvedValue({ id: 'p1', name: 'Gold', menuTemplate: {}, packageOptions: [], categorySettings: [] });
+    const service = new MenuService();
+    mockPrisma.menuPackage.findUnique.mockResolvedValueOnce(makeCurrentPkg());
+    mockPrisma.menuPackage.update.mockResolvedValue(updatedPkg);
+    mockPrisma.menuPriceHistory.create.mockResolvedValue({});
 
-    await service.updatePackage('p1', { pricePerAdult: 200, pricePerChild: 100, pricePerToddler: 0 } as any, USER);
+    await service.updatePackage('p1', {
+      pricePerAdult: 200, pricePerChild: 100, pricePerToddler: 0,
+    } as any, USER);
 
     expect(mockPrisma.menuPriceHistory.create).not.toHaveBeenCalled();
   });
@@ -93,6 +96,7 @@ describe('MenuService — updatePackage pricePerChild/pricePerToddler branches',
 describe('MenuService — assignOptionsToPackage branches', () => {
 
   it('should use defaults for isRequired/isDefault/displayOrder when not provided', async () => {
+    const service = new MenuService();
     mockPrisma.menuPackageOption.deleteMany.mockResolvedValue({});
     mockPrisma.menuPackageOption.createMany.mockResolvedValue({ count: 1 });
     mockPrisma.menuPackage.findUnique.mockResolvedValue({
@@ -110,6 +114,7 @@ describe('MenuService — assignOptionsToPackage branches', () => {
   });
 
   it('should use provided values for isRequired/isDefault/displayOrder', async () => {
+    const service = new MenuService();
     mockPrisma.menuPackageOption.deleteMany.mockResolvedValue({});
     mockPrisma.menuPackageOption.createMany.mockResolvedValue({ count: 1 });
     mockPrisma.menuPackage.findUnique.mockResolvedValue({
@@ -133,8 +138,10 @@ describe('MenuService — assignOptionsToPackage branches', () => {
 describe('MenuService — updateOption priceAmount change branch', () => {
 
   it('should create price history when priceAmount changes', async () => {
+    const service = new MenuService();
     mockPrisma.menuOption.findUnique.mockResolvedValue({ name: 'Extra cheese', priceAmount: { toNumber: () => 10 } });
     mockPrisma.menuOption.update.mockResolvedValue({ id: 'o1', name: 'Extra cheese' });
+    mockPrisma.menuPriceHistory.create.mockResolvedValue({});
 
     await service.updateOption('o1', { priceAmount: 15 } as any, USER);
 
@@ -146,6 +153,7 @@ describe('MenuService — updateOption priceAmount change branch', () => {
   });
 
   it('should NOT create price history when priceAmount unchanged', async () => {
+    const service = new MenuService();
     mockPrisma.menuOption.findUnique.mockResolvedValue({ name: 'Extra cheese', priceAmount: { toNumber: () => 10 } });
     mockPrisma.menuOption.update.mockResolvedValue({ id: 'o1', name: 'Extra cheese' });
 
@@ -158,6 +166,7 @@ describe('MenuService — updateOption priceAmount change branch', () => {
 describe('MenuService — getPackagesByEventType empty templates', () => {
 
   it('should return empty array when no templates found', async () => {
+    const service = new MenuService();
     mockPrisma.menuTemplate.findMany.mockResolvedValue([]);
     const result = await service.getPackagesByEventType('et-nonexistent');
     expect(result).toEqual([]);
