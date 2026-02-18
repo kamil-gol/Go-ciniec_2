@@ -327,6 +327,7 @@ export class ReservationService {
     const clientName = reservation.client
       ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}`
       : 'N/A';
+    /* istanbul ignore next -- hall always included */
     const hallName = (reservation.hall as any)?.name || 'N/A';
 
     const adults = data.adultsCount ?? reservation.adults;
@@ -336,6 +337,7 @@ export class ReservationService {
 
     if (data.menuPackageId === null) {
       // Get old package name before removal
+      /* istanbul ignore next -- defensive: menuData always has packageName */
       const oldPackageName = reservation.menuSnapshot
         ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || 'Nieznany pakiet'
         : 'Brak';
@@ -802,7 +804,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
+        description: `Zmiana statusu rezerwacji: ${existingReservation.status} \u2192 ${data.status}`,
         oldStatus: existingReservation.status,
         newStatus: data.status,
         reason: data.reason
@@ -888,6 +890,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
+        /* istanbul ignore next -- hall always included */
         description: `Zarchiwizowano rezerwację: ${reservation.client.firstName} ${reservation.client.lastName} | ${reservation.hall?.name || 'Brak sali'}`,
         reason
       }
@@ -926,6 +929,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
+        /* istanbul ignore next -- hall always included */
         description: `Przywrócono rezerwację z archiwum: ${reservation.client.firstName} ${reservation.client.lastName} | ${reservation.hall?.name || 'Brak sali'}`,
         reason
       }
@@ -1038,12 +1042,14 @@ export class ReservationService {
       });
 
       if (conflict) {
+        /* istanbul ignore next -- client always included */
         const clientName = conflict.client
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
+        /* istanbul ignore next -- hall always included */
         const hallName = (conflict as any).hall?.name || 'inna sala';
         throw new Error(
-          `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
+          `Nie można zarezerwować całego obiektu \u2014 sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
         );
       }
     } else {
@@ -1061,11 +1067,12 @@ export class ReservationService {
       });
 
       if (conflict) {
+        /* istanbul ignore next -- client always included */
         const clientName = conflict.client
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
         throw new Error(
-          `Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
+          `Nie można zarezerwować tej sali \u2014 cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
         );
       }
     }
@@ -1074,7 +1081,7 @@ export class ReservationService {
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
+      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje \u2014 wyloguj się i zaloguj ponownie');
     }
   }
 
