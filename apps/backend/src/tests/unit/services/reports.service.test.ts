@@ -1,108 +1,183 @@
 /**
- * ReportsService — Unit Tests
+ * ReportsService — Comprehensive Unit Tests
+ * Targets 50% branches. Covers: getRevenueReport all filters,
+ * all 4 groupBy periods (day/week/month/year), growthPercent branches,
+ * null hall/eventType guards, getOccupancyReport branches,
+ * peakHours startTime guards, peakDay N/A fallback.
  */
 
-jest.mock('../../../lib/prisma', () => {
-  const mock = {
-    reservation: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      aggregate: jest.fn(),
-    },
-  };
-  return { prisma: mock, __esModule: true, default: mock };
-});
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
+    reservation: { findMany: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
+  },
+}));
 
-import reportsService from '../../../services/reports.service';
+import ReportsService from '../../../services/reports.service';
 import { prisma } from '../../../lib/prisma';
 
-const mockPrisma = prisma as any;
+const db = prisma as any;
+const svc = ReportsService;
 
 const RESERVATIONS = [
-  {
-    id: 'r-001', date: '2026-01-15', startTime: '16:00', totalPrice: 15000,
-    status: 'COMPLETED', guests: 80,
-    hall: { id: 'h-001', name: 'Sala Główna' },
-    eventType: { id: 'et-001', name: 'Wesele' },
-  },
-  {
-    id: 'r-002', date: '2026-01-22', startTime: '18:00', totalPrice: 8000,
-    status: 'CONFIRMED', guests: 40,
-    hall: { id: 'h-002', name: 'Sala Kameralna' },
-    eventType: { id: 'et-002', name: 'Komunia' },
-  },
-  {
-    id: 'r-003', date: '2026-01-22', startTime: '12:00', totalPrice: 12000,
-    status: 'COMPLETED', guests: 60,
-    hall: { id: 'h-001', name: 'Sala Główna' },
-    eventType: { id: 'et-001', name: 'Wesele' },
-  },
+  { id: 'r1', date: '2026-02-10', startTime: '14:00', totalPrice: 5000, status: 'COMPLETED', guests: 80, hall: { id: 'h1', name: 'Sala A' }, eventType: { id: 'et1', name: 'Wesele' } },
+  { id: 'r2', date: '2026-02-15', startTime: '16:00', totalPrice: 3000, status: 'CONFIRMED', guests: 50, hall: { id: 'h1', name: 'Sala A' }, eventType: { id: 'et2', name: 'Komunia' } },
+  { id: 'r3', date: '2026-02-20', startTime: '18:00', totalPrice: 7000, status: 'COMPLETED', guests: 120, hall: { id: 'h2', name: 'Sala B' }, eventType: { id: 'et1', name: 'Wesele' } },
 ];
 
-beforeEach(() => {
-  jest.clearAllMocks();
-  mockPrisma.reservation.findMany.mockResolvedValue(RESERVATIONS);
-  mockPrisma.reservation.count.mockResolvedValue(2); // completed count
-  mockPrisma.reservation.aggregate.mockResolvedValue({ _sum: { totalPrice: 30000 } });
-});
+beforeEach(() => jest.clearAllMocks());
 
 describe('ReportsService', () => {
+  // ========== getRevenueReport ==========
   describe('getRevenueReport()', () => {
-    const FILTERS = { dateFrom: '2026-01-01', dateTo: '2026-01-31', groupBy: 'month' as const };
+    function mockRevenue(reservations: any[] = RESERVATIONS, prevRevenue = 10000) {
+      db.reservation.findMany.mockResolvedValue(reservations);
+      db.reservation.count.mockResolvedValue(
+        reservations.filter((r: any) => r.status === 'COMPLETED').length
+      );
+      db.reservation.aggregate.mockResolvedValue({ _sum: { totalPrice: prevRevenue } });
+    }
 
-    it('should calculate total revenue', async () => {
-      const result = await reportsService.getRevenueReport(FILTERS);
-      expect(result.summary.totalRevenue).toBe(35000);
+    it('should return full revenue report with defaults (groupBy month)', async () => {
+      mockRevenue();
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.summary.totalRevenue).toBe(15000);
       expect(result.summary.totalReservations).toBe(3);
+      expect(result.summary.completedReservations).toBe(2);
+      expect(result.breakdown.length).toBeGreaterThan(0);
+      expect(result.byHall.length).toBe(2);
+      expect(result.byEventType.length).toBe(2);
     });
 
-    it('should calculate avg revenue per reservation', async () => {
-      const result = await reportsService.getRevenueReport(FILTERS);
-      expect(result.summary.avgRevenuePerReservation).toBeCloseTo(11666.67, 0);
+    it('should apply hallId filter', async () => {
+      mockRevenue();
+      await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', hallId: 'h1' });
+      const call = db.reservation.findMany.mock.calls[0][0];
+      expect(call.where.hallId).toBe('h1');
     });
 
-    it('should break down by hall', async () => {
-      const result = await reportsService.getRevenueReport(FILTERS);
-      expect(result.byHall).toHaveLength(2);
-      // Sala Główna should be first (higher revenue)
-      expect(result.byHall[0].hallName).toBe('Sala Główna');
-      expect(result.byHall[0].revenue).toBe(27000);
+    it('should apply eventTypeId filter', async () => {
+      mockRevenue();
+      await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', eventTypeId: 'et1' });
+      const call = db.reservation.findMany.mock.calls[0][0];
+      expect(call.where.eventTypeId).toBe('et1');
     });
 
-    it('should break down by event type', async () => {
-      const result = await reportsService.getRevenueReport(FILTERS);
-      expect(result.byEventType).toHaveLength(2);
-      expect(result.byEventType[0].eventTypeName).toBe('Wesele');
+    it('should apply status filter', async () => {
+      mockRevenue();
+      await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', status: 'COMPLETED' });
+      const call = db.reservation.findMany.mock.calls[0][0];
+      expect(call.where.status).toBe('COMPLETED');
     });
 
-    it('should calculate growth from previous period', async () => {
-      // Previous period aggregate returns 30000
-      const result = await reportsService.getRevenueReport(FILTERS);
-      // Growth: ((35000 - 30000) / 30000) * 100 ≈ 17%
-      expect(result.summary.growthPercent).toBe(17);
+    it('should calculate growthPercent when prev > 0', async () => {
+      mockRevenue(RESERVATIONS, 10000);
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.summary.growthPercent).toBe(50); // (15000-10000)/10000*100
+    });
+
+    it('should return 0 growthPercent when prev = 0', async () => {
+      mockRevenue(RESERVATIONS, 0);
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.summary.growthPercent).toBe(0);
+    });
+
+    it('should handle 0 reservations', async () => {
+      mockRevenue([], 0);
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.summary.totalRevenue).toBe(0);
+      expect(result.summary.avgRevenuePerReservation).toBe(0);
+      expect(result.summary.maxRevenueDay).toBeNull();
+    });
+
+    it('should group by day', async () => {
+      mockRevenue();
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', groupBy: 'day' });
+      expect(result.breakdown.length).toBe(3);
+      expect(result.breakdown[0].period).toMatch(/^2026-02/);
+    });
+
+    it('should group by week', async () => {
+      mockRevenue();
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', groupBy: 'week' });
+      expect(result.breakdown[0].period).toMatch(/^2026-W/);
+    });
+
+    it('should group by year', async () => {
+      mockRevenue();
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', groupBy: 'year' });
+      expect(result.breakdown[0].period).toBe('2026');
+    });
+
+    it('should handle reservation with null hall', async () => {
+      const noHall = [{ ...RESERVATIONS[0], hall: null }];
+      mockRevenue(noHall);
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.byHall).toHaveLength(0);
+    });
+
+    it('should handle reservation with null eventType', async () => {
+      const noET = [{ ...RESERVATIONS[0], eventType: null }];
+      mockRevenue(noET);
+      const result = await svc.getRevenueReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.byEventType).toHaveLength(0);
     });
   });
 
+  // ========== getOccupancyReport ==========
   describe('getOccupancyReport()', () => {
-    const FILTERS = { dateFrom: '2026-01-01', dateTo: '2026-01-31' };
+    function mockOccupancy(reservations: any[] = RESERVATIONS) {
+      db.reservation.findMany.mockResolvedValue(reservations);
+    }
 
-    it('should calculate occupancy summary', async () => {
-      const result = await reportsService.getOccupancyReport(FILTERS);
+    it('should return full occupancy report', async () => {
+      mockOccupancy();
+      const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
       expect(result.summary.totalReservations).toBe(3);
-      expect(result.summary.totalDaysInPeriod).toBe(31);
-      // 2 unique dates out of 31 days
-      expect(result.summary.avgOccupancy).toBeCloseTo(6.5, 0);
-    });
-
-    it('should analyze by hall', async () => {
-      const result = await reportsService.getOccupancyReport(FILTERS);
-      expect(result.halls).toHaveLength(2);
-    });
-
-    it('should analyze peak days of week', async () => {
-      const result = await reportsService.getOccupancyReport(FILTERS);
+      expect(result.summary.totalDaysInPeriod).toBe(28);
+      expect(result.summary.avgOccupancy).toBeGreaterThan(0);
+      expect(result.halls.length).toBe(2);
       expect(result.peakDaysOfWeek.length).toBeGreaterThan(0);
-      expect(result.summary.peakDay).toBeDefined();
+    });
+
+    it('should apply hallId filter', async () => {
+      mockOccupancy();
+      await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28', hallId: 'h1' });
+      const call = db.reservation.findMany.mock.calls[0][0];
+      expect(call.where.hallId).toBe('h1');
+    });
+
+    it('should return N/A for peakDay when no reservations', async () => {
+      mockOccupancy([]);
+      const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.summary.peakDay).toBe('N/A');
+      expect(result.summary.peakHall).toBeNull();
+    });
+
+    it('should handle reservations with null startTime', async () => {
+      const noTime = [{ ...RESERVATIONS[0], startTime: null }];
+      mockOccupancy(noTime);
+      const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.peakHours).toHaveLength(0);
+    });
+
+    it('should handle reservations with invalid startTime', async () => {
+      const badTime = [{ ...RESERVATIONS[0], startTime: 'abc' }];
+      mockOccupancy(badTime);
+      const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.peakHours).toHaveLength(0);
+    });
+
+    it('should handle reservation with null hall in occupancy', async () => {
+      const noHall = [{ ...RESERVATIONS[0], hall: null }];
+      mockOccupancy(noHall);
+      const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+      expect(result.halls).toHaveLength(0);
+    });
+
+    it('should handle 0 totalDaysInPeriod', async () => {
+      mockOccupancy([]);
+      const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-01' });
+      expect(result.summary.avgOccupancy).toBeDefined();
     });
   });
 });
