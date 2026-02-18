@@ -21,12 +21,14 @@ jest.mock('../../../services/pdf.service', () => ({
 }));
 
 jest.mock('../../../services/email.service', () => ({
+  __esModule: true,
   default: {
     sendDepositPaidConfirmation: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
 jest.mock('../../../utils/logger', () => ({
+  __esModule: true,
   default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
