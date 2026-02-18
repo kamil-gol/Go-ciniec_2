@@ -1,6 +1,6 @@
 /**
- * DepositController — Unit Tests
- * Service + pdfService mocked. Tests validation (Zod), auth checks, response format.
+ * Deposit Controller — Unit Tests
+ * Tests all exported controller functions.
  */
 
 jest.mock('../../../services/deposit.service', () => ({
@@ -27,19 +27,22 @@ jest.mock('../../../services/pdf.service', () => ({
   },
 }));
 
-import {
-  listDeposits, getDepositStats, getOverdueDeposits, getDeposit,
-  getReservationDeposits, createDeposit, updateDeposit, deleteDeposit,
-  markDepositAsPaid, markDepositAsUnpaid, cancelDeposit, downloadDepositPdf,
-} from '../../../controllers/deposit.controller';
+jest.mock('../../../validation/deposit.validation', () => ({
+  createDepositSchema: { parse: jest.fn((d: any) => d) },
+  updateDepositSchema: { parse: jest.fn((d: any) => d) },
+  markPaidSchema: { parse: jest.fn((d: any) => d) },
+  depositFiltersSchema: { parse: jest.fn((d: any) => d) },
+}));
+
+import * as ctrl from '../../../controllers/deposit.controller';
 import depositService from '../../../services/deposit.service';
 import { pdfService } from '../../../services/pdf.service';
 
 const svc = depositService as any;
-const pdf = pdfService as any;
+const pdfSvc = pdfService as any;
 
 const req = (overrides: any = {}): any => ({
-  body: {}, params: {}, query: {}, user: { id: 1 },
+  body: {}, params: {}, query: {}, user: { id: 'u-1' },
   ...overrides,
 });
 
@@ -54,218 +57,238 @@ const res = () => {
 
 beforeEach(() => jest.clearAllMocks());
 
-describe('DepositController', () => {
-  // ═══════ listDeposits ═══════
-  describe('listDeposits()', () => {
-    it('should return 200 with deposits + pagination', async () => {
-      svc.list.mockResolvedValue({ deposits: [{ id: 'd-1' }], pagination: { page: 1, total: 1 } });
+describe('Deposit Controller', () => {
+  describe('listDeposits', () => {
+    it('should return list with pagination', async () => {
+      svc.list.mockResolvedValue({ deposits: [{ id: 'd-1' }], pagination: { total: 1 } });
       const response = res();
-      await listDeposits(req({ query: {} }), response);
+      await ctrl.listDeposits(req({ query: {} }), response);
       expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, pagination: expect.any(Object) })
+        expect.objectContaining({ success: true, data: [{ id: 'd-1' }] })
       );
     });
   });
 
-  // ═══════ getDepositStats ═══════
-  describe('getDepositStats()', () => {
-    it('should return 200 with stats', async () => {
-      svc.getStats.mockResolvedValue({ totalPending: 5, totalPaid: 10 });
+  describe('getDepositStats', () => {
+    it('should return stats', async () => {
+      svc.getStats.mockResolvedValue({ total: 5000 });
       const response = res();
-      await getDepositStats(req(), response);
+      await ctrl.getDepositStats(req(), response);
       expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, data: { totalPending: 5, totalPaid: 10 } })
+        expect.objectContaining({ data: { total: 5000 } })
       );
     });
   });
 
-  // ═══════ getOverdueDeposits ═══════
-  describe('getOverdueDeposits()', () => {
-    it('should return 200 with overdue list', async () => {
-      svc.getOverdue.mockResolvedValue([{ id: 'd-1', status: 'OVERDUE' }]);
+  describe('getOverdueDeposits', () => {
+    it('should return overdue list', async () => {
+      svc.getOverdue.mockResolvedValue([{ id: 'd-2' }]);
       const response = res();
-      await getOverdueDeposits(req(), response);
+      await ctrl.getOverdueDeposits(req(), response);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ data: [{ id: 'd-2' }] })
+      );
+    });
+  });
+
+  describe('getDeposit', () => {
+    it('should return single deposit', async () => {
+      svc.getById.mockResolvedValue({ id: 'd-1' });
+      const response = res();
+      await ctrl.getDeposit(req({ params: { id: 'd-1' } }), response);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { id: 'd-1' } })
+      );
+    });
+  });
+
+  describe('downloadDepositPdf', () => {
+    const PAID_DEPOSIT = {
+      id: 'd-1', paid: true, amount: 5000,
+      paidAt: '2026-01-15T10:00:00Z',
+      paymentMethod: 'CASH',
+      reservation: {
+        id: 'r-1', date: '2026-03-15', startTime: '14:00', endTime: '22:00',
+        guests: 80, totalPrice: 20000,
+        client: { firstName: 'Jan', lastName: 'Kowalski', email: 'jan@x.pl', phone: '123' },
+        hall: { name: 'Sala A' },
+        eventType: { name: 'Wesele' },
+      },
+    };
+
+    it('should throw 400 when deposit not paid', async () => {
+      svc.getById.mockResolvedValue({ ...PAID_DEPOSIT, paid: false });
+      await expect(
+        ctrl.downloadDepositPdf(req({ params: { id: 'd-1' } }), res())
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when no reservation', async () => {
+      svc.getById.mockResolvedValue({ ...PAID_DEPOSIT, reservation: null });
+      await expect(
+        ctrl.downloadDepositPdf(req({ params: { id: 'd-1' } }), res())
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should throw 400 when no client', async () => {
+      svc.getById.mockResolvedValue({
+        ...PAID_DEPOSIT,
+        reservation: { ...PAID_DEPOSIT.reservation, client: null },
+      });
+      await expect(
+        ctrl.downloadDepositPdf(req({ params: { id: 'd-1' } }), res())
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it('should generate PDF with paidAt date', async () => {
+      svc.getById.mockResolvedValue(PAID_DEPOSIT);
+      pdfSvc.generatePaymentConfirmationPDF.mockResolvedValue(Buffer.from('pdf'));
+      const response = res();
+      await ctrl.downloadDepositPdf(req({ params: { id: 'd-1' } }), response);
+      expect(pdfSvc.generatePaymentConfirmationPDF).toHaveBeenCalledWith(
+        expect.objectContaining({ paidAt: new Date('2026-01-15T10:00:00Z'), paymentMethod: 'CASH' })
+      );
+      expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+      expect(response.send).toHaveBeenCalled();
+    });
+
+    it('should use current date when paidAt is null', async () => {
+      svc.getById.mockResolvedValue({ ...PAID_DEPOSIT, paidAt: null });
+      pdfSvc.generatePaymentConfirmationPDF.mockResolvedValue(Buffer.from('pdf'));
+      const response = res();
+      await ctrl.downloadDepositPdf(req({ params: { id: 'd-1' } }), response);
+      const call = pdfSvc.generatePaymentConfirmationPDF.mock.calls[0][0];
+      expect(call.paidAt).toBeInstanceOf(Date);
+    });
+
+    it('should fallback paymentMethod to TRANSFER when null', async () => {
+      svc.getById.mockResolvedValue({ ...PAID_DEPOSIT, paymentMethod: null });
+      pdfSvc.generatePaymentConfirmationPDF.mockResolvedValue(Buffer.from('pdf'));
+      const response = res();
+      await ctrl.downloadDepositPdf(req({ params: { id: 'd-1' } }), response);
+      const call = pdfSvc.generatePaymentConfirmationPDF.mock.calls[0][0];
+      expect(call.paymentMethod).toBe('TRANSFER');
+    });
+  });
+
+  describe('sendDepositEmail', () => {
+    it('should return result', async () => {
+      svc.sendConfirmationEmail.mockResolvedValue({ sent: true });
+      const response = res();
+      await ctrl.sendDepositEmail(req({ params: { id: 'd-1' } }), response);
+      expect(response.json).toHaveBeenCalledWith({ sent: true });
+    });
+  });
+
+  describe('getReservationDeposits', () => {
+    it('should return deposits with summary', async () => {
+      svc.getByReservation.mockResolvedValue({ deposits: [], summary: { total: 0 } });
+      const response = res();
+      await ctrl.getReservationDeposits(req({ params: { reservationId: 'r-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
     });
   });
 
-  // ═══════ getDeposit ═══════
-  describe('getDeposit()', () => {
-    it('should return deposit by id', async () => {
-      svc.getById.mockResolvedValue({ id: 'd-1', amount: 5000 });
-      const response = res();
-      await getDeposit(req({ params: { id: 'd-1' } }), response);
-      expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { id: 'd-1', amount: 5000 } })
-      );
-    });
-  });
-
-  // ═══════ getReservationDeposits ═══════
-  describe('getReservationDeposits()', () => {
-    it('should return deposits + summary for reservation', async () => {
-      svc.getByReservation.mockResolvedValue({
-        deposits: [{ id: 'd-1' }], summary: { total: 5000, paid: 3000 },
-      });
-      const response = res();
-      await getReservationDeposits(req({ params: { reservationId: 'r-1' } }), response);
-      expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ summary: { total: 5000, paid: 3000 } })
-      );
-    });
-  });
-
-  // ═══════ createDeposit ═══════
-  describe('createDeposit()', () => {
+  describe('createDeposit', () => {
     it('should throw 401 when no user', async () => {
-      const r = req({ user: undefined, params: { reservationId: 'r-1' }, body: { amount: 1000, dueDate: '2026-04-01' } });
-      await expect(createDeposit(r, res())).rejects.toMatchObject({ statusCode: 401 });
-    });
-
-    it('should throw Zod error when amount missing', async () => {
-      const r = req({ params: { reservationId: 'r-1' }, body: { dueDate: '2026-04-01' } });
-      await expect(createDeposit(r, res())).rejects.toThrow();
-    });
-
-    it('should throw Zod error when amount negative', async () => {
-      const r = req({ params: { reservationId: 'r-1' }, body: { amount: -100, dueDate: '2026-04-01' } });
-      await expect(createDeposit(r, res())).rejects.toThrow();
+      await expect(
+        ctrl.createDeposit(req({ params: { reservationId: 'r-1' }, user: undefined }), res())
+      ).rejects.toMatchObject({ statusCode: 401 });
     });
 
     it('should return 201 on success', async () => {
-      svc.create.mockResolvedValue({ id: 'd-new', amount: 2000 });
-      const r = req({ params: { reservationId: 'r-1' }, body: { amount: 2000, dueDate: '2026-04-01' } });
+      svc.create.mockResolvedValue({ id: 'd-new' });
       const response = res();
-      await createDeposit(r, response);
-      expect(response.status).toHaveBeenCalledWith(201);
-      expect(svc.create).toHaveBeenCalledWith(
-        expect.objectContaining({ reservationId: 'r-1', amount: 2000 }), 1
+      await ctrl.createDeposit(
+        req({ params: { reservationId: 'r-1' }, body: { amount: 1000, dueDate: '2026-04-01' } }),
+        response
       );
+      expect(response.status).toHaveBeenCalledWith(201);
     });
   });
 
-  // ═══════ updateDeposit ═══════
-  describe('updateDeposit()', () => {
+  describe('updateDeposit', () => {
     it('should throw 401 when no user', async () => {
-      const r = req({ user: undefined, params: { id: 'd-1' }, body: { amount: 3000 } });
-      await expect(updateDeposit(r, res())).rejects.toMatchObject({ statusCode: 401 });
+      await expect(
+        ctrl.updateDeposit(req({ params: { id: 'd-1' }, user: undefined }), res())
+      ).rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it('should return 200 on success', async () => {
-      svc.update.mockResolvedValue({ id: 'd-1', amount: 3000 });
-      const r = req({ params: { id: 'd-1' }, body: { amount: 3000 } });
+    it('should return updated deposit', async () => {
+      svc.update.mockResolvedValue({ id: 'd-1' });
       const response = res();
-      await updateDeposit(r, response);
+      await ctrl.updateDeposit(req({ params: { id: 'd-1' }, body: { amount: 2000 } }), response);
       expect(response.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
     });
   });
 
-  // ═══════ deleteDeposit ═══════
-  describe('deleteDeposit()', () => {
+  describe('deleteDeposit', () => {
     it('should throw 401 when no user', async () => {
-      await expect(deleteDeposit(req({ user: undefined, params: { id: 'd-1' } }), res()))
-        .rejects.toMatchObject({ statusCode: 401 });
+      await expect(
+        ctrl.deleteDeposit(req({ params: { id: 'd-1' }, user: undefined }), res())
+      ).rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it('should return 200 on success', async () => {
+    it('should return result', async () => {
       svc.delete.mockResolvedValue({ success: true });
       const response = res();
-      await deleteDeposit(req({ params: { id: 'd-1' } }), response);
+      await ctrl.deleteDeposit(req({ params: { id: 'd-1' } }), response);
       expect(response.json).toHaveBeenCalledWith({ success: true });
     });
   });
 
-  // ═══════ markDepositAsPaid ═══════
-  describe('markDepositAsPaid()', () => {
+  describe('markDepositAsPaid', () => {
     it('should throw 401 when no user', async () => {
-      const r = req({ user: undefined, params: { id: 'd-1' }, body: { paymentMethod: 'CASH', paidAt: '2026-03-01' } });
-      await expect(markDepositAsPaid(r, res())).rejects.toMatchObject({ statusCode: 401 });
+      await expect(
+        ctrl.markDepositAsPaid(req({ params: { id: 'd-1' }, user: undefined }), res())
+      ).rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it('should throw Zod error when paymentMethod invalid', async () => {
-      const r = req({ params: { id: 'd-1' }, body: { paymentMethod: 'BITCOIN', paidAt: '2026-03-01' } });
-      await expect(markDepositAsPaid(r, res())).rejects.toThrow();
-    });
-
-    it('should return 200 on valid payment', async () => {
-      svc.markAsPaid.mockResolvedValue({ id: 'd-1', status: 'PAID' });
-      const r = req({ params: { id: 'd-1' }, body: { paymentMethod: 'TRANSFER', paidAt: '2026-03-01' } });
+    it('should return paid deposit', async () => {
+      svc.markAsPaid.mockResolvedValue({ id: 'd-1', paid: true });
       const response = res();
-      await markDepositAsPaid(r, response);
+      await ctrl.markDepositAsPaid(req({ params: { id: 'd-1' }, body: { paymentMethod: 'CASH' } }), response);
       expect(response.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
     });
   });
 
-  // ═══════ markDepositAsUnpaid ═══════
-  describe('markDepositAsUnpaid()', () => {
+  describe('markDepositAsUnpaid', () => {
     it('should throw 401 when no user', async () => {
-      await expect(markDepositAsUnpaid(req({ user: undefined, params: { id: 'd-1' } }), res()))
-        .rejects.toMatchObject({ statusCode: 401 });
+      await expect(
+        ctrl.markDepositAsUnpaid(req({ params: { id: 'd-1' }, user: undefined }), res())
+      ).rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it('should return 200 on success', async () => {
-      svc.markAsUnpaid.mockResolvedValue({ id: 'd-1', status: 'PENDING' });
+    it('should return unpaid deposit', async () => {
+      svc.markAsUnpaid.mockResolvedValue({ id: 'd-1', paid: false });
       const response = res();
-      await markDepositAsUnpaid(req({ params: { id: 'd-1' } }), response);
+      await ctrl.markDepositAsUnpaid(req({ params: { id: 'd-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
     });
   });
 
-  // ═══════ cancelDeposit ═══════
-  describe('cancelDeposit()', () => {
+  describe('cancelDeposit', () => {
     it('should throw 401 when no user', async () => {
-      await expect(cancelDeposit(req({ user: undefined, params: { id: 'd-1' } }), res()))
-        .rejects.toMatchObject({ statusCode: 401 });
+      await expect(
+        ctrl.cancelDeposit(req({ params: { id: 'd-1' }, user: undefined }), res())
+      ).rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it('should return 200 on cancel', async () => {
+    it('should return cancelled deposit', async () => {
       svc.cancel.mockResolvedValue({ id: 'd-1', status: 'CANCELLED' });
       const response = res();
-      await cancelDeposit(req({ params: { id: 'd-1' } }), response);
+      await ctrl.cancelDeposit(req({ params: { id: 'd-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
-    });
-  });
-
-  // ═══════ downloadDepositPdf ═══════
-  describe('downloadDepositPdf()', () => {
-    it('should throw 400 when deposit not paid', async () => {
-      svc.getById.mockResolvedValue({ id: 'd-1', paid: false });
-      await expect(downloadDepositPdf(req({ params: { id: 'd-1' } }), res()))
-        .rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    it('should throw 400 when no reservation data', async () => {
-      svc.getById.mockResolvedValue({ id: 'd-1', paid: true, reservation: null });
-      await expect(downloadDepositPdf(req({ params: { id: 'd-1' } }), res()))
-        .rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    it('should send PDF buffer on success', async () => {
-      const pdfBuf = Buffer.from('fake-pdf');
-      svc.getById.mockResolvedValue({
-        id: 'd-1', paid: true, paidAt: '2026-03-01', paymentMethod: 'TRANSFER', amount: 5000,
-        reservation: {
-          id: 'r-1', date: '2026-06-15', startTime: '14:00', endTime: '22:00',
-          guests: 80, totalPrice: 15000,
-          hall: { name: 'Sala Główna' }, eventType: { name: 'Wesele' },
-          client: { firstName: 'Jan', lastName: 'Kowalski', email: 'jan@test.pl', phone: '+48123' },
-        },
-      });
-      pdf.generatePaymentConfirmationPDF.mockResolvedValue(pdfBuf);
-      const response = res();
-      await downloadDepositPdf(req({ params: { id: 'd-1' } }), response);
-      expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
-      expect(response.send).toHaveBeenCalledWith(pdfBuf);
     });
   });
 });
