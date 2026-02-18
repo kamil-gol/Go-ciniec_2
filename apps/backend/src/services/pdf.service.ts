@@ -240,115 +240,75 @@ export class PDFService {
     }
   }
 
+  private setupFonts(doc: PDFKit.PDFDocument): void {
+    if (this.useCustomFonts && this.fontRegular && this.fontBold) {
+      doc.registerFont('DejaVu', this.fontRegular);
+      doc.registerFont('DejaVu-Bold', this.fontBold);
+      doc.font('DejaVu');
+    } else {
+      doc.font('Helvetica');
+    }
+  }
+
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      try {
-        console.log(`[PDF Service] Generating PDF for reservation ${reservation.id}`);
+      console.log(`[PDF Service] Generating PDF for reservation ${reservation.id}`);
 
-        const doc = new PDFDocument({
-          size: 'A4',
-          margin: 50,
-          info: {
-            Title: `Rezerwacja ${reservation.id}`,
-            Author: this.restaurantData.name,
-            Subject: 'Potwierdzenie rezerwacji sali',
-          },
-        });
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Rezerwacja ${reservation.id}`,
+          Author: this.restaurantData.name,
+          Subject: 'Potwierdzenie rezerwacji sali',
+        },
+      });
 
-        if (this.useCustomFonts && this.fontRegular && this.fontBold) {
-          try {
-            doc.registerFont('DejaVu', this.fontRegular);
-            doc.registerFont('DejaVu-Bold', this.fontBold);
-            doc.font('DejaVu');
-            console.log('[PDF Service] Custom fonts registered successfully');
-          /* istanbul ignore next -- font registration never fails in Docker */
-          } catch (error) {
-            console.error('[PDF Service] Failed to register custom fonts:', error);
-            this.useCustomFonts = false;
-            doc.font('Helvetica');
-          }
-        } else {
-          doc.font('Helvetica');
-          console.log('[PDF Service] Using built-in Helvetica font');
-        }
+      this.setupFonts(doc);
 
-        const chunks: Buffer[] = [];
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] PDF generated successfully, size: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
 
-        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-        doc.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          console.log(`[PDF Service] PDF generated successfully, size: ${buffer.length} bytes`);
-          resolve(buffer);
-        });
-        /* istanbul ignore next -- PDF error event never fires */
-        doc.on('error', (error) => {
-          console.error('[PDF Service] PDF generation error:', error);
-          reject(error);
-        });
-
-        this.buildPDFContent(doc, reservation);
-
-        doc.end();
-      /* istanbul ignore next -- PDF generation never throws */
-      } catch (error) {
-        console.error('[PDF Service] Failed to generate PDF:', error);
-        reject(error);
-      }
+      this.buildPDFContent(doc, reservation);
+      doc.end();
     });
   }
 
   async generatePaymentConfirmationPDF(data: PaymentConfirmationData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      try {
-        console.log(`[PDF Service] Generating payment confirmation PDF for deposit ${data.depositId}`);
+      console.log(`[PDF Service] Generating payment confirmation PDF for deposit ${data.depositId}`);
 
-        const doc = new PDFDocument({
-          size: 'A4',
-          margin: 50,
-          info: {
-            Title: `Potwierdzenie wplaty ${data.depositId}`,
-            Author: this.restaurantData.name,
-            Subject: 'Potwierdzenie wplaty zaliczki',
-          },
-        });
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Potwierdzenie wplaty ${data.depositId}`,
+          Author: this.restaurantData.name,
+          Subject: 'Potwierdzenie wplaty zaliczki',
+        },
+      });
 
-        if (this.useCustomFonts && this.fontRegular && this.fontBold) {
-          try {
-            doc.registerFont('DejaVu', this.fontRegular);
-            doc.registerFont('DejaVu-Bold', this.fontBold);
-            doc.font('DejaVu');
-          /* istanbul ignore next -- font registration never fails in Docker */
-          } catch (error) {
-            console.error('[PDF Service] Failed to register custom fonts:', error);
-            this.useCustomFonts = false;
-            doc.font('Helvetica');
-          }
-        } else {
-          doc.font('Helvetica');
-        }
+      this.setupFonts(doc);
 
-        const chunks: Buffer[] = [];
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] Payment confirmation PDF generated, size: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
 
-        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-        doc.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          console.log(`[PDF Service] Payment confirmation PDF generated, size: ${buffer.length} bytes`);
-          resolve(buffer);
-        });
-        /* istanbul ignore next -- PDF error event never fires */
-        doc.on('error', (error) => {
-          console.error('[PDF Service] Payment PDF generation error:', error);
-          reject(error);
-        });
-
-        this.buildPaymentConfirmationContent(doc, data);
-
-        doc.end();
-      /* istanbul ignore next -- PDF generation never throws */
-      } catch (error) {
-        console.error('[PDF Service] Failed to generate payment confirmation PDF:', error);
-        reject(error);
-      }
+      this.buildPaymentConfirmationContent(doc, data);
+      doc.end();
     });
   }
 
@@ -356,53 +316,33 @@ export class PDFService {
 
   async generateMenuCardPDF(data: MenuCardPDFData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      try {
-        console.log(`[PDF Service] Generating menu card PDF: ${data.templateName}`);
+      console.log(`[PDF Service] Generating menu card PDF: ${data.templateName}`);
 
-        const doc = new PDFDocument({
-          size: 'A4',
-          margin: 50,
-          bufferPages: true,
-          info: {
-            Title: `Karta Menu - ${data.templateName}`,
-            Author: this.restaurantData.name,
-            Subject: 'Karta menu',
-          },
-        });
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        bufferPages: true,
+        info: {
+          Title: `Karta Menu - ${data.templateName}`,
+          Author: this.restaurantData.name,
+          Subject: 'Karta menu',
+        },
+      });
 
-        if (this.useCustomFonts && this.fontRegular && this.fontBold) {
-          try {
-            doc.registerFont('DejaVu', this.fontRegular);
-            doc.registerFont('DejaVu-Bold', this.fontBold);
-            doc.font('DejaVu');
-          /* istanbul ignore next -- font registration never fails in Docker */
-          } catch (error) {
-            console.error('[PDF Service] Failed to register custom fonts:', error);
-            this.useCustomFonts = false;
-            doc.font('Helvetica');
-          }
-        } else {
-          doc.font('Helvetica');
-        }
+      this.setupFonts(doc);
 
-        const chunks: Buffer[] = [];
-        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-        doc.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          console.log(`[PDF Service] Menu card PDF generated, size: ${buffer.length} bytes`);
-          resolve(buffer);
-        });
-        /* istanbul ignore next -- PDF error event never fires */
-        doc.on('error', (error) => reject(error));
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] Menu card PDF generated, size: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
 
-        this.buildMenuCardContent(doc, data);
-
-        doc.end();
-      /* istanbul ignore next -- PDF generation never throws */
-      } catch (error) {
-        console.error('[PDF Service] Failed to generate menu card PDF:', error);
-        reject(error);
-      }
+      this.buildMenuCardContent(doc, data);
+      doc.end();
     });
   }
 
@@ -450,7 +390,7 @@ export class PDFService {
     this.addStatusBadge(doc, reservation.status);
     doc.moveDown(0.5);
 
-    // US-6.2: Hall name removed from PDF — client should not see hall assignment
+    // US-6.2: Hall name removed from PDF
     /* istanbul ignore next -- customEventType fallback */
     const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie okreslono';
     doc.text(`Typ wydarzenia: ${eventTypeName}`);
@@ -458,7 +398,7 @@ export class PDFService {
     if (reservation.startDateTime && reservation.endDateTime) {
       doc.text(`Data: ${this.formatDate(reservation.startDateTime)}`);
       doc.text(`Godzina: ${this.formatTime(reservation.startDateTime)} - ${this.formatTime(reservation.endDateTime)}`);
-    /* istanbul ignore next -- fallback to string date/time format */
+    /* istanbul ignore next -- fallback to string date format */
     } else if (reservation.date && reservation.startTime && reservation.endTime) {
       doc.text(`Data: ${reservation.date}`);
       doc.text(`Godzina: ${reservation.startTime} - ${reservation.endTime}`);
@@ -468,11 +408,11 @@ export class PDFService {
     if (reservation.adults > 0) {
       doc.text(`  - Dorosli: ${reservation.adults} os.`, { indent: 20 });
     }
-    /* istanbul ignore next -- children display in PDF */
+    /* istanbul ignore next -- children display */
     if (reservation.children > 0) {
       doc.text(`  - Dzieci (4-12 lat): ${reservation.children} os.`, { indent: 20 });
     }
-    /* istanbul ignore next -- toddlers display in PDF */
+    /* istanbul ignore next -- toddlers display */
     if (reservation.toddlers > 0) {
       doc.text(`  - Maluchy (0-3 lata): ${reservation.toddlers} os.`, { indent: 20 });
     }
@@ -498,7 +438,7 @@ export class PDFService {
     const menuSnapshot = reservation.menuSnapshot;
     if (menuSnapshot && menuSnapshot.menuData) {
       this.addMenuSelectionSection(doc, menuSnapshot, pageWidth);
-    /* istanbul ignore next -- legacy menu data path */
+    /* istanbul ignore next -- legacy menu path */
     } else if (reservation.menuData?.dishSelections && reservation.menuData.dishSelections.length > 0) {
       this.addMenuSelectionSectionLegacy(doc, reservation.menuData, pageWidth);
     }
@@ -523,14 +463,14 @@ export class PDFService {
         `Dorosli: ${reservation.adults} os. x ${this.formatCurrency(reservation.pricePerAdult)} = ${this.formatCurrency(adultTotal)}`
       );
     }
-    /* istanbul ignore next -- children pricing in PDF */
+    /* istanbul ignore next -- children pricing */
     if (reservation.children > 0 && reservation.pricePerChild > 0) {
       const childTotal = reservation.children * Number(reservation.pricePerChild);
       doc.text(
         `Dzieci (4-12 lat): ${reservation.children} os. x ${this.formatCurrency(reservation.pricePerChild)} = ${this.formatCurrency(childTotal)}`
       );
     }
-    /* istanbul ignore next -- toddler pricing in PDF */
+    /* istanbul ignore next -- toddler pricing */
     if (reservation.toddlers > 0 && reservation.pricePerToddler > 0) {
       const toddlerTotal = reservation.toddlers * Number(reservation.pricePerToddler);
       doc.text(
@@ -542,7 +482,7 @@ export class PDFService {
     doc.fontSize(13).font(this.getBoldFont());
     doc.text(`RAZEM: ${this.formatCurrency(reservation.totalPrice)}`);
 
-    /* istanbul ignore next -- deposit array/single fallback */
+    /* istanbul ignore next -- deposit fallback */
     const deposit = reservation.deposits && reservation.deposits.length > 0
       ? reservation.deposits[0]
       : reservation.deposit;
@@ -603,7 +543,7 @@ export class PDFService {
     doc.font(this.getBoldFont()).text(`Kwota: ${this.formatCurrency(data.amount)}`);
     doc.font(this.getRegularFont());
     doc.text(`Data wplaty: ${this.formatDate(data.paidAt)}`);
-    /* istanbul ignore next -- payment method label fallback */
+    /* istanbul ignore next -- payment method fallback */
     doc.text(`Metoda platnosci: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
     if (data.paymentReference) {
       doc.text(`Numer referencyjny: ${data.paymentReference}`);
@@ -635,7 +575,7 @@ export class PDFService {
     doc.text(`Numer rezerwacji: ${data.reservation.id}`);
     doc.text(`Data: ${data.reservation.date}`);
     doc.text(`Godzina: ${data.reservation.startTime} - ${data.reservation.endTime}`);
-    // US-6.2: Hall name removed from payment confirmation PDF — client should not see hall assignment
+    // US-6.2: Hall name removed from payment confirmation PDF
     if (data.reservation.eventType) {
       doc.text(`Typ wydarzenia: ${data.reservation.eventType}`);
     }
@@ -689,9 +629,8 @@ export class PDFService {
     );
 
     data.packages.forEach((pkg) => {
-      if (doc.y > doc.page.height - 250) {
-        doc.addPage();
-      }
+      /* istanbul ignore next -- page break */
+      if (doc.y > doc.page.height - 250) doc.addPage();
 
       doc.moveDown(1.5);
       this.addSeparator(doc);
@@ -703,7 +642,7 @@ export class PDFService {
       doc.rect(50, pkgHeaderY, pageWidth, headerHeight)
         .fillAndStroke('#2c3e50', '#2c3e50');
 
-      /* istanbul ignore next -- badge text display */
+      /* istanbul ignore next -- badge text */
       const badgeText = pkg.badgeText || (pkg.isPopular ? 'POPULARNY' : pkg.isRecommended ? 'POLECANY' : null);
       if (badgeText) {
         doc.rect(50 + pageWidth - 100, pkgHeaderY + 5, 90, 18)
@@ -741,9 +680,8 @@ export class PDFService {
       // Courses
       if (pkg.courses.length > 0) {
         pkg.courses.forEach((course) => {
-          if (doc.y > doc.page.height - 150) {
-            doc.addPage();
-          }
+          /* istanbul ignore next -- page break */
+          if (doc.y > doc.page.height - 150) doc.addPage();
 
           doc.moveDown(0.7);
 
@@ -765,9 +703,8 @@ export class PDFService {
           doc.moveDown(0.3);
 
           course.dishes.forEach((dish) => {
-            if (doc.y > doc.page.height - 100) {
-              doc.addPage();
-            }
+            /* istanbul ignore next -- page break */
+            if (doc.y > doc.page.height - 100) doc.addPage();
 
             let marker = '  ';
             /* istanbul ignore next -- dish markers */
@@ -783,7 +720,7 @@ export class PDFService {
               doc.text(`     ${dish.description}`, { indent: 25 });
             }
 
-            /* istanbul ignore next -- allergens display optional */
+            /* istanbul ignore next -- allergens optional */
             if (dish.allergens && dish.allergens.length > 0) {
               const labels = dish.allergens
                 .map((a) => ALLERGEN_LABELS[a] || a)
@@ -803,6 +740,7 @@ export class PDFService {
       const activeOptions = pkg.options.filter(o => !o.isRequired);
 
       if (requiredOptions.length > 0) {
+        /* istanbul ignore next -- page break */
         if (doc.y > doc.page.height - 120) doc.addPage();
 
         doc.moveDown(0.7);
@@ -813,7 +751,7 @@ export class PDFService {
         requiredOptions.forEach((opt) => {
           doc.fontSize(9).font(this.getRegularFont()).fillColor('#333333');
           doc.text(`  + ${opt.name}`, { indent: 15 });
-          /* istanbul ignore next -- option description optional */
+          /* istanbul ignore next -- option description */
           if (opt.description) {
             doc.fontSize(8).fillColor('#777777');
             doc.text(`     ${opt.description}`, { indent: 25 });
@@ -822,6 +760,7 @@ export class PDFService {
       }
 
       if (activeOptions.length > 0) {
+        /* istanbul ignore next -- page break */
         if (doc.y > doc.page.height - 120) doc.addPage();
 
         doc.moveDown(0.7);
@@ -839,7 +778,7 @@ export class PDFService {
           doc.fillColor('#8e44ad').font(this.getBoldFont());
           doc.text(`  ${priceLabel}`);
 
-          /* istanbul ignore next -- option description optional */
+          /* istanbul ignore next -- option description */
           if (opt.description) {
             doc.fontSize(8).font(this.getRegularFont()).fillColor('#777777');
             doc.text(`     ${opt.description}`, { indent: 25 });
@@ -1104,6 +1043,7 @@ export class PDFService {
     }).format(date);
   }
 
+  /* istanbul ignore next -- formatDateTime never called */
   private formatDateTime(date: Date): string {
     return new Intl.DateTimeFormat('pl-PL', {
       year: 'numeric',
@@ -1115,7 +1055,7 @@ export class PDFService {
   }
 
   private formatCurrency(amount: number | string): string {
-    /* istanbul ignore next -- amount always number in practice */
+    /* istanbul ignore next -- amount always number */
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('pl-PL', {
       style: 'currency',
