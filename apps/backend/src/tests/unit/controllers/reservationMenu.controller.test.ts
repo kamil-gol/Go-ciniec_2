@@ -82,7 +82,22 @@ describe('ReservationMenuController', () => {
         req({ params: { id: 'r-1' }, body: { packageId: 'p-1' } }), response
       );
       expect(response.status).toHaveBeenCalledWith(201);
-      expect(db.update).toHaveBeenCalled(); // sync pricing
+      expect(db.update).toHaveBeenCalled();
+    });
+
+    it('should default children/toddlers to 0 when null', async () => {
+      db.findUnique.mockResolvedValue({ id: 'r-2', adults: 30, children: null, toddlers: null });
+      snapSvc.hasSnapshot.mockResolvedValue(false);
+      snapSvc.createSnapshot.mockResolvedValue({ priceBreakdown: mockPriceBreakdown });
+      db.update.mockResolvedValue({});
+      const response = res();
+      await controller.selectMenu(
+        req({ params: { id: 'r-2' }, body: { packageId: 'p-1' } }), response
+      );
+      expect(response.status).toHaveBeenCalledWith(201);
+      expect(snapSvc.createSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({ childrenCount: 0, toddlersCount: 0 })
+      );
     });
   });
 
@@ -113,6 +128,20 @@ describe('ReservationMenuController', () => {
       );
       expect(response.status).toHaveBeenCalledWith(200);
     });
+
+    it('should default children/toddlers to 0 when null', async () => {
+      db.findUnique.mockResolvedValue({ id: 'r-3', adults: 20, children: null, toddlers: null });
+      snapSvc.replaceSnapshot.mockResolvedValue({ priceBreakdown: mockPriceBreakdown });
+      db.update.mockResolvedValue({});
+      const response = res();
+      await controller.updateMenu(
+        req({ params: { id: 'r-3' }, body: { packageId: 'p-2' } }), response
+      );
+      expect(response.status).toHaveBeenCalledWith(200);
+      expect(snapSvc.replaceSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({ childrenCount: 0, toddlersCount: 0 })
+      );
+    });
   });
 
   describe('deleteMenu()', () => {
@@ -135,10 +164,29 @@ describe('ReservationMenuController', () => {
       const response = res();
       await controller.deleteMenu(req({ params: { id: 'r-1' } }), response);
       expect(response.status).toHaveBeenCalledWith(200);
-      // Verify total = 50*200 + 10*100 + 5*0 = 11000
       expect(db.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ totalPrice: 11000 }),
+        })
+      );
+    });
+
+    it('should default children/toddlers to 0 when null and recalculate', async () => {
+      db.findUnique.mockResolvedValue({
+        id: 'r-4', adults: 40, children: null, toddlers: null,
+        pricePerAdult: { toNumber: () => 150 },
+        pricePerChild: { toNumber: () => 80 },
+        pricePerToddler: { toNumber: () => 0 },
+      });
+      snapSvc.deleteSnapshot.mockResolvedValue(undefined);
+      db.update.mockResolvedValue({});
+      const response = res();
+      await controller.deleteMenu(req({ params: { id: 'r-4' } }), response);
+      expect(response.status).toHaveBeenCalledWith(200);
+      // total = 40*150 + 0*80 + 0*0 = 6000
+      expect(db.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ totalPrice: 6000 }),
         })
       );
     });
