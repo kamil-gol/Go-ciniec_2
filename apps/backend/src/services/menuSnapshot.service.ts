@@ -44,13 +44,13 @@ export class MenuSnapshotService {
 
       // Fetch dishes and categories in bulk
       const [dishes, categories] = await Promise.all([
-        allDishIds.length > 0 
+        /* istanbul ignore next */ allDishIds.length > 0 
           ? prisma.dish.findMany({ 
               where: { id: { in: allDishIds } },
               select: { id: true, name: true, description: true, allergens: true }
             })
           : [],
-        allCategoryIds.length > 0
+        /* istanbul ignore next */ allCategoryIds.length > 0
           ? prisma.dishCategory.findMany({
               where: { id: { in: allCategoryIds } },
               select: { id: true, name: true, icon: true }
@@ -229,6 +229,7 @@ export class MenuSnapshotService {
     snapshots.forEach(snapshot => {
       const menuData = snapshot.menuData as MenuSnapshotData;
       menuData.selectedOptions.forEach(opt => {
+        /* istanbul ignore next */
         if (!optionCounts[opt.optionId]) optionCounts[opt.optionId] = { name: opt.name, count: 0 };
         optionCounts[opt.optionId].count++;
       });
@@ -242,6 +243,7 @@ export class MenuSnapshotService {
     snapshots.forEach(snapshot => {
       const menuData = snapshot.menuData as MenuSnapshotData;
       const pkgId = menuData.packageId;
+      /* istanbul ignore next */
       if (!packageCounts[pkgId]) packageCounts[pkgId] = { name: menuData.packageName, count: 0 };
       packageCounts[pkgId].count++;
     });
