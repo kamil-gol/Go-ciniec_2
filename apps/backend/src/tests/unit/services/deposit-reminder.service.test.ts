@@ -2,6 +2,9 @@
  * DepositReminderService — Unit Tests
  */
 
+const mockSendDepositReminder = jest.fn().mockResolvedValue(true);
+const mockSendDepositOverdueNotice = jest.fn().mockResolvedValue(true);
+
 jest.mock('../../../lib/prisma', () => {
   const mock = {
     deposit: { findMany: jest.fn() },
@@ -10,9 +13,10 @@ jest.mock('../../../lib/prisma', () => {
 });
 
 jest.mock('../../../services/email.service', () => ({
+  __esModule: true,
   default: {
-    sendDepositReminder: jest.fn().mockResolvedValue(true),
-    sendDepositOverdueNotice: jest.fn().mockResolvedValue(true),
+    sendDepositReminder: mockSendDepositReminder,
+    sendDepositOverdueNotice: mockSendDepositOverdueNotice,
   },
 }));
 
@@ -23,7 +27,6 @@ jest.mock('../../../utils/logger', () => ({
 
 import depositReminderService from '../../../services/deposit-reminder.service';
 import { prisma } from '../../../lib/prisma';
-import emailService from '../../../services/email.service';
 
 const mockPrisma = prisma as any;
 
@@ -43,6 +46,16 @@ const DEPOSIT_NO_EMAIL = {
   reservation: { ...DEPOSIT_WITH_CLIENT.reservation, client: { firstName: 'A', lastName: 'B', email: null } },
 };
 
+// Overdue deposit — dueDate 2 days in the past (within OVERDUE_DAILY_LIMIT)
+const twoDaysAgo = new Date();
+twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+const DEPOSIT_OVERDUE = {
+  ...DEPOSIT_WITH_CLIENT,
+  id: 'dep-003',
+  status: 'OVERDUE',
+  dueDate: twoDaysAgo.toISOString().substring(0, 10),
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockPrisma.deposit.findMany.mockResolvedValue([DEPOSIT_WITH_CLIENT]);
@@ -53,7 +66,7 @@ describe('DepositReminderService', () => {
     it('should send reminders for deposits due in N days', async () => {
       const count = await depositReminderService.sendUpcomingReminders(7);
       expect(count).toBe(1);
-      expect(emailService.sendDepositReminder).toHaveBeenCalledWith(
+      expect(mockSendDepositReminder).toHaveBeenCalledWith(
         'jan@test.pl',
         expect.objectContaining({ clientName: 'Jan Kowalski', daysLeft: 7 })
       );
@@ -63,15 +76,16 @@ describe('DepositReminderService', () => {
       mockPrisma.deposit.findMany.mockResolvedValue([DEPOSIT_NO_EMAIL]);
       const count = await depositReminderService.sendUpcomingReminders(7);
       expect(count).toBe(0);
-      expect(emailService.sendDepositReminder).not.toHaveBeenCalled();
+      expect(mockSendDepositReminder).not.toHaveBeenCalled();
     });
   });
 
   describe('sendOverdueNotices()', () => {
-    it('should send overdue notices', async () => {
+    it('should send overdue notices for past-due deposits', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([DEPOSIT_OVERDUE]);
       const count = await depositReminderService.sendOverdueNotices();
       expect(count).toBe(1);
-      expect(emailService.sendDepositOverdueNotice).toHaveBeenCalledWith(
+      expect(mockSendDepositOverdueNotice).toHaveBeenCalledWith(
         'jan@test.pl',
         expect.objectContaining({ clientName: 'Jan Kowalski' })
       );
