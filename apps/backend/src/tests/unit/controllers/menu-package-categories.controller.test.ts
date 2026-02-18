@@ -1,12 +1,16 @@
+jest.mock('@prisma/client', () => {
+  const _mockFindUnique = jest.fn();
+  return {
+    PrismaClient: jest.fn(() => ({
+      menuPackage: { findUnique: _mockFindUnique },
+    })),
+    __mockFindUnique: _mockFindUnique,
+  };
+});
+
 import { getPackageCategories } from '../../../controllers/menu-package-categories.controller';
 
-// Mock PrismaClient
-const mockFindUnique = jest.fn();
-jest.mock('@prisma/client', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => ({
-    menuPackage: { findUnique: mockFindUnique },
-  })),
-}));
+const { __mockFindUnique: mockFindUnique } = jest.requireMock<any>('@prisma/client');
 
 function mockReq(params: any = {}): any {
   return { params };
