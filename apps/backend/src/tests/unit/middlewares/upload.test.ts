@@ -5,10 +5,10 @@
  * - ensureDirectories() runs at module load → use jest.isolateModules
  * - fileFilter & storage callbacks → capture from multer mock args
  *
- * IMPORTANT: jest.doMock paths are relative to THIS test file.
- * upload.ts lives at src/middlewares/upload.ts
- * logger lives at src/utils/logger.ts
- * From src/tests/unit/middlewares/ → ../../../utils/logger
+ * Path notes:
+ * - jest.doMock paths resolve relative to THIS file (src/tests/unit/middlewares/)
+ * - logger lives at src/utils/logger.ts → '../../../utils/logger'
+ * - upload lives at src/middlewares/upload.ts → '../../../middlewares/upload'
  */
 
 // Shared references for captured multer callbacks
@@ -29,6 +29,28 @@ function createMulterMock() {
   return { __esModule: true, default: fn };
 }
 
+function createLoggerMock() {
+  return {
+    __esModule: true,
+    default: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+  };
+}
+
+function loadUpload(fsMock: any, loggerFactory?: () => any) {
+  const logger = loggerFactory ? loggerFactory() : createLoggerMock();
+
+  jest.isolateModules(() => {
+    jest.doMock('fs', () => fsMock);
+    jest.doMock('../../../utils/logger', () => logger);
+    jest.doMock('multer', () => createMulterMock());
+    jest.doMock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
+
+    require('../../../middlewares/upload');
+  });
+
+  return logger;
+}
+
 describe('upload middleware', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -41,37 +63,18 @@ describe('upload middleware', () => {
   describe('ensureDirectories — dirs DO NOT exist', () => {
     it('should create staging + entity directories', () => {
       const fsMock = { existsSync: jest.fn().mockReturnValue(false), mkdirSync: jest.fn() };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+      const logger = loadUpload(fsMock);
 
-      jest.isolateModules(() => {
-        jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
-        jest.doMock('multer', () => createMulterMock());
-        jest.doMock('uuid', () => ({ v4: () => 'test-uuid' }));
-
-        require('../../../middlewares/upload');
-      });
-
-      // existsSync called for staging + 3 entity dirs = 4 calls
       expect(fsMock.existsSync).toHaveBeenCalled();
       expect(fsMock.mkdirSync.mock.calls.length).toBeGreaterThanOrEqual(4);
-      expect(loggerMock.info).toHaveBeenCalled();
+      expect(logger.default.info).toHaveBeenCalled();
     });
   });
 
   describe('ensureDirectories — dirs ALREADY exist', () => {
     it('should not create directories', () => {
       const fsMock = { existsSync: jest.fn().mockReturnValue(true), mkdirSync: jest.fn() };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-
-      jest.isolateModules(() => {
-        jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
-        jest.doMock('multer', () => createMulterMock());
-        jest.doMock('uuid', () => ({ v4: () => 'test-uuid' }));
-
-        require('../../../middlewares/upload');
-      });
+      loadUpload(fsMock);
 
       expect(fsMock.existsSync).toHaveBeenCalled();
       expect(fsMock.mkdirSync).not.toHaveBeenCalled();
@@ -84,20 +87,11 @@ describe('upload middleware', () => {
       const fsMock = {
         existsSync: jest.fn(() => {
           callCount++;
-          return callCount > 1; // first = false (staging), rest = true
+          return callCount > 1;
         }),
         mkdirSync: jest.fn(),
       };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-
-      jest.isolateModules(() => {
-        jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
-        jest.doMock('multer', () => createMulterMock());
-        jest.doMock('uuid', () => ({ v4: () => 'test-uuid' }));
-
-        require('../../../middlewares/upload');
-      });
+      loadUpload(fsMock);
 
       expect(fsMock.mkdirSync).toHaveBeenCalledTimes(1);
     });
@@ -106,16 +100,7 @@ describe('upload middleware', () => {
   describe('fileFilter', () => {
     beforeEach(() => {
       const fsMock = { existsSync: jest.fn().mockReturnValue(true), mkdirSync: jest.fn() };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-
-      jest.isolateModules(() => {
-        jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
-        jest.doMock('multer', () => createMulterMock());
-        jest.doMock('uuid', () => ({ v4: () => 'test-uuid' }));
-
-        require('../../../middlewares/upload');
-      });
+      loadUpload(fsMock);
     });
 
     it('should accept application/pdf', () => {
@@ -166,16 +151,7 @@ describe('upload middleware', () => {
   describe('storage callbacks', () => {
     beforeEach(() => {
       const fsMock = { existsSync: jest.fn().mockReturnValue(true), mkdirSync: jest.fn() };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-
-      jest.isolateModules(() => {
-        jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
-        jest.doMock('multer', () => createMulterMock());
-        jest.doMock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
-
-        require('../../../middlewares/upload');
-      });
+      loadUpload(fsMock);
     });
 
     it('destination should point to staging dir', () => {
@@ -200,16 +176,7 @@ describe('upload middleware', () => {
   describe('multer config', () => {
     it('should set fileSize limit to MAX_FILE_SIZE', () => {
       const fsMock = { existsSync: jest.fn().mockReturnValue(true), mkdirSync: jest.fn() };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-
-      jest.isolateModules(() => {
-        jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
-        jest.doMock('multer', () => createMulterMock());
-        jest.doMock('uuid', () => ({ v4: () => 'test-uuid' }));
-
-        require('../../../middlewares/upload');
-      });
+      loadUpload(fsMock);
 
       expect(capturedMulterOpts.limits.fileSize).toBe(10 * 1024 * 1024);
       expect(capturedMulterOpts.limits.files).toBe(1);
@@ -219,12 +186,11 @@ describe('upload middleware', () => {
   describe('exports', () => {
     it('should export UPLOAD_BASE as absolute path containing uploads', () => {
       const fsMock = { existsSync: jest.fn().mockReturnValue(true), mkdirSync: jest.fn() };
-      const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
       let mod: any;
 
       jest.isolateModules(() => {
         jest.doMock('fs', () => fsMock);
-        jest.doMock('../../../utils/logger', () => ({ default: loggerMock }));
+        jest.doMock('../../../utils/logger', () => createLoggerMock());
         jest.doMock('multer', () => {
           const fn: any = jest.fn(() => ({ single: jest.fn() }));
           fn.diskStorage = jest.fn(() => ({}));
