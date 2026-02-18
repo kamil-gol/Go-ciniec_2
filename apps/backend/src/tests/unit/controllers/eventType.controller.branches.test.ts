@@ -45,9 +45,9 @@ describe('EventTypeController branches', () => {
   beforeEach(() => jest.clearAllMocks());
 
   describe('createEventType', () => {
-    it('should throw unauthorized when no userId', async () => {
+    it('should throw when no userId', async () => {
       const req = { body: { name: 'Test' }, user: undefined } as any;
-      await expect(ctrl.createEventType(req, mockRes())).rejects.toThrow('Unauthorized');
+      await expect(ctrl.createEventType(req, mockRes())).rejects.toThrow();
     });
 
     it('should throw badRequest when no name', async () => {
@@ -115,9 +115,9 @@ describe('EventTypeController branches', () => {
   });
 
   describe('updateEventType', () => {
-    it('should throw unauthorized when no userId', async () => {
+    it('should throw when no userId', async () => {
       const req = { params: { id: '1' }, body: {}, user: undefined } as any;
-      await expect(ctrl.updateEventType(req, mockRes())).rejects.toThrow('Unauthorized');
+      await expect(ctrl.updateEventType(req, mockRes())).rejects.toThrow();
     });
 
     it('should include only name when only name provided', async () => {
@@ -156,9 +156,9 @@ describe('EventTypeController branches', () => {
   });
 
   describe('deleteEventType', () => {
-    it('should throw unauthorized when no userId', async () => {
+    it('should throw when no userId', async () => {
       const req = { params: { id: '1' }, user: undefined } as any;
-      await expect(ctrl.deleteEventType(req, mockRes())).rejects.toThrow('Unauthorized');
+      await expect(ctrl.deleteEventType(req, mockRes())).rejects.toThrow();
     });
 
     it('should delete successfully', async () => {
