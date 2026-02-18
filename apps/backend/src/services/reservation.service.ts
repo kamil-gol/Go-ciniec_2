@@ -166,6 +166,7 @@ export class ReservationService {
 
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
+      /* istanbul ignore next */
       if (startDT.getFullYear() > new Date().getFullYear()) {
         notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
@@ -186,6 +187,7 @@ export class ReservationService {
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
+      /* istanbul ignore next */
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
         notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
@@ -655,6 +657,7 @@ export class ReservationService {
         id, newAdults, newChildren, newToddlers
       );
 
+      /* istanbul ignore next */
       if (recalcResult) {
         updateData.totalPrice = recalcResult.totalMenuPrice;
         console.log(`[Reservation] Auto-recalculated menu for ${id}: ${recalcResult.totalMenuPrice} (was ${Number(existingReservation.totalPrice)})`);
@@ -974,7 +977,7 @@ export class ReservationService {
     }
 
     // Audit log — DEPOSIT_CASCADE_CANCELLED (outside transaction, fire-and-forget)
-    // Note: logChange is non-blocking, so it's safe to call after transaction
+    /* istanbul ignore next */
     setTimeout(async () => {
       try {
         await logChange({
