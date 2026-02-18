@@ -171,10 +171,11 @@ describe('MenuTemplateController', () => {
       expect(response.status).toHaveBeenCalledWith(201);
     });
 
-    it('should throw 401 when no user', async () => {
-      await expect(
-        ctrl.create(req({ user: undefined, body: { name: 'X' } }), res(), next)
-      ).rejects.toMatchObject({ statusCode: 401 });
+    it('should pass 401 to next when no user', async () => {
+      await ctrl.create(req({ user: undefined, body: { name: 'X' } }), res(), next);
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
     });
 
     it('should return 400 on ZodError', async () => {
@@ -200,10 +201,11 @@ describe('MenuTemplateController', () => {
       expect(response.status).toHaveBeenCalledWith(200);
     });
 
-    it('should throw 401 when no user', async () => {
-      await expect(
-        ctrl.update(req({ user: undefined, params: { id: 't-1' } }), res(), next)
-      ).rejects.toMatchObject({ statusCode: 401 });
+    it('should pass 401 to next when no user', async () => {
+      await ctrl.update(req({ user: undefined, params: { id: 't-1' } }), res(), next);
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
     });
 
     it('should return 400 on ZodError', async () => {
@@ -236,10 +238,11 @@ describe('MenuTemplateController', () => {
       expect(response.status).toHaveBeenCalledWith(200);
     });
 
-    it('should throw 401 when no user', async () => {
-      await expect(
-        ctrl.delete(req({ user: undefined, params: { id: 't-1' } }), res(), next)
-      ).rejects.toMatchObject({ statusCode: 401 });
+    it('should pass 401 to next when no user', async () => {
+      await ctrl.delete(req({ user: undefined, params: { id: 't-1' } }), res(), next);
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
     });
 
     it('should return 409 on Cannot delete', async () => {
@@ -272,10 +275,11 @@ describe('MenuTemplateController', () => {
       expect(response.status).toHaveBeenCalledWith(201);
     });
 
-    it('should throw 401 when no user', async () => {
-      await expect(
-        ctrl.duplicate(req({ user: undefined, params: { id: 't-1' } }), res(), next)
-      ).rejects.toMatchObject({ statusCode: 401 });
+    it('should pass 401 to next when no user', async () => {
+      await ctrl.duplicate(req({ user: undefined, params: { id: 't-1' } }), res(), next);
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
     });
 
     it('should return 400 on ZodError', async () => {
