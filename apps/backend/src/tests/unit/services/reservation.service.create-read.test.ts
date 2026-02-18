@@ -5,35 +5,29 @@
  * Mockuje: prisma, audit-logger, reservation-menu.service
  */
 
-import { ReservationService } from '../../../services/reservation.service';
-import { ReservationStatus } from '../../../types/reservation.types';
-
-// ═══ Mock Prisma ═══
-const mockPrisma = {
-  hall: { findUnique: jest.fn() },
-  client: { findUnique: jest.fn() },
-  eventType: { findUnique: jest.fn() },
-  user: { findUnique: jest.fn() },
-  reservation: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-  menuPackage: { findUnique: jest.fn() },
-  menuOption: { findMany: jest.fn() },
-  reservationMenuSnapshot: { create: jest.fn() },
-  deposit: { create: jest.fn() },
-  reservationHistory: { create: jest.fn() },
-  activityLog: { create: jest.fn() },
-};
-
-jest.mock('../../../lib/prisma', () => ({
-  prisma: mockPrisma,
-  __esModule: true,
-  default: mockPrisma,
-}));
+// ═══ Mock Prisma (factory wewnątrz jest.mock — hoisting-safe) ═══
+jest.mock('../../../lib/prisma', () => {
+  const mock = {
+    hall: { findUnique: jest.fn() },
+    client: { findUnique: jest.fn() },
+    eventType: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn() },
+    reservation: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    menuPackage: { findUnique: jest.fn() },
+    menuOption: { findMany: jest.fn() },
+    reservationMenuSnapshot: { create: jest.fn() },
+    deposit: { create: jest.fn() },
+    reservationHistory: { create: jest.fn() },
+    activityLog: { create: jest.fn() },
+  };
+  return { prisma: mock, __esModule: true, default: mock };
+});
 
 // ═══ Mock audit-logger ═══
 jest.mock('../../../utils/audit-logger', () => ({
@@ -48,6 +42,14 @@ jest.mock('../../../services/reservation-menu.service', () => ({
     recalculateForGuestChange: jest.fn().mockResolvedValue(null),
   },
 }));
+
+// ═══ Imports (po mockach — dostaną zamockowane moduły) ═══
+import { ReservationService } from '../../../services/reservation.service';
+import { ReservationStatus } from '../../../types/reservation.types';
+import { prisma } from '../../../lib/prisma';
+
+// Reference do mocka (cast do any — safe bo to jest.fn())
+const mockPrisma = prisma as any;
 
 // ═══ Test Fixtures ═══
 const TEST_USER_ID = 'user-uuid-001';
