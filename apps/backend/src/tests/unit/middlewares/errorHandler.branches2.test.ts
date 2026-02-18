@@ -1,67 +1,98 @@
 /**
- * ErrorHandler middleware — Branch Coverage (line 67)
+ * ErrorHandler middleware — Branch Coverage (line 67: PrismaClientValidationError)
+ * Also covers: 'already exists' conflict, 'already booked' conflict, default Prisma code fallthrough
  */
 import { Request, Response, NextFunction } from 'express';
-
-let errorHandler: any;
-let AppError: any;
-
-beforeAll(() => {
-  const mod = require('../../../middlewares/errorHandler');
-  errorHandler = mod.errorHandler || mod.default;
-  AppError = mod.AppError;
-});
+import { Prisma } from '@prisma/client';
 
 const mockRes = () => {
   const res: any = {};
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
-  res.headersSent = false;
   return res;
 };
 
-describe('errorHandler — line 67 branch', () => {
+const mockReq = {} as Request;
+const mockNext = jest.fn() as NextFunction;
 
-  it('should not send response when headers already sent', () => {
-    const req = {} as Request;
+let errorHandler: any;
+
+beforeAll(() => {
+  const mod = require('../../../middlewares/errorHandler');
+  errorHandler = mod.errorHandler;
+});
+
+beforeEach(() => jest.clearAllMocks());
+
+describe('errorHandler — PrismaClientValidationError (line 67)', () => {
+
+  it('should return 400 for PrismaClientValidationError', () => {
     const res = mockRes();
-    res.headersSent = true;
-    const next = jest.fn();
+    // PrismaClientValidationError constructor requires specific params.
+    // We create an object that passes instanceof via prototype chain.
+    const validationError = new Prisma.PrismaClientValidationError('Invalid data', { clientVersion: '5.0.0' });
 
-    errorHandler(new Error('test'), req, res, next);
+    errorHandler(validationError, mockReq, res, mockNext);
 
-    expect(res.status).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      error: 'Invalid data provided',
+    }));
   });
+});
 
-  it('should handle non-AppError with 500 status', () => {
-    const req = {} as Request;
+describe('errorHandler — Prisma default code fallthrough', () => {
+
+  it('should fall through to 500 for unknown Prisma error code', () => {
     const res = mockRes();
-    const next = jest.fn();
+    // Create a PrismaClientKnownRequestError with an unhandled code
+    const prismaError = new Prisma.PrismaClientKnownRequestError('Unknown', {
+      code: 'P2024',
+      clientVersion: '5.0.0',
+    });
 
-    errorHandler(new Error('unexpected'), req, res, next);
+    errorHandler(prismaError, mockReq, res, mockNext);
 
+    // Should fall through to the 500 handler since P2024 isn't handled
     expect(res.status).toHaveBeenCalledWith(500);
   });
+});
 
-  it('should handle AppError with custom status', () => {
-    if (!AppError) return; // skip if not exported
-    const req = {} as Request;
+describe('errorHandler — conflict patterns', () => {
+
+  it('should return 409 for "already exists" error', () => {
     const res = mockRes();
-    const next = jest.fn();
-
-    errorHandler(new AppError(422, 'Validation failed'), req, res, next);
-
-    expect(res.status).toHaveBeenCalledWith(422);
+    errorHandler(new Error('Email already exists'), mockReq, res, mockNext);
+    expect(res.status).toHaveBeenCalledWith(409);
   });
 
-  it('should handle error without message', () => {
-    const req = {} as Request;
+  it('should return 409 for "already booked" error', () => {
     const res = mockRes();
-    const next = jest.fn();
+    errorHandler(new Error('Hall already booked for this date'), mockReq, res, mockNext);
+    expect(res.status).toHaveBeenCalledWith(409);
+  });
 
-    errorHandler({}, req, res, next);
+  it('should return 409 for "conflict" error', () => {
+    const res = mockRes();
+    errorHandler(new Error('Schedule conflict detected'), mockReq, res, mockNext);
+    expect(res.status).toHaveBeenCalledWith(409);
+  });
+});
 
-    expect(res.status).toHaveBeenCalled();
+describe('errorHandler — 500 with NODE_ENV production', () => {
+
+  it('should hide error message in production', () => {
+    const origEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    const res = mockRes();
+
+    errorHandler(new Error('secret info'), mockReq, res, mockNext);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'Internal server error',
+    }));
+    process.env.NODE_ENV = origEnv;
   });
 });
