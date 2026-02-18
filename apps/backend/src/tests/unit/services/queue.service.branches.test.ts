@@ -1,59 +1,42 @@
 /**
  * QueueService — Branch Coverage
- * withRetry: lock_not_available, 55P03, non-lock error on first attempt, retry exhaustion
  * addToQueue: missing fields, guests<1, invalid date, past date, adults/children/toddlers/notes fallbacks, P2002
- * updateQueueReservation: date unchanged, no guests, notes change tracking, no changes (skip audit)
- * swapPositions: same id, lock error, P2002 error, null client names
- * moveToPosition: invalid position, same position (return), lock error, P2002
- * batchUpdatePositions: empty updates, invalid position, missing id, not found, different dates, duplicate positions
+ * swapPositions: same id, missing ids, null client names
+ * moveToPosition: invalid position, same position (return), exceeds queue, null client
  * rebuildPositions: empty, null reservationQueueDate
- * autoCancelExpired: nothing cancelled, with userId, without userId
- * getQueueStats: empty, null queueDate, manual order
+ * autoCancelExpired: nothing cancelled, with userId, without userId, null result
+ * getQueueStats: empty, manual order, oldest date
  */
 
-const mockPrisma = {
-  client: { findUnique: jest.fn() },
-  reservation: {
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    updateMany: jest.fn(),
-    aggregate: jest.fn(),
-    count: jest.fn(),
-    findFirst: jest.fn(),
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
+    client: { findUnique: jest.fn() },
+    reservation: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+      aggregate: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    hall: { findUnique: jest.fn() },
+    eventType: { findUnique: jest.fn() },
+    $executeRaw: jest.fn(),
+    $queryRaw: jest.fn(),
+    $transaction: jest.fn(),
   },
-  hall: { findUnique: jest.fn() },
-  eventType: { findUnique: jest.fn() },
-  $executeRaw: jest.fn(),
-  $queryRaw: jest.fn(),
-  $transaction: jest.fn(),
-};
+}));
 
-jest.mock('../../../lib/prisma', () => ({ prisma: mockPrisma }));
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('@prisma/client', () => ({
-  ReservationStatus: {
-    RESERVED: 'RESERVED', PENDING: 'PENDING',
-    CONFIRMED: 'CONFIRMED', CANCELLED: 'CANCELLED', COMPLETED: 'COMPLETED',
-  },
-  Prisma: {
-    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
-      code: string;
-      constructor(message: string, opts: any) {
-        super(message);
-        this.code = opts?.code || '';
-      }
-    },
-  },
-}));
 
 import { QueueService } from '../../../services/queue.service';
-import { Prisma } from '@prisma/client';
+import { prisma } from '../../../lib/prisma';
 
-const db = mockPrisma;
+const db = prisma as any;
 const svc = new QueueService();
 
 const makeReservation = (o: any = {}) => ({
@@ -80,7 +63,6 @@ describe('QueueService — branches', () => {
     });
 
     it('should throw when guests < 1', async () => {
-      // guests: -1 (not 0, because 0 is falsy and triggers the !data.guests check first)
       await expect(svc.addToQueue({ clientId: 'c-1', reservationQueueDate: '2026-06-15', guests: -1 } as any, 'u-1'))
         .rejects.toThrow('at least 1');
     });
@@ -131,7 +113,9 @@ describe('QueueService — branches', () => {
     it('should handle P2002 unique constraint error', async () => {
       db.client.findUnique.mockResolvedValue({ id: 'c-1', firstName: 'J', lastName: 'K' });
       db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 0 } });
-      const p2002 = new (Prisma.PrismaClientKnownRequestError as any)('Unique', { code: 'P2002' });
+      // Create a mock error that mimics PrismaClientKnownRequestError
+      const { Prisma } = jest.requireActual('@prisma/client');
+      const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint', { code: 'P2002', clientVersion: '5.0.0' });
       db.reservation.create.mockRejectedValue(p2002);
       await expect(svc.addToQueue({ clientId: 'c-1', reservationQueueDate: '2026-06-15', guests: 10 } as any, 'u-1'))
         .rejects.toThrow('already taken');
