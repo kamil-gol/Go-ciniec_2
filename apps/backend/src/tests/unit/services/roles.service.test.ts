@@ -109,6 +109,10 @@ describe('RolesService', () => {
 
   describe('updateRole()', () => {
     it('should update and invalidate cache', async () => {
+      // 1st findUnique(id) → existing role, 2nd findUnique(name) → null (not taken)
+      mockPrisma.role.findUnique
+        .mockResolvedValueOnce(ROLE_DB)
+        .mockResolvedValueOnce(null);
       await rolesService.updateRole('role-001', { name: 'Editor Pro' }, ACTOR);
       expect(invalidateAllPermissionCaches).toHaveBeenCalledTimes(1);
       expect(logActivity).toHaveBeenCalledWith(expect.objectContaining({ action: 'ROLE_UPDATED' }));
