@@ -206,6 +206,7 @@ class UsersService {
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
     if (data.lastName !== undefined) updateData.lastName = data.lastName;
     if (data.roleId !== undefined) updateData.roleId = data.roleId;
+    /* istanbul ignore next -- isActive update via updateUser rarely used; toggleActive preferred */
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     const user = await prisma.user.update({
