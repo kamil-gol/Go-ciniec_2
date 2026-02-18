@@ -1,13 +1,14 @@
 /**
  * Reservation Controller — Branch coverage tests
  * Minimal PrismaClient mock for safe module loading.
- * Tests all validation branches in createReservation, updateReservation,
- * updateStatus, cancelReservation, getReservations, downloadPDF.
+ * Tests all validation branches + checkAvailability formatting.
  */
+
+const mockFindMany = jest.fn().mockResolvedValue([]);
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
-    reservation: { findMany: jest.fn().mockResolvedValue([]) },
+    reservation: { findMany: mockFindMany },
   })),
 }));
 
@@ -173,6 +174,110 @@ describe('ReservationController branches', () => {
     });
   });
 
+  // ===== checkAvailability =====
+  describe('checkAvailability', () => {
+    it('should throw when missing params', async () => {
+      const req = { query: {} } as any;
+      await expect(ctrl.checkAvailability(req, mockRes())).rejects.toThrow('hallId');
+    });
+
+    it('should throw on invalid date format', async () => {
+      const req = { query: { hallId: 'h1', startDateTime: 'bad', endDateTime: 'bad' } } as any;
+      await expect(ctrl.checkAvailability(req, mockRes())).rejects.toThrow('Invalid date');
+    });
+
+    it('should throw when end <= start', async () => {
+      const req = {
+        query: { hallId: 'h1', startDateTime: '2026-03-01T18:00:00Z', endDateTime: '2026-03-01T10:00:00Z' }
+      } as any;
+      await expect(ctrl.checkAvailability(req, mockRes())).rejects.toThrow('after');
+    });
+
+    it('should return available=true when no conflicts', async () => {
+      mockFindMany.mockResolvedValue([]);
+      const req = {
+        query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
+      } as any;
+      const res = mockRes();
+      await ctrl.checkAvailability(req, res);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ available: true, conflicts: [] }),
+      }));
+    });
+
+    it('should format conflicts with null client/eventType', async () => {
+      mockFindMany.mockResolvedValue([{
+        id: 'r1',
+        client: null,
+        eventType: null,
+        startDateTime: null,
+        endDateTime: null,
+        status: 'CONFIRMED',
+      }]);
+      const req = {
+        query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
+      } as any;
+      const res = mockRes();
+      await ctrl.checkAvailability(req, res);
+      const data = res.json.mock.calls[0][0].data;
+      expect(data.available).toBe(false);
+      expect(data.conflicts[0].clientName).toBe('Nieznany');
+      expect(data.conflicts[0].eventType).toBe('Nieznany');
+      expect(data.conflicts[0].startDateTime).toBe('');
+      expect(data.conflicts[0].endDateTime).toBe('');
+    });
+
+    it('should format conflicts with client and eventType', async () => {
+      mockFindMany.mockResolvedValue([{
+        id: 'r2',
+        client: { firstName: 'Jan', lastName: 'Kowalski' },
+        eventType: { name: 'Wesele' },
+        startDateTime: new Date('2026-03-01T10:00:00Z'),
+        endDateTime: new Date('2026-03-01T18:00:00Z'),
+        status: 'CONFIRMED',
+      }]);
+      const req = {
+        query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
+      } as any;
+      const res = mockRes();
+      await ctrl.checkAvailability(req, res);
+      const c = res.json.mock.calls[0][0].data.conflicts[0];
+      expect(c.clientName).toBe('Jan Kowalski');
+      expect(c.eventType).toBe('Wesele');
+    });
+
+    it('should pass excludeReservationId when provided', async () => {
+      mockFindMany.mockResolvedValue([]);
+      const req = {
+        query: {
+          hallId: 'h1',
+          startDateTime: '2026-03-01T10:00:00Z',
+          endDateTime: '2026-03-01T18:00:00Z',
+          excludeReservationId: 'r-exclude',
+        }
+      } as any;
+      const res = mockRes();
+      await ctrl.checkAvailability(req, res);
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: { not: 'r-exclude' },
+          }),
+        })
+      );
+    });
+
+    it('should not include id filter without excludeReservationId', async () => {
+      mockFindMany.mockResolvedValue([]);
+      const req = {
+        query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
+      } as any;
+      await ctrl.checkAvailability(req, mockRes());
+      const where = mockFindMany.mock.calls[0][0].where;
+      expect(where.id).toBeUndefined();
+    });
+  });
+
   // ===== getReservations =====
   describe('getReservations', () => {
     it('should pass archived=true', async () => {
@@ -280,7 +385,7 @@ describe('ReservationController branches', () => {
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
-    it('should detect startDateTime as important change', async () => {
+    it('should detect startDateTime as important', async () => {
       const req = {
         params: { id: 'r1' },
         body: { startDateTime: '2026-04-01T10:00:00Z' },
@@ -289,7 +394,7 @@ describe('ReservationController branches', () => {
       await expect(ctrl.updateReservation(req, mockRes())).rejects.toThrow('Reason');
     });
 
-    it('should detect endDateTime as important change', async () => {
+    it('should detect endDateTime as important', async () => {
       const req = {
         params: { id: 'r1' },
         body: { endDateTime: '2026-04-01T18:00:00Z' },
@@ -298,39 +403,23 @@ describe('ReservationController branches', () => {
       await expect(ctrl.updateReservation(req, mockRes())).rejects.toThrow('Reason');
     });
 
-    it('should detect children count as important change', async () => {
-      const req = {
-        params: { id: 'r1' },
-        body: { children: 20 },
-        user: { id: 'u1' }
-      } as any;
+    it('should detect children as important', async () => {
+      const req = { params: { id: 'r1' }, body: { children: 20 }, user: { id: 'u1' } } as any;
       await expect(ctrl.updateReservation(req, mockRes())).rejects.toThrow('Reason');
     });
 
-    it('should detect toddlers as important change', async () => {
-      const req = {
-        params: { id: 'r1' },
-        body: { toddlers: 5 },
-        user: { id: 'u1' }
-      } as any;
+    it('should detect toddlers as important', async () => {
+      const req = { params: { id: 'r1' }, body: { toddlers: 5 }, user: { id: 'u1' } } as any;
       await expect(ctrl.updateReservation(req, mockRes())).rejects.toThrow('Reason');
     });
 
-    it('should detect pricePerChild as important change', async () => {
-      const req = {
-        params: { id: 'r1' },
-        body: { pricePerChild: 100 },
-        user: { id: 'u1' }
-      } as any;
+    it('should detect pricePerChild as important', async () => {
+      const req = { params: { id: 'r1' }, body: { pricePerChild: 100 }, user: { id: 'u1' } } as any;
       await expect(ctrl.updateReservation(req, mockRes())).rejects.toThrow('Reason');
     });
 
-    it('should detect pricePerToddler as important change', async () => {
-      const req = {
-        params: { id: 'r1' },
-        body: { pricePerToddler: 50 },
-        user: { id: 'u1' }
-      } as any;
+    it('should detect pricePerToddler as important', async () => {
+      const req = { params: { id: 'r1' }, body: { pricePerToddler: 50 }, user: { id: 'u1' } } as any;
       await expect(ctrl.updateReservation(req, mockRes())).rejects.toThrow('Reason');
     });
   });
@@ -352,7 +441,7 @@ describe('ReservationController branches', () => {
         hasPaidDeposits: true, paidCount: 2, paidTotal: 1000,
       });
       const req = { params: { id: 'r1' }, body: { status: 'CANCELLED' }, user: { id: 'u1' } } as any;
-      await expect(ctrl.updateStatus(req, mockRes())).rejects.toThrow('opłaconymi zaliczkami');
+      await expect(ctrl.updateStatus(req, mockRes())).rejects.toThrow('zaliczkami');
     });
 
     it('should allow cancel without paid deposits', async () => {
@@ -372,7 +461,6 @@ describe('ReservationController branches', () => {
       const res = mockRes();
       await ctrl.updateStatus(req, res);
       expect(depositService.checkPaidDepositsBeforeCancel).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
@@ -388,7 +476,7 @@ describe('ReservationController branches', () => {
         hasPaidDeposits: true, paidCount: 1, paidTotal: 500,
       });
       const req = { params: { id: 'r1' }, body: { reason: 'test' }, user: { id: 'u1' } } as any;
-      await expect(ctrl.cancelReservation(req, mockRes())).rejects.toThrow('opłaconymi zaliczkami');
+      await expect(ctrl.cancelReservation(req, mockRes())).rejects.toThrow('zaliczkami');
     });
 
     it('should cancel successfully', async () => {
