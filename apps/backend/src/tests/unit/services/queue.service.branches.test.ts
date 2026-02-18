@@ -80,7 +80,8 @@ describe('QueueService — branches', () => {
     });
 
     it('should throw when guests < 1', async () => {
-      await expect(svc.addToQueue({ clientId: 'c-1', reservationQueueDate: '2026-06-15', guests: 0 } as any, 'u-1'))
+      // guests: -1 (not 0, because 0 is falsy and triggers the !data.guests check first)
+      await expect(svc.addToQueue({ clientId: 'c-1', reservationQueueDate: '2026-06-15', guests: -1 } as any, 'u-1'))
         .rejects.toThrow('at least 1');
     });
 
