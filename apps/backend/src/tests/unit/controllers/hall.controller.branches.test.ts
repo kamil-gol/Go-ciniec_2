@@ -4,20 +4,20 @@
  */
 import { Request, Response, NextFunction } from 'express';
 
+const mockHallService = {
+  getHalls: jest.fn(),
+  getHallById: jest.fn(),
+  createHall: jest.fn(),
+  updateHall: jest.fn(),
+  deleteHall: jest.fn(),
+};
+
 jest.mock('../../../services/hall.service', () => ({
-  default: {
-    getHalls: jest.fn(),
-    getHallById: jest.fn(),
-    createHall: jest.fn(),
-    updateHall: jest.fn(),
-    deleteHall: jest.fn(),
-  },
+  __esModule: true,
+  default: mockHallService,
 }));
 
 import hallController from '../../../controllers/hall.controller';
-import hallService from '../../../services/hall.service';
-
-const mockService = hallService as jest.Mocked<typeof hallService>;
 
 const mockReq = (overrides: any = {}): Partial<Request> => ({
   query: {},
@@ -41,7 +41,7 @@ beforeEach(() => jest.clearAllMocks());
 describe('HallController — error paths', () => {
   it('getHalls should call next(error) when service throws', async () => {
     const error = new Error('DB connection failed');
-    mockService.getHalls.mockRejectedValue(error);
+    mockHallService.getHalls.mockRejectedValue(error);
 
     await hallController.getHalls(
       mockReq({ query: {} }) as Request,
@@ -54,7 +54,7 @@ describe('HallController — error paths', () => {
 
   it('getHallById should call next(error) when service throws', async () => {
     const error = new Error('Hall not found');
-    mockService.getHallById.mockRejectedValue(error);
+    mockHallService.getHallById.mockRejectedValue(error);
 
     await hallController.getHallById(
       mockReq({ params: { id: 'bad-id' } }) as Request,
@@ -66,7 +66,7 @@ describe('HallController — error paths', () => {
   });
 
   it('getHalls with isActive=false filter', async () => {
-    mockService.getHalls.mockResolvedValue([]);
+    mockHallService.getHalls.mockResolvedValue([]);
     const res = mockRes() as Response;
 
     await hallController.getHalls(
@@ -75,14 +75,14 @@ describe('HallController — error paths', () => {
       mockNext
     );
 
-    expect(mockService.getHalls).toHaveBeenCalledWith(
+    expect(mockHallService.getHalls).toHaveBeenCalledWith(
       expect.objectContaining({ isActive: false })
     );
     expect(res.json).toHaveBeenCalled();
   });
 
   it('getHalls with no isActive filter (undefined)', async () => {
-    mockService.getHalls.mockResolvedValue([]);
+    mockHallService.getHalls.mockResolvedValue([]);
     const res = mockRes() as Response;
 
     await hallController.getHalls(
@@ -91,7 +91,7 @@ describe('HallController — error paths', () => {
       mockNext
     );
 
-    expect(mockService.getHalls).toHaveBeenCalledWith(
+    expect(mockHallService.getHalls).toHaveBeenCalledWith(
       expect.objectContaining({ isActive: undefined })
     );
   });
