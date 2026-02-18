@@ -1,7 +1,9 @@
 /**
- * QueueService — Branch Coverage (line 39)
- * Targets: edge-case branch in early queue logic
+ * QueueService — Branch Coverage (line 39: withRetry lock error + delay)
+ * Also tests edge branches in queue operations
  */
+
+// Must mock before imports
 jest.mock('../../../lib/prisma', () => {
   const mockPrisma: any = {
     reservation: {
@@ -16,76 +18,180 @@ jest.mock('../../../lib/prisma', () => {
     reservationHistory: { create: jest.fn().mockResolvedValue({}) },
     deposit: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
+    $executeRaw: jest.fn(),
+    $queryRaw: jest.fn(),
   };
   return { prisma: mockPrisma };
 });
 
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
-  diffObjects: jest.fn().mockReturnValue({}),
 }));
 
+import { QueueService } from '../../../services/queue.service';
 import { prisma } from '../../../lib/prisma';
 const mockPrisma = prisma as any;
 
-let QueueService: any;
+let service: QueueService;
 
-beforeAll(async () => {
-  const mod = await import('../../../services/queue.service');
-  QueueService = mod.default || mod.QueueService || mod;
+beforeEach(() => {
+  jest.resetAllMocks();
+  // Restore default mocks
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.count.mockResolvedValue(0);
+  mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: null } });
+  mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
+  service = new QueueService();
 });
 
-beforeEach(() => jest.clearAllMocks());
+describe('QueueService — withRetry lock error branch (line 39)', () => {
 
-describe('QueueService — line 39 branch', () => {
+  it('should retry on lock error in swapPositions and succeed on 2nd attempt', async () => {
+    const res1 = {
+      id: 'r1', status: 'RESERVED',
+      reservationQueueDate: new Date('2026-06-15'),
+      reservationQueuePosition: 1,
+      client: { firstName: 'Jan', lastName: 'Kowalski' },
+    };
+    const res2 = {
+      id: 'r2', status: 'RESERVED',
+      reservationQueueDate: new Date('2026-06-15'),
+      reservationQueuePosition: 2,
+      client: { firstName: 'Anna', lastName: 'Nowak' },
+    };
 
-  it('should handle getQueueEntries with no filters', async () => {
-    mockPrisma.reservation.findMany.mockResolvedValue([]);
-    mockPrisma.reservation.count.mockResolvedValue(0);
+    mockPrisma.reservation.findUnique
+      .mockResolvedValueOnce(res1)
+      .mockResolvedValueOnce(res2);
 
-    const result = await QueueService.getQueueEntries();
-    expect(result).toBeDefined();
+    // First attempt: lock error → retry, Second attempt: success
+    const lockError = new Error('lock_not_available');
+    mockPrisma.$executeRaw
+      .mockRejectedValueOnce(lockError)
+      .mockResolvedValueOnce(undefined);
+
+    // Speed up setTimeout
+    jest.useFakeTimers();
+    const promise = service.swapPositions('r1', 'r2', 'u1');
+    // Fast-forward retry delay (100ms * 2^0 = 100ms)
+    jest.advanceTimersByTime(200);
+    jest.useRealTimers();
+
+    await promise;
+
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
   });
 
-  it('should handle getQueueEntries with hallId filter', async () => {
-    mockPrisma.reservation.findMany.mockResolvedValue([]);
-    mockPrisma.reservation.count.mockResolvedValue(0);
+  it('should throw after max retries on persistent lock error', async () => {
+    const res1 = {
+      id: 'r1', status: 'RESERVED',
+      reservationQueueDate: new Date('2026-06-15'),
+      reservationQueuePosition: 1,
+      client: { firstName: 'Jan', lastName: 'Kowalski' },
+    };
+    const res2 = {
+      id: 'r2', status: 'RESERVED',
+      reservationQueueDate: new Date('2026-06-15'),
+      reservationQueuePosition: 2,
+      client: { firstName: 'Anna', lastName: 'Nowak' },
+    };
 
-    const result = await QueueService.getQueueEntries({ hallId: 'h1' });
-    expect(result).toBeDefined();
+    mockPrisma.reservation.findUnique
+      .mockResolvedValueOnce(res1)
+      .mockResolvedValueOnce(res2);
+
+    const lockError = new Error('lock_not_available');
+    mockPrisma.$executeRaw.mockRejectedValue(lockError);
+
+    await expect(service.swapPositions('r1', 'r2', 'u1'))
+      .rejects.toThrow('lock_not_available');
+  });
+});
+
+describe('QueueService — getAllQueues', () => {
+
+  it('should return formatted queue items', async () => {
+    mockPrisma.reservation.findMany.mockResolvedValue([
+      {
+        id: 'r1', reservationQueuePosition: 1, reservationQueueDate: new Date(),
+        guests: 10, queueOrderManual: false, notes: null, createdAt: new Date(),
+        client: { id: 'c1', firstName: 'Jan', lastName: 'K', phone: '123', email: 'j@k.pl' },
+        createdBy: { id: 'u1', firstName: 'Admin', lastName: 'A' },
+      },
+    ]);
+
+    const result = await service.getAllQueues();
+    expect(result).toHaveLength(1);
+    expect(result[0].position).toBe(1);
+  });
+});
+
+describe('QueueService — getQueueStats', () => {
+
+  it('should return stats with manual count and oldest date', async () => {
+    const date1 = new Date('2026-06-15');
+    const date2 = new Date('2026-06-10');
+    mockPrisma.reservation.findMany.mockResolvedValue([
+      { reservationQueueDate: date1, guests: 10, queueOrderManual: true },
+      { reservationQueueDate: date1, guests: 5, queueOrderManual: false },
+      { reservationQueueDate: date2, guests: 8, queueOrderManual: true },
+    ]);
+
+    const result = await service.getQueueStats();
+    expect(result.totalQueued).toBe(3);
+    expect(result.manualOrderCount).toBe(2);
+    expect(result.queuesByDate).toHaveLength(2);
   });
 
-  it('should handle getQueueEntries with eventTypeId filter', async () => {
+  it('should return empty stats when no reservations', async () => {
     mockPrisma.reservation.findMany.mockResolvedValue([]);
-    mockPrisma.reservation.count.mockResolvedValue(0);
+    const result = await service.getQueueStats();
+    expect(result.totalQueued).toBe(0);
+    expect(result.oldestQueueDate).toBeNull();
+  });
+});
 
-    const result = await QueueService.getQueueEntries({ eventTypeId: 'et1' });
-    expect(result).toBeDefined();
+describe('QueueService — autoCancelExpired', () => {
+
+  it('should log audit when cancellations occur', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 3, cancelled_ids: ['r1', 'r2', 'r3'] }]);
+    const result = await service.autoCancelExpired('u1');
+    expect(result.cancelledCount).toBe(3);
+    const { logChange } = require('../../../utils/audit-logger');
+    expect(logChange).toHaveBeenCalledWith(expect.objectContaining({ action: 'QUEUE_AUTO_CANCEL' }));
   });
 
-  it('should handle getQueueEntries with status filter', async () => {
-    mockPrisma.reservation.findMany.mockResolvedValue([]);
-    mockPrisma.reservation.count.mockResolvedValue(0);
-
-    const result = await QueueService.getQueueEntries({ status: 'RESERVED' });
-    expect(result).toBeDefined();
+  it('should NOT log audit when no cancellations', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
+    const result = await service.autoCancelExpired();
+    expect(result.cancelledCount).toBe(0);
+    const { logChange } = require('../../../utils/audit-logger');
+    expect(logChange).not.toHaveBeenCalled();
   });
 
-  it('should handle getQueueEntries with page/pageSize', async () => {
-    mockPrisma.reservation.findMany.mockResolvedValue([]);
-    mockPrisma.reservation.count.mockResolvedValue(0);
+  it('should handle null queryRaw result', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await service.autoCancelExpired();
+    expect(result.cancelledCount).toBe(0);
+  });
+});
 
-    const result = await QueueService.getQueueEntries({ page: 2, pageSize: 5 });
-    expect(result).toBeDefined();
+describe('QueueService — rebuildPositions', () => {
+
+  it('should return zero counts when no reservations', async () => {
+    mockPrisma.reservation.findMany.mockResolvedValue([]);
+    const result = await service.rebuildPositions('u1');
+    expect(result).toEqual({ updatedCount: 0, dateCount: 0 });
   });
 
-  it('should handle null/undefined maxPosition in aggregate', async () => {
-    mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: null } });
-    mockPrisma.reservation.findUnique.mockResolvedValue(null);
+  it('should skip reservations without queueDate in rebuild', async () => {
+    mockPrisma.reservation.findMany.mockResolvedValue([
+      { id: 'r1', reservationQueueDate: null, createdAt: new Date() },
+    ]);
+    mockPrisma.reservation.update.mockResolvedValue({});
 
-    // Try to call a method that uses aggregate for max position
-    try {
-      await QueueService.addToQueue?.({ hallId: 'h1', clientId: 'c1', eventTypeId: 'e1' }, 'u1');
-    } catch { /* expected - just trigger branch */ }
+    const result = await service.rebuildPositions('u1');
+    expect(result.updatedCount).toBe(0);
+    expect(result.dateCount).toBe(0);
   });
 });
