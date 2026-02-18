@@ -8,7 +8,10 @@
 // ═══ Mock Prisma (factory wewnątrz jest.mock — hoisting-safe) ═══
 jest.mock('../../../lib/prisma', () => {
   const mock = {
-    hall: { findUnique: jest.fn() },
+    hall: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),   // używane przez checkWholeVenueConflict
+    },
     client: { findUnique: jest.fn() },
     eventType: { findUnique: jest.fn() },
     user: { findUnique: jest.fn() },
@@ -48,7 +51,6 @@ import { ReservationService } from '../../../services/reservation.service';
 import { ReservationStatus } from '../../../types/reservation.types';
 import { prisma } from '../../../lib/prisma';
 
-// Reference do mocka (cast do any — safe bo to jest.fn())
 const mockPrisma = prisma as any;
 
 // ═══ Test Fixtures ═══
@@ -93,7 +95,7 @@ const CREATED_RESERVATION = {
   id: 'res-uuid-001',
   ...VALID_CREATE_DTO,
   guests: 65,
-  totalPrice: 11250, // 50*200 + 10*100 + 5*50
+  totalPrice: 11250,
   status: ReservationStatus.PENDING,
   notes: null,
   createdAt: new Date(),
@@ -114,10 +116,11 @@ beforeEach(() => {
   // Default mocks — happy path
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
   mockPrisma.hall.findUnique.mockResolvedValue(TEST_HALL);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);           // no whole-venue hall
   mockPrisma.client.findUnique.mockResolvedValue(TEST_CLIENT);
   mockPrisma.eventType.findUnique.mockResolvedValue(TEST_EVENT_TYPE);
   mockPrisma.reservation.create.mockResolvedValue(CREATED_RESERVATION);
-  mockPrisma.reservation.findFirst.mockResolvedValue(null); // no overlap
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);    // no overlap
   mockPrisma.reservationHistory.create.mockResolvedValue({});
   mockPrisma.activityLog.create.mockResolvedValue({});
 });
@@ -141,8 +144,8 @@ describe('ReservationService', () => {
       await service.createReservation(VALID_CREATE_DTO, TEST_USER_ID);
 
       const createCall = mockPrisma.reservation.create.mock.calls[0][0];
-      expect(createCall.data.guests).toBe(65); // 50 + 10 + 5
-      expect(createCall.data.totalPrice).toBe(11250); // 50*200 + 10*100 + 5*50
+      expect(createCall.data.guests).toBe(65);
+      expect(createCall.data.totalPrice).toBe(11250);
     });
 
     it('should throw when hallId is missing', async () => {
@@ -203,7 +206,6 @@ describe('ReservationService', () => {
       await service.createReservation(dto, TEST_USER_ID);
 
       const createCall = mockPrisma.reservation.create.mock.calls[0][0];
-      // totalPrice = 11250, 10% = 1125, final = 10125
       expect(createCall.data.totalPrice).toBe(10125);
       expect(createCall.data.discountAmount).toBe(1125);
       expect(createCall.data.priceBeforeDiscount).toBe(11250);
@@ -219,7 +221,7 @@ describe('ReservationService', () => {
       await service.createReservation(dto, TEST_USER_ID);
 
       const createCall = mockPrisma.reservation.create.mock.calls[0][0];
-      expect(createCall.data.totalPrice).toBe(10750); // 11250 - 500
+      expect(createCall.data.totalPrice).toBe(10750);
       expect(createCall.data.discountAmount).toBe(500);
     });
   });
@@ -267,7 +269,7 @@ describe('ReservationService', () => {
 
       const call = mockPrisma.reservation.findMany.mock.calls[0][0];
       expect(call.where.OR).toBeDefined();
-      expect(call.where.OR).toHaveLength(2); // startDateTime + date (legacy)
+      expect(call.where.OR).toHaveLength(2);
     });
 
     it('should include archived when requested', async () => {
