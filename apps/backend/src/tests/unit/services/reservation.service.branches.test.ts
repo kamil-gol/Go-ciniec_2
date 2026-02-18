@@ -556,12 +556,17 @@ describe('ReservationService — Branch Coverage', () => {
       expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should include deposit count in reason when deposits cancelled', async () => {
+    it('should include deposit info in per-deposit history entries', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'PENDING' });
       txMock.deposit.findMany.mockResolvedValue([{ id: 'd1', amount: 500, status: 'PENDING' }]);
       await svc.cancelReservation('res-001', UID, 'Anulowano');
-      const mainHist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(mainHist.data.reason).toContain('Auto-anulowano 1 zaliczek');
+      // Per-deposit entries come first, main cancel entry is last
+      const allCalls = txMock.reservationHistory.create.mock.calls;
+      const depositHist = allCalls[0][0];
+      expect(depositHist.data.reason).toContain('500');
+      // Main cancel entry is the last call
+      const mainHist = allCalls[allCalls.length - 1][0];
+      expect(mainHist.data.reason).toContain('Anulowano');
     });
 
     it('should handle cancel without explicit reason', async () => {
