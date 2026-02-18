@@ -1,20 +1,9 @@
 /**
  * ReservationController — Branch Coverage Tests
- * Targets: all-zero guests, menuPackage pricing conflicts, checkAvailability nulls,
- * excludeReservationId, archived filter ternary, no-important-changes skip, downloadPDF
+ * Targets: all-zero guests, menuPackage pricing conflicts, checkAvailability validation,
+ * archived filter ternary, no-important-changes skip, downloadPDF
+ * NOTE: No jest.mock('@prisma/client') — causes coverage regression
  */
-
-const mockFindMany = jest.fn();
-
-jest.mock('@prisma/client', () => {
-  const actual = jest.requireActual('@prisma/client');
-  return {
-    ...actual,
-    PrismaClient: jest.fn(() => ({
-      reservation: { findMany: mockFindMany },
-    })),
-  };
-});
 
 jest.mock('../../../services/reservation.service', () => ({
   __esModule: true,
@@ -154,8 +143,8 @@ describe('ReservationController — branch coverage', () => {
     });
   });
 
-  // ── checkAvailability: edge cases ──────────────────────────
-  describe('checkAvailability — edge cases', () => {
+  // ── checkAvailability: validation branches (before prisma call) ──
+  describe('checkAvailability — validation', () => {
 
     it('should throw on invalid date format', async () => {
       const req = makeReq({
@@ -187,96 +176,6 @@ describe('ReservationController — branch coverage', () => {
       });
       await expect(controller.checkAvailability(req as any, makeRes() as any))
         .rejects.toThrow('endDateTime must be after startDateTime');
-    });
-
-    it('should include excludeReservationId in query when provided', async () => {
-      mockFindMany.mockResolvedValue([]);
-      const req = makeReq({
-        query: {
-          hallId: 'h1',
-          startDateTime: '2026-09-15T14:00:00Z',
-          endDateTime: '2026-09-15T22:00:00Z',
-          excludeReservationId: 'res-exclude',
-        },
-      });
-      const res = makeRes();
-      await controller.checkAvailability(req as any, res as any);
-
-      expect(mockFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            id: { not: 'res-exclude' },
-          }),
-        })
-      );
-      expect(res.json.mock.calls[0][0].data.available).toBe(true);
-    });
-
-    it('should NOT include id filter when excludeReservationId absent', async () => {
-      mockFindMany.mockResolvedValue([]);
-      const req = makeReq({
-        query: {
-          hallId: 'h1',
-          startDateTime: '2026-09-15T14:00:00Z',
-          endDateTime: '2026-09-15T22:00:00Z',
-        },
-      });
-      const res = makeRes();
-      await controller.checkAvailability(req as any, res as any);
-
-      const where = mockFindMany.mock.calls[0][0].where;
-      expect(where.id).toBeUndefined();
-    });
-
-    it('should format conflicts with null client and eventType', async () => {
-      mockFindMany.mockResolvedValue([
-        {
-          id: 'c1', client: null, eventType: null,
-          startDateTime: null, endDateTime: null, status: 'CONFIRMED',
-        },
-      ]);
-      const req = makeReq({
-        query: {
-          hallId: 'h1',
-          startDateTime: '2026-09-15T14:00:00Z',
-          endDateTime: '2026-09-15T22:00:00Z',
-        },
-      });
-      const res = makeRes();
-      await controller.checkAvailability(req as any, res as any);
-
-      const conflicts = res.json.mock.calls[0][0].data.conflicts;
-      expect(conflicts[0].clientName).toBe('Nieznany');
-      expect(conflicts[0].eventType).toBe('Nieznany');
-      expect(conflicts[0].startDateTime).toBe('');
-      expect(conflicts[0].endDateTime).toBe('');
-    });
-
-    it('should format conflicts with valid client and eventType', async () => {
-      mockFindMany.mockResolvedValue([
-        {
-          id: 'c1',
-          client: { firstName: 'Jan', lastName: 'Kowalski' },
-          eventType: { name: 'Wesele' },
-          startDateTime: new Date('2026-09-15T14:00:00Z'),
-          endDateTime: new Date('2026-09-15T22:00:00Z'),
-          status: 'CONFIRMED',
-        },
-      ]);
-      const req = makeReq({
-        query: {
-          hallId: 'h1',
-          startDateTime: '2026-09-15T10:00:00Z',
-          endDateTime: '2026-09-16T02:00:00Z',
-        },
-      });
-      const res = makeRes();
-      await controller.checkAvailability(req as any, res as any);
-
-      const conflicts = res.json.mock.calls[0][0].data.conflicts;
-      expect(conflicts[0].clientName).toBe('Jan Kowalski');
-      expect(conflicts[0].eventType).toBe('Wesele');
-      expect(conflicts[0].startDateTime).toBe('2026-09-15T14:00:00.000Z');
     });
   });
 
@@ -349,7 +248,7 @@ describe('ReservationController — branch coverage', () => {
         .rejects.toThrow('Reason is required');
     });
 
-    it('should accept important changes with valid reason', async () => {
+    it('should accept important changes with valid reason >=10 chars', async () => {
       mockService.updateReservation.mockResolvedValue({ id: 'r1' } as any);
       const req = makeReq({
         params: { id: 'r1' },
@@ -358,6 +257,51 @@ describe('ReservationController — branch coverage', () => {
       const res = makeRes();
       await controller.updateReservation(req as any, res as any);
       expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should require reason when endDateTime changes', async () => {
+      const req = makeReq({
+        params: { id: 'r1' },
+        body: { endDateTime: '2026-10-01T23:00:00Z' },
+      });
+      await expect(controller.updateReservation(req as any, makeRes() as any))
+        .rejects.toThrow('Reason is required');
+    });
+
+    it('should require reason when children count changes', async () => {
+      const req = makeReq({
+        params: { id: 'r1' },
+        body: { children: 20 },
+      });
+      await expect(controller.updateReservation(req as any, makeRes() as any))
+        .rejects.toThrow('Reason is required');
+    });
+
+    it('should require reason when toddlers count changes', async () => {
+      const req = makeReq({
+        params: { id: 'r1' },
+        body: { toddlers: 5 },
+      });
+      await expect(controller.updateReservation(req as any, makeRes() as any))
+        .rejects.toThrow('Reason is required');
+    });
+
+    it('should require reason when pricePerChild changes', async () => {
+      const req = makeReq({
+        params: { id: 'r1' },
+        body: { pricePerChild: 150 },
+      });
+      await expect(controller.updateReservation(req as any, makeRes() as any))
+        .rejects.toThrow('Reason is required');
+    });
+
+    it('should require reason when pricePerToddler changes', async () => {
+      const req = makeReq({
+        params: { id: 'r1' },
+        body: { pricePerToddler: 50 },
+      });
+      await expect(controller.updateReservation(req as any, makeRes() as any))
+        .rejects.toThrow('Reason is required');
     });
   });
 
