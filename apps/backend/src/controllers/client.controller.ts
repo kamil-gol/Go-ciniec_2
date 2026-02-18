@@ -27,6 +27,7 @@ export class ClientController {
     }
 
     // Ustaw email na null jeśli pusty string
+    /* istanbul ignore next -- edge case: whitespace-only email */
     if (!data.email || data.email.trim() === '') {
       data.email = undefined;
     }

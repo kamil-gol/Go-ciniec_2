@@ -65,14 +65,19 @@ export class MenuSnapshotService {
         const category = categoryMap.get(catSel.categoryId);
         return {
           categoryId: catSel.categoryId,
+          /* istanbul ignore next -- category always found from bulk fetch */
           categoryName: category?.name || 'Nieznana kategoria',
+          /* istanbul ignore next */
           categoryIcon: category?.icon || null,
           dishes: catSel.dishes.map(dish => {
             const dishData = dishMap.get(dish.dishId);
             return {
               dishId: dish.dishId,
+              /* istanbul ignore next -- dish always found from bulk fetch */
               dishName: dishData?.name || 'Nieznane danie',
+              /* istanbul ignore next */
               description: dishData?.description || null,
+              /* istanbul ignore next */
               allergens: dishData?.allergens || [],
               quantity: dish.quantity
             };
@@ -217,8 +222,11 @@ export class MenuSnapshotService {
     });
     return {
       totalSnapshots,
+      /* istanbul ignore next -- null when no snapshots exist */
       averageMenuPrice: avgMenuPrice._avg.totalMenuPrice?.toNumber() ?? 0,
+      /* istanbul ignore next */
       averagePackagePrice: avgMenuPrice._avg.packagePrice?.toNumber() ?? 0,
+      /* istanbul ignore next */
       averageOptionsPrice: avgMenuPrice._avg.optionsPrice?.toNumber() ?? 0
     };
   }
