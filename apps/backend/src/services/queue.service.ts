@@ -36,6 +36,7 @@ const withRetry = async <T>(
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+  /* istanbul ignore next -- unreachable: loop always returns or throws */
   throw lastError;
 };
 
@@ -287,7 +288,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: id1,
       details: {
-        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) ↔ ${client2Name} (#${pos2}) | ${queueDate}`,
+        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) \u2194 ${client2Name} (#${pos2}) | ${queueDate}`,
         reservation1: { id: id1, clientName: client1Name, oldPosition: pos1 },
         reservation2: { id: id2, clientName: client2Name, oldPosition: pos2 },
         queueDate,
@@ -345,7 +346,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} → #${newPosition} | ${queueDate}`,
+        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} \u2192 #${newPosition} | ${queueDate}`,
         clientName,
         oldPosition,
         newPosition,
@@ -412,7 +413,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: updates[0]?.id || 'batch',
       details: {
-        description: `Zmieniono kolejność ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
+        description: `Zmieniono kolejno\u015b\u0107 ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
         queueDate,
         updatedCount: result.updatedCount,
         positionChanges,
