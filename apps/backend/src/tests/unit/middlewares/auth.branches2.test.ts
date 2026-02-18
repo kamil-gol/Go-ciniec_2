@@ -4,40 +4,51 @@
 
 describe('auth.ts — JWT_SECRET environment checks', () => {
 
-  const ORIGINAL_ENV = process.env;
+  const ORIGINAL_ENV = { ...process.env };
 
-  beforeEach(() => {
-    jest.resetModules();
+  afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
-    delete process.env.JWT_SECRET;
-  });
-
-  afterAll(() => {
-    process.env = ORIGINAL_ENV;
+    jest.resetModules();
   });
 
   it('should throw in production when JWT_SECRET is missing (line 12)', () => {
     process.env.NODE_ENV = 'production';
-    expect(() => {
-      require('../../../middlewares/auth');
-    }).toThrow('FATAL: JWT_SECRET environment variable is not set');
+    delete process.env.JWT_SECRET;
+
+    jest.isolateModules(() => {
+      // Mock logger to avoid side effects
+      jest.doMock('@utils/logger', () => ({ default: { warn: jest.fn(), error: jest.fn(), info: jest.fn() } }));
+      expect(() => {
+        require('../../../middlewares/auth');
+      }).toThrow('FATAL');
+    });
   });
 
-  it('should warn (not throw) in non-production when JWT_SECRET is missing (line 19)', () => {
+  it('should warn (not throw) in dev when JWT_SECRET is missing (line 19)', () => {
     process.env.NODE_ENV = 'test';
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    // Logger might use console or a different transport; import should succeed
-    expect(() => {
-      require('../../../middlewares/auth');
-    }).not.toThrow();
-    warnSpy.mockRestore();
+    delete process.env.JWT_SECRET;
+
+    jest.isolateModules(() => {
+      const mockWarn = jest.fn();
+      jest.doMock('@utils/logger', () => ({ default: { warn: mockWarn, error: jest.fn(), info: jest.fn() } }));
+      expect(() => {
+        require('../../../middlewares/auth');
+      }).not.toThrow();
+      expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining('JWT_SECRET is not set'));
+    });
   });
 
   it('should not warn when JWT_SECRET is set', () => {
-    process.env.JWT_SECRET = 'test-secret-key';
     process.env.NODE_ENV = 'test';
-    expect(() => {
-      require('../../../middlewares/auth');
-    }).not.toThrow();
+    process.env.JWT_SECRET = 'my-test-secret';
+
+    jest.isolateModules(() => {
+      const mockWarn = jest.fn();
+      jest.doMock('@utils/logger', () => ({ default: { warn: mockWarn, error: jest.fn(), info: jest.fn() } }));
+      expect(() => {
+        require('../../../middlewares/auth');
+      }).not.toThrow();
+      expect(mockWarn).not.toHaveBeenCalled();
+    });
   });
 });
