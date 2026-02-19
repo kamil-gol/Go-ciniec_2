@@ -40,9 +40,9 @@ module.exports = {
       testEnvironment: 'node',
       roots: ['<rootDir>/src'],
       testMatch: ['<rootDir>/src/tests/integration/**/*.test.ts'],
-      // CRITICAL: Run integration suites serially to prevent
-      // PostgreSQL deadlocks from concurrent TRUNCATE CASCADE
-      maxWorkers: 1,
+      // NOTE: Serial execution is enforced via --runInBand CLI flag
+      // in package.json scripts. maxWorkers inside project config
+      // is ignored by Jest 29 multi-project runner.
       setupFiles: [
         '<rootDir>/src/tests/setup.ts',
         '<rootDir>/src/tests/helpers/integration-setup.ts',
