@@ -162,20 +162,35 @@ app.use((_req: Request, res: Response) => {
 app.use(errorHandler);
 
 /**
- * Start Server
+ * Start Server (only when not in test mode)
+ * 
+ * In test mode, supertest handles HTTP requests directly via the app instance.
+ * We skip app.listen() and cron jobs to avoid port conflicts and side effects.
  */
-const server = app.listen(PORT, () => {
-  logger.info(`Server running on http://localhost:${PORT}`);
-  logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(PORT, () => {
+    logger.info(`Server running on http://localhost:${PORT}`);
+    logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 
-  // Setup cron jobs
-  setupAutoCancelCron();
-  setupDepositOverdueCron();
-  setupDepositReminderCron();
+    // Setup cron jobs
+    setupAutoCancelCron();
+    setupDepositOverdueCron();
+    setupDepositReminderCron();
 
-  // Verify email on startup
-  emailService.verify();
-});
+    // Verify email on startup
+    emailService.verify();
+  });
+
+  /**
+   * Graceful Shutdown
+   */
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      logger.info('HTTP server closed');
+    });
+  });
+}
 
 /**
  * Setup Auto-Cancel Cron Job
@@ -239,15 +254,5 @@ function setupDepositReminderCron() {
   });
   logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
 }
-
-/**
- * Graceful Shutdown
- */
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    logger.info('HTTP server closed');
-  });
-});
 
 export default app;
