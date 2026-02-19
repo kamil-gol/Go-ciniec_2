@@ -161,12 +161,16 @@ app.use((_req: Request, res: Response) => {
  */
 app.use(errorHandler);
 
-/**
- * Start Server (only when not in test mode)
- * 
- * In test mode, supertest handles HTTP requests directly via the app instance.
- * We skip app.listen() and cron jobs to avoid port conflicts and side effects.
- */
+// ========================================
+// Export app for testing (supertest)
+// MUST be before app.listen() so tests
+// can import without starting the server.
+// ========================================
+export default app;
+
+// ========================================
+// Start Server (skip in test mode)
+// ========================================
 if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(PORT, () => {
     logger.info(`Server running on http://localhost:${PORT}`);
@@ -254,5 +258,3 @@ function setupDepositReminderCron() {
   });
   logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
 }
-
-export default app;
