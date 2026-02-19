@@ -39,8 +39,8 @@ beforeEach(() => {
   // Restore default mocks
   mockPrisma.reservation.findMany.mockResolvedValue([]);
   mockPrisma.reservation.count.mockResolvedValue(0);
+  mockPrisma.reservation.updateMany.mockResolvedValue({ count: 0 });
   mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: null } });
-  mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
   service = new QueueService();
 });
 
@@ -153,23 +153,31 @@ describe('QueueService — getQueueStats', () => {
 describe('QueueService — autoCancelExpired', () => {
 
   it('should log audit when cancellations occur', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 3, cancelled_ids: ['r1', 'r2', 'r3'] }]);
+    // autoCancelExpired now uses findMany + updateMany (not $queryRaw)
+    mockPrisma.reservation.findMany.mockResolvedValueOnce([
+      { id: 'r1' }, { id: 'r2' }, { id: 'r3' },
+    ]);
+    mockPrisma.reservation.updateMany.mockResolvedValueOnce({ count: 3 });
+
     const result = await service.autoCancelExpired('u1');
     expect(result.cancelledCount).toBe(3);
+    expect(result.cancelledIds).toEqual(['r1', 'r2', 'r3']);
     const { logChange } = require('../../../utils/audit-logger');
     expect(logChange).toHaveBeenCalledWith(expect.objectContaining({ action: 'QUEUE_AUTO_CANCEL' }));
   });
 
   it('should NOT log audit when no cancellations', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
+    mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
+
     const result = await service.autoCancelExpired();
     expect(result.cancelledCount).toBe(0);
     const { logChange } = require('../../../utils/audit-logger');
     expect(logChange).not.toHaveBeenCalled();
   });
 
-  it('should handle null queryRaw result', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([]);
+  it('should handle empty findMany result', async () => {
+    mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
+
     const result = await service.autoCancelExpired();
     expect(result.cancelledCount).toBe(0);
   });
