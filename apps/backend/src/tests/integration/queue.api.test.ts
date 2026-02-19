@@ -4,6 +4,18 @@
  *
  * Tests queue management endpoints against a real test database.
  * Covers: CRUD, positioning, batch updates, promotion, auto-cancel.
+ *
+ * IMPORTANT: The queue system uses the Reservation model with:
+ *   - status: 'RESERVED'
+ *   - reservationQueuePosition: Int
+ *   - reservationQueueDate: DateTime
+ * There is NO separate QueueReservation model in the schema.
+ *
+ * API DTOs (from queue.types.ts):
+ *   - CreateReservedDTO: { clientId, reservationQueueDate, guests, ... }
+ *   - SwapQueuePositionsDTO: { reservationId1, reservationId2 }
+ *   - BatchUpdatePositionsDTO: { updates: [{ id, position }] }
+ *   - PromoteReservationDTO: { hallId, eventTypeId, startDateTime, endDateTime, adults, pricePerAdult, status, ... }
  */
 import { api, authHeader } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
@@ -31,24 +43,30 @@ describe('Queue API — /api/queue', () => {
   // Helpers
   // ========================================
 
-  /**
-   * Create a queue item directly in DB for testing.
-   */
-  async function createQueueItem(overrides: Record<string, any> = {}) {
-    const futureDate = new Date();
-    futureDate.setMonth(futureDate.getMonth() + 3);
+  function futureDate(monthsAhead: number = 3): Date {
+    const d = new Date();
+    d.setMonth(d.getMonth() + monthsAhead);
+    return d;
+  }
 
-    return prismaTest.queueReservation.create({
+  function futureDateStr(monthsAhead: number = 3): string {
+    return futureDate(monthsAhead).toISOString().split('T')[0];
+  }
+
+  /**
+   * Create a queue item (RESERVED reservation) directly in DB.
+   * Uses the Reservation model with queue-specific fields.
+   */
+  async function createQueueItemInDb(overrides: Record<string, any> = {}) {
+    return prismaTest.reservation.create({
       data: {
-        clientName: 'Test Klient Kolejka',
-        clientPhone: '+48 111 222 333',
-        clientEmail: 'kolejka@test.pl',
-        eventTypeId: seed.eventType1.id,
-        hallId: seed.hall1.id,
-        preferredDate: futureDate,
-        guestCount: 80,
-        position: 1,
-        status: 'WAITING',
+        clientId: seed.client1.id,
+        createdById: seed.admin.id,
+        reservationQueueDate: futureDate(3),
+        reservationQueuePosition: 1,
+        guests: 80,
+        totalPrice: 0,
+        status: 'RESERVED',
         notes: 'Integration test queue item',
         ...overrides,
       },
@@ -60,20 +78,18 @@ describe('Queue API — /api/queue', () => {
    */
   async function createMultipleQueueItems(count: number) {
     const items = [];
-    const futureDate = new Date();
-    futureDate.setMonth(futureDate.getMonth() + 3);
+    const queueDate = futureDate(3);
 
     for (let i = 1; i <= count; i++) {
-      const item = await prismaTest.queueReservation.create({
+      const item = await prismaTest.reservation.create({
         data: {
-          clientName: `Klient Kolejka ${i}`,
-          clientPhone: `+48 ${String(i).padStart(9, '0')}`,
-          clientEmail: `kolejka${i}@test.pl`,
-          eventTypeId: seed.eventType1.id,
-          preferredDate: futureDate,
-          guestCount: 50 + i * 10,
-          position: i,
-          status: 'WAITING',
+          clientId: seed.client1.id,
+          createdById: seed.admin.id,
+          reservationQueueDate: queueDate,
+          reservationQueuePosition: i,
+          guests: 50 + i * 10,
+          totalPrice: 0,
+          status: 'RESERVED',
         },
       });
       items.push(item);
@@ -161,21 +177,15 @@ describe('Queue API — /api/queue', () => {
   // ========================================
   describe('POST /api/queue/reserved', () => {
     it('should add item to queue with valid data', async () => {
-      const futureDate = new Date();
-      futureDate.setMonth(futureDate.getMonth() + 4);
-      const dateStr = futureDate.toISOString().split('T')[0];
+      const dateStr = futureDateStr(4);
 
       const res = await api
         .post('/api/queue/reserved')
         .set(authHeader('ADMIN'))
         .send({
-          clientName: 'Jan Nowy',
-          clientPhone: '+48 555 666 777',
-          clientEmail: 'jan.nowy@test.pl',
-          eventTypeId: seed.eventType1.id,
-          hallId: seed.hall1.id,
-          preferredDate: dateStr,
-          guestCount: 100,
+          clientId: seed.client1.id,
+          reservationQueueDate: dateStr,
+          guests: 100,
           notes: 'Nowa rezerwacja w kolejce',
         });
 
@@ -185,7 +195,7 @@ describe('Queue API — /api/queue', () => {
     it('should return 401 without auth', async () => {
       const res = await api
         .post('/api/queue/reserved')
-        .send({ clientName: 'Brak Auth' });
+        .send({ clientId: seed.client1.id });
 
       expect(res.status).toBe(401);
     });
@@ -198,6 +208,32 @@ describe('Queue API — /api/queue', () => {
 
       expect([400, 422, 500]).toContain(res.status);
     });
+
+    it('should allow EMPLOYEE role to add to queue', async () => {
+      const res = await api
+        .post('/api/queue/reserved')
+        .set(authHeader('EMPLOYEE'))
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: futureDateStr(5),
+          guests: 60,
+        });
+
+      expect([200, 201]).toContain(res.status);
+    });
+
+    it('should deny CLIENT role from adding to queue', async () => {
+      const res = await api
+        .post('/api/queue/reserved')
+        .set(authHeader('CLIENT'))
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: futureDateStr(5),
+          guests: 60,
+        });
+
+      expect([401, 403]).toContain(res.status);
+    });
   });
 
   // ========================================
@@ -205,14 +241,13 @@ describe('Queue API — /api/queue', () => {
   // ========================================
   describe('PUT /api/queue/:id', () => {
     it('should update queue item details', async () => {
-      const item = await createQueueItem();
+      const item = await createQueueItemInDb();
 
       const res = await api
         .put(`/api/queue/${item.id}`)
         .set(authHeader('ADMIN'))
         .send({
-          clientName: 'Zaktualizowany Klient',
-          guestCount: 120,
+          guests: 120,
           notes: 'Zmienione dane',
         });
 
@@ -223,7 +258,7 @@ describe('Queue API — /api/queue', () => {
       const res = await api
         .put('/api/queue/not-a-uuid')
         .set(authHeader('ADMIN'))
-        .send({ clientName: 'Test' });
+        .send({ guests: 50 });
 
       expect(res.status).toBe(400);
     });
@@ -239,7 +274,7 @@ describe('Queue API — /api/queue', () => {
       const res = await api
         .put(`/api/queue/${items[2].id}/position`)
         .set(authHeader('ADMIN'))
-        .send({ position: 1 });
+        .send({ newPosition: 1 });
 
       expect(res.status).toBe(200);
     });
@@ -266,13 +301,13 @@ describe('Queue API — /api/queue', () => {
       expect(res.status).toBe(200);
     });
 
-    it('should handle empty batch update', async () => {
+    it('should reject empty batch update', async () => {
       const res = await api
         .post('/api/queue/batch-update-positions')
         .set(authHeader('ADMIN'))
         .send({ updates: [] });
 
-      expect([200, 400]).toContain(res.status);
+      expect([400, 422]).toContain(res.status);
     });
   });
 
@@ -287,11 +322,20 @@ describe('Queue API — /api/queue', () => {
         .post('/api/queue/swap')
         .set(authHeader('ADMIN'))
         .send({
-          id1: items[0].id,
-          id2: items[1].id,
+          reservationId1: items[0].id,
+          reservationId2: items[1].id,
         });
 
       expect(res.status).toBe(200);
+    });
+
+    it('should return error for missing reservation IDs', async () => {
+      const res = await api
+        .post('/api/queue/swap')
+        .set(authHeader('ADMIN'))
+        .send({});
+
+      expect([400, 422, 500]).toContain(res.status);
     });
   });
 
@@ -309,18 +353,18 @@ describe('Queue API — /api/queue', () => {
       expect([200, 204]).toContain(res.status);
     });
 
-    it('should deny USER role (not admin)', async () => {
+    it('should deny EMPLOYEE role (requireAdmin)', async () => {
       const res = await api
         .post('/api/queue/rebuild-positions')
-        .set(authHeader('USER'));
+        .set(authHeader('EMPLOYEE'));
 
       expect(res.status).toBe(403);
     });
 
-    it('should deny READONLY role', async () => {
+    it('should deny CLIENT role', async () => {
       const res = await api
         .post('/api/queue/rebuild-positions')
-        .set(authHeader('READONLY'));
+        .set(authHeader('CLIENT'));
 
       expect([401, 403]).toContain(res.status);
     });
@@ -330,18 +374,28 @@ describe('Queue API — /api/queue', () => {
   // PUT /api/queue/:id/promote — promote to reservation
   // ========================================
   describe('PUT /api/queue/:id/promote', () => {
-    it('should promote queue item to reservation', async () => {
-      const item = await createQueueItem();
+    it('should promote queue item to full reservation', async () => {
+      const item = await createQueueItemInDb();
+      const dateStr = item.reservationQueueDate
+        ? item.reservationQueueDate.toISOString().split('T')[0]
+        : futureDateStr(3);
 
       const res = await api
         .put(`/api/queue/${item.id}/promote`)
         .set(authHeader('ADMIN'))
         .send({
-          clientId: seed.client1.id,
           hallId: seed.hall1.id,
-          date: item.preferredDate.toISOString().split('T')[0],
-          startTime: '14:00',
-          endTime: '22:00',
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 60,
+          children: 15,
+          toddlers: 5,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+          status: 'CONFIRMED',
+          notes: 'Awansowano z kolejki',
         });
 
       expect([200, 201]).toContain(res.status);
@@ -354,6 +408,17 @@ describe('Queue API — /api/queue', () => {
         .send({});
 
       expect(res.status).toBe(400);
+    });
+
+    it('should return error for missing promote fields', async () => {
+      const item = await createQueueItemInDb();
+
+      const res = await api
+        .put(`/api/queue/${item.id}/promote`)
+        .set(authHeader('ADMIN'))
+        .send({});
+
+      expect([400, 422, 500]).toContain(res.status);
     });
   });
 
@@ -384,7 +449,7 @@ describe('Queue API — /api/queue', () => {
       const res = await api
         .put('/api/queue/123')
         .set(authHeader('ADMIN'))
-        .send({ clientName: 'Test' });
+        .send({ guests: 50 });
 
       expect(res.status).toBe(400);
     });
@@ -393,7 +458,7 @@ describe('Queue API — /api/queue', () => {
       const res = await api
         .put('/api/queue/abc/position')
         .set(authHeader('ADMIN'))
-        .send({ position: 1 });
+        .send({ newPosition: 1 });
 
       expect(res.status).toBe(400);
     });
@@ -404,7 +469,7 @@ describe('Queue API — /api/queue', () => {
       const res = await api
         .put(`/api/queue/${fakeUuid}`)
         .set(authHeader('ADMIN'))
-        .send({ clientName: 'Ghost' });
+        .send({ guests: 50 });
 
       expect([404, 500]).toContain(res.status);
     });
