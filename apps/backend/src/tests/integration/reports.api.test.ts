@@ -3,6 +3,9 @@
  * Issue: #100 — Raporty / Audit Log / PDF (Faza 3)
  *
  * Tests revenue, occupancy reports and their export endpoints.
+ *
+ * Field names match Prisma schema:
+ *   - Reservation: guests (not guestCount), date as string, createdById required
  */
 import { api, authHeader } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
@@ -31,22 +34,19 @@ describe('Reports API — /api/reports', () => {
   // ========================================
 
   async function createReservationsForReports() {
-    const dates = [
-      new Date('2025-06-15'),
-      new Date('2025-07-20'),
-      new Date('2025-08-10'),
-    ];
+    const dates = ['2025-06-15', '2025-07-20', '2025-08-10'];
 
     for (const date of dates) {
       await prismaTest.reservation.create({
         data: {
           clientId: seed.client1.id,
+          createdById: seed.admin.id,
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
           date,
           startTime: '14:00',
           endTime: '22:00',
-          guestCount: 80,
+          guests: 80,
           status: 'COMPLETED',
           totalPrice: 15000,
         },

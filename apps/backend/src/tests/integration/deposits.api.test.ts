@@ -34,20 +34,26 @@ describe('Deposits API — /api/deposits', () => {
   /**
    * Create a reservation with a deposit for testing.
    * Inserts data directly in DB (not via API).
+   *
+   * Field names match Prisma schema:
+   *   - Reservation: guests (not guestCount), date as string, createdById required
+   *   - Deposit: dueDate as string, remainingAmount required, internalNotes (not notes)
    */
   async function createReservationWithDeposit(depositOverrides: Record<string, any> = {}) {
     const futureDate = new Date();
     futureDate.setMonth(futureDate.getMonth() + 2);
+    const dateStr = futureDate.toISOString().split('T')[0];
 
     const reservation = await prismaTest.reservation.create({
       data: {
         clientId: seed.client1.id,
+        createdById: seed.admin.id,
         hallId: seed.hall1.id,
         eventTypeId: seed.eventType1.id,
-        date: futureDate,
+        date: dateStr,
         startTime: '14:00',
         endTime: '22:00',
-        guestCount: 100,
+        guests: 100,
         status: 'CONFIRMED',
         totalPrice: 15000,
         notes: 'Integration test reservation',
@@ -56,15 +62,20 @@ describe('Deposits API — /api/deposits', () => {
 
     const dueDate = new Date(futureDate);
     dueDate.setDate(dueDate.getDate() - 30);
+    const dueDateStr = dueDate.toISOString().split('T')[0];
+
+    const depositAmount = depositOverrides.amount || 5000;
 
     const deposit = await prismaTest.deposit.create({
       data: {
         reservationId: reservation.id,
-        amount: 5000,
-        dueDate,
-        status: 'PENDING',
-        notes: 'Test deposit',
-        ...depositOverrides,
+        amount: depositAmount,
+        remainingAmount: depositOverrides.remainingAmount ?? depositAmount,
+        dueDate: depositOverrides.dueDate || dueDateStr,
+        status: depositOverrides.status || 'PENDING',
+        internalNotes: depositOverrides.internalNotes || 'Test deposit',
+        ...(depositOverrides.title && { title: depositOverrides.title }),
+        ...(depositOverrides.description && { description: depositOverrides.description }),
       },
     });
 
@@ -77,9 +88,10 @@ describe('Deposits API — /api/deposits', () => {
   async function createOverdueDeposit() {
     const pastDue = new Date();
     pastDue.setDate(pastDue.getDate() - 14);
+    const pastDueStr = pastDue.toISOString().split('T')[0];
 
     return createReservationWithDeposit({
-      dueDate: pastDue,
+      dueDate: pastDueStr,
       status: 'OVERDUE',
     });
   }
@@ -237,7 +249,7 @@ describe('Deposits API — /api/deposits', () => {
       // First mark as paid
       await prismaTest.deposit.update({
         where: { id: deposit.id },
-        data: { status: 'PAID', paidAt: new Date() },
+        data: { status: 'PAID', paid: true, paidAt: new Date() },
       });
 
       const res = await api
@@ -285,7 +297,7 @@ describe('Deposits API — /api/deposits', () => {
         .set(authHeader('ADMIN'))
         .send({
           amount: 7500,
-          notes: 'Kwota zaktualizowana',
+          internalNotes: 'Kwota zaktualizowana',
         });
 
       expect(res.status).toBe(200);
