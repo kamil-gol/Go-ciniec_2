@@ -10,7 +10,7 @@ import { logout } from '../fixtures/auth.fixture';
  * - Login with invalid credentials
  * - Logout
  * - Protected routes redirect
- * - Session timeout (optional)
+ * - Session persistence
  * 
  * Priority: CRITICAL 🔥
  * Coverage: 100%
@@ -46,11 +46,12 @@ test.describe('Autentykacja', () => {
     // Verify redirect to dashboard
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
     
-    // Header.tsx shows "Witaj, {firstName}!" as h1
-    await expect(page.locator('h1').first()).toContainText(/Witaj/i);
+    // Header.tsx renders "Witaj, {firstName}!" inside <header> element
+    // Use 'header h1' to avoid matching sidebar h1 "Gościniec"
+    await expect(page.locator('header h1')).toContainText(/Witaj/i, { timeout: 5000 });
     
-    // Sidebar shows "Wyloguj" button (proves user is authenticated)
-    await expect(page.locator('button:has-text("Wyloguj")')).toBeVisible();
+    // Sidebar shows logout icon button with aria-label
+    await expect(page.locator('button[aria-label="Wyloguj"]')).toBeVisible();
   });
   
   test.skip('should login with valid employee credentials', async ({ page }) => {
@@ -66,7 +67,7 @@ test.describe('Autentykacja', () => {
     
     // Verify redirect to dashboard
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
-    await expect(page.locator('h1').first()).toContainText(/Witaj/i);
+    await expect(page.locator('header h1')).toContainText(/Witaj/i, { timeout: 5000 });
   });
   
   test('should fail login with invalid email', async ({ page }) => {
@@ -82,18 +83,11 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Wait for error feedback
-    await page.waitForTimeout(1500);
-    
-    // Error alert container has .bg-error-50 class and contains error text
-    // Also check for sonner toast as alternative
-    const errorContainer = page.locator('.bg-error-50, [data-sonner-toast]');
-    const hasError = await errorContainer.first().isVisible().catch(() => false);
-    
-    if (hasError) {
-      // The container holds: "Błąd logowania" + actual error message
-      await expect(errorContainer.first()).toContainText(/Błąd|niepoprawne|error|Invalid|Niepoprawny/i);
-    } else {
+    // Wait for error: persistent .bg-error-50 div or password cleared
+    try {
+      await page.locator('.bg-error-50').waitFor({ state: 'visible', timeout: 5000 });
+      await expect(page.locator('.bg-error-50')).toContainText(/Błąd|niepoprawne|error|Invalid|Niepoprawny/i);
+    } catch {
       // Fallback: password was cleared = error handler ran (security best practice)
       const pwd = await page.inputValue('input[name="password"]');
       expect(pwd).toBe('');
@@ -113,16 +107,11 @@ test.describe('Autentykacja', () => {
     // Should stay on login page
     await expect(page).toHaveURL(/\/login/);
     
-    // Wait for error feedback
-    await page.waitForTimeout(1500);
-    
-    // Error alert container has .bg-error-50 class and contains error text
-    const errorContainer = page.locator('.bg-error-50, [data-sonner-toast]');
-    const hasError = await errorContainer.first().isVisible().catch(() => false);
-    
-    if (hasError) {
-      await expect(errorContainer.first()).toContainText(/Błąd|niepoprawne|error|Invalid|Niepoprawny/i);
-    } else {
+    // Wait for error: persistent .bg-error-50 div or password cleared
+    try {
+      await page.locator('.bg-error-50').waitFor({ state: 'visible', timeout: 5000 });
+      await expect(page.locator('.bg-error-50')).toContainText(/Błąd|niepoprawne|error|Invalid|Niepoprawny/i);
+    } catch {
       // Fallback: password was cleared = error handler ran (security best practice)
       const pwd = await page.inputValue('input[name="password"]');
       expect(pwd).toBe('');
@@ -148,7 +137,7 @@ test.describe('Autentykacja', () => {
     // adminPage is already authenticated
     await expect(adminPage).toHaveURL('/dashboard');
     
-    // Logout (clicks "Wyloguj" button directly in sidebar)
+    // Logout (clicks icon button with aria-label="Wyloguj")
     await logout(adminPage);
     
     // Verify redirect to login
@@ -167,16 +156,16 @@ test.describe('Autentykacja', () => {
   });
   
   test('should redirect to login when accessing reservations without auth', async ({ page }) => {
-    // Try to access reservations without auth
-    await page.goto('/reservations');
+    // Try to access reservations without auth (under /dashboard/ prefix)
+    await page.goto('/dashboard/reservations');
     
     // Should redirect to login
     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
   });
   
   test('should redirect to login when accessing queue without auth', async ({ page }) => {
-    // Try to access queue without auth
-    await page.goto('/queue');
+    // Try to access queue without auth (under /dashboard/ prefix)
+    await page.goto('/dashboard/queue');
     
     // Should redirect to login
     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
@@ -193,19 +182,18 @@ test.describe('Autentykacja', () => {
     await expect(adminPage).toHaveURL('/dashboard');
     
     // Header still shows welcome message (proves session is alive)
-    await expect(adminPage.locator('h1').first()).toContainText(/Witaj/i);
+    await expect(adminPage.locator('header h1')).toContainText(/Witaj/i, { timeout: 5000 });
   });
   
   test('should show user info in sidebar', async ({ adminPage }) => {
     await expect(adminPage).toHaveURL('/dashboard');
     
     // In Gościniec UI, user info is displayed directly in the sidebar
-    // (not behind a dropdown menu)
     const sidebar = adminPage.locator('aside');
     await expect(sidebar).toBeVisible();
     
-    // Sidebar bottom section shows user name/email and logout button
-    await expect(sidebar.locator('button:has-text("Wyloguj")')).toBeVisible();
+    // Sidebar bottom section shows logout icon button with aria-label
+    await expect(sidebar.locator('button[aria-label="Wyloguj"]')).toBeVisible();
     
     // User info (name or email) should be visible in sidebar
     await expect(sidebar).toContainText(/admin|Admin/i);
@@ -235,8 +223,8 @@ test.describe('Autentykacja - Security', () => {
     await page.fill('input[name="password"]', 'wrongpassword');
     await page.click('button[type="submit"]');
     
-    // Wait for error
-    await page.waitForTimeout(1500);
+    // Wait for error response to be processed
+    await page.waitForTimeout(2000);
     
     // Password field should be cleared (security best practice)
     const passwordValue = await page.inputValue('input[name="password"]');

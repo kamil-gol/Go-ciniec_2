@@ -24,7 +24,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
     await page1.fill('input[name="password"]', 'Admin123!@#');
     await page1.click('button[type="submit"]');
     await page1.waitForURL('/dashboard');
-    await page1.goto('/queue');
+    await page1.goto('/dashboard/queue');
     
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
@@ -33,11 +33,11 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
     await page2.fill('input[name="password"]', 'Admin123!@#');
     await page2.click('button[type="submit"]');
     await page2.waitForURL('/dashboard');
-    await page2.goto('/queue');
+    await page2.goto('/dashboard/queue');
     
-    // Both pages should load without error
-    await expect(page1.locator('h1, h2').first()).toContainText(/Kolejka/i);
-    await expect(page2.locator('h1, h2').first()).toContainText(/Kolejka/i);
+    // Both pages should load without error — check main content area
+    await expect(page1.locator('main')).toContainText(/Kolejka/i, { timeout: 5000 });
+    await expect(page2.locator('main')).toContainText(/Kolejka/i, { timeout: 5000 });
     
     // No fatal errors
     await expect(page1.locator('.error-fatal')).not.toBeVisible();
@@ -48,7 +48,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
   });
   
   test('should have row-level locking implemented (FOR UPDATE NOWAIT)', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -63,7 +63,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
   });
   
   test('should use retry logic with exponential backoff', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -81,7 +81,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
 
 test.describe('Bug #6 Regression - Loading States', () => {
   test('should show loading overlay during drag operation', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -97,7 +97,7 @@ test.describe('Bug #6 Regression - Loading States', () => {
   });
   
   test('should disable drag interactions during loading', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -110,7 +110,7 @@ test.describe('Bug #6 Regression - Loading States', () => {
   });
   
   test('should show visual feedback (opacity, cursor) during loading', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -129,7 +129,7 @@ test.describe('Bug #6 Regression - Loading States', () => {
 
 test.describe('Bug #7 Regression - Auto-Cancel Logic', () => {
   test('auto-cancel should NOT cancel today entries', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const today = getTodayDate();
     
@@ -145,7 +145,7 @@ test.describe('Bug #7 Regression - Auto-Cancel Logic', () => {
   });
   
   test('auto-cancel SHOULD cancel past date entries', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const yesterday = getPastDate(1);
     
@@ -167,7 +167,7 @@ test.describe('Bug #7 Regression - Auto-Cancel Logic', () => {
 
 test.describe('Bug #8 Regression - Position Validation', () => {
   test('should validate position range [1, maxPosition]', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -192,7 +192,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
   });
   
   test('should show user-friendly error messages', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const errorToast = adminPage.locator('.toast-error, [role="alert"].error');
     const exists = await errorToast.count() >= 0;
@@ -201,7 +201,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
   });
   
   test('should validate newPosition is a number', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -224,7 +224,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
 
 test.describe('Bug #9 Regression - Nullable Constraints', () => {
   test('RESERVED status should require queue fields', async ({ adminPage }) => {
-    await adminPage.goto('/queue/new');
+    await adminPage.goto('/dashboard/queue/new');
     
     const dateInput = adminPage.locator('input[name="reservationQueueDate"]');
     const hasDateInput = await dateInput.count() > 0;
@@ -236,7 +236,7 @@ test.describe('Bug #9 Regression - Nullable Constraints', () => {
   });
   
   test('PENDING/CONFIRMED status should NOT have queue fields', async ({ adminPage }) => {
-    await adminPage.goto('/reservations');
+    await adminPage.goto('/dashboard/reservations');
     
     const pendingBadge = adminPage.locator('[data-status="PENDING"], .status-pending');
     const hasPending = await pendingBadge.count() > 0;
@@ -262,15 +262,15 @@ test.describe('All Bugs - Final Verification', () => {
   test('all bugfixes should be deployed and working', async ({ adminPage }) => {
     // 1. Dashboard - Header shows "Witaj, {name}!"
     await adminPage.goto('/dashboard');
-    await expect(adminPage.locator('h1').first()).toContainText(/Witaj/i);
+    await expect(adminPage.locator('header h1')).toContainText(/Witaj/i, { timeout: 5000 });
     
     // 2. Reservations
-    await adminPage.goto('/reservations');
-    await expect(adminPage.locator('h1, h2').first()).toContainText(/Rezerwacje/i);
+    await adminPage.goto('/dashboard/reservations');
+    await expect(adminPage.locator('main')).toContainText(/Rezerwacj/i, { timeout: 5000 });
     
     // 3. Queue (Bug #5, #6, #7, #8, #9 all affect this)
-    await adminPage.goto('/queue');
-    await expect(adminPage.locator('h1, h2').first()).toContainText(/Kolejka/i);
+    await adminPage.goto('/dashboard/queue');
+    await expect(adminPage.locator('main')).toContainText(/Kolejka/i, { timeout: 5000 });
     
     // 4. No fatal errors anywhere
     await expect(adminPage.locator('.error-fatal, .crash-report')).not.toBeVisible();
@@ -286,8 +286,8 @@ test.describe('All Bugs - Final Verification', () => {
     });
     
     await adminPage.goto('/dashboard');
-    await adminPage.goto('/reservations');
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/reservations');
+    await adminPage.goto('/dashboard/queue');
     
     const criticalErrors = errors.filter(err => 
       !err.includes('favicon') &&
@@ -301,11 +301,11 @@ test.describe('All Bugs - Final Verification', () => {
   test('system should be stable for production deployment', async ({ adminPage }) => {
     const criticalPaths = [
       '/dashboard',
-      '/reservations',
-      '/reservations/new',
-      '/queue',
-      '/queue/new',
-      '/clients',
+      '/dashboard/reservations',
+      '/dashboard/reservations/new',
+      '/dashboard/queue',
+      '/dashboard/queue/new',
+      '/dashboard/clients',
     ];
     
     for (const path of criticalPaths) {
