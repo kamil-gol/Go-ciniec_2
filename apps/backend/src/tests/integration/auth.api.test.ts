@@ -87,7 +87,6 @@ describe('Auth API — /api/auth', () => {
 
     it('should return 401 or 403 for inactive/blocked account', async () => {
       const { admin } = await seedUsersOnly();
-      // Deactivate directly in DB
       const prismaTest = (await import('../helpers/prisma-test-client')).default;
       await prismaTest.user.update({
         where: { id: admin.id },
@@ -169,7 +168,7 @@ describe('Auth API — /api/auth', () => {
       const token = generateTestToken({
         id: seed.admin.id,
         email: seed.admin.email,
-        role: seed.admin.role,
+        role: seed.admin.legacyRole || 'ADMIN',
       });
 
       const res = await api
@@ -212,11 +211,10 @@ describe('Auth API — /api/auth', () => {
     it('should return correct user data for different roles', async () => {
       const seed = await seedTestData();
 
-      // Test with regular user
       const userToken = generateTestToken({
         id: seed.user.id,
         email: seed.user.email,
-        role: seed.user.role,
+        role: seed.user.legacyRole || 'EMPLOYEE',
       });
 
       const res = await api
@@ -279,22 +277,22 @@ describe('Auth API — /api/auth', () => {
       }
     });
 
-    it('should deny READONLY user from admin-only queue operations', async () => {
+    it('should deny CLIENT role from admin-only queue operations', async () => {
       await seedTestData();
 
       const res = await api
         .post('/api/queue/rebuild-positions')
-        .set(authHeader('READONLY'));
+        .set(authHeader('CLIENT'));
 
       expect([401, 403]).toContain(res.status);
     });
 
-    it('should deny USER from admin-only queue rebuild', async () => {
+    it('should deny EMPLOYEE from admin-only queue rebuild', async () => {
       await seedTestData();
 
       const res = await api
         .post('/api/queue/rebuild-positions')
-        .set(authHeader('USER'));
+        .set(authHeader('EMPLOYEE'));
 
       expect(res.status).toBe(403);
     });

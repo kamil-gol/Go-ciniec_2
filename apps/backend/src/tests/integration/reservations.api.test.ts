@@ -38,18 +38,18 @@ describe('Reservations API — /api/reservations', () => {
   }
 
   async function createReservationInDb(overrides: Record<string, any> = {}) {
-    const date = new Date();
-    date.setMonth(date.getMonth() + 2);
+    const dateStr = futureDate(2);
 
     return prismaTest.reservation.create({
       data: {
         clientId: seed.client1.id,
+        createdById: seed.admin.id,
         hallId: seed.hall1.id,
         eventTypeId: seed.eventType1.id,
-        date,
+        date: dateStr,
         startTime: '14:00',
         endTime: '22:00',
-        guestCount: 100,
+        guests: 100,
         status: 'CONFIRMED',
         totalPrice: 15000,
         notes: 'Integration test reservation',
@@ -73,7 +73,7 @@ describe('Reservations API — /api/reservations', () => {
           date: futureDate(4),
           startTime: '14:00',
           endTime: '22:00',
-          guestCount: 80,
+          guests: 80,
           notes: 'Wesele testowe',
         });
 
@@ -102,22 +102,22 @@ describe('Reservations API — /api/reservations', () => {
         .post('/api/reservations')
         .set(authHeader('ADMIN'))
         .send({
-          clientId: 999999,
+          clientId: '00000000-0000-4000-a000-000000000099',
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
           date: futureDate(5),
           startTime: '14:00',
           endTime: '22:00',
-          guestCount: 50,
+          guests: 50,
         });
 
       expect([400, 404, 500]).toContain(res.status);
     });
 
-    it('should deny READONLY users from creating reservations', async () => {
+    it('should deny CLIENT role from creating reservations', async () => {
       const res = await api
         .post('/api/reservations')
-        .set(authHeader('READONLY'))
+        .set(authHeader('CLIENT'))
         .send({
           clientId: seed.client1.id,
           hallId: seed.hall1.id,
@@ -125,7 +125,7 @@ describe('Reservations API — /api/reservations', () => {
           date: futureDate(3),
           startTime: '14:00',
           endTime: '22:00',
-          guestCount: 60,
+          guests: 60,
         });
 
       expect([401, 403]).toContain(res.status);
@@ -204,7 +204,7 @@ describe('Reservations API — /api/reservations', () => {
         .put(`/api/reservations/${reservation.id}`)
         .set(authHeader('ADMIN'))
         .send({
-          guestCount: 150,
+          guests: 150,
           notes: 'Zaktualizowana liczba gosci',
         });
 
@@ -215,7 +215,7 @@ describe('Reservations API — /api/reservations', () => {
       const res = await api
         .put('/api/reservations/bad-id')
         .set(authHeader('ADMIN'))
-        .send({ guestCount: 50 });
+        .send({ guests: 50 });
 
       expect(res.status).toBe(400);
     });
@@ -273,13 +273,10 @@ describe('Reservations API — /api/reservations', () => {
     });
 
     it('should detect conflict when slot is taken', async () => {
-      const date = new Date();
-      date.setMonth(date.getMonth() + 5);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = futureDate(5);
 
-      // Create a reservation for this date
       await createReservationInDb({
-        date,
+        date: dateStr,
         hallId: seed.hall1.id,
       });
 
@@ -345,7 +342,6 @@ describe('Reservations API — /api/reservations', () => {
         .delete(`/api/reservations/${reservation.id}/discount`)
         .set(authHeader('ADMIN'));
 
-      // 200 if discount existed, 404 if not — both acceptable
       expect([200, 204, 404]).toContain(res.status);
     });
   });
@@ -367,7 +363,6 @@ describe('Reservations API — /api/reservations', () => {
     it('should unarchive a reservation', async () => {
       const reservation = await createReservationInDb({ status: 'COMPLETED' });
 
-      // Archive first
       await api
         .post(`/api/reservations/${reservation.id}/archive`)
         .set(authHeader('ADMIN'));
@@ -394,12 +389,12 @@ describe('Reservations API — /api/reservations', () => {
       expect([200, 204]).toContain(res.status);
     });
 
-    it('should deny USER from deleting reservation', async () => {
+    it('should deny CLIENT role from deleting reservation', async () => {
       const reservation = await createReservationInDb();
 
       const res = await api
         .delete(`/api/reservations/${reservation.id}`)
-        .set(authHeader('USER'));
+        .set(authHeader('CLIENT'));
 
       expect(res.status).toBe(403);
     });
