@@ -20,14 +20,14 @@ test.describe('Kolejka - Drag & Drop', () => {
   const testDatePL = formatDatePL(testDate);
   
   test.beforeEach(async ({ adminPage }) => {
-    // Navigate to queue
-    await adminPage.goto('/queue');
+    // Navigate to queue (under /dashboard/ prefix)
+    await adminPage.goto('/dashboard/queue');
     await adminPage.waitForLoadState('networkidle');
   });
   
   test('should display queue page correctly', async ({ adminPage }) => {
-    // Verify queue page loaded
-    await expect(adminPage.locator('h1, h2')).toContainText(/Kolejka|Queue/i);
+    // Verify queue page loaded — check main content area to avoid sidebar h1
+    await expect(adminPage.locator('main')).toContainText(/Kolejka|Queue/i, { timeout: 5000 });
     
     // Verify add button visible
     await expect(adminPage.locator('button:has-text("Dodaj do kolejki")')).toBeVisible();
@@ -61,41 +61,13 @@ test.describe('Kolejka - Basic Drag & Drop', () => {
     // TODO: This test requires actual queue items to be created first
     // Will be implemented after queue creation helpers are ready
     
-    await adminPage.goto('/queue');
-    
-    // Create test entries first
-    // await createQueueEntry({ date: testDate, position: 1, client: 'Client A' });
-    // await createQueueEntry({ date: testDate, position: 2, client: 'Client B' });
-    // await createQueueEntry({ date: testDate, position: 3, client: 'Client C' });
-    
-    // Reload to see entries
-    // await adminPage.reload();
-    
-    // Verify initial order
-    // const items = adminPage.locator('[data-date="${testDate}"] .queue-item');
-    // await expect(items.nth(0)).toContainText('Client A');
-    // await expect(items.nth(1)).toContainText('Client B');
-    // await expect(items.nth(2)).toContainText('Client C');
-    
-    // Drag A to position 3 (after C)
-    // await adminPage.dragAndDrop(
-    //   '[data-client="Client A"]',
-    //   '[data-client="Client C"]'
-    // );
-    
-    // Wait for operation to complete
-    // await adminPage.waitForTimeout(1000);
-    
-    // Verify new order: B, C, A
-    // await expect(items.nth(0)).toContainText('Client B');
-    // await expect(items.nth(1)).toContainText('Client C');
-    // await expect(items.nth(2)).toContainText('Client A');
+    await adminPage.goto('/dashboard/queue');
   });
 });
 
 test.describe('Kolejka - Loading States (Bug #6)', () => {
   test('should show loading overlay during drag operation', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -109,7 +81,6 @@ test.describe('Kolejka - Loading States (Bug #6)', () => {
       const dragPromise = item1.dragTo(item2);
       
       // Check for loading state (should appear quickly)
-      // Note: This might be too fast to catch, but we try
       const loadingOverlay = adminPage.locator(
         '[data-testid="loading-overlay"], .loading-overlay, .spinner'
       );
@@ -123,7 +94,7 @@ test.describe('Kolejka - Loading States (Bug #6)', () => {
   });
   
   test('should disable drag during loading', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -133,12 +104,6 @@ test.describe('Kolejka - Loading States (Bug #6)', () => {
       
       // Check if item is draggable initially
       await expect(item1).toHaveAttribute('draggable', 'true');
-      
-      // During loading, items should be disabled
-      // This is tested by checking aria-disabled or disabled class
-      // after initiating a drag operation
-      
-      // Note: This test might need adjustment based on actual implementation
     }
   });
 });
@@ -158,7 +123,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
     await page1.fill('input[name="password"]', 'Admin123!@#');
     await page1.click('button[type="submit"]');
     await page1.waitForURL('/dashboard');
-    await page1.goto('/queue');
+    await page1.goto('/dashboard/queue');
     await page1.waitForLoadState('networkidle');
     
     // Create second admin session
@@ -171,7 +136,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
     await page2.fill('input[name="password"]', 'Admin123!@#');
     await page2.click('button[type="submit"]');
     await page2.waitForURL('/dashboard');
-    await page2.goto('/queue');
+    await page2.goto('/dashboard/queue');
     await page2.waitForLoadState('networkidle');
     
     // Check if there are enough items for testing
@@ -192,7 +157,6 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
       const swap1 = item1_page1.dragTo(item2_page1);
       
       // Admin 2: Swap position 1 and 3 (concurrent!)
-      // Small delay to make it more realistic
       await page2.waitForTimeout(50);
       const swap2 = item1_page2.dragTo(item3_page2);
       
@@ -216,9 +180,6 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
       
       // Both pages should show same number of items
       expect(finalItems1).toBe(finalItems2);
-      
-      // No duplicate positions (would indicate race condition bug)
-      // This is verified by the backend constraints
     }
     
     // Cleanup
@@ -227,15 +188,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
   });
   
   test('should retry on lock conflict', async ({ adminPage }) => {
-    // This test verifies the retry logic (exponential backoff)
-    // When a lock conflict occurs, the system should:
-    // 1. Catch the error
-    // 2. Wait 100ms
-    // 3. Retry (if fails, wait 200ms)
-    // 4. Retry (if fails, wait 400ms)
-    // 5. Show error if all retries fail
-    
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -248,31 +201,24 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
       await item1.dragTo(item2);
       
       // Should complete successfully (with or without retries)
-      // The user should see success message, not error
       await expect(
         adminPage.locator('.toast-success, [role="status"]')
       ).toBeVisible({ timeout: 10000 });
       
-      // Should NOT see "Another user is modifying" error
-      // (unless all 3 retries failed, which is unlikely in single-user test)
+      // Should NOT see lock error
       const errorMessage = adminPage.locator(
         '.toast-error:has-text("Another user is modifying")'
       );
       
-      // If visible, it means all retries failed (edge case)
       const isErrorVisible = await errorMessage.isVisible().catch(() => false);
       
       if (!isErrorVisible) {
-        // Success case (most likely)
         await expect(adminPage.locator('.toast-success')).toBeVisible();
       }
     }
   });
   
   test('should maintain consistent positions after concurrent operations', async ({ browser }) => {
-    // Verify: After concurrent operations, positions are sequential (1, 2, 3, ...)
-    // No gaps, no duplicates
-    
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
     await page1.goto('/login');
@@ -280,7 +226,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
     await page1.fill('input[name="password"]', 'Admin123!@#');
     await page1.click('button[type="submit"]');
     await page1.waitForURL('/dashboard');
-    await page1.goto('/queue');
+    await page1.goto('/dashboard/queue');
     await page1.waitForLoadState('networkidle');
     
     // Get all position numbers
@@ -315,20 +261,12 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
 
 test.describe('Kolejka - Error Handling', () => {
   test('should show user-friendly error on failure', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
-    
-    // If a drag operation fails (all retries exhausted),
-    // user should see a friendly error message
-    
-    // This is hard to test without mocking, but we can verify
-    // that error messages are styled correctly and contain helpful text
+    await adminPage.goto('/dashboard/queue');
     
     const errorToast = adminPage.locator(
       '.toast-error, [role="alert"].error'
     );
     
-    // We can't force an error easily, so we just verify
-    // that error UI elements exist in the DOM (even if hidden)
     const errorExists = await errorToast.count() > 0;
     
     // Error toast component should exist (ready to show errors)
@@ -336,7 +274,7 @@ test.describe('Kolejka - Error Handling', () => {
   });
   
   test('should allow retry after failed drag operation', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -362,7 +300,7 @@ test.describe('Kolejka - Error Handling', () => {
 
 test.describe('Kolejka - Performance', () => {
   test('drag operation should complete within reasonable time', async ({ adminPage }) => {
-    await adminPage.goto('/queue');
+    await adminPage.goto('/dashboard/queue');
     
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
@@ -379,9 +317,7 @@ test.describe('Kolejka - Performance', () => {
       const endTime = Date.now();
       const duration = endTime - startTime;
       
-      // Should complete within 2 seconds (including retry logic)
-      // Max retries: 3 attempts with exponential backoff (100ms + 200ms + 400ms = 700ms)
-      // Plus API call time (~300ms) = ~1000ms total
+      // Should complete within 2 seconds
       expect(duration).toBeLessThan(2000);
     }
   });
