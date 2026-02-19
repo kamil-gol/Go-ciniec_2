@@ -4,9 +4,8 @@
  * Seeds the test database with a minimal set of realistic data.
  * Used in integration tests when you need pre-existing records.
  *
- * Usage:
- *   import { seedTestData } from '../helpers/db-seed';
- *   beforeAll(async () => { await seedTestData(); });
+ * Uses upsert pattern for entities with unique constraints
+ * to prevent crashes if cleanDatabase() partially failed.
  *
  * IMPORTANT: Field names MUST match Prisma schema exactly:
  *   - User: firstName, lastName, legacyRole (NOT name, role)
@@ -31,9 +30,11 @@ export interface TestSeedData {
 export async function seedTestData(): Promise<TestSeedData> {
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
 
-  // Users
-  const admin = await prismaTest.user.create({
-    data: {
+  // Users — upsert to handle partial cleanup
+  const admin = await prismaTest.user.upsert({
+    where: { email: 'admin@test.pl' },
+    update: { password: hashedPassword, isActive: true },
+    create: {
       email: 'admin@test.pl',
       password: hashedPassword,
       firstName: 'Admin',
@@ -43,8 +44,10 @@ export async function seedTestData(): Promise<TestSeedData> {
     },
   });
 
-  const user = await prismaTest.user.create({
-    data: {
+  const user = await prismaTest.user.upsert({
+    where: { email: 'user@test.pl' },
+    update: { password: hashedPassword, isActive: true },
+    create: {
       email: 'user@test.pl',
       password: hashedPassword,
       firstName: 'User',
@@ -54,8 +57,10 @@ export async function seedTestData(): Promise<TestSeedData> {
     },
   });
 
-  const readonlyUser = await prismaTest.user.create({
-    data: {
+  const readonlyUser = await prismaTest.user.upsert({
+    where: { email: 'readonly@test.pl' },
+    update: { password: hashedPassword, isActive: true },
+    create: {
       email: 'readonly@test.pl',
       password: hashedPassword,
       firstName: 'Readonly',
@@ -65,9 +70,11 @@ export async function seedTestData(): Promise<TestSeedData> {
     },
   });
 
-  // Halls
-  const hall1 = await prismaTest.hall.create({
-    data: {
+  // Halls — upsert by name
+  const hall1 = await prismaTest.hall.upsert({
+    where: { name: 'Sala G\u0142\u00f3wna' },
+    update: { isActive: true },
+    create: {
       name: 'Sala G\u0142\u00f3wna',
       capacity: 200,
       description: 'Du\u017ca sala na wesela i konferencje',
@@ -75,8 +82,10 @@ export async function seedTestData(): Promise<TestSeedData> {
     },
   });
 
-  const hall2 = await prismaTest.hall.create({
-    data: {
+  const hall2 = await prismaTest.hall.upsert({
+    where: { name: 'Sala Kameralna' },
+    update: { isActive: true },
+    create: {
       name: 'Sala Kameralna',
       capacity: 50,
       description: 'Ma\u0142a sala na komunie i chrzciny',
@@ -84,22 +93,31 @@ export async function seedTestData(): Promise<TestSeedData> {
     },
   });
 
-  // Event Types
-  const eventType1 = await prismaTest.eventType.create({
-    data: {
+  // Event Types — upsert by name
+  const eventType1 = await prismaTest.eventType.upsert({
+    where: { name: 'Wesele' },
+    update: { isActive: true },
+    create: {
       name: 'Wesele',
       isActive: true,
     },
   });
 
-  const eventType2 = await prismaTest.eventType.create({
-    data: {
+  const eventType2 = await prismaTest.eventType.upsert({
+    where: { name: 'Komunia' },
+    update: { isActive: true },
+    create: {
       name: 'Komunia',
       isActive: true,
     },
   });
 
-  // Clients
+  // Clients — no unique constraint on name, use create
+  // Delete existing test clients first to avoid duplicates
+  await prismaTest.client.deleteMany({
+    where: { email: { in: ['jan.kowalski@test.pl', 'anna.nowak@test.pl'] } },
+  });
+
   const client1 = await prismaTest.client.create({
     data: {
       firstName: 'Jan',
@@ -139,8 +157,10 @@ export async function seedTestData(): Promise<TestSeedData> {
 export async function seedUsersOnly() {
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
 
-  const admin = await prismaTest.user.create({
-    data: {
+  const admin = await prismaTest.user.upsert({
+    where: { email: 'admin@test.pl' },
+    update: { password: hashedPassword, isActive: true },
+    create: {
       email: 'admin@test.pl',
       password: hashedPassword,
       firstName: 'Admin',
