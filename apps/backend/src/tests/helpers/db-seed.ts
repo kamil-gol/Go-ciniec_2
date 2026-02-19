@@ -1,16 +1,23 @@
 /**
- * Test Database Seeder
+ * Test Database Seeder — Read-Only Pattern
  *
- * Seeds the test database with a minimal set of realistic data.
- * Used in integration tests when you need pre-existing records.
+ * Queries existing data created by production seed (npx prisma db seed)
+ * instead of creating/upserting records.
  *
- * Uses upsert pattern for entities with unique constraints
- * to prevent crashes if cleanDatabase() partially failed.
+ * WHY: Multiple Jest workers calling seedTestData() concurrently
+ * caused PostgreSQL deadlocks (40P01) on upsert operations.
+ * Read-only queries eliminate this entirely.
  *
- * IMPORTANT: Field names MUST match Prisma schema exactly:
- *   - User: firstName, lastName, legacyRole (NOT name, role)
- *   - Client: firstName, lastName (NOT name)
- *   - User.id: UUID string (NOT number)
+ * PREREQUISITE: Run `docker compose exec backend npx prisma db seed` before tests.
+ *
+ * Production seed creates:
+ *   - Users: admin@gosciniecrodzinny.pl (ADMIN), pracownik1/2 (EMPLOYEE)
+ *   - Halls: Sala Kryształowa, Sala Taneczna, Sala Złota, etc.
+ *   - EventTypes: Wesele, Komunia, Urodziny, Inne
+ *   - Clients: Marek Kowalski, Anna Nowak, Piotr Wiśniewski, etc.
+ *
+ * Only the CLIENT-role user (readonly@test.pl) is created here
+ * because it doesn't exist in production seed.
  */
 import prismaTest from './prisma-test-client';
 import bcrypt from 'bcryptjs';
@@ -28,147 +35,121 @@ export interface TestSeedData {
 }
 
 export async function seedTestData(): Promise<TestSeedData> {
+  // ── Users: find existing from production seed ──
+  const admin = await prismaTest.user.findFirst({
+    where: { legacyRole: 'ADMIN', isActive: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!admin) {
+    throw new Error(
+      'seedTestData: No ADMIN user found in database. ' +
+      'Run `docker compose exec backend npx prisma db seed` first.'
+    );
+  }
+
+  const user = await prismaTest.user.findFirst({
+    where: { legacyRole: 'EMPLOYEE', isActive: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!user) {
+    throw new Error(
+      'seedTestData: No EMPLOYEE user found in database. ' +
+      'Run `docker compose exec backend npx prisma db seed` first.'
+    );
+  }
+
+  // CLIENT-role user doesn't exist in production seed — upsert it
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+  let readonlyUser: any;
+  try {
+    readonlyUser = await prismaTest.user.upsert({
+      where: { email: 'readonly@test.pl' },
+      update: { password: hashedPassword, isActive: true },
+      create: {
+        email: 'readonly@test.pl',
+        password: hashedPassword,
+        firstName: 'Readonly',
+        lastName: 'Testowy',
+        legacyRole: 'CLIENT',
+        isActive: true,
+      },
+    });
+  } catch {
+    // If upsert fails (concurrent worker), try to find existing
+    readonlyUser = await prismaTest.user.findUnique({
+      where: { email: 'readonly@test.pl' },
+    });
+    if (!readonlyUser) {
+      throw new Error('seedTestData: Failed to create/find CLIENT user readonly@test.pl');
+    }
+  }
 
-  // Users — upsert to handle partial cleanup
-  const admin = await prismaTest.user.upsert({
-    where: { email: 'admin@test.pl' },
-    update: { password: hashedPassword, isActive: true },
-    create: {
-      email: 'admin@test.pl',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'Testowy',
-      legacyRole: 'ADMIN',
-      isActive: true,
-    },
+  // ── Halls: find existing from production seed ──
+  const halls = await prismaTest.hall.findMany({
+    where: { isActive: true },
+    orderBy: { capacity: 'desc' },
+    take: 2,
   });
+  if (halls.length < 2) {
+    throw new Error(
+      `seedTestData: Need at least 2 halls, found ${halls.length}. ` +
+      'Run `docker compose exec backend npx prisma db seed` first.'
+    );
+  }
 
-  const user = await prismaTest.user.upsert({
-    where: { email: 'user@test.pl' },
-    update: { password: hashedPassword, isActive: true },
-    create: {
-      email: 'user@test.pl',
-      password: hashedPassword,
-      firstName: 'User',
-      lastName: 'Testowy',
-      legacyRole: 'EMPLOYEE',
-      isActive: true,
-    },
+  // ── Event Types: find existing from production seed ──
+  const eventTypes = await prismaTest.eventType.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' },
+    take: 2,
   });
+  if (eventTypes.length < 2) {
+    throw new Error(
+      `seedTestData: Need at least 2 event types, found ${eventTypes.length}. ` +
+      'Run `docker compose exec backend npx prisma db seed` first.'
+    );
+  }
 
-  const readonlyUser = await prismaTest.user.upsert({
-    where: { email: 'readonly@test.pl' },
-    update: { password: hashedPassword, isActive: true },
-    create: {
-      email: 'readonly@test.pl',
-      password: hashedPassword,
-      firstName: 'Readonly',
-      lastName: 'Testowy',
-      legacyRole: 'CLIENT',
-      isActive: true,
-    },
+  // ── Clients: find existing from production seed ──
+  const clients = await prismaTest.client.findMany({
+    orderBy: { createdAt: 'asc' },
+    take: 2,
   });
-
-  // Halls — upsert by name
-  const hall1 = await prismaTest.hall.upsert({
-    where: { name: 'Sala G\u0142\u00f3wna' },
-    update: { isActive: true },
-    create: {
-      name: 'Sala G\u0142\u00f3wna',
-      capacity: 200,
-      description: 'Du\u017ca sala na wesela i konferencje',
-      isActive: true,
-    },
-  });
-
-  const hall2 = await prismaTest.hall.upsert({
-    where: { name: 'Sala Kameralna' },
-    update: { isActive: true },
-    create: {
-      name: 'Sala Kameralna',
-      capacity: 50,
-      description: 'Ma\u0142a sala na komunie i chrzciny',
-      isActive: true,
-    },
-  });
-
-  // Event Types — upsert by name
-  const eventType1 = await prismaTest.eventType.upsert({
-    where: { name: 'Wesele' },
-    update: { isActive: true },
-    create: {
-      name: 'Wesele',
-      isActive: true,
-    },
-  });
-
-  const eventType2 = await prismaTest.eventType.upsert({
-    where: { name: 'Komunia' },
-    update: { isActive: true },
-    create: {
-      name: 'Komunia',
-      isActive: true,
-    },
-  });
-
-  // Clients — no unique constraint on name, use create
-  // Delete existing test clients first to avoid duplicates
-  await prismaTest.client.deleteMany({
-    where: { email: { in: ['jan.kowalski@test.pl', 'anna.nowak@test.pl'] } },
-  });
-
-  const client1 = await prismaTest.client.create({
-    data: {
-      firstName: 'Jan',
-      lastName: 'Kowalski',
-      email: 'jan.kowalski@test.pl',
-      phone: '+48123456789',
-      notes: 'Klient testowy nr 1',
-    },
-  });
-
-  const client2 = await prismaTest.client.create({
-    data: {
-      firstName: 'Anna',
-      lastName: 'Nowak',
-      email: 'anna.nowak@test.pl',
-      phone: '+48987654321',
-      notes: 'Klient testowy nr 2',
-    },
-  });
+  if (clients.length < 2) {
+    throw new Error(
+      `seedTestData: Need at least 2 clients, found ${clients.length}. ` +
+      'Run `docker compose exec backend npx prisma db seed` first.'
+    );
+  }
 
   return {
     admin,
     user,
     readonlyUser,
-    hall1,
-    hall2,
-    eventType1,
-    eventType2,
-    client1,
-    client2,
+    hall1: halls[0],
+    hall2: halls[1],
+    eventType1: eventTypes[0],
+    eventType2: eventTypes[1],
+    client1: clients[0],
+    client2: clients[1],
   };
 }
 
 /**
  * Quick seed: only users (for auth tests).
+ * Also read-only — finds existing ADMIN from production seed.
  */
 export async function seedUsersOnly() {
-  const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
-
-  const admin = await prismaTest.user.upsert({
-    where: { email: 'admin@test.pl' },
-    update: { password: hashedPassword, isActive: true },
-    create: {
-      email: 'admin@test.pl',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'Testowy',
-      legacyRole: 'ADMIN',
-      isActive: true,
-    },
+  const admin = await prismaTest.user.findFirst({
+    where: { legacyRole: 'ADMIN', isActive: true },
+    orderBy: { createdAt: 'asc' },
   });
+  if (!admin) {
+    throw new Error(
+      'seedUsersOnly: No ADMIN user found in database. ' +
+      'Run `docker compose exec backend npx prisma db seed` first.'
+    );
+  }
 
   return { admin };
 }
