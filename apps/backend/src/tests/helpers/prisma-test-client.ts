@@ -1,6 +1,6 @@
 /**
  * Prisma Test Client
- * 
+ *
  * Provides an isolated Prisma client for integration tests
  * with automatic cleanup between tests.
  */
@@ -18,21 +18,40 @@ const prismaTest = new PrismaClient({
 /**
  * Clean all tables in the test database.
  * Uses TRUNCATE CASCADE for fast cleanup.
+ * Retries on deadlock (PostgreSQL 40P01) which can happen
+ * if test suites overlap despite maxWorkers:1.
  */
-export async function cleanDatabase(): Promise<void> {
-  const tablenames = await prismaTest.$queryRaw<
-    Array<{ tablename: string }>
-  >`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
+export async function cleanDatabase(retries = 3): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const tablenames = await prismaTest.$queryRaw<
+        Array<{ tablename: string }>
+      >`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
 
-  const tables = tablenames
-    .map(({ tablename }) => tablename)
-    .filter((name) => name !== '_prisma_migrations')
-    .map((name) => `"public"."${name}"`);
+      const tables = tablenames
+        .map(({ tablename }) => tablename)
+        .filter((name) => name !== '_prisma_migrations')
+        .map((name) => `"public"."${name}"`);
 
-  if (tables.length > 0) {
-    await prismaTest.$executeRawUnsafe(
-      `TRUNCATE TABLE ${tables.join(', ')} CASCADE;`
-    );
+      if (tables.length > 0) {
+        await prismaTest.$executeRawUnsafe(
+          `TRUNCATE TABLE ${tables.join(', ')} CASCADE;`
+        );
+      }
+      return; // Success — exit retry loop
+    } catch (error: any) {
+      const isDeadlock = error?.code === 'P2010' ||
+        error?.code === '40P01' ||
+        error?.message?.includes('deadlock') ||
+        error?.meta?.code === '40P01';
+
+      if (isDeadlock && attempt < retries) {
+        // Exponential backoff: 200ms, 400ms, ...
+        await new Promise((r) => setTimeout(r, 200 * attempt));
+        continue;
+      }
+      throw error; // Not a deadlock or out of retries
+    }
   }
 }
 
