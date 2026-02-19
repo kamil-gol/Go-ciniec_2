@@ -29,10 +29,11 @@ async function login(page: Page, email: string, password: string): Promise<void>
   // Submit
   await page.click('button[type="submit"]');
   
-  // Wait for redirect to dashboard
-  await page.waitForURL('/dashboard', { timeout: 10000 });
+  // Wait for redirect to dashboard — use regex for flexible matching
+  // and generous timeout for slower engines (webkit, mobile-safari)
+  await page.waitForURL(/\/dashboard/, { timeout: 30000 });
   
-  // Wait for dashboard to load
+  // Wait for dashboard to fully load
   await page.waitForLoadState('networkidle');
 }
 
@@ -40,37 +41,22 @@ async function login(page: Page, email: string, password: string): Promise<void>
  * Extended test with auth fixtures
  */
 export const test = base.extend<AuthFixtures>({
-  /**
-   * Generic authenticated page
-   * Uses admin credentials by default
-   */
   authenticatedPage: async ({ page }, use) => {
     await login(page, testData.admin.email, testData.admin.password);
     await use(page);
   },
   
-  /**
-   * Admin user page
-   * Full permissions
-   */
   adminPage: async ({ page }, use) => {
     await login(page, testData.admin.email, testData.admin.password);
     await use(page);
   },
   
-  /**
-   * Employee user page
-   * Limited permissions
-   */
   employeePage: async ({ page }, use) => {
     await login(page, testData.employee.email, testData.employee.password);
     await use(page);
   },
 });
 
-/**
- * Export expect from @playwright/test
- */
 export { expect } from '@playwright/test';
 
 /**
@@ -87,13 +73,24 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
 
 /**
  * Helper: Logout current user
- * In Gościniec UI the logout button is an icon-only button
- * with aria-label="Wyloguj" (no visible text).
+ * 
+ * Handles both desktop and mobile layouts:
+ * - Desktop (lg+): sidebar is always visible, logout button accessible directly
+ * - Mobile (<lg): sidebar is hidden, need to open hamburger menu first
  */
 export async function logout(page: Page): Promise<void> {
+  // On mobile viewports, the sidebar is hidden (class="hidden lg:flex").
+  // We need to open the hamburger menu (Sheet) to access the logout button.
+  const hamburger = page.locator('button[aria-label="Otwórz menu nawigacji"]');
+  if (await hamburger.isVisible().catch(() => false)) {
+    await hamburger.click();
+    // Wait for Sheet slide-in animation
+    await page.waitForTimeout(500);
+  }
+  
   // Click the logout icon button identified by aria-label
   await page.click('button[aria-label="Wyloguj"]', { timeout: 5000 });
   
   // Wait for redirect to login
-  await page.waitForURL('/login', { timeout: 5000 });
+  await page.waitForURL(/\/login/, { timeout: 10000 });
 }

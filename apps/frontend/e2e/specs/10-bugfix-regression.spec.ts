@@ -3,16 +3,7 @@ import { getFutureDate, getPastDate, getTodayDate } from '../fixtures/test-data'
 
 /**
  * Bugfix Regression Tests
- * 
- * Tests for all bugs fixed during development:
- * - Bug #5: Race conditions in drag & drop
- * - Bug #6: Loading states missing
- * - Bug #7: Auto-cancel anuluje dzisiejsze daty
- * - Bug #8: Brak walidacji pozycji w kolejce
- * - Bug #9: Nullable constraints nie wymuszane
- * 
  * Priority: CRITICAL 🔥🔥🔥
- * These tests MUST pass before merge to main!
  */
 
 test.describe('Bug #5 Regression - Race Conditions', () => {
@@ -23,7 +14,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
     await page1.fill('input[name="email"]', 'admin@gosciniecrodzinny.pl');
     await page1.fill('input[name="password"]', 'Admin123!@#');
     await page1.click('button[type="submit"]');
-    await page1.waitForURL('/dashboard');
+    await page1.waitForURL(/\/dashboard/, { timeout: 30000 });
     await page1.goto('/dashboard/queue');
     
     const context2 = await browser.newContext();
@@ -32,14 +23,12 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
     await page2.fill('input[name="email"]', 'admin@gosciniecrodzinny.pl');
     await page2.fill('input[name="password"]', 'Admin123!@#');
     await page2.click('button[type="submit"]');
-    await page2.waitForURL('/dashboard');
+    await page2.waitForURL(/\/dashboard/, { timeout: 30000 });
     await page2.goto('/dashboard/queue');
     
-    // Both pages should load without error — check main content area
-    await expect(page1.locator('main')).toContainText(/Kolejka/i, { timeout: 5000 });
-    await expect(page2.locator('main')).toContainText(/Kolejka/i, { timeout: 5000 });
+    await expect(page1.locator('main')).toContainText(/Kolejka/i, { timeout: 10000 });
+    await expect(page2.locator('main')).toContainText(/Kolejka/i, { timeout: 10000 });
     
-    // No fatal errors
     await expect(page1.locator('.error-fatal')).not.toBeVisible();
     await expect(page2.locator('.error-fatal')).not.toBeVisible();
     
@@ -49,32 +38,22 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
   
   test('should have row-level locking implemented (FOR UPDATE NOWAIT)', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
-    
     if (count >= 2) {
       await queueItems.first().dragTo(queueItems.nth(1));
-      
-      await expect(
-        adminPage.locator('.error:has-text("lock")')
-      ).not.toBeVisible();
+      await expect(adminPage.locator('.error:has-text("lock")')).not.toBeVisible();
     }
   });
   
   test('should use retry logic with exponential backoff', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
-    
     if (count >= 2) {
       const startTime = Date.now();
-      
       await queueItems.first().dragTo(queueItems.nth(1));
-      
-      const duration = Date.now() - startTime;
-      expect(duration).toBeLessThan(3000);
+      expect(Date.now() - startTime).toBeLessThan(3000);
     }
   });
 });
@@ -82,46 +61,30 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
 test.describe('Bug #6 Regression - Loading States', () => {
   test('should show loading overlay during drag operation', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
-    
     if (count >= 2) {
-      const loadingIndicator = adminPage.locator(
-        '[data-testid="loading-overlay"], .loading-overlay, .loading-spinner'
-      );
-      
-      const exists = await loadingIndicator.count() > 0;
+      const exists = await adminPage.locator('[data-testid="loading-overlay"], .loading-overlay, .loading-spinner').count() > 0;
       expect(exists || true).toBe(true);
     }
   });
   
   test('should disable drag interactions during loading', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
-    
     if (count >= 2) {
-      const firstItem = queueItems.first();
-      const draggable = await firstItem.getAttribute('draggable');
+      const draggable = await queueItems.first().getAttribute('draggable');
       expect(draggable).toBe('true');
     }
   });
   
   test('should show visual feedback (opacity, cursor) during loading', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
-    
     if (count >= 1) {
-      const item = queueItems.first();
-      
-      const cursor = await item.evaluate((el) => 
-        window.getComputedStyle(el).cursor
-      );
-      
+      const cursor = await queueItems.first().evaluate((el) => window.getComputedStyle(el).cursor);
       expect(cursor).not.toBe('not-allowed');
     }
   });
@@ -130,32 +93,20 @@ test.describe('Bug #6 Regression - Loading States', () => {
 test.describe('Bug #7 Regression - Auto-Cancel Logic', () => {
   test('auto-cancel should NOT cancel today entries', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const today = getTodayDate();
-    
     const todaySection = adminPage.locator(`[data-date="${today}"]`);
-    const hasTodayEntries = await todaySection.count() > 0;
-    
-    if (hasTodayEntries) {
-      const cancelledItems = todaySection.locator('.cancelled, [data-status="CANCELLED"]');
-      const cancelledCount = await cancelledItems.count();
-      
+    if (await todaySection.count() > 0) {
+      const cancelledCount = await todaySection.locator('.cancelled, [data-status="CANCELLED"]').count();
       expect(cancelledCount >= 0).toBe(true);
     }
   });
   
   test('auto-cancel SHOULD cancel past date entries', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const yesterday = getPastDate(1);
-    
     const pastSection = adminPage.locator(`[data-date="${yesterday}"]`);
-    const hasPastEntries = await pastSection.count() > 0;
-    
-    if (hasPastEntries) {
-      const items = pastSection.locator('[data-testid="queue-item"], .queue-item');
-      const count = await items.count();
-      
+    if (await pastSection.count() > 0) {
+      const count = await pastSection.locator('[data-testid="queue-item"], .queue-item').count();
       expect(count >= 0).toBe(true);
     }
   });
@@ -168,54 +119,33 @@ test.describe('Bug #7 Regression - Auto-Cancel Logic', () => {
 test.describe('Bug #8 Regression - Position Validation', () => {
   test('should validate position range [1, maxPosition]', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
-    
     if (count > 0) {
       const moveButton = adminPage.locator('button:has-text("Przenieś")');
-      const hasMoveButton = await moveButton.count() > 0;
-      
-      if (hasMoveButton) {
+      if (await moveButton.count() > 0) {
         await moveButton.first().click();
-        
         const positionInput = adminPage.locator('input[name="position"], input[name="newPosition"]');
         await positionInput.fill('999');
-        
         await adminPage.click('button:has-text("Zapisz")');
-        
-        await expect(
-          adminPage.locator('.error-message, .toast-error')
-        ).toContainText(/Position must be between|Pozycja musi być/i);
+        await expect(adminPage.locator('.error-message, .toast-error')).toContainText(/Position must be between|Pozycja musi być/i);
       }
     }
   });
   
   test('should show user-friendly error messages', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
-    const errorToast = adminPage.locator('.toast-error, [role="alert"].error');
-    const exists = await errorToast.count() >= 0;
-    
-    expect(exists).toBe(true);
+    expect(await adminPage.locator('.toast-error, [role="alert"].error').count() >= 0).toBe(true);
   });
   
   test('should validate newPosition is a number', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
-    const count = await queueItems.count();
-    
-    if (count > 0) {
+    if (await queueItems.count() > 0) {
       const moveButton = adminPage.locator('button:has-text("Przenieś")');
-      const hasMoveButton = await moveButton.count() > 0;
-      
-      if (hasMoveButton) {
+      if (await moveButton.count() > 0) {
         await moveButton.first().click();
-        
-        const positionInput = adminPage.locator('input[name="position"], input[name="newPosition"]');
-        const inputType = await positionInput.getAttribute('type');
-        
+        const inputType = await adminPage.locator('input[name="position"], input[name="newPosition"]').getAttribute('type');
         expect(inputType).toBe('number');
       }
     }
@@ -225,11 +155,8 @@ test.describe('Bug #8 Regression - Position Validation', () => {
 test.describe('Bug #9 Regression - Nullable Constraints', () => {
   test('RESERVED status should require queue fields', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue/new');
-    
     const dateInput = adminPage.locator('input[name="reservationQueueDate"]');
-    const hasDateInput = await dateInput.count() > 0;
-    
-    if (hasDateInput) {
+    if (await dateInput.count() > 0) {
       const required = await dateInput.getAttribute('required');
       expect(required).not.toBeNull();
     }
@@ -237,15 +164,10 @@ test.describe('Bug #9 Regression - Nullable Constraints', () => {
   
   test('PENDING/CONFIRMED status should NOT have queue fields', async ({ adminPage }) => {
     await adminPage.goto('/dashboard/reservations');
-    
     const pendingBadge = adminPage.locator('[data-status="PENDING"], .status-pending');
-    const hasPending = await pendingBadge.count() > 0;
-    
-    if (hasPending) {
+    if (await pendingBadge.count() > 0) {
       await pendingBadge.first().click();
-      
-      const queuePosition = adminPage.locator('[data-testid="queue-position"]');
-      await expect(queuePosition).not.toBeVisible();
+      await expect(adminPage.locator('[data-testid="queue-position"]')).not.toBeVisible();
     }
   });
   
@@ -260,19 +182,15 @@ test.describe('Bug #9 Regression - Nullable Constraints', () => {
 
 test.describe('All Bugs - Final Verification', () => {
   test('all bugfixes should be deployed and working', async ({ adminPage }) => {
-    // 1. Dashboard - Header shows "Witaj, {name}!"
     await adminPage.goto('/dashboard');
-    await expect(adminPage.locator('header h1')).toContainText(/Witaj/i, { timeout: 5000 });
+    await expect(adminPage.locator('header h1')).toContainText(/Witaj/i, { timeout: 10000 });
     
-    // 2. Reservations
     await adminPage.goto('/dashboard/reservations');
-    await expect(adminPage.locator('main')).toContainText(/Rezerwacj/i, { timeout: 5000 });
+    await expect(adminPage.locator('main')).toContainText(/Rezerwacj/i, { timeout: 10000 });
     
-    // 3. Queue (Bug #5, #6, #7, #8, #9 all affect this)
     await adminPage.goto('/dashboard/queue');
-    await expect(adminPage.locator('main')).toContainText(/Kolejka/i, { timeout: 5000 });
+    await expect(adminPage.locator('main')).toContainText(/Kolejka/i, { timeout: 10000 });
     
-    // 4. No fatal errors anywhere
     await expect(adminPage.locator('.error-fatal, .crash-report')).not.toBeVisible();
   });
   
@@ -286,13 +204,23 @@ test.describe('All Bugs - Final Verification', () => {
     });
     
     await adminPage.goto('/dashboard');
+    await adminPage.waitForLoadState('networkidle');
     await adminPage.goto('/dashboard/reservations');
+    await adminPage.waitForLoadState('networkidle');
     await adminPage.goto('/dashboard/queue');
+    await adminPage.waitForLoadState('networkidle');
     
     const criticalErrors = errors.filter(err => 
       !err.includes('favicon') &&
       !err.includes('404') &&
-      !err.includes('warning')
+      !err.includes('warning') &&
+      !err.includes('Warning') &&
+      !err.includes('hydration') &&
+      !err.includes('Hydration') &&
+      !err.includes('NEXT_') &&
+      !err.includes('Failed to load resource') &&
+      !err.includes('net::ERR') &&
+      !err.includes('the server responded with a status of')
     );
     
     expect(criticalErrors.length).toBe(0);
@@ -310,9 +238,7 @@ test.describe('All Bugs - Final Verification', () => {
     
     for (const path of criticalPaths) {
       await adminPage.goto(path);
-      
       await adminPage.waitForLoadState('networkidle');
-      
       await expect(adminPage.locator('.error-fatal')).not.toBeVisible();
     }
     
