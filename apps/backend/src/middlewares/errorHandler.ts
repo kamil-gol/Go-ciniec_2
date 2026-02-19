@@ -76,6 +76,45 @@ export function errorHandler(
     return;
   }
 
+  // ——— Bridge: auth service errors (Invalid credentials → 401) ———
+  if (err.message && (
+    err.message.toLowerCase().includes('invalid credentials') ||
+    err.message.toLowerCase().includes('invalid email or password')
+  )) {
+    res.status(401).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  // ——— Bridge: inactive/blocked account → 403 ———
+  if (err.message && (
+    err.message.toLowerCase().includes('inactive') ||
+    err.message.toLowerCase().includes('blocked') ||
+    err.message.toLowerCase().includes('disabled')
+  )) {
+    res.status(403).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  // ——— Bridge: password validation errors → 422 ———
+  if (err.message && err.message.toLowerCase().includes('password') && (
+    err.message.toLowerCase().includes('must') ||
+    err.message.toLowerCase().includes('weak') ||
+    err.message.toLowerCase().includes('too short') ||
+    err.message.toLowerCase().includes('requires')
+  )) {
+    res.status(422).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
   // ——— Bridge: legacy service errors with 'not found' pattern ———
   if (err.message && err.message.toLowerCase().includes('not found')) {
     res.status(404).json({
