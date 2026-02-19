@@ -37,9 +37,10 @@ describe('Clients, Halls & Event Types API', () => {
           .post('/api/clients')
           .set(authHeader('ADMIN'))
           .send({
-            name: 'Nowy Klient',
+            firstName: 'Nowy',
+            lastName: 'Klient',
             email: 'nowy@test.pl',
-            phone: '+48 111 222 333',
+            phone: '+48111222333',
             notes: 'Testowy klient',
           });
 
@@ -49,12 +50,12 @@ describe('Clients, Halls & Event Types API', () => {
       it('should return 401 without auth', async () => {
         const res = await api
           .post('/api/clients')
-          .send({ name: 'Brak auth' });
+          .send({ firstName: 'Brak', lastName: 'Auth' });
 
         expect(res.status).toBe(401);
       });
 
-      it('should return error for missing name', async () => {
+      it('should return error for missing required fields', async () => {
         const res = await api
           .post('/api/clients')
           .set(authHeader('ADMIN'))
@@ -63,11 +64,11 @@ describe('Clients, Halls & Event Types API', () => {
         expect([400, 422, 500]).toContain(res.status);
       });
 
-      it('should deny READONLY user', async () => {
+      it('should deny CLIENT role', async () => {
         const res = await api
           .post('/api/clients')
-          .set(authHeader('READONLY'))
-          .send({ name: 'Readonly attempt' });
+          .set(authHeader('CLIENT'))
+          .send({ firstName: 'Client', lastName: 'Attempt' });
 
         expect([401, 403]).toContain(res.status);
       });
@@ -128,8 +129,9 @@ describe('Clients, Halls & Event Types API', () => {
           .put(`/api/clients/${seed.client1.id}`)
           .set(authHeader('ADMIN'))
           .send({
-            name: 'Jan Kowalski Updated',
-            phone: '+48 999 888 777',
+            firstName: 'Jan',
+            lastName: 'Kowalski Updated',
+            phone: '+48999888777',
           });
 
         expect(res.status).toBe(200);
@@ -139,12 +141,12 @@ describe('Clients, Halls & Event Types API', () => {
     // ---------- DELETE (admin only) ----------
     describe('DELETE /api/clients/:id', () => {
       it('should allow ADMIN to delete client', async () => {
-        // Create a disposable client
         const client = await prismaTest.client.create({
           data: {
-            name: 'Do Usuniecia',
+            firstName: 'Do',
+            lastName: 'Usuniecia',
             email: 'delete@test.pl',
-            phone: '+48 000 000 000',
+            phone: '+48000000000',
           },
         });
 
@@ -155,10 +157,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect([200, 204]).toContain(res.status);
       });
 
-      it('should deny USER from deleting client', async () => {
+      it('should deny CLIENT role from deleting client', async () => {
         const res = await api
           .delete(`/api/clients/${seed.client1.id}`)
-          .set(authHeader('USER'));
+          .set(authHeader('CLIENT'));
 
         expect(res.status).toBe(403);
       });
@@ -192,10 +194,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect([200, 201]).toContain(res.status);
       });
 
-      it('should deny USER from creating hall', async () => {
+      it('should deny CLIENT role from creating hall', async () => {
         const res = await api
           .post('/api/halls')
-          .set(authHeader('USER'))
+          .set(authHeader('CLIENT'))
           .send({
             name: 'Sala Nieautoryzowana',
             capacity: 50,
@@ -263,10 +265,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect(res.status).toBe(200);
       });
 
-      it('should deny USER from updating hall', async () => {
+      it('should deny CLIENT role from updating hall', async () => {
         const res = await api
           .put(`/api/halls/${seed.hall1.id}`)
-          .set(authHeader('USER'))
+          .set(authHeader('CLIENT'))
           .send({ name: 'Hacked' });
 
         expect(res.status).toBe(403);
@@ -291,10 +293,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect([200, 204]).toContain(res.status);
       });
 
-      it('should deny USER from deleting hall', async () => {
+      it('should deny CLIENT role from deleting hall', async () => {
         const res = await api
           .delete(`/api/halls/${seed.hall1.id}`)
-          .set(authHeader('USER'));
+          .set(authHeader('CLIENT'));
 
         expect(res.status).toBe(403);
       });
@@ -319,10 +321,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect([200, 201]).toContain(res.status);
       });
 
-      it('should deny USER from creating event type', async () => {
+      it('should deny CLIENT role from creating event type', async () => {
         const res = await api
           .post('/api/event-types')
-          .set(authHeader('USER'))
+          .set(authHeader('CLIENT'))
           .send({ name: 'Nieautoryzowany Typ' });
 
         expect(res.status).toBe(403);
@@ -390,10 +392,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect(res.status).toBe(200);
       });
 
-      it('should deny USER', async () => {
+      it('should deny CLIENT role', async () => {
         const res = await api
           .put(`/api/event-types/${seed.eventType1.id}`)
-          .set(authHeader('USER'))
+          .set(authHeader('CLIENT'))
           .send({ name: 'Hacked' });
 
         expect(res.status).toBe(403);
@@ -414,10 +416,10 @@ describe('Clients, Halls & Event Types API', () => {
         expect([200, 204]).toContain(res.status);
       });
 
-      it('should deny USER from deleting', async () => {
+      it('should deny CLIENT role from deleting', async () => {
         const res = await api
           .delete(`/api/event-types/${seed.eventType1.id}`)
-          .set(authHeader('USER'));
+          .set(authHeader('CLIENT'));
 
         expect(res.status).toBe(403);
       });
