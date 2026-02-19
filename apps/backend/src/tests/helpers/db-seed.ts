@@ -4,6 +4,10 @@
  * Seeds the test database with a minimal set of realistic data.
  * Used in integration tests when you need pre-existing records.
  * 
+ * Field names match the actual Prisma schema:
+ *   User: firstName, lastName, legacyRole (mapped to "role" column)
+ *   Client: firstName, lastName
+ * 
  * Usage:
  *   import { seedTestData } from '../helpers/db-seed';
  *   beforeAll(async () => { await seedTestData(); });
@@ -31,8 +35,9 @@ export async function seedTestData(): Promise<TestSeedData> {
     data: {
       email: 'admin@test.pl',
       password: hashedPassword,
-      name: 'Admin Testowy',
-      role: 'ADMIN',
+      firstName: 'Admin',
+      lastName: 'Testowy',
+      legacyRole: 'ADMIN',
       isActive: true,
     },
   });
@@ -41,8 +46,9 @@ export async function seedTestData(): Promise<TestSeedData> {
     data: {
       email: 'user@test.pl',
       password: hashedPassword,
-      name: 'User Testowy',
-      role: 'USER',
+      firstName: 'User',
+      lastName: 'Testowy',
+      legacyRole: 'EMPLOYEE',
       isActive: true,
     },
   });
@@ -51,8 +57,9 @@ export async function seedTestData(): Promise<TestSeedData> {
     data: {
       email: 'readonly@test.pl',
       password: hashedPassword,
-      name: 'Readonly Testowy',
-      role: 'READONLY',
+      firstName: 'Readonly',
+      lastName: 'Testowy',
+      legacyRole: 'CLIENT',
       isActive: true,
     },
   });
@@ -94,18 +101,20 @@ export async function seedTestData(): Promise<TestSeedData> {
   // Clients
   const client1 = await prismaTest.client.create({
     data: {
-      name: 'Jan Kowalski',
+      firstName: 'Jan',
+      lastName: 'Kowalski',
       email: 'jan.kowalski@test.pl',
-      phone: '+48 123 456 789',
+      phone: '+48123456789',
       notes: 'Klient testowy nr 1',
     },
   });
 
   const client2 = await prismaTest.client.create({
     data: {
-      name: 'Anna Nowak',
+      firstName: 'Anna',
+      lastName: 'Nowak',
       email: 'anna.nowak@test.pl',
-      phone: '+48 987 654 321',
+      phone: '+48987654321',
       notes: 'Klient testowy nr 2',
     },
   });
@@ -133,8 +142,9 @@ export async function seedUsersOnly() {
     data: {
       email: 'admin@test.pl',
       password: hashedPassword,
-      name: 'Admin Testowy',
-      role: 'ADMIN',
+      firstName: 'Admin',
+      lastName: 'Testowy',
+      legacyRole: 'ADMIN',
       isActive: true,
     },
   });
