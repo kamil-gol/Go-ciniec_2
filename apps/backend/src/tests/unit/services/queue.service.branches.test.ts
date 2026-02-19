@@ -69,7 +69,6 @@ beforeEach(() => {
   mockPrisma.reservation.count.mockResolvedValue(5);
   mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 5 } });
   mockPrisma.$executeRaw.mockResolvedValue(undefined);
-  mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
   mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
   mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala Główna' });
   mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
@@ -293,7 +292,7 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // —— updateQueueReservation: edge cases ——————————————————————————
+  // —— updateQueueReservation: edge cases ——————————————————————
   describe('updateQueueReservation — branches', () => {
 
     it('should throw when reservation not found', async () => {
@@ -398,7 +397,7 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // —— batchUpdatePositions: extra branches ——————————————————————
+  // —— batchUpdatePositions: extra branches ————————————————————
   describe('batchUpdatePositions — extra branches', () => {
 
     it('should throw when update has no ID', async () => {
@@ -432,7 +431,7 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // —— getQueueStats: edge cases ————————————————————————————————
+  // —— getQueueStats: edge cases ————————————————————————————
   describe('getQueueStats — branches', () => {
 
     it('should count manual orders and find oldest date', async () => {
@@ -458,7 +457,7 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // —— promoteReservation: extra error branches ——————————————————
+  // —— promoteReservation: extra error branches ————————————————
   describe('promoteReservation — extra branches', () => {
 
     it('should throw on invalid date format', async () => {
@@ -519,11 +518,13 @@ describe('QueueService — branch coverage', () => {
     });
   });
 
-  // —— autoCancelExpired: new branches ———————————————————————————
+  // —— autoCancelExpired: uses Prisma ORM (findMany + updateMany) ——
   describe('autoCancelExpired — branches', () => {
 
     it('should NOT log when cancelledCount is 0', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
+      // findMany returns empty → no cancellations
+      mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
+
       const result = await service.autoCancelExpired('u1');
       expect(result.cancelledCount).toBe(0);
       const { logChange } = require('../../../utils/audit-logger');
@@ -531,7 +532,12 @@ describe('QueueService — branch coverage', () => {
     });
 
     it('should log with triggeredBy system when no userId', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 2, cancelled_ids: ['r1', 'r2'] }]);
+      // findMany returns expired reservations
+      mockPrisma.reservation.findMany.mockResolvedValueOnce([
+        { id: 'r1' }, { id: 'r2' },
+      ]);
+      mockPrisma.reservation.updateMany.mockResolvedValueOnce({ count: 2 });
+
       await service.autoCancelExpired();
       const { logChange } = require('../../../utils/audit-logger');
       expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
@@ -539,8 +545,9 @@ describe('QueueService — branch coverage', () => {
       }));
     });
 
-    it('should handle null result from queryRaw', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue(null);
+    it('should handle empty findMany result', async () => {
+      mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
+
       const result = await service.autoCancelExpired();
       expect(result.cancelledCount).toBe(0);
     });
