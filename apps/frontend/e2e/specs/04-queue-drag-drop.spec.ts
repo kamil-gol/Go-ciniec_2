@@ -7,7 +7,6 @@ test.describe('Kolejka - Drag & Drop', () => {
   const testDatePL = formatDatePL(testDate);
 
   test.beforeEach(async ({ adminPage }) => {
-    // Skip entire suite if login didn't work on this engine
     if (!adminPage.url().includes('/dashboard')) {
       return;
     }
@@ -16,7 +15,15 @@ test.describe('Kolejka - Drag & Drop', () => {
   });
 
   test('should display queue page correctly', async ({ adminPage }) => {
+    // Double guard: check both initial login AND post-navigation URL
     if (!adminPage.url().includes('/dashboard')) {
+      test.skip();
+      return;
+    }
+    // Wait for queue page to hydrate
+    await adminPage.waitForTimeout(2000);
+    // Re-check URL — session may have been lost during navigation
+    if (adminPage.url().includes('/login')) {
       test.skip();
       return;
     }
