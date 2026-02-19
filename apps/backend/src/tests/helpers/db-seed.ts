@@ -1,16 +1,17 @@
 /**
  * Test Database Seeder
- * 
+ *
  * Seeds the test database with a minimal set of realistic data.
  * Used in integration tests when you need pre-existing records.
- * 
- * Field names match the actual Prisma schema:
- *   User: firstName, lastName, legacyRole (mapped to "role" column)
- *   Client: firstName, lastName
- * 
+ *
  * Usage:
  *   import { seedTestData } from '../helpers/db-seed';
  *   beforeAll(async () => { await seedTestData(); });
+ *
+ * IMPORTANT: Field names MUST match Prisma schema exactly:
+ *   - User: firstName, lastName, legacyRole (NOT name, role)
+ *   - Client: firstName, lastName (NOT name)
+ *   - User.id: UUID string (NOT number)
  */
 import prismaTest from './prisma-test-client';
 import bcrypt from 'bcryptjs';

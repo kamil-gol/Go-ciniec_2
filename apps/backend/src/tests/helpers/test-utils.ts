@@ -1,8 +1,11 @@
 /**
  * Test Utilities
- * 
+ *
  * Provides helpers for integration testing with Supertest.
  * Uses the exported Express app from server.ts.
+ *
+ * IMPORTANT: JWT secret MUST match auth middleware fallback.
+ * integration-setup.ts sets process.env.JWT_SECRET before this loads.
  */
 import supertest from 'supertest';
 import app from '@/server';
@@ -23,14 +26,6 @@ export const api = supertest(app);
 // Auth Helpers
 // ========================================
 
-/**
- * JWT secret — MUST match the one used by auth middleware.
- * In test mode (NODE_ENV=test), auth.ts falls back to:
- * 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION'
- * But we set JWT_SECRET in integration-setup.ts, so use that.
- */
-const TEST_JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-integration-tests';
-
 interface TestUser {
   id: string;
   email: string;
@@ -42,7 +37,17 @@ interface TestUser {
 }
 
 /**
+ * Get JWT secret — must match auth middleware.
+ * Auth middleware uses: process.env.JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION'
+ * integration-setup.ts sets JWT_SECRET before modules load.
+ */
+function getJwtSecret(): string {
+  return process.env.JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
+}
+
+/**
  * Generate a valid JWT token for testing.
+ * Payload structure matches JwtPayload from @types/index.ts
  */
 export function generateTestToken(user: Partial<TestUser> = {}): string {
   const payload = {
@@ -53,7 +58,7 @@ export function generateTestToken(user: Partial<TestUser> = {}): string {
     ...(user.roleSlug && { roleSlug: user.roleSlug }),
   };
 
-  return jwt.sign(payload, TEST_JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: '1h',
   });
 }
@@ -64,7 +69,7 @@ export function generateTestToken(user: Partial<TestUser> = {}): string {
 export function generateExpiredToken(): string {
   return jwt.sign(
     { id: '00000000-0000-0000-0000-000000000001', email: 'expired@test.pl', role: 'ADMIN' },
-    TEST_JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '-1h' }
   );
 }
@@ -79,11 +84,16 @@ export function authHeader(role: string = 'ADMIN'): { Authorization: string } {
 }
 
 /**
- * Returns auth header with a specific user ID (for createdById matching).
+ * Generate auth header for a specific seeded user (uses real DB id).
+ * Use this when the test needs req.user.id to match a real user in DB.
  */
-export function authHeaderForUser(userId: string, role: string = 'ADMIN'): { Authorization: string } {
+export function authHeaderForUser(user: { id: string; email: string; role?: string }): { Authorization: string } {
   return {
-    Authorization: `Bearer ${generateTestToken({ id: userId, role })}`,
+    Authorization: `Bearer ${generateTestToken({
+      id: user.id,
+      email: user.email,
+      role: user.role || 'ADMIN',
+    })}`,
   };
 }
 
@@ -113,8 +123,7 @@ export function expectError(res: supertest.Response, statusCode: number): void {
 
 /**
  * Create a test user directly in the database.
- * Field names match the Prisma schema:
- *   firstName, lastName, legacyRole (mapped to "role" column)
+ * Field names match Prisma schema: firstName, lastName, legacyRole.
  */
 export async function createTestUser(overrides: Record<string, any> = {}) {
   const bcrypt = await import('bcryptjs');
@@ -135,59 +144,14 @@ export async function createTestUser(overrides: Record<string, any> = {}) {
 
 /**
  * Create a test client directly in the database.
+ * Field names match Prisma schema: firstName, lastName.
  */
 export async function createTestClient(overrides: Record<string, any> = {}) {
   return prismaTest.client.create({
     data: {
       firstName: 'Test',
-      lastName: 'Klient',
-      phone: '+48123456789',
-      email: `client-${Date.now()}@test.pl`,
-      ...overrides,
-    },
-  });
-}
-
-/**
- * Create a test hall directly in the database.
- */
-export async function createTestHall(overrides: Record<string, any> = {}) {
-  return prismaTest.hall.create({
-    data: {
-      name: `Sala Testowa ${Date.now()}`,
-      capacity: 100,
-      isActive: true,
-      ...overrides,
-    },
-  });
-}
-
-/**
- * Create a test event type directly in the database.
- */
-export async function createTestEventType(overrides: Record<string, any> = {}) {
-  return prismaTest.eventType.create({
-    data: {
-      name: `Typ ${Date.now()}`,
-      isActive: true,
-      ...overrides,
-    },
-  });
-}
-
-/**
- * Create a test reservation directly in the database.
- * Requires clientId and createdById at minimum.
- */
-export async function createTestReservation(overrides: Record<string, any> = {}) {
-  return prismaTest.reservation.create({
-    data: {
-      clientId: overrides.clientId,
-      createdById: overrides.createdById,
-      guests: 50,
-      totalPrice: 5000,
-      date: '2026-06-15',
-      status: 'CONFIRMED',
+      lastName: 'Client',
+      phone: '+48000000000',
       ...overrides,
     },
   });
