@@ -82,7 +82,6 @@ beforeEach(() => {
   mockPrisma.reservation.count.mockResolvedValue(5);
   mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 5 } });
   mockPrisma.$executeRaw.mockResolvedValue(undefined);
-  mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
   mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
   mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala Główna' });
   mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
@@ -353,15 +352,16 @@ describe('QueueService', () => {
   });
 
   // ══════════════════════════════════════════════════════════════
-  // autoCancelExpired
+  // autoCancelExpired — uses Prisma ORM (findMany + updateMany)
   // ══════════════════════════════════════════════════════════════
   describe('autoCancelExpired()', () => {
 
     it('should cancel expired and audit when count > 0', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue([{
-        cancelled_count: 3,
-        cancelled_ids: ['r1', 'r2', 'r3'],
-      }]);
+      // autoCancelExpired uses reservation.findMany + updateMany (not $queryRaw)
+      mockPrisma.reservation.findMany.mockResolvedValueOnce([
+        { id: 'r1' }, { id: 'r2' }, { id: 'r3' },
+      ]);
+      mockPrisma.reservation.updateMany.mockResolvedValueOnce({ count: 3 });
 
       const result = await service.autoCancelExpired(TEST_USER_ID);
 
@@ -373,7 +373,7 @@ describe('QueueService', () => {
     });
 
     it('should NOT audit when nothing cancelled', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue([{ cancelled_count: 0, cancelled_ids: [] }]);
+      mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
 
       const result = await service.autoCancelExpired();
 
