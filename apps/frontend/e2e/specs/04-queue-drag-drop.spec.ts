@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures/auth.fixture';
+import { manualLogin } from '../fixtures/auth.fixture';
 import { getFutureDate, formatDatePL } from '../fixtures/test-data';
 
 /**
@@ -14,7 +15,7 @@ test.describe('Kolejka - Drag & Drop', () => {
   
   test.beforeEach(async ({ adminPage }) => {
     await adminPage.goto('/dashboard/queue');
-    await adminPage.waitForLoadState('networkidle');
+    await adminPage.waitForLoadState('domcontentloaded');
   });
   
   test('should display queue page correctly', async ({ adminPage }) => {
@@ -81,23 +82,15 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
   test('should handle concurrent drag operations gracefully', async ({ browser }) => {
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
-    await page1.goto('/login');
-    await page1.fill('input[name="email"]', 'admin@gosciniecrodzinny.pl');
-    await page1.fill('input[name="password"]', 'Admin123!@#');
-    await page1.click('button[type="submit"]');
-    await page1.waitForURL(/\/dashboard/, { timeout: 30000 });
+    await manualLogin(page1, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
     await page1.goto('/dashboard/queue');
-    await page1.waitForLoadState('networkidle');
+    await page1.waitForLoadState('domcontentloaded');
     
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
-    await page2.goto('/login');
-    await page2.fill('input[name="email"]', 'admin@gosciniecrodzinny.pl');
-    await page2.fill('input[name="password"]', 'Admin123!@#');
-    await page2.click('button[type="submit"]');
-    await page2.waitForURL(/\/dashboard/, { timeout: 30000 });
+    await manualLogin(page2, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
     await page2.goto('/dashboard/queue');
-    await page2.waitForLoadState('networkidle');
+    await page2.waitForLoadState('domcontentloaded');
     
     const items1 = page1.locator('[data-testid="queue-item"], .queue-item');
     const count = await items1.count();
@@ -114,8 +107,8 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
       
       await page1.reload();
       await page2.reload();
-      await page1.waitForLoadState('networkidle');
-      await page2.waitForLoadState('networkidle');
+      await page1.waitForLoadState('domcontentloaded');
+      await page2.waitForLoadState('domcontentloaded');
       
       const finalItems1 = await page1.locator('[data-testid="queue-item"], .queue-item').count();
       const finalItems2 = await page2.locator('[data-testid="queue-item"], .queue-item').count();
@@ -144,13 +137,9 @@ test.describe('Kolejka - Race Conditions (Bug #5) 🔥', () => {
   test('should maintain consistent positions after concurrent operations', async ({ browser }) => {
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
-    await page1.goto('/login');
-    await page1.fill('input[name="email"]', 'admin@gosciniecrodzinny.pl');
-    await page1.fill('input[name="password"]', 'Admin123!@#');
-    await page1.click('button[type="submit"]');
-    await page1.waitForURL(/\/dashboard/, { timeout: 30000 });
+    await manualLogin(page1, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
     await page1.goto('/dashboard/queue');
-    await page1.waitForLoadState('networkidle');
+    await page1.waitForLoadState('domcontentloaded');
     
     const positionElements = page1.locator(
       '[data-testid="position"], .position-number, [data-position]'
