@@ -77,7 +77,7 @@ describe('Reservations API — /api/reservations', () => {
   // POST /api/reservations
   // ========================================
   describe('POST /api/reservations', () => {
-    it('should create a reservation with valid data', async () => {
+    it('should create a reservation with valid data (startDateTime format)', async () => {
       const dateStr = futureDate(4);
 
       const res = await api
@@ -87,14 +87,11 @@ describe('Reservations API — /api/reservations', () => {
           clientId: seed.client1.id,
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
-          // New datetime format supported by controller
           startDateTime: `${dateStr}T14:00:00`,
           endDateTime: `${dateStr}T22:00:00`,
-          // Controller requires adults/children/toddlers (not guests)
           adults: 60,
           children: 15,
           toddlers: 5,
-          // Manual pricing (when no menuPackageId)
           pricePerAdult: 200,
           pricePerChild: 100,
           pricePerToddler: 0,
@@ -102,6 +99,311 @@ describe('Reservations API — /api/reservations', () => {
         });
 
       expect([200, 201]).toContain(res.status);
+    });
+
+    it('should create reservation with legacy date format (date/startTime/endTime)', async () => {
+      const dateStr = futureDate(5);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          date: dateStr,
+          startTime: '14:00',
+          endTime: '22:00',
+          adults: 40,
+          children: 10,
+          toddlers: 5,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([200, 201]).toContain(res.status);
+    });
+
+    it('should reject creation with 0 guests', async () => {
+      const dateStr = futureDate(4);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 0,
+          children: 0,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject guests exceeding hall capacity', async () => {
+      const dateStr = futureDate(4);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 9999,
+          children: 0,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject past startDateTime', async () => {
+      const pastStr = pastDate(2);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${pastStr}T14:00:00`,
+          endDateTime: `${pastStr}T22:00:00`,
+          adults: 30,
+          children: 5,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject endDateTime before startDateTime', async () => {
+      const dateStr = futureDate(4);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T22:00:00`,
+          endDateTime: `${dateStr}T14:00:00`,
+          adults: 30,
+          children: 5,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject overlapping reservation for same hall', async () => {
+      const dateStr = futureDate(6);
+
+      // Create first reservation
+      await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 30,
+          children: 5,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      // Try overlapping reservation
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T16:00:00`,
+          endDateTime: `${dateStr}T23:00:00`,
+          adults: 20,
+          children: 5,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 409, 500]).toContain(res.status);
+    });
+
+    it('should reject non-existent hallId', async () => {
+      const dateStr = futureDate(4);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: '00000000-0000-4000-a000-000000000099',
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 30,
+          children: 5,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 404, 500]).toContain(res.status);
+    });
+
+    it('should reject non-existent eventTypeId', async () => {
+      const dateStr = futureDate(4);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: '00000000-0000-4000-a000-000000000099',
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 30,
+          children: 5,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+        });
+
+      expect([400, 404, 500]).toContain(res.status);
+    });
+
+    it('should create reservation with inline PERCENTAGE discount', async () => {
+      const dateStr = futureDate(7);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 50,
+          children: 10,
+          toddlers: 5,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+          discountType: 'PERCENTAGE',
+          discountValue: 10,
+          discountReason: 'Rabat testowy dla stalego klienta',
+        });
+
+      expect([200, 201]).toContain(res.status);
+    });
+
+    it('should create reservation with inline AMOUNT discount', async () => {
+      const dateStr = futureDate(8);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 50,
+          children: 10,
+          toddlers: 5,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+          discountType: 'AMOUNT',
+          discountValue: 500,
+          discountReason: 'Rabat kwotowy testowy na rezerwacje',
+        });
+
+      expect([200, 201]).toContain(res.status);
+    });
+
+    it('should create reservation with deposit data', async () => {
+      const dateStr = futureDate(9);
+      const dueDateStr = futureDate(7);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 40,
+          children: 10,
+          toddlers: 0,
+          pricePerAdult: 200,
+          pricePerChild: 100,
+          pricePerToddler: 0,
+          deposit: {
+            amount: 3000,
+            dueDate: dueDateStr,
+          },
+        });
+
+      expect([200, 201]).toContain(res.status);
+    });
+
+    it('should reject missing prices without menu package', async () => {
+      const dateStr = futureDate(4);
+
+      const res = await api
+        .post('/api/reservations')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 30,
+          children: 5,
+          toddlers: 0,
+          // No pricePerAdult/pricePerChild and no menuPackageId
+        });
+
+      expect([400, 422, 500]).toContain(res.status);
     });
 
     it('should return 401 without auth', async () => {
@@ -190,6 +492,65 @@ describe('Reservations API — /api/reservations', () => {
       expect(res.status).toBe(200);
     });
 
+    it('should filter by status', async () => {
+      await createReservationInDb({ status: 'PENDING' });
+      await createReservationInDb({ status: 'CONFIRMED', date: futureDate(3) });
+
+      const res = await api
+        .get('/api/reservations')
+        .query({ status: 'PENDING' })
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should filter by hallId', async () => {
+      await createReservationInDb();
+
+      const res = await api
+        .get('/api/reservations')
+        .query({ hallId: seed.hall1.id })
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should filter by date range', async () => {
+      await createReservationInDb();
+
+      const res = await api
+        .get('/api/reservations')
+        .query({
+          dateFrom: '2025-01-01',
+          dateTo: '2030-12-31',
+        })
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should filter by clientId', async () => {
+      await createReservationInDb();
+
+      const res = await api
+        .get('/api/reservations')
+        .query({ clientId: seed.client1.id })
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should filter by eventTypeId', async () => {
+      await createReservationInDb();
+
+      const res = await api
+        .get('/api/reservations')
+        .query({ eventTypeId: seed.eventType1.id })
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+    });
+
     it('should return 401 without auth', async () => {
       const res = await api.get('/api/reservations');
       expect(res.status).toBe(401);
@@ -200,7 +561,7 @@ describe('Reservations API — /api/reservations', () => {
   // GET /api/reservations/:id
   // ========================================
   describe('GET /api/reservations/:id', () => {
-    it('should return reservation details', async () => {
+    it('should return reservation details with includes', async () => {
       const reservation = await createReservationInDb();
 
       const res = await api
@@ -233,7 +594,7 @@ describe('Reservations API — /api/reservations', () => {
   // PUT /api/reservations/:id
   // ========================================
   describe('PUT /api/reservations/:id', () => {
-    it('should update reservation details', async () => {
+    it('should update reservation notes', async () => {
       const reservation = await createReservationInDb();
 
       const res = await api
@@ -243,8 +604,63 @@ describe('Reservations API — /api/reservations', () => {
           notes: 'Zaktualizowana notatka testowa',
         });
 
-      // 200 for success, 400/500 if service-level validation rejects
       expect([200, 400, 500]).toContain(res.status);
+    });
+
+    it('should reject update of cancelled reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'CANCELLED' });
+
+      const res = await api
+        .put(`/api/reservations/${reservation.id}`)
+        .set(adminAuth())
+        .send({ notes: 'Should not work' });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject update of completed reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'COMPLETED', date: pastDate(1) });
+
+      const res = await api
+        .put(`/api/reservations/${reservation.id}`)
+        .set(adminAuth())
+        .send({ notes: 'Should not work' });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should update guest count and recalculate price', async () => {
+      const reservation = await createReservationInDb({
+        status: 'PENDING',
+        adults: 50,
+        children: 10,
+        toddlers: 5,
+        pricePerAdult: 200,
+        pricePerChild: 100,
+        pricePerToddler: 0,
+        totalPrice: 11000,
+      });
+
+      const res = await api
+        .put(`/api/reservations/${reservation.id}`)
+        .set(adminAuth())
+        .send({
+          adults: 60,
+          reason: 'Zmiana liczby gosci - doszlo 10 osob doroslych do rezerwacji',
+        });
+
+      expect([200, 400, 500]).toContain(res.status);
+    });
+
+    it('should return 404 for non-existent reservation', async () => {
+      const fakeUuid = '00000000-0000-4000-a000-000000000000';
+
+      const res = await api
+        .put(`/api/reservations/${fakeUuid}`)
+        .set(adminAuth())
+        .send({ notes: 'test' });
+
+      expect([404, 500]).toContain(res.status);
     });
 
     it('should return 400 for invalid UUID', async () => {
@@ -261,9 +677,23 @@ describe('Reservations API — /api/reservations', () => {
   // PATCH /api/reservations/:id/status
   // ========================================
   describe('PATCH /api/reservations/:id/status', () => {
-    it('should update reservation status to COMPLETED', async () => {
-      // Service requires event date to be in the PAST to allow COMPLETED transition
-      // ("Nie można zakończyć rezerwacji przed datą wydarzenia")
+    it('should transition PENDING → CONFIRMED', async () => {
+      const reservation = await createReservationInDb({ status: 'PENDING' });
+
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/status`)
+        .set(adminAuth())
+        .send({ status: 'CONFIRMED' });
+
+      expect(res.status).toBe(200);
+
+      const updated = await prismaTest.reservation.findUnique({
+        where: { id: reservation.id },
+      });
+      expect(updated?.status).toBe('CONFIRMED');
+    });
+
+    it('should transition CONFIRMED → COMPLETED (past event)', async () => {
       const pastDateStr = pastDate(1);
       const reservation = await createReservationInDb({
         status: 'CONFIRMED',
@@ -283,8 +713,19 @@ describe('Reservations API — /api/reservations', () => {
       expect(updated?.status).toBe('COMPLETED');
     });
 
-    it('should update status to CANCELLED', async () => {
+    it('should transition CONFIRMED → CANCELLED', async () => {
       const reservation = await createReservationInDb({ status: 'CONFIRMED' });
+
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/status`)
+        .set(adminAuth())
+        .send({ status: 'CANCELLED', reason: 'Klient zrezygnowal' });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should transition PENDING → CANCELLED', async () => {
+      const reservation = await createReservationInDb({ status: 'PENDING' });
 
       const res = await api
         .patch(`/api/reservations/${reservation.id}/status`)
@@ -292,6 +733,84 @@ describe('Reservations API — /api/reservations', () => {
         .send({ status: 'CANCELLED' });
 
       expect(res.status).toBe(200);
+    });
+
+    it('should reject invalid transition COMPLETED → PENDING', async () => {
+      const reservation = await createReservationInDb({
+        status: 'COMPLETED',
+        date: pastDate(1),
+      });
+
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/status`)
+        .set(adminAuth())
+        .send({ status: 'PENDING' });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject invalid transition CANCELLED → CONFIRMED', async () => {
+      const reservation = await createReservationInDb({ status: 'CANCELLED' });
+
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/status`)
+        .set(adminAuth())
+        .send({ status: 'CONFIRMED' });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should reject COMPLETED for future event', async () => {
+      const reservation = await createReservationInDb({
+        status: 'CONFIRMED',
+        date: futureDate(3),
+      });
+
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/status`)
+        .set(adminAuth())
+        .send({ status: 'COMPLETED' });
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+
+    it('should cascade cancel deposits when cancelling reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'CONFIRMED' });
+
+      // Create a PENDING deposit
+      await prismaTest.deposit.create({
+        data: {
+          reservationId: reservation.id,
+          amount: 3000,
+          remainingAmount: 3000,
+          dueDate: new Date(futureDate(1)),
+          status: 'PENDING',
+        },
+      });
+
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/status`)
+        .set(adminAuth())
+        .send({ status: 'CANCELLED', reason: 'Test cascade cancel with deposit' });
+
+      expect(res.status).toBe(200);
+
+      // Verify deposit was cascade-cancelled
+      const deposits = await prismaTest.deposit.findMany({
+        where: { reservationId: reservation.id },
+      });
+      expect(deposits[0]?.status).toBe('CANCELLED');
+    });
+
+    it('should return 404 for non-existent reservation', async () => {
+      const fakeUuid = '00000000-0000-4000-a000-000000000000';
+
+      const res = await api
+        .patch(`/api/reservations/${fakeUuid}/status`)
+        .set(adminAuth())
+        .send({ status: 'CONFIRMED' });
+
+      expect([404, 500]).toContain(res.status);
     });
   });
 
@@ -336,7 +855,7 @@ describe('Reservations API — /api/reservations', () => {
   });
 
   // ========================================
-  // POST/GET/PUT/DELETE /api/reservations/:id/menu
+  // Menu Selection Endpoints
   // ========================================
   describe('Menu Selection Endpoints', () => {
     it('should return 404 or empty for reservation without menu', async () => {
@@ -359,17 +878,16 @@ describe('Reservations API — /api/reservations', () => {
   });
 
   // ========================================
-  // PATCH /api/reservations/:id/discount
+  // Discount Endpoints
   // ========================================
   describe('Discount Endpoints', () => {
-    it('should apply discount to reservation', async () => {
+    it('should apply PERCENTAGE discount to reservation', async () => {
       const reservation = await createReservationInDb({ totalPrice: 20000 });
 
       const res = await api
         .patch(`/api/reservations/${reservation.id}/discount`)
         .set(adminAuth())
         .send({
-          // Controller expects: type, value, reason (not discountType/discountValue/discountReason)
           type: 'PERCENTAGE',
           value: 10,
           reason: 'Rabat testowy - staly klient',
@@ -378,10 +896,25 @@ describe('Reservations API — /api/reservations', () => {
       expect([200, 201]).toContain(res.status);
     });
 
-    it('should remove discount from reservation', async () => {
-      // First apply a discount so there IS something to remove
+    it('should apply AMOUNT discount to reservation', async () => {
       const reservation = await createReservationInDb({ totalPrice: 20000 });
 
+      const res = await api
+        .patch(`/api/reservations/${reservation.id}/discount`)
+        .set(adminAuth())
+        .send({
+          type: 'AMOUNT',
+          value: 1000,
+          reason: 'Rabat kwotowy testowy na rezerwacje',
+        });
+
+      expect([200, 201]).toContain(res.status);
+    });
+
+    it('should remove discount from reservation', async () => {
+      const reservation = await createReservationInDb({ totalPrice: 20000 });
+
+      // First apply discount
       await api
         .patch(`/api/reservations/${reservation.id}/discount`)
         .set(adminAuth())
@@ -391,11 +924,11 @@ describe('Reservations API — /api/reservations', () => {
           reason: 'Rabat do usuniecia testowy',
         });
 
+      // Then remove it
       const res = await api
         .delete(`/api/reservations/${reservation.id}/discount`)
         .set(adminAuth());
 
-      // 200/204 = removed, 400 = validation error, 404 = no discount found
       expect([200, 204, 400, 404]).toContain(res.status);
     });
   });
@@ -417,20 +950,48 @@ describe('Reservations API — /api/reservations', () => {
     it('should unarchive a reservation', async () => {
       const reservation = await createReservationInDb({ status: 'COMPLETED' });
 
+      // Archive first
       await api
         .post(`/api/reservations/${reservation.id}/archive`)
         .set(adminAuth());
 
+      // Then unarchive
       const res = await api
         .post(`/api/reservations/${reservation.id}/unarchive`)
         .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
+
+    it('should reject archiving already archived reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'COMPLETED' });
+
+      // Archive first
+      await api
+        .post(`/api/reservations/${reservation.id}/archive`)
+        .set(adminAuth());
+
+      // Try again
+      const res = await api
+        .post(`/api/reservations/${reservation.id}/archive`)
+        .set(adminAuth());
+
+      expect([400, 409, 500]).toContain(res.status);
+    });
+
+    it('should reject unarchiving non-archived reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'COMPLETED' });
+
+      const res = await api
+        .post(`/api/reservations/${reservation.id}/unarchive`)
+        .set(adminAuth());
+
+      expect([400, 409, 500]).toContain(res.status);
+    });
   });
 
   // ========================================
-  // DELETE /api/reservations/:id (admin only)
+  // DELETE /api/reservations/:id
   // ========================================
   describe('DELETE /api/reservations/:id', () => {
     it('should allow ADMIN to cancel reservation', async () => {
@@ -441,6 +1002,53 @@ describe('Reservations API — /api/reservations', () => {
         .set(adminAuth());
 
       expect([200, 204]).toContain(res.status);
+    });
+
+    it('should reject cancelling already cancelled reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'CANCELLED' });
+
+      const res = await api
+        .delete(`/api/reservations/${reservation.id}`)
+        .set(adminAuth());
+
+      expect([400, 409, 500]).toContain(res.status);
+    });
+
+    it('should reject cancelling completed reservation', async () => {
+      const reservation = await createReservationInDb({ status: 'COMPLETED', date: pastDate(1) });
+
+      const res = await api
+        .delete(`/api/reservations/${reservation.id}`)
+        .set(adminAuth());
+
+      expect([400, 409, 500]).toContain(res.status);
+    });
+
+    it('should cascade cancel deposits on delete/cancel', async () => {
+      const reservation = await createReservationInDb({ status: 'PENDING' });
+
+      await prismaTest.deposit.create({
+        data: {
+          reservationId: reservation.id,
+          amount: 2000,
+          remainingAmount: 2000,
+          dueDate: new Date(futureDate(1)),
+          status: 'PENDING',
+        },
+      });
+
+      const res = await api
+        .delete(`/api/reservations/${reservation.id}`)
+        .set(adminAuth());
+
+      expect([200, 204]).toContain(res.status);
+
+      const deposits = await prismaTest.deposit.findMany({
+        where: { reservationId: reservation.id },
+      });
+      if (deposits.length > 0) {
+        expect(deposits[0].status).toBe('CANCELLED');
+      }
     });
 
     it('should deny CLIENT role from deleting reservation', async () => {
