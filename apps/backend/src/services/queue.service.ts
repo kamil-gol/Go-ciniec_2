@@ -2,6 +2,7 @@
  * Queue Service
  * Business logic for reservation queue management
  * Updated: Phase 2 Audit — logChange() for all queue operations
+ * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM (19.02.2026)
  */
 
 import { ReservationStatus, Prisma } from '@prisma/client';
@@ -94,7 +95,7 @@ export class QueueService {
         entityType: 'RESERVATION',
         entityId: reservation.id,
         details: {
-          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} gości`,
+          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} go\u015bci`,
           clientId: data.clientId,
           clientName: `${client.firstName} ${client.lastName}`,
           queueDate: queueDate.toISOString().split('T')[0],
@@ -600,31 +601,64 @@ export class QueueService {
     };
   }
 
+  /**
+   * Auto-cancel expired RESERVED reservations
+   * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM
+   * Bug #7: Only cancels reservations with queue date BEFORE today
+   *   (today's entries are NOT cancelled)
+   */
   async autoCancelExpired(userId?: string): Promise<AutoCancelResult> {
-    const result = await prisma.$queryRaw<Array<{ cancelled_count: number; cancelled_ids: string[] }>>`
-      SELECT * FROM auto_cancel_expired_reserved()
-    `;
+    // Bug #7: today's entries should NOT be cancelled
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const cancelledCount = result?.[0]?.cancelled_count || 0;
-    const cancelledIds = result?.[0]?.cancelled_ids || [];
+    // Find RESERVED reservations with queue date strictly BEFORE today
+    const expiredReservations = await prisma.reservation.findMany({
+      where: {
+        status: ReservationStatus.RESERVED,
+        reservationQueueDate: {
+          lt: today,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (expiredReservations.length === 0) {
+      return { cancelledCount: 0, cancelledIds: [] };
+    }
+
+    const expiredIds = expiredReservations.map(r => r.id);
+
+    // Batch cancel all expired reservations
+    await prisma.reservation.updateMany({
+      where: { id: { in: expiredIds } },
+      data: {
+        status: ReservationStatus.CANCELLED,
+        reservationQueuePosition: null,
+        reservationQueueDate: null,
+      },
+    });
 
     // Audit log — QUEUE_AUTO_CANCEL (only if something was cancelled)
-    if (cancelledCount > 0) {
+    if (expiredIds.length > 0) {
       await logChange({
         userId: userId || null,
         action: 'QUEUE_AUTO_CANCEL',
         entityType: 'RESERVATION',
         entityId: 'system',
         details: {
-          description: `Auto-anulowano ${cancelledCount} przeterminowanych rezerwacji z kolejki`,
-          cancelledCount,
-          cancelledIds,
+          description: `Auto-anulowano ${expiredIds.length} przeterminowanych rezerwacji z kolejki`,
+          cancelledCount: expiredIds.length,
+          cancelledIds: expiredIds,
           triggeredBy: userId ? 'manual' : 'system',
         },
       });
     }
 
-    return { cancelledCount, cancelledIds };
+    return {
+      cancelledCount: expiredIds.length,
+      cancelledIds: expiredIds,
+    };
   }
 
   private formatQueueItem(reservation: any): QueueItemResponse {

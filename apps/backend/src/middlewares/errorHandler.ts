@@ -20,8 +20,19 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   // ——— AppError (known, operational errors) ———
+  // FIX: Also check for statusCode property as fallback when instanceof fails
+  // (can happen with path aliases / different module instances)
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  if ('statusCode' in err && typeof (err as any).statusCode === 'number') {
+    const statusCode = (err as any).statusCode;
+    res.status(statusCode).json({
       success: false,
       error: err.message,
     });
