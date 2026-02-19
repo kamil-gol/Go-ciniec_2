@@ -16,19 +16,24 @@ const prismaTest = new PrismaClient({
 });
 
 /**
- * Tables containing seed data (users, halls, clients, event types).
- * These are preserved during beforeEach cleanup to prevent FK violations
- * when test helpers reference seed.admin.id, seed.client1.id, etc.
+ * Tables preserved during beforeEach cleanup.
  *
- * Seed data is created once in beforeAll via seedTestData() (find-or-create)
- * and must persist across all tests in the suite.
+ * Includes:
+ * - Seed data tables: User, Client, Hall, EventType
+ * - RBAC tables: Role, Permission, RolePermission
+ *
+ * IMPORTANT: Role MUST be skipped because TRUNCATE TABLE "Role" CASCADE
+ * cascades to User (via User.roleId FK), which would destroy seed data.
+ * Cascade chain: Role → User → Reservation → everything.
  */
-const SEED_TABLES = ['User', 'Client', 'Hall', 'EventType'];
+const PRESERVED_TABLES = [
+  'User', 'Client', 'Hall', 'EventType',
+  'Role', 'Permission', 'RolePermission',
+];
 
 /**
  * Clean transactional tables in the test database.
- * Preserves seed tables (User, Client, Hall, EventType) so that
- * seed data from beforeAll → seedTestData() survives between tests.
+ * Preserves seed + RBAC tables to prevent FK cascade destroying seed data.
  *
  * Uses TRUNCATE CASCADE for fast cleanup.
  * Retries on deadlock (PostgreSQL 40P01).
@@ -42,7 +47,7 @@ export async function cleanDatabase(retries = 3): Promise<void> {
 
       const tables = tablenames
         .map(({ tablename }) => tablename)
-        .filter((name) => name !== '_prisma_migrations' && !SEED_TABLES.includes(name))
+        .filter((name) => name !== '_prisma_migrations' && !PRESERVED_TABLES.includes(name))
         .map((name) => `"public"."${name}"`);
 
       if (tables.length > 0) {
@@ -68,8 +73,8 @@ export async function cleanDatabase(retries = 3): Promise<void> {
 }
 
 /**
- * Full cleanup including seed tables.
- * Use in afterAll when you want to leave the DB completely clean.
+ * Full cleanup including ALL tables.
+ * Use only in afterAll to leave the DB completely clean.
  */
 export async function cleanDatabaseFull(retries = 3): Promise<void> {
   for (let attempt = 1; attempt <= retries; attempt++) {

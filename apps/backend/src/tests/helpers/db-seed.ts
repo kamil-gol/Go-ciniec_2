@@ -32,6 +32,7 @@ export interface TestSeedData {
 /**
  * Find existing record or create if not found.
  * Handles race conditions when multiple Jest workers run concurrently.
+ * Re-throws original create error for better debugging if retry also fails.
  */
 async function findOrCreate<T>(
   findFn: () => Promise<T | null>,
@@ -44,12 +45,12 @@ async function findOrCreate<T>(
   // 2. Not found → try to create
   try {
     return await createFn();
-  } catch {
+  } catch (createError) {
     // 3. Another worker created it concurrently → find again
     const retry = await findFn();
     if (retry) return retry;
-    // If still not found, re-throw the original error
-    throw new Error('findOrCreate: record could not be found or created');
+    // Re-throw original error for debugging
+    throw createError;
   }
 }
 
