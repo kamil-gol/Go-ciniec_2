@@ -5,7 +5,7 @@
  * Tests deposit management endpoints against a real test database.
  * Covers: CRUD, lifecycle (PENDING→PAID→UNPAID→CANCELLED), stats, overdue.
  */
-import { api, authHeader } from '../helpers/test-utils';
+import { api, authHeader, authHeaderForUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
@@ -31,13 +31,18 @@ describe('Deposits API — /api/deposits', () => {
   // Helpers
   // ========================================
 
+  /** Auth header with REAL admin user ID (avoids FK violations in audit logger) */
+  function adminAuth() {
+    return authHeaderForUser({
+      id: seed.admin.id,
+      email: seed.admin.email,
+      role: seed.admin.legacyRole || 'ADMIN',
+    });
+  }
+
   /**
    * Create a reservation with a deposit for testing.
    * Inserts data directly in DB (not via API).
-   *
-   * Field names match Prisma schema:
-   *   - Reservation: guests (not guestCount), date as string, createdById required
-   *   - Deposit: dueDate as string, remainingAmount required, internalNotes (not notes)
    */
   async function createReservationWithDeposit(depositOverrides: Record<string, any> = {}) {
     const futureDate = new Date();
@@ -103,7 +108,7 @@ describe('Deposits API — /api/deposits', () => {
     it('should return empty list when no deposits exist', async () => {
       const res = await api
         .get('/api/deposits')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -114,7 +119,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .get('/api/deposits')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -134,7 +139,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .get('/api/deposits/stats')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/json/);
@@ -150,7 +155,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .get('/api/deposits/overdue')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -158,7 +163,7 @@ describe('Deposits API — /api/deposits', () => {
     it('should return empty when no overdue deposits', async () => {
       const res = await api
         .get('/api/deposits/overdue')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -173,7 +178,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .get(`/api/deposits/${deposit.id}`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -183,7 +188,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .get(`/api/deposits/${fakeUuid}`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([404, 500]).toContain(res.status);
     });
@@ -191,7 +196,7 @@ describe('Deposits API — /api/deposits', () => {
     it('should return 400 for invalid UUID format', async () => {
       const res = await api
         .get('/api/deposits/not-a-uuid')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(400);
     });
@@ -214,7 +219,11 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .patch(`/api/deposits/${deposit.id}/mark-paid`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth())
+        .send({
+          paymentMethod: 'TRANSFER',
+          paidAt: new Date().toISOString(),
+        });
 
       expect(res.status).toBe(200);
 
@@ -230,7 +239,11 @@ describe('Deposits API — /api/deposits', () => {
 
       await api
         .patch(`/api/deposits/${deposit.id}/mark-paid`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth())
+        .send({
+          paymentMethod: 'CASH',
+          paidAt: new Date().toISOString(),
+        });
 
       const updated = await prismaTest.deposit.findUnique({
         where: { id: deposit.id },
@@ -254,7 +267,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .patch(`/api/deposits/${deposit.id}/mark-unpaid`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
 
@@ -274,7 +287,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .patch(`/api/deposits/${deposit.id}/cancel`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
 
@@ -294,10 +307,10 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .put(`/api/deposits/${deposit.id}`)
-        .set(authHeader('ADMIN'))
+        .set(adminAuth())
         .send({
           amount: 7500,
-          internalNotes: 'Kwota zaktualizowana',
+          notes: 'Kwota zaktualizowana',
         });
 
       expect(res.status).toBe(200);
@@ -311,7 +324,7 @@ describe('Deposits API — /api/deposits', () => {
     it('should return 400 for invalid UUID', async () => {
       const res = await api
         .put('/api/deposits/bad-id')
-        .set(authHeader('ADMIN'))
+        .set(adminAuth())
         .send({ amount: 1000 });
 
       expect(res.status).toBe(400);
@@ -327,7 +340,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .delete(`/api/deposits/${deposit.id}`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([200, 204]).toContain(res.status);
 
@@ -341,7 +354,7 @@ describe('Deposits API — /api/deposits', () => {
     it('should return 400 for invalid UUID', async () => {
       const res = await api
         .delete('/api/deposits/invalid')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(400);
     });
@@ -351,7 +364,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .delete(`/api/deposits/${fakeUuid}`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([404, 500]).toContain(res.status);
     });
@@ -367,13 +380,17 @@ describe('Deposits API — /api/deposits', () => {
       // Step 1: Verify initial state is PENDING
       const getRes = await api
         .get(`/api/deposits/${deposit.id}`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
       expect(getRes.status).toBe(200);
 
-      // Step 2: PENDING → PAID
+      // Step 2: PENDING → PAID (markPaidSchema requires paymentMethod + paidAt)
       const paidRes = await api
         .patch(`/api/deposits/${deposit.id}/mark-paid`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth())
+        .send({
+          paymentMethod: 'TRANSFER',
+          paidAt: new Date().toISOString(),
+        });
       expect(paidRes.status).toBe(200);
 
       let state = await prismaTest.deposit.findUnique({ where: { id: deposit.id } });
@@ -383,7 +400,7 @@ describe('Deposits API — /api/deposits', () => {
       // Step 3: PAID → UNPAID/PENDING
       const unpaidRes = await api
         .patch(`/api/deposits/${deposit.id}/mark-unpaid`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
       expect(unpaidRes.status).toBe(200);
 
       state = await prismaTest.deposit.findUnique({ where: { id: deposit.id } });
@@ -392,7 +409,7 @@ describe('Deposits API — /api/deposits', () => {
       // Step 4: → CANCELLED
       const cancelRes = await api
         .patch(`/api/deposits/${deposit.id}/cancel`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
       expect(cancelRes.status).toBe(200);
 
       state = await prismaTest.deposit.findUnique({ where: { id: deposit.id } });
@@ -404,7 +421,7 @@ describe('Deposits API — /api/deposits', () => {
 
       const res = await api
         .patch(`/api/deposits/${deposit.id}/cancel`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
 
@@ -417,21 +434,43 @@ describe('Deposits API — /api/deposits', () => {
   // GET /api/deposits/:id/pdf
   // ========================================
   describe('GET /api/deposits/:id/pdf', () => {
-    it('should generate PDF for valid deposit', async () => {
+    it('should generate PDF for paid deposit', async () => {
       const { deposit } = await createReservationWithDeposit();
+
+      // PDF requires deposit.paid=true — mark as paid first
+      await prismaTest.deposit.update({
+        where: { id: deposit.id },
+        data: {
+          status: 'PAID',
+          paid: true,
+          paidAt: new Date(),
+          paymentMethod: 'TRANSFER',
+        },
+      });
 
       const res = await api
         .get(`/api/deposits/${deposit.id}/pdf`)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       // PDF generation might return 200 with PDF content or fail gracefully
       expect([200, 500]).toContain(res.status);
     });
 
+    it('should return 400 for unpaid deposit (PDF requires paid)', async () => {
+      const { deposit } = await createReservationWithDeposit();
+
+      const res = await api
+        .get(`/api/deposits/${deposit.id}/pdf`)
+        .set(adminAuth());
+
+      // Controller throws badRequest if deposit is not paid
+      expect(res.status).toBe(400);
+    });
+
     it('should return 400 for invalid UUID', async () => {
       const res = await api
         .get('/api/deposits/bad-id/pdf')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(400);
     });
