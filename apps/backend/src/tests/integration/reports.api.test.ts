@@ -7,7 +7,7 @@
  * Field names match Prisma schema:
  *   - Reservation: guests (not guestCount), date as string, createdById required
  */
-import { api, authHeader } from '../helpers/test-utils';
+import { api, authHeader, authHeaderForUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
@@ -32,6 +32,15 @@ describe('Reports API — /api/reports', () => {
   // ========================================
   // Helpers
   // ========================================
+
+  /** Auth header with REAL admin user ID */
+  function adminAuth() {
+    return authHeaderForUser({
+      id: seed.admin.id,
+      email: seed.admin.email,
+      role: seed.admin.legacyRole || 'ADMIN',
+    });
+  }
 
   async function createReservationsForReports() {
     const dates = ['2025-06-15', '2025-07-20', '2025-08-10'];
@@ -69,7 +78,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/revenue')
         .query(defaultDateRange)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/json/);
@@ -79,7 +88,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/revenue')
         .query({ dateFrom: '2099-01-01', dateTo: '2099-12-31' })
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -91,7 +100,7 @@ describe('Reports API — /api/reports', () => {
         const res = await api
           .get('/api/reports/revenue')
           .query({ ...defaultDateRange, groupBy })
-          .set(authHeader('ADMIN'));
+          .set(adminAuth());
 
         expect(res.status).toBe(200);
       }
@@ -103,7 +112,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/revenue')
         .query({ ...defaultDateRange, hallId: seed.hall1.id })
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -114,7 +123,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/revenue')
         .query({ ...defaultDateRange, eventTypeId: seed.eventType1.id })
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -130,7 +139,7 @@ describe('Reports API — /api/reports', () => {
     it('should return error for missing date params', async () => {
       const res = await api
         .get('/api/reports/revenue')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([400, 422, 500]).toContain(res.status);
     });
@@ -146,7 +155,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/occupancy')
         .query(defaultDateRange)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -155,7 +164,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/occupancy')
         .query({ ...defaultDateRange, hallId: seed.hall1.id })
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -179,7 +188,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/export/revenue/excel')
         .query(defaultDateRange)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([200, 500]).toContain(res.status);
       if (res.status === 200) {
@@ -195,7 +204,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/export/revenue/pdf')
         .query(defaultDateRange)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([200, 500]).toContain(res.status);
       if (res.status === 200) {
@@ -222,7 +231,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/export/occupancy/excel')
         .query(defaultDateRange)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([200, 500]).toContain(res.status);
     });
@@ -233,7 +242,7 @@ describe('Reports API — /api/reports', () => {
       const res = await api
         .get('/api/reports/export/occupancy/pdf')
         .query(defaultDateRange)
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect([200, 500]).toContain(res.status);
     });
@@ -246,7 +255,7 @@ describe('Reports API — /api/reports', () => {
     it('should list audit logs with auth', async () => {
       const res = await api
         .get('/api/audit-log')
-        .set(authHeader('ADMIN'));
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
@@ -258,19 +267,34 @@ describe('Reports API — /api/reports', () => {
   });
 
   // ========================================
-  // Stats — /api/stats
+  // Stats — /api/stats/overview
   // ========================================
   describe('Stats API — /api/stats', () => {
-    it('should return dashboard stats with auth', async () => {
+    // NOTE: Stats routes are /api/stats/overview and /api/stats/upcoming
+    //       There is NO root GET /api/stats handler.
+    it('should return dashboard overview stats with auth', async () => {
       const res = await api
-        .get('/api/stats')
-        .set(authHeader('ADMIN'));
+        .get('/api/stats/overview')
+        .set(adminAuth());
 
       expect(res.status).toBe(200);
     });
 
-    it('should return 401 without auth', async () => {
-      const res = await api.get('/api/stats');
+    it('should return upcoming reservations with auth', async () => {
+      const res = await api
+        .get('/api/stats/upcoming')
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should return 401 without auth for overview', async () => {
+      const res = await api.get('/api/stats/overview');
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 401 without auth for upcoming', async () => {
+      const res = await api.get('/api/stats/upcoming');
       expect(res.status).toBe(401);
     });
   });
