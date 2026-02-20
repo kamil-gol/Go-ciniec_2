@@ -17,7 +17,7 @@ const mockEmailService = {
 };
 
 jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
-jest.mock('../email.service', () => ({ default: mockEmailService }));
+jest.mock('@services/email.service', () => ({ default: mockEmailService }));
 jest.mock('@utils/logger', () => ({
   info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 }));
@@ -63,12 +63,10 @@ describe('DepositReminderService', () => {
   // ═══════════════ runReminders ═══════════════
   describe('runReminders', () => {
     it('should run upcoming (7,3,1 days) + overdue reminders', async () => {
-      // All findMany calls return empty → 0 emails
       mockPrisma.deposit.findMany.mockResolvedValue([]);
 
       const result = await depositReminderService.runReminders();
 
-      // 3 upcoming calls (7,3,1) + 1 overdue = 4 findMany calls
       expect(mockPrisma.deposit.findMany).toHaveBeenCalledTimes(4);
       expect(result.upcomingSent).toBe(0);
       expect(result.overdueSent).toBe(0);
@@ -80,21 +78,19 @@ describe('DepositReminderService', () => {
 
       const result = await depositReminderService.runReminders();
 
-      // 3 upcoming errors + 1 overdue error = 4
       expect(result.errors).toBe(4);
       expect(result.upcomingSent).toBe(0);
       expect(result.overdueSent).toBe(0);
     });
 
     it('should aggregate sent counts from all reminder types', async () => {
-      // Each upcoming call finds 1 deposit, overdue finds 1
       mockPrisma.deposit.findMany.mockResolvedValue([createMockDeposit()]);
       mockEmailService.sendDepositReminder.mockResolvedValue(true);
       mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
 
       const result = await depositReminderService.runReminders();
 
-      expect(result.upcomingSent).toBe(3);   // 7+3+1 days, each finds 1
+      expect(result.upcomingSent).toBe(3);
       expect(result.overdueSent).toBe(1);
       expect(result.errors).toBe(0);
     });
@@ -157,7 +153,6 @@ describe('DepositReminderService', () => {
   // ═══════════════ sendOverdueNotices ═══════════════
   describe('sendOverdueNotices', () => {
     it('should send overdue notice for past-due deposits', async () => {
-      // 1 day overdue → within daily limit, should send
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const dep = createMockDeposit({ dueDate: yesterday.toISOString().substring(0, 10) });
@@ -190,7 +185,6 @@ describe('DepositReminderService', () => {
     });
 
     it('should throttle: skip day 5 overdue (> daily limit, not divisible by 3)', async () => {
-      // 5 days overdue: > 3 (daily limit) AND 5 % 3 !== 0 → should be throttled
       const fiveDaysAgo = new Date();
       fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
       const dep = createMockDeposit({ dueDate: fiveDaysAgo.toISOString().substring(0, 10) });
@@ -203,7 +197,6 @@ describe('DepositReminderService', () => {
     });
 
     it('should send on day 6 overdue (> daily limit, divisible by 3)', async () => {
-      // 6 days overdue: > 3 AND 6 % 3 === 0 → should send
       const sixDaysAgo = new Date();
       sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
       const dep = createMockDeposit({ dueDate: sixDaysAgo.toISOString().substring(0, 10) });
