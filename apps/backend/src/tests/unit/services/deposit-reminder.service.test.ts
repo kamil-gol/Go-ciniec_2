@@ -17,7 +17,10 @@ const mockEmailService = {
 };
 
 jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
-jest.mock('@services/email.service', () => ({ default: mockEmailService }));
+jest.mock('@services/email.service', () => ({
+  __esModule: true,
+  default: mockEmailService,
+}));
 jest.mock('@utils/logger', () => ({
   info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 }));

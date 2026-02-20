@@ -44,7 +44,10 @@ jest.mock('@utils/logger', () => ({
   info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 }));
 jest.mock('@services/pdf.service', () => ({ pdfService: mockPdfService }));
-jest.mock('@services/email.service', () => ({ default: mockEmailService }));
+jest.mock('@services/email.service', () => ({
+  __esModule: true,
+  default: mockEmailService,
+}));
 
 import depositService from '@services/deposit.service';
 import { logChange } from '@utils/audit-logger';
