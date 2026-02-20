@@ -4,11 +4,33 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
+// Global DOM mock for jsdom
+Element.prototype.scrollIntoView = vi.fn();
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
   useParams: () => ({}),
 }))
+
+// Mock framer-motion
+vi.mock('framer-motion', () => {
+  const React = require('react');
+  return {
+    motion: new Proxy({}, {
+      get: (_target: any, prop: string) => {
+        return React.forwardRef((props: any, ref: any) => {
+          const { initial, animate, exit, transition, variants, whileHover, whileTap, whileFocus, whileInView, layout, layoutId, ...rest } = props;
+          return React.createElement(prop, { ...rest, ref });
+        });
+      },
+    }),
+    AnimatePresence: ({ children }: any) => React.createElement(React.Fragment, null, children),
+    useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
+    useMotionValue: (val: any) => ({ get: () => val, set: vi.fn() }),
+    useTransform: (val: any) => val,
+  };
+});
 
 // Mock API hooks
 const mockCreateReservation = vi.fn()
@@ -85,28 +107,30 @@ describe('ReservationForm', () => {
   })
 
   describe('Rendering', () => {
-    it('should render the reservation form with all required fields', () => {
+    it('should render the reservation form with wizard stepper', () => {
       if (!CreateReservationForm) return
       renderWithProviders(<CreateReservationForm />)
 
-      // Check for key form sections
-      expect(screen.getByText(/data/i) || screen.getByLabelText(/data/i)).toBeTruthy()
+      // Check that the form renders with a heading
+      expect(screen.getByText('Nowa Rezerwacja')).toBeInTheDocument()
     })
 
-    it('should display hall selection options', () => {
+    it('should display hall selection step in wizard', () => {
       if (!CreateReservationForm) return
       renderWithProviders(<CreateReservationForm />)
 
-      const hallSelect = screen.queryByText(/sala/i)
-      expect(hallSelect).toBeTruthy()
+      // Wizard has "Sala i termin" step
+      const bodyText = document.body.textContent || ''
+      expect(bodyText).toMatch(/Sala/i)
     })
 
-    it('should display event type selection', () => {
+    it('should display event type selection on first step', () => {
       if (!CreateReservationForm) return
       renderWithProviders(<CreateReservationForm />)
 
-      const eventTypeSelect = screen.queryByText(/typ wydarzenia/i) || screen.queryByText(/wydarzenie/i)
-      expect(eventTypeSelect).toBeTruthy()
+      // First step shows event type — use getAllByText since multiple matches
+      const matches = screen.queryAllByText(/typ wydarzenia|wydarzenie/i)
+      expect(matches.length).toBeGreaterThan(0)
     })
   })
 
