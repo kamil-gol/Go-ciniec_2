@@ -1,110 +1,214 @@
 /**
- * Auth Middleware — Unit Tests
+ * Unit tests for middlewares/auth.ts
+ * Covers: generateToken, verifyToken, extractToken, authMiddleware, requireRole
+ * Issue: #96
  */
-
-jest.mock('../../../utils/logger', () => ({
-  info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-}));
-
 import jwt from 'jsonwebtoken';
 
-const SECRET = 'test-secret-key-do-not-use-in-production';
-process.env.JWT_SECRET = SECRET;
+// Must set env BEFORE importing the module
+process.env.JWT_SECRET = 'test-secret-key-do-not-use-in-production';
+process.env.JWT_EXPIRY = '1h';
 
-import { authMiddleware, generateToken, verifyToken, requireRole } from '../../../middlewares/auth';
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+}));
 
-const mockReq = (overrides: any = {}): any => ({
-  headers: {}, query: {}, user: undefined,
+import { generateToken, verifyToken, authMiddleware, requireRole } from '@middlewares/auth';
+import { AppError } from '@middlewares/errorHandler';
+
+// ── Helpers ──────────────────────────────────────────────
+const mockRequest = (overrides: any = {}) => ({
+  headers: {},
+  query: {},
+  user: undefined,
   ...overrides,
 });
-const mockRes = (): any => {
-  const r: any = {};
-  r.status = jest.fn().mockReturnValue(r);
-  r.json = jest.fn().mockReturnValue(r);
-  return r;
-};
+
+const mockResponse = () => ({
+  status: jest.fn().mockReturnThis(),
+  json: jest.fn().mockReturnThis(),
+});
+
 const mockNext = jest.fn();
 
-beforeEach(() => jest.clearAllMocks());
+const validPayload = {
+  id: 'user-1',
+  email: 'admin@test.pl',
+  role: 'ADMIN',
+  roleId: 'role-1',
+  roleSlug: 'admin',
+};
 
 describe('Auth Middleware', () => {
-  describe('generateToken()', () => {
-    it('should generate a valid JWT', () => {
-      const token = generateToken({ id: 1, email: 'a@b.pl', role: 'ADMIN', roleId: 'r1', roleSlug: 'admin' });
-      const decoded = jwt.verify(token, SECRET) as any;
-      expect(decoded.id).toBe(1);
-      expect(decoded.email).toBe('a@b.pl');
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // ══════════════════════════════════════════════════════
+  // generateToken & verifyToken
+  // ══════════════════════════════════════════════════════
+  describe('generateToken', () => {
+    it('should generate a valid JWT token', () => {
+      const token = generateToken(validPayload);
+
+      expect(token).toBeDefined();
+      expect(typeof token).toBe('string');
+      expect(token.split('.')).toHaveLength(3); // JWT has 3 parts
+    });
+
+    it('should include payload data in the token', () => {
+      const token = generateToken(validPayload);
+      const decoded = jwt.decode(token) as any;
+
+      expect(decoded.id).toBe('user-1');
+      expect(decoded.email).toBe('admin@test.pl');
+      expect(decoded.role).toBe('ADMIN');
+      expect(decoded.roleSlug).toBe('admin');
     });
   });
 
-  describe('verifyToken()', () => {
-    it('should return payload for valid token', () => {
-      const token = jwt.sign({ id: 1, email: 'a@b.pl', role: 'ADMIN' }, SECRET, { expiresIn: '1h' });
-      const payload = verifyToken(token);
-      expect(payload.id).toBe(1);
+  describe('verifyToken', () => {
+    it('should verify a valid token and return payload', () => {
+      const token = generateToken(validPayload);
+      const result = verifyToken(token);
+
+      expect(result.id).toBe('user-1');
+      expect(result.email).toBe('admin@test.pl');
     });
 
-    it('should throw on invalid token', () => {
-      expect(() => verifyToken('invalid-token')).toThrow();
+    it('should throw AppError(401) for invalid token', () => {
+      expect(() => verifyToken('invalid.token.here')).toThrow();
+      try {
+        verifyToken('invalid.token.here');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(AppError);
+        expect(e.statusCode).toBe(401);
+        expect(e.message).toBe('Invalid or expired token');
+      }
     });
 
-    it('should throw on expired token', () => {
-      const token = jwt.sign({ id: 1 }, SECRET, { expiresIn: '-1h' });
-      expect(() => verifyToken(token)).toThrow();
+    it('should throw AppError(401) for expired token', () => {
+      const expiredToken = jwt.sign(
+        validPayload,
+        'test-secret-key-do-not-use-in-production',
+        { expiresIn: '0s' }
+      );
+
+      expect(() => verifyToken(expiredToken)).toThrow();
     });
   });
 
-  describe('authMiddleware()', () => {
-    it('should call next with error when no token', () => {
-      authMiddleware(mockReq(), mockRes(), mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
-    });
+  // ══════════════════════════════════════════════════════
+  // authMiddleware
+  // ══════════════════════════════════════════════════════
+  describe('authMiddleware', () => {
+    it('should authenticate request with valid Bearer token', () => {
+      const token = generateToken(validPayload);
+      const req = mockRequest({
+        headers: { authorization: `Bearer ${token}` },
+      });
 
-    it('should set req.user on valid Bearer token', () => {
-      const token = jwt.sign({ id: 5, email: 'x@y.pl', role: 'ADMIN', roleId: 'r1', roleSlug: 'admin' }, SECRET);
-      const req = mockReq({ headers: { authorization: `Bearer ${token}` } });
-      authMiddleware(req, mockRes(), mockNext);
+      authMiddleware(req as any, mockResponse() as any, mockNext);
+
       expect(mockNext).toHaveBeenCalledWith();
-      expect(req.user.id).toBe(5);
+      expect(req.user).toBeDefined();
+      expect(req.user.id).toBe('user-1');
+      expect(req.user.email).toBe('admin@test.pl');
       expect(req.user.role).toBe('ADMIN');
     });
 
-    it('should accept token from query string', () => {
-      const token = jwt.sign({ id: 3, email: 'q@q.pl', role: 'EMPLOYEE' }, SECRET);
-      const req = mockReq({ query: { token } });
-      authMiddleware(req, mockRes(), mockNext);
+    it('should authenticate request with token in query string', () => {
+      const token = generateToken(validPayload);
+      const req = mockRequest({ query: { token } });
+
+      authMiddleware(req as any, mockResponse() as any, mockNext);
+
       expect(mockNext).toHaveBeenCalledWith();
-      expect(req.user.id).toBe(3);
+      expect(req.user).toBeDefined();
+      expect(req.user.id).toBe('user-1');
     });
 
-    it('should call next with error on expired token', () => {
-      const token = jwt.sign({ id: 1 }, SECRET, { expiresIn: '-1h' });
-      const req = mockReq({ headers: { authorization: `Bearer ${token}` } });
-      authMiddleware(req, mockRes(), mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    it('should call next with AppError(401) when no token provided', () => {
+      const req = mockRequest();
+
+      authMiddleware(req as any, mockResponse() as any, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 401,
+          message: 'No token provided',
+        })
+      );
+    });
+
+    it('should call next with AppError(401) for malformed token', () => {
+      const req = mockRequest({
+        headers: { authorization: 'Bearer invalid.garbage.token' },
+      });
+
+      authMiddleware(req as any, mockResponse() as any, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+
+    it('should prefer Authorization header over query token', () => {
+      const headerToken = generateToken(validPayload);
+      const queryToken = generateToken({ ...validPayload, id: 'user-other' });
+      const req = mockRequest({
+        headers: { authorization: `Bearer ${headerToken}` },
+        query: { token: queryToken },
+      });
+
+      authMiddleware(req as any, mockResponse() as any, mockNext);
+
+      expect(req.user.id).toBe('user-1'); // from header, not query
     });
   });
 
-  describe('requireRole()', () => {
-    it('should call next when user has allowed role', () => {
-      const middleware = requireRole('ADMIN', 'EMPLOYEE');
-      const req = mockReq({ user: { id: 1, email: 'a@b.pl', role: 'ADMIN' } });
-      middleware(req, mockRes(), mockNext);
+  // ══════════════════════════════════════════════════════
+  // requireRole (legacy)
+  // ══════════════════════════════════════════════════════
+  describe('requireRole', () => {
+    it('should call next() when user has matching role', () => {
+      const req = mockRequest({ user: { ...validPayload } });
+      const middleware = requireRole('ADMIN', 'MANAGER');
+
+      middleware(req as any, mockResponse() as any, mockNext);
+
       expect(mockNext).toHaveBeenCalledWith();
     });
 
-    it('should call next with 403 when role not allowed', () => {
+    it('should call next with AppError(403) when user has wrong role', () => {
+      const req = mockRequest({ user: { ...validPayload, role: 'EMPLOYEE' } });
       const middleware = requireRole('ADMIN');
-      const req = mockReq({ user: { id: 1, email: 'a@b.pl', role: 'EMPLOYEE' } });
-      middleware(req, mockRes(), mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
+
+      middleware(req as any, mockResponse() as any, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 403,
+          message: 'Insufficient permissions',
+        })
+      );
     });
 
-    it('should call next with 401 when no user', () => {
+    it('should call next with AppError(401) when user is not authenticated', () => {
+      const req = mockRequest({ user: undefined });
       const middleware = requireRole('ADMIN');
-      middleware(mockReq(), mockRes(), mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+
+      middleware(req as any, mockResponse() as any, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 401,
+          message: 'User not authenticated',
+        })
+      );
     });
   });
 });
