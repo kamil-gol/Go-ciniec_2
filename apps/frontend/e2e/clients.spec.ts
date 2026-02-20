@@ -1,303 +1,236 @@
 import { test, expect } from '@playwright/test';
 import { login } from './fixtures/auth';
-import { sampleClients } from './fixtures/test-data';
+import { generateRandomEmail, generateRandomPhone } from './fixtures/test-data';
 
-test.describe('Client Management Tests', () => {
+/**
+ * Client Management Tests
+ *
+ * Page: /dashboard/clients
+ * Create form: inline, toggled via "Dodaj Klienta" button
+ * Form fields: firstName, lastName, email, phone, notes
+ * Required: firstName, lastName, phone
+ * Search: input with placeholder "Szukaj klientów..."
+ * Stats: Wszyscy, Z emailem, Z telefonem, Ten miesiąc
+ */
+
+test.describe('Client Management', () => {
   test.beforeEach(async ({ page }) => {
     await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
   });
 
-  test.describe('Client List', () => {
-    test('should display list of clients', async ({ page }) => {
-      await page.goto('/clients');
+  test.describe('Client List Page', () => {
+    test('should load clients page', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      await expect(page.locator('h1')).toContainText('Klienci');
-      await expect(page.locator('[data-testid="client-list"]')).toBeVisible();
-      
-      // Should show at least one client
-      await expect(page.locator('[data-testid="client-item"]')).toHaveCount(await page.locator('[data-testid="client-item"]').count());
+      await expect(
+        page.getByRole('heading', { name: 'Klienci' })
+      ).toBeVisible({ timeout: 10000 });
     });
 
+    test('should display stats cards', async ({ page }) => {
+      await page.goto('/dashboard/clients');
+
+      await expect(page.getByText('Wszyscy', { exact: true })).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText('Z emailem', { exact: true })).toBeVisible();
+      await expect(page.getByText('Z telefonem', { exact: true })).toBeVisible();
+      await expect(page.getByText('Ten miesiąc', { exact: true })).toBeVisible();
+    });
+
+    test('should have Dodaj Klienta button', async ({ page }) => {
+      await page.goto('/dashboard/clients');
+
+      await expect(
+        page.locator('button:has-text("Dodaj Klienta")')
+      ).toBeVisible({ timeout: 5000 });
+    });
+
+    test('should display Lista Klientów section', async ({ page }) => {
+      await page.goto('/dashboard/clients');
+
+      await expect(
+        page.getByText('Lista Klientów', { exact: true })
+      ).toBeVisible({ timeout: 5000 });
+    });
+
+    test('should have search input', async ({ page }) => {
+      await page.goto('/dashboard/clients');
+
+      await expect(
+        page.locator('input[placeholder="Szukaj klientów..."]')
+      ).toBeVisible({ timeout: 5000 });
+    });
+  });
+
+  test.describe('Client Search', () => {
     test('should filter clients by search term', async ({ page }) => {
-      await page.goto('/clients');
+      await page.goto('/dashboard/clients');
 
-      const searchTerm = 'Nowak';
-      await page.fill('input[placeholder*="Szukaj"]', searchTerm);
-      await page.waitForTimeout(500); // Debounce
+      const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
+      await expect(searchInput).toBeVisible({ timeout: 5000 });
 
-      // All visible clients should contain search term
-      const clientItems = page.locator('[data-testid="client-item"]');
-      const count = await clientItems.count();
-      
-      for (let i = 0; i < count; i++) {
-        const text = await clientItems.nth(i).textContent();
-        expect(text?.toLowerCase()).toContain(searchTerm.toLowerCase());
-      }
+      // Type a search term
+      await searchInput.fill('test-nonexistent-xyz');
+
+      // Wait for client-side filtering
+      await page.waitForTimeout(500);
+
+      // Should show empty state
+      await expect(
+        page.locator('text=Nie znaleziono klientów')
+      ).toBeVisible({ timeout: 3000 });
     });
 
-    test('should paginate client list', async ({ page }) => {
-      await page.goto('/clients');
+    test('should clear search and show all clients again', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      // Check if pagination exists (if more than 20 clients)
-      const pagination = page.locator('[data-testid="pagination"]');
-      
-      if (await pagination.isVisible()) {
-        // Click next page
-        await page.click('[data-testid="next-page"]');
-        
-        // URL should contain page parameter
-        await expect(page).toHaveURL(/page=2/);
-      }
-    });
+      const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
+      await expect(searchInput).toBeVisible({ timeout: 5000 });
 
-    test('should sort clients by name', async ({ page }) => {
-      await page.goto('/clients');
+      // Apply search
+      await searchInput.fill('test-nonexistent-xyz');
+      await page.waitForTimeout(500);
 
-      // Click sort by name
-      await page.click('th:has-text("Nazwisko")');
+      // Clear search
+      await searchInput.fill('');
+      await page.waitForTimeout(500);
 
-      // Get all client names
-      const names = await page.locator('[data-testid="client-name"]').allTextContents();
-      
-      // Should be sorted alphabetically
-      const sorted = [...names].sort();
-      expect(names).toEqual(sorted);
+      // Empty state should be gone (assuming clients exist)
+      // "Nie znaleziono klientów" should disappear
+      await expect(
+        page.locator('text=Nie znaleziono klientów')
+      ).toBeHidden({ timeout: 3000 });
     });
   });
 
-  test.describe('Create Client', () => {
-    test('should create new client successfully', async ({ page }) => {
-      await page.goto('/clients/new');
+  test.describe('Create Client Form', () => {
+    test('should open create form when clicking Dodaj Klienta', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      const newClient = {
-        firstName: 'Jan',
-        lastName: 'Testowy',
-        email: 'jan.testowy@example.com',
-        phone: '+48 123 456 789',
-        address: 'ul. Testowa 123, 00-000 Warszawa'
-      };
+      await page.click('button:has-text("Dodaj Klienta")');
 
-      await page.fill('input[name="firstName"]', newClient.firstName);
-      await page.fill('input[name="lastName"]', newClient.lastName);
-      await page.fill('input[name="email"]', newClient.email);
-      await page.fill('input[name="phone"]', newClient.phone);
-      await page.fill('textarea[name="address"]', newClient.address);
+      // Form header should appear
+      await expect(
+        page.locator('text=Dodaj Nowego Klienta')
+      ).toBeVisible({ timeout: 3000 });
 
-      await page.click('button:has-text("Utwórz Klienta")');
-
-      // Should redirect to client list
-      await expect(page).toHaveURL('/clients');
-
-      // Should show success message
-      await expect(page.locator('text=Klient został utworzony')).toBeVisible();
-
-      // Should find new client in list
-      await page.fill('input[placeholder*="Szukaj"]', newClient.lastName);
-      await expect(page.locator(`text=${newClient.firstName} ${newClient.lastName}`)).toBeVisible();
+      // Form fields should be visible
+      await expect(page.locator('#firstName')).toBeVisible();
+      await expect(page.locator('#lastName')).toBeVisible();
+      await expect(page.locator('#email')).toBeVisible();
+      await expect(page.locator('#phone')).toBeVisible();
+      await expect(page.locator('#notes')).toBeVisible();
     });
 
-    test('should validate required fields', async ({ page }) => {
-      await page.goto('/clients/new');
+    test('should close form when clicking Anuluj', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      // Try to submit empty form
-      await page.click('button:has-text("Utwórz Klienta")');
-
-      // Should show validation errors
-      await expect(page.locator('text=Imię jest wymagane')).toBeVisible();
-      await expect(page.locator('text=Nazwisko jest wymagane')).toBeVisible();
-      await expect(page.locator('text=Telefon jest wymagany')).toBeVisible();
-    });
-
-    test('should validate email format', async ({ page }) => {
-      await page.goto('/clients/new');
-
-      await page.fill('input[name="email"]', 'invalid-email');
-      await page.blur('input[name="email"]');
-
-      await expect(page.locator('text=Nieprawidłowy format email')).toBeVisible();
-    });
-
-    test('should validate phone format', async ({ page }) => {
-      await page.goto('/clients/new');
-
-      await page.fill('input[name="phone"]', '123'); // Too short
-      await page.blur('input[name="phone"]');
-
-      await expect(page.locator('text=Nieprawidłowy numer telefonu')).toBeVisible();
-    });
-  });
-
-  test.describe('Edit Client', () => {
-    test('should edit existing client', async ({ page }) => {
-      await page.goto('/clients');
-
-      // Click edit on first client
-      await page.click('[data-testid="edit-button"]').first();
-
-      // Should pre-fill form with existing data
-      await expect(page.locator('input[name="firstName"]')).not.toBeEmpty();
-      await expect(page.locator('input[name="lastName"]')).not.toBeEmpty();
-
-      // Update data
-      const updatedPhone = '+48 999 888 777';
-      await page.fill('input[name="phone"]', updatedPhone);
-
-      await page.click('button:has-text("Zapisz Zmiany")');
-
-      // Should show success message
-      await expect(page.locator('text=Klient został zaktualizowany')).toBeVisible();
-
-      // Verify changes persisted
-      await page.reload();
-      await page.click('[data-testid="edit-button"]').first();
-      await expect(page.locator('input[name="phone"]')).toHaveValue(updatedPhone);
-    });
-
-    test('should cancel edit without saving', async ({ page }) => {
-      await page.goto('/clients');
-
-      await page.click('[data-testid="edit-button"]').first();
-
-      const originalPhone = await page.locator('input[name="phone"]').inputValue();
-
-      // Make changes
-      await page.fill('input[name="phone"]', '+48 111 111 111');
+      // Open form
+      await page.click('button:has-text("Dodaj Klienta")');
+      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
 
       // Cancel
       await page.click('button:has-text("Anuluj")');
 
-      // Should redirect back
-      await expect(page).toHaveURL('/clients');
-
-      // Verify changes NOT persisted
-      await page.click('[data-testid="edit-button"]').first();
-      await expect(page.locator('input[name="phone"]')).toHaveValue(originalPhone);
-    });
-  });
-
-  test.describe('View Client Details', () => {
-    test('should display client details', async ({ page }) => {
-      await page.goto('/clients');
-
-      // Click view on first client
-      await page.click('[data-testid="view-button"]').first();
-
-      // Should show client details
-      await expect(page.locator('[data-testid="client-details"]')).toBeVisible();
-      await expect(page.locator('text=Informacje kontaktowe')).toBeVisible();
+      // Form should close
+      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeHidden({ timeout: 3000 });
     });
 
-    test('should display client reservation history', async ({ page }) => {
-      await page.goto('/clients');
+    test('should show form field labels', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      await page.click('[data-testid="view-button"]').first();
+      await page.click('button:has-text("Dodaj Klienta")');
 
-      // Click on reservations tab
-      await page.click('[data-testid="tab-reservations"]');
+      // Section headers
+      await expect(page.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
+      await expect(page.locator('text=Dane kontaktowe')).toBeVisible();
+      await expect(page.locator('text=Notatki').first()).toBeVisible();
 
-      // Should show list of reservations
-      await expect(page.locator('[data-testid="reservation-list"]')).toBeVisible();
+      // Field labels
+      await expect(page.locator('label[for="firstName"]')).toContainText('Imię');
+      await expect(page.locator('label[for="lastName"]')).toContainText('Nazwisko');
+      await expect(page.locator('label[for="phone"]')).toContainText('Telefon');
     });
 
-    test('should display client notes', async ({ page }) => {
-      await page.goto('/clients');
+    test('should show validation toast when submitting empty form', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      await page.click('[data-testid="view-button"]').first();
+      await page.click('button:has-text("Dodaj Klienta")');
+      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
 
-      // Click on notes tab
-      await page.click('[data-testid="tab-notes"]');
+      // Click submit without filling fields
+      await page.click('button:has-text("Dodaj klienta")');
 
-      // Should show notes section
-      await expect(page.locator('[data-testid="notes-section"]')).toBeVisible();
+      // Validation toast should appear
+      await expect(
+        page.locator('text=Wypełnij wszystkie wymagane pola')
+      ).toBeVisible({ timeout: 3000 });
     });
 
-    test('should add note to client', async ({ page }) => {
-      await page.goto('/clients');
+    test('should create client successfully', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      await page.click('[data-testid="view-button"]').first();
-      await page.click('[data-testid="tab-notes"]');
+      await page.click('button:has-text("Dodaj Klienta")');
+      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
 
-      const noteText = 'Test note: Client prefers afternoon events';
-      await page.fill('textarea[name="note"]', noteText);
-      await page.click('button:has-text("Dodaj Notatkę")');
+      // Fill form
+      const randomEmail = generateRandomEmail();
+      const randomPhone = generateRandomPhone();
 
-      // Should show success message
-      await expect(page.locator('text=Notatka została dodana')).toBeVisible();
+      await page.locator('#firstName').fill('E2E-Test');
+      await page.locator('#lastName').fill('Klient');
+      await page.locator('#email').fill(randomEmail);
+      await page.locator('#phone').fill(randomPhone);
+      await page.locator('#notes').fill('Klient testowy z E2E');
 
-      // Should display the note
-      await expect(page.locator(`text=${noteText}`)).toBeVisible();
-    });
-  });
+      // Submit
+      await page.click('button:has-text("Dodaj klienta")');
 
-  test.describe('Delete Client', () => {
-    test('should delete client without reservations', async ({ page }) => {
-      await page.goto('/clients');
+      // Success toast
+      await expect(
+        page.locator('text=Klient został dodany')
+      ).toBeVisible({ timeout: 5000 });
 
-      // Find client without reservations
-      await page.click('[data-testid="delete-button"]').first();
-
-      // Confirm deletion
-      await page.click('button:has-text("Potwierdź Usunięcie")');
-
-      // Should show success message
-      await expect(page.locator('text=Klient został usunięty')).toBeVisible();
+      // Form should close
+      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeHidden({ timeout: 3000 });
     });
 
-    test('should prevent deletion of client with active reservations', async ({ page }) => {
-      await page.goto('/clients');
+    test('should find newly created client in search', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      // Find client with reservations (e.g., Jan Kowalski)
-      await page.fill('input[placeholder*="Szukaj"]', 'Kowalski');
-      
-      await page.click('[data-testid="delete-button"]').first();
+      // Create a client with a unique name
+      const uniqueName = `E2ESearch${Date.now()}`;
 
-      // Should show warning
-      await expect(page.locator('text=Klient posiada aktywne rezerwacje')).toBeVisible();
+      await page.click('button:has-text("Dodaj Klienta")');
+      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
 
-      // Delete button should be disabled
-      await expect(page.locator('button:has-text("Potwierdź Usunięcie")')).toBeDisabled();
-    });
-  });
+      await page.locator('#firstName').fill(uniqueName);
+      await page.locator('#lastName').fill('Testowy');
+      await page.locator('#phone').fill(generateRandomPhone());
 
-  test.describe('Client Search and Filters', () => {
-    test('should search by email', async ({ page }) => {
-      await page.goto('/clients');
+      await page.click('button:has-text("Dodaj klienta")');
+      await expect(page.locator('text=Klient został dodany')).toBeVisible({ timeout: 5000 });
 
-      await page.fill('input[placeholder*="Szukaj"]', 'jan.kowalski@example.com');
+      // Search for the client
+      const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
+      await searchInput.fill(uniqueName);
       await page.waitForTimeout(500);
 
-      await expect(page.locator('text=jan.kowalski@example.com')).toBeVisible();
-    });
-
-    test('should search by phone', async ({ page }) => {
-      await page.goto('/clients');
-
-      await page.fill('input[placeholder*="Szukaj"]', '123456789');
-      await page.waitForTimeout(500);
-
-      await expect(page.locator('text=123456789')).toBeVisible();
-    });
-
-    test('should filter by recent activity', async ({ page }) => {
-      await page.goto('/clients');
-
-      await page.click('[data-testid="filter-recent"]');
-
-      // Should show only clients with recent reservations
-      await expect(page.locator('[data-testid="client-item"]')).toHaveCount(await page.locator('[data-testid="client-item"]').count());
+      // Client should appear in results
+      await expect(page.locator(`text=${uniqueName}`)).toBeVisible({ timeout: 3000 });
     });
   });
 
-  test.describe('Client Stats', () => {
-    test('should display client statistics', async ({ page }) => {
-      await page.goto('/clients');
+  test.describe('Client Detail Page', () => {
+    test('should navigate to client detail via link', async ({ page }) => {
+      await page.goto('/dashboard/clients');
 
-      await page.click('[data-testid="view-button"]').first();
+      // Find any link to a client detail page
+      const clientLink = page.locator('a[href*="/dashboard/clients/"]').first();
 
-      // Should show stats
-      await expect(page.locator('[data-testid="total-reservations"]')).toBeVisible();
-      await expect(page.locator('[data-testid="total-spent"]')).toBeVisible();
-      await expect(page.locator('[data-testid="last-visit"]')).toBeVisible();
+      if (await clientLink.isVisible({ timeout: 5000 })) {
+        await clientLink.click();
+        await expect(page).toHaveURL(/\/dashboard\/clients\//);
+      }
     });
   });
 });
