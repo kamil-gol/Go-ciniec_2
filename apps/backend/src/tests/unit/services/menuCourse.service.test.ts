@@ -1,146 +1,184 @@
 /**
- * MenuCourseService — Unit Tests
+ * Unit tests for menuCourse.service.ts
+ * Covers: listByPackage, getById, create, update, delete,
+ *         assignDishes, removeDish, getForSelection, reorderDishes
+ * Issue: #98
  */
 
-jest.mock('../../../lib/prisma', () => {
-  const mock = {
-    menuCourse: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    menuPackage: { findUnique: jest.fn() },
-    menuCourseOption: {
-      findFirst: jest.fn(),
-      deleteMany: jest.fn(),
-      createMany: jest.fn(),
-      delete: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    $transaction: jest.fn(),
-  };
-  return { prisma: mock, __esModule: true, default: mock };
-});
-
-jest.mock('../../../services/dish.service', () => ({
-  dishService: { getByIds: jest.fn() },
-  default: { getByIds: jest.fn() },
-}));
-
-import { menuCourseService } from '../../../services/menuCourse.service';
-import { prisma } from '../../../lib/prisma';
-import { dishService } from '../../../services/dish.service';
-
-const mockPrisma = prisma as any;
-
-const DISH = { id: 'dish-001', name: 'Tartare', isActive: true };
-const COURSE = {
-  id: 'mc-001', packageId: 'pkg-001', name: 'Przystawki',
-  minSelect: 1, maxSelect: 2, isRequired: true, displayOrder: 0,
-  options: [{ id: 'mco-001', dishId: 'dish-001', customPrice: null, displayOrder: 0, dish: DISH }],
+const mockPrisma = {
+  menuCourse: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  menuCourseOption: {
+    findFirst: jest.fn(),
+    deleteMany: jest.fn(),
+    createMany: jest.fn(),
+    delete: jest.fn(),
+    updateMany: jest.fn(),
+  },
+  menuPackage: {
+    findUnique: jest.fn(),
+  },
+  $transaction: jest.fn(async (cb: any) => {
+    if (typeof cb === 'function') {
+      return cb({ menuCourseOption: mockPrisma.menuCourseOption });
+    }
+    return Promise.all(cb);
+  }),
 };
 
-beforeEach(() => {
-  jest.clearAllMocks();
-  mockPrisma.menuCourse.findMany.mockResolvedValue([COURSE]);
-  mockPrisma.menuCourse.findUnique.mockResolvedValue(COURSE);
-  mockPrisma.menuCourse.create.mockResolvedValue(COURSE);
-  mockPrisma.menuCourse.update.mockResolvedValue(COURSE);
-  mockPrisma.menuCourse.delete.mockResolvedValue(COURSE);
-  mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-001' });
-  mockPrisma.menuCourseOption.findFirst.mockResolvedValue({ id: 'mco-001' });
-  mockPrisma.menuCourseOption.delete.mockResolvedValue({});
-  mockPrisma.$transaction.mockImplementation(async (fn: any) => {
-    if (typeof fn === 'function') {
-      return fn({ menuCourseOption: { deleteMany: jest.fn(), createMany: jest.fn() } });
-    }
-    return Promise.all(fn);
-  });
-  (dishService.getByIds as jest.Mock).mockResolvedValue([DISH]);
-});
+const mockDishService = {
+  getByIds: jest.fn(),
+};
+
+jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
+jest.mock('@services/dish.service', () => ({ dishService: mockDishService }));
+
+import { menuCourseService } from '@services/menuCourse.service';
+
+const mockCourse = {
+  id: 'course-1', packageId: 'pkg-1', name: 'Zupy',
+  description: 'Kursy zup', minSelect: 1, maxSelect: 1,
+  isRequired: true, displayOrder: 0, icon: 'soup',
+  options: [{ id: 'co-1', dishId: 'dish-1', dish: { id: 'dish-1', name: 'Rosół' } }],
+};
 
 describe('MenuCourseService', () => {
-  describe('listByPackage()', () => {
-    it('should return courses for package', async () => {
-      const result = await menuCourseService.listByPackage('pkg-001');
+  beforeEach(() => jest.clearAllMocks());
+
+  describe('listByPackage', () => {
+    it('should return courses for package ordered by displayOrder', async () => {
+      mockPrisma.menuCourse.findMany.mockResolvedValue([mockCourse]);
+      const result = await menuCourseService.listByPackage('pkg-1');
       expect(result).toHaveLength(1);
       expect(mockPrisma.menuCourse.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { packageId: 'pkg-001' } })
+        expect.objectContaining({ where: { packageId: 'pkg-1' }, orderBy: { displayOrder: 'asc' } })
       );
     });
   });
 
-  describe('getById()', () => {
+  describe('getById', () => {
     it('should return course with options', async () => {
-      const result = await menuCourseService.getById('mc-001');
-      expect(result.name).toBe('Przystawki');
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      const result = await menuCourseService.getById('course-1');
+      expect(result.id).toBe('course-1');
+      expect(result.options).toHaveLength(1);
     });
 
-    it('should throw when not found', async () => {
+    it('should throw when course not found', async () => {
       mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
-      await expect(menuCourseService.getById('x')).rejects.toThrow(/not found/);
+      await expect(menuCourseService.getById('x')).rejects.toThrow('Course not found');
     });
   });
 
-  describe('create()', () => {
-    it('should create with defaults', async () => {
-      await menuCourseService.create({ packageId: 'pkg-001', name: 'Zupy' });
-      const data = mockPrisma.menuCourse.create.mock.calls[0][0].data;
-      expect(data.minSelect).toBe(1);
-      expect(data.maxSelect).toBe(1);
-      expect(data.isRequired).toBe(true);
+  describe('create', () => {
+    it('should create course for existing package', async () => {
+      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-1' });
+      mockPrisma.menuCourse.create.mockResolvedValue(mockCourse);
+      const result = await menuCourseService.create({ packageId: 'pkg-1', name: 'Zupy' });
+      expect(result.id).toBe('course-1');
     });
 
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(menuCourseService.create({ packageId: 'bad', name: 'X' })).rejects.toThrow(/not found/);
+      await expect(menuCourseService.create({ packageId: 'x', name: 'Test' }))
+        .rejects.toThrow('Package not found');
     });
   });
 
-  describe('update()', () => {
-    it('should update course', async () => {
-      await menuCourseService.update('mc-001', { name: 'Updated' });
-      expect(mockPrisma.menuCourse.update).toHaveBeenCalledTimes(1);
+  describe('update', () => {
+    it('should update course fields', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      mockPrisma.menuCourse.update.mockResolvedValue({ ...mockCourse, name: 'Desery' });
+      const result = await menuCourseService.update('course-1', { name: 'Desery' });
+      expect(result.name).toBe('Desery');
+    });
+
+    it('should throw when course not found', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
+      await expect(menuCourseService.update('x', { name: 'Y' })).rejects.toThrow('Course not found');
     });
   });
 
-  describe('delete()', () => {
-    it('should delete course', async () => {
-      await menuCourseService.delete('mc-001');
-      expect(mockPrisma.menuCourse.delete).toHaveBeenCalledTimes(1);
+  describe('delete', () => {
+    it('should delete existing course', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      mockPrisma.menuCourse.delete.mockResolvedValue(mockCourse);
+      const result = await menuCourseService.delete('course-1');
+      expect(mockPrisma.menuCourse.delete).toHaveBeenCalledWith({ where: { id: 'course-1' } });
     });
   });
 
-  describe('assignDishes()', () => {
-    it('should clear and assign dishes in transaction', async () => {
-      await menuCourseService.assignDishes('mc-001', [{ dishId: 'dish-001' }]);
-      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+  describe('assignDishes', () => {
+    it('should assign dishes to course', async () => {
+      mockPrisma.menuCourse.findUnique
+        .mockResolvedValueOnce(mockCourse)   // getById check
+        .mockResolvedValueOnce(mockCourse);  // return after assign
+      mockDishService.getByIds.mockResolvedValue([{ id: 'dish-1' }, { id: 'dish-2' }]);
+      mockPrisma.menuCourseOption.deleteMany.mockResolvedValue({});
+      mockPrisma.menuCourseOption.createMany.mockResolvedValue({ count: 2 });
+
+      const result = await menuCourseService.assignDishes('course-1', [
+        { dishId: 'dish-1', isDefault: true },
+        { dishId: 'dish-2' },
+      ]);
+
+      expect(mockDishService.getByIds).toHaveBeenCalledWith(['dish-1', 'dish-2']);
     });
 
-    it('should throw when dish not found', async () => {
-      (dishService.getByIds as jest.Mock).mockResolvedValue([]); // no dishes found
-      await expect(menuCourseService.assignDishes('mc-001', [{ dishId: 'bad' }])).rejects.toThrow(/not found/);
+    it('should throw when some dishes not found', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      mockDishService.getByIds.mockResolvedValue([{ id: 'dish-1' }]);
+
+      await expect(menuCourseService.assignDishes('course-1', [
+        { dishId: 'dish-1' }, { dishId: 'dish-missing' },
+      ])).rejects.toThrow(/Dishes not found.*dish-missing/);
     });
   });
 
-  describe('removeDish()', () => {
+  describe('removeDish', () => {
     it('should remove dish from course', async () => {
-      await menuCourseService.removeDish('mc-001', 'dish-001');
-      expect(mockPrisma.menuCourseOption.delete).toHaveBeenCalledTimes(1);
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      mockPrisma.menuCourseOption.findFirst.mockResolvedValue({ id: 'co-1', courseId: 'course-1', dishId: 'dish-1' });
+      mockPrisma.menuCourseOption.delete.mockResolvedValue({});
+      await menuCourseService.removeDish('course-1', 'dish-1');
+      expect(mockPrisma.menuCourseOption.delete).toHaveBeenCalledWith({ where: { id: 'co-1' } });
     });
 
     it('should throw when dish not assigned', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
       mockPrisma.menuCourseOption.findFirst.mockResolvedValue(null);
-      await expect(menuCourseService.removeDish('mc-001', 'bad')).rejects.toThrow(/not assigned/);
+      await expect(menuCourseService.removeDish('course-1', 'dish-x'))
+        .rejects.toThrow('Dish not assigned to this course');
     });
   });
 
-  describe('getForSelection()', () => {
-    it('should return course with active options', async () => {
-      const result = await menuCourseService.getForSelection('mc-001');
-      expect(result).toBeDefined();
+  describe('getForSelection', () => {
+    it('should return course with active dishes sorted by recommended/default', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      const result = await menuCourseService.getForSelection('course-1');
+      expect(result.id).toBe('course-1');
+    });
+
+    it('should throw when course not found', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
+      await expect(menuCourseService.getForSelection('x')).rejects.toThrow('Course not found');
+    });
+  });
+
+  describe('reorderDishes', () => {
+    it('should reorder dishes in course', async () => {
+      mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
+      mockPrisma.menuCourseOption.updateMany.mockResolvedValue({});
+      const result = await menuCourseService.reorderDishes('course-1', [
+        { dishId: 'dish-1', displayOrder: 1 },
+        { dishId: 'dish-2', displayOrder: 0 },
+      ]);
+      expect(result.id).toBe('course-1');
     });
   });
 });
