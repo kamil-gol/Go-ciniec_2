@@ -19,8 +19,11 @@ test.describe('Smoke Tests - Critical Paths', () => {
   test('should load dashboard successfully', async ({ page }) => {
     await page.goto('/dashboard');
 
-    // Header shows welcome message: "Witaj, Admin! \ud83d\udc4b"
-    await expect(page.locator('h1')).toContainText('Witaj', { timeout: 10000 });
+    // Header shows welcome message: "Witaj, Admin! 👋"
+    // Page has 3 h1 elements so we use getByRole with name filter
+    await expect(
+      page.getByRole('heading', { name: /Witaj/ })
+    ).toBeVisible({ timeout: 10000 });
     
     // Page loaded without crash
     await expect(page.locator('text=404')).toHaveCount(0);
@@ -121,7 +124,9 @@ test.describe('Smoke Tests - Mobile Responsive', () => {
 
     // Dashboard should load
     await page.goto('/dashboard');
-    await expect(page.locator('h1')).toContainText('Witaj', { timeout: 10000 });
+    await expect(
+      page.getByRole('heading', { name: /Witaj/ })
+    ).toBeVisible({ timeout: 10000 });
 
     // Hamburger menu should be visible on mobile
     const hamburger = page.locator('button[aria-label="Otwórz menu nawigacji"]');
