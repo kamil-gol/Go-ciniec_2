@@ -40,9 +40,9 @@ test.describe('Bug #6 - Loading States Regression', () => {
       page.locator('text=Wystąpił błąd')
     ).not.toBeVisible({ timeout: 5000 });
 
-    // Should show queue UI (header or content area)
+    // Should show queue heading
     await expect(
-      page.locator('text=/Kolejka|Lista oczekujących|Dodaj do kolejki/')
+      page.locator('h1:has-text("Kolejka")')
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -111,7 +111,7 @@ test.describe('Bug #8 - Position Validation Regression', () => {
 
     // Queue page should load without position-related errors
     await expect(
-      page.locator('text=/Pozycja musi być|Position must be/')
+      page.locator('text=/Pozycja musi być|Position must be/').first()
     ).not.toBeVisible({ timeout: 3000 });
   });
 
@@ -153,7 +153,7 @@ test.describe('Form Bugs Regression (Docs Bug #1-8)', () => {
 
     // First step should show event type selection
     await expect(
-      page.locator('text=/Typ wydarzenia|Wydarzenie/')
+      page.locator('text=/Typ wydarzenia|Wydarzenie/').first()
     ).toBeVisible({ timeout: 5000 });
   });
 
