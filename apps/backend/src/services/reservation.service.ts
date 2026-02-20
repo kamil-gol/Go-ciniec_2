@@ -268,7 +268,7 @@ export class ReservationService {
           reservationId: reservation.id,
           amount: depositAmount,
           remainingAmount: depositAmount,
-          dueDate: new Date(depositData.dueDate),
+          dueDate: new Date(depositData.dueDate).toISOString().split('T')[0],
           paid: depositData.paid || false,
           status: depositData.paid ? 'PAID' : 'PENDING',
           paymentMethod: sanitizeString(depositData.paymentMethod),
@@ -804,7 +804,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Zmiana statusu rezerwacji: ${existingReservation.status} \u2192 ${data.status}`,
+        description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
         oldStatus: existingReservation.status,
         newStatus: data.status,
         reason: data.reason
@@ -971,7 +971,7 @@ export class ReservationService {
         data: {
           reservationId,
           changedByUserId: userId,
-          changeType: 'DEPOSIT_CASCADE_CANCELLED',
+          changeType: 'DEPOSIT_CANCELLED',
           fieldName: 'deposit',
           oldValue: deposit.status,
           newValue: 'CANCELLED',
@@ -980,13 +980,13 @@ export class ReservationService {
       });
     }
 
-    // Audit log — DEPOSIT_CASCADE_CANCELLED (outside transaction, fire-and-forget)
+    // Audit log — DEPOSIT_CANCELLED (outside transaction, fire-and-forget)
     /* istanbul ignore next */
     setTimeout(async () => {
       try {
         await logChange({
           userId,
-          action: 'DEPOSIT_CASCADE_CANCELLED',
+          action: 'DEPOSIT_CANCELLED',
           entityType: 'RESERVATION',
           entityId: reservationId,
           details: {
@@ -998,7 +998,7 @@ export class ReservationService {
           },
         });
       } catch (e) {
-        console.error('[Audit] Failed to log DEPOSIT_CASCADE_CANCELLED:', e);
+        console.error('[Audit] Failed to log DEPOSIT_CANCELLED:', e);
       }
     }, 0);
 
@@ -1049,7 +1049,7 @@ export class ReservationService {
         /* istanbul ignore next -- hall always included */
         const hallName = (conflict as any).hall?.name || 'inna sala';
         throw new Error(
-          `Nie można zarezerwować całego obiektu \u2014 sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
+          `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
         );
       }
     } else {
@@ -1072,7 +1072,7 @@ export class ReservationService {
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
         throw new Error(
-          `Nie można zarezerwować tej sali \u2014 cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
+          `Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
         );
       }
     }
@@ -1081,7 +1081,7 @@ export class ReservationService {
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje \u2014 wyloguj się i zaloguj ponownie');
+      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
     }
   }
 
