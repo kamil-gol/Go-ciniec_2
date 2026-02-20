@@ -4,7 +4,7 @@
  * Issue: #97
  */
 
-// ── Mocks ────────────────────────────────────────────
+// ── Mocks ────────────────────────────────────────
 const mockPrisma = {
   deposit: {
     findMany: jest.fn(),
@@ -27,7 +27,7 @@ jest.mock('@utils/logger', () => ({
 
 import depositReminderService from '@services/deposit-reminder.service';
 
-// ── Fixtures ─────────────────────────────────────────
+// ── Fixtures ─────────────────────────────────────
 const mockClient = {
   firstName: 'Anna',
   lastName: 'Nowak',
@@ -87,7 +87,15 @@ describe('DepositReminderService', () => {
     });
 
     it('should aggregate sent counts from all reminder types', async () => {
-      mockPrisma.deposit.findMany.mockResolvedValue([createMockDeposit()]);
+      // Use yesterday's date so overdue throttle allows sending
+      // (daysOverdue=1, within OVERDUE_DAILY_LIMIT=3)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().substring(0, 10);
+
+      mockPrisma.deposit.findMany.mockResolvedValue([
+        createMockDeposit({ dueDate: yesterdayStr }),
+      ]);
       mockEmailService.sendDepositReminder.mockResolvedValue(true);
       mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
 
