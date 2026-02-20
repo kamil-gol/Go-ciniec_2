@@ -38,7 +38,6 @@ test.describe('Authentication Flow', () => {
       await page.click('button[type="submit"]');
 
       // App shows field validation via motion.p with AlertCircle icon
-      // Email: "Email jest wymagany", Password: "Hasło jest wymagane"
       await expect(page.locator('text=Email jest wymagany')).toBeVisible({ timeout: 3000 });
       await expect(page.locator('text=Hasło jest wymagane')).toBeVisible({ timeout: 3000 });
     });
@@ -62,11 +61,10 @@ test.describe('Authentication Flow', () => {
       await page.fill('input[name="email"]', TEST_USERS.admin.email);
       await page.fill('input[name="password"]', TEST_USERS.admin.password);
       
-      // Click submit and immediately check for loading text
+      // Click submit and verify login completes
       await page.click('button[type="submit"]');
       
-      // Button shows "Logowanie..." during request
-      // This may be fast so we just verify it doesn't crash
+      // Should eventually redirect to dashboard
       await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
     });
   });
@@ -153,24 +151,26 @@ test.describe('Authentication Flow', () => {
       expect(isLoggedIn).toBe(true);
     });
 
-    test('should redirect to login with invalid token', async ({ page }) => {
+    test('should not stay logged in with invalid token after navigation', async ({ page }) => {
       // Set an invalid/expired token
       await page.goto('/login');
       await page.evaluate(() => {
         localStorage.setItem('auth_token', 'expired-invalid-token');
       });
       
-      // DashboardLayout only checks token existence, not validity
-      // So with any token set, it will render the dashboard
+      // Navigate to dashboard — app may clear invalid token and redirect
       await page.goto('/dashboard');
-      
-      // App should load (DashboardLayout doesn't validate token server-side)
-      // This verifies the client-side auth check logic
       await page.waitForLoadState('networkidle');
       
-      // Token should still be present
+      // After navigation with invalid token, app either:
+      // 1. Shows dashboard (client-side only check) OR
+      // 2. Clears token and redirects to login
+      // Both are valid — verify the token was cleared (app detected invalid token)
       const token = await page.evaluate(() => localStorage.getItem('auth_token'));
-      expect(token).toBe('expired-invalid-token');
+      const onLoginPage = page.url().includes('/login');
+      
+      // At least one should be true: either redirected to login or token was cleared
+      expect(token === null || onLoginPage).toBe(true);
     });
 
     test('should redirect to login when token is removed', async ({ page, authHelper }) => {
@@ -186,7 +186,7 @@ test.describe('Authentication Flow', () => {
         localStorage.removeItem('auth_token');
       });
       
-      // Reload - DashboardLayout will check token and redirect
+      // Reload — DashboardLayout will check token and redirect
       await page.reload();
       await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
     });
