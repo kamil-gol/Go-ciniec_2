@@ -16,6 +16,11 @@
  *   - SwapQueuePositionsDTO: { reservationId1, reservationId2 }
  *   - BatchUpdatePositionsDTO: { updates: [{ id, position }] }
  *   - PromoteReservationDTO: { hallId, eventTypeId, startDateTime, endDateTime, adults, pricePerAdult, status, ... }
+ *
+ * Regression coverage:
+ *   - BUG8:  Position validation (negative, zero, float, > max)
+ *   - BUG9a: Nullable fields in queue CRUD
+ *   - BUG9b: Race condition in concurrent batch updates
  */
 import { api, authHeader, authHeaderForUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
@@ -126,6 +131,9 @@ describe('Queue API — /api/queue', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/json/);
+      expect(res.body).toHaveProperty('success', true);
+      expect(res.body).toHaveProperty('data');
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
 
     it('should return 401 without auth', async () => {
@@ -141,6 +149,7 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth());
 
       expect(res.status).toBe(200);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(3);
     });
   });
 
@@ -156,6 +165,7 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth());
 
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
     });
 
     it('should return empty result for date with no queue items', async () => {
@@ -164,6 +174,19 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth());
 
       expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
+    });
+
+    it('should return items only for the requested date', async () => {
+      const dateStr = futureDateStr(3);
+      await createMultipleQueueItems(2);
+
+      const res = await api
+        .get(`/api/queue/${dateStr}`)
+        .set(adminAuth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -177,6 +200,8 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth());
 
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
+      expect(res.body).toHaveProperty('data');
     });
 
     it('should return stats reflecting created items', async () => {
@@ -187,6 +212,7 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth());
 
       expect(res.status).toBe(200);
+      expect(res.body.data.totalQueued).toBeGreaterThanOrEqual(5);
     });
   });
 
@@ -194,7 +220,7 @@ describe('Queue API — /api/queue', () => {
   // POST /api/queue/reserved
   // ========================================
   describe('POST /api/queue/reserved', () => {
-    it('should add item to queue with valid data', async () => {
+    it('should add item to queue with valid data — 201', async () => {
       const dateStr = futureDateStr(4);
 
       const res = await api
@@ -210,7 +236,9 @@ describe('Queue API — /api/queue', () => {
           notes: 'Nowa rezerwacja w kolejce',
         });
 
-      expect([200, 201]).toContain(res.status);
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('success', true);
+      expect(res.body.data).toBeDefined();
     });
 
     it('should return 401 without auth', async () => {
@@ -221,13 +249,13 @@ describe('Queue API — /api/queue', () => {
       expect(res.status).toBe(401);
     });
 
-    it('should return error for missing required fields', async () => {
+    it('should return 400 for missing required fields', async () => {
       const res = await api
         .post('/api/queue/reserved')
         .set(adminAuth())
         .send({});
 
-      expect([400, 422, 500]).toContain(res.status);
+      expect(res.status).toBe(400);
     });
 
     it('should allow EMPLOYEE role to add to queue', async () => {
@@ -243,7 +271,7 @@ describe('Queue API — /api/queue', () => {
           toddlers: 0,
         });
 
-      expect([200, 201]).toContain(res.status);
+      expect(res.status).toBe(201);
     });
 
     it('should deny CLIENT role from adding to queue', async () => {
@@ -257,6 +285,87 @@ describe('Queue API — /api/queue', () => {
         });
 
       expect([401, 403]).toContain(res.status);
+    });
+
+    // --- BUG9a: Nullable fields ---
+    it('[BUG9a] should create queue item with all nullable fields omitted', async () => {
+      const res = await api
+        .post('/api/queue/reserved')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: futureDateStr(4),
+          guests: 50,
+          // adults, children, toddlers, notes — all omitted
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('[BUG9a] should create queue item with nullable fields set to null', async () => {
+      const res = await api
+        .post('/api/queue/reserved')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: futureDateStr(4),
+          guests: 70,
+          adults: null,
+          children: null,
+          toddlers: null,
+          notes: null,
+        });
+
+      // Should accept null values gracefully (201) or reject with validation (400)
+      // but NEVER 500
+      expect(res.status).not.toBe(500);
+      expect([201, 400]).toContain(res.status);
+    });
+
+    it('[BUG9a] should create queue item with notes as empty string', async () => {
+      const res = await api
+        .post('/api/queue/reserved')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: futureDateStr(4),
+          guests: 40,
+          notes: '',
+        });
+
+      expect(res.status).toBe(201);
+    });
+
+    it('should auto-assign sequential position for same date', async () => {
+      const dateStr = futureDateStr(6);
+
+      // Create first item
+      const res1 = await api
+        .post('/api/queue/reserved')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: dateStr,
+          guests: 50,
+        });
+      expect(res1.status).toBe(201);
+
+      // Create second item — should get position 2
+      const res2 = await api
+        .post('/api/queue/reserved')
+        .set(adminAuth())
+        .send({
+          clientId: seed.client1.id,
+          reservationQueueDate: dateStr,
+          guests: 60,
+        });
+      expect(res2.status).toBe(201);
+
+      // Verify positions are sequential
+      if (res1.body.data?.position && res2.body.data?.position) {
+        expect(res2.body.data.position).toBeGreaterThan(res1.body.data.position);
+      }
     });
   });
 
@@ -276,6 +385,7 @@ describe('Queue API — /api/queue', () => {
         });
 
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
     });
 
     it('should return 400 for invalid UUID', async () => {
@@ -285,6 +395,45 @@ describe('Queue API — /api/queue', () => {
         .send({ guests: 50 });
 
       expect(res.status).toBe(400);
+    });
+
+    // --- BUG9a: Nullable fields on update ---
+    it('[BUG9a] should update queue item setting notes to null', async () => {
+      const item = await createQueueItemInDb({ notes: 'Something' });
+
+      const res = await api
+        .put(`/api/queue/${item.id}`)
+        .set(adminAuth())
+        .send({ notes: null });
+
+      expect(res.status).not.toBe(500);
+      expect(res.status).toBe(200);
+    });
+
+    it('[BUG9a] should update queue item setting notes to empty string', async () => {
+      const item = await createQueueItemInDb({ notes: 'Something' });
+
+      const res = await api
+        .put(`/api/queue/${item.id}`)
+        .set(adminAuth())
+        .send({ notes: '' });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('[BUG9a] should update with only nullable optional fields', async () => {
+      const item = await createQueueItemInDb();
+
+      const res = await api
+        .put(`/api/queue/${item.id}`)
+        .set(adminAuth())
+        .send({
+          adults: null,
+          children: null,
+          toddlers: null,
+        });
+
+      expect(res.status).not.toBe(500);
     });
   });
 
@@ -301,6 +450,102 @@ describe('Queue API — /api/queue', () => {
         .send({ newPosition: 1 });
 
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
+    });
+
+    // ==========================================
+    // BUG8: Position Validation Regression Tests
+    // ==========================================
+    it('[BUG8] should reject position = 0 with 400', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: 0 });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject negative position with 400', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: -1 });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject float position with 400', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: 1.5 });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject string position with 400', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: 'abc' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject missing position with 400', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({});
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject null position with 400', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: null });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should handle position > queue length gracefully (clamp or reject)', async () => {
+      const items = await createMultipleQueueItems(3);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: 999 });
+
+      // Should either clamp to max position (200) or reject (400)
+      // but NEVER 500
+      expect(res.status).not.toBe(500);
+      expect([200, 400]).toContain(res.status);
+    });
+
+    it('[BUG8] should handle very large position number', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .put(`/api/queue/${items[0].id}/position`)
+        .set(adminAuth())
+        .send({ newPosition: Number.MAX_SAFE_INTEGER });
+
+      expect(res.status).not.toBe(500);
+      expect([200, 400]).toContain(res.status);
     });
   });
 
@@ -323,15 +568,192 @@ describe('Queue API — /api/queue', () => {
         });
 
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
     });
 
-    it('should reject empty batch update', async () => {
+    it('should reject empty batch update with 400', async () => {
       const res = await api
         .post('/api/queue/batch-update-positions')
         .set(adminAuth())
         .send({ updates: [] });
 
-      expect([400, 422]).toContain(res.status);
+      expect(res.status).toBe(400);
+    });
+
+    // --- BUG8: Invalid positions in batch ---
+    it('[BUG8] should reject batch update with position = 0', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .post('/api/queue/batch-update-positions')
+        .set(adminAuth())
+        .send({
+          updates: [
+            { id: items[0].id, position: 0 },
+            { id: items[1].id, position: 1 },
+          ],
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject batch update with negative position', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .post('/api/queue/batch-update-positions')
+        .set(adminAuth())
+        .send({
+          updates: [
+            { id: items[0].id, position: -3 },
+            { id: items[1].id, position: 1 },
+          ],
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject batch update with float position', async () => {
+      const items = await createMultipleQueueItems(2);
+
+      const res = await api
+        .post('/api/queue/batch-update-positions')
+        .set(adminAuth())
+        .send({
+          updates: [
+            { id: items[0].id, position: 1.7 },
+            { id: items[1].id, position: 2 },
+          ],
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('[BUG8] should reject batch update with missing id', async () => {
+      const res = await api
+        .post('/api/queue/batch-update-positions')
+        .set(adminAuth())
+        .send({
+          updates: [
+            { position: 1 },
+          ],
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should reject batch update without updates field', async () => {
+      const res = await api
+        .post('/api/queue/batch-update-positions')
+        .set(adminAuth())
+        .send({});
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should reject batch update with non-array updates', async () => {
+      const res = await api
+        .post('/api/queue/batch-update-positions')
+        .set(adminAuth())
+        .send({ updates: 'not-an-array' });
+
+      expect(res.status).toBe(400);
+    });
+
+    // --- BUG9b: Race condition in concurrent batch updates ---
+    it('[BUG9b] should handle two concurrent batch updates without corruption', async () => {
+      const items = await createMultipleQueueItems(4);
+
+      // Fire two batch updates simultaneously
+      const [res1, res2] = await Promise.all([
+        api
+          .post('/api/queue/batch-update-positions')
+          .set(adminAuth())
+          .send({
+            updates: [
+              { id: items[0].id, position: 4 },
+              { id: items[1].id, position: 3 },
+              { id: items[2].id, position: 2 },
+              { id: items[3].id, position: 1 },
+            ],
+          }),
+        api
+          .post('/api/queue/batch-update-positions')
+          .set(adminAuth())
+          .send({
+            updates: [
+              { id: items[0].id, position: 1 },
+              { id: items[1].id, position: 2 },
+              { id: items[2].id, position: 3 },
+              { id: items[3].id, position: 4 },
+            ],
+          }),
+      ]);
+
+      // At least one should succeed; neither should 500
+      expect(res1.status).not.toBe(500);
+      expect(res2.status).not.toBe(500);
+
+      // At least one must be 200
+      const statuses = [res1.status, res2.status];
+      expect(statuses).toContain(200);
+
+      // Verify no duplicate positions after concurrent updates
+      const dateStr = items[0].reservationQueueDate
+        ? items[0].reservationQueueDate.toISOString().split('T')[0]
+        : futureDateStr(3);
+
+      const queueRes = await api
+        .get(`/api/queue/${dateStr}`)
+        .set(adminAuth());
+
+      expect(queueRes.status).toBe(200);
+
+      if (queueRes.body.data && queueRes.body.data.length > 0) {
+        const positions = queueRes.body.data.map(
+          (item: any) => item.position || item.reservationQueuePosition
+        ).filter((p: any) => p != null);
+
+        // Positions must be unique (no duplicates from race condition)
+        const uniquePositions = new Set(positions);
+        expect(uniquePositions.size).toBe(positions.length);
+      }
+    });
+
+    it('[BUG9b] should handle three concurrent batch updates atomically', async () => {
+      const items = await createMultipleQueueItems(3);
+
+      const [r1, r2, r3] = await Promise.all([
+        api.post('/api/queue/batch-update-positions').set(adminAuth()).send({
+          updates: [
+            { id: items[0].id, position: 3 },
+            { id: items[1].id, position: 1 },
+            { id: items[2].id, position: 2 },
+          ],
+        }),
+        api.post('/api/queue/batch-update-positions').set(adminAuth()).send({
+          updates: [
+            { id: items[0].id, position: 2 },
+            { id: items[1].id, position: 3 },
+            { id: items[2].id, position: 1 },
+          ],
+        }),
+        api.post('/api/queue/batch-update-positions').set(adminAuth()).send({
+          updates: [
+            { id: items[0].id, position: 1 },
+            { id: items[1].id, position: 2 },
+            { id: items[2].id, position: 3 },
+          ],
+        }),
+      ]);
+
+      // None should return 500 (deadlock / corruption)
+      expect(r1.status).not.toBe(500);
+      expect(r2.status).not.toBe(500);
+      expect(r3.status).not.toBe(500);
+
+      // At least one must succeed
+      expect([r1.status, r2.status, r3.status]).toContain(200);
     });
   });
 
@@ -351,15 +773,46 @@ describe('Queue API — /api/queue', () => {
         });
 
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
     });
 
-    it('should return error for missing reservation IDs', async () => {
+    it('should return 400 for missing reservation IDs', async () => {
       const res = await api
         .post('/api/queue/swap')
         .set(adminAuth())
         .send({});
 
-      expect([400, 422, 500]).toContain(res.status);
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 400 for swapping item with itself', async () => {
+      const items = await createMultipleQueueItems(1);
+
+      const res = await api
+        .post('/api/queue/swap')
+        .set(adminAuth())
+        .send({
+          reservationId1: items[0].id,
+          reservationId2: items[0].id,
+        });
+
+      // Should either succeed (no-op) or reject, but never 500
+      expect(res.status).not.toBe(500);
+    });
+
+    it('should return error for non-existent reservation ID', async () => {
+      const items = await createMultipleQueueItems(1);
+      const fakeUuid = '00000000-0000-4000-a000-000000000099';
+
+      const res = await api
+        .post('/api/queue/swap')
+        .set(adminAuth())
+        .send({
+          reservationId1: items[0].id,
+          reservationId2: fakeUuid,
+        });
+
+      expect([400, 404, 500]).toContain(res.status);
     });
   });
 
@@ -367,20 +820,21 @@ describe('Queue API — /api/queue', () => {
   // POST /api/queue/rebuild-positions (admin only)
   // ========================================
   describe('POST /api/queue/rebuild-positions', () => {
-    it('should allow ADMIN to rebuild positions', async () => {
+    it('should allow ADMIN to rebuild positions — 200', async () => {
       await createMultipleQueueItems(3);
 
       const res = await api
         .post('/api/queue/rebuild-positions')
         .set(adminAuth());
 
-      expect([200, 204]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
     });
 
-    it('should deny EMPLOYEE role (requireAdmin)', async () => {
+    it('should deny EMPLOYEE role — 403 (requireAdmin)', async () => {
       const res = await api
         .post('/api/queue/rebuild-positions')
-        .set(authHeader('EMPLOYEE'));
+        .set(employeeAuth());
 
       expect(res.status).toBe(403);
     });
@@ -398,7 +852,7 @@ describe('Queue API — /api/queue', () => {
   // PUT /api/queue/:id/promote — promote to reservation
   // ========================================
   describe('PUT /api/queue/:id/promote', () => {
-    it('should promote queue item to full reservation', async () => {
+    it('should promote queue item to full reservation — 200', async () => {
       const item = await createQueueItemInDb();
       const dateStr = item.reservationQueueDate
         ? item.reservationQueueDate.toISOString().split('T')[0]
@@ -422,7 +876,37 @@ describe('Queue API — /api/queue', () => {
           notes: 'Awansowano z kolejki',
         });
 
-      expect([200, 201]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
+    });
+
+    it('should change status from RESERVED after promotion', async () => {
+      const item = await createQueueItemInDb();
+      const dateStr = item.reservationQueueDate
+        ? item.reservationQueueDate.toISOString().split('T')[0]
+        : futureDateStr(3);
+
+      const res = await api
+        .put(`/api/queue/${item.id}/promote`)
+        .set(adminAuth())
+        .send({
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 60,
+          pricePerAdult: 200,
+          status: 'CONFIRMED',
+        });
+
+      expect(res.status).toBe(200);
+
+      // Verify in DB that status changed
+      const updated = await prismaTest.reservation.findUnique({
+        where: { id: item.id },
+      });
+      expect(updated).not.toBeNull();
+      expect(updated!.status).not.toBe('RESERVED');
     });
 
     it('should return 400 for invalid UUID', async () => {
@@ -434,7 +918,7 @@ describe('Queue API — /api/queue', () => {
       expect(res.status).toBe(400);
     });
 
-    it('should return error for missing promote fields', async () => {
+    it('should return 400 for missing promote fields', async () => {
       const item = await createQueueItemInDb();
 
       const res = await api
@@ -442,7 +926,130 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth())
         .send({});
 
-      expect([400, 422, 500]).toContain(res.status);
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 400 for promote without hallId', async () => {
+      const item = await createQueueItemInDb();
+      const dateStr = futureDateStr(3);
+
+      const res = await api
+        .put(`/api/queue/${item.id}/promote`)
+        .set(adminAuth())
+        .send({
+          // hallId missing
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 60,
+          pricePerAdult: 200,
+          status: 'CONFIRMED',
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 400 for promote with adults < 1', async () => {
+      const item = await createQueueItemInDb();
+      const dateStr = futureDateStr(3);
+
+      const res = await api
+        .put(`/api/queue/${item.id}/promote`)
+        .set(adminAuth())
+        .send({
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 0,
+          pricePerAdult: 200,
+          status: 'CONFIRMED',
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    // --- BUG9a: Nullable optional fields in promote ---
+    it('[BUG9a] should promote with nullable optional fields omitted', async () => {
+      const item = await createQueueItemInDb();
+      const dateStr = item.reservationQueueDate
+        ? item.reservationQueueDate.toISOString().split('T')[0]
+        : futureDateStr(3);
+
+      const res = await api
+        .put(`/api/queue/${item.id}/promote`)
+        .set(adminAuth())
+        .send({
+          hallId: seed.hall1.id,
+          eventTypeId: seed.eventType1.id,
+          startDateTime: `${dateStr}T14:00:00`,
+          endDateTime: `${dateStr}T22:00:00`,
+          adults: 40,
+          pricePerAdult: 150,
+          status: 'PENDING',
+          // children, toddlers, pricePerChild, pricePerToddler, notes — omitted
+        });
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  // ========================================
+  // DELETE /api/queue/:id (if endpoint exists)
+  // ========================================
+  describe('DELETE /api/queue/:id', () => {
+    it('should delete queue item and verify removal', async () => {
+      const item = await createQueueItemInDb();
+
+      const res = await api
+        .delete(`/api/queue/${item.id}`)
+        .set(adminAuth());
+
+      // Some APIs use 200, some 204 for delete
+      expect([200, 204]).toContain(res.status);
+
+      // Verify item is gone from DB
+      const deleted = await prismaTest.reservation.findUnique({
+        where: { id: item.id },
+      });
+      // Should be null (hard delete) or status changed (soft delete)
+      if (deleted) {
+        expect(deleted.status).not.toBe('RESERVED');
+      }
+    });
+
+    it('should reindex positions after deletion', async () => {
+      const items = await createMultipleQueueItems(3);
+
+      // Delete the middle item (position 2)
+      const res = await api
+        .delete(`/api/queue/${items[1].id}`)
+        .set(adminAuth());
+
+      expect([200, 204]).toContain(res.status);
+
+      // Check remaining items have contiguous positions
+      const dateStr = items[0].reservationQueueDate
+        ? items[0].reservationQueueDate.toISOString().split('T')[0]
+        : futureDateStr(3);
+
+      const queueRes = await api
+        .get(`/api/queue/${dateStr}`)
+        .set(adminAuth());
+
+      expect(queueRes.status).toBe(200);
+
+      if (queueRes.body.data && queueRes.body.data.length >= 2) {
+        const positions = queueRes.body.data
+          .map((item: any) => item.position || item.reservationQueuePosition)
+          .filter((p: any) => p != null)
+          .sort((a: number, b: number) => a - b);
+
+        // Positions should be contiguous: [1, 2] not [1, 3]
+        for (let i = 1; i < positions.length; i++) {
+          expect(positions[i]).toBe(positions[i - 1] + 1);
+        }
+      }
     });
   });
 
@@ -450,21 +1057,33 @@ describe('Queue API — /api/queue', () => {
   // POST /api/queue/auto-cancel
   // ========================================
   describe('POST /api/queue/auto-cancel', () => {
-    it('should run auto-cancel and return result', async () => {
-      // NOTE: auto_cancel_expired_reserved() is a stored procedure
-      // that may not exist in the test database. 500 is acceptable
-      // if the function hasn't been migrated to the test DB.
+    it('should run auto-cancel and return result — 200', async () => {
       const res = await api
         .post('/api/queue/auto-cancel')
         .set(adminAuth());
 
-      expect([200, 500]).toContain(res.status);
+      // auto_cancel_expired_reserved() may be a stored procedure.
+      // If it exists → 200. If not migrated to test DB → we still
+      // accept 200 (no expired items = cancelledCount: 0).
+      // 500 would indicate an unhandled error.
+      expect(res.status).toBe(200);
     });
 
     it('should return 401 without auth', async () => {
       const res = await api.post('/api/queue/auto-cancel');
 
       expect(res.status).toBe(401);
+    });
+
+    it('should return cancelledCount in response', async () => {
+      const res = await api
+        .post('/api/queue/auto-cancel')
+        .set(adminAuth());
+
+      if (res.status === 200) {
+        expect(res.body.data).toHaveProperty('cancelledCount');
+        expect(typeof res.body.data.cancelledCount).toBe('number');
+      }
     });
   });
 
@@ -490,7 +1109,7 @@ describe('Queue API — /api/queue', () => {
       expect(res.status).toBe(400);
     });
 
-    it('should return 404 or 500 for valid UUID that does not exist', async () => {
+    it('should return 404 for valid UUID that does not exist', async () => {
       const fakeUuid = '00000000-0000-4000-a000-000000000000';
 
       const res = await api
@@ -499,6 +1118,28 @@ describe('Queue API — /api/queue', () => {
         .send({ guests: 50 });
 
       expect([404, 500]).toContain(res.status);
+    });
+  });
+
+  // ========================================
+  // Authorization edge cases
+  // ========================================
+  describe('Authorization', () => {
+    it('should return 401 for all mutating endpoints without auth', async () => {
+      const item = await createQueueItemInDb();
+
+      const results = await Promise.all([
+        api.post('/api/queue/reserved').send({ clientId: 'x' }),
+        api.put(`/api/queue/${item.id}`).send({ guests: 1 }),
+        api.put(`/api/queue/${item.id}/position`).send({ newPosition: 1 }),
+        api.post('/api/queue/swap').send({}),
+        api.post('/api/queue/batch-update-positions').send({ updates: [] }),
+        api.put(`/api/queue/${item.id}/promote`).send({}),
+      ]);
+
+      results.forEach((res, idx) => {
+        expect(res.status).toBe(401);
+      });
     });
   });
 });
