@@ -45,6 +45,22 @@ async function goToReservationDetail(page: Page): Promise<boolean> {
   return false;
 }
 
+// Helper: navigate to Historia tab, returns false if empty or unavailable
+async function goToHistoriaTab(page: Page): Promise<boolean> {
+  const loaded = await goToReservationDetail(page);
+  if (!loaded) return false;
+
+  await page.locator('button:has-text("Historia")').click();
+  await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
+
+  // Check if history is empty
+  if (await page.locator('text=Brak historii zmian').isVisible({ timeout: 2000 }).catch(() => false)) {
+    return false;
+  }
+
+  return true;
+}
+
 test.describe('History and Audit Trail', () => {
   test.beforeEach(async ({ page }) => {
     await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
@@ -134,7 +150,6 @@ test.describe('History and Audit Trail', () => {
       await page.locator('button:has-text("Historia")').click();
       await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
 
-      // Either entries ("Utworzenie" badge) or empty ("Brak historii zmian")
       await expect(
         page.locator('text=Utworzenie').first()
           .or(page.locator('text=Brak historii zmian'))
@@ -142,29 +157,15 @@ test.describe('History and Audit Trail', () => {
     });
 
     test('should show timestamps on entries', async ({ page }) => {
-      const loaded = await goToReservationDetail(page);
-      test.skip(!loaded, 'No reservations available');
-
-      await page.locator('button:has-text("Historia")').click();
-      await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
-
-      if (await page.locator('text=Brak historii zmian').isVisible({ timeout: 2000 }).catch(() => false)) {
-        return;
-      }
+      const hasEntries = await goToHistoriaTab(page);
+      test.skip(!hasEntries, 'No history entries available');
 
       await expect(page.locator('time').first()).toBeVisible({ timeout: 3000 });
     });
 
     test('should show user attribution on entries', async ({ page }) => {
-      const loaded = await goToReservationDetail(page);
-      test.skip(!loaded, 'No reservations available');
-
-      await page.locator('button:has-text("Historia")').click();
-      await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
-
-      if (await page.locator('text=Brak historii zmian').isVisible({ timeout: 2000 }).catch(() => false)) {
-        return;
-      }
+      const hasEntries = await goToHistoriaTab(page);
+      test.skip(!hasEntries, 'No history entries available');
 
       await expect(
         page.locator('text=/przez /').first()
@@ -172,15 +173,8 @@ test.describe('History and Audit Trail', () => {
     });
 
     test('should show entry count', async ({ page }) => {
-      const loaded = await goToReservationDetail(page);
-      test.skip(!loaded, 'No reservations available');
-
-      await page.locator('button:has-text("Historia")').click();
-      await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
-
-      if (await page.locator('text=Brak historii zmian').isVisible({ timeout: 2000 }).catch(() => false)) {
-        return;
-      }
+      const hasEntries = await goToHistoriaTab(page);
+      test.skip(!hasEntries, 'No history entries available');
 
       await expect(
         page.locator('text=/\\d+ wpis/')
@@ -189,30 +183,33 @@ test.describe('History and Audit Trail', () => {
   });
 
   test.describe('Expandable Details', () => {
-    test('should toggle entry details with Szczegóły/Zwiń', async ({ page }) => {
-      const loaded = await goToReservationDetail(page);
-      test.skip(!loaded, 'No reservations available');
+    test('should toggle entry details with expand/collapse', async ({ page }) => {
+      const hasEntries = await goToHistoriaTab(page);
+      test.skip(!hasEntries, 'No history entries available');
 
-      await page.locator('button:has-text("Historia")').click();
-      await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
+      // On Historia tab, buttons with text "Szczegóły":
+      //   [0] = the tab button "Szczegóły" (always present)
+      //   [1+] = timeline expand buttons (only if entries have changes)
+      const szczegolyButtons = page.locator('button:has-text("Szczegóły")');
+      const count = await szczegolyButtons.count();
 
-      if (await page.locator('text=Brak historii zmian').isVisible({ timeout: 2000 }).catch(() => false)) {
-        return;
-      }
+      // If more than 1, the extras are timeline expand buttons
+      if (count > 1) {
+        // Click the first timeline expand button (index 1)
+        await szczegolyButtons.nth(1).click();
 
-      // The "Szczegóły" expand button is distinct from the tab button;
-      // scope to last match (inside timeline, not the tab)
-      const expandBtn = page.locator('button:has-text("Szczegóły")').last();
-
-      if (await expandBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await expandBtn.click();
-
+        // Should change to "Zwiń"
         await expect(
           page.locator('button:has-text("Zwiń")').first()
-        ).toBeVisible({ timeout: 3000 });
+        ).toBeVisible({ timeout: 5000 });
 
+        // Collapse back
         await page.locator('button:has-text("Zwiń")').first().click();
+
+        // Should revert to "Szczegóły"
+        await expect(szczegolyButtons.nth(1)).toBeVisible({ timeout: 3000 });
       }
+      // If count <= 1 — no expandable entries, test passes silently
     });
   });
 });
