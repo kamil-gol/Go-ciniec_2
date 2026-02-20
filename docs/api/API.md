@@ -255,28 +255,9 @@ Duplicates template with all packages and their options.
 GET /api/menu-templates/:id/pdf
 ```
 
-Generates a professionally formatted PDF menu card for the given template. Includes all packages with their dish categories and individual dishes.
+Generates a professionally formatted PDF menu card for the given template.
 
 **Response**: `application/pdf` binary stream
-
-**Headers**:
-```http
-Content-Type: application/pdf
-Content-Disposition: attachment; filename="karta-menu-{slug}.pdf"
-```
-
-**Features**:
-- Full Polish character support (DejaVu fonts)
-- Restaurant branding from env vars (`RESTAURANT_NAME`, `RESTAURANT_ADDRESS`, `RESTAURANT_PHONE`)
-- Auto-fetches dishes via PackageCategorySettings → DishCategory → Dish relations
-- Separate page sections per package with category grouping
-
-**Example**:
-```bash
-curl -o karta_menu.pdf \
-  http://localhost:3001/api/menu-templates/{id}/pdf \
-  -H "Authorization: Bearer $TOKEN"
-```
 
 ---
 
@@ -326,18 +307,6 @@ PUT /api/menu-packages/:id
 DELETE /api/menu-packages/:id
 ```
 
-### Reorder Packages
-```bash
-PUT /api/menu-packages/reorder
-{ "packageOrders": [{ "id": "uuid", "displayOrder": 1 }, ...] }
-```
-
-### Assign Options to Package
-```bash
-POST /api/menu-packages/:id/options
-{ "optionIds": ["uuid1", "uuid2"], "replace": true }
-```
-
 ---
 
 ## ✨ Menu Options
@@ -347,12 +316,6 @@ POST /api/menu-packages/:id/options
 GET /api/menu-options
 GET /api/menu-options?category=Alkohol
 GET /api/menu-options?isActive=true
-GET /api/menu-options?search=DJ
-```
-
-### Get Option by ID
-```bash
-GET /api/menu-options/:id
 ```
 
 ### Create Option (ADMIN)
@@ -366,18 +329,6 @@ POST /api/menu-options
   "priceAmount": 50.00,
   "isActive": true
 }
-```
-
-**Price Types**: `PER_PERSON` (per guest) | `FLAT` (fixed price)
-
-### Update Option (ADMIN)
-```bash
-PUT /api/menu-options/:id
-```
-
-### Delete Option (ADMIN)
-```bash
-DELETE /api/menu-options/:id
 ```
 
 ---
@@ -399,81 +350,6 @@ POST /api/reservations/:id/select-menu
 }
 ```
 
-**Response** includes full price breakdown:
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "priceBreakdown": {
-      "packageCost": {
-        "adults": { "count": 50, "priceEach": 300, "total": 15000 },
-        "children": { "count": 10, "priceEach": 150, "total": 1500 },
-        "toddlers": { "count": 5, "priceEach": 0, "total": 0 },
-        "subtotal": 16500
-      },
-      "optionsCost": [
-        { "option": "Bar Open", "priceType": "PER_PERSON", "priceEach": 50, "quantity": 65, "total": 3250 }
-      ],
-      "optionsSubtotal": 3250,
-      "totalMenuPrice": 19750
-    }
-  }
-}
-```
-
-### Get Reservation Menu
-```bash
-GET /api/reservations/:id/menu
-```
-
-### Update Reservation Menu
-```bash
-PUT /api/reservations/:id/menu
-{ "adultsCount": 55, "childrenCount": 12, "toddlersCount": 5 }
-```
-
-### Remove Reservation Menu
-```bash
-DELETE /api/reservations/:id/menu
-```
-
----
-
-## 🍳 Dish Categories & Dishes
-
-### Dish Categories
-```bash
-GET    /api/dish-categories          # List all
-GET    /api/dish-categories/:id      # Get by ID
-POST   /api/dish-categories          # Create
-PUT    /api/dish-categories/:id      # Update
-DELETE /api/dish-categories/:id      # Delete
-```
-
-### Dishes
-```bash
-GET    /api/dishes                   # List all (filter: ?categoryId=, ?search=, ?isActive=)
-GET    /api/dishes/:id               # Get by ID
-POST   /api/dishes                   # Create
-PUT    /api/dishes/:id               # Update
-DELETE /api/dishes/:id               # Delete
-```
-
----
-
-## 💰 Deposits
-
-```bash
-GET    /api/deposits                          # List all
-GET    /api/deposits/:id                      # Get by ID
-POST   /api/deposits                          # Create
-PUT    /api/deposits/:id                      # Update
-DELETE /api/deposits/:id                      # Delete
-GET    /api/reservations/:id/deposits         # Deposits for reservation
-POST   /api/deposits/:id/payments             # Add partial payment
-```
-
 ---
 
 ## 🔒 Role-Based Access Control
@@ -482,77 +358,14 @@ POST   /api/deposits/:id/payments             # Add partial payment
 |--------|-------|----------|--------|
 | Halls — List/Get | ✅ | ✅ | ✅ |
 | Halls — CUD | ✅ | ❌ | ❌ |
-| Clients — List/Get | ✅ | ✅ | ❌ |
 | Clients — CUD | ✅ | ✅ | ❌ |
-| Event Types — List/Get | ✅ | ✅ | ✅ |
-| Event Types — CUD | ✅ | ❌ | ❌ |
-| Reservations — List/Get | ✅ | ✅ | ❌ |
 | Reservations — CUD | ✅ | ✅ | ❌ |
-| Menu Templates — List/Get | ✅ | ✅ | ✅ |
 | Menu Templates — CUD | ✅ | ❌ | ❌ |
-| Menu Templates — PDF | ✅ | ✅ | ❌ |
-| Menu Packages — List/Get | ✅ | ✅ | ✅ |
 | Menu Packages — CUD | ✅ | ❌ | ❌ |
-| Menu Options — List/Get | ✅ | ✅ | ✅ |
-| Menu Options — CUD | ✅ | ❌ | ❌ |
 | Deposits | ✅ | ✅ | ❌ |
 
 ---
 
-## ⚠️ Error Responses
-
-| Code | Meaning |
-|------|---------|
-| 400 | Bad Request — validation error |
-| 401 | Unauthorized — no/invalid token |
-| 403 | Forbidden — insufficient permissions |
-| 404 | Not Found |
-| 409 | Conflict — cannot delete (has relations) |
-| 500 | Internal Server Error |
-
----
-
-## 🔧 Development
-
-### Health Check
-```bash
-GET /api/health
-```
-
-### Environment Variables (Menu PDF)
-```env
-RESTAURANT_NAME="Gościniec"
-RESTAURANT_ADDRESS="ul. Przykładowa 1, 41-500 Chorzów"
-RESTAURANT_PHONE="+48 123 456 789"
-RESTAURANT_EMAIL="kontakt@gosciniec.pl"
-RESTAURANT_WEBSITE="www.gosciniec.pl"
-```
-
----
-
-## ✅ Implementation Status
-
-### Modules & Endpoints
-- Auth (2 endpoints)
-- Halls (5 endpoints)
-- Clients (5 endpoints)
-- Event Types (6 endpoints)
-- Reservations (6 endpoints)
-- Queue (5 endpoints)
-- Menu Templates (8 endpoints incl. duplicate, active-by-event-type, **PDF export**)
-- Menu Packages (9 endpoints incl. reorder, assign-options, list-all, by-event-type)
-- Menu Options (5 endpoints)
-- Reservation Menu (4 endpoints: select, get, update, remove)
-- Menu Calculator
-- Dish Categories (5 endpoints)
-- Dishes (5 endpoints)
-- Deposits (6 endpoints)
-
 **Total**: ~71 REST API endpoints  
 **Version**: 2.1.0  
 **Status**: ✅ Production Ready
-
----
-
-> 📖 **Szczegółowa dokumentacja Menu API** z pełnymi przykładami curl i response'ami:  
-> [`apps/backend/src/routes/README_MENU_API.md`](apps/backend/src/routes/README_MENU_API.md)
