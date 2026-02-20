@@ -776,7 +776,7 @@ describe('Reservations API — /api/reservations', () => {
       expect([400, 422, 500]).toContain(res.status);
     });
 
-    it('should attempt cascade cancel of deposits when cancelling reservation', async () => {
+    it('should cascade cancel deposits when cancelling reservation', async () => {
       const reservation = await createReservationInDb({ status: 'CONFIRMED' });
 
       // Create a PENDING deposit — dueDate is String (VarChar(10)), not DateTime
@@ -795,15 +795,12 @@ describe('Reservations API — /api/reservations', () => {
         .set(adminAuth())
         .send({ status: 'CANCELLED', reason: 'Test cascade cancel with deposit' });
 
-      // 200 = success with cascade, 500 = cascade error in $transaction
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
 
-      if (res.status === 200) {
-        const deposits = await prismaTest.deposit.findMany({
-          where: { reservationId: reservation.id },
-        });
-        expect(deposits[0]?.status).toBe('CANCELLED');
-      }
+      const deposits = await prismaTest.deposit.findMany({
+        where: { reservationId: reservation.id },
+      });
+      expect(deposits[0]?.status).toBe('CANCELLED');
     });
 
     it('should return 404 for non-existent reservation', async () => {
@@ -1028,7 +1025,7 @@ describe('Reservations API — /api/reservations', () => {
       expect([400, 409, 500]).toContain(res.status);
     });
 
-    it('should attempt cascade cancel of deposits on delete', async () => {
+    it('should cascade cancel deposits on delete', async () => {
       const reservation = await createReservationInDb({ status: 'PENDING' });
 
       // dueDate is String (VarChar(10)), not DateTime
@@ -1046,16 +1043,13 @@ describe('Reservations API — /api/reservations', () => {
         .delete(`/api/reservations/${reservation.id}`)
         .set(adminAuth());
 
-      // 200/204 = cancelled with cascade, 500 = cascade error in $transaction
-      expect([200, 204, 500]).toContain(res.status);
+      expect([200, 204]).toContain(res.status);
 
-      if (res.status !== 500) {
-        const deposits = await prismaTest.deposit.findMany({
-          where: { reservationId: reservation.id },
-        });
-        if (deposits.length > 0) {
-          expect(deposits[0].status).toBe('CANCELLED');
-        }
+      const deposits = await prismaTest.deposit.findMany({
+        where: { reservationId: reservation.id },
+      });
+      if (deposits.length > 0) {
+        expect(deposits[0].status).toBe('CANCELLED');
       }
     });
 
