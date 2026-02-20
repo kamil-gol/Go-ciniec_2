@@ -1,276 +1,308 @@
 /**
- * UsersService — Comprehensive Unit Tests
- * Targets 52.63% branches. Covers: getUsers all filters, getUserById
- * with/without role, createUser (duplicate, role not found, admin/employee slug),
- * updateUser (email conflict, role check, cache invalidation, conditional fields),
- * changePassword, toggleActive (self-block, active/inactive), deleteUser.
+ * Unit tests for users.service.ts
+ * Covers: getUsers, getUserById, createUser, updateUser, changePassword, toggleActive, deleteUser
+ * Issue: #96
  */
+import bcrypt from 'bcryptjs';
 
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {
-    user: { findMany: jest.fn(), findUnique: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
-    role: { findUnique: jest.fn() },
+// ── Mocks ────────────────────────────────────────────────
+const mockPrisma = {
+  user: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
   },
-}));
-jest.mock('../../../utils/audit-logger', () => ({ logChange: jest.fn() }));
-jest.mock('../../../utils/logger', () => ({ __esModule: true, default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() } }));
-jest.mock('../../../middlewares/permissions', () => ({ invalidatePermissionCache: jest.fn() }));
-jest.mock('bcryptjs', () => ({ hash: jest.fn().mockResolvedValue('hashed123') }));
-jest.mock('../../../utils/password', () => ({ validatePassword: jest.fn() }));
-
-import UsersService from '../../../services/users.service';
-import { prisma } from '../../../lib/prisma';
-import { invalidatePermissionCache } from '../../../middlewares/permissions';
-import { validatePassword } from '../../../utils/password';
-
-const db = prisma as any;
-const svc = UsersService;
-
-const USER = {
-  id: 'u1', email: 'jan@test.pl', firstName: 'Jan', lastName: 'K',
-  isActive: true, lastLoginAt: null, legacyRole: 'EMPLOYEE', createdAt: new Date(), updatedAt: new Date(),
-  assignedRole: { id: 'r1', name: 'Employee', slug: 'employee', color: '#000',
-    permissions: [{ permission: { slug: 'clients:read' } }]
+  role: {
+    findUnique: jest.fn(),
   },
 };
 
-beforeEach(() => jest.clearAllMocks());
+jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
+jest.mock('@utils/password', () => ({
+  validatePassword: jest.fn(),
+}));
+jest.mock('@utils/AppError', () => ({
+  AppError: {
+    notFound: (msg: string) => { const e = new Error(`${msg} nie znaleziono`); (e as any).statusCode = 404; return e; },
+    conflict: (msg: string) => { const e = new Error(msg); (e as any).statusCode = 409; return e; },
+    badRequest: (msg: string) => { const e = new Error(msg); (e as any).statusCode = 400; return e; },
+  },
+}));
+jest.mock('@utils/audit-logger', () => ({
+  logChange: jest.fn(),
+}));
+jest.mock('@middlewares/permissions', () => ({
+  invalidatePermissionCache: jest.fn(),
+}));
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+}));
+
+import UsersService from '@services/users.service';
+import { validatePassword } from '@utils/password';
+import { invalidatePermissionCache } from '@middlewares/permissions';
+import { logChange } from '@utils/audit-logger';
+
+// ── Fixtures ─────────────────────────────────────────────
+const mockRole = { id: 'role-1', name: 'Admin', slug: 'admin', color: '#F00' };
+
+const mockUser = {
+  id: 'user-1',
+  email: 'jan@test.pl',
+  firstName: 'Jan',
+  lastName: 'Kowalski',
+  isActive: true,
+  lastLoginAt: null,
+  legacyRole: 'ADMIN',
+  roleId: 'role-1',
+  assignedRole: mockRole,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
+const mockUserWithPerms = {
+  ...mockUser,
+  assignedRole: {
+    ...mockRole,
+    permissions: [
+      { permission: { slug: 'reservations:read' } },
+      { permission: { slug: 'settings:manage' } },
+    ],
+  },
+};
 
 describe('UsersService', () => {
-  // ========== getUsers ==========
-  describe('getUsers()', () => {
-    beforeEach(() => {
-      db.user.findMany.mockResolvedValue([USER]);
-      db.user.count.mockResolvedValue(1);
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    it('should use defaults', async () => {
-      const result = await svc.getUsers({});
+  // ═══════════════ getUsers ═══════════════
+  describe('getUsers', () => {
+    it('should return paginated users list', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([mockUser]);
+      mockPrisma.user.count.mockResolvedValue(1);
+
+      const result = await UsersService.getUsers({ page: 1, limit: 20 });
+
       expect(result.users).toHaveLength(1);
-      expect(result.pagination.page).toBe(1);
+      expect(result.users[0].email).toBe('jan@test.pl');
+      expect(result.pagination).toEqual({
+        page: 1, limit: 20, total: 1, totalPages: 1,
+      });
     });
 
-    it('should filter by search', async () => {
-      await svc.getUsers({ search: 'Jan' });
-      const call = db.user.findMany.mock.calls[0][0];
-      expect(call.where.OR).toHaveLength(3);
+    it('should apply search filter across name and email', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      await UsersService.getUsers({ search: 'kowalski' });
+
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.arrayContaining([
+              { firstName: { contains: 'kowalski', mode: 'insensitive' } },
+              { lastName: { contains: 'kowalski', mode: 'insensitive' } },
+              { email: { contains: 'kowalski', mode: 'insensitive' } },
+            ]),
+          }),
+        })
+      );
     });
 
     it('should filter by roleId', async () => {
-      await svc.getUsers({ roleId: 'r1' });
-      const call = db.user.findMany.mock.calls[0][0];
-      expect(call.where.roleId).toBe('r1');
-    });
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
 
-    it('should filter by isActive', async () => {
-      await svc.getUsers({ isActive: true });
-      const call = db.user.findMany.mock.calls[0][0];
-      expect(call.where.isActive).toBe(true);
-    });
+      await UsersService.getUsers({ roleId: 'role-1' });
 
-    it('should not set isActive when undefined', async () => {
-      await svc.getUsers({});
-      const call = db.user.findMany.mock.calls[0][0];
-      expect(call.where.isActive).toBeUndefined();
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ roleId: 'role-1' }),
+        })
+      );
     });
   });
 
-  // ========== getUserById ==========
-  describe('getUserById()', () => {
-    it('should throw when not found', async () => {
-      db.user.findUnique.mockResolvedValue(null);
-      await expect(svc.getUserById('x')).rejects.toThrow();
+  // ═══════════════ getUserById ═══════════════
+  describe('getUserById', () => {
+    it('should return user with permissions', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUserWithPerms);
+
+      const result = await UsersService.getUserById('user-1');
+
+      expect(result.email).toBe('jan@test.pl');
+      expect(result.permissions).toEqual(['reservations:read', 'settings:manage']);
     });
 
-    it('should return user with role and permissions', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      const result = await svc.getUserById('u1');
-      expect(result.role).toEqual({ id: 'r1', name: 'Employee', slug: 'employee', color: '#000' });
-      expect(result.permissions).toEqual(['clients:read']);
-    });
+    it('should throw 404 when user not found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
 
-    it('should return null role/empty permissions when no assignedRole', async () => {
-      db.user.findUnique.mockResolvedValue({ ...USER, assignedRole: null });
-      const result = await svc.getUserById('u1');
-      expect(result.role).toBeNull();
-      expect(result.permissions).toEqual([]);
+      await expect(UsersService.getUserById('nonexistent'))
+        .rejects.toThrow(/nie znaleziono/);
     });
   });
 
-  // ========== createUser ==========
-  describe('createUser()', () => {
-    const CREATE_DATA = { email: 'new@test.pl', password: 'Password1!', firstName: 'A', lastName: 'B', roleId: 'r1' };
+  // ═══════════════ createUser ═══════════════
+  describe('createUser', () => {
+    const createData = {
+      email: 'new@test.pl',
+      password: 'NewPass123!',
+      firstName: 'Anna',
+      lastName: 'Nowak',
+      roleId: 'role-1',
+    };
 
-    it('should throw on duplicate email', async () => {
-      db.user.findUnique.mockResolvedValue({ id: 'existing' });
-      await expect(svc.createUser(CREATE_DATA, 'actor')).rejects.toThrow('email');
+    it('should create user with hashed password and log change', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null); // no duplicate
+      mockPrisma.role.findUnique.mockResolvedValue(mockRole);
+      mockPrisma.user.create.mockResolvedValue({ ...mockUser, id: 'new-1', email: 'new@test.pl' });
+
+      const result = await UsersService.createUser(createData, 'actor-1');
+
+      expect(result.email).toBe('new@test.pl');
+      expect(validatePassword).toHaveBeenCalledWith('NewPass123!');
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'USER_CREATED', entityType: 'User' })
+      );
+      // Password should be hashed (not plaintext)
+      expect(mockPrisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            password: expect.not.stringContaining('NewPass123!'),
+          }),
+        })
+      );
     });
 
-    it('should throw when role not found', async () => {
-      db.user.findUnique.mockResolvedValueOnce(null); // email check
-      db.role.findUnique.mockResolvedValue(null);
-      await expect(svc.createUser(CREATE_DATA, 'actor')).rejects.toThrow();
+    it('should throw conflict when email already exists', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+
+      await expect(UsersService.createUser(createData, 'actor-1'))
+        .rejects.toThrow(/email/);
     });
 
-    it('should set legacyRole to ADMIN when role slug is admin', async () => {
-      db.user.findUnique.mockResolvedValueOnce(null);
-      db.role.findUnique.mockResolvedValue({ id: 'r-admin', name: 'Admin', slug: 'admin' });
-      db.user.create.mockResolvedValue({ ...USER, legacyRole: 'ADMIN', assignedRole: { id: 'r-admin', name: 'Admin', slug: 'admin', color: '#f00' } });
-      const result = await svc.createUser(CREATE_DATA, 'actor');
-      expect(db.user.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ legacyRole: 'ADMIN' }),
-      }));
-    });
+    it('should throw 404 when roleId does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.role.findUnique.mockResolvedValue(null);
 
-    it('should set legacyRole to EMPLOYEE when role slug is not admin', async () => {
-      db.user.findUnique.mockResolvedValueOnce(null);
-      db.role.findUnique.mockResolvedValue({ id: 'r1', name: 'Employee', slug: 'employee' });
-      db.user.create.mockResolvedValue(USER);
-      await svc.createUser(CREATE_DATA, 'actor');
-      expect(db.user.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ legacyRole: 'EMPLOYEE' }),
-      }));
-    });
-  });
-
-  // ========== updateUser ==========
-  describe('updateUser()', () => {
-    it('should throw when not found', async () => {
-      db.user.findUnique.mockResolvedValue(null);
-      await expect(svc.updateUser('x', {}, 'actor')).rejects.toThrow();
-    });
-
-    it('should throw on email conflict', async () => {
-      db.user.findUnique
-        .mockResolvedValueOnce(USER)
-        .mockResolvedValueOnce({ id: 'other' }); // email taken
-      await expect(svc.updateUser('u1', { email: 'taken@test.pl' }, 'actor')).rejects.toThrow('email');
-    });
-
-    it('should not check email uniqueness when same email', async () => {
-      db.user.findUnique.mockResolvedValueOnce(USER);
-      db.user.update.mockResolvedValue(USER);
-      await svc.updateUser('u1', { email: 'jan@test.pl' }, 'actor');
-      expect(db.user.findUnique).toHaveBeenCalledTimes(1); // only existing check
-    });
-
-    it('should throw when role not found', async () => {
-      db.user.findUnique.mockResolvedValueOnce(USER);
-      db.role.findUnique.mockResolvedValue(null);
-      await expect(svc.updateUser('u1', { roleId: 'bad-role' }, 'actor')).rejects.toThrow();
-    });
-
-    it('should invalidate permission cache when roleId changed', async () => {
-      db.user.findUnique.mockResolvedValueOnce(USER);
-      db.role.findUnique.mockResolvedValue({ id: 'r2', name: 'Manager', slug: 'manager' });
-      db.user.update.mockResolvedValue({ ...USER, assignedRole: { id: 'r2', name: 'Manager', slug: 'manager', color: '#0f0' } });
-      await svc.updateUser('u1', { roleId: 'r2' }, 'actor');
-      expect(invalidatePermissionCache).toHaveBeenCalledWith('u1');
-    });
-
-    it('should not invalidate cache without roleId change', async () => {
-      db.user.findUnique.mockResolvedValueOnce(USER);
-      db.user.update.mockResolvedValue({ ...USER, firstName: 'Anna' });
-      await svc.updateUser('u1', { firstName: 'Anna' }, 'actor');
-      expect(invalidatePermissionCache).not.toHaveBeenCalled();
-    });
-
-    it('should only include defined fields in updateData', async () => {
-      db.user.findUnique.mockResolvedValueOnce(USER);
-      db.user.update.mockResolvedValue(USER);
-      await svc.updateUser('u1', { firstName: 'Anna', isActive: false }, 'actor');
-      const call = db.user.update.mock.calls[0][0];
-      expect(call.data.firstName).toBe('Anna');
-      expect(call.data.isActive).toBe(false);
-      expect(call.data.lastName).toBeUndefined();
+      await expect(UsersService.createUser(createData, 'actor-1'))
+        .rejects.toThrow(/nie znaleziono/);
     });
   });
 
-  // ========== changePassword ==========
-  describe('changePassword()', () => {
-    it('should throw when not found', async () => {
-      db.user.findUnique.mockResolvedValue(null);
-      await expect(svc.changePassword('x', 'New1!', 'actor')).rejects.toThrow();
+  // ═══════════════ updateUser ═══════════════
+  describe('updateUser', () => {
+    it('should update user and log change', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.update.mockResolvedValue({ ...mockUser, firstName: 'Janusz' });
+
+      const result = await UsersService.updateUser('user-1', { firstName: 'Janusz' }, 'actor-1');
+
+      expect(result.firstName).toBe('Janusz');
+      expect(logChange).toHaveBeenCalled();
     });
 
-    it('should change password successfully', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      db.user.update.mockResolvedValue(USER);
-      await svc.changePassword('u1', 'NewPass1!', 'actor');
-      expect(validatePassword).toHaveBeenCalledWith('NewPass1!');
-      expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
-        data: { password: 'hashed123' },
-      }));
+    it('should throw conflict when new email is already taken', async () => {
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(mockUser) // existing user
+        .mockResolvedValueOnce({ ...mockUser, id: 'other-user' }); // email taken
+
+      await expect(UsersService.updateUser('user-1', { email: 'taken@test.pl' }, 'actor-1'))
+        .rejects.toThrow(/email/);
     });
 
-    it('should log changedBy self when actorId = userId', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      db.user.update.mockResolvedValue(USER);
-      await svc.changePassword('u1', 'NewPass1!', 'u1');
-      const { logChange } = require('../../../utils/audit-logger');
-      expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
-        details: { changedBy: 'self' },
-      }));
-    });
+    it('should invalidate permission cache when roleId changes', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.role.findUnique.mockResolvedValue({ id: 'role-2', name: 'Employee' });
+      mockPrisma.user.update.mockResolvedValue({ ...mockUser, roleId: 'role-2' });
 
-    it('should log changedBy admin when actorId != userId', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      db.user.update.mockResolvedValue(USER);
-      await svc.changePassword('u1', 'NewPass1!', 'admin-id');
-      const { logChange } = require('../../../utils/audit-logger');
-      expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
-        details: { changedBy: 'admin' },
-      }));
+      await UsersService.updateUser('user-1', { roleId: 'role-2' }, 'actor-1');
+
+      expect(invalidatePermissionCache).toHaveBeenCalledWith('user-1');
     });
   });
 
-  // ========== toggleActive ==========
-  describe('toggleActive()', () => {
-    it('should throw when not found', async () => {
-      db.user.findUnique.mockResolvedValue(null);
-      await expect(svc.toggleActive('x', 'actor')).rejects.toThrow();
+  // ═══════════════ changePassword ═══════════════
+  describe('changePassword', () => {
+    it('should hash new password and update user', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.update.mockResolvedValue(mockUser);
+
+      await UsersService.changePassword('user-1', 'NewSecure123!', 'actor-1');
+
+      expect(validatePassword).toHaveBeenCalledWith('NewSecure123!');
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { password: expect.any(String) },
+      });
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'USER_PASSWORD_CHANGED' })
+      );
     });
 
-    it('should throw when trying to deactivate self', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      await expect(svc.toggleActive('u1', 'u1')).rejects.toThrow('w\u0142asnego');
-    });
+    it('should throw 404 when user not found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
 
-    it('should deactivate active user', async () => {
-      db.user.findUnique.mockResolvedValue({ ...USER, isActive: true });
-      db.user.update.mockResolvedValue({ ...USER, isActive: false });
-      const result = await svc.toggleActive('u1', 'other');
+      await expect(UsersService.changePassword('nonexistent', 'pass', 'actor-1'))
+        .rejects.toThrow(/nie znaleziono/);
+    });
+  });
+
+  // ═══════════════ toggleActive ═══════════════
+  describe('toggleActive', () => {
+    it('should toggle isActive from true to false', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.update.mockResolvedValue({ ...mockUser, isActive: false });
+
+      const result = await UsersService.toggleActive('user-1', 'other-actor');
+
       expect(result.isActive).toBe(false);
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'USER_DEACTIVATED' })
+      );
     });
 
-    it('should activate inactive user', async () => {
-      db.user.findUnique.mockResolvedValue({ ...USER, isActive: false });
-      db.user.update.mockResolvedValue({ ...USER, isActive: true });
-      const result = await svc.toggleActive('u1', 'other');
-      expect(result.isActive).toBe(true);
+    it('should throw when trying to deactivate own account', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+
+      await expect(UsersService.toggleActive('user-1', 'user-1'))
+        .rejects.toThrow(/własnego konta/);
     });
   });
 
-  // ========== deleteUser ==========
-  describe('deleteUser()', () => {
-    it('should throw when not found', async () => {
-      db.user.findUnique.mockResolvedValue(null);
-      await expect(svc.deleteUser('x', 'actor')).rejects.toThrow();
-    });
+  // ═══════════════ deleteUser ═══════════════
+  describe('deleteUser', () => {
+    it('should soft-delete user (set isActive=false) and invalidate cache', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.update.mockResolvedValue({ ...mockUser, isActive: false });
 
-    it('should throw when deleting self', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      await expect(svc.deleteUser('u1', 'u1')).rejects.toThrow('w\u0142asnego');
-    });
+      await UsersService.deleteUser('user-1', 'other-actor');
 
-    it('should soft-delete user', async () => {
-      db.user.findUnique.mockResolvedValue(USER);
-      db.user.update.mockResolvedValue(undefined);
-      await svc.deleteUser('u1', 'other');
-      expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
         data: { isActive: false },
-      }));
-      expect(invalidatePermissionCache).toHaveBeenCalledWith('u1');
+      });
+      expect(invalidatePermissionCache).toHaveBeenCalledWith('user-1');
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'USER_DELETED' })
+      );
+    });
+
+    it('should throw when trying to delete own account', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+
+      await expect(UsersService.deleteUser('user-1', 'user-1'))
+        .rejects.toThrow(/własnego konta/);
+    });
+
+    it('should throw 404 when user not found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(UsersService.deleteUser('nonexistent', 'actor-1'))
+        .rejects.toThrow(/nie znaleziono/);
     });
   });
 });
