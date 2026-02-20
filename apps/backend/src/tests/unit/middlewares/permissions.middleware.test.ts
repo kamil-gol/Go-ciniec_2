@@ -22,7 +22,7 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('./errorHandler', () => ({
+jest.mock('@middlewares/errorHandler', () => ({
   AppError: class AppError extends Error {
     statusCode: number;
     constructor(statusCode: number, message: string) {

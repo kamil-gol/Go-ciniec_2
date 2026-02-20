@@ -175,7 +175,9 @@ describe('RolesService', () => {
   // ═══════════════ updateRole ═══════════════
   describe('updateRole', () => {
     it('should update role and invalidate all permission caches', async () => {
-      mockPrisma.role.findUnique.mockResolvedValue(mockRoleData);
+      mockPrisma.role.findUnique
+        .mockResolvedValueOnce(mockRoleData)  // existing role check
+        .mockResolvedValueOnce(null);         // name uniqueness check — not taken
       mockPrisma.role.update.mockResolvedValue({
         ...mockRoleData,
         name: 'Super Admin',
@@ -227,7 +229,7 @@ describe('RolesService', () => {
     });
   });
 
-  // ═══════════════ deleteRole ═══════════════
+  // ═══════════════ deleteRole ════════════════
   describe('deleteRole', () => {
     it('should delete non-system role with 0 users', async () => {
       mockPrisma.role.findUnique.mockResolvedValue(mockCustomRole);
