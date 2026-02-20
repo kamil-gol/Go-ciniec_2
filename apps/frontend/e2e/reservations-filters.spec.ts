@@ -27,17 +27,14 @@ test.describe('Reservations Filters', () => {
 
   test.describe('Status Filter', () => {
     test('should show status filter with default "Wszystkie statusy"', async ({ page }) => {
-      // The Radix Select trigger should show "Wszystkie statusy" by default
       await expect(
         page.getByRole('combobox').filter({ hasText: 'Wszystkie statusy' })
       ).toBeVisible({ timeout: 5000 });
     });
 
     test('should open status filter dropdown with all options', async ({ page }) => {
-      // Click the status filter trigger
       await page.getByRole('combobox').filter({ hasText: 'Wszystkie statusy' }).click();
 
-      // Dropdown should show all status options
       const listbox = page.locator('[role="listbox"]');
       await expect(listbox).toBeVisible({ timeout: 3000 });
 
@@ -49,14 +46,11 @@ test.describe('Reservations Filters', () => {
     });
 
     test('should filter by PENDING status', async ({ page }) => {
-      // Open dropdown and select Oczekujące
       await page.getByRole('combobox').filter({ hasText: 'Wszystkie statusy' }).click();
       await page.locator('[role="option"]:has-text("Oczekujące")').click();
 
-      // Wait for the list to reload
       await page.waitForLoadState('networkidle');
 
-      // The filter trigger should now show "Oczekujące"
       await expect(
         page.getByRole('combobox').filter({ hasText: 'Oczekujące' })
       ).toBeVisible({ timeout: 3000 });
@@ -95,7 +89,6 @@ test.describe('Reservations Filters', () => {
       await page.locator('[role="option"]:has-text("Wszystkie statusy")').click();
       await page.waitForLoadState('networkidle');
 
-      // Should show "Wszystkie statusy" again
       await expect(
         page.getByRole('combobox').filter({ hasText: 'Wszystkie statusy' })
       ).toBeVisible({ timeout: 3000 });
@@ -104,13 +97,17 @@ test.describe('Reservations Filters', () => {
 
   test.describe('Archive Toggle', () => {
     test('should show archive toggle', async ({ page }) => {
+      // The switch has id="show-archived" and a label with for="show-archived"
+      const archiveSwitch = page.locator('#show-archived');
+      await expect(archiveSwitch).toBeVisible({ timeout: 5000 });
+
+      // Label should be visible next to it
       await expect(
-        page.getByText('Pokaż zarchiwizowane').or(page.getByText('Archiwum'))
-      ).toBeVisible({ timeout: 5000 });
+        page.locator('label[for="show-archived"]')
+      ).toBeVisible();
     });
 
     test('should toggle archive view', async ({ page }) => {
-      // Find and click the archive switch
       const archiveSwitch = page.locator('#show-archived');
       await expect(archiveSwitch).toBeVisible({ timeout: 5000 });
 
@@ -126,17 +123,14 @@ test.describe('Reservations Filters', () => {
 
   test.describe('Reservation Count', () => {
     test('should display reservation count', async ({ page }) => {
-      // "Znaleziono X rezerwacji" should be visible
       await expect(
         page.locator('text=/Znaleziono.*rezerwacji/')
       ).toBeVisible({ timeout: 5000 });
     });
 
     test('should update count when filter changes', async ({ page }) => {
-      // Get initial count text
       const countLocator = page.locator('text=/Znaleziono.*rezerwacji/');
       await expect(countLocator).toBeVisible({ timeout: 5000 });
-      const initialText = await countLocator.textContent();
 
       // Apply CANCELLED filter (likely fewer results)
       await page.getByRole('combobox').filter({ hasText: 'Wszystkie statusy' }).click();
@@ -157,7 +151,6 @@ test.describe('Reservations Filters', () => {
       await page.locator('[role="option"]:has-text("Anulowane")').click();
       await page.waitForLoadState('networkidle');
 
-      // Check count — if 0, empty state should show
       const countText = await page.locator('text=/Znaleziono.*rezerwacji/').textContent();
       const count = parseInt(countText?.match(/\d+/)?.[0] || '0', 10);
 
@@ -171,7 +164,6 @@ test.describe('Reservations Filters', () => {
 
   test.describe('Reservation Cards', () => {
     test('should display reservation cards with key info', async ({ page }) => {
-      // If there are reservations, check that cards show expected info sections
       const countText = await page.locator('text=/Znaleziono.*rezerwacji/').textContent();
       const count = parseInt(countText?.match(/\d+/)?.[0] || '0', 10);
 
@@ -189,7 +181,7 @@ test.describe('Reservations Filters', () => {
       const count = parseInt(countText?.match(/\d+/)?.[0] || '0', 10);
 
       if (count > 0) {
-        // Eye icon (view details) button should exist
+        // Eye icon (view details) link should exist
         await expect(
           page.locator('a[href*="/dashboard/reservations/"] button').first()
         ).toBeVisible({ timeout: 3000 });
