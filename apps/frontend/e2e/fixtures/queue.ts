@@ -42,8 +42,8 @@ export class QueueHelper {
       await this.page.fill('input[name="children"]', data.children.toString());
     }
     
-    if (data.babies !== undefined) {
-      await this.page.fill('input[name="babies"]', data.babies.toString());
+    if (data.toddlers !== undefined) {
+      await this.page.fill('input[name="toddlers"]', data.toddlers.toString());
     }
     
     if (data.notes) {
