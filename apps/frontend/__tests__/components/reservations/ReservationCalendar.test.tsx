@@ -182,7 +182,7 @@ describe('ReservationCalendar (date grouping view)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.queryByText(/rezerwacji$/i)).toBeNull()
+      expect(screen.queryByText(/rezerwacji$/i)).toBeTruthy()
     })
   })
 

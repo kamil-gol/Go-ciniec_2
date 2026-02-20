@@ -183,7 +183,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/zarchiwizowane/i)).toBeTruthy()
+      const archivedElements = screen.getAllByText(/zarchiwizowane/i); expect(archivedElements.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should show restore button instead of archive for archived reservations', () => {

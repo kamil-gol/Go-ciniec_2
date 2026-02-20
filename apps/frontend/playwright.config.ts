@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 const chromiumExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 export default defineConfig({
-  testDir: './e2e/specs',
+  testDir: './e2e',
   
   /* Run tests in files in parallel */
   fullyParallel: true,
