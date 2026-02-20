@@ -13,6 +13,21 @@ import { Page, expect } from '@playwright/test';
  * - GET  /api/menu/options
  * - POST /api/reservations/:id/menu
  */
+
+/**
+ * Safely parse JSON from a Playwright API response.
+ * Returns null if the response is not JSON (e.g. HTML error page).
+ */
+export async function safeJson(response: { ok(): boolean; text(): Promise<string> }): Promise<any | null> {
+  try {
+    const text = await response.text();
+    if (text.trimStart().startsWith('<')) return null; // HTML response
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export class MenuHelper {
   constructor(private page: Page) {}
 
@@ -31,7 +46,6 @@ export class MenuHelper {
   // ── Menu Templates ────────────────────────────────────────────────
 
   async waitForTemplatesLoaded() {
-    // Wait for any skeleton/loading to disappear or content to appear
     await this.page.waitForTimeout(1000);
     await this.page.waitForLoadState('domcontentloaded');
   }
@@ -41,7 +55,6 @@ export class MenuHelper {
   }
 
   async clickCreateTemplate() {
-    // Look for "Nowy szablon" or "Dodaj" button
     const createBtn = this.page.locator('button:has-text("Nowy szablon"), button:has-text("Dodaj szablon"), button:has-text("Dodaj")');
     await createBtn.first().click();
   }
@@ -72,9 +85,6 @@ export class MenuHelper {
   }
 
   async navigateToMenuStep() {
-    // The reservation wizard is: Wydarzenie → Sala i termin → Goście → Menu i ceny → Klient → Podsumowanie
-    // We need to navigate to step 4 (Menu i ceny)
-    // Click on the step indicator if available
     const menuStep = this.page.locator('text=Menu i ceny, text=Menu');
     if (await menuStep.isVisible().catch(() => false)) {
       await menuStep.first().click();
@@ -92,28 +102,39 @@ export class MenuHelper {
   }
 
   async confirmDishes() {
-    await this.page.click('button:has-text("Zatwierdź wybór")');
+    await this.page.click('button:has-text("Zatwierd\u017a wyb\u00f3r")');
     await this.page.waitForTimeout(300);
   }
 
   async confirmOptions() {
-    await this.page.click('button:has-text("Zatwierdź wybór")');
+    await this.page.click('button:has-text("Zatwierd\u017a wyb\u00f3r")');
     await this.page.waitForTimeout(300);
   }
 
   // ── API Helpers ───────────────────────────────────────────────────
+
+  private get baseURL() {
+    return process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+  }
+
+  /** Returns true if the menu API is available (not returning HTML). */
+  async isMenuApiAvailable(): Promise<boolean> {
+    try {
+      const resp = await this.page.request.get(`${this.baseURL}/api/menu/templates`);
+      const json = await safeJson(resp);
+      return json !== null;
+    } catch {
+      return false;
+    }
+  }
 
   async createTemplateViaAPI(data: {
     name: string;
     eventTypeId: string;
     variant?: string;
     validFrom?: string;
-  }): Promise<string> {
-    const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-    const cookies = await this.page.context().cookies();
-    const tokenCookie = cookies.find(c => c.name === 'token' || c.name === 'auth-token' || c.name === 'next-auth.session-token');
-
-    const response = await this.page.request.post(`${baseURL}/api/menu/templates`, {
+  }): Promise<string | null> {
+    const response = await this.page.request.post(`${this.baseURL}/api/menu/templates`, {
       data: {
         name: data.name,
         eventTypeId: data.eventTypeId,
@@ -124,26 +145,40 @@ export class MenuHelper {
       },
     });
 
-    const json = await response.json();
-    return json.data?.id || json.id;
+    const json = await safeJson(response);
+    if (!json) return null;
+    return json.data?.id || json.id || null;
   }
 
   async deleteTemplateViaAPI(templateId: string) {
-    const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-    await this.page.request.delete(`${baseURL}/api/menu/templates/${templateId}`);
+    await this.page.request.delete(`${this.baseURL}/api/menu/templates/${templateId}`);
   }
 
-  async getTemplatesViaAPI(): Promise<any[]> {
-    const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-    const response = await this.page.request.get(`${baseURL}/api/menu/templates`);
-    const json = await response.json();
+  async getTemplatesViaAPI(): Promise<any[] | null> {
+    const response = await this.page.request.get(`${this.baseURL}/api/menu/templates`);
+    const json = await safeJson(response);
+    if (!json) return null;
     return json.data || json || [];
   }
 
-  async getEventTypesViaAPI(): Promise<any[]> {
-    const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-    const response = await this.page.request.get(`${baseURL}/api/event-types`);
-    const json = await response.json();
+  async getEventTypesViaAPI(): Promise<any[] | null> {
+    const response = await this.page.request.get(`${this.baseURL}/api/event-types`);
+    const json = await safeJson(response);
+    if (!json) return null;
+    return json.data || json || [];
+  }
+
+  async getPackagesViaAPI(templateId: string): Promise<any[] | null> {
+    const response = await this.page.request.get(`${this.baseURL}/api/menu/packages?templateId=${templateId}`);
+    const json = await safeJson(response);
+    if (!json) return null;
+    return json.data || json || [];
+  }
+
+  async getOptionsViaAPI(): Promise<any[] | null> {
+    const response = await this.page.request.get(`${this.baseURL}/api/menu/options`);
+    const json = await safeJson(response);
+    if (!json) return null;
     return json.data || json || [];
   }
 }

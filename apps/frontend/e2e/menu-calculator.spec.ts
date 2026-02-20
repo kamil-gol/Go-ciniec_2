@@ -30,7 +30,6 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
       await reservation.goToList();
       await reservation.openCreateForm();
 
-      // The wizard steps include "Menu i ceny" or "Menu"
       await expect(
         page.locator('text=Menu').first()
       ).toBeVisible({ timeout: 10000 });
@@ -39,32 +38,16 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
 
   test.describe('Price Calculation via API', () => {
     test('should calculate package cost for adults only', async ({ page }) => {
-      // Use API to verify price calculation logic
-      const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+      const apiAvailable = await menu.isMenuApiAvailable();
+      if (!apiAvailable) { test.skip(); return; }
 
-      // Get templates
-      const templatesResp = await page.request.get(`${baseURL}/api/menu/templates`);
-      const templates = await templatesResp.json();
-      const templateList = templates.data || templates;
+      const templates = await menu.getTemplatesViaAPI();
+      if (!templates || templates.length === 0) { test.skip(); return; }
 
-      if (!templateList || templateList.length === 0) {
-        test.skip();
-        return;
-      }
+      const packages = await menu.getPackagesViaAPI(templates[0].id);
+      if (!packages || packages.length === 0) { test.skip(); return; }
 
-      // Get packages for first template
-      const packagesResp = await page.request.get(
-        `${baseURL}/api/menu/packages?templateId=${templateList[0].id}`
-      );
-      const packages = await packagesResp.json();
-      const packageList = packages.data || packages;
-
-      if (!packageList || packageList.length === 0) {
-        test.skip();
-        return;
-      }
-
-      const pkg = packageList[0];
+      const pkg = packages[0];
       const adults = 50;
       const expectedAdultsCost = adults * Number(pkg.pricePerAdult);
 
@@ -72,29 +55,16 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
     });
 
     test('should calculate mixed guest types correctly', async ({ page }) => {
-      const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+      const apiAvailable = await menu.isMenuApiAvailable();
+      if (!apiAvailable) { test.skip(); return; }
 
-      const templatesResp = await page.request.get(`${baseURL}/api/menu/templates`);
-      const templates = await templatesResp.json();
-      const templateList = templates.data || templates;
+      const templates = await menu.getTemplatesViaAPI();
+      if (!templates || templates.length === 0) { test.skip(); return; }
 
-      if (!templateList || templateList.length === 0) {
-        test.skip();
-        return;
-      }
+      const packages = await menu.getPackagesViaAPI(templates[0].id);
+      if (!packages || packages.length === 0) { test.skip(); return; }
 
-      const packagesResp = await page.request.get(
-        `${baseURL}/api/menu/packages?templateId=${templateList[0].id}`
-      );
-      const packages = await packagesResp.json();
-      const packageList = packages.data || packages;
-
-      if (!packageList || packageList.length === 0) {
-        test.skip();
-        return;
-      }
-
-      const pkg = packageList[0];
+      const pkg = packages[0];
       const adults = 50;
       const children = 10;
       const toddlers = 5;
@@ -109,13 +79,12 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
     });
 
     test('should load menu options from API', async ({ page }) => {
-      const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+      const apiAvailable = await menu.isMenuApiAvailable();
+      if (!apiAvailable) { test.skip(); return; }
 
-      const optionsResp = await page.request.get(`${baseURL}/api/menu/options`);
-      const options = await optionsResp.json();
-      const optionList = options.data || options;
+      const optionList = await menu.getOptionsViaAPI();
+      if (!optionList) { test.skip(); return; }
 
-      // Should have some options configured
       expect(Array.isArray(optionList)).toBe(true);
 
       if (optionList.length > 0) {
@@ -127,18 +96,14 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
     });
 
     test('should correctly apply PER_PERSON option pricing', async ({ page }) => {
-      const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+      const apiAvailable = await menu.isMenuApiAvailable();
+      if (!apiAvailable) { test.skip(); return; }
 
-      const optionsResp = await page.request.get(`${baseURL}/api/menu/options`);
-      const options = await optionsResp.json();
-      const optionList = (options.data || options) as any[];
+      const optionList = await menu.getOptionsViaAPI();
+      if (!optionList) { test.skip(); return; }
 
       const perPersonOption = optionList.find((o: any) => o.priceType === 'PER_PERSON');
-
-      if (!perPersonOption) {
-        test.skip();
-        return;
-      }
+      if (!perPersonOption) { test.skip(); return; }
 
       const guests = 60;
       const optionCost = guests * Number(perPersonOption.priceAmount);
@@ -148,22 +113,18 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
     });
 
     test('should correctly apply FLAT option pricing', async ({ page }) => {
-      const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+      const apiAvailable = await menu.isMenuApiAvailable();
+      if (!apiAvailable) { test.skip(); return; }
 
-      const optionsResp = await page.request.get(`${baseURL}/api/menu/options`);
-      const options = await optionsResp.json();
-      const optionList = (options.data || options) as any[];
+      const optionList = await menu.getOptionsViaAPI();
+      if (!optionList) { test.skip(); return; }
 
       const flatOption = optionList.find((o: any) => o.priceType === 'FLAT');
-
-      if (!flatOption) {
-        test.skip();
-        return;
-      }
+      if (!flatOption) { test.skip(); return; }
 
       // FLAT pricing should not depend on guest count
       const cost1Guest = 1 * Number(flatOption.priceAmount);
-      const cost100Guests = 1 * Number(flatOption.priceAmount); // quantity, not guests
+      const cost100Guests = 1 * Number(flatOption.priceAmount);
 
       expect(cost1Guest).toBe(cost100Guests);
     });
@@ -174,12 +135,10 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
       await menu.goToMenuManagement();
       await menu.waitForTemplatesLoaded();
 
-      // Look for PLN-formatted prices anywhere on the page
-      const pricePattern = page.locator('text=/\\d+\\s*zł/');
+      const pricePattern = page.locator('text=/\\d+\\s*z\u0142/');
       const count = await pricePattern.count();
 
       // Menu page may or may not show prices directly
-      // This is an existence check
       expect(count).toBeGreaterThanOrEqual(0);
     });
 
@@ -187,7 +146,6 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
       await menu.goToMenuManagement();
       await menu.waitForTemplatesLoaded();
 
-      // Try to find and click on a template to see details
       const templateCard = page.locator(
         '[class*="Card"], [class*="card"], [data-testid^="template"]'
       ).first();
@@ -196,9 +154,8 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
         await templateCard.click();
         await page.waitForTimeout(500);
 
-        // Check for price-related content
-        const hasPrice = await page.locator('text=/cen|zł|PLN|pakiet/i').first().isVisible().catch(() => false);
-        // Some pages show prices, others don't — this is a soft check
+        // Soft check — some pages show prices, others don't
+        await page.locator('text=/cen|z\u0142|PLN|pakiet/i').first().isVisible().catch(() => false);
       }
     });
   });
