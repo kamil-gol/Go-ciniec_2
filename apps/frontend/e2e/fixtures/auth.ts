@@ -156,3 +156,15 @@ export const test = base.extend<{
 });
 
 export { expect } from '@playwright/test';
+
+/**
+ * Simple login helper for smoke/integration tests.
+ * 
+ * Usage:
+ *   import { login } from './fixtures/auth';
+ *   await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+ */
+export async function login(page: Page, email: string, password: string) {
+  const helper = new AuthHelper(page);
+  await helper.loginViaAPI(email, password);
+}
