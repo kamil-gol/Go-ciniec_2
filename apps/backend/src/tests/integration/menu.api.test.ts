@@ -9,6 +9,11 @@
  *
  * IMPORTANT: Uses authHeaderForUser(seed.admin) for write operations because
  * controllers extract userId from JWT for audit logging — the user must exist in DB.
+ *
+ * NOTE on menu-options: menuOptionController does NOT use Zod validation.
+ * It uses manual validation with:
+ *   VALID_CATEGORIES = ['DRINK','ALCOHOL','DESSERT','EXTRA_DISH','SERVICE','DECORATION','ENTERTAINMENT','OTHER']
+ *   VALID_PRICE_TYPES = ['PER_PERSON','PER_ITEM','FLAT']  (no 'FREE'!)
  */
 import { api, authHeader, authHeaderForUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
@@ -79,9 +84,9 @@ describe('Menu API — /api/menu-*', () => {
     await disconnectTestDb();
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // AUTH MATRIX
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   describe('Auth Matrix', () => {
     it('should block unauthenticated access to menu-templates', async () => {
       const res = await api.get('/api/menu-templates');
@@ -132,9 +137,9 @@ describe('Menu API — /api/menu-*', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // MENU TEMPLATES CRUD
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   describe('Menu Templates — /api/menu-templates', () => {
     it('GET / should return empty array initially', async () => {
       const res = await api.get('/api/menu-templates').set(adminAuth());
@@ -210,9 +215,9 @@ describe('Menu API — /api/menu-*', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // MENU PACKAGES CRUD
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   describe('Menu Packages — /api/menu-packages', () => {
     let templateId: string;
 
@@ -235,7 +240,7 @@ describe('Menu API — /api/menu-*', () => {
     });
 
     it('GET / should list packages', async () => {
-      await createPackage(templateId, 'P1');
+      await createPackage(templateId, 'Pkg One');
 
       const res = await api.get('/api/menu-packages').set(adminAuth());
       expect(res.status).toBe(200);
@@ -243,7 +248,7 @@ describe('Menu API — /api/menu-*', () => {
     });
 
     it('GET /template/:templateId should list packages for template', async () => {
-      await createPackage(templateId, 'P1');
+      await createPackage(templateId, 'Pkg One');
 
       const res = await api.get(`/api/menu-packages/template/${templateId}`)
         .set(adminAuth());
@@ -268,8 +273,8 @@ describe('Menu API — /api/menu-*', () => {
     });
 
     it('PUT /reorder should reorder packages', async () => {
-      const p1 = await createPackage(templateId, 'Pkg A');
-      const p2 = await createPackage(templateId, 'Pkg B');
+      const p1 = await createPackage(templateId, 'Pkg Alpha');
+      const p2 = await createPackage(templateId, 'Pkg Beta');
 
       const res = await api.put('/api/menu-packages/reorder')
         .set(adminAuth())
@@ -283,9 +288,11 @@ describe('Menu API — /api/menu-*', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // MENU OPTIONS CRUD
-  // ═══════════════════════════════════════════════════════════════
+  // NOTE: menuOptionController uses manual validation, NOT Zod.
+  // VALID_PRICE_TYPES = ['PER_PERSON', 'PER_ITEM', 'FLAT'] — no 'FREE'
+  // ═══════════════════════════════════════════════════════════════════
   describe('Menu Options — /api/menu-options', () => {
     it('GET / should return empty initially', async () => {
       const res = await api.get('/api/menu-options').set(adminAuth());
@@ -316,6 +323,7 @@ describe('Menu API — /api/menu-*', () => {
       const created = await api.post('/api/menu-options')
         .set(adminAuth())
         .send({ name: 'Old Option', category: 'ALCOHOL', priceType: 'FLAT', priceAmount: 20 });
+      expect(created.status).toBe(201);
       const optId = created.body.data.id;
 
       const res = await api.put(`/api/menu-options/${optId}`)
@@ -327,7 +335,8 @@ describe('Menu API — /api/menu-*', () => {
     it('DELETE /:id should remove option', async () => {
       const created = await api.post('/api/menu-options')
         .set(adminAuth())
-        .send({ name: 'To Delete', category: 'OTHER', priceType: 'FREE', priceAmount: 0 });
+        .send({ name: 'To Delete', category: 'OTHER', priceType: 'FLAT', priceAmount: 0 });
+      expect(created.status).toBe(201);
 
       const res = await api.delete(`/api/menu-options/${created.body.data.id}`)
         .set(adminAuth());
@@ -335,9 +344,9 @@ describe('Menu API — /api/menu-*', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // MENU COURSES
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   describe('Menu Courses — /api/menu-courses', () => {
     let packageId: string;
 
@@ -368,6 +377,7 @@ describe('Menu API — /api/menu-*', () => {
       const created = await api.post('/api/menu-courses')
         .set(adminAuth())
         .send({ name: 'Old Course', packageId, displayOrder: 0 });
+      expect(created.status).toBe(201);
       const courseId = created.body.data.id;
 
       const res = await api.put(`/api/menu-courses/${courseId}`)
@@ -380,6 +390,7 @@ describe('Menu API — /api/menu-*', () => {
       const created = await api.post('/api/menu-courses')
         .set(adminAuth())
         .send({ name: 'To Delete', packageId, displayOrder: 0 });
+      expect(created.status).toBe(201);
 
       const res = await api.delete(`/api/menu-courses/${created.body.data.id}`)
         .set(adminAuth());
@@ -387,9 +398,9 @@ describe('Menu API — /api/menu-*', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // ADDON GROUPS
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   describe('Addon Groups — /api/addon-groups', () => {
     it('GET / should return empty initially', async () => {
       const res = await api.get('/api/addon-groups').set(adminAuth());
@@ -407,7 +418,7 @@ describe('Menu API — /api/menu-*', () => {
     it('POST / should reject invalid priceType', async () => {
       const res = await api.post('/api/addon-groups')
         .set(adminAuth())
-        .send({ name: 'Invalid', priceType: 'FLAT', basePrice: 10 });
+        .send({ name: 'Invalid', priceType: 'INVALID_TYPE', basePrice: 10 });
       expect(res.status).toBe(400);
     });
 
@@ -415,6 +426,7 @@ describe('Menu API — /api/menu-*', () => {
       const created = await api.post('/api/addon-groups')
         .set(adminAuth())
         .send({ name: 'Test Group', priceType: 'FREE' });
+      expect(created.status).toBe(201);
       const groupId = created.body.data.id;
 
       const res = await api.get(`/api/addon-groups/${groupId}`).set(adminAuth());
@@ -426,6 +438,7 @@ describe('Menu API — /api/menu-*', () => {
       const created = await api.post('/api/addon-groups')
         .set(adminAuth())
         .send({ name: 'Old Group', priceType: 'PER_PERSON', basePrice: 50 });
+      expect(created.status).toBe(201);
 
       const res = await api.put(`/api/addon-groups/${created.body.data.id}`)
         .set(adminAuth())
@@ -437,6 +450,7 @@ describe('Menu API — /api/menu-*', () => {
       const created = await api.post('/api/addon-groups')
         .set(adminAuth())
         .send({ name: 'To Delete', priceType: 'FREE' });
+      expect(created.status).toBe(201);
 
       const res = await api.delete(`/api/addon-groups/${created.body.data.id}`)
         .set(adminAuth());
@@ -444,9 +458,9 @@ describe('Menu API — /api/menu-*', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // FULL FLOW: Template → Package → Course → Reservation Menu
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   describe('Full Menu Flow', () => {
     it('should support complete flow: template → package → course', async () => {
       // 1. Create template
