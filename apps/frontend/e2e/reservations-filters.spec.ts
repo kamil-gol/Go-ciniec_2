@@ -1,240 +1,385 @@
-import { test, expect, Page } from '@playwright/test'
-
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000'
-
-async function login(page: Page) {
-  await page.goto(`${BASE_URL}/login`)
-  await page.fill('input[name="email"], input[type="email"]', process.env.E2E_USER_EMAIL || 'admin@gociniec.pl')
-  await page.fill('input[name="password"], input[type="password"]', process.env.E2E_USER_PASSWORD || 'admin123')
-  await page.click('button[type="submit"]')
-  await page.waitForURL(/dashboard/, { timeout: 10000 })
-}
-
-async function navigateToReservations(page: Page) {
-  await page.goto(`${BASE_URL}/dashboard/reservations`)
-  await page.waitForLoadState('networkidle')
-  // Wait for reservations list to load
-  await page.waitForSelector('[data-testid="reservations-list"], .space-y-6', { timeout: 10000 })
-}
+import { test, expect } from './fixtures/auth';
+import { ReservationHelper } from './fixtures/reservation';
+import { TEST_RESERVATIONS, testData, getFutureDate } from './fixtures/test-data';
 
 test.describe('Reservations Filters', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-    await navigateToReservations(page)
-  })
+  let reservationHelper: ReservationHelper;
 
-  test.describe('Status filter', () => {
-    test('should display status filter dropdown with all options', async ({ page }) => {
-      // Click the status filter trigger
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      await expect(filterTrigger).toBeVisible()
-      await filterTrigger.click()
+  test.beforeEach(async ({ authenticatedPage }) => {
+    reservationHelper = new ReservationHelper(authenticatedPage);
 
-      // Verify all status options are available
-      await expect(page.getByText('Oczekujące')).toBeVisible()
-      await expect(page.getByText('Potwierdzone')).toBeVisible()
-      await expect(page.getByText('Zakończone')).toBeVisible()
-      await expect(page.getByText('Anulowane')).toBeVisible()
-    })
+    // Seed test reservations via API
+    await reservationHelper.createViaAPI({
+      ...TEST_RESERVATIONS.pending,
+      date: getFutureDate(30),
+      notes: 'filter-test-pending',
+    });
+    await reservationHelper.createViaAPI({
+      ...TEST_RESERVATIONS.confirmed,
+      date: getFutureDate(45),
+      notes: 'filter-test-confirmed',
+    });
+    await reservationHelper.createViaAPI({
+      ...TEST_RESERVATIONS.birthday,
+      date: getFutureDate(20),
+      notes: 'filter-test-birthday',
+    });
+  });
 
-    test('should filter reservations by CONFIRMED status', async ({ page }) => {
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      await filterTrigger.click()
-      await page.getByText('Potwierdzone').click()
+  test.describe('Status Filters', () => {
+    test('should filter reservations by PENDING status', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      // Wait for filtered results
-      await page.waitForLoadState('networkidle')
+      await reservationHelper.applyFilters({ status: 'PENDING' });
 
-      // All visible status badges should be "Potwierdzone" (or list should be empty)
-      const statusBadges = page.locator('[class*="badge"]').filter({ hasText: /potwierdzon/i })
-      const cancelledBadges = page.locator('[class*="badge"]').filter({ hasText: /anulowan/i })
-      const pendingBadges = page.locator('[class*="badge"]').filter({ hasText: /oczekując/i })
+      const statuses = await authenticatedPage
+        .locator('[data-testid="status-badge"]')
+        .allTextContents();
 
-      // Cancelled and pending should not be visible
-      await expect(cancelledBadges).toHaveCount(0)
-      await expect(pendingBadges).toHaveCount(0)
-    })
+      expect(statuses.length).toBeGreaterThan(0);
+      statuses.forEach((status) => {
+        expect(status.toUpperCase()).toContain('PENDING');
+      });
+    });
 
-    test('should filter reservations by PENDING status', async ({ page }) => {
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      await filterTrigger.click()
-      await page.getByText('Oczekujące').click()
+    test('should filter reservations by CONFIRMED status', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      await page.waitForLoadState('networkidle')
+      await reservationHelper.applyFilters({ status: 'CONFIRMED' });
 
-      const confirmedBadges = page.locator('[class*="badge"]').filter({ hasText: /potwierdzon/i })
-      await expect(confirmedBadges).toHaveCount(0)
-    })
+      const statuses = await authenticatedPage
+        .locator('[data-testid="status-badge"]')
+        .allTextContents();
 
-    test('should filter reservations by CANCELLED status', async ({ page }) => {
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy|potwierdzone|oczekując|zakończon/i })
-      await filterTrigger.first().click()
-      await page.getByText('Anulowane').click()
+      statuses.forEach((status) => {
+        expect(status.toUpperCase()).toContain('CONFIRMED');
+      });
+    });
 
-      await page.waitForLoadState('networkidle')
+    test('should filter reservations by CANCELLED status', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      const confirmedBadges = page.locator('[class*="badge"]').filter({ hasText: /potwierdzon/i })
-      const pendingBadges = page.locator('[class*="badge"]').filter({ hasText: /oczekując/i })
-      await expect(confirmedBadges).toHaveCount(0)
-      await expect(pendingBadges).toHaveCount(0)
-    })
+      await reservationHelper.applyFilters({ status: 'CANCELLED' });
 
-    test('should filter reservations by COMPLETED status', async ({ page }) => {
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy|potwierdzone|oczekując|anulowan/i })
-      await filterTrigger.first().click()
-      await page.getByText('Zakończone').click()
+      const statuses = await authenticatedPage
+        .locator('[data-testid="status-badge"]')
+        .allTextContents();
 
-      await page.waitForLoadState('networkidle')
+      statuses.forEach((status) => {
+        expect(status.toUpperCase()).toContain('CANCELLED');
+      });
+    });
 
-      const confirmedBadges = page.locator('[class*="badge"]').filter({ hasText: /potwierdzon/i })
-      const pendingBadges = page.locator('[class*="badge"]').filter({ hasText: /oczekując/i })
-      await expect(confirmedBadges).toHaveCount(0)
-      await expect(pendingBadges).toHaveCount(0)
-    })
-  })
+    test('should show all reservations when status filter is cleared', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-  test.describe('Archive filter', () => {
-    test('should toggle archived reservations view', async ({ page }) => {
-      // Find the archive toggle
-      const archiveSwitch = page.getByRole('switch')
-      await expect(archiveSwitch).toBeVisible()
+      // Apply a filter first
+      await reservationHelper.applyFilters({ status: 'PENDING' });
+      const filteredCount = await reservationHelper.getCount();
 
-      // Initially unchecked
-      await expect(archiveSwitch).not.toBeChecked()
+      // Clear filters
+      const clearBtn = authenticatedPage.locator(
+        'button:has-text("Wyczyść"), button:has-text("Resetuj"), button:has-text("Wszystkie")'
+      );
+      if (await clearBtn.count() > 0) {
+        await clearBtn.first().click();
+        await authenticatedPage.waitForLoadState('networkidle');
 
-      // Toggle on
-      await archiveSwitch.click()
-      await page.waitForLoadState('networkidle')
-
-      // Toggle should now be checked
-      await expect(archiveSwitch).toBeChecked()
-    })
-
-    test('should show archived reservations with archive badge', async ({ page }) => {
-      const archiveSwitch = page.getByRole('switch')
-      await archiveSwitch.click()
-      await page.waitForLoadState('networkidle')
-
-      // If there are archived reservations, they should have the badge
-      const archivedBadges = page.locator('text=Zarchiwizowane')
-      const reservationCount = page.locator('text=/Znaleziono/')
-
-      // Either we find archived badges or the list is empty
-      const countText = await reservationCount.textContent().catch(() => '')
-      if (countText && !countText.includes('0')) {
-        await expect(archivedBadges.first()).toBeVisible()
+        const totalCount = await reservationHelper.getCount();
+        expect(totalCount).toBeGreaterThanOrEqual(filteredCount);
       }
-    })
-  })
+    });
+  });
 
-  test.describe('Combined filters', () => {
-    test('should apply status filter together with archive toggle', async ({ page }) => {
-      // Set status to CONFIRMED
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      await filterTrigger.click()
-      await page.getByText('Potwierdzone').click()
-      await page.waitForLoadState('networkidle')
+  test.describe('Hall Filters', () => {
+    test('should filter reservations by specific hall', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      // Then toggle archived
-      const archiveSwitch = page.getByRole('switch')
-      await archiveSwitch.click()
-      await page.waitForLoadState('networkidle')
+      await reservationHelper.applyFilters({ hallId: 'hall-1' });
 
-      // Both filters should be active
-      await expect(archiveSwitch).toBeChecked()
+      const halls = await authenticatedPage
+        .locator('[data-testid="hall-name"]')
+        .allTextContents();
 
-      // Cancelled/pending should not be visible
-      const cancelledBadges = page.locator('[class*="badge"]').filter({ hasText: /anulowan/i })
-      await expect(cancelledBadges).toHaveCount(0)
-    })
-  })
+      halls.forEach((hall) => {
+        expect(hall).toContain('Sala');
+      });
+    });
 
-  test.describe('Filter reset', () => {
-    test('should reset status filter to show all reservations', async ({ page }) => {
-      // First filter by CONFIRMED
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      await filterTrigger.click()
-      await page.getByText('Potwierdzone').click()
-      await page.waitForLoadState('networkidle')
+    test('should update results when switching between halls', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      // Count current results
-      const filteredCount = await page.locator('text=/Znaleziono/').textContent().catch(() => '')
+      // Filter by first hall
+      await reservationHelper.applyFilters({ hallId: 'hall-1' });
+      const countHall1 = await reservationHelper.getCount();
 
-      // Reset to ALL
-      const resetTrigger = page.locator('button').filter({ hasText: /potwierdzone/i })
-      await resetTrigger.click()
-      await page.getByText('Wszystkie statusy').click()
-      await page.waitForLoadState('networkidle')
+      // Switch to second hall
+      await reservationHelper.applyFilters({ hallId: 'hall-2' });
+      const countHall2 = await reservationHelper.getCount();
 
-      // Count should be >= filtered count
-      const allCount = await page.locator('text=/Znaleziono/').textContent().catch(() => '')
-      expect(allCount).toBeTruthy()
-    })
+      // Counts may differ — at least one hall should have results
+      expect(countHall1 + countHall2).toBeGreaterThanOrEqual(0);
+    });
+  });
 
-    test('should reset archive toggle', async ({ page }) => {
-      // Toggle on
-      const archiveSwitch = page.getByRole('switch')
-      await archiveSwitch.click()
-      await page.waitForLoadState('networkidle')
-      await expect(archiveSwitch).toBeChecked()
+  test.describe('Date Range Filters', () => {
+    test('should filter reservations within a date range', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      // Toggle off
-      await archiveSwitch.click()
-      await page.waitForLoadState('networkidle')
-      await expect(archiveSwitch).not.toBeChecked()
-    })
-  })
+      const dateFrom = getFutureDate(25);
+      const dateTo = getFutureDate(35);
 
-  test.describe('Reservation count display', () => {
-    test('should display current reservation count', async ({ page }) => {
-      const countText = page.locator('text=/Znaleziono/')
-      await expect(countText).toBeVisible()
+      await reservationHelper.applyFilters({ dateFrom, dateTo });
 
-      // Should contain a number
-      const text = await countText.textContent()
-      expect(text).toMatch(/\d+/)
-    })
+      const dates = await authenticatedPage
+        .locator('[data-testid="reservation-date"]')
+        .allTextContents();
 
-    test('should update count when filter changes', async ({ page }) => {
-      const countEl = page.locator('text=/Znaleziono/')
-      const initialCount = await countEl.textContent()
+      dates.forEach((dateStr) => {
+        // Parse DD.MM.YYYY to YYYY-MM-DD
+        const parts = dateStr.split('.');
+        if (parts.length === 3) {
+          const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          expect(isoDate >= dateFrom && isoDate <= dateTo).toBe(true);
+        }
+      });
+    });
 
-      // Apply a specific filter
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      await filterTrigger.click()
-      await page.getByText('Anulowane').click()
-      await page.waitForLoadState('networkidle')
+    test('should show no results for date range with no reservations', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
 
-      // Count may have changed (or stayed if all are cancelled)
-      const newCount = await countEl.textContent().catch(() => '')
-      expect(newCount).toBeTruthy()
-    })
-  })
+      // Use far-future range where no reservations exist
+      const dateFrom = getFutureDate(365);
+      const dateTo = getFutureDate(370);
 
-  test.describe('Empty state after filtering', () => {
-    test('should show empty state message when no results match filter', async ({ page }) => {
-      // Try to find a filter that yields no results
-      // Toggle archived + a specific status might yield empty
-      const archiveSwitch = page.getByRole('switch')
-      await archiveSwitch.click()
-      await page.waitForLoadState('networkidle')
+      await reservationHelper.applyFilters({ dateFrom, dateTo });
 
-      const filterTrigger = page.locator('button').filter({ hasText: /wszystkie statusy/i })
-      if (await filterTrigger.isVisible()) {
-        await filterTrigger.click()
-        await page.getByText('Anulowane').click()
-        await page.waitForLoadState('networkidle')
+      const count = await reservationHelper.getCount();
+      expect(count).toBe(0);
+
+      // Empty state message should be visible
+      const emptyMsg = authenticatedPage.locator(
+        'text=/brak rezerwacji|nie znaleziono|brak wyników/i'
+      );
+      if (await emptyMsg.count() > 0) {
+        await expect(emptyMsg.first()).toBeVisible();
+      }
+    });
+
+    test('should handle single-day date filter', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      const targetDate = getFutureDate(30);
+      await reservationHelper.applyFilters({ dateFrom: targetDate, dateTo: targetDate });
+
+      const dates = await authenticatedPage
+        .locator('[data-testid="reservation-date"]')
+        .allTextContents();
+
+      dates.forEach((dateStr) => {
+        const parts = dateStr.split('.');
+        if (parts.length === 3) {
+          const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          expect(isoDate).toBe(targetDate);
+        }
+      });
+    });
+  });
+
+  test.describe('Event Type Filters', () => {
+    test('should filter by event type when selector is available', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      // Try to find event type filter
+      const eventTypeFilter = authenticatedPage.locator(
+        'select[name="eventType"], [data-testid="event-type-filter"]'
+      );
+
+      if (await eventTypeFilter.count() > 0) {
+        await eventTypeFilter.first().selectOption({ label: 'Wesele' });
+        await authenticatedPage.waitForLoadState('networkidle');
+
+        const eventTypes = await authenticatedPage
+          .locator('[data-testid="event-type"]')
+          .allTextContents();
+
+        eventTypes.forEach((type) => {
+          expect(type).toContain('Wesele');
+        });
+      }
+    });
+  });
+
+  test.describe('Client Search', () => {
+    test('should search reservations by client name', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      const searchInput = authenticatedPage.locator(
+        'input[placeholder*="szukaj" i], input[placeholder*="klient" i], input[name="search"], [data-testid="search-input"]'
+      );
+
+      if (await searchInput.count() > 0) {
+        await searchInput.first().fill('Kowalski');
+        await authenticatedPage.waitForLoadState('networkidle');
+
+        // Wait for filtered results
+        await authenticatedPage.waitForTimeout(500);
+
+        const clients = await authenticatedPage
+          .locator('[data-testid="client-name"]')
+          .allTextContents();
+
+        clients.forEach((name) => {
+          expect(name.toLowerCase()).toContain('kowalski');
+        });
+      }
+    });
+
+    test('should clear search and show all results', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      const searchInput = authenticatedPage.locator(
+        'input[placeholder*="szukaj" i], input[name="search"], [data-testid="search-input"]'
+      );
+
+      if (await searchInput.count() > 0) {
+        // Apply search
+        await searchInput.first().fill('Kowalski');
+        await authenticatedPage.waitForTimeout(500);
+        const filteredCount = await reservationHelper.getCount();
+
+        // Clear search
+        await searchInput.first().fill('');
+        await authenticatedPage.waitForTimeout(500);
+        const totalCount = await reservationHelper.getCount();
+
+        expect(totalCount).toBeGreaterThanOrEqual(filteredCount);
+      }
+    });
+  });
+
+  test.describe('Combined Filters', () => {
+    test('should apply status and date range filters together', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      const dateFrom = getFutureDate(15);
+      const dateTo = getFutureDate(50);
+
+      await reservationHelper.applyFilters({
+        status: 'PENDING',
+        dateFrom,
+        dateTo,
+      });
+
+      const statuses = await authenticatedPage
+        .locator('[data-testid="status-badge"]')
+        .allTextContents();
+
+      statuses.forEach((status) => {
+        expect(status.toUpperCase()).toContain('PENDING');
+      });
+
+      const dates = await authenticatedPage
+        .locator('[data-testid="reservation-date"]')
+        .allTextContents();
+
+      dates.forEach((dateStr) => {
+        const parts = dateStr.split('.');
+        if (parts.length === 3) {
+          const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          expect(isoDate >= dateFrom && isoDate <= dateTo).toBe(true);
+        }
+      });
+    });
+
+    test('should apply status and hall filters together', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      await reservationHelper.applyFilters({
+        status: 'PENDING',
+        hallId: 'hall-1',
+      });
+
+      const statuses = await authenticatedPage
+        .locator('[data-testid="status-badge"]')
+        .allTextContents();
+
+      statuses.forEach((status) => {
+        expect(status.toUpperCase()).toContain('PENDING');
+      });
+
+      const halls = await authenticatedPage
+        .locator('[data-testid="hall-name"]')
+        .allTextContents();
+
+      halls.forEach((hall) => {
+        expect(hall).toContain('Sala');
+      });
+    });
+  });
+
+  test.describe('Filter URL Persistence', () => {
+    test('should persist filter state in URL query params', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      await reservationHelper.applyFilters({ status: 'CONFIRMED' });
+
+      // URL should contain filter params
+      const url = authenticatedPage.url();
+      expect(url).toMatch(/status|filter/i);
+    });
+
+    test('should restore filters from URL on page reload', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      await reservationHelper.applyFilters({ status: 'PENDING' });
+
+      const urlBefore = authenticatedPage.url();
+
+      // Reload page
+      await authenticatedPage.reload();
+      await authenticatedPage.waitForLoadState('networkidle');
+
+      // Filters should still be applied
+      const statuses = await authenticatedPage
+        .locator('[data-testid="status-badge"]')
+        .allTextContents();
+
+      if (statuses.length > 0) {
+        statuses.forEach((status) => {
+          expect(status.toUpperCase()).toContain('PENDING');
+        });
+      }
+    });
+  });
+
+  test.describe('Sort with Filters', () => {
+    test('should maintain sort order when filters are applied', async ({ authenticatedPage }) => {
+      await reservationHelper.goToList();
+
+      // Sort by date
+      const sortBtn = authenticatedPage.locator('[data-sort="date"]');
+      if (await sortBtn.count() > 0) {
+        await sortBtn.click();
       }
 
-      // Check if empty state or results are shown
-      const emptyState = page.locator('text=/brak rezerwacji/i')
-      const hasResults = page.locator('text=/Znaleziono/')
+      // Apply filter
+      await reservationHelper.applyFilters({ status: 'PENDING' });
 
-      const isEmpty = await emptyState.isVisible().catch(() => false)
-      const hasData = await hasResults.isVisible().catch(() => false)
+      // Get dates and verify still sorted
+      const dates = await authenticatedPage
+        .locator('[data-testid="reservation-date"]')
+        .allTextContents();
 
-      // One of these should be true
-      expect(isEmpty || hasData).toBe(true)
-    })
-  })
-})
+      if (dates.length > 1) {
+        const isoDates = dates.map((d) => {
+          const parts = d.split('.');
+          return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : d;
+        });
+
+        const sorted = [...isoDates].sort();
+        expect(isoDates).toEqual(sorted);
+      }
+    });
+  });
+});

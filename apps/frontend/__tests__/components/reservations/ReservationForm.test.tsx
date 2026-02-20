@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
 
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
@@ -53,6 +55,21 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), promise: vi.fn() },
 }))
 
+// Helper: render with QueryClientProvider
+function renderWithProviders(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>
+  )
+}
+
 // Dynamic import of the component
 let CreateReservationForm: any
 try {
@@ -70,7 +87,7 @@ describe('ReservationForm', () => {
   describe('Rendering', () => {
     it('should render the reservation form with all required fields', () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       // Check for key form sections
       expect(screen.getByText(/data/i) || screen.getByLabelText(/data/i)).toBeTruthy()
@@ -78,7 +95,7 @@ describe('ReservationForm', () => {
 
     it('should display hall selection options', () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       const hallSelect = screen.queryByText(/sala/i)
       expect(hallSelect).toBeTruthy()
@@ -86,7 +103,7 @@ describe('ReservationForm', () => {
 
     it('should display event type selection', () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       const eventTypeSelect = screen.queryByText(/typ wydarzenia/i) || screen.queryByText(/wydarzenie/i)
       expect(eventTypeSelect).toBeTruthy()
@@ -96,7 +113,7 @@ describe('ReservationForm', () => {
   describe('Validation', () => {
     it('should show validation errors when submitting empty form', async () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       const submitButton = screen.queryByRole('button', { name: /zapisz|utwórz|dodaj/i })
       if (submitButton) {
@@ -111,7 +128,7 @@ describe('ReservationForm', () => {
 
     it('should validate that guest count is a positive number', async () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       const guestInput = screen.queryByLabelText(/goś/i) || screen.queryByPlaceholderText(/goś/i)
       if (guestInput) {
@@ -129,7 +146,7 @@ describe('ReservationForm', () => {
 
     it('should validate date is not in the past', async () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       // Try to set a past date — form should reject or warn
       const dateInput = screen.queryByLabelText(/data/i)
@@ -145,7 +162,7 @@ describe('ReservationForm', () => {
   describe('Guest breakdown', () => {
     it('should have fields for adults, children, and toddlers', () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       const adultsField = screen.queryByLabelText(/dorosl|dorosł/i) || screen.queryByText(/dorosl|dorosł/i)
       const childrenField = screen.queryByLabelText(/dzieci/i) || screen.queryByText(/dzieci/i)
@@ -162,7 +179,7 @@ describe('ReservationForm', () => {
       if (!CreateReservationForm) return
       mockCreateReservation.mockResolvedValueOnce({ id: 'new-res-1' })
 
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       // Fill required fields and submit
       const submitButton = screen.queryByRole('button', { name: /zapisz|utwórz|dodaj/i })
@@ -174,7 +191,7 @@ describe('ReservationForm', () => {
 
     it('should show loading state during submission', async () => {
       if (!CreateReservationForm) return
-      render(<CreateReservationForm />)
+      renderWithProviders(<CreateReservationForm />)
 
       const submitButton = screen.queryByRole('button', { name: /zapisz|utwórz|dodaj/i })
       // Button should exist and be clickable
