@@ -99,8 +99,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
     it('should display total price formatted in PLN', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
-      // 27000 PLN → "27 000 zł" — appears in SUMA CAŁKOWITA section
-      // Use the total section to scope the query
       const totalSection = screen.getByText('SUMA CAŁKOWITA').closest('div')!;
       expect(within(totalSection).getByText(/27\s*000\s*zł/)).toBeInTheDocument();
     });
@@ -126,7 +124,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
     it('should show package subtotal formatted', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
-      // 19500 PLN → "19 500 zł" — appears in Pakiet header area
       const allPrices = screen.getAllByText(/19\s*500\s*zł/);
       expect(allPrices.length).toBeGreaterThanOrEqual(1);
     });
@@ -144,15 +141,19 @@ describe('MenuCalculator (PriceBreakdown)', () => {
     it('should display toddlers as "Gratis" when price is 0', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/5.*×.*Maluch/)).toBeInTheDocument();
-      expect(screen.getByText(/Gratis/)).toBeInTheDocument();
+      // "Gratis" appears in both the label "(Gratis)" and the price column — use getAllByText
+      const gratisElements = screen.getAllByText(/Gratis/);
+      expect(gratisElements.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should display toddlers with price when priceEach > 0', async () => {
       await renderPriceBreakdown({ breakdown: toddlersPaidBreakdown });
       expect(screen.getByText(/5.*×.*Maluch/)).toBeInTheDocument();
       // Toddler line should show price, not Gratis
+      // Component may use non-breaking space (\u00a0) between number and "zł"
       const bodyText = document.body.textContent || '';
-      expect(bodyText).toContain('50 zł');
+      expect(bodyText).toMatch(/50\s*zł/);
+      expect(bodyText).not.toContain('Gratis');
     });
 
     it('should hide children row when count is 0', async () => {
@@ -181,8 +182,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
     it('should show options subtotal', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
-      // 7500 PLN → "7 500 zł" or "7500 zł" — but 17500 also contains '7 500'
-      // Scope to the options section header button area
       const optionsHeader = screen.getByText('Opcje dodatkowe').closest('button');
       if (optionsHeader) {
         const headerText = optionsHeader.textContent || '';
@@ -208,7 +207,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
     it('should show quantity × price for PER_PERSON option', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
-      // Bar otwarty: 60 × 100 zł
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/60.*×.*100\s*zł/);
     });
@@ -219,22 +217,14 @@ describe('MenuCalculator (PriceBreakdown)', () => {
   describe('Expand/Collapse Sections', () => {
     it('should have clickable package section header', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
-
-      // Package section starts expanded — adults visible
       expect(screen.getByText(/50.*×.*Doro/)).toBeInTheDocument();
-
-      // The header should be a button
       const pakietBtn = screen.getByText('Pakiet').closest('button');
       expect(pakietBtn).not.toBeNull();
     });
 
     it('should have clickable options section header', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown });
-
-      // Options section starts expanded
       expect(screen.getByText('Bar otwarty')).toBeInTheDocument();
-
-      // The header should be a button
       const optionsBtn = screen.getByText('Opcje dodatkowe').closest('button');
       expect(optionsBtn).not.toBeNull();
     });
@@ -245,12 +235,8 @@ describe('MenuCalculator (PriceBreakdown)', () => {
   describe('showDetails Prop', () => {
     it('should hide details when showDetails=false', async () => {
       await renderPriceBreakdown({ breakdown: fullBreakdown, showDetails: false });
-
-      // Title and total should still be visible
       expect(screen.getByText('Rozliczenie cen')).toBeInTheDocument();
       expect(screen.getByText('SUMA CAŁKOWITA')).toBeInTheDocument();
-
-      // Detail sections should be hidden
       expect(screen.queryByText('Pakiet')).not.toBeInTheDocument();
       expect(screen.queryByText('Opcje dodatkowe')).not.toBeInTheDocument();
     });
@@ -279,7 +265,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
       await renderPriceBreakdown({ breakdown: adultsOnly });
       expect(screen.getByText(/100.*×.*Doro/)).toBeInTheDocument();
-      // "40 000 zł" appears multiple times (subtotal, line item, total) — use getAllByText
       const priceMatches = screen.getAllByText(/40\s*000\s*zł/);
       expect(priceMatches.length).toBeGreaterThanOrEqual(2);
       expect(screen.queryByText(/×.*Dzieci/)).not.toBeInTheDocument();
@@ -300,7 +285,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
       };
 
       await renderPriceBreakdown({ breakdown: expensive });
-      // "100 000 zł" appears multiple times — use getAllByText
       const priceMatches = screen.getAllByText(/100\s*000\s*zł/);
       expect(priceMatches.length).toBeGreaterThanOrEqual(2);
     });
@@ -322,7 +306,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
       await renderPriceBreakdown({ breakdown: singleOption });
       expect(screen.getByText('DJ')).toBeInTheDocument();
-      // Total "4 000 zł" should appear
       const totalSection = screen.getByText('SUMA CAŁKOWITA').closest('div')!;
       expect(within(totalSection).getByText(/4\s*000\s*zł/)).toBeInTheDocument();
     });

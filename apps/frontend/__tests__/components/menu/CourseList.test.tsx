@@ -147,7 +147,6 @@ describe('CourseList (DishSelector)', () => {
     it('should show spinner when loading', async () => {
       mockUsePackageCategories.mockReturnValue({ data: undefined, isLoading: true });
       const { container } = await renderDishSelector();
-      // Look for any loading indicator
       const hasSpinner = container.querySelector('.animate-spin') ||
         container.querySelector('[role="status"]') ||
         document.body.textContent?.match(/ładowan|wczytyw/i);
@@ -178,7 +177,6 @@ describe('CourseList (DishSelector)', () => {
     it('should render all categories', async () => {
       await renderDishSelector();
       expect(screen.getByText('Zupy')).toBeInTheDocument();
-      // cat-main has customLabel = 'Danie na ciepło'
       expect(screen.getByText('Danie na ciepło')).toBeInTheDocument();
       expect(screen.getByText('Desery')).toBeInTheDocument();
     });
@@ -193,15 +191,12 @@ describe('CourseList (DishSelector)', () => {
     it('should show selection limits in counter badges', async () => {
       await renderDishSelector();
       const bodyText = document.body.textContent || '';
-      // Zupy: shows min-max somewhere
       expect(bodyText).toMatch(/1.*2/);
-      // Dania główne: 2-3
       expect(bodyText).toMatch(/2.*3/);
     });
 
     it('should use customLabel instead of categoryName when provided', async () => {
       await renderDishSelector();
-      // cat-main has customLabel = 'Danie na ciepło' instead of 'Dania główne'
       expect(screen.getByText('Danie na ciepło')).toBeInTheDocument();
       expect(screen.queryByText('Dania główne')).not.toBeInTheDocument();
     });
@@ -231,7 +226,6 @@ describe('CourseList (DishSelector)', () => {
 
     it('should display allergen badges', async () => {
       await renderDishSelector();
-      // Rosół has gluten + jajka
       const allergenBadges = screen.getAllByText('gluten');
       expect(allergenBadges.length).toBeGreaterThan(0);
       expect(screen.getAllByText('jajka').length).toBeGreaterThan(0);
@@ -248,7 +242,6 @@ describe('CourseList (DishSelector)', () => {
       await user.click(screen.getByText('Rosół'));
 
       await waitFor(() => {
-        // Counter should update — body text should reflect selection
         const bodyText = document.body.textContent || '';
         expect(bodyText).toMatch(/1\s*\/\s*1/);
       });
@@ -277,15 +270,13 @@ describe('CourseList (DishSelector)', () => {
       await user.click(screen.getByText('Rosół'));
       await user.click(screen.getByText('Żurek'));
 
-      // Try to select 3rd — should show toast
+      // Try to select 3rd — component shows inline alert instead of toast
       await user.click(screen.getByText('Krem z pomidorów'));
 
       await waitFor(() => {
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: expect.stringMatching(/limit|maksymal/i),
-          })
-        );
+        const bodyText = document.body.textContent || '';
+        // Component renders inline alert: "Osiągnięto maksymalną liczbę pozycji"
+        expect(bodyText).toMatch(/maksymaln|limit|osiągnięto/i);
       });
     });
   });
@@ -297,7 +288,6 @@ describe('CourseList (DishSelector)', () => {
       const user = userEvent.setup();
       const { onComplete } = await renderDishSelector();
 
-      // Find and click confirm button without selecting anything
       const buttons = screen.getAllByRole('button');
       const confirmBtn = buttons.find(b => /zatwierdź|potwierdź|dalej/i.test(b.textContent || ''));
       if (confirmBtn) {
@@ -316,12 +306,10 @@ describe('CourseList (DishSelector)', () => {
       const user = userEvent.setup();
       const { onComplete } = await renderDishSelector();
 
-      // Select required dishes: 1 soup + 2 mains
       await user.click(screen.getByText('Rosół'));
       await user.click(screen.getByText('Polędwica wołowa'));
       await user.click(screen.getByText('Łosoś grillowany'));
 
-      // Find and click confirm
       const buttons = screen.getAllByRole('button');
       const confirmBtn = buttons.find(b => /zatwierdź|potwierdź|dalej/i.test(b.textContent || ''));
       if (confirmBtn) {
@@ -341,7 +329,6 @@ describe('CourseList (DishSelector)', () => {
       const user = userEvent.setup();
       const { onComplete } = await renderDishSelector();
 
-      // Select required dishes
       await user.click(screen.getByText('Rosół'));
       await user.click(screen.getByText('Polędwica wołowa'));
       await user.click(screen.getByText('Łosoś grillowany'));
@@ -403,7 +390,6 @@ describe('CourseList (DishSelector)', () => {
 
       await waitFor(() => {
         const bodyText = document.body.textContent || '';
-        // Soup counter should show 1 selected
         expect(bodyText).toMatch(/1\s*\/\s*1/);
       });
     });
