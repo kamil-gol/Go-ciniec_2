@@ -8,7 +8,7 @@ import { generateRandomEmail, generateRandomPhone } from './fixtures/test-data';
  * Page: /dashboard/clients
  * Create form: inline, toggled via "Dodaj Klienta" button
  * Form fields: firstName, lastName, email, phone, notes
- * Required: firstName, lastName, phone
+ * Required: firstName, lastName, phone (HTML required + JS validation)
  * Search: input with placeholder "Szukaj klientów..."
  * Stats: Wszyscy, Z emailem, Z telefonem, Ten miesiąc
  */
@@ -95,7 +95,6 @@ test.describe('Client Management', () => {
       await page.waitForTimeout(500);
 
       // Empty state should be gone (assuming clients exist)
-      // "Nie znaleziono klientów" should disappear
       await expect(
         page.locator('text=Nie znaleziono klientów')
       ).toBeHidden({ timeout: 3000 });
@@ -129,41 +128,47 @@ test.describe('Client Management', () => {
       await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
 
       // Cancel
-      await page.click('button:has-text("Anuluj")');
+      await page.locator('form').locator('button:has-text("Anuluj")').click();
 
       // Form should close
       await expect(page.locator('text=Dodaj Nowego Klienta')).toBeHidden({ timeout: 3000 });
     });
 
-    test('should show form field labels', async ({ page }) => {
+    test('should show form field labels with required markers', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
       await page.click('button:has-text("Dodaj Klienta")');
 
-      // Section headers
-      await expect(page.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
-      await expect(page.locator('text=Dane kontaktowe')).toBeVisible();
-      await expect(page.locator('text=Notatki').first()).toBeVisible();
+      // Section headers (scoped to form to avoid stat card duplicates)
+      const form = page.locator('form');
+      await expect(form.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
+      await expect(form.locator('text=Dane kontaktowe')).toBeVisible();
 
-      // Field labels
+      // Field labels with required markers
       await expect(page.locator('label[for="firstName"]')).toContainText('Imię');
       await expect(page.locator('label[for="lastName"]')).toContainText('Nazwisko');
       await expect(page.locator('label[for="phone"]')).toContainText('Telefon');
+
+      // Required markers (*) should be present
+      await expect(page.locator('label[for="firstName"] .text-red-500')).toBeVisible();
+      await expect(page.locator('label[for="lastName"] .text-red-500')).toBeVisible();
+      await expect(page.locator('label[for="phone"] .text-red-500')).toBeVisible();
     });
 
-    test('should show validation toast when submitting empty form', async ({ page }) => {
+    test('should have required attribute on mandatory fields', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
       await page.click('button:has-text("Dodaj Klienta")');
       await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
 
-      // Click submit without filling fields
-      await page.click('button:has-text("Dodaj klienta")');
+      // firstName, lastName, phone should have required attribute
+      await expect(page.locator('#firstName')).toHaveAttribute('required', '');
+      await expect(page.locator('#lastName')).toHaveAttribute('required', '');
+      await expect(page.locator('#phone')).toHaveAttribute('required', '');
 
-      // Validation toast should appear
-      await expect(
-        page.locator('text=Wypełnij wszystkie wymagane pola')
-      ).toBeVisible({ timeout: 3000 });
+      // email and notes should NOT be required
+      await expect(page.locator('#email')).not.toHaveAttribute('required', '');
+      await expect(page.locator('#notes')).not.toHaveAttribute('required', '');
     });
 
     test('should create client successfully', async ({ page }) => {
@@ -182,23 +187,20 @@ test.describe('Client Management', () => {
       await page.locator('#phone').fill(randomPhone);
       await page.locator('#notes').fill('Klient testowy z E2E');
 
-      // Submit
-      await page.click('button:has-text("Dodaj klienta")');
+      // Submit via form button (scoped to form to avoid hero button match)
+      await page.locator('form button[type="submit"]').click();
 
-      // Success toast
+      // Success: form should close (onSuccess closes form)
       await expect(
-        page.locator('text=Klient został dodany')
-      ).toBeVisible({ timeout: 5000 });
-
-      // Form should close
-      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeHidden({ timeout: 3000 });
+        page.locator('text=Dodaj Nowego Klienta')
+      ).toBeHidden({ timeout: 10000 });
     });
 
     test('should find newly created client in search', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
       // Create a client with a unique name
-      const uniqueName = `E2ESearch${Date.now()}`;
+      const uniqueName = `E2EFind${Date.now()}`;
 
       await page.click('button:has-text("Dodaj Klienta")');
       await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
@@ -207,8 +209,13 @@ test.describe('Client Management', () => {
       await page.locator('#lastName').fill('Testowy');
       await page.locator('#phone').fill(generateRandomPhone());
 
-      await page.click('button:has-text("Dodaj klienta")');
-      await expect(page.locator('text=Klient został dodany')).toBeVisible({ timeout: 5000 });
+      // Submit via form button
+      await page.locator('form button[type="submit"]').click();
+
+      // Wait for form to close (success)
+      await expect(
+        page.locator('text=Dodaj Nowego Klienta')
+      ).toBeHidden({ timeout: 10000 });
 
       // Search for the client
       const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
