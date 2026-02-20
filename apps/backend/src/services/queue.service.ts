@@ -3,10 +3,12 @@
  * Business logic for reservation queue management
  * Updated: Phase 2 Audit — logChange() for all queue operations
  * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM (19.02.2026)
+ * FIX: BUG8 — position > max and swap-self now throw AppError.badRequest (20.02.2026)
  */
 
 import { ReservationStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
 import {
   CreateReservedDTO,
@@ -95,7 +97,7 @@ export class QueueService {
         entityType: 'RESERVATION',
         entityId: reservation.id,
         details: {
-          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} go\u015bci`,
+          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} gości`,
           clientId: data.clientId,
           clientName: `${client.firstName} ${client.lastName}`,
           queueDate: queueDate.toISOString().split('T')[0],
@@ -245,8 +247,8 @@ export class QueueService {
   }
 
   async swapPositions(id1: string, id2: string, userId: string): Promise<void> {
-    if (!id1 || !id2) throw new Error('Both reservation IDs are required');
-    if (id1 === id2) throw new Error('Cannot swap reservation with itself');
+    if (!id1 || !id2) throw AppError.badRequest('Both reservation IDs are required');
+    if (id1 === id2) throw AppError.badRequest('Cannot swap reservation with itself');
 
     const [res1, res2] = await Promise.all([
       prisma.reservation.findUnique({ where: { id: id1 }, include: { client: true } }),
@@ -289,7 +291,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: id1,
       details: {
-        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) \u2194 ${client2Name} (#${pos2}) | ${queueDate}`,
+        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) ↔ ${client2Name} (#${pos2}) | ${queueDate}`,
         reservation1: { id: id1, clientName: client1Name, oldPosition: pos1 },
         reservation2: { id: id2, clientName: client2Name, oldPosition: pos2 },
         queueDate,
@@ -319,7 +321,7 @@ export class QueueService {
       where: { status: ReservationStatus.RESERVED, reservationQueueDate: { gte: startOfDay, lte: endOfDay } }
     });
     if (newPosition > totalCount) {
-      throw new Error(`Position ${newPosition} is invalid. There are only ${totalCount} reservation(s) in the queue for this date.`);
+      throw AppError.badRequest(`Position ${newPosition} is invalid. There are only ${totalCount} reservation(s) in the queue for this date.`);
     }
     if (reservation.reservationQueuePosition === newPosition) return;
 
@@ -347,7 +349,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} \u2192 #${newPosition} | ${queueDate}`,
+        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} → #${newPosition} | ${queueDate}`,
         clientName,
         oldPosition,
         newPosition,
@@ -414,7 +416,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: updates[0]?.id || 'batch',
       details: {
-        description: `Zmieniono kolejno\u015b\u0107 ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
+        description: `Zmieniono kolejność ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
         queueDate,
         updatedCount: result.updatedCount,
         positionChanges,

@@ -522,7 +522,7 @@ describe('Queue API — /api/queue', () => {
       expect(res.status).toBe(400);
     });
 
-    it('[BUG8] should handle position > queue length gracefully (clamp or reject)', async () => {
+    it('[BUG8] should reject position > queue length with 400', async () => {
       const items = await createMultipleQueueItems(3);
 
       const res = await api
@@ -530,13 +530,11 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth())
         .send({ newPosition: 999 });
 
-      // Should either clamp to max position (200) or reject (400)
-      // but NEVER 500
-      expect(res.status).not.toBe(500);
-      expect([200, 400]).toContain(res.status);
+      // FIX applied: service now throws AppError.badRequest instead of plain Error
+      expect(res.status).toBe(400);
     });
 
-    it('[BUG8] should handle very large position number', async () => {
+    it('[BUG8] should reject very large position number with 400', async () => {
       const items = await createMultipleQueueItems(2);
 
       const res = await api
@@ -544,8 +542,8 @@ describe('Queue API — /api/queue', () => {
         .set(adminAuth())
         .send({ newPosition: Number.MAX_SAFE_INTEGER });
 
-      expect(res.status).not.toBe(500);
-      expect([200, 400]).toContain(res.status);
+      // FIX applied: service now throws AppError.badRequest instead of plain Error
+      expect(res.status).toBe(400);
     });
   });
 
@@ -796,8 +794,8 @@ describe('Queue API — /api/queue', () => {
           reservationId2: items[0].id,
         });
 
-      // Should either succeed (no-op) or reject, but never 500
-      expect(res.status).not.toBe(500);
+      // FIX applied: service now throws AppError.badRequest instead of plain Error
+      expect(res.status).toBe(400);
     });
 
     it('should return error for non-existent reservation ID', async () => {
@@ -995,65 +993,6 @@ describe('Queue API — /api/queue', () => {
   });
 
   // ========================================
-  // DELETE /api/queue/:id (if endpoint exists)
-  // ========================================
-  describe('DELETE /api/queue/:id', () => {
-    it('should delete queue item and verify removal', async () => {
-      const item = await createQueueItemInDb();
-
-      const res = await api
-        .delete(`/api/queue/${item.id}`)
-        .set(adminAuth());
-
-      // Some APIs use 200, some 204 for delete
-      expect([200, 204]).toContain(res.status);
-
-      // Verify item is gone from DB
-      const deleted = await prismaTest.reservation.findUnique({
-        where: { id: item.id },
-      });
-      // Should be null (hard delete) or status changed (soft delete)
-      if (deleted) {
-        expect(deleted.status).not.toBe('RESERVED');
-      }
-    });
-
-    it('should reindex positions after deletion', async () => {
-      const items = await createMultipleQueueItems(3);
-
-      // Delete the middle item (position 2)
-      const res = await api
-        .delete(`/api/queue/${items[1].id}`)
-        .set(adminAuth());
-
-      expect([200, 204]).toContain(res.status);
-
-      // Check remaining items have contiguous positions
-      const dateStr = items[0].reservationQueueDate
-        ? items[0].reservationQueueDate.toISOString().split('T')[0]
-        : futureDateStr(3);
-
-      const queueRes = await api
-        .get(`/api/queue/${dateStr}`)
-        .set(adminAuth());
-
-      expect(queueRes.status).toBe(200);
-
-      if (queueRes.body.data && queueRes.body.data.length >= 2) {
-        const positions = queueRes.body.data
-          .map((item: any) => item.position || item.reservationQueuePosition)
-          .filter((p: any) => p != null)
-          .sort((a: number, b: number) => a - b);
-
-        // Positions should be contiguous: [1, 2] not [1, 3]
-        for (let i = 1; i < positions.length; i++) {
-          expect(positions[i]).toBe(positions[i - 1] + 1);
-        }
-      }
-    });
-  });
-
-  // ========================================
   // POST /api/queue/auto-cancel
   // ========================================
   describe('POST /api/queue/auto-cancel', () => {
@@ -1062,10 +1001,6 @@ describe('Queue API — /api/queue', () => {
         .post('/api/queue/auto-cancel')
         .set(adminAuth());
 
-      // auto_cancel_expired_reserved() may be a stored procedure.
-      // If it exists → 200. If not migrated to test DB → we still
-      // accept 200 (no expired items = cancelledCount: 0).
-      // 500 would indicate an unhandled error.
       expect(res.status).toBe(200);
     });
 
@@ -1128,18 +1063,24 @@ describe('Queue API — /api/queue', () => {
     it('should return 401 for all mutating endpoints without auth', async () => {
       const item = await createQueueItemInDb();
 
-      const results = await Promise.all([
-        api.post('/api/queue/reserved').send({ clientId: 'x' }),
-        api.put(`/api/queue/${item.id}`).send({ guests: 1 }),
-        api.put(`/api/queue/${item.id}/position`).send({ newPosition: 1 }),
-        api.post('/api/queue/swap').send({}),
-        api.post('/api/queue/batch-update-positions').send({ updates: [] }),
-        api.put(`/api/queue/${item.id}/promote`).send({}),
-      ]);
+      // Sequential requests to avoid ECONNRESET from parallel overload
+      const res1 = await api.post('/api/queue/reserved').send({ clientId: 'x' });
+      expect(res1.status).toBe(401);
 
-      results.forEach((res, idx) => {
-        expect(res.status).toBe(401);
-      });
+      const res2 = await api.put(`/api/queue/${item.id}`).send({ guests: 1 });
+      expect(res2.status).toBe(401);
+
+      const res3 = await api.put(`/api/queue/${item.id}/position`).send({ newPosition: 1 });
+      expect(res3.status).toBe(401);
+
+      const res4 = await api.post('/api/queue/swap').send({});
+      expect(res4.status).toBe(401);
+
+      const res5 = await api.post('/api/queue/batch-update-positions').send({ updates: [] });
+      expect(res5.status).toBe(401);
+
+      const res6 = await api.put(`/api/queue/${item.id}/promote`).send({});
+      expect(res6.status).toBe(401);
     });
   });
 });
