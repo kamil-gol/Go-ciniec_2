@@ -19,6 +19,7 @@ jest.mock('../../../lib/prisma', () => {
     deposit: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
     $executeRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
     $queryRaw: jest.fn(),
   };
   return { prisma: mockPrisma };
@@ -66,7 +67,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
 
     // First attempt: lock error -> retry, Second attempt: success
     const lockError = new Error('lock_not_available');
-    mockPrisma.$executeRaw
+    mockPrisma.$executeRawUnsafe
       .mockRejectedValueOnce(lockError)
       .mockResolvedValueOnce(undefined);
 
@@ -78,7 +79,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
 
     await promise;
 
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(2);
   });
 
   it('should throw user-friendly message after max retries on persistent lock error', async () => {
@@ -100,7 +101,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
       .mockResolvedValueOnce(res2);
 
     const lockError = new Error('lock_not_available');
-    mockPrisma.$executeRaw.mockRejectedValue(lockError);
+    mockPrisma.$executeRawUnsafe.mockRejectedValue(lockError);
 
     await expect(service.swapPositions('r1', 'r2', 'u1'))
       .rejects.toThrow('Another user is modifying the queue. Please refresh and try again.');

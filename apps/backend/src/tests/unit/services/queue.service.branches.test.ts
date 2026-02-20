@@ -16,6 +16,7 @@ jest.mock('../../../lib/prisma', () => {
       count: jest.fn(), aggregate: jest.fn(),
     },
     $executeRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
     $queryRaw: jest.fn(),
     $transaction: jest.fn(),
   };
@@ -69,6 +70,7 @@ beforeEach(() => {
   mockPrisma.reservation.count.mockResolvedValue(5);
   mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 5 } });
   mockPrisma.$executeRaw.mockResolvedValue(undefined);
+  mockPrisma.$executeRawUnsafe.mockResolvedValue(undefined);
   mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
   mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala Główna' });
   mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
@@ -163,11 +165,11 @@ describe('QueueService — branch coverage', () => {
   // —— swapPositions: lock and P2002 error branches ————————————————
   describe('swapPositions — error branches', () => {
 
-    it('should throw user-friendly message on lock error from $executeRaw', async () => {
+    it('should throw user-friendly message on lock error from $executeRawUnsafe', async () => {
       mockPrisma.reservation.findUnique
         .mockResolvedValueOnce(RES_1)
         .mockResolvedValueOnce(RES_2);
-      mockPrisma.$executeRaw.mockRejectedValue(
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(
         Object.assign(new Error('lock_not_available'), { code: undefined })
       );
 
@@ -179,7 +181,7 @@ describe('QueueService — branch coverage', () => {
       mockPrisma.reservation.findUnique
         .mockResolvedValueOnce(RES_1)
         .mockResolvedValueOnce(RES_2);
-      mockPrisma.$executeRaw.mockRejectedValue(
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(
         Object.assign(new Error('Transaction failed'), { code: 'P2034' })
       );
 
@@ -191,7 +193,7 @@ describe('QueueService — branch coverage', () => {
       mockPrisma.reservation.findUnique
         .mockResolvedValueOnce(RES_1)
         .mockResolvedValueOnce(RES_2);
-      mockPrisma.$executeRaw.mockRejectedValue(
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(
         Object.assign(new Error('Unique constraint'), { code: 'P2002' })
       );
 
@@ -203,7 +205,7 @@ describe('QueueService — branch coverage', () => {
       mockPrisma.reservation.findUnique
         .mockResolvedValueOnce(RES_1)
         .mockResolvedValueOnce(RES_2);
-      mockPrisma.$executeRaw.mockRejectedValue(new Error('Unknown DB error'));
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(new Error('Unknown DB error'));
 
       await expect(service.swapPositions('res-001', 'res-002', TEST_USER_ID))
         .rejects.toThrow('Unknown DB error');
@@ -223,7 +225,7 @@ describe('QueueService — branch coverage', () => {
         .mockResolvedValueOnce(RES_1)
         .mockResolvedValueOnce(RES_2);
       let callCount = 0;
-      mockPrisma.$executeRaw.mockImplementation(async () => {
+      mockPrisma.$executeRawUnsafe.mockImplementation(async () => {
         callCount++;
         if (callCount === 1) throw new Error('lock_not_available');
         return 1;
@@ -240,7 +242,7 @@ describe('QueueService — branch coverage', () => {
     it('should throw on lock error during move', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       mockPrisma.reservation.count.mockResolvedValue(5);
-      mockPrisma.$executeRaw.mockRejectedValue(
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(
         Object.assign(new Error('lock_not_available'), { code: undefined })
       );
 
@@ -254,7 +256,7 @@ describe('QueueService — branch coverage', () => {
       const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
         code: 'P2002', clientVersion: '5.0.0',
       });
-      mockPrisma.$executeRaw.mockRejectedValue(p2002);
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(p2002);
 
       await expect(service.moveToPosition('res-001', 3, TEST_USER_ID))
         .rejects.toThrow('Position 3 is already occupied');
@@ -263,7 +265,7 @@ describe('QueueService — branch coverage', () => {
     it('should re-throw unknown errors during move', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       mockPrisma.reservation.count.mockResolvedValue(5);
-      mockPrisma.$executeRaw.mockRejectedValue(new Error('Timeout'));
+      mockPrisma.$executeRawUnsafe.mockRejectedValue(new Error('Timeout'));
 
       await expect(service.moveToPosition('res-001', 3, TEST_USER_ID))
         .rejects.toThrow('Timeout');
@@ -288,7 +290,7 @@ describe('QueueService — branch coverage', () => {
 
       await service.moveToPosition('res-001', 1, TEST_USER_ID);
 
-      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRawUnsafe).not.toHaveBeenCalled();
     });
   });
 
@@ -522,7 +524,6 @@ describe('QueueService — branch coverage', () => {
   describe('autoCancelExpired — branches', () => {
 
     it('should NOT log when cancelledCount is 0', async () => {
-      // findMany returns empty → no cancellations
       mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
 
       const result = await service.autoCancelExpired('u1');
@@ -532,7 +533,6 @@ describe('QueueService — branch coverage', () => {
     });
 
     it('should log with triggeredBy system when no userId', async () => {
-      // findMany returns expired reservations
       mockPrisma.reservation.findMany.mockResolvedValueOnce([
         { id: 'r1' }, { id: 'r2' },
       ]);

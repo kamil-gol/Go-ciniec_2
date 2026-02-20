@@ -13,6 +13,7 @@ jest.mock('../../../lib/prisma', () => {
     hall: { findUnique: jest.fn() },
     eventType: { findUnique: jest.fn() },
     $executeRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
     $queryRaw: jest.fn(),
   };
@@ -52,13 +53,13 @@ describe('QueueService — 55P03 lock error branch in withRetry (line 39)', () =
     // Error with 55P03 in message — targets the third OR branch in isLockError check
     // Message also contains 'lock' so outer catch maps to user-friendly message
     const lockError = new Error('database error code 55P03 lock timeout');
-    mockPrisma.$executeRaw.mockRejectedValue(lockError);
+    mockPrisma.$executeRawUnsafe.mockRejectedValue(lockError);
 
     await expect(
       service.swapPositions('r1', 'r2', 'user-1')
     ).rejects.toThrow('Another user is modifying the queue');
 
     // Should have been called 3 times (initial + 2 retries)
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+    expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(3);
   }, 10000);
 });
