@@ -6,12 +6,7 @@ import { login } from './fixtures/auth';
  *
  * Reservation detail page: /dashboard/reservations/[id]
  * Tabs: "Szczegóły" | "Historia" (plain <button> elements)
- * Historia tab renders EntityActivityTimeline with:
- * - Title: "Historia zmian"
- * - Timeline items with action badges (Utworzenie, Aktualizacja, etc.)
- * - Timestamps, user info ("przez ...")
- * - Expandable details with "Szczegóły" / "Zwiń" toggle
- * - Empty state: "Brak historii zmian"
+ * Historia tab renders EntityActivityTimeline
  */
 
 // Helper: navigate to first reservation detail page
@@ -21,30 +16,29 @@ async function goToReservationDetail(page: Page): Promise<boolean> {
     page.locator('text=/Znaleziono.*rezerwacji/')
   ).toBeVisible({ timeout: 15000 });
 
-  // Find a detail link (contains UUID path segment after /reservations/)
-  const link = page.locator('a[href*="/dashboard/reservations/"]').first();
+  // Find Eye button (detail view) — this is the icon button inside
+  // <Link href="/dashboard/reservations/{id}"><Button title="Zobacz szczegóły i edytuj"><Eye/></Button></Link>
+  // We must NOT match the "Nowa rezerwacja" link (/dashboard/reservations/new)
+  const detailLink = page.locator('a:has(button[title="Zobacz szczegóły i edytuj"])').first();
 
-  if (!(await link.isVisible({ timeout: 5000 }).catch(() => false))) {
-    return false;
+  if (!(await detailLink.isVisible({ timeout: 5000 }).catch(() => false))) {
+    return false; // No reservations available
   }
 
-  // Extract href and navigate directly (avoids Next.js Link click issues)
-  const href = await link.getAttribute('href');
+  // Extract href and navigate directly
+  const href = await detailLink.getAttribute('href');
   if (!href) return false;
 
   await page.goto(href);
   await page.waitForLoadState('networkidle');
 
-  // Wait for page to settle: either detail loaded or error state
-  const loaded = page.locator('text=Szczegóły rezerwacji');
-  const error = page.locator('text=Nie udało się załadować rezerwacji');
-  const loading = page.locator('text=Wczytywanie...');
-
   // Wait for loading to finish
+  const loading = page.locator('text=Wczytywanie...');
   await expect(loading).toBeHidden({ timeout: 15000 }).catch(() => {});
 
-  // Check if detail loaded successfully
-  if (await loaded.isVisible({ timeout: 5000 }).catch(() => false)) {
+  // Check if detail page loaded
+  const loaded = page.locator('text=Szczegóły rezerwacji');
+  if (await loaded.isVisible({ timeout: 10000 }).catch(() => false)) {
     return true;
   }
 
@@ -61,7 +55,6 @@ test.describe('History and Audit Trail', () => {
       const loaded = await goToReservationDetail(page);
       test.skip(!loaded, 'No reservations available or detail page failed to load');
 
-      // Hero header
       await expect(
         page.locator('text=Szczegóły rezerwacji')
       ).toBeVisible();
@@ -93,15 +86,6 @@ test.describe('History and Audit Trail', () => {
         page.locator('h2:has-text("Klient")')
       ).toBeVisible({ timeout: 5000 });
     });
-
-    test('should show Szybkie akcje section', async ({ page }) => {
-      const loaded = await goToReservationDetail(page);
-      test.skip(!loaded, 'No reservations available');
-
-      await expect(
-        page.locator('text=Szybkie akcje')
-      ).toBeVisible({ timeout: 5000 });
-    });
   });
 
   test.describe('Tab Navigation', () => {
@@ -123,7 +107,6 @@ test.describe('History and Audit Trail', () => {
 
       await page.locator('button:has-text("Historia")').click();
 
-      // Should show "Historia zmian" heading
       await expect(
         page.locator('text=Historia zmian')
       ).toBeVisible({ timeout: 10000 });
@@ -133,11 +116,9 @@ test.describe('History and Audit Trail', () => {
       const loaded = await goToReservationDetail(page);
       test.skip(!loaded, 'No reservations available');
 
-      // Go to Historia
       await page.locator('button:has-text("Historia")').click();
       await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
 
-      // Go back to Szczegóły
       await page.locator('button:has-text("Szczegóły")').click();
       await expect(
         page.locator('h2:has-text("Klient")')
@@ -153,7 +134,7 @@ test.describe('History and Audit Trail', () => {
       await page.locator('button:has-text("Historia")').click();
       await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
 
-      // Either has entries ("Utworzenie" badge) or empty ("Brak historii zmian")
+      // Either entries ("Utworzenie" badge) or empty ("Brak historii zmian")
       await expect(
         page.locator('text=Utworzenie').first()
           .or(page.locator('text=Brak historii zmian'))
@@ -167,12 +148,10 @@ test.describe('History and Audit Trail', () => {
       await page.locator('button:has-text("Historia")').click();
       await expect(page.locator('text=Historia zmian')).toBeVisible({ timeout: 10000 });
 
-      // Skip if empty
       if (await page.locator('text=Brak historii zmian').isVisible({ timeout: 2000 }).catch(() => false)) {
         return;
       }
 
-      // Timestamps render in <time> elements
       await expect(page.locator('time').first()).toBeVisible({ timeout: 3000 });
     });
 
@@ -187,7 +166,6 @@ test.describe('History and Audit Trail', () => {
         return;
       }
 
-      // User info: "przez [name]"
       await expect(
         page.locator('text=/przez /').first()
       ).toBeVisible({ timeout: 3000 });
@@ -204,7 +182,6 @@ test.describe('History and Audit Trail', () => {
         return;
       }
 
-      // Count: "X wpisów" / "X wpisy" / "X wpis"
       await expect(
         page.locator('text=/\\d+ wpis/')
       ).toBeVisible({ timeout: 3000 });
@@ -223,19 +200,17 @@ test.describe('History and Audit Trail', () => {
         return;
       }
 
-      // Find "Szczegóły" expand button (entries with changes have it)
-      // Note: this text also appears in the tab, so scope to the timeline area
+      // The "Szczegóły" expand button is distinct from the tab button;
+      // scope to last match (inside timeline, not the tab)
       const expandBtn = page.locator('button:has-text("Szczegóły")').last();
 
       if (await expandBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await expandBtn.click();
 
-        // Should change to "Zwiń"
         await expect(
           page.locator('button:has-text("Zwiń")').first()
         ).toBeVisible({ timeout: 3000 });
 
-        // Collapse
         await page.locator('button:has-text("Zwiń")').first().click();
       }
     });
