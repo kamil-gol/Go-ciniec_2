@@ -67,6 +67,13 @@ temp/
 
 # Backup files
 *.backup
-*.bakapps/backend/uploads/
-apps/frontend/.next/
+*.bak
+
+# Generated artifacts — never commit
 *.pdf
+*.xlsx
+FETCH_HEAD
+
+# Upload directories
+apps/backend/uploads/
+apps/frontend/.next/
