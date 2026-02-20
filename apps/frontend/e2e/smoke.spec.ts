@@ -132,11 +132,14 @@ test.describe('Smoke Tests - Mobile Responsive', () => {
     const hamburger = page.locator('button[aria-label="Otwórz menu nawigacji"]');
     await expect(hamburger).toBeVisible();
 
-    // Click hamburger to open mobile sidebar (Sheet)
+    // Click hamburger to open mobile sidebar (Sheet / Radix Dialog portal)
     await hamburger.click();
 
-    // Mobile sidebar should show navigation links
-    await expect(page.locator('text=Rezerwacje').first()).toBeVisible({ timeout: 3000 });
+    // Mobile sidebar renders in a Radix Dialog portal with role="dialog"
+    // Wait for the Sheet slide-in animation (500ms) and check nav inside dialog
+    const mobileSheet = page.locator('[role="dialog"]');
+    await expect(mobileSheet).toBeVisible({ timeout: 3000 });
+    await expect(mobileSheet.locator('text=Rezerwacje')).toBeVisible({ timeout: 3000 });
   });
 });
 
