@@ -43,8 +43,8 @@ jest.mock('@utils/audit-logger', () => ({ logChange: jest.fn() }));
 jest.mock('@utils/logger', () => ({
   info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 }));
-jest.mock('../pdf.service', () => ({ pdfService: mockPdfService }));
-jest.mock('../email.service', () => ({ default: mockEmailService }));
+jest.mock('@services/pdf.service', () => ({ pdfService: mockPdfService }));
+jest.mock('@services/email.service', () => ({ default: mockEmailService }));
 
 import depositService from '@services/deposit.service';
 import { logChange } from '@utils/audit-logger';
@@ -209,12 +209,12 @@ describe('DepositService', () => {
       const result = await depositService.getByReservation('res-1');
 
       expect(result.deposits).toHaveLength(3);
-      expect(result.summary.totalAmount).toBe(5000);     // 3000+2000 (excl cancelled)
+      expect(result.summary.totalAmount).toBe(5000);
       expect(result.summary.paidAmount).toBe(3000);
       expect(result.summary.pendingAmount).toBe(2000);
       expect(result.summary.activeDeposits).toBe(2);
-      expect(result.summary.remainingToDeposit).toBe(5000); // 10000-5000
-      expect(result.summary.percentPaid).toBe(30);        // 3000/10000*100
+      expect(result.summary.remainingToDeposit).toBe(5000);
+      expect(result.summary.percentPaid).toBe(30);
     });
 
     it('should throw 404 when reservation not found', async () => {
@@ -294,8 +294,8 @@ describe('DepositService', () => {
   describe('update', () => {
     it('should update amount and dueDate together', async () => {
       mockPrisma.deposit.findUnique
-        .mockResolvedValueOnce(mockDeposit)         // initial check
-        .mockResolvedValueOnce({ ...mockDeposit, amount: 3000, dueDate: '2026-06-01' }); // after update
+        .mockResolvedValueOnce(mockDeposit)
+        .mockResolvedValueOnce({ ...mockDeposit, amount: 3000, dueDate: '2026-06-01' });
       mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
       mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
 
@@ -395,13 +395,12 @@ describe('DepositService', () => {
 
     it('should mark deposit as fully PAID', async () => {
       mockPrisma.deposit.findUnique
-        .mockResolvedValueOnce(mockDeposit)        // initial check
-        .mockResolvedValueOnce(mockPaidDeposit);   // after update
+        .mockResolvedValueOnce(mockDeposit)
+        .mockResolvedValueOnce(mockPaidDeposit);
       mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
-      // Mock auto-confirm chain
       mockPrisma.reservation.findUnique.mockResolvedValue({
         ...mockReservation,
-        status: 'CONFIRMED', // already handled
+        status: 'CONFIRMED',
         deposits: [{ ...mockPaidDeposit }],
       });
 
@@ -617,7 +616,7 @@ describe('DepositService', () => {
     });
 
     it('should throw when deposit is already PENDING and not paid', async () => {
-      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit); // paid=false, status=PENDING
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
 
       await expect(depositService.markAsUnpaid('dep-1', userId))
         .rejects.toThrow(/nie jest oznaczona/);
