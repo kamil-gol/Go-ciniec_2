@@ -35,11 +35,11 @@ test.describe('Reservations Page', () => {
     test('should display stats cards', async ({ page }) => {
       await helper.goToList();
 
-      // 4 stat cards: Wszystkie, Potwierdzone, Oczekuj\u0105ce, Ten miesi\u0105c
-      await expect(page.locator('text=Wszystkie')).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('text=Potwierdzone')).toBeVisible();
-      await expect(page.locator('text=Oczekuj\u0105ce')).toBeVisible();
-      await expect(page.locator('text=Ten miesi\u0105c')).toBeVisible();
+      // 4 stat cards: Wszystkie, Potwierdzone, Oczekujące, Ten miesiąc
+      await expect(page.getByText('Wszystkie', { exact: true })).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText('Potwierdzone', { exact: true })).toBeVisible();
+      await expect(page.getByText('Oczekujące', { exact: true })).toBeVisible();
+      await expect(page.getByText('Ten miesiąc', { exact: true })).toBeVisible();
     });
 
     test('should have view toggle (Lista / Kalendarz)', async ({ page }) => {
@@ -74,7 +74,7 @@ test.describe('Reservations Page', () => {
       // Stepper should be visible with step titles
       await expect(page.locator('text=Wydarzenie').first()).toBeVisible();
       await expect(page.locator('text=Sala i termin').first()).toBeVisible();
-      await expect(page.locator('text=Go\u015bcie').first()).toBeVisible();
+      await expect(page.locator('text=Goście').first()).toBeVisible();
     });
 
     test('should close form when clicking cancel', async ({ page }) => {
@@ -100,12 +100,12 @@ test.describe('Reservations Page', () => {
       await helper.openCreateForm();
 
       // Step 0 content
-      await expect(page.locator('text=Jaki typ wydarzenia?')).toBeVisible();
-      await expect(page.locator('text=Typ wydarzenia')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Jaki typ wydarzenia?' })).toBeVisible();
+      await expect(page.getByText('Typ wydarzenia', { exact: true })).toBeVisible();
 
       // Select trigger should show placeholder
       await expect(
-        page.locator('text=Wybierz typ wydarzenia...')
+        page.locator('text=Wybierz typ wydarzenia...').first()
       ).toBeVisible();
     });
 
@@ -130,7 +130,6 @@ test.describe('Reservations Page', () => {
       await page.click('text=Wybierz typ wydarzenia...');
 
       // Dropdown should show event types from the database
-      // At minimum, the select content should be visible
       const selectContent = page.locator('[role="listbox"]');
       await expect(selectContent).toBeVisible({ timeout: 3000 });
 
@@ -154,7 +153,7 @@ test.describe('Reservations Page', () => {
 
       // Step 1 content should appear
       await expect(
-        page.locator('text=Wybierz sal\u0119 i termin')
+        page.locator('text=Wybierz salę i termin')
       ).toBeVisible({ timeout: 3000 });
     });
 
@@ -169,7 +168,7 @@ test.describe('Reservations Page', () => {
 
       // Verify we're on step 1
       await expect(
-        page.locator('text=Wybierz sal\u0119 i termin')
+        page.locator('text=Wybierz salę i termin')
       ).toBeVisible({ timeout: 3000 });
 
       // Go back
