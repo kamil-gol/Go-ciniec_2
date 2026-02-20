@@ -1,103 +1,135 @@
 /**
- * PackageCategoryService — Unit Tests
+ * Unit tests for packageCategory.service.ts
+ * Covers: getByPackageId, getById, create (duplicate guard), update, bulkUpdate, delete
+ * Issue: #98
  */
 
-jest.mock('../../../lib/prisma', () => {
-  const mock = {
-    packageCategorySettings: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    menuPackage: { findUnique: jest.fn() },
-  };
-  return { prisma: mock, __esModule: true, default: mock };
-});
+const mockPrisma = {
+  packageCategorySettings: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  menuPackage: {
+    findUnique: jest.fn(),
+  },
+};
 
-import { packageCategoryService } from '../../../services/packageCategory.service';
-import { prisma } from '../../../lib/prisma';
+jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
 
-const mockPrisma = prisma as any;
+import { packageCategoryService } from '@services/packageCategory.service';
 
-const SETTING = {
-  id: 'pcs-001', packageId: 'pkg-001', category: 'APPETIZER',
-  minSelect: 1, maxSelect: 3, isRequired: true, isEnabled: true,
+const mockSetting = {
+  id: 'pcs-1', packageId: 'pkg-1', category: 'SOUP',
+  minSelect: 1, maxSelect: 2, isRequired: true, isEnabled: true,
   displayOrder: 0, customLabel: null,
 };
 
-beforeEach(() => {
-  jest.clearAllMocks();
-  mockPrisma.packageCategorySettings.findMany.mockResolvedValue([SETTING]);
-  mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(SETTING);
-  mockPrisma.packageCategorySettings.create.mockResolvedValue(SETTING);
-  mockPrisma.packageCategorySettings.update.mockResolvedValue(SETTING);
-  mockPrisma.packageCategorySettings.delete.mockResolvedValue(SETTING);
-  mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-001' });
-});
-
 describe('PackageCategoryService', () => {
-  describe('getByPackageId()', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  describe('getByPackageId', () => {
     it('should return settings for package', async () => {
-      const result = await packageCategoryService.getByPackageId('pkg-001');
+      mockPrisma.packageCategorySettings.findMany.mockResolvedValue([mockSetting]);
+      const result = await packageCategoryService.getByPackageId('pkg-1');
       expect(result).toHaveLength(1);
+      expect(mockPrisma.packageCategorySettings.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { packageId: 'pkg-1' }, orderBy: { displayOrder: 'asc' } })
+      );
     });
   });
 
-  describe('getById()', () => {
+  describe('getById', () => {
     it('should return setting', async () => {
-      const result = await packageCategoryService.getById('pcs-001');
-      expect(result.category).toBe('APPETIZER');
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(mockSetting);
+      const result = await packageCategoryService.getById('pcs-1');
+      expect(result.id).toBe('pcs-1');
     });
 
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.getById('x')).rejects.toThrow(/not found/);
+      await expect(packageCategoryService.getById('x')).rejects.toThrow('Category setting not found');
     });
   });
 
-  describe('create()', () => {
-    it('should create with defaults', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null); // no existing
-      await packageCategoryService.create({ packageId: 'pkg-001', category: 'SOUP' as any, priceType: 'FIXED' } as any);
-      const data = mockPrisma.packageCategorySettings.create.mock.calls[0][0].data;
-      expect(data.minSelect).toBe(1);
-      expect(data.isRequired).toBe(true);
-    });
-
-    it('should throw when already exists', async () => {
-      await expect(packageCategoryService.create({
-        packageId: 'pkg-001', category: 'APPETIZER' as any,
-      } as any)).rejects.toThrow(/already exists/);
-    });
-  });
-
-  describe('update()', () => {
-    it('should update setting', async () => {
-      await packageCategoryService.update('pcs-001', { maxSelect: 5 });
-      expect(mockPrisma.packageCategorySettings.update).toHaveBeenCalledTimes(1);
-    });
-
-    it('should throw when not found', async () => {
+  describe('create', () => {
+    it('should create category setting', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.update('x', { maxSelect: 5 })).rejects.toThrow(/not found/);
-    });
-  });
-
-  describe('bulkUpdate()', () => {
-    it('should update existing settings', async () => {
-      const result = await packageCategoryService.bulkUpdate('pkg-001', {
-        settings: [{ category: 'APPETIZER' as any, maxSelect: 5 }],
+      mockPrisma.packageCategorySettings.create.mockResolvedValue(mockSetting);
+      const result = await packageCategoryService.create({
+        packageId: 'pkg-1', category: 'SOUP' as any,
       });
+      expect(result.id).toBe('pcs-1');
+    });
+
+    it('should throw when duplicate category for package', async () => {
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(mockSetting);
+      await expect(packageCategoryService.create({ packageId: 'pkg-1', category: 'SOUP' as any }))
+        .rejects.toThrow(/already exists/);
+    });
+  });
+
+  describe('update', () => {
+    it('should update existing setting', async () => {
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(mockSetting);
+      mockPrisma.packageCategorySettings.update.mockResolvedValue({ ...mockSetting, maxSelect: 5 });
+      const result = await packageCategoryService.update('pcs-1', { maxSelect: 5 });
+      expect(result.maxSelect).toBe(5);
+    });
+
+    it('should throw when not found', async () => {
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+      await expect(packageCategoryService.update('x', { maxSelect: 5 }))
+        .rejects.toThrow('Category setting not found');
+    });
+  });
+
+  describe('bulkUpdate', () => {
+    it('should update existing category settings for package', async () => {
+      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-1' });
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(mockSetting);
+      mockPrisma.packageCategorySettings.update.mockResolvedValue({ ...mockSetting, maxSelect: 3 });
+
+      const result = await packageCategoryService.bulkUpdate('pkg-1', {
+        settings: [{ category: 'SOUP' as any, maxSelect: 3 }],
+      });
+
+      expect(result).toHaveLength(1);
       expect(mockPrisma.packageCategorySettings.update).toHaveBeenCalled();
     });
+
+    it('should skip non-existing categories (no upsert)', async () => {
+      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-1' });
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+
+      const result = await packageCategoryService.bulkUpdate('pkg-1', {
+        settings: [{ category: 'NONEXISTENT' as any, maxSelect: 3 }],
+      });
+
+      expect(result).toHaveLength(0);
+      expect(mockPrisma.packageCategorySettings.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw when package not found', async () => {
+      mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
+      await expect(packageCategoryService.bulkUpdate('x', { settings: [] }))
+        .rejects.toThrow('Package not found');
+    });
   });
 
-  describe('delete()', () => {
-    it('should delete and return success', async () => {
-      const result = await packageCategoryService.delete('pcs-001');
+  describe('delete', () => {
+    it('should delete setting', async () => {
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(mockSetting);
+      mockPrisma.packageCategorySettings.delete.mockResolvedValue(undefined);
+      const result = await packageCategoryService.delete('pcs-1');
       expect(result.success).toBe(true);
+    });
+
+    it('should throw when not found', async () => {
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+      await expect(packageCategoryService.delete('x')).rejects.toThrow('Category setting not found');
     });
   });
 });
