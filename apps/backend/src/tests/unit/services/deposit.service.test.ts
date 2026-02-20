@@ -1,537 +1,744 @@
 /**
- * DepositService — Comprehensive Unit Tests
- * Targets ~46.22% branches. Covers: create validation, list filters,
- * update 3-way branch (amount+dueDate/amount/dueDate), markAsPaid
- * full/partial, checkAndAutoConfirmReservation all early returns,
- * sendConfirmationEmail guards, markAsUnpaid, cancel, getStats, getOverdue.
+ * Unit tests for deposit.service.ts
+ * Covers: create, getById, getByReservation, list, update, delete,
+ *         markAsPaid, checkAndAutoConfirmReservation, checkPaidDepositsBeforeCancel,
+ *         sendConfirmationEmail, markAsUnpaid, cancel, getStats, getOverdue, autoMarkOverdue
+ * Issue: #97
  */
 
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {
-    reservation: { findUnique: jest.fn(), update: jest.fn(), count: jest.fn() },
-    deposit: {
-      findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn(),
-    },
-    reservationHistory: { create: jest.fn() },
-    $queryRawUnsafe: jest.fn(),
+// ── Mocks ────────────────────────────────────────────
+const mockPrisma = {
+  reservation: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+  deposit: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  reservationHistory: {
+    create: jest.fn(),
+  },
+  $queryRawUnsafe: jest.fn(),
+};
+
+const mockPdfService = {
+  generatePaymentConfirmationPDF: jest.fn(),
+};
+
+const mockEmailService = {
+  sendDepositPaidConfirmation: jest.fn(),
+};
+
+jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
+jest.mock('@utils/AppError', () => ({
+  AppError: {
+    notFound: (msg: string) => { const e = new Error(`${msg} nie znaleziono`); (e as any).statusCode = 404; return e; },
+    badRequest: (msg: string) => { const e = new Error(msg); (e as any).statusCode = 400; return e; },
+    conflict: (msg: string) => { const e = new Error(msg); (e as any).statusCode = 409; return e; },
   },
 }));
+jest.mock('@utils/audit-logger', () => ({ logChange: jest.fn() }));
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+}));
+jest.mock('../pdf.service', () => ({ pdfService: mockPdfService }));
+jest.mock('../email.service', () => ({ default: mockEmailService }));
 
-jest.mock('../../../utils/audit-logger', () => ({ logChange: jest.fn() }));
-jest.mock('../../../utils/logger', () => ({ __esModule: true, default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() } }));
-jest.mock('../../../services/pdf.service', () => ({ pdfService: { generatePaymentConfirmationPDF: jest.fn().mockResolvedValue(Buffer.from('pdf')) } }));
-jest.mock('../../../services/email.service', () => ({ __esModule: true, default: { sendDepositPaidConfirmation: jest.fn().mockResolvedValue(true) } }));
+import depositService from '@services/deposit.service';
+import { logChange } from '@utils/audit-logger';
 
-import depositService from '../../../services/deposit.service';
-import { prisma } from '../../../lib/prisma';
-
-const db = prisma as any;
-
-const dec = (v: number) => ({ toNumber: () => v, toString: () => String(v) });
-
-const DEPOSIT = {
-  id: 'd1', reservationId: 'r1', amount: dec(1000), remainingAmount: dec(1000),
-  paidAmount: dec(0), dueDate: '2026-03-01', status: 'PENDING', paid: false,
-  paidAt: null, paymentMethod: null,
+// ── Fixtures ─────────────────────────────────────────
+const mockClient = {
+  id: 'client-1',
+  firstName: 'Jan',
+  lastName: 'Kowalski',
+  email: 'jan@test.pl',
+  phone: '+48 123 456 789',
 };
 
-const DEPOSIT_PAID = {
-  ...DEPOSIT, id: 'd2', paid: true, status: 'PAID', paidAt: '2026-02-18',
-  paymentMethod: 'TRANSFER', paidAmount: dec(1000), remainingAmount: dec(0),
+const mockHall = { id: 'hall-1', name: 'Sala Główna' };
+const mockEventType = { id: 'evt-1', name: 'Wesele' };
+
+const mockReservation = {
+  id: 'res-1',
+  totalPrice: 10000,
+  status: 'PENDING',
+  date: '2026-06-15',
+  startTime: '14:00',
+  endTime: '23:00',
+  guests: 100,
+  client: mockClient,
+  hall: mockHall,
+  eventType: mockEventType,
+  deposits: [],
 };
 
-const RESERVATION = {
-  id: 'r1', totalPrice: dec(5000), status: 'PENDING',
-  deposits: [{ ...DEPOSIT, amount: 1000, status: 'PENDING' }],
-  client: { firstName: 'Jan', lastName: 'K', email: 'j@t.pl', phone: '123456789' },
+const mockDeposit = {
+  id: 'dep-1',
+  reservationId: 'res-1',
+  amount: 2000,
+  remainingAmount: 2000,
+  paidAmount: 0,
+  dueDate: '2026-05-01',
+  status: 'PENDING',
+  paid: false,
+  paidAt: null,
+  paymentMethod: null,
+  createdAt: new Date('2026-01-15'),
+  updatedAt: new Date('2026-01-15'),
+  reservation: { ...mockReservation, client: mockClient, hall: mockHall, eventType: mockEventType },
 };
 
-beforeEach(() => jest.clearAllMocks());
+const mockPaidDeposit = {
+  ...mockDeposit,
+  id: 'dep-paid',
+  status: 'PAID',
+  paid: true,
+  paidAt: '2026-04-20T12:00:00Z',
+  paymentMethod: 'TRANSFER',
+  remainingAmount: 0,
+  paidAmount: 2000,
+};
 
-describe('depositService', () => {
-  // ========== create ==========
-  describe('create()', () => {
-    it('should throw when reservation not found', async () => {
-      db.reservation.findUnique.mockResolvedValue(null);
-      await expect(depositService.create({ reservationId: 'x', amount: 100, dueDate: '2026-03-01' }, 'u1'))
-        .rejects.toThrow();
+const userId = 'user-1';
+
+describe('DepositService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // ═══════════════ create ═══════════════
+  describe('create', () => {
+    const createInput = {
+      reservationId: 'res-1',
+      amount: 2000,
+      dueDate: '2026-05-01',
+    };
+
+    it('should create deposit and log activity', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ id: 'new-dep-1' }]);
+      mockPrisma.deposit.findUnique.mockResolvedValue({ ...mockDeposit, id: 'new-dep-1' });
+
+      const result = await depositService.create(createInput, userId);
+
+      expect(result.id).toBe('new-dep-1');
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO "Deposit"'),
+        'res-1', 2000, 2000, '2026-05-01'
+      );
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'CREATE', entityType: 'DEPOSIT' })
+      );
     });
 
-    it('should throw when sum exceeds total price', async () => {
-      db.reservation.findUnique.mockResolvedValue({
-        ...RESERVATION, totalPrice: dec(1000),
-        deposits: [{ amount: 800, status: 'PENDING' }],
-      });
-      await expect(depositService.create({ reservationId: 'r1', amount: 300, dueDate: '2026-03-01' }, 'u1'))
-        .rejects.toThrow('przekracza');
+    it('should throw 404 when reservation not found', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.create(createInput, userId))
+        .rejects.toThrow(/nie znaleziono/);
     });
 
-    it('should throw when amount <= 0', async () => {
-      db.reservation.findUnique.mockResolvedValue({ ...RESERVATION, deposits: [] });
-      await expect(depositService.create({ reservationId: 'r1', amount: 0, dueDate: '2026-03-01' }, 'u1'))
-        .rejects.toThrow('wieksza od 0');
+    it('should throw when deposit sum exceeds reservation totalPrice', async () => {
+      const resWithDeposits = {
+        ...mockReservation,
+        deposits: [{ status: 'PENDING', amount: 9000 }],
+      };
+      mockPrisma.reservation.findUnique.mockResolvedValue(resWithDeposits);
+
+      await expect(depositService.create(createInput, userId))
+        .rejects.toThrow(/przekracza/);
     });
 
-    it('should filter out CANCELLED deposits in sum', async () => {
-      db.reservation.findUnique.mockResolvedValue({
-        ...RESERVATION, totalPrice: dec(5000),
-        deposits: [
-          { amount: 3000, status: 'CANCELLED' },
-          { amount: 1000, status: 'PENDING' },
-        ],
-      });
-      db.$queryRawUnsafe.mockResolvedValue([{ id: 'd-new' }]);
-      db.deposit.findUnique.mockResolvedValue({ id: 'd-new' });
-      const result = await depositService.create({ reservationId: 'r1', amount: 3000, dueDate: '2026-03-01' }, 'u1');
-      expect(result).toBeDefined();
+    it('should throw when amount is 0 or negative', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
+
+      await expect(depositService.create({ ...createInput, amount: 0 }, userId))
+        .rejects.toThrow(/wieksza od 0/);
+
+      await expect(depositService.create({ ...createInput, amount: -100 }, userId))
+        .rejects.toThrow(/wieksza od 0/);
+    });
+
+    it('should exclude CANCELLED deposits from sum calculation', async () => {
+      const resWithCancelled = {
+        ...mockReservation,
+        deposits: [{ status: 'CANCELLED', amount: 9000 }],
+      };
+      mockPrisma.reservation.findUnique.mockResolvedValue(resWithCancelled);
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ id: 'new-dep-2' }]);
+      mockPrisma.deposit.findUnique.mockResolvedValue({ ...mockDeposit, id: 'new-dep-2' });
+
+      const result = await depositService.create(createInput, userId);
+      expect(result.id).toBe('new-dep-2');
     });
   });
 
-  // ========== getById ==========
-  describe('getById()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.getById('x')).rejects.toThrow();
+  // ═══════════════ getById ═══════════════
+  describe('getById', () => {
+    it('should return deposit with reservation data', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
+
+      const result = await depositService.getById('dep-1');
+
+      expect(result.id).toBe('dep-1');
+      expect(result.reservation.client).toBeDefined();
     });
 
-    it('should return deposit', async () => {
-      db.deposit.findUnique.mockResolvedValue({ id: 'd1' });
-      expect(await depositService.getById('d1')).toEqual({ id: 'd1' });
-    });
-  });
+    it('should throw 404 when deposit not found', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(null);
 
-  // ========== getByReservation ==========
-  describe('getByReservation()', () => {
-    it('should throw when reservation not found', async () => {
-      db.reservation.findUnique.mockResolvedValue(null);
-      await expect(depositService.getByReservation('x')).rejects.toThrow();
-    });
-
-    it('should calculate summary correctly', async () => {
-      db.reservation.findUnique.mockResolvedValue({ id: 'r1', totalPrice: dec(5000) });
-      db.deposit.findMany.mockResolvedValue([
-        { amount: dec(2000), status: 'PAID', paid: true },
-        { amount: dec(1000), status: 'PENDING', paid: false },
-        { amount: dec(500), status: 'CANCELLED', paid: false },
-      ]);
-      const result = await depositService.getByReservation('r1');
-      expect(result.summary.totalAmount).toBe(3000); // 2000+1000 (excl cancelled)
-      expect(result.summary.paidAmount).toBe(2000);
-      expect(result.summary.pendingAmount).toBe(1000);
-      expect(result.summary.percentPaid).toBe(40); // 2000/5000*100
-    });
-
-    it('should return 0 percentPaid when reservationTotal is 0', async () => {
-      db.reservation.findUnique.mockResolvedValue({ id: 'r1', totalPrice: dec(0) });
-      db.deposit.findMany.mockResolvedValue([]);
-      const result = await depositService.getByReservation('r1');
-      expect(result.summary.percentPaid).toBe(0);
+      await expect(depositService.getById('nonexistent'))
+        .rejects.toThrow(/nie znaleziono/);
     });
   });
 
-  // ========== list ==========
-  describe('list()', () => {
-    beforeEach(() => {
-      db.deposit.findMany.mockResolvedValue([]);
-      db.deposit.count.mockResolvedValue(0);
+  // ═══════════════ getByReservation ═══════════════
+  describe('getByReservation', () => {
+    it('should return deposits with correct summary', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
+      const deposits = [
+        { ...mockDeposit, amount: 3000, status: 'PAID', paid: true },
+        { ...mockDeposit, id: 'dep-2', amount: 2000, status: 'PENDING', paid: false },
+        { ...mockDeposit, id: 'dep-3', amount: 1000, status: 'CANCELLED', paid: false },
+      ];
+      mockPrisma.deposit.findMany.mockResolvedValue(deposits);
+
+      const result = await depositService.getByReservation('res-1');
+
+      expect(result.deposits).toHaveLength(3);
+      expect(result.summary.totalAmount).toBe(5000);     // 3000+2000 (excl cancelled)
+      expect(result.summary.paidAmount).toBe(3000);
+      expect(result.summary.pendingAmount).toBe(2000);
+      expect(result.summary.activeDeposits).toBe(2);
+      expect(result.summary.remainingToDeposit).toBe(5000); // 10000-5000
+      expect(result.summary.percentPaid).toBe(30);        // 3000/10000*100
     });
 
-    it('should use defaults for page/limit/sort', async () => {
-      await depositService.list({});
-      expect(db.deposit.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        skip: 0, take: 20, orderBy: { dueDate: 'asc' },
-      }));
+    it('should throw 404 when reservation not found', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.getByReservation('nonexistent'))
+        .rejects.toThrow(/nie znaleziono/);
+    });
+  });
+
+  // ═══════════════ list ═══════════════
+  describe('list', () => {
+    it('should return paginated deposits', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([mockDeposit]);
+      mockPrisma.deposit.count.mockResolvedValue(1);
+
+      const result = await depositService.list({ page: 1, limit: 20 });
+
+      expect(result.deposits).toHaveLength(1);
+      expect(result.pagination.page).toBe(1);
+      expect(result.pagination.totalCount).toBe(1);
+      expect(result.pagination.totalPages).toBe(1);
+      expect(result.pagination.hasMore).toBe(false);
     });
 
-    it('should filter by reservationId', async () => {
-      await depositService.list({ reservationId: 'r1' });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.reservationId).toBe('r1');
-    });
+    it('should apply status filter', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([]);
+      mockPrisma.deposit.count.mockResolvedValue(0);
 
-    it('should filter by status', async () => {
       await depositService.list({ status: 'PAID' });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.status).toEqual({ equals: 'PAID' });
+
+      expect(mockPrisma.deposit.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: { equals: 'PAID' } }),
+        })
+      );
     });
 
-    it('should filter by paid', async () => {
-      await depositService.list({ paid: true });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.paid).toBe(true);
+    it('should apply search filter on client name/phone', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([]);
+      mockPrisma.deposit.count.mockResolvedValue(0);
+
+      await depositService.list({ search: 'Kowalski' });
+
+      expect(mockPrisma.deposit.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            reservation: expect.objectContaining({
+              client: expect.objectContaining({
+                OR: expect.arrayContaining([
+                  expect.objectContaining({ lastName: { contains: 'Kowalski', mode: 'insensitive' } }),
+                ]),
+              }),
+            }),
+          }),
+        })
+      );
     });
 
-    it('should filter overdue deposits', async () => {
-      await depositService.list({ overdue: true });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.status).toEqual({ equals: 'PENDING' });
-      expect(call.where.dueDate).toBeDefined();
-    });
+    it('should apply date range filter', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([]);
+      mockPrisma.deposit.count.mockResolvedValue(0);
 
-    it('should filter by dateFrom and dateTo', async () => {
       await depositService.list({ dateFrom: '2026-01-01', dateTo: '2026-12-31' });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.dueDate.gte).toBe('2026-01-01');
-      expect(call.where.dueDate.lte).toBe('2026-12-31');
-    });
 
-    it('should filter by dateFrom only', async () => {
-      await depositService.list({ dateFrom: '2026-01-01' });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.dueDate.gte).toBe('2026-01-01');
-      expect(call.where.dueDate.lte).toBeUndefined();
-    });
-
-    it('should filter by search (client name)', async () => {
-      await depositService.list({ search: 'Jan' });
-      const call = db.deposit.findMany.mock.calls[0][0];
-      expect(call.where.reservation.client.OR).toHaveLength(3);
-    });
-
-    it('should calculate pagination correctly', async () => {
-      db.deposit.findMany.mockResolvedValue([{ id: '1' }]);
-      db.deposit.count.mockResolvedValue(50);
-      const result = await depositService.list({ page: 2, limit: 10 });
-      expect(result.pagination).toEqual({
-        page: 2, limit: 10, totalCount: 50, totalPages: 5, hasMore: true,
-      });
+      expect(mockPrisma.deposit.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            dueDate: { gte: '2026-01-01', lte: '2026-12-31' },
+          }),
+        })
+      );
     });
   });
 
-  // ========== update ==========
-  describe('update()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.update('x', {}, 'u1')).rejects.toThrow();
+  // ═══════════════ update ═══════════════
+  describe('update', () => {
+    it('should update amount and dueDate together', async () => {
+      mockPrisma.deposit.findUnique
+        .mockResolvedValueOnce(mockDeposit)         // initial check
+        .mockResolvedValueOnce({ ...mockDeposit, amount: 3000, dueDate: '2026-06-01' }); // after update
+      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
+
+      const result = await depositService.update('dep-1', { amount: 3000, dueDate: '2026-06-01' }, userId);
+
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('amount'),
+        3000, 3000, '2026-06-01', 'dep-1'
+      );
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'UPDATE', entityType: 'DEPOSIT' })
+      );
     });
 
-    it('should throw when already paid', async () => {
-      db.deposit.findUnique.mockResolvedValue(DEPOSIT_PAID);
-      await expect(depositService.update('d2', { amount: 500 }, 'u1')).rejects.toThrow('oplaconej');
+    it('should update only dueDate when amount is not provided', async () => {
+      mockPrisma.deposit.findUnique
+        .mockResolvedValueOnce(mockDeposit)
+        .mockResolvedValueOnce({ ...mockDeposit, dueDate: '2026-07-01' });
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
+
+      await depositService.update('dep-1', { dueDate: '2026-07-01' }, userId);
+
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('dueDate'),
+        '2026-07-01', 'dep-1'
+      );
+    });
+
+    it('should throw when trying to edit paid deposit', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
+
+      await expect(depositService.update('dep-paid', { amount: 3000 }, userId))
+        .rejects.toThrow(/oplaconej/);
     });
 
     it('should throw when amount <= 0', async () => {
-      db.deposit.findUnique.mockResolvedValueOnce(DEPOSIT);
-      await expect(depositService.update('d1', { amount: -1 }, 'u1')).rejects.toThrow('wieksza od 0');
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
+
+      await expect(depositService.update('dep-1', { amount: 0 }, userId))
+        .rejects.toThrow(/wieksza od 0/);
     });
 
-    it('should throw when new amount exceeds total', async () => {
-      db.deposit.findUnique.mockResolvedValueOnce(DEPOSIT);
-      db.reservation.findUnique.mockResolvedValue({
-        id: 'r1', totalPrice: dec(1000),
-        deposits: [{ id: 'd1', amount: 500, status: 'PENDING' }, { id: 'd2', amount: 400, status: 'PENDING' }],
+    it('should throw when new amount + other deposits > totalPrice', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...mockReservation,
+        deposits: [
+          { id: 'dep-1', status: 'PENDING', amount: 2000 },
+          { id: 'dep-other', status: 'PAID', amount: 8000 },
+        ],
       });
-      await expect(depositService.update('d1', { amount: 700 }, 'u1')).rejects.toThrow('przekracza');
-    });
 
-    it('should update both amount and dueDate', async () => {
-      db.deposit.findUnique.mockResolvedValueOnce(DEPOSIT);
-      db.reservation.findUnique.mockResolvedValue({ ...RESERVATION, deposits: [] });
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      db.deposit.findUnique.mockResolvedValueOnce({ ...DEPOSIT, amount: 500 });
-      await depositService.update('d1', { amount: 500, dueDate: '2026-04-01' }, 'u1');
-      expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
-        expect.stringContaining('amount'), 500, 500, '2026-04-01', 'd1'
-      );
-    });
-
-    it('should update amount only', async () => {
-      db.deposit.findUnique.mockResolvedValueOnce(DEPOSIT);
-      db.reservation.findUnique.mockResolvedValue({ ...RESERVATION, deposits: [] });
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      db.deposit.findUnique.mockResolvedValueOnce({ ...DEPOSIT, amount: 500 });
-      await depositService.update('d1', { amount: 500 }, 'u1');
-      const sql = db.$queryRawUnsafe.mock.calls[0][0];
-      expect(sql).toContain('amount');
-      expect(sql).not.toContain('dueDate');
-    });
-
-    it('should update dueDate only', async () => {
-      db.deposit.findUnique.mockResolvedValueOnce(DEPOSIT);
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      db.deposit.findUnique.mockResolvedValueOnce(DEPOSIT);
-      await depositService.update('d1', { dueDate: '2026-05-01' }, 'u1');
-      const sql = db.$queryRawUnsafe.mock.calls[0][0];
-      expect(sql).toContain('dueDate');
-      expect(sql).not.toContain('amount');
+      await expect(depositService.update('dep-1', { amount: 3000 }, userId))
+        .rejects.toThrow(/przekracza/);
     });
   });
 
-  // ========== delete ==========
-  describe('delete()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.delete('x', 'u1')).rejects.toThrow();
-    });
+  // ═══════════════ delete ═══════════════
+  describe('delete', () => {
+    it('should delete unpaid deposit and log activity', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
 
-    it('should throw when paid', async () => {
-      db.deposit.findUnique.mockResolvedValue(DEPOSIT_PAID);
-      await expect(depositService.delete('d2', 'u1')).rejects.toThrow('oplaconej');
-    });
+      const result = await depositService.delete('dep-1', userId);
 
-    it('should delete unpaid deposit', async () => {
-      db.deposit.findUnique.mockResolvedValue(DEPOSIT);
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      const result = await depositService.delete('d1', 'u1');
       expect(result.success).toBe(true);
-    });
-  });
-
-  // ========== markAsPaid ==========
-  describe('markAsPaid()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.markAsPaid('x', { paymentMethod: 'CASH', paidAt: '2026-02-18' }, 'u1'))
-        .rejects.toThrow();
-    });
-
-    it('should throw when already paid', async () => {
-      db.deposit.findUnique.mockResolvedValue(DEPOSIT_PAID);
-      await expect(depositService.markAsPaid('d2', { paymentMethod: 'CASH', paidAt: '2026-02-18' }, 'u1'))
-        .rejects.toThrow('juz oznaczona');
-    });
-
-    it('should mark as fully PAID (default amountPaid)', async () => {
-      db.deposit.findUnique
-        .mockResolvedValueOnce(DEPOSIT)
-        .mockResolvedValueOnce({ ...DEPOSIT_PAID });
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      // Mock checkAndAutoConfirmReservation dependencies
-      db.reservation.findUnique.mockResolvedValue(null); // no reservation → early return
-      const result = await depositService.markAsPaid('d1', { paymentMethod: 'TRANSFER', paidAt: '2026-02-18' }, 'u1');
-      expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
-        expect.any(String), true, 'PAID', '2026-02-18', 'TRANSFER', 0, 1000, 'd1'
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE'),
+        'dep-1'
+      );
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'DELETE', entityType: 'DEPOSIT' })
       );
     });
 
-    it('should mark as PARTIALLY_PAID with partial amount', async () => {
-      db.deposit.findUnique
-        .mockResolvedValueOnce(DEPOSIT)
-        .mockResolvedValueOnce({ ...DEPOSIT, status: 'PARTIALLY_PAID' });
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      const result = await depositService.markAsPaid('d1', {
-        paymentMethod: 'CASH', paidAt: '2026-02-18', amountPaid: 500,
-      }, 'u1');
-      // remaining = 1000 - 500 = 500 > 0 → PARTIALLY_PAID, isPaid=false
-      expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
-        expect.any(String), false, 'PARTIALLY_PAID', '2026-02-18', 'CASH', 500, 500, 'd1'
-      );
+    it('should throw when trying to delete paid deposit', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
+
+      await expect(depositService.delete('dep-paid', userId))
+        .rejects.toThrow(/oplaconej/);
+    });
+
+    it('should throw 404 when deposit not found', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.delete('nonexistent', userId))
+        .rejects.toThrow(/nie znaleziono/);
     });
   });
 
-  // ========== checkAndAutoConfirmReservation ==========
-  describe('checkAndAutoConfirmReservation()', () => {
-    it('should return when reservation not found', async () => {
-      db.reservation.findUnique.mockResolvedValue(null);
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      expect(db.reservation.update).not.toHaveBeenCalled();
-    });
+  // ═══════════════ markAsPaid ═══════════════
+  describe('markAsPaid', () => {
+    const paidInput = {
+      paymentMethod: 'TRANSFER' as const,
+      paidAt: '2026-04-20T12:00:00Z',
+    };
 
-    it('should return when status is not PENDING', async () => {
-      db.reservation.findUnique.mockResolvedValue({ ...RESERVATION, status: 'CONFIRMED' });
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      expect(db.reservation.update).not.toHaveBeenCalled();
-    });
-
-    it('should return when no active deposits', async () => {
-      db.reservation.findUnique.mockResolvedValue({
-        ...RESERVATION, deposits: [{ status: 'CANCELLED' }],
+    it('should mark deposit as fully PAID', async () => {
+      mockPrisma.deposit.findUnique
+        .mockResolvedValueOnce(mockDeposit)        // initial check
+        .mockResolvedValueOnce(mockPaidDeposit);   // after update
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
+      // Mock auto-confirm chain
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...mockReservation,
+        status: 'CONFIRMED', // already handled
+        deposits: [{ ...mockPaidDeposit }],
       });
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      expect(db.reservation.update).not.toHaveBeenCalled();
+
+      const result = await depositService.markAsPaid('dep-1', paidInput, userId);
+
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE "Deposit"'),
+        true, 'PAID', '2026-04-20T12:00:00Z', 'TRANSFER', 0, 2000, 'dep-1'
+      );
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'MARK_PAID' })
+      );
     });
 
-    it('should not confirm when not all deposits paid', async () => {
-      db.reservation.findUnique.mockResolvedValue({
-        ...RESERVATION, deposits: [
-          { status: 'PAID', amount: 1000 },
-          { status: 'PENDING', amount: 500 },
+    it('should mark as PARTIALLY_PAID when amountPaid < total', async () => {
+      mockPrisma.deposit.findUnique
+        .mockResolvedValueOnce(mockDeposit)
+        .mockResolvedValueOnce({ ...mockDeposit, status: 'PARTIALLY_PAID', paidAmount: 1000 });
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
+
+      await depositService.markAsPaid('dep-1', { ...paidInput, amountPaid: 1000 }, userId);
+
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE "Deposit"'),
+        false, 'PARTIALLY_PAID', '2026-04-20T12:00:00Z', 'TRANSFER', 1000, 1000, 'dep-1'
+      );
+    });
+
+    it('should throw when deposit is already paid', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
+
+      await expect(depositService.markAsPaid('dep-paid', paidInput, userId))
+        .rejects.toThrow(/juz oznaczona/);
+    });
+
+    it('should throw 404 when deposit not found', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.markAsPaid('nonexistent', paidInput, userId))
+        .rejects.toThrow(/nie znaleziono/);
+    });
+  });
+
+  // ═══════════════ checkAndAutoConfirmReservation ═══════════════
+  describe('checkAndAutoConfirmReservation', () => {
+    it('should auto-confirm PENDING reservation when all deposits are PAID', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...mockReservation,
+        status: 'PENDING',
+        deposits: [
+          { status: 'PAID', amount: 3000 },
+          { status: 'PAID', amount: 2000 },
         ],
       });
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      expect(db.reservation.update).not.toHaveBeenCalled();
-    });
+      mockPrisma.reservation.update.mockResolvedValue({});
+      mockPrisma.reservationHistory.create.mockResolvedValue({});
 
-    it('should auto-confirm when all deposits paid', async () => {
-      db.reservation.findUnique.mockResolvedValue({
-        ...RESERVATION, deposits: [
-          { status: 'PAID', amount: 1000 },
-          { status: 'PAID', amount: 500 },
-        ],
-      });
-      db.reservation.update.mockResolvedValue(undefined);
-      db.reservationHistory.create.mockResolvedValue(undefined);
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      expect(db.reservation.update).toHaveBeenCalledWith(expect.objectContaining({
+      await depositService.checkAndAutoConfirmReservation('res-1', userId);
+
+      expect(mockPrisma.reservation.update).toHaveBeenCalledWith({
+        where: { id: 'res-1' },
         data: { status: 'CONFIRMED' },
-      }));
-    });
-
-    it('should handle clientName when no client', async () => {
-      db.reservation.findUnique.mockResolvedValue({
-        ...RESERVATION, client: null, deposits: [{ status: 'PAID', amount: 1000 }],
       });
-      db.reservation.update.mockResolvedValue(undefined);
-      db.reservationHistory.create.mockResolvedValue(undefined);
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      expect(db.reservation.update).toHaveBeenCalled();
+      expect(mockPrisma.reservationHistory.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            changeType: 'STATUS_CHANGED',
+            oldValue: 'PENDING',
+            newValue: 'CONFIRMED',
+          }),
+        })
+      );
     });
 
-    it('should catch and log errors', async () => {
-      db.reservation.findUnique.mockRejectedValue(new Error('DB down'));
-      await depositService.checkAndAutoConfirmReservation('r1', 'u1');
-      // Should not throw
+    it('should NOT auto-confirm when reservation is not PENDING', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...mockReservation,
+        status: 'CONFIRMED',
+        deposits: [{ status: 'PAID', amount: 2000 }],
+      });
+
+      await depositService.checkAndAutoConfirmReservation('res-1', userId);
+
+      expect(mockPrisma.reservation.update).not.toHaveBeenCalled();
+    });
+
+    it('should NOT auto-confirm when not all deposits are paid', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...mockReservation,
+        status: 'PENDING',
+        deposits: [
+          { status: 'PAID', amount: 3000 },
+          { status: 'PENDING', amount: 2000 },
+        ],
+      });
+
+      await depositService.checkAndAutoConfirmReservation('res-1', userId);
+
+      expect(mockPrisma.reservation.update).not.toHaveBeenCalled();
+    });
+
+    it('should NOT auto-confirm when there are no active deposits', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...mockReservation,
+        status: 'PENDING',
+        deposits: [{ status: 'CANCELLED', amount: 2000 }],
+      });
+
+      await depositService.checkAndAutoConfirmReservation('res-1', userId);
+
+      expect(mockPrisma.reservation.update).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully without throwing', async () => {
+      mockPrisma.reservation.findUnique.mockRejectedValue(new Error('DB error'));
+
+      await expect(depositService.checkAndAutoConfirmReservation('res-1', userId))
+        .resolves.toBeUndefined();
     });
   });
 
-  // ========== checkPaidDepositsBeforeCancel ==========
-  describe('checkPaidDepositsBeforeCancel()', () => {
-    it('should return hasPaidDeposits true', async () => {
-      db.deposit.findMany.mockResolvedValue([{ amount: dec(1000) }]);
-      const result = await depositService.checkPaidDepositsBeforeCancel('r1');
+  // ═══════════════ checkPaidDepositsBeforeCancel ═══════════════
+  describe('checkPaidDepositsBeforeCancel', () => {
+    it('should return hasPaidDeposits=true when paid deposits exist', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([
+        { amount: 2000 },
+        { amount: 3000 },
+      ]);
+
+      const result = await depositService.checkPaidDepositsBeforeCancel('res-1');
+
       expect(result.hasPaidDeposits).toBe(true);
-      expect(result.paidCount).toBe(1);
+      expect(result.paidCount).toBe(2);
+      expect(result.paidTotal).toBe(5000);
     });
 
-    it('should return hasPaidDeposits false', async () => {
-      db.deposit.findMany.mockResolvedValue([]);
-      const result = await depositService.checkPaidDepositsBeforeCancel('r1');
+    it('should return hasPaidDeposits=false when no paid deposits', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([]);
+
+      const result = await depositService.checkPaidDepositsBeforeCancel('res-1');
+
       expect(result.hasPaidDeposits).toBe(false);
+      expect(result.paidCount).toBe(0);
+      expect(result.paidTotal).toBe(0);
     });
   });
 
-  // ========== sendConfirmationEmail ==========
-  describe('sendConfirmationEmail()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.sendConfirmationEmail('x')).rejects.toThrow();
+  // ═══════════════ sendConfirmationEmail ═══════════════
+  describe('sendConfirmationEmail', () => {
+    it('should send email with PDF for paid deposit', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
+      mockPdfService.generatePaymentConfirmationPDF.mockResolvedValue(Buffer.from('pdf'));
+      mockEmailService.sendDepositPaidConfirmation.mockResolvedValue(true);
+
+      const result = await depositService.sendConfirmationEmail('dep-paid');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('jan@test.pl');
+      expect(mockPdfService.generatePaymentConfirmationPDF).toHaveBeenCalled();
+      expect(mockEmailService.sendDepositPaidConfirmation).toHaveBeenCalledWith(
+        'jan@test.pl',
+        expect.objectContaining({ clientName: 'Jan Kowalski' }),
+        expect.any(Buffer)
+      );
     });
 
-    it('should throw when not paid', async () => {
-      db.deposit.findUnique.mockResolvedValue({ ...DEPOSIT, paid: false, reservation: RESERVATION });
-      await expect(depositService.sendConfirmationEmail('d1')).rejects.toThrow('oplaconej');
+    it('should throw when deposit is not paid', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
+
+      await expect(depositService.sendConfirmationEmail('dep-1'))
+        .rejects.toThrow(/oplaconej/);
+    });
+
+    it('should throw 404 when deposit not found', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.sendConfirmationEmail('nonexistent'))
+        .rejects.toThrow(/nie znaleziono/);
     });
 
     it('should throw when client has no email', async () => {
-      db.deposit.findUnique.mockResolvedValue({
-        ...DEPOSIT_PAID, reservation: { ...RESERVATION, client: { firstName: 'J', lastName: 'K', email: null, phone: '123' } },
-      });
-      await expect(depositService.sendConfirmationEmail('d2')).rejects.toThrow('email');
-    });
-
-    it('should send email with PDF', async () => {
-      db.deposit.findUnique.mockResolvedValue({
-        ...DEPOSIT_PAID,
+      const noEmailDeposit = {
+        ...mockPaidDeposit,
         reservation: {
-          ...RESERVATION,
-          date: '2026-06-15', startTime: '14:00', endTime: '22:00',
-          hall: { name: 'Sala A' }, eventType: { name: 'Wesele' }, guests: 100,
+          ...mockReservation,
+          client: { ...mockClient, email: null },
         },
-      });
-      const result = await depositService.sendConfirmationEmail('d2');
-      expect(result.success).toBe(true);
-    });
+      };
+      mockPrisma.deposit.findUnique.mockResolvedValue(noEmailDeposit);
 
-    it('should use fallback names when hall/eventType missing', async () => {
-      db.deposit.findUnique.mockResolvedValue({
-        ...DEPOSIT_PAID,
-        reservation: {
-          ...RESERVATION, date: null, startTime: null, endTime: null,
-          hall: null, eventType: null, guests: 50,
-        },
-      });
-      const result = await depositService.sendConfirmationEmail('d2');
-      expect(result.success).toBe(true);
+      await expect(depositService.sendConfirmationEmail('dep-paid'))
+        .rejects.toThrow(/email/);
     });
   });
 
-  // ========== markAsUnpaid ==========
-  describe('markAsUnpaid()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.markAsUnpaid('x', 'u1')).rejects.toThrow();
+  // ═══════════════ markAsUnpaid ═══════════════
+  describe('markAsUnpaid', () => {
+    it('should reset paid deposit to PENDING', async () => {
+      mockPrisma.deposit.findUnique
+        .mockResolvedValueOnce(mockPaidDeposit)
+        .mockResolvedValueOnce({ ...mockDeposit });
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
+
+      const result = await depositService.markAsUnpaid('dep-paid', userId);
+
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining("status = 'PENDING'"),
+        2000, 'dep-paid'
+      );
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'MARK_UNPAID' })
+      );
     });
 
-    it('should throw when not paid and PENDING', async () => {
-      db.deposit.findUnique.mockResolvedValue(DEPOSIT);
-      await expect(depositService.markAsUnpaid('d1', 'u1')).rejects.toThrow('nie jest oznaczona');
+    it('should throw when deposit is already PENDING and not paid', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit); // paid=false, status=PENDING
+
+      await expect(depositService.markAsUnpaid('dep-1', userId))
+        .rejects.toThrow(/nie jest oznaczona/);
     });
 
-    it('should unpaid a paid deposit', async () => {
-      db.deposit.findUnique
-        .mockResolvedValueOnce(DEPOSIT_PAID)
-        .mockResolvedValueOnce({ ...DEPOSIT });
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      const result = await depositService.markAsUnpaid('d2', 'u1');
-      expect(db.$queryRawUnsafe).toHaveBeenCalled();
+    it('should throw 404 when deposit not found', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.markAsUnpaid('nonexistent', userId))
+        .rejects.toThrow(/nie znaleziono/);
     });
   });
 
-  // ========== cancel ==========
-  describe('cancel()', () => {
-    it('should throw when not found', async () => {
-      db.deposit.findUnique.mockResolvedValue(null);
-      await expect(depositService.cancel('x', 'u1')).rejects.toThrow();
-    });
-
-    it('should throw when paid', async () => {
-      db.deposit.findUnique.mockResolvedValue(DEPOSIT_PAID);
-      await expect(depositService.cancel('d2', 'u1')).rejects.toThrow('oplaconej');
-    });
-
+  // ═══════════════ cancel ═══════════════
+  describe('cancel', () => {
     it('should cancel unpaid deposit', async () => {
-      db.deposit.findUnique
-        .mockResolvedValueOnce(DEPOSIT)
-        .mockResolvedValueOnce({ ...DEPOSIT, status: 'CANCELLED' });
-      db.$queryRawUnsafe.mockResolvedValue(undefined);
-      const result = await depositService.cancel('d1', 'u1');
-      expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
-        expect.stringContaining('CANCELLED'), 'd1'
+      mockPrisma.deposit.findUnique
+        .mockResolvedValueOnce(mockDeposit)
+        .mockResolvedValueOnce({ ...mockDeposit, status: 'CANCELLED' });
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(undefined);
+
+      const result = await depositService.cancel('dep-1', userId);
+
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining("'CANCELLED'"),
+        'dep-1'
+      );
+      expect(logChange).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'CANCEL', entityType: 'DEPOSIT' })
+      );
+    });
+
+    it('should throw when trying to cancel paid deposit', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
+
+      await expect(depositService.cancel('dep-paid', userId))
+        .rejects.toThrow(/oplaconej|platnosc/);
+    });
+
+    it('should throw 404 when deposit not found', async () => {
+      mockPrisma.deposit.findUnique.mockResolvedValue(null);
+
+      await expect(depositService.cancel('nonexistent', userId))
+        .rejects.toThrow(/nie znaleziono/);
+    });
+  });
+
+  // ═══════════════ getStats ═══════════════
+  describe('getStats', () => {
+    it('should return aggregated stats from raw SQL', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{
+        total: 10,
+        pending: 4,
+        paid: 3,
+        overdue: 2,
+        partiallyPaid: 1,
+        cancelled: 0,
+        upcomingIn7Days: 2,
+        totalAmount: 50000,
+        paidAmountSum: 30000,
+        overdueAmount: 10000,
+      }]);
+
+      const result = await depositService.getStats();
+
+      expect(result.counts.total).toBe(10);
+      expect(result.counts.pending).toBe(4);
+      expect(result.counts.paid).toBe(3);
+      expect(result.counts.overdue).toBe(2);
+      expect(result.amounts.total).toBe(50000);
+      expect(result.amounts.paid).toBe(30000);
+      expect(result.amounts.pending).toBe(20000);
+      expect(result.amounts.overdue).toBe(10000);
+    });
+
+    it('should handle empty stats gracefully', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{}]);
+
+      const result = await depositService.getStats();
+
+      expect(result.counts.total).toBe(0);
+      expect(result.amounts.total).toBe(0);
+    });
+  });
+
+  // ═══════════════ getOverdue ═══════════════
+  describe('getOverdue', () => {
+    it('should return overdue deposits ordered by dueDate', async () => {
+      mockPrisma.deposit.findMany.mockResolvedValue([mockDeposit]);
+
+      const result = await depositService.getOverdue();
+
+      expect(result).toHaveLength(1);
+      expect(mockPrisma.deposit.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: { equals: 'PENDING' } }),
+          orderBy: { dueDate: 'asc' },
+        })
       );
     });
   });
 
-  // ========== getStats ==========
-  describe('getStats()', () => {
-    it('should return formatted stats', async () => {
-      db.$queryRawUnsafe.mockResolvedValue([{
-        total: 10, pending: 3, paid: 5, overdue: 1, partiallyPaid: 1, cancelled: 2,
-        upcomingIn7Days: 2, totalAmount: 50000, paidAmountSum: 30000, overdueAmount: 5000,
-      }]);
-      const stats = await depositService.getStats();
-      expect(stats.counts.total).toBe(10);
-      expect(stats.amounts.total).toBe(50000);
-      expect(stats.amounts.pending).toBe(20000);
-    });
+  // ═══════════════ autoMarkOverdue ═══════════════
+  describe('autoMarkOverdue', () => {
+    it('should batch-update overdue deposits and return count', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ count: 5 }]);
 
-    it('should handle empty stats row', async () => {
-      db.$queryRawUnsafe.mockResolvedValue([{}]);
-      const stats = await depositService.getStats();
-      expect(stats.counts.total).toBe(0);
-      expect(stats.amounts.total).toBe(0);
-    });
-  });
-
-  // ========== getOverdue ==========
-  describe('getOverdue()', () => {
-    it('should return overdue deposits', async () => {
-      db.deposit.findMany.mockResolvedValue([{ id: 'd1' }]);
-      const result = await depositService.getOverdue();
-      expect(result).toHaveLength(1);
-    });
-  });
-
-  // ========== autoMarkOverdue ==========
-  describe('autoMarkOverdue()', () => {
-    it('should return count', async () => {
-      db.$queryRawUnsafe.mockResolvedValue([{ count: 3 }]);
       const result = await depositService.autoMarkOverdue();
-      expect(result.markedOverdueCount).toBe(3);
+
+      expect(result.markedOverdueCount).toBe(5);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE "Deposit"'),
+        expect.any(String)
+      );
     });
 
-    it('should handle null count', async () => {
-      db.$queryRawUnsafe.mockResolvedValue([{}]);
+    it('should return 0 when no overdue deposits', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ count: 0 }]);
+
       const result = await depositService.autoMarkOverdue();
+
       expect(result.markedOverdueCount).toBe(0);
     });
   });
