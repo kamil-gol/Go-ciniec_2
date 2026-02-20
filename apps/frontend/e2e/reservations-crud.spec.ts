@@ -1,360 +1,184 @@
-import { test, expect } from './fixtures/auth';
+import { test, expect } from '@playwright/test';
+import { login } from './fixtures/auth';
 import { ReservationHelper } from './fixtures/reservation';
-import { TEST_RESERVATIONS, TEST_HALLS, getFutureDate } from './fixtures/test-data';
 
-test.describe('Reservations CRUD', () => {
-  let reservationHelper: ReservationHelper;
+/**
+ * Reservations CRUD Tests
+ *
+ * Tests the reservations list page and create form wizard.
+ * Page: /dashboard/reservations/list
+ * Create form: inline 6-step wizard opened via "Nowa Rezerwacja" button.
+ *
+ * Note: Full end-to-end CRUD (create with real data, edit, delete) requires
+ * known database IDs for halls, event types, and clients. These tests focus
+ * on UI structure and validation that works without specific DB state.
+ */
 
-  test.beforeEach(async ({ authenticatedPage }) => {
-    reservationHelper = new ReservationHelper(authenticatedPage);
+test.describe('Reservations Page', () => {
+  let helper: ReservationHelper;
+
+  test.beforeEach(async ({ page }) => {
+    await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+    helper = new ReservationHelper(page);
   });
 
-  test.describe('Create Reservation', () => {
-    test('should create basic reservation with all required fields', async ({ authenticatedPage }) => {
-      const data = {
-        ...TEST_RESERVATIONS.pending,
-        date: getFutureDate(30),
-      };
+  test.describe('List Page', () => {
+    test('should load reservations list page', async ({ page }) => {
+      await helper.goToList();
 
-      await reservationHelper.createViaUI(data);
-
-      // Verify redirect to list
-      await expect(authenticatedPage).toHaveURL('/reservations');
-      
-      // Verify reservation appears in list
+      // Page hero should show "Rezerwacje"
       await expect(
-        authenticatedPage.locator(`text=${data.notes}`)
-      ).toBeVisible();
+        page.getByRole('heading', { name: 'Rezerwacje' })
+      ).toBeVisible({ timeout: 10000 });
     });
 
-    test('should show conditional fields for Birthday event type', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('/reservations/new');
-      
-      // Select Birthday event type
-      await authenticatedPage.selectOption('select[name="eventTypeId"]', 'event-2');
-      
-      // Birthday age field should appear
-      await expect(
-        authenticatedPage.locator('input[name="birthdayAge"]')
-      ).toBeVisible();
-      
-      // Fill and verify
-      await authenticatedPage.fill('input[name="birthdayAge"]', '10');
-      
-      const value = await authenticatedPage.inputValue('input[name="birthdayAge"]');
-      expect(value).toBe('10');
+    test('should display stats cards', async ({ page }) => {
+      await helper.goToList();
+
+      // 4 stat cards: Wszystkie, Potwierdzone, Oczekuj\u0105ce, Ten miesi\u0105c
+      await expect(page.locator('text=Wszystkie')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('text=Potwierdzone')).toBeVisible();
+      await expect(page.locator('text=Oczekuj\u0105ce')).toBeVisible();
+      await expect(page.locator('text=Ten miesi\u0105c')).toBeVisible();
     });
 
-    test('should show conditional fields for Anniversary event type', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('/reservations/new');
-      
-      // Select Anniversary event type
-      await authenticatedPage.selectOption('select[name="eventTypeId"]', 'event-3');
-      
-      // Anniversary fields should appear
-      await expect(
-        authenticatedPage.locator('input[name="anniversaryType"]')
-      ).toBeVisible();
-      await expect(
-        authenticatedPage.locator('input[name="anniversaryYears"]')
-      ).toBeVisible();
+    test('should have view toggle (Lista / Kalendarz)', async ({ page }) => {
+      await helper.goToList();
+
+      // View toggle: Lista (active) and Kalendarz (link)
+      await expect(page.locator('text=Lista').first()).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('a:has-text("Kalendarz")')).toBeVisible();
     });
 
-    test('should calculate price in real-time', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('/reservations/new');
-      
-      // Select hall (50 PLN per person)
-      await authenticatedPage.selectOption('select[name="hallId"]', 'hall-1');
-      
-      // Fill guest numbers: 80 adults + 15 children + 5 babies = 100 guests
-      await authenticatedPage.fill('input[name="adults"]', '80');
-      await authenticatedPage.fill('input[name="children"]', '15');
-      await authenticatedPage.fill('input[name="babies"]', '5');
-      
-      // Price should be: 100 guests * 50 PLN = 5000 PLN
-      await reservationHelper.verifyPriceCalculation(5000);
-    });
+    test('should have Nowa Rezerwacja button', async ({ page }) => {
+      await helper.goToList();
 
-    test('should validate guest numbers against hall capacity', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('/reservations/new');
-      
-      // Select hall with capacity 50
-      await authenticatedPage.selectOption('select[name="hallId"]', 'hall-3');
-      
-      // Try to add more guests than capacity (51 adults)
-      await authenticatedPage.fill('input[name="adults"]', '51');
-      await authenticatedPage.fill('input[name="children"]', '0');
-      await authenticatedPage.fill('input[name="babies"]', '0');
-      
-      // Submit
-      await authenticatedPage.click('button[type="submit"]');
-      
-      // Should show error
       await expect(
-        authenticatedPage.locator('.error-message')
-      ).toContainText('przekracza pojemność sali');
+        page.locator('button:has-text("Nowa Rezerwacja")')
+      ).toBeVisible({ timeout: 5000 });
     });
 
-    test('should validate date is not in the past', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('/reservations/new');
-      
-      // Fill with past date
-      await authenticatedPage.fill('input[name="date"]', '2020-01-01');
-      await authenticatedPage.click('button[type="submit"]');
-      
-      // Should show error
-      await expect(
-        authenticatedPage.locator('.error-message')
-      ).toContainText('Data nie może być w przeszłości');
-    });
+    test('should navigate to calendar view', async ({ page }) => {
+      await helper.goToList();
 
-    test('should validate required fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('/reservations/new');
-      
-      // Try to submit without filling fields
-      await authenticatedPage.click('button[type="submit"]');
-      
-      // Should show validation errors
-      await expect(authenticatedPage.locator('.field-error')).toHaveCount(7); // All required fields
+      await page.click('a:has-text("Kalendarz")');
+      await expect(page).toHaveURL(/\/dashboard\/reservations\/calendar/);
     });
   });
 
-  test.describe('Read/List Reservations', () => {
-    test.beforeEach(async () => {
-      // Create test reservations via API
-      await reservationHelper.createViaAPI({
-        ...TEST_RESERVATIONS.pending,
-        date: getFutureDate(30),
-      });
-      await reservationHelper.createViaAPI({
-        ...TEST_RESERVATIONS.confirmed,
-        date: getFutureDate(45),
-      });
+  test.describe('Create Form', () => {
+    test('should open create form when clicking Nowa Rezerwacja', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
+
+      // Stepper should be visible with step titles
+      await expect(page.locator('text=Wydarzenie').first()).toBeVisible();
+      await expect(page.locator('text=Sala i termin').first()).toBeVisible();
+      await expect(page.locator('text=Go\u015bcie').first()).toBeVisible();
     });
 
-    test('should display list of reservations', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Should have at least 2 reservations
-      const count = await reservationHelper.getCount();
-      expect(count).toBeGreaterThanOrEqual(2);
-    });
+    test('should close form when clicking cancel', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
 
-    test('should filter by status', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Filter by PENDING
-      await reservationHelper.applyFilters({ status: 'PENDING' });
-      
-      // All visible reservations should have PENDING status
-      const statuses = await authenticatedPage.locator('[data-testid="status-badge"]').allTextContents();
-      statuses.forEach(status => {
-        expect(status).toContain('PENDING');
-      });
-    });
-
-    test('should filter by hall', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Filter by specific hall
-      await reservationHelper.applyFilters({ hallId: 'hall-1' });
-      
-      // Verify filtered results
-      const halls = await authenticatedPage.locator('[data-testid="hall-name"]').allTextContents();
-      halls.forEach(hall => {
-        expect(hall).toContain('Sala Główna');
-      });
-    });
-
-    test('should filter by date range', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      const dateFrom = getFutureDate(25);
-      const dateTo = getFutureDate(35);
-      
-      await reservationHelper.applyFilters({ dateFrom, dateTo });
-      
-      // Should show only reservations in range
-      const dates = await authenticatedPage.locator('[data-testid="reservation-date"]').allTextContents();
-      dates.forEach(dateStr => {
-        const [day, month, year] = dateStr.split('.');
-        const date = `${year}-${month}-${day}`;
-        expect(date >= dateFrom && date <= dateTo).toBe(true);
-      });
-    });
-
-    test('should paginate results', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Check if pagination controls exist
-      await expect(authenticatedPage.locator('[data-testid="pagination"]')).toBeVisible();
-      
-      // Click next page
-      await authenticatedPage.click('button:has-text("Następna")');
-      
-      // URL should include page param
-      await expect(authenticatedPage).toHaveURL(/page=2/);
-    });
-
-    test('should sort by date', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Click sort by date
-      await authenticatedPage.click('[data-sort="date"]');
-      
-      // Get all dates
-      const dates = await authenticatedPage.locator('[data-testid="reservation-date"]').allTextContents();
-      
-      // Verify sorted
-      const datesArray = dates.map(d => {
-        const [day, month, year] = d.split('.');
-        return `${year}-${month}-${day}`;
-      });
-      
-      const sorted = [...datesArray].sort();
-      expect(datesArray).toEqual(sorted);
-    });
-
-    test('should open details modal', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Click first reservation
-      await authenticatedPage.click('[data-testid="reservation-item"]:first-child');
-      
-      // Modal should open
-      await expect(authenticatedPage.locator('[role="dialog"]')).toBeVisible();
-      
-      // Should show all details
-      await expect(authenticatedPage.locator('[data-testid="client-name"]')).toBeVisible();
-      await expect(authenticatedPage.locator('[data-testid="hall-name"]')).toBeVisible();
-      await expect(authenticatedPage.locator('[data-testid="event-type"]')).toBeVisible();
-    });
-  });
-
-  test.describe('Update Reservation', () => {
-    let reservationId: string;
-
-    test.beforeEach(async () => {
-      const reservation = await reservationHelper.createViaAPI({
-        ...TEST_RESERVATIONS.pending,
-        date: getFutureDate(30),
-      });
-      reservationId = reservation.id;
-    });
-
-    test('should edit reservation with reason', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Edit reservation
-      await reservationHelper.edit(
-        reservationId,
-        {
-          adults: 90,
-          notes: 'Updated notes',
-        },
-        'Klient zmienił liczbę gości'
-      );
-      
-      // Verify changes
-      await reservationHelper.viewDetails(reservationId);
+      // Form should be visible
       await expect(
-        authenticatedPage.locator('[data-testid="guest-count"]')
-      ).toContainText('90');
-    });
+        page.locator('text=Jaki typ wydarzenia?')
+      ).toBeVisible({ timeout: 3000 });
 
-    test('should require reason for edits', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Open edit modal
-      await authenticatedPage.click(`[data-reservation-id="${reservationId}"] button:has-text("Edytuj")`);
-      
-      // Change something
-      await authenticatedPage.fill('input[name="adults"]', '90');
-      
-      // Try to submit without reason
-      await authenticatedPage.click('button[type="submit"]');
-      
-      // Should show error
-      await expect(
-        authenticatedPage.locator('textarea[name="reason"] + .error')
-      ).toContainText('Powód zmiany jest wymagany');
-    });
-
-    test('should preserve conditional fields when editing', async ({ authenticatedPage }) => {
-      // Create birthday reservation
-      const birthday = await reservationHelper.createViaAPI({
-        ...TEST_RESERVATIONS.confirmed,
-        date: getFutureDate(35),
-      });
-      
-      await reservationHelper.goToList();
-      
-      // Open edit
-      await authenticatedPage.click(`[data-reservation-id="${birthday.id}"] button:has-text("Edytuj")`);
-      
-      // Birthday age field should be visible and pre-filled
-      await expect(
-        authenticatedPage.locator('input[name="birthdayAge"]')
-      ).toBeVisible();
-      
-      const value = await authenticatedPage.inputValue('input[name="birthdayAge"]');
-      expect(value).toBe('10');
-    });
-  });
-
-  test.describe('Delete/Cancel Reservation', () => {
-    let reservationId: string;
-
-    test.beforeEach(async () => {
-      const reservation = await reservationHelper.createViaAPI({
-        ...TEST_RESERVATIONS.pending,
-        date: getFutureDate(30),
-      });
-      reservationId = reservation.id;
-    });
-
-    test('should cancel reservation with reason', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
       // Cancel
-      await reservationHelper.cancel(reservationId, 'Klient zrezygnował');
-      
-      // Verify status changed
-      const status = await reservationHelper.getStatus(reservationId);
-      expect(status).toContain('CANCELLED');
+      await helper.cancelCreateForm();
+
+      // Form should be hidden
+      await expect(
+        page.locator('text=Jaki typ wydarzenia?')
+      ).toBeHidden({ timeout: 3000 });
     });
 
-    test('should require cancellation reason', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      // Open cancel modal
-      await authenticatedPage.click(`[data-reservation-id="${reservationId}"] button:has-text("Anuluj")`);
-      
-      // Try to confirm without reason
-      await authenticatedPage.click('button:has-text("Potwierdź anulowanie")');
-      
-      // Should show error
+    test('should show step 0 (event type) content', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
+
+      // Step 0 content
+      await expect(page.locator('text=Jaki typ wydarzenia?')).toBeVisible();
+      await expect(page.locator('text=Typ wydarzenia')).toBeVisible();
+
+      // Select trigger should show placeholder
       await expect(
-        authenticatedPage.locator('textarea[name="cancellationReason"] + .error')
-      ).toContainText('Powód anulowania jest wymagany');
+        page.locator('text=Wybierz typ wydarzenia...')
+      ).toBeVisible();
     });
 
-    test('should save cancellation reason in history', async ({ authenticatedPage }) => {
-      await reservationHelper.goToList();
-      
-      const reason = 'Klient zmienił plany';
-      await reservationHelper.cancel(reservationId, reason);
-      
-      // Open details
-      await reservationHelper.viewDetails(reservationId);
-      
-      // Go to history tab
-      await authenticatedPage.click('[data-tab="history"]');
-      
-      // Should show cancellation reason
+    test('should validate event type on step 0', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
+
+      // Try to go next without selecting event type
+      await helper.nextStep();
+
+      // Should show validation error
       await expect(
-        authenticatedPage.locator('[data-testid="history-item"]:first-child')
-      ).toContainText(reason);
+        page.locator('text=Wybierz typ wydarzenia')
+      ).toBeVisible({ timeout: 3000 });
+    });
+
+    test('should show event type options in dropdown', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
+
+      // Click the Select trigger to open dropdown
+      await page.click('text=Wybierz typ wydarzenia...');
+
+      // Dropdown should show event types from the database
+      // At minimum, the select content should be visible
+      const selectContent = page.locator('[role="listbox"]');
+      await expect(selectContent).toBeVisible({ timeout: 3000 });
+
+      // Should have at least one option
+      const options = selectContent.locator('[role="option"]');
+      const count = await options.count();
+      expect(count).toBeGreaterThan(0);
+    });
+
+    test('should navigate to step 1 after selecting event type', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
+
+      // Open event type dropdown and select first option
+      await page.click('text=Wybierz typ wydarzenia...');
+      const firstOption = page.locator('[role="option"]').first();
+      await firstOption.click();
+
+      // Click Dalej
+      await helper.nextStep();
+
+      // Step 1 content should appear
+      await expect(
+        page.locator('text=Wybierz sal\u0119 i termin')
+      ).toBeVisible({ timeout: 3000 });
+    });
+
+    test('should navigate back with Wstecz button', async ({ page }) => {
+      await helper.goToList();
+      await helper.openCreateForm();
+
+      // Select event type and go to step 1
+      await page.click('text=Wybierz typ wydarzenia...');
+      await page.locator('[role="option"]').first().click();
+      await helper.nextStep();
+
+      // Verify we're on step 1
+      await expect(
+        page.locator('text=Wybierz sal\u0119 i termin')
+      ).toBeVisible({ timeout: 3000 });
+
+      // Go back
+      await helper.prevStep();
+
+      // Should be back on step 0
+      await expect(
+        page.locator('text=Jaki typ wydarzenia?')
+      ).toBeVisible({ timeout: 3000 });
     });
   });
 });

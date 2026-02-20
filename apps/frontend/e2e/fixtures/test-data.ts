@@ -1,34 +1,23 @@
 /**
  * Test Data for E2E Tests
- * 
+ *
  * Contains all test data used across E2E test suites.
  * Update these values to match your test environment.
  */
 
 export const testData = {
-  /**
-   * Admin user credentials
-   */
   admin: {
     email: 'admin@gosciniecrodzinny.pl',
     password: 'Admin123!@#',
     firstName: 'Admin',
     lastName: 'System',
   },
-  
-  /**
-   * Employee user credentials
-   */
   employee: {
     email: 'pracownik@gosciniecrodzinny.pl',
     password: 'Employee123!@#',
     firstName: 'Pracownik',
     lastName: 'Testowy',
   },
-  
-  /**
-   * Test client data
-   */
   client: {
     firstName: 'Jan',
     lastName: 'Kowalski',
@@ -36,10 +25,6 @@ export const testData = {
     phone: '+48123456789',
     notes: 'Test client for E2E tests',
   },
-  
-  /**
-   * Additional test clients
-   */
   clients: [
     {
       firstName: 'Anna',
@@ -49,21 +34,17 @@ export const testData = {
     },
     {
       firstName: 'Piotr',
-      lastName: 'Wiśniewski',
+      lastName: 'Wi\u015bniewski',
       email: 'piotr.wisniewski@example.com',
       phone: '+48345678901',
     },
     {
       firstName: 'Maria',
-      lastName: 'Wójcik',
+      lastName: 'W\u00f3jcik',
       email: 'maria.wojcik@example.com',
       phone: '+48456789012',
     },
   ],
-  
-  /**
-   * Test reservation data
-   */
   reservation: {
     date: '2026-03-15',
     startTime: '18:00',
@@ -76,10 +57,6 @@ export const testData = {
     notes: 'Test reservation from E2E tests',
     pricePerPerson: 350,
   },
-  
-  /**
-   * Test reservation variants
-   */
   reservations: {
     birthday: {
       date: '2026-03-20',
@@ -90,7 +67,7 @@ export const testData = {
       guestsChildren0to3: 5,
       eventType: 'Urodziny',
       birthdayAge: 30,
-      hall: 'Sala Mała',
+      hall: 'Sala Ma\u0142a',
       notes: 'Birthday party test',
     },
     anniversary: {
@@ -102,7 +79,7 @@ export const testData = {
       guestsChildren0to3: 0,
       eventType: 'Rocznica/Jubileusz',
       anniversaryYears: 25,
-      anniversaryType: 'Ślub',
+      anniversaryType: '\u015alub',
       hall: 'Sala Bankietowa',
       notes: '25th wedding anniversary',
     },
@@ -118,10 +95,6 @@ export const testData = {
       notes: 'First communion celebration',
     },
   },
-  
-  /**
-   * Test queue entry data
-   */
   queueEntry: {
     date: '2026-03-20',
     guestsAdults: 40,
@@ -129,10 +102,6 @@ export const testData = {
     guestsChildren0to3: 5,
     notes: 'Test queue entry from E2E tests',
   },
-  
-  /**
-   * Event types
-   */
   eventTypes: [
     'Wesele',
     'Urodziny',
@@ -141,24 +110,10 @@ export const testData = {
     'Chrzciny',
     'Inne',
   ],
-  
-  /**
-   * Halls
-   */
   halls: [
-    {
-      name: 'Sala Bankietowa',
-      capacity: 150,
-    },
-    {
-      name: 'Sala Mała',
-      capacity: 50,
-    },
+    { name: 'Sala Bankietowa', capacity: 150 },
+    { name: 'Sala Ma\u0142a', capacity: 50 },
   ],
-  
-  /**
-   * Statuses
-   */
   statuses: [
     'PENDING',
     'CONFIRMED',
@@ -169,7 +124,8 @@ export const testData = {
 };
 
 /**
- * Test reservations used in reservation E2E tests
+ * Test reservations used in reservation E2E tests.
+ * Field 'toddlers' matches app schema (not 'babies').
  */
 export const TEST_RESERVATIONS = {
   pending: {
@@ -181,11 +137,11 @@ export const TEST_RESERVATIONS = {
     endTime: '23:00',
     adults: 50,
     children: 10,
-    babies: 5,
+    toddlers: 5,
     notes: 'Test pending reservation',
     birthdayAge: undefined as number | undefined,
-    anniversaryType: undefined as string | undefined,
-    anniversaryYears: undefined as number | undefined,
+    anniversaryOccasion: undefined as string | undefined,
+    anniversaryYear: undefined as number | undefined,
   },
   confirmed: {
     clientId: '',
@@ -196,11 +152,11 @@ export const TEST_RESERVATIONS = {
     endTime: '00:00',
     adults: 80,
     children: 15,
-    babies: 5,
+    toddlers: 5,
     notes: 'Test confirmed reservation',
     birthdayAge: undefined as number | undefined,
-    anniversaryType: undefined as string | undefined,
-    anniversaryYears: undefined as number | undefined,
+    anniversaryOccasion: undefined as string | undefined,
+    anniversaryYear: undefined as number | undefined,
   },
   birthday: {
     clientId: '',
@@ -211,11 +167,11 @@ export const TEST_RESERVATIONS = {
     endTime: '20:00',
     adults: 30,
     children: 15,
-    babies: 5,
+    toddlers: 5,
     notes: 'Test birthday reservation',
     birthdayAge: 30,
-    anniversaryType: undefined as string | undefined,
-    anniversaryYears: undefined as number | undefined,
+    anniversaryOccasion: undefined as string | undefined,
+    anniversaryYear: undefined as number | undefined,
   },
   anniversary: {
     clientId: '',
@@ -226,16 +182,16 @@ export const TEST_RESERVATIONS = {
     endTime: '01:00',
     adults: 80,
     children: 0,
-    babies: 0,
+    toddlers: 0,
     notes: 'Test anniversary reservation',
     birthdayAge: undefined as number | undefined,
-    anniversaryType: 'Ślub',
-    anniversaryYears: 25,
+    anniversaryOccasion: '\u015alub',
+    anniversaryYear: 25,
   },
 };
 
 /**
- * Test queue entries used in queue E2E tests
+ * Test queue entries used in queue E2E tests.
  */
 export const TEST_QUEUE_ENTRIES = [
   {
@@ -244,7 +200,7 @@ export const TEST_QUEUE_ENTRIES = [
     reservationQueueDate: getFutureDate(15),
     adults: 40,
     children: 10,
-    babies: 5,
+    toddlers: 5,
     notes: 'Test queue entry 1',
     birthdayAge: undefined as number | undefined,
   },
@@ -254,7 +210,7 @@ export const TEST_QUEUE_ENTRIES = [
     reservationQueueDate: getFutureDate(20),
     adults: 60,
     children: 15,
-    babies: 3,
+    toddlers: 3,
     notes: 'Test queue entry 2',
     birthdayAge: undefined as number | undefined,
   },
@@ -264,57 +220,39 @@ export const TEST_QUEUE_ENTRIES = [
     reservationQueueDate: getFutureDate(30),
     adults: 25,
     children: 5,
-    babies: 2,
+    toddlers: 2,
     notes: 'Test queue entry 3',
     birthdayAge: 30,
   },
 ];
 
-/**
- * Helper: Get future date
- */
 export function getFutureDate(daysFromNow: number): string {
   const date = new Date();
   date.setDate(date.getDate() + daysFromNow);
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  return date.toISOString().split('T')[0];
 }
 
-/**
- * Helper: Get past date
- */
 export function getPastDate(daysAgo: number): string {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  return date.toISOString().split('T')[0];
 }
 
-/**
- * Helper: Format date for Polish locale (DD.MM.YYYY)
- */
 export function formatDatePL(dateString: string): string {
   const [year, month, day] = dateString.split('-');
   return `${day}.${month}.${year}`;
 }
 
-/**
- * Helper: Get today's date
- */
 export function getTodayDate(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-/**
- * Helper: Generate random email
- */
 export function generateRandomEmail(): string {
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 10000);
   return `test-${timestamp}-${random}@example.com`;
 }
 
-/**
- * Helper: Generate random phone
- */
 export function generateRandomPhone(): string {
   const random = Math.floor(Math.random() * 900000000) + 100000000;
   return `+48${random}`;
