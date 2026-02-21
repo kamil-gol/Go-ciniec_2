@@ -93,9 +93,7 @@ export function ServiceCategoryList({
   onEditItem,
   flatItemView = false,
 }: ServiceCategoryListProps) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    new Set(categories.map((c) => c.id))
-  );
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{
     type: 'category' | 'item';
     id: string;
