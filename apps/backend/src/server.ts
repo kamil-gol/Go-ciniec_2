@@ -22,6 +22,7 @@ import attachmentRoutes from '@/routes/attachment.routes';
 import auditLogRoutes from '@/routes/audit-log.routes';
 import reportsRoutes from '@/routes/reports.routes';
 import settingsRoutes from '@/routes/settings.routes';
+import serviceExtraRoutes from '@/routes/serviceExtra.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -32,6 +33,7 @@ validateEnv();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 /**
  * CORS Allowed Origins
@@ -147,6 +149,11 @@ app.use('/api/dishes', dishRoutes);
 app.use('/api/dish-categories', dishCategoryRoutes);
 
 /**
+ * Service Extras Routes
+ */
+app.use('/api/service-extras', serviceExtraRoutes);
+
+/**
  * 404 Handler
  */
 app.use((_req: Request, res: Response) => {
@@ -172,8 +179,8 @@ export default app;
 // Start Server (skip in test mode)
 // ========================================
 if (process.env.NODE_ENV !== 'test') {
-  const server = app.listen(PORT, () => {
-    logger.info(`Server running on http://localhost:${PORT}`);
+  const server = app.listen(Number(PORT), HOST, () => {
+    logger.info(`Server running on http://${HOST}:${PORT}`);
     logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 
     // Setup cron jobs

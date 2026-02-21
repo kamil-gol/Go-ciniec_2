@@ -35,6 +35,20 @@ interface MenuSnapshot {
   selectedAt: Date;
 }
 
+interface ReservationExtraForPDF {
+  serviceItem: {
+    name: string;
+    priceType: string;
+    category?: { name: string } | null;
+  };
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  priceType: string;
+  note?: string | null;
+  status: string;
+}
+
 interface ReservationPDFData {
   id: string;
   client: {
@@ -64,6 +78,7 @@ interface ReservationPDFData {
   pricePerChild: number;
   pricePerToddler: number;
   totalPrice: number;
+  extrasTotalPrice?: number;
   status: string;
   notes?: string;
   birthdayAge?: number;
@@ -83,6 +98,7 @@ interface ReservationPDFData {
   }>;
   menuData?: MenuData;
   menuSnapshot?: MenuSnapshot;
+  reservationExtras?: ReservationExtraForPDF[];
   createdAt: Date;
 }
 
@@ -443,6 +459,11 @@ export class PDFService {
       this.addMenuSelectionSectionLegacy(doc, reservation.menuData, pageWidth);
     }
 
+    // Extras section — service extras attached to reservation
+    if (reservation.reservationExtras && reservation.reservationExtras.length > 0) {
+      this.addExtrasSection(doc, reservation.reservationExtras, pageWidth);
+    }
+
     doc.moveDown(1);
     this.addSeparator(doc);
 
@@ -476,6 +497,13 @@ export class PDFService {
       doc.text(
         `Maluchy (0-3 lata): ${reservation.toddlers} os. x ${this.formatCurrency(reservation.pricePerToddler)} = ${this.formatCurrency(toddlerTotal)}`
       );
+    }
+
+    // Extras cost line in calculation
+    const extrasTotalCalc = (reservation.reservationExtras || [])
+      .reduce((sum, e) => sum + Number(e.totalPrice), 0);
+    if (extrasTotalCalc > 0) {
+      doc.text(`Uslugi dodatkowe: ${this.formatCurrency(extrasTotalCalc)}`);
     }
 
     doc.moveDown(0.5);
@@ -888,6 +916,67 @@ export class PDFService {
 
     doc.fontSize(12).font(this.getBoldFont());
     doc.text(`Razem menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`);
+  }
+
+  private addExtrasSection(
+    doc: PDFKit.PDFDocument,
+    extras: ReservationExtraForPDF[],
+    pageWidth: number
+  ): void {
+    doc.moveDown(1);
+    this.addSeparator(doc);
+    doc.moveDown(1);
+
+    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Uslugi dodatkowe');
+    doc.moveDown(0.5);
+
+    // Group extras by category
+    const grouped = new Map<string, ReservationExtraForPDF[]>();
+    for (const extra of extras) {
+      const catName = extra.serviceItem.category?.name || 'Inne';
+      if (!grouped.has(catName)) grouped.set(catName, []);
+      grouped.get(catName)!.push(extra);
+    }
+
+    let extrasTotal = 0;
+
+    for (const [categoryName, items] of grouped) {
+      /* istanbul ignore next -- page break for long extras list */
+      if (doc.y > doc.page.height - 150) doc.addPage();
+
+      doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
+      doc.text(categoryName);
+      doc.moveDown(0.3);
+
+      for (const item of items) {
+        doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
+
+        const priceLabel = item.priceType === 'PER_PERSON' ? '/os.' : '/szt.';
+        const statusLabel = item.status !== 'CONFIRMED' && item.status !== 'ACTIVE'
+          ? ` [${item.status}]`
+          : '';
+
+        doc.text(
+          `  ${item.quantity}x ${item.serviceItem.name} @ ${this.formatCurrency(item.unitPrice)}${priceLabel} = ${this.formatCurrency(item.totalPrice)}${statusLabel}`,
+          { indent: 15 }
+        );
+
+        if (item.note) {
+          doc.fontSize(8).fillColor('#777777');
+          doc.text(`     Uwaga: ${item.note}`, { indent: 25 });
+          doc.fillColor('#000000');
+        }
+
+        extrasTotal += Number(item.totalPrice);
+        doc.moveDown(0.2);
+      }
+
+      doc.moveDown(0.3);
+    }
+
+    doc.moveDown(0.3);
+    doc.fontSize(12).font(this.getBoldFont()).fillColor('#000000');
+    doc.text(`Razem uslugi dodatkowe: ${this.formatCurrency(extrasTotal)}`);
   }
 
   private addMenuSelectionSectionLegacy(

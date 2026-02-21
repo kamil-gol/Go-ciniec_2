@@ -22,6 +22,7 @@ import {
   BarChart3,
   Archive,
   FileText,
+  Gift,
 } from 'lucide-react'
 
 const navItems = [
@@ -33,6 +34,7 @@ const navItems = [
   { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed },
   { name: 'Kolejka', href: '/dashboard/queue', icon: Clock },
   { name: 'Zaliczki', href: '/dashboard/deposits', icon: DollarSign },
+  { name: 'Usługi dodatkowe', href: '/dashboard/service-extras', icon: Gift },
   { name: 'Typy Wydarzeń', href: '/dashboard/event-types', icon: Theater },
   { name: 'Dziennik Audytu', href: '/dashboard/audit-log', icon: FileText },
   { name: 'Raporty', href: '/dashboard/reports', icon: BarChart3 },
@@ -131,7 +133,7 @@ interface SidebarProps {
 }
 
 /* ============================
-   Main Sidebar \u2014 default export
+   Main Sidebar — default export
    ============================ */
 export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
@@ -204,7 +206,7 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
               </div>
             </div>
 
-            {/* Nav \u2014 always expanded on mobile, close sheet on click */}
+            {/* Nav — always expanded on mobile, close sheet on click */}
             <SidebarNav collapsed={false} onNavigate={onMobileClose} />
             <SidebarUser collapsed={false} user={user} onLogout={onLogout} />
           </div>

@@ -223,6 +223,9 @@ model Reservation {
   attachments     String[] @db.Text
   archivedAt      DateTime?
 
+  // Service Extras — total cost of all extras (independent from menu)
+  extrasTotalPrice Decimal  @default(0) @db.Decimal(10, 2)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -234,6 +237,7 @@ model Reservation {
   history         ReservationHistory[]
   deposits        Deposit[]
   menuSnapshot    ReservationMenuSnapshot?
+  extras          ReservationExtra[]
 
   @@index([date])
   @@index([startDateTime])
@@ -408,8 +412,8 @@ model MenuPackage {
   
   menuTemplate    MenuTemplate @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
   packageOptions  MenuPackageOption[]
-  courses         MenuCourse[]
   categorySettings PackageCategorySettings[]
+  courses         MenuCourse[]
   priceHistory    MenuPriceHistory[]
   
   @@index([menuTemplateId])
@@ -474,7 +478,7 @@ model MenuPackageOption {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🍽️ MENU COURSES — Package → Course → Dish assignments
+// 🍽️ MENU COURSES — Per-package course structure
 // ═══════════════════════════════════════════════════════════════
 
 model MenuCourse {
@@ -514,7 +518,7 @@ model MenuCourseOption {
   updatedAt     DateTime @updatedAt
 
   course        MenuCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  dish          Dish       @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  dish          Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, dishId])
   @@index([courseId])
@@ -732,4 +736,87 @@ model Attachment {
   @@index([category])
   @@index([uploadedById])
   @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🎁 SERVICE EXTRAS — venue decoration, music, cake, etc.
+// Independent from Menu system — can be assigned without menu
+// ═══════════════════════════════════════════════════════════════
+
+model ServiceCategory {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  name          String   @db.VarChar(100)
+  slug          String   @unique @db.VarChar(50)
+  description   String?  @db.Text
+  icon          String?  @db.VarChar(20)
+  color         String?  @db.VarChar(50)
+
+  displayOrder  Int      @default(0) @db.SmallInt
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items         ServiceItem[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([displayOrder])
+}
+
+model ServiceItem {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId    String   @db.Uuid
+
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+
+  priceType     String   @db.VarChar(20)   // FLAT | PER_PERSON | FREE
+  basePrice     Decimal  @default(0) @db.Decimal(10, 2)
+
+  icon          String?  @db.VarChar(50)
+  displayOrder  Int      @default(0) @db.SmallInt
+
+  isExclusive   Boolean  @default(false)   // only one item from category
+  requiresNote  Boolean  @default(false)   // e.g. "describe your own cake"
+  noteLabel     String?  @db.VarChar(255)  // custom label for note field
+
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category      ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  reservationExtras ReservationExtra[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([priceType])
+}
+
+model ReservationExtra {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId   String   @db.Uuid
+  serviceItemId   String   @db.Uuid
+
+  quantity        Int      @default(1) @db.SmallInt
+  unitPrice       Decimal  @db.Decimal(10, 2)   // snapshot of price at assignment time
+  priceType       String   @db.VarChar(20)       // snapshot of price type
+  totalPrice      Decimal  @db.Decimal(10, 2)   // calculated total
+
+  note            String?  @db.Text
+  status          String   @default("PENDING") @db.VarChar(20)  // PENDING | CONFIRMED | CANCELLED
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  serviceItem     ServiceItem @relation(fields: [serviceItemId], references: [id], onDelete: Restrict)
+
+  @@unique([reservationId, serviceItemId])
+  @@index([reservationId])
+  @@index([serviceItemId])
+  @@index([status])
 }

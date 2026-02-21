@@ -3,6 +3,7 @@
  * Full CRUD + business logic for deposit/advance payment management
  * Phase 4.2: Auto-confirm reservation when all deposits are paid
  * Phase 4.3: Block cancellation of reservations with paid deposits
+ * Updated: Deposit limits include extrasTotalPrice (#6)
  */
 
 import { prisma } from '../lib/prisma';
@@ -61,6 +62,14 @@ const DEPOSIT_INCLUDE = {
   },
 } as const;
 
+/**
+ * Calculate full reservation price including extras.
+ * Used as the deposit ceiling — sum of base totalPrice + extrasTotalPrice.
+ */
+function getFullReservationPrice(reservation: any): number {
+  return Number(reservation.totalPrice || 0) + Number(reservation.extrasTotalPrice || 0);
+}
+
 const depositService = {
   async create(input: CreateDepositInput, userId: string) {
     const { reservationId, amount, dueDate } = input;
@@ -76,12 +85,12 @@ const depositService = {
       .filter((d: any) => d.status !== 'CANCELLED')
       .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
-    const totalPrice = Number(reservation.totalPrice);
+    const fullPrice = getFullReservationPrice(reservation);
 
-    if (existingDepositsSum + amount > totalPrice) {
+    if (existingDepositsSum + amount > fullPrice) {
       throw AppError.badRequest(
-        'Suma zaliczek (' + (existingDepositsSum + amount) + ' PLN) przekracza cene rezerwacji (' + totalPrice + ' PLN). ' +
-        'Dostepne do zaliczki: ' + (totalPrice - existingDepositsSum).toFixed(2) + ' PLN'
+        'Suma zaliczek (' + (existingDepositsSum + amount) + ' PLN) przekracza cenę rezerwacji (' + fullPrice + ' PLN, w tym usługi dodatkowe). ' +
+        'Dostępne do zaliczki: ' + (fullPrice - existingDepositsSum).toFixed(2) + ' PLN'
       );
     }
 
@@ -148,7 +157,7 @@ const depositService = {
       .filter((d: any) => d.paid)
       .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
     const pendingAmount = totalAmount - paidAmount;
-    const reservationTotal = Number(reservation.totalPrice);
+    const reservationTotal = getFullReservationPrice(reservation);
 
     return {
       deposits,
@@ -244,11 +253,11 @@ const depositService = {
           .filter((d: any) => d.id !== id && d.status !== 'CANCELLED')
           .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
-        const totalPrice = Number(reservation.totalPrice);
+        const fullPrice = getFullReservationPrice(reservation);
 
-        if (otherDepositsSum + input.amount > totalPrice) {
+        if (otherDepositsSum + input.amount > fullPrice) {
           throw AppError.badRequest(
-            'Suma zaliczek (' + (otherDepositsSum + input.amount) + ' PLN) przekracza cene rezerwacji (' + totalPrice + ' PLN).'
+            'Suma zaliczek (' + (otherDepositsSum + input.amount) + ' PLN) przekracza cenę rezerwacji (' + fullPrice + ' PLN, w tym usługi dodatkowe).'
           );
         }
       }
@@ -352,7 +361,7 @@ const depositService = {
       }
     });
 
-    // ═══ Phase 4.2: Auto-confirm reservation when all deposits are paid ═══
+    // Phase 4.2: Auto-confirm reservation when all deposits are paid
     if (isPaid) {
       await depositService.checkAndAutoConfirmReservation(deposit.reservationId, userId);
     }
@@ -476,7 +485,7 @@ const depositService = {
         hall: reservation.hall?.name,
         eventType: reservation.eventType?.name,
         guests: reservation.guests,
-        totalPrice: Number(reservation.totalPrice),
+        totalPrice: getFullReservationPrice(reservation),
       },
     });
 
