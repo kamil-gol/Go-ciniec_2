@@ -409,6 +409,7 @@ model MenuPackage {
   menuTemplate    MenuTemplate @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
   packageOptions  MenuPackageOption[]
   categorySettings PackageCategorySettings[]
+  courses         MenuCourse[]
   priceHistory    MenuPriceHistory[]
   
   @@index([menuTemplateId])
@@ -473,6 +474,54 @@ model MenuPackageOption {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 🍽️ MENU COURSES — Per-package course structure
+// ═══════════════════════════════════════════════════════════════
+
+model MenuCourse {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packageId     String   @db.Uuid
+
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+
+  minSelect     Int      @default(1) @db.SmallInt
+  maxSelect     Int      @default(1) @db.SmallInt
+  isRequired    Boolean  @default(true)
+  displayOrder  Int      @default(0) @db.SmallInt
+  icon          String?  @db.VarChar(50)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  package       MenuPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  options       MenuCourseOption[]
+
+  @@index([packageId])
+  @@index([displayOrder])
+}
+
+model MenuCourseOption {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId       String   @db.Uuid
+  dishId        String   @db.Uuid
+
+  customPrice   Decimal? @db.Decimal(10, 2)
+  isDefault     Boolean  @default(false)
+  isRecommended Boolean  @default(false)
+  displayOrder  Int      @default(0) @db.SmallInt
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  course        MenuCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dish          Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, dishId])
+  @@index([courseId])
+  @@index([dishId])
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 🍽️ DISH LIBRARY & DYNAMIC CATEGORY SYSTEM
 // ═══════════════════════════════════════════════════════════════
 
@@ -515,6 +564,7 @@ model Dish {
   
   category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   addonGroups   AddonGroupDish[]
+  courseOptions  MenuCourseOption[]
   
   @@index([categoryId])
   @@index([isActive])
