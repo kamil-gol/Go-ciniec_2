@@ -267,7 +267,7 @@ export class QueueService {
 
     try {
       await withRetry(async () => {
-        await prisma.$executeRaw`SELECT swap_queue_positions(${id1}::UUID, ${id2}::UUID)`;
+        await prisma.$executeRawUnsafe('SELECT swap_queue_positions($1::UUID, $2::UUID)', id1, id2);
       });
     } catch (error: any) {
       if (error.message?.includes('lock') || error.code === 'P2034') {
@@ -327,7 +327,7 @@ export class QueueService {
 
     try {
       await withRetry(async () => {
-        await prisma.$executeRaw`SELECT move_to_queue_position(${reservationId}::UUID, ${newPosition}::INTEGER)`;
+        await prisma.$executeRawUnsafe('SELECT move_to_queue_position($1::UUID, $2::INTEGER)', reservationId, newPosition);
       });
     } catch (error: any) {
       if (error.message?.includes('lock') || error.code === 'P2034') {

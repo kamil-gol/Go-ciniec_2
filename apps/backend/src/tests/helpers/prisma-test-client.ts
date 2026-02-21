@@ -67,10 +67,75 @@ export async function cleanDatabase(retries = 3): Promise<void> {
 }
 
 /**
- * Connect to test database.
+ * Connect to test database and ensure SQL queue functions exist.
+ *
+ * The queue service uses two PostgreSQL functions for atomic
+ * position operations (swap_queue_positions, move_to_queue_position).
+ * These are normally created by migration 0002_queue_sql_functions,
+ * but the test database may not have had migrations applied.
+ *
+ * CREATE OR REPLACE is idempotent — safe to run on every connect.
  */
 export async function connectTestDb(): Promise<void> {
   await prismaTest.$connect();
+
+  // Ensure swap_queue_positions() exists (from migration 0002)
+  await prismaTest.$executeRawUnsafe(`
+    CREATE OR REPLACE FUNCTION swap_queue_positions(id1 UUID, id2 UUID)
+    RETURNS VOID AS $$
+    DECLARE
+      pos1 INTEGER;
+      pos2 INTEGER;
+    BEGIN
+      SELECT "reservationQueuePosition" INTO pos1
+        FROM "Reservation" WHERE id = id1 FOR UPDATE;
+      SELECT "reservationQueuePosition" INTO pos2
+        FROM "Reservation" WHERE id = id2 FOR UPDATE;
+      UPDATE "Reservation" SET "reservationQueuePosition" = -1,
+        "queueOrderManual" = true WHERE id = id1;
+      UPDATE "Reservation" SET "reservationQueuePosition" = pos1,
+        "queueOrderManual" = true WHERE id = id2;
+      UPDATE "Reservation" SET "reservationQueuePosition" = pos2,
+        "queueOrderManual" = true WHERE id = id1;
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
+
+  // Ensure move_to_queue_position() exists (from migration 0002)
+  await prismaTest.$executeRawUnsafe(`
+    CREATE OR REPLACE FUNCTION move_to_queue_position(res_id UUID, new_pos INTEGER)
+    RETURNS VOID AS $$
+    DECLARE
+      old_pos INTEGER;
+      queue_date TIMESTAMP;
+    BEGIN
+      SELECT "reservationQueuePosition", "reservationQueueDate"
+        INTO old_pos, queue_date
+        FROM "Reservation" WHERE id = res_id FOR UPDATE;
+      IF old_pos = new_pos THEN RETURN; END IF;
+      IF new_pos < old_pos THEN
+        UPDATE "Reservation"
+        SET "reservationQueuePosition" = "reservationQueuePosition" + 1
+        WHERE status = 'RESERVED'
+          AND "reservationQueueDate"::date = queue_date::date
+          AND "reservationQueuePosition" >= new_pos
+          AND "reservationQueuePosition" < old_pos
+          AND id != res_id;
+      ELSE
+        UPDATE "Reservation"
+        SET "reservationQueuePosition" = "reservationQueuePosition" - 1
+        WHERE status = 'RESERVED'
+          AND "reservationQueueDate"::date = queue_date::date
+          AND "reservationQueuePosition" > old_pos
+          AND "reservationQueuePosition" <= new_pos
+          AND id != res_id;
+      END IF;
+      UPDATE "Reservation"
+      SET "reservationQueuePosition" = new_pos, "queueOrderManual" = true
+      WHERE id = res_id;
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
 }
 
 /**

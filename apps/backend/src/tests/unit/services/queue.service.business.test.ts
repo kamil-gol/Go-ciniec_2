@@ -19,6 +19,7 @@ jest.mock('../../../lib/prisma', () => {
       aggregate: jest.fn(),
     },
     $executeRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
     $queryRaw: jest.fn(),
     $transaction: jest.fn(),
   };
@@ -82,6 +83,7 @@ beforeEach(() => {
   mockPrisma.reservation.count.mockResolvedValue(5);
   mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 5 } });
   mockPrisma.$executeRaw.mockResolvedValue(undefined);
+  mockPrisma.$executeRawUnsafe.mockResolvedValue(undefined);
   mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
   mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala Główna' });
   mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
@@ -97,14 +99,14 @@ describe('QueueService', () => {
   // ══════════════════════════════════════════════════════════════
   describe('swapPositions()', () => {
 
-    it('should swap positions via $executeRaw', async () => {
+    it('should swap positions via $executeRawUnsafe', async () => {
       mockPrisma.reservation.findUnique
         .mockResolvedValueOnce(RES_1)
         .mockResolvedValueOnce(RES_2);
 
       await service.swapPositions('res-001', 'res-002', TEST_USER_ID);
 
-      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(1);
       expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'QUEUE_SWAP' })
       );
@@ -147,13 +149,13 @@ describe('QueueService', () => {
   // ══════════════════════════════════════════════════════════════
   describe('moveToPosition()', () => {
 
-    it('should move reservation via $executeRaw and audit', async () => {
+    it('should move reservation via $executeRawUnsafe and audit', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       mockPrisma.reservation.count.mockResolvedValue(5);
 
       await service.moveToPosition('res-001', 3, TEST_USER_ID);
 
-      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(1);
       expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'QUEUE_MOVE' })
       );
@@ -357,7 +359,6 @@ describe('QueueService', () => {
   describe('autoCancelExpired()', () => {
 
     it('should cancel expired and audit when count > 0', async () => {
-      // autoCancelExpired uses reservation.findMany + updateMany (not $queryRaw)
       mockPrisma.reservation.findMany.mockResolvedValueOnce([
         { id: 'r1' }, { id: 'r2' }, { id: 'r3' },
       ]);
