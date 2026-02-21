@@ -29,14 +29,14 @@ interface CreateReservationExtrasSectionProps {
 
 // ═══ CATEGORY ICON MAP ═══
 
-const CATEGORY_ICONS: Record&lt;string, string&gt; = {
-  'muzyka': '🎵',
-  'torty-slodkosci': '🎂',
-  'dekoracje': '💐',
-  'foto-video': '📷',
-  'animacje-efekty': '🎉',
-  'transport': '🚗',
-  'inne': '📦',
+const CATEGORY_ICONS: { [key: string]: string } = {
+  'muzyka': '\uD83C\uDFB5',
+  'torty-slodkosci': '\uD83C\uDF82',
+  'dekoracje': '\uD83D\uDC90',
+  'foto-video': '\uD83D\uDCF7',
+  'animacje-efekty': '\uD83C\uDF89',
+  'transport': '\uD83D\uDE97',
+  'inne': '\uD83D\uDCE6',
 }
 
 // ═══ COMPONENT ═══
@@ -48,8 +48,8 @@ export function CreateReservationExtrasSection({
   compact = false,
 }: CreateReservationExtrasSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [expandedCategories, setExpandedCategories] = useState&lt;Set&lt;string&gt;&gt;(new Set())
-  const [editingNote, setEditingNote] = useState&lt;string | null&gt;(null)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [editingNote, setEditingNote] = useState<string | null>(null)
 
   const { data: categories, isLoading: categoriesLoading } = useServiceCategories(true)
   const { data: items, isLoading: itemsLoading } = useServiceItems(true)
@@ -67,7 +67,7 @@ export function CreateReservationExtrasSection({
   )
 
   const itemsByCategory = useMemo(() => {
-    const map = new Map&lt;string, ServiceItem[]&gt;()
+    const map = new Map<string, ServiceItem[]>()
     for (const item of itemsArray) {
       const arr = map.get(item.categoryId) || []
       arr.push(item)
@@ -77,7 +77,7 @@ export function CreateReservationExtrasSection({
   }, [itemsArray])
 
   const selectedMap = useMemo(() => {
-    const map = new Map&lt;string, SelectedExtra&gt;()
+    const map = new Map<string, SelectedExtra>()
     for (const extra of selectedExtras) {
       map.set(extra.serviceItemId, extra)
     }
@@ -121,7 +121,7 @@ export function CreateReservationExtrasSection({
         ])
       } else {
         const filtered = selectedExtras.filter(
-          e => !(e.serviceItem.categoryId === item.categoryId &amp;&amp; e.serviceItem.isExclusive)
+          e => !(e.serviceItem.categoryId === item.categoryId && e.serviceItem.isExclusive)
         )
         onExtrasChange([
           ...filtered,
@@ -152,10 +152,10 @@ export function CreateReservationExtrasSection({
   const getItemPrice = useCallback((item: ServiceItem, qty: number = 1): string => {
     if (item.priceType === 'FREE') return 'Gratis'
     if (item.priceType === 'PER_PERSON') {
-      return `${formatCurrency(item.basePrice)}/os × ${totalGuests} = ${formatCurrency(item.basePrice * totalGuests * qty)}`
+      return `${formatCurrency(item.basePrice)}/os \u00d7 ${totalGuests} = ${formatCurrency(item.basePrice * totalGuests * qty)}`
     }
     return qty > 1
-      ? `${formatCurrency(item.basePrice)} × ${qty} = ${formatCurrency(item.basePrice * qty)}`
+      ? `${formatCurrency(item.basePrice)} \u00d7 ${qty} = ${formatCurrency(item.basePrice * qty)}`
       : formatCurrency(item.basePrice)
   }, [totalGuests])
 
@@ -164,308 +164,308 @@ export function CreateReservationExtrasSection({
   if (compact) {
     if (selectedExtras.length === 0) return null
     return (
-      &lt;div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-2"&gt;
-        &lt;div className="flex items-center justify-between"&gt;
-          &lt;div className="flex items-center gap-2"&gt;
-            &lt;Package className="w-4 h-4 text-rose-600 dark:text-rose-400" /&gt;
-            &lt;span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200"&gt;
-              Usługi dodatkowe ({selectedExtras.length})
-            &lt;/span&gt;
-          &lt;/div&gt;
-          &lt;span className="font-bold text-rose-600 dark:text-rose-400"&gt;
+      <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200">
+              Us\u0142ugi dodatkowe ({selectedExtras.length})
+            </span>
+          </div>
+          <span className="font-bold text-rose-600 dark:text-rose-400">
             +{formatCurrency(extrasTotal)}
-          &lt;/span&gt;
-        &lt;/div&gt;
-        &lt;div className="space-y-1"&gt;
-          {selectedExtras.map(extra =&gt; (
-            &lt;div key={extra.serviceItemId} className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400"&gt;
-              &lt;span&gt;
-                {CATEGORY_ICONS[extra.serviceItem.category?.slug || ''] || '📦'}{' '}
+          </span>
+        </div>
+        <div className="space-y-1">
+          {selectedExtras.map(extra => (
+            <div key={extra.serviceItemId} className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
+              <span>
+                {CATEGORY_ICONS[extra.serviceItem.category?.slug || ''] || '\uD83D\uDCE6'}{' '}
                 {extra.serviceItem.name}
-                {extra.quantity &gt; 1 &amp;&amp; ` ×${extra.quantity}`}
-                {extra.note &amp;&amp; &lt;span className="text-neutral-400 dark:text-neutral-500 ml-1"&gt;— {extra.note}&lt;/span&gt;}
-              &lt;/span&gt;
-              &lt;span className="font-medium"&gt;{getItemPrice(extra.serviceItem, extra.quantity)}&lt;/span&gt;
-            &lt;/div&gt;
+                {extra.quantity > 1 && ` \u00d7${extra.quantity}`}
+                {extra.note && <span className="text-neutral-400 dark:text-neutral-500 ml-1">\u2014 {extra.note}</span>}
+              </span>
+              <span className="font-medium">{getItemPrice(extra.serviceItem, extra.quantity)}</span>
+            </div>
           ))}
-        &lt;/div&gt;
-      &lt;/div&gt;
+        </div>
+      </div>
     )
   }
 
   // ═══ FULL VIEW ═══
 
   return (
-    &lt;div className="space-y-3"&gt;
+    <div className="space-y-3">
       {/* Toggle Header */}
-      &lt;button
+      <button
         type="button"
-        onClick={() =&gt; setIsExpanded(!isExpanded)}
+        onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl border border-rose-200 dark:border-rose-800 hover:border-rose-300 dark:hover:border-rose-700 transition-colors"
-      &gt;
-        &lt;div className="flex items-center gap-3"&gt;
-          &lt;div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center"&gt;
-            &lt;Package className="w-5 h-5 text-rose-600 dark:text-rose-400" /&gt;
-          &lt;/div&gt;
-          &lt;div className="text-left"&gt;
-            &lt;span className="font-medium text-neutral-800 dark:text-neutral-200"&gt;Usługi dodatkowe&lt;/span&gt;
-            &lt;p className="text-xs text-neutral-500 dark:text-neutral-400"&gt;
-              {selectedExtras.length &gt; 0
-                ? `Wybrano ${selectedExtras.length} — łącznie ${formatCurrency(extrasTotal)}`
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+            <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+          </div>
+          <div className="text-left">
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">Us\u0142ugi dodatkowe</span>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              {selectedExtras.length > 0
+                ? `Wybrano ${selectedExtras.length} \u2014 \u0142\u0105cznie ${formatCurrency(extrasTotal)}`
                 : 'Opcjonalnie: DJ, fotograf, torty, dekoracje...'}
-            &lt;/p&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div className="flex items-center gap-2"&gt;
-          {selectedExtras.length &gt; 0 &amp;&amp; (
-            &lt;Badge variant="secondary" className="bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300"&gt;
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedExtras.length > 0 && (
+            <Badge variant="secondary" className="bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300">
               {selectedExtras.length}
-            &lt;/Badge&gt;
+            </Badge>
           )}
           {isExpanded ? (
-            &lt;ChevronUp className="w-5 h-5 text-neutral-400" /&gt;
+            <ChevronUp className="w-5 h-5 text-neutral-400" />
           ) : (
-            &lt;ChevronDown className="w-5 h-5 text-neutral-400" /&gt;
+            <ChevronDown className="w-5 h-5 text-neutral-400" />
           )}
-        &lt;/div&gt;
-      &lt;/button&gt;
+        </div>
+      </button>
 
       {/* Expanded Content */}
-      &lt;AnimatePresence&gt;
-        {isExpanded &amp;&amp; (
-          &lt;motion.div
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
-          &gt;
+          >
             {isLoading ? (
-              &lt;div className="flex items-center justify-center py-8 gap-2"&gt;
-                &lt;div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" /&gt;
-                &lt;span className="text-sm text-neutral-500"&gt;Ładowanie katalogu usług...&lt;/span&gt;
-              &lt;/div&gt;
+              <div className="flex items-center justify-center py-8 gap-2">
+                <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-neutral-500">\u0141adowanie katalogu us\u0142ug...</span>
+              </div>
             ) : categoriesArray.length === 0 ? (
-              &lt;div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2"&gt;
-                &lt;AlertCircle className="w-5 h-5 text-amber-600" /&gt;
-                &lt;p className="text-sm text-amber-800 dark:text-amber-200"&gt;
-                  Brak dostępnych usług dodatkowych. Skonfiguruj katalog w Ustawienia → Usługi dodatkowe.
-                &lt;/p&gt;
-              &lt;/div&gt;
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Brak dost\u0119pnych us\u0142ug dodatkowych. Skonfiguruj katalog w Ustawienia \u2192 Us\u0142ugi dodatkowe.
+                </p>
+              </div>
             ) : (
-              &lt;div className="space-y-2"&gt;
-                {categoriesArray.map(category =&gt; {
+              <div className="space-y-2">
+                {categoriesArray.map(category => {
                   const categoryItems = itemsByCategory.get(category.id) || []
                   if (categoryItems.length === 0) return null
 
                   const isOpen = expandedCategories.has(category.id)
-                  const selectedInCategory = categoryItems.filter(item =&gt; selectedMap.has(item.id))
-                  const icon = CATEGORY_ICONS[category.slug] || '📦'
+                  const selectedInCategory = categoryItems.filter(item => selectedMap.has(item.id))
+                  const icon = CATEGORY_ICONS[category.slug] || '\uD83D\uDCE6'
 
                   return (
-                    &lt;div
+                    <div
                       key={category.id}
                       className={`rounded-xl border transition-colors ${
-                        selectedInCategory.length &gt; 0
+                        selectedInCategory.length > 0
                           ? 'border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-900/10'
                           : 'border-neutral-200 dark:border-neutral-700'
                       }`}
-                    &gt;
+                    >
                       {/* Category header */}
-                      &lt;button
+                      <button
                         type="button"
-                        onClick={() =&gt; toggleCategory(category.id)}
+                        onClick={() => toggleCategory(category.id)}
                         className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-xl transition-colors"
-                      &gt;
-                        &lt;div className="flex items-center gap-2"&gt;
-                          &lt;span className="text-lg"&gt;{icon}&lt;/span&gt;
-                          &lt;span className="font-medium text-sm text-neutral-800 dark:text-neutral-200"&gt;
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{icon}</span>
+                          <span className="font-medium text-sm text-neutral-800 dark:text-neutral-200">
                             {category.name}
-                          &lt;/span&gt;
-                          &lt;span className="text-xs text-neutral-400"&gt;
+                          </span>
+                          <span className="text-xs text-neutral-400">
                             ({categoryItems.length})
-                          &lt;/span&gt;
-                          {selectedInCategory.length &gt; 0 &amp;&amp; (
-                            &lt;Badge variant="secondary" className="text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400"&gt;
+                          </span>
+                          {selectedInCategory.length > 0 && (
+                            <Badge variant="secondary" className="text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400">
                               {selectedInCategory.length} wybr.
-                            &lt;/Badge&gt;
+                            </Badge>
                           )}
-                        &lt;/div&gt;
+                        </div>
                         {isOpen ? (
-                          &lt;ChevronUp className="w-4 h-4 text-neutral-400" /&gt;
+                          <ChevronUp className="w-4 h-4 text-neutral-400" />
                         ) : (
-                          &lt;ChevronDown className="w-4 h-4 text-neutral-400" /&gt;
+                          <ChevronDown className="w-4 h-4 text-neutral-400" />
                         )}
-                      &lt;/button&gt;
+                      </button>
 
                       {/* Items */}
-                      &lt;AnimatePresence&gt;
-                        {isOpen &amp;&amp; (
-                          &lt;motion.div
+                      <AnimatePresence>
+                        {isOpen && (
+                          <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
                             className="px-3 pb-3 space-y-1.5"
-                          &gt;
-                            {categoryItems.map(item =&gt; {
+                          >
+                            {categoryItems.map(item => {
                               const selected = selectedMap.get(item.id)
                               const isSelected = !!selected
 
                               return (
-                                &lt;div
+                                <div
                                   key={item.id}
                                   className={`p-3 rounded-lg border transition-all cursor-pointer ${
                                     isSelected
                                       ? 'border-rose-300 dark:border-rose-700 bg-white dark:bg-neutral-800 shadow-sm'
                                       : 'border-transparent hover:border-neutral-200 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/30'
                                   }`}
-                                &gt;
-                                  &lt;div
+                                >
+                                  <div
                                     className="flex items-center justify-between"
-                                    onClick={() =&gt; toggleItem(item)}
-                                  &gt;
-                                    &lt;div className="flex items-center gap-3 min-w-0 flex-1"&gt;
-                                      &lt;div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    onClick={() => toggleItem(item)}
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                                         isSelected
                                           ? 'bg-rose-500 border-rose-500 text-white'
                                           : 'border-neutral-300 dark:border-neutral-600'
-                                      }`}&gt;
-                                        {isSelected &amp;&amp; &lt;Check className="w-3.5 h-3.5" /&gt;}
-                                      &lt;/div&gt;
-                                      &lt;div className="min-w-0"&gt;
-                                        &lt;div className="flex items-center gap-2"&gt;
-                                          &lt;span className="text-sm font-medium text-neutral-800 dark:text-neutral-200"&gt;
+                                      }`}>
+                                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
                                             {item.name}
-                                          &lt;/span&gt;
-                                          {item.isExclusive &amp;&amp; (
-                                            &lt;Badge variant="outline" className="text-[10px] px-1.5 py-0"&gt;
-                                              &lt;Sparkles className="w-2.5 h-2.5 mr-0.5" /&gt;
+                                          </span>
+                                          {item.isExclusive && (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
                                               Exclusive
-                                            &lt;/Badge&gt;
+                                            </Badge>
                                           )}
-                                          {item.requiresNote &amp;&amp; (
-                                            &lt;MessageSquare className="w-3 h-3 text-neutral-400" /&gt;
+                                          {item.requiresNote && (
+                                            <MessageSquare className="w-3 h-3 text-neutral-400" />
                                           )}
-                                        &lt;/div&gt;
-                                        {item.description &amp;&amp; (
-                                          &lt;p className="text-xs text-neutral-500 dark:text-neutral-400 truncate"&gt;
+                                        </div>
+                                        {item.description && (
+                                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                                             {item.description}
-                                          &lt;/p&gt;
+                                          </p>
                                         )}
-                                      &lt;/div&gt;
-                                    &lt;/div&gt;
-                                    &lt;div className="text-right flex-shrink-0 ml-3"&gt;
-                                      &lt;span className={`text-sm font-semibold ${
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex-shrink-0 ml-3">
+                                      <span className={`text-sm font-semibold ${
                                         item.priceType === 'FREE'
                                           ? 'text-green-600 dark:text-green-400'
                                           : 'text-neutral-800 dark:text-neutral-200'
-                                      }`}&gt;
+                                      }`}>
                                         {item.priceType === 'FREE'
                                           ? 'Gratis'
                                           : formatCurrency(item.basePrice)}
-                                      &lt;/span&gt;
-                                      {item.priceType === 'PER_PERSON' &amp;&amp; (
-                                        &lt;p className="text-[10px] text-neutral-400"&gt;/os&lt;/p&gt;
+                                      </span>
+                                      {item.priceType === 'PER_PERSON' && (
+                                        <p className="text-[10px] text-neutral-400">/os</p>
                                       )}
-                                    &lt;/div&gt;
-                                  &lt;/div&gt;
+                                    </div>
+                                  </div>
 
                                   {/* Expanded controls when selected */}
-                                  {isSelected &amp;&amp; selected &amp;&amp; (
-                                    &lt;motion.div
+                                  {isSelected && selected && (
+                                    <motion.div
                                       initial={{ opacity: 0, height: 0 }}
                                       animate={{ opacity: 1, height: 'auto' }}
                                       className="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700 space-y-2"
-                                    &gt;
-                                      &lt;div className="flex items-center justify-between"&gt;
-                                        &lt;div className="flex items-center gap-2"&gt;
-                                          &lt;span className="text-xs text-neutral-500"&gt;Ilość:&lt;/span&gt;
-                                          &lt;div className="flex items-center gap-1"&gt;
-                                            &lt;button
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs text-neutral-500">Ilo\u015b\u0107:</span>
+                                          <div className="flex items-center gap-1">
+                                            <button
                                               type="button"
-                                              onClick={(e) =&gt; { e.stopPropagation(); updateQuantity(item.id, -1) }}
+                                              onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1) }}
                                               className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-                                              disabled={selected.quantity &lt;= 1}
-                                            &gt;
-                                              &lt;Minus className="w-3 h-3" /&gt;
-                                            &lt;/button&gt;
-                                            &lt;span className="w-8 text-center text-sm font-semibold"&gt;
+                                              disabled={selected.quantity <= 1}
+                                            >
+                                              <Minus className="w-3 h-3" />
+                                            </button>
+                                            <span className="w-8 text-center text-sm font-semibold">
                                               {selected.quantity}
-                                            &lt;/span&gt;
-                                            &lt;button
+                                            </span>
+                                            <button
                                               type="button"
-                                              onClick={(e) =&gt; { e.stopPropagation(); updateQuantity(item.id, 1) }}
+                                              onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1) }}
                                               className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-                                            &gt;
-                                              &lt;Plus className="w-3 h-3" /&gt;
-                                            &lt;/button&gt;
-                                          &lt;/div&gt;
-                                        &lt;/div&gt;
-                                        &lt;span className="text-xs font-medium text-rose-600 dark:text-rose-400"&gt;
+                                            >
+                                              <Plus className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <span className="text-xs font-medium text-rose-600 dark:text-rose-400">
                                           {getItemPrice(item, selected.quantity)}
-                                        &lt;/span&gt;
-                                      &lt;/div&gt;
+                                        </span>
+                                      </div>
 
                                       {/* Note field */}
-                                      {(item.requiresNote || editingNote === item.id) &amp;&amp; (
-                                        &lt;div className="flex items-center gap-2"&gt;
-                                          &lt;MessageSquare className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" /&gt;
-                                          &lt;input
+                                      {(item.requiresNote || editingNote === item.id) && (
+                                        <div className="flex items-center gap-2">
+                                          <MessageSquare className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                                          <input
                                             type="text"
                                             value={selected.note}
-                                            onChange={(e) =&gt; updateNote(item.id, e.target.value)}
-                                            onClick={(e) =&gt; e.stopPropagation()}
-                                            placeholder={item.noteLabel || 'Dodaj notatkę...'}
+                                            onChange={(e) => updateNote(item.id, e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            placeholder={item.noteLabel || 'Dodaj notatk\u0119...'}
                                             className="flex-1 text-xs px-2 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
-                                          /&gt;
-                                        &lt;/div&gt;
+                                          />
+                                        </div>
                                       )}
 
-                                      {!item.requiresNote &amp;&amp; editingNote !== item.id &amp;&amp; (
-                                        &lt;button
+                                      {!item.requiresNote && editingNote !== item.id && (
+                                        <button
                                           type="button"
-                                          onClick={(e) =&gt; { e.stopPropagation(); setEditingNote(item.id) }}
+                                          onClick={(e) => { e.stopPropagation(); setEditingNote(item.id) }}
                                           className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-1"
-                                        &gt;
-                                          &lt;MessageSquare className="w-3 h-3" /&gt;
-                                          Dodaj notatkę
-                                        &lt;/button&gt;
+                                        >
+                                          <MessageSquare className="w-3 h-3" />
+                                          Dodaj notatk\u0119
+                                        </button>
                                       )}
-                                    &lt;/motion.div&gt;
+                                    </motion.div>
                                   )}
-                                &lt;/div&gt;
+                                </div>
                               )
                             })}
-                          &lt;/motion.div&gt;
+                          </motion.div>
                         )}
-                      &lt;/AnimatePresence&gt;
-                    &lt;/div&gt;
+                      </AnimatePresence>
+                    </div>
                   )
                 })}
 
                 {/* Summary bar */}
-                {selectedExtras.length &gt; 0 &amp;&amp; (
-                  &lt;motion.div
+                {selectedExtras.length > 0 && (
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between"
-                  &gt;
-                    &lt;div className="flex items-center gap-2"&gt;
-                      &lt;Package className="w-4 h-4 text-rose-600 dark:text-rose-400" /&gt;
-                      &lt;span className="text-sm font-medium text-neutral-800 dark:text-neutral-200"&gt;
-                        {selectedExtras.length} {selectedExtras.length === 1 ? 'usługa' : selectedExtras.length &lt; 5 ? 'usługi' : 'usług'}
-                      &lt;/span&gt;
-                    &lt;/div&gt;
-                    &lt;span className="text-lg font-bold text-rose-600 dark:text-rose-400"&gt;
+                  >
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                      <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                        {selectedExtras.length} {selectedExtras.length === 1 ? 'us\u0142uga' : selectedExtras.length < 5 ? 'us\u0142ugi' : 'us\u0142ug'}
+                      </span>
+                    </div>
+                    <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
                       +{formatCurrency(extrasTotal)}
-                    &lt;/span&gt;
-                  &lt;/motion.div&gt;
+                    </span>
+                  </motion.div>
                 )}
-              &lt;/div&gt;
+              </div>
             )}
-          &lt;/motion.div&gt;
+          </motion.div>
         )}
-      &lt;/AnimatePresence&gt;
-    &lt;/div&gt;
+      </AnimatePresence>
+    </div>
   )
 }
