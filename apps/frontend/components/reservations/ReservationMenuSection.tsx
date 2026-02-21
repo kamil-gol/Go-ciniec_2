@@ -46,31 +46,27 @@ export function ReservationMenuSection({
     try {
       if (hasMenu) {
         await updateMenuMutation.mutateAsync({ reservationId, selection })
-        toast({ title: 'Sukces!', description: 'Menu zostało zaktualizowane' })
+        toast({ title: 'Sukces!', description: 'Menu zosta\u0142o zaktualizowane' })
       } else {
         await selectMenuMutation.mutateAsync({ reservationId, selection })
-        toast({ title: 'Sukces!', description: 'Menu zostało dodane do rezerwacji' })
+        toast({ title: 'Sukces!', description: 'Menu zosta\u0142o dodane do rezerwacji' })
       }
       setShowSelectionDialog(false)
       onMenuUpdated?.()
     } catch (error: any) {
-      toast({ title: 'Błąd', description: error.message || 'Nie udało się zapisać menu', variant: 'destructive' })
+      toast({ title: 'B\u0142\u0105d', description: error.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 menu', variant: 'destructive' })
     }
   }
 
   const handleDeleteMenu = async () => {
-    if (!confirm('Czy na pewno chcesz usunąć wybrane menu?')) return
+    if (!confirm('Czy na pewno chcesz usun\u0105\u0107 wybrane menu?')) return
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
-      toast({ title: 'Sukces', description: 'Menu zostało usunięte' })
+      toast({ title: 'Sukces', description: 'Menu zosta\u0142o usuni\u0119te' })
       onMenuUpdated?.()
     } catch (error: any) {
-      toast({ title: 'Błąd', description: 'Nie udało się usunąć menu', variant: 'destructive' })
+      toast({ title: 'B\u0142\u0105d', description: 'Nie uda\u0142o si\u0119 usun\u0105\u0107 menu', variant: 'destructive' })
     }
-  }
-
-  const handleCloseDialog = () => {
-    setShowSelectionDialog(false)
   }
 
   const buildInitialSelection = () => {
@@ -141,7 +137,7 @@ export function ReservationMenuSection({
               <div>
                 <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {'Dodaj menu do rezerwacji aby zobaczyć szczegóły'}
+                  Dodaj menu do rezerwacji aby zobaczy\u0107 szczeg\u00f3\u0142y
                 </p>
               </div>
               <Button
@@ -174,7 +170,7 @@ export function ReservationMenuSection({
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
                   <Edit className="mr-2 h-4 w-4" />
-                  {'Zmień'}
+                  Zmie\u0144
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleDeleteMenu} className="text-red-600 hover:text-red-700">
                   <Trash2 className="h-4 w-4" />
@@ -187,12 +183,12 @@ export function ReservationMenuSection({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-orange-600" />
-                  <span className="font-semibold text-sm">{'Pakiet: '}{packageName}</span>
+                  <span className="font-semibold text-sm">Pakiet: {packageName}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>{'Dor. '}<strong>{pricePerAdult}{' zł'}</strong></span>
-                  <span>{'Dz. '}<strong>{pricePerChild}{' zł'}</strong></span>
-                  <span>{'Mal. '}<strong>{pricePerToddler}{' zł'}</strong></span>
+                  <span>Dor. <strong>{pricePerAdult} z\u0142</strong></span>
+                  <span>Dz. <strong>{pricePerChild} z\u0142</strong></span>
+                  <span>Mal. <strong>{pricePerToddler} z\u0142</strong></span>
                 </div>
               </div>
               {packageDescription && (
@@ -227,7 +223,7 @@ export function ReservationMenuSection({
                           >
                             <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
                             {dish.quantity > 1 && (
-                              <span className="text-orange-600 font-bold">{'×'}{dish.quantity}</span>
+                              <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
                             )}
                           </span>
                         ))}
@@ -243,7 +239,7 @@ export function ReservationMenuSection({
               <div className="bg-white dark:bg-black/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="h-4 w-4 text-amber-600" />
-                  <span className="font-semibold text-sm">{'Opcje dodatkowe ('}{selectedOptions.length}{')'}</span>
+                  <span className="font-semibold text-sm">Opcje dodatkowe ({selectedOptions.length})</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedOptions.map((opt: any, idx: number) => (
@@ -253,7 +249,7 @@ export function ReservationMenuSection({
                     >
                       <Sparkles className="h-3 w-3 text-amber-600" />
                       <span className="font-medium">{opt.optionName || opt.name}</span>
-                      <span className="text-amber-700 font-bold">{opt.priceAmount}{' zł'}</span>
+                      <span className="text-amber-700 font-bold">{opt.priceAmount} z\u0142</span>
                     </span>
                   ))}
                 </div>
@@ -265,12 +261,9 @@ export function ReservationMenuSection({
 
       {/* Selection Dialog */}
       <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
-        <DialogContent 
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
-          onClose={handleCloseDialog}
-        >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
+            <DialogTitle>{hasMenu ? 'Zmie\u0144 menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
           </DialogHeader>
           <MenuSelectionFlow
             eventTypeId={eventTypeId}
