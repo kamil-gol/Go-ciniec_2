@@ -1,22 +1,52 @@
-FROM node:20-slim
+# ============================================
+# Multi-stage Dockerfile for Backend
+# ============================================
+# Usage:
+#   target: dev   → development with hot-reload
+#   target: prod  → optimized production image
+# ============================================
+
+# === Stage: base ===
+FROM node:20-slim AS base
 WORKDIR /app
 
-# Install OpenSSL and DejaVu fonts (full UTF-8/Polish support)
+# System dependencies (OpenSSL for Prisma, fonts for PDF)
 RUN apt-get update && \
-    apt-get install -y openssl fonts-dejavu-core && \
+    apt-get install -y --no-install-recommends openssl fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
 COPY package*.json ./
+
+# === Stage: dev ===
+FROM base AS dev
 RUN npm install
+COPY prisma ./prisma/
+RUN npx prisma generate
+EXPOSE 3001
+CMD ["npm", "run", "dev"]
 
-# Copy source
+# === Stage: build ===
+FROM base AS build
+RUN npm ci --include=dev
 COPY . .
+RUN npx prisma generate
+RUN npm run build
 
-# Generate Prisma Client
+# === Stage: prod ===
+FROM node:20-slim AS prod
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl fonts-dejavu-core && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/fonts ./fonts
+
 RUN npx prisma generate
 
 EXPOSE 3001
-
-# Run in dev mode
-CMD ["npm", "run", "dev"]
+CMD ["node", "dist/index.js"]
