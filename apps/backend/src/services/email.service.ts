@@ -2,6 +2,8 @@
  * Email Service
  * Nodemailer-based email sending with HTML templates
  *
+ * Company name & footer text are loaded dynamically from CompanySettings DB.
+ *
  * Required env vars:
  *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
  *
@@ -15,6 +17,7 @@
 
 import nodemailer from 'nodemailer';
 import logger from '@utils/logger';
+import companySettingsService from './company-settings.service';
 
 // ═══════════════════════════════════════════
 // Types
@@ -78,6 +81,35 @@ export interface ReservationConfirmationData {
   depositAmount?: string;
   depositDueDate?: string;
   notes?: string;
+}
+
+// ═══════════════════════════════════════════
+// Company Info Helper
+// ═══════════════════════════════════════════
+
+interface CompanyInfo {
+  name: string;
+  footerText: string;
+}
+
+/**
+ * Fetch company name from DB for email templates.
+ * Falls back to 'Gościniec' if DB is unavailable.
+ */
+async function getCompanyInfo(): Promise<CompanyInfo> {
+  try {
+    const settings = await companySettingsService.getSettings();
+    const name = settings.companyName || 'Gościniec';
+    return {
+      name,
+      footerText: `Ta wiadomość została wysłana automatycznie z systemu rezerwacji ${name}.`,
+    };
+  } catch {
+    return {
+      name: 'Gościniec',
+      footerText: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
+    };
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -165,6 +197,7 @@ const emailService = {
    * Send reservation confirmation with extras list
    */
   async sendReservationConfirmation(to: string, data: ReservationConfirmationData, pdfBuffer?: Buffer): Promise<boolean> {
+    const company = await getCompanyInfo();
     const subject = `✅ Potwierdzenie rezerwacji: ${data.eventType} — ${data.reservationDate}`;
 
     // Build extras section HTML
@@ -220,6 +253,7 @@ const emailService = {
     const html = buildHtmlTemplate({
       title: 'Potwierdzenie rezerwacji',
       preheader: `Rezerwacja ${data.eventType} — ${data.reservationDate} potwierdzona`,
+      companyName: company.name,
       body: `
         <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
         <p>Potwierdzamy przyjęcie rezerwacji:</p>
@@ -264,7 +298,7 @@ const emailService = {
         <p>W razie pytań lub zmian prosimy o kontakt.</p>
         ${pdfBuffer ? '<p>Szczegóły rezerwacji w załączniku PDF.</p>' : ''}
       `,
-      footer: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
+      footer: company.footerText,
     });
 
     const attachments = pdfBuffer ? [{
@@ -280,11 +314,13 @@ const emailService = {
    * Send deposit upcoming reminder (X days before due)
    */
   async sendDepositReminder(to: string, data: DepositReminderData): Promise<boolean> {
+    const company = await getCompanyInfo();
     const subject = `Przypomnienie: zaliczka ${data.depositAmount} zł — termin za ${data.daysLeft} dni`;
 
     const html = buildHtmlTemplate({
       title: 'Przypomnienie o zaliczce',
       preheader: `Termin płatności za ${data.daysLeft} dni`,
+      companyName: company.name,
       body: `
         <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
         <p>Przypominamy o zbliżającym się terminie płatności zaliczki:</p>
@@ -312,7 +348,7 @@ const emailService = {
         </table>
         <p>Prosimy o terminowe uregulowanie płatności. W razie pytań prosimy o kontakt.</p>
       `,
-      footer: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
+      footer: company.footerText,
     });
 
     return this.send({ to, subject, html });
@@ -322,11 +358,13 @@ const emailService = {
    * Send deposit overdue notification
    */
   async sendDepositOverdueNotice(to: string, data: DepositOverdueData): Promise<boolean> {
+    const company = await getCompanyInfo();
     const subject = `⚠️ Zaległa zaliczka: ${data.depositAmount} zł — termin minął ${data.daysOverdue} dni temu`;
 
     const html = buildHtmlTemplate({
       title: 'Zaległa zaliczka — prosimy o kontakt',
       preheader: `Termin płatności minął ${data.daysOverdue} dni temu`,
+      companyName: company.name,
       body: `
         <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
         <p style="color:#dc2626;">Termin płatności zaliczki już minął. Prosimy o jak najszybsze uregulowanie należności:</p>
@@ -351,7 +389,7 @@ const emailService = {
         <p>W przypadku braku wpłaty zastrzegamy sobie prawo do anulowania rezerwacji.</p>
         <p>Jeśli płatność została już dokonana, prosimy o informację — zaktualizujemy status w systemie.</p>
       `,
-      footer: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
+      footer: company.footerText,
     });
 
     return this.send({ to, subject, html });
@@ -369,6 +407,7 @@ const emailService = {
     hallName: string;
     eventType: string;
   }, pdfBuffer?: Buffer): Promise<boolean> {
+    const company = await getCompanyInfo();
     const subject = `✅ Potwierdzenie wpłaty zaliczki: ${data.depositAmount} zł`;
 
     const methodLabels: Record<string, string> = {
@@ -381,6 +420,7 @@ const emailService = {
     const html = buildHtmlTemplate({
       title: 'Potwierdzenie wpłaty zaliczki',
       preheader: `Zaliczka ${data.depositAmount} zł została zaksięgowana`,
+      companyName: company.name,
       body: `
         <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
         <p style="color:#16a34a;">Potwierdzamy otrzymanie wpłaty zaliczki:</p>
@@ -408,7 +448,7 @@ const emailService = {
         </table>
         <p>Dziękujemy za wpłatę! ${pdfBuffer ? 'Potwierdzenie w załączniku PDF.' : ''}</p>
       `,
-      footer: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
+      footer: company.footerText,
     });
 
     const attachments = pdfBuffer ? [{
@@ -450,7 +490,10 @@ function buildHtmlTemplate(opts: {
   preheader: string;
   body: string;
   footer: string;
+  companyName?: string;
 }): string {
+  const displayName = opts.companyName || 'Gościniec';
+
   return `
 <!DOCTYPE html>
 <html lang="pl">
@@ -472,7 +515,7 @@ function buildHtmlTemplate(opts: {
   <span style="display:none;max-height:0;overflow:hidden;">${opts.preheader}</span>
   <div class="wrapper">
     <div class="header">
-      <h1>🏛️ Gościniec</h1>
+      <h1>🏛️ ${displayName}</h1>
     </div>
     <div class="content">
       ${opts.body}
