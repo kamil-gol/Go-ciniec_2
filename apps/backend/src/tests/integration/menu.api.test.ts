@@ -81,7 +81,7 @@ async function seedMenuData(): Promise<MenuSeedData> {
     },
   });
 
-  // Menu Package
+  // Menu Package — NOTE: MenuPackage model has NO isActive field
   const menuPackage = await prismaTest.menuPackage.create({
     data: {
       menuTemplateId: menuTemplate.id,
@@ -94,7 +94,6 @@ async function seedMenuData(): Promise<MenuSeedData> {
       color: '#FFD700',
       icon: '⭐',
       displayOrder: 1,
-      isActive: true,
     },
   });
 
@@ -112,18 +111,22 @@ async function seedMenuData(): Promise<MenuSeedData> {
   });
 
   // Reservation (for menu selection tests)
+  // Schema fields: date (String), startTime, endTime, adults, children, toddlers, guests, totalPrice, status
   const reservation = await prismaTest.reservation.create({
     data: {
       hallId: base.hall1.id,
       clientId: base.client1.id,
       eventTypeId: base.eventType1.id,
-      eventDate: new Date('2026-09-15'),
+      createdById: base.admin.id,
+      date: '2026-09-15',
       startTime: '16:00',
       endTime: '04:00',
-      guestCount: 120,
+      adults: 80,
+      children: 20,
+      toddlers: 10,
+      guests: 110,
       totalPrice: 30000,
       status: 'CONFIRMED',
-      createdById: base.admin.id,
     },
   });
 
@@ -936,14 +939,13 @@ describe('Menu API — Integration Tests', () => {
           .set(authHeader('ADMIN'))
           .send({
             packageId: seed.menuPackage.id,
-            category: 'ZUPY',
+            categoryId: seed.dishCategory.id,
             minSelect: 1,
             maxSelect: 2,
             isRequired: true,
             isEnabled: true,
           });
         expect([200, 201, 400]).toContain(res.status);
-        // 400 if DishCategory enum doesn't match — that's valid behavior
       });
     });
 
