@@ -38,6 +38,8 @@ import {
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { CreateReservationDiscountSection } from '@/components/reservations/CreateReservationDiscountSection'
+import { CreateReservationExtrasSection } from '@/components/service-extras/CreateReservationExtrasSection'
+import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
 import { useQueryClient } from '@tanstack/react-query'
 
 // ═══ STEP CONFIGURATION ═══
@@ -159,6 +161,7 @@ export function CreateReservationForm({
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
+  const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([])
 
   const { data: halls } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
@@ -996,6 +999,13 @@ export function CreateReservationForm({
         control={control}
         register={register}
         totalPrice={totalWithExtras}
+      />
+
+      {/* Service Extras — Sprint 8 */}
+      <CreateReservationExtrasSection
+        selectedExtras={selectedExtras}
+        onExtrasChange={setSelectedExtras}
+        totalGuests={totalGuests}
       />
     </div>
   )
