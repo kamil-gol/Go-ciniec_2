@@ -570,7 +570,17 @@ export class ReservationService {
       include: {
         ...RESERVATION_INCLUDE,
         menuSnapshot: true,
-        deposits: true
+        deposits: true,
+        reservationExtras: {
+          include: {
+            serviceItem: {
+              include: {
+                category: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
       }
     });
 
