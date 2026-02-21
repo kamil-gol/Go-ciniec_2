@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 import * as fs from 'fs';
+import companySettingsService from './company-settings.service';
 
 interface DishSelection {
   dishId: string;
@@ -219,15 +220,39 @@ export class PDFService {
   private restaurantData: RestaurantData;
 
   constructor() {
+    // Static fallbacks — used only if DB is unreachable
     this.restaurantData = {
-      name: process.env.RESTAURANT_NAME || 'Gosciniec Rodzinny',
-      address: process.env.RESTAURANT_ADDRESS || 'ul. Przykladowa 123, 00-000 Miasto',
-      phone: process.env.RESTAURANT_PHONE || '+48 123 456 789',
-      email: process.env.RESTAURANT_EMAIL || 'kontakt@gosciniecrodzinny.pl',
-      website: process.env.RESTAURANT_WEBSITE || 'www.gosciniecrodzinny.pl',
-      nip: process.env.RESTAURANT_NIP || '123-456-78-90',
+      name: process.env.RESTAURANT_NAME || 'Gościniec Rodzinny',
+      address: process.env.RESTAURANT_ADDRESS || '',
+      phone: process.env.RESTAURANT_PHONE || '',
+      email: process.env.RESTAURANT_EMAIL || '',
+      website: process.env.RESTAURANT_WEBSITE || '',
+      nip: process.env.RESTAURANT_NIP || '',
     };
     this.checkFontsAvailability();
+  }
+
+  /**
+   * Refresh restaurant data from CompanySettings in DB.
+   * Called before every PDF generation to ensure fresh data.
+   * Falls back to env vars / constructor defaults if DB unavailable.
+   */
+  private async refreshRestaurantData(): Promise<void> {
+    try {
+      const settings = await companySettingsService.getSettings();
+      this.restaurantData = {
+        name: settings.companyName || this.restaurantData.name,
+        address: [settings.address, settings.postalCode, settings.city]
+          .filter(Boolean)
+          .join(', ') || this.restaurantData.address,
+        phone: settings.phone || this.restaurantData.phone,
+        email: settings.email || this.restaurantData.email,
+        website: settings.website || this.restaurantData.website,
+        nip: settings.nip || this.restaurantData.nip,
+      };
+    } catch (error) {
+      console.warn('[PDF Service] Could not load company settings from DB, using fallbacks');
+    }
   }
 
   private checkFontsAvailability(): void {
@@ -267,6 +292,8 @@ export class PDFService {
   }
 
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+
     return new Promise((resolve, reject) => {
       console.log(`[PDF Service] Generating PDF for reservation ${reservation.id}`);
 
@@ -298,6 +325,8 @@ export class PDFService {
   }
 
   async generatePaymentConfirmationPDF(data: PaymentConfirmationData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+
     return new Promise((resolve, reject) => {
       console.log(`[PDF Service] Generating payment confirmation PDF for deposit ${data.depositId}`);
 
@@ -305,9 +334,9 @@ export class PDFService {
         size: 'A4',
         margin: 50,
         info: {
-          Title: `Potwierdzenie wplaty ${data.depositId}`,
+          Title: `Potwierdzenie wpłaty ${data.depositId}`,
           Author: this.restaurantData.name,
-          Subject: 'Potwierdzenie wplaty zaliczki',
+          Subject: 'Potwierdzenie wpłaty zaliczki',
         },
       });
 
@@ -331,6 +360,8 @@ export class PDFService {
   // ═══════════════ MENU CARD PDF ═══════════════
 
   async generateMenuCardPDF(data: MenuCardPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+
     return new Promise((resolve, reject) => {
       console.log(`[PDF Service] Generating menu card PDF: ${data.templateName}`);
 
@@ -386,7 +417,7 @@ export class PDFService {
     doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Dane klienta');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Imie i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
+    doc.text(`Imię i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
     if (reservation.client.email) {
       doc.text(`Email: ${reservation.client.email}`);
     }
@@ -399,7 +430,7 @@ export class PDFService {
     this.addSeparator(doc);
 
     doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Szczegoly rezerwacji');
+    doc.fontSize(14).font(this.getBoldFont()).text('Szczegóły rezerwacji');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
 
@@ -408,7 +439,7 @@ export class PDFService {
 
     // US-6.2: Hall name removed from PDF
     /* istanbul ignore next -- customEventType fallback */
-    const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie okreslono';
+    const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie określono';
     doc.text(`Typ wydarzenia: ${eventTypeName}`);
 
     if (reservation.startDateTime && reservation.endDateTime) {
@@ -420,9 +451,9 @@ export class PDFService {
       doc.text(`Godzina: ${reservation.startTime} - ${reservation.endTime}`);
     }
 
-    doc.text(`Liczba gosci: ${reservation.guests}`);
+    doc.text(`Liczba gości: ${reservation.guests}`);
     if (reservation.adults > 0) {
-      doc.text(`  - Dorosli: ${reservation.adults} os.`, { indent: 20 });
+      doc.text(`  - Dorośli: ${reservation.adults} os.`, { indent: 20 });
     }
     /* istanbul ignore next -- children display */
     if (reservation.children > 0) {
@@ -468,7 +499,7 @@ export class PDFService {
     this.addSeparator(doc);
 
     doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Kalkulacja kosztow');
+    doc.fontSize(14).font(this.getBoldFont()).text('Kalkulacja kosztów');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
 
@@ -481,21 +512,21 @@ export class PDFService {
     if (reservation.adults > 0 && reservation.pricePerAdult > 0) {
       const adultTotal = reservation.adults * Number(reservation.pricePerAdult);
       doc.text(
-        `Dorosli: ${reservation.adults} os. x ${this.formatCurrency(reservation.pricePerAdult)} = ${this.formatCurrency(adultTotal)}`
+        `Dorośli: ${reservation.adults} os. × ${this.formatCurrency(reservation.pricePerAdult)} = ${this.formatCurrency(adultTotal)}`
       );
     }
     /* istanbul ignore next -- children pricing */
     if (reservation.children > 0 && reservation.pricePerChild > 0) {
       const childTotal = reservation.children * Number(reservation.pricePerChild);
       doc.text(
-        `Dzieci (4-12 lat): ${reservation.children} os. x ${this.formatCurrency(reservation.pricePerChild)} = ${this.formatCurrency(childTotal)}`
+        `Dzieci (4-12 lat): ${reservation.children} os. × ${this.formatCurrency(reservation.pricePerChild)} = ${this.formatCurrency(childTotal)}`
       );
     }
     /* istanbul ignore next -- toddler pricing */
     if (reservation.toddlers > 0 && reservation.pricePerToddler > 0) {
       const toddlerTotal = reservation.toddlers * Number(reservation.pricePerToddler);
       doc.text(
-        `Maluchy (0-3 lata): ${reservation.toddlers} os. x ${this.formatCurrency(reservation.pricePerToddler)} = ${this.formatCurrency(toddlerTotal)}`
+        `Maluchy (0-3 lata): ${reservation.toddlers} os. × ${this.formatCurrency(reservation.pricePerToddler)} = ${this.formatCurrency(toddlerTotal)}`
       );
     }
 
@@ -503,7 +534,7 @@ export class PDFService {
     const extrasTotalCalc = (reservation.reservationExtras || [])
       .reduce((sum, e) => sum + (Number(e.quantity) * Number(e.unitPrice)), 0);
     if (extrasTotalCalc > 0) {
-      doc.text(`Uslugi dodatkowe: ${this.formatCurrency(extrasTotalCalc)}`);
+      doc.text(`Usługi dodatkowe: ${this.formatCurrency(extrasTotalCalc)}`);
     }
 
     doc.moveDown(0.5);
@@ -530,9 +561,9 @@ export class PDFService {
       const dueDate = deposit.dueDate instanceof Date
         ? this.formatDate(deposit.dueDate)
         : deposit.dueDate;
-      doc.text(`Termin wplaty: ${dueDate}`);
+      doc.text(`Termin wpłaty: ${dueDate}`);
 
-      const depositStatus = deposit.paid ? 'Oplacona' : 'Nieoplacona';
+      const depositStatus = deposit.paid ? 'Opłacona' : 'Nieopłacona';
       doc.font(this.getBoldFont()).text(`Status: ${depositStatus}`);
     }
 
@@ -546,7 +577,7 @@ export class PDFService {
     this.addHeader(doc);
 
     doc.moveDown(2);
-    doc.fontSize(20).font(this.getBoldFont()).fillColor('#16a34a').text('POTWIERDZENIE WPLATY ZALICZKI', {
+    doc.fontSize(20).font(this.getBoldFont()).fillColor('#16a34a').text('POTWIERDZENIE WPŁATY ZALICZKI', {
       align: 'center',
     });
 
@@ -559,22 +590,22 @@ export class PDFService {
     this.addSeparator(doc);
 
     doc.moveDown(1);
-    doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Szczegoly wplaty');
+    doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Szczegóły wpłaty');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
 
     const methodLabels: Record<string, string> = {
       TRANSFER: 'Przelew bankowy',
-      CASH: 'Gotowka',
+      CASH: 'Gotówka',
       BLIK: 'BLIK',
-      CARD: 'Karta platnicza',
+      CARD: 'Karta płatnicza',
     };
 
     doc.font(this.getBoldFont()).text(`Kwota: ${this.formatCurrency(data.amount)}`);
     doc.font(this.getRegularFont());
-    doc.text(`Data wplaty: ${this.formatDate(data.paidAt)}`);
+    doc.text(`Data wpłaty: ${this.formatDate(data.paidAt)}`);
     /* istanbul ignore next -- payment method fallback */
-    doc.text(`Metoda platnosci: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
+    doc.text(`Metoda płatności: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
     if (data.paymentReference) {
       doc.text(`Numer referencyjny: ${data.paymentReference}`);
     }
@@ -586,7 +617,7 @@ export class PDFService {
     doc.fontSize(14).font(this.getBoldFont()).text('Dane klienta');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Imie i nazwisko: ${data.client.firstName} ${data.client.lastName}`);
+    doc.text(`Imię i nazwisko: ${data.client.firstName} ${data.client.lastName}`);
     if (data.client.email) {
       doc.text(`Email: ${data.client.email}`);
     }
@@ -599,7 +630,7 @@ export class PDFService {
     this.addSeparator(doc);
 
     doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Szczegoly rezerwacji');
+    doc.fontSize(14).font(this.getBoldFont()).text('Szczegóły rezerwacji');
     doc.moveDown(0.5);
     doc.fontSize(11).font(this.getRegularFont());
     doc.text(`Numer rezerwacji: ${data.reservation.id}`);
@@ -609,12 +640,12 @@ export class PDFService {
     if (data.reservation.eventType) {
       doc.text(`Typ wydarzenia: ${data.reservation.eventType}`);
     }
-    doc.text(`Liczba gosci: ${data.reservation.guests}`);
-    doc.text(`Calkowita cena rezerwacji: ${this.formatCurrency(data.reservation.totalPrice)}`);
+    doc.text(`Liczba gości: ${data.reservation.guests}`);
+    doc.text(`Całkowita cena rezerwacji: ${this.formatCurrency(data.reservation.totalPrice)}`);
 
     doc.moveDown(1.5);
     doc.fontSize(11).fillColor('#16a34a');
-    doc.font(this.getBoldFont()).text('Wplata zaksiegowana pomyslnie', { align: 'center' });
+    doc.font(this.getBoldFont()).text('Wpłata zaksięgowana pomyślnie', { align: 'center' });
     doc.fillColor('#000000');
 
     this.addFooter(doc);
@@ -685,7 +716,7 @@ export class PDFService {
       doc.text(pkg.name, 65, pkgHeaderY + 12, { width: pageWidth - 30 });
 
       doc.fontSize(9).font(this.getRegularFont()).fillColor('#ecf0f1');
-      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosla`];
+      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosła`];
       if (pkg.pricePerChild > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerChild)}/dziecko`);
       if (pkg.pricePerToddler > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerToddler)}/maluch`);
       doc.text(priceParts.join('  |  '), 65, pkgHeaderY + 38, { width: pageWidth - 30 });
@@ -738,8 +769,8 @@ export class PDFService {
 
             let marker = '  ';
             /* istanbul ignore next -- dish markers */
-            if (dish.isRecommended) marker = '* ';
-            else if (dish.isDefault) marker = '> ';
+            if (dish.isRecommended) marker = '★ ';
+            else if (dish.isDefault) marker = '▸ ';
 
             doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
             doc.text(`  ${marker}${dish.name}`, { indent: 15 });
@@ -822,7 +853,7 @@ export class PDFService {
     this.addSeparator(doc);
     doc.moveDown(0.5);
     doc.fontSize(8).font(this.getRegularFont()).fillColor('#999999');
-    doc.text('* = polecane przez szefa kuchni  |  > = domyslny wybor  |  - = dostepne', {
+    doc.text('★ = polecane przez szefa kuchni  |  ▸ = domyślny wybór  |  - = dostępne', {
       align: 'center',
     });
 
@@ -854,16 +885,16 @@ export class PDFService {
     doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555');
     const guestParts = [];
     if (menuSnapshot.adultsCount > 0) {
-      guestParts.push(`${menuSnapshot.adultsCount} doroslych`);
+      guestParts.push(`${menuSnapshot.adultsCount} dorosłych`);
     }
     if (menuSnapshot.childrenCount > 0) {
       guestParts.push(`${menuSnapshot.childrenCount} dzieci`);
     }
     if (menuSnapshot.toddlersCount > 0) {
-      guestParts.push(`${menuSnapshot.toddlersCount} maluchow`);
+      guestParts.push(`${menuSnapshot.toddlersCount} maluchów`);
     }
     if (guestParts.length > 0) {
-      doc.text(`Liczba osob dla menu: ${guestParts.join(', ')}`);
+      doc.text(`Liczba osób dla menu: ${guestParts.join(', ')}`);
       doc.moveDown(0.5);
     }
 
@@ -871,7 +902,7 @@ export class PDFService {
     const dishSelections = menuSnapshot.menuData?.dishSelections || [];
     if (dishSelections.length === 0) {
       doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
-      doc.text('Brak wybranych dan');
+      doc.text('Brak wybranych dań');
     } else {
       dishSelections.forEach((category: CategorySelection, categoryIndex: number) => {
         doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
@@ -885,7 +916,7 @@ export class PDFService {
             ? dish.quantity.toString()
             : dish.quantity.toFixed(1);
 
-          doc.text(`  ${quantityText}x ${dish.dishName}`, { indent: 15 });
+          doc.text(`  ${quantityText}× ${dish.dishName}`, { indent: 15 });
 
           if (dish.allergens && dish.allergens.length > 0) {
             const allergenLabels = dish.allergens
@@ -929,7 +960,7 @@ export class PDFService {
     this.addSeparator(doc);
     doc.moveDown(1);
 
-    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Uslugi dodatkowe');
+    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Usługi dodatkowe');
     doc.moveDown(0.5);
 
     // Group extras by category
@@ -961,7 +992,7 @@ export class PDFService {
         // FIX: Calculate item total from quantity * unitPrice for accuracy
         const itemTotal = Number(item.quantity) * Number(item.unitPrice);
         doc.text(
-          `  ${item.quantity}x ${item.serviceItem.name} @ ${this.formatCurrency(item.unitPrice)}${priceLabel} = ${this.formatCurrency(itemTotal)}${statusLabel}`,
+          `  ${item.quantity}× ${item.serviceItem.name} @ ${this.formatCurrency(item.unitPrice)}${priceLabel} = ${this.formatCurrency(itemTotal)}${statusLabel}`,
           { indent: 15 }
         );
 
@@ -980,7 +1011,7 @@ export class PDFService {
 
     doc.moveDown(0.3);
     doc.fontSize(12).font(this.getBoldFont()).fillColor('#000000');
-    doc.text(`Razem uslugi dodatkowe: ${this.formatCurrency(extrasTotal)}`);
+    doc.text(`Razem usługi dodatkowe: ${this.formatCurrency(extrasTotal)}`);
   }
 
   private addMenuSelectionSectionLegacy(
@@ -997,7 +1028,7 @@ export class PDFService {
 
     if (!menuData.dishSelections || menuData.dishSelections.length === 0) {
       doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
-      doc.text('Brak wybranych dan');
+      doc.text('Brak wybranych dań');
       return;
     }
 
@@ -1013,7 +1044,7 @@ export class PDFService {
           ? dish.quantity.toString()
           : dish.quantity.toFixed(1);
 
-        doc.text(`  ${quantityText}x ${dish.dishName}`, { indent: 15 });
+        doc.text(`  ${quantityText}× ${dish.dishName}`, { indent: 15 });
 
         if (dish.allergens && dish.allergens.length > 0) {
           const allergenLabels = dish.allergens
@@ -1040,10 +1071,15 @@ export class PDFService {
 
     doc.moveDown(0.3);
     doc.fontSize(9).font(this.getRegularFont()).fillColor('#7f8c8d');
-    doc.text(this.restaurantData.address, { align: 'center' });
-    doc.text(`Tel: ${this.restaurantData.phone} | Email: ${this.restaurantData.email}`, {
-      align: 'center',
-    });
+    if (this.restaurantData.address) {
+      doc.text(this.restaurantData.address, { align: 'center' });
+    }
+    const contactParts = [];
+    if (this.restaurantData.phone) contactParts.push(`Tel: ${this.restaurantData.phone}`);
+    if (this.restaurantData.email) contactParts.push(`Email: ${this.restaurantData.email}`);
+    if (contactParts.length > 0) {
+      doc.text(contactParts.join(' | '), { align: 'center' });
+    }
     if (this.restaurantData.website) {
       doc.text(this.restaurantData.website, { align: 'center' });
     }
@@ -1065,9 +1101,9 @@ export class PDFService {
   private addStatusBadge(doc: PDFKit.PDFDocument, status: string): void {
     const statusMap: Record<string, { label: string; color: string }> = {
       RESERVED: { label: 'Lista rezerwowa', color: '#3498db' },
-      PENDING: { label: 'Oczekujaca', color: '#f39c12' },
+      PENDING: { label: 'Oczekująca', color: '#f39c12' },
       CONFIRMED: { label: 'Potwierdzona', color: '#27ae60' },
-      COMPLETED: { label: 'Zakonczona', color: '#95a5a6' },
+      COMPLETED: { label: 'Zakończona', color: '#95a5a6' },
       CANCELLED: { label: 'Anulowana', color: '#e74c3c' },
     };
 
@@ -1095,7 +1131,7 @@ export class PDFService {
 
     doc.fontSize(8).fillColor('#7f8c8d').font(this.getRegularFont());
     doc.text(
-      'Dziekujemy za wybranie naszej restauracji. W razie pytan prosimy o kontakt.',
+      'Dziękujemy za wybranie naszej restauracji. W razie pytań prosimy o kontakt.',
       50,
       bottomY,
       {
