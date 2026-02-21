@@ -36,7 +36,7 @@ show_help() {
   echo "    db        Start dev PostgreSQL + Redis containers"
   echo "    db:stop   Stop dev containers"
   echo "    db:logs   Show dev container logs"
-  echo "    migrate   Run Prisma migrations on dev DB"
+  echo "    migrate   Sync dev DB schema (prisma db push)"
   echo "    seed      Seed dev DB (full + service extras)"
   echo "    backend   Start backend API on :4001"
   echo "    frontend  Start frontend on :4000"
@@ -74,11 +74,19 @@ cmd_db_logs() {
 }
 
 cmd_migrate() {
-  log "Running Prisma migrations on dev DB..."
+  log "Syncing dev DB schema with prisma db push..."
   cd "$PROJECT_ROOT/apps/backend"
-  npx dotenv -e "$ENV_FILE" -- npx prisma migrate deploy
+  # Use db push for dev — creates ALL tables from schema.prisma
+  # (baseline migration is incomplete for fresh DBs)
+  npx dotenv -e "$ENV_FILE" -- npx prisma db push --accept-data-loss
   npx dotenv -e "$ENV_FILE" -- npx prisma generate
-  log "✅ Migrations applied"
+  log "✅ Dev DB schema synced"
+
+  # Also apply SQL functions from migration 0002
+  log "Applying SQL functions..."
+  PGPASSWORD=rezerwacje_dev_2026 psql -h localhost -p 5434 -U rezerwacje_dev -d rezerwacje_dev \
+    -f "$PROJECT_ROOT/apps/backend/prisma/migrations/0002_queue_sql_functions/migration.sql" \
+    2>/dev/null && log "✅ SQL functions applied" || warn "⚠️  SQL functions skipped (psql not available or already applied)"
 }
 
 cmd_seed() {
