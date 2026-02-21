@@ -1,51 +1,86 @@
-# docker-compose.dev.yml
-# Development environment — runs alongside production
-# Ports: PostgreSQL 5434, Redis 6380, Backend 4001, Frontend 4000
+# ============================================
+# Docker Compose — Development Override
+# ============================================
+# Usage: docker compose -p rezerwacje-dev -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up -d
+#    or: make dev
+#
+# Features:
+#   - Runs alongside prod (separate project, containers, ports)
+#   - Source code mounted as volumes (hot-reload)
+#   - Dev commands (npm run dev)
+#   - Debug-friendly settings
+#   - Uses .env.dev for environment variables
+# ============================================
 
 services:
-  # Dev PostgreSQL — osobna baza, port 5434
-  postgres-dev:
-    image: postgres:16-alpine
+  postgres:
     container_name: rezerwacje-db-dev
-    environment:
-      POSTGRES_USER: rezerwacje_dev
-      POSTGRES_PASSWORD: rezerwacje_dev_2026
-      POSTGRES_DB: rezerwacje_dev
-      POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
     ports:
-      - '5434:5432'
+      - '${DB_PORT:-5433}:5432'
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-    networks:
-      - rezerwacje-dev-network
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U rezerwacje_dev -d rezerwacje_dev']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./apps/backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 
-  # Dev Redis — port 6380
-  redis-dev:
-    image: redis:7-alpine
+  redis:
     container_name: rezerwacje-cache-dev
     ports:
-      - '6380:6379'
+      - '${REDIS_PORT:-6380}:6379'
     volumes:
-      - redis_dev_data:/data
-    networks:
-      - rezerwacje-dev-network
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - redis_data_dev:/data
 
-networks:
-  rezerwacje-dev-network:
-    driver: bridge
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: rezerwacje-api-dev
+    env_file:
+      - .env.dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      LOG_LEVEL: debug
+    ports:
+      - '${API_PORT:-4001}:3001'
+      - '9229:9229'  # Node.js debugger
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    networks:
+      - rezerwacje-network
+    command: npm run dev
+    restart: 'no'
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: rezerwacje-web-dev
+    env_file:
+      - .env.dev
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4001/api}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Rezerwacje DEV}
+    ports:
+      - '${WEB_PORT:-4000}:3000'
+    depends_on:
+      - backend
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - rezerwacje-network
+    command: npm run dev
+    restart: 'no'
 
 volumes:
-  postgres_dev_data:
+  postgres_data_dev:
     driver: local
-  redis_dev_data:
+  redis_data_dev:
     driver: local
