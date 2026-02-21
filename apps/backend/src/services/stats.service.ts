@@ -1,6 +1,7 @@
 /**
  * Stats Service
  * Dashboard statistics — real-time queries from database
+ * Updated: extras revenue included in KPIs (#4)
  */
 
 import { prisma } from '@/lib/prisma';
@@ -14,6 +15,7 @@ export interface DashboardOverview {
   revenueThisMonth: number;
   revenuePrevMonth: number;
   revenueChangePercent: number;
+  extrasRevenueThisMonth: number;
   totalClients: number;
   newClientsThisMonth: number;
   pendingDepositsCount: number;
@@ -103,9 +105,9 @@ class StatsService {
         },
       }),
 
-      // Przychód ten miesiąc (suma totalPrice, nie-anulowane)
+      // Przychód ten miesiąc (suma totalPrice + extrasTotalPrice, nie-anulowane)
       prisma.reservation.aggregate({
-        _sum: { totalPrice: true },
+        _sum: { totalPrice: true, extrasTotalPrice: true },
         where: {
           date: { gte: monthStartStr, lt: monthEndStr },
           status: { not: 'CANCELLED' },
@@ -114,7 +116,7 @@ class StatsService {
 
       // Przychód poprzedni miesiąc
       prisma.reservation.aggregate({
-        _sum: { totalPrice: true },
+        _sum: { totalPrice: true, extrasTotalPrice: true },
         where: {
           date: { gte: prevMonthStartStr, lt: prevMonthEndStr },
           status: { not: 'CANCELLED' },
@@ -146,8 +148,15 @@ class StatsService {
       }),
     ]);
 
-    const revenueThisMonthVal = Number(revenueThisMonth._sum.totalPrice || 0);
-    const revenuePrevMonthVal = Number(revenuePrevMonth._sum.totalPrice || 0);
+    // Revenue = base price + extras
+    const baseRevenueThisMonth = Number(revenueThisMonth._sum.totalPrice || 0);
+    const extrasRevenueThisMonthVal = Number(revenueThisMonth._sum.extrasTotalPrice || 0);
+    const revenueThisMonthVal = baseRevenueThisMonth + extrasRevenueThisMonthVal;
+
+    const baseRevenuePrevMonth = Number(revenuePrevMonth._sum.totalPrice || 0);
+    const extrasRevenuePrevMonth = Number(revenuePrevMonth._sum.extrasTotalPrice || 0);
+    const revenuePrevMonthVal = baseRevenuePrevMonth + extrasRevenuePrevMonth;
+
     const revenueChangePercent =
       revenuePrevMonthVal > 0
         ? Math.round(
@@ -164,6 +173,7 @@ class StatsService {
       revenueThisMonth: revenueThisMonthVal,
       revenuePrevMonth: revenuePrevMonthVal,
       revenueChangePercent,
+      extrasRevenueThisMonth: extrasRevenueThisMonthVal,
       totalClients,
       newClientsThisMonth,
       pendingDepositsCount: pendingDeposits._count || 0,
