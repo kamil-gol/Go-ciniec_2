@@ -129,8 +129,8 @@ export default function ServiceExtrasPage() {
       {/* Hero */}
       <PageHero
         accent={accent}
-        title="Us\u0142ugi Dodatkowe"
-        subtitle="Zarz\u0105dzanie us\u0142ugami \u2014 tort, muzyka, wystr\u00f3j, fotografia i inne"
+        title="Usługi Dodatkowe"
+        subtitle="Zarządzanie usługami \u2014 tort, muzyka, wystrój, fotografia i inne"
         icon={Gift}
         action={
           <div className="flex gap-2">
@@ -167,7 +167,7 @@ export default function ServiceExtrasPage() {
         <StatCard
           label="Pozycje"
           value={stats.items}
-          subtitle="\u0141\u0105cznie us\u0142ug"
+          subtitle="Łącznie usług"
           icon={Package}
           iconGradient="from-violet-500 to-purple-500"
           delay={0.2}
@@ -175,7 +175,7 @@ export default function ServiceExtrasPage() {
         <StatCard
           label="Aktywne"
           value={stats.active}
-          subtitle="Dost\u0119pne do wyboru"
+          subtitle="Dostępne do wyboru"
           icon={TrendingUp}
           iconGradient="from-emerald-500 to-teal-500"
           delay={0.3}
@@ -183,7 +183,7 @@ export default function ServiceExtrasPage() {
         <StatCard
           label="Gratis"
           value={stats.free}
-          subtitle="Bezp\u0142atne pozycje"
+          subtitle="Bezpłatne pozycje"
           icon={Sparkles}
           iconGradient="from-amber-500 to-orange-500"
           delay={0.4}
@@ -198,7 +198,7 @@ export default function ServiceExtrasPage() {
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
                 <Gift className="h-5 w-5 text-white" />
               </div>
-              <CardTitle>Katalog Us\u0142ug</CardTitle>
+              <CardTitle>Katalog Usług</CardTitle>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               {/* View mode tabs */}
@@ -255,14 +255,14 @@ export default function ServiceExtrasPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={6} message="\u0141adowanie us\u0142ug..." />
+              <LoadingState variant="skeleton" rows={6} message="Ładowanie usług..." />
             </div>
           ) : filteredCategories.length === 0 && search ? (
             <div className="p-4 sm:p-6">
               <EmptyState
                 icon={Gift}
                 title="Nie znaleziono"
-                description="Spr\u00f3buj u\u017cy\u0107 innego wyszukiwania"
+                description="Spróbuj użyć innego wyszukiwania"
               />
             </div>
           ) : filteredCategories.length === 0 ? (
@@ -270,7 +270,7 @@ export default function ServiceExtrasPage() {
               <EmptyState
                 icon={Gift}
                 title="Brak kategorii"
-                description="Utw\u00f3rz pierwsz\u0105 kategori\u0119 us\u0142ug dodatkowych"
+                description="Utwórz pierwszą kategorię usług dodatkowych"
                 actionLabel="Nowa Kategoria"
                 onAction={handleCreateCategory}
               />
@@ -292,7 +292,7 @@ export default function ServiceExtrasPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'Edytuj kategori\u0119' : 'Nowa kategoria us\u0142ug'}
+              {editingCategory ? 'Edytuj kategorię' : 'Nowa kategoria usług'}
             </DialogTitle>
           </DialogHeader>
           <ServiceCategoryForm
@@ -307,7 +307,7 @@ export default function ServiceExtrasPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Edytuj pozycj\u0119' : 'Nowa pozycja us\u0142ugi'}
+              {editingItem ? 'Edytuj pozycję' : 'Nowa pozycja usługi'}
             </DialogTitle>
           </DialogHeader>
           <ServiceItemForm
