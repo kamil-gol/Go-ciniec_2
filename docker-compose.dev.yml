@@ -1,10 +1,11 @@
 # ============================================
 # Docker Compose — Development Override
 # ============================================
-# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Usage: docker compose -p rezerwacje-dev -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up -d
 #    or: make dev
 #
 # Features:
+#   - Runs alongside prod (separate project, containers, ports)
 #   - Source code mounted as volumes (hot-reload)
 #   - Dev commands (npm run dev)
 #   - Debug-friendly settings
@@ -13,8 +14,19 @@
 
 services:
   postgres:
+    container_name: rezerwacje-db-dev
+    ports:
+      - '${DB_PORT:-5433}:5432'
     volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
       - ./apps/backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+  redis:
+    container_name: rezerwacje-cache-dev
+    ports:
+      - '${REDIS_PORT:-6380}:6379'
+    volumes:
+      - redis_data_dev:/data
 
   backend:
     build:
@@ -29,7 +41,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       LOG_LEVEL: debug
     ports:
-      - '${API_PORT:-3001}:3001'
+      - '${API_PORT:-4001}:3001'
       - '9229:9229'  # Node.js debugger
     depends_on:
       postgres:
@@ -52,10 +64,10 @@ services:
       - .env.dev
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
-      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Rezerwacje Gosciniec Rodzinny}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4001/api}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Rezerwacje DEV}
     ports:
-      - '${WEB_PORT:-3000}:3000'
+      - '${WEB_PORT:-4000}:3000'
     depends_on:
       - backend
     volumes:
@@ -66,3 +78,9 @@ services:
       - rezerwacje-network
     command: npm run dev
     restart: 'no'
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
