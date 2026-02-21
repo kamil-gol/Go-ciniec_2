@@ -542,6 +542,7 @@ export class ServiceExtraService {
     // Update reservation extras total
     await this.recalculateExtrasTotal(reservationId);
 
+    // Log on extra-level (item audit trail)
     await logChange({
       userId,
       action: 'CREATE',
@@ -553,6 +554,23 @@ export class ServiceExtraService {
           reservationId,
           itemName: item.name,
           priceType: item.priceType,
+          totalPrice: totalPrice.toString(),
+        },
+      },
+    });
+
+    // Log on reservation-level (timeline visibility)
+    await logChange({
+      userId,
+      action: 'UPDATE',
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      details: {
+        description: `Dodano usługę dodatkową: ${item.name} (${totalPrice} zł)`,
+        field: 'extras',
+        data: {
+          itemName: item.name,
+          category: item.category?.name,
           totalPrice: totalPrice.toString(),
         },
       },
@@ -586,6 +604,19 @@ export class ServiceExtraService {
       details: {
         description: `Zaktualizowano usługi dodatkowe rezerwacji (${data.extras.length} pozycji)`,
         count: data.extras.length,
+      },
+    });
+
+    // Log on reservation-level (timeline visibility)
+    await logChange({
+      userId,
+      action: 'UPDATE',
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      details: {
+        description: `Zaktualizowano zbiorczo usługi dodatkowe (${data.extras.length} pozycji)`,
+        field: 'extras',
+        data: { count: data.extras.length },
       },
     });
 
@@ -647,6 +678,7 @@ export class ServiceExtraService {
 
     const changes = diffObjects(existing, extra);
     if (Object.keys(changes).length > 0) {
+      // Log on extra-level (item audit trail)
       await logChange({
         userId,
         action: 'UPDATE',
@@ -654,6 +686,19 @@ export class ServiceExtraService {
         entityId: extra.id,
         details: {
           description: `Zaktualizowano usługę dodatkową: ${existing.serviceItem.name}`,
+          changes,
+        },
+      });
+
+      // Log on reservation-level (timeline visibility)
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Zmieniono usługę dodatkową: ${existing.serviceItem.name}`,
+          field: 'extras',
           changes,
         },
       });
@@ -677,6 +722,7 @@ export class ServiceExtraService {
 
     await this.recalculateExtrasTotal(reservationId);
 
+    // Log on extra-level (item audit trail)
     await logChange({
       userId,
       action: 'DELETE',
@@ -687,6 +733,22 @@ export class ServiceExtraService {
         deletedData: {
           itemName: existing.serviceItem.name,
           totalPrice: existing.totalPrice.toString(),
+        },
+      },
+    });
+
+    // Log on reservation-level (timeline visibility)
+    await logChange({
+      userId,
+      action: 'UPDATE',
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      details: {
+        description: `Usunięto usługę dodatkową: ${existing.serviceItem.name} (${existing.totalPrice} zł)`,
+        field: 'extras',
+        data: {
+          removedItem: existing.serviceItem.name,
+          removedPrice: existing.totalPrice.toString(),
         },
       },
     });
