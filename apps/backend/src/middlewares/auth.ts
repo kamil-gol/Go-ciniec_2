@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { AuthenticatedRequest, JwtPayload } from '@types/index';
 import { AppError } from './errorHandler';
 import logger from '@utils/logger';
-import pl from '../i18n/pl';
+import { pl } from '../i18n/pl';
 
 // Fail-fast: crash on startup if JWT_SECRET is missing in production
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -113,7 +113,7 @@ export const requireRole = (...roles: string[]) => {
     }
 
     if (!roles.includes(req.user.role)) {
-      logger.warn(`Brak uprawnie\u0144: ${req.user.email} (${req.user.role})`);
+      logger.warn(`Unauthorized access attempt by ${req.user.email} (${req.user.role})`);
       next(new AppError(403, pl.auth.insufficientPermissions));
       return;
     }

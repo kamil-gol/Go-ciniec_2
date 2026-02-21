@@ -1,7 +1,6 @@
 /**
  * Custom Application Error class
- * Replaces fragile string-matching on error.message for HTTP status codes
- * 🇵🇱 Polish defaults for user-facing error messages
+ * Polish-first error messages for Gościniec Rodzinny
  */
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -32,7 +31,7 @@ export class AppError extends Error {
     Object.setPrototypeOf(this, AppError.prototype);
   }
 
-  // ——— Factory methods for common errors ———
+  // ——— Factory methods — polskie domyślne komunikaty ———
 
   static badRequest(message: string): AppError {
     return new AppError(message, 400);
@@ -42,19 +41,19 @@ export class AppError extends Error {
     return new AppError(message, 401);
   }
 
-  static forbidden(message = 'Brak dost\u0119pu'): AppError {
+  static forbidden(message = 'Brak dostępu'): AppError {
     return new AppError(message, 403);
   }
 
-  static notFound(resource = 'Zas\u00f3b'): AppError {
-    return new AppError(`Nie znaleziono: ${resource}`, 404);
+  static notFound(resource = 'Zasób'): AppError {
+    return new AppError(`${resource} — nie znaleziono`, 404);
   }
 
   static conflict(message: string): AppError {
     return new AppError(message, 409);
   }
 
-  static internal(message = 'Wewn\u0119trzny b\u0142\u0105d serwera'): AppError {
+  static internal(message = 'Wewnętrzny błąd serwera'): AppError {
     return new AppError(message, 500, false);
   }
 }

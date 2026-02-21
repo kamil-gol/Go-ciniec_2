@@ -1,16 +1,16 @@
 import { PasswordValidationResult } from '@types/index';
-import pl from '../i18n/pl';
+import { pl } from '../i18n/pl';
 
 /**
- * Validates password against Gościniec security requirements:
- * - Minimum 12 characters
- * - At least 1 uppercase letter
- * - At least 1 lowercase letter
- * - At least 1 digit
- * - At least 1 special character (!@#$%^&*)
+ * Waliduje hasło zgodnie z wymogami bezpieczeństwa Gościniec Rodzinny:
+ * - Minimum 12 znaków
+ * - Co najmniej 1 wielka litera
+ * - Co najmniej 1 mała litera
+ * - Co najmniej 1 cyfra
+ * - Co najmniej 1 znak specjalny (!@#$%^&*)
  *
- * @param password - Password to validate
- * @returns Validation result with errors if any
+ * @param password - Hasło do walidacji
+ * @returns Wynik walidacji z listą błędów
  */
 export function validatePassword(password: string): PasswordValidationResult {
   const errors: string[] = [];
@@ -42,7 +42,7 @@ export function validatePassword(password: string): PasswordValidationResult {
 }
 
 /**
- * Gets human-readable password requirements for API responses
+ * Zwraca czytelne wymagania dotyczące hasła (dla odpowiedzi API)
  */
 export function getPasswordRequirements(): string[] {
   return [...pl.password.requirements];

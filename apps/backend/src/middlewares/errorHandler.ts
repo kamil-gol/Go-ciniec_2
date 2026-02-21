@@ -1,18 +1,18 @@
 /**
- * Global Error Handler Middleware
- * 🇵🇱 Polish error messages for user-facing responses
+ * Global Error Handler Middleware — Polish-first
  *
- * Also re-exports AppError and asyncHandler for backward compatibility
- * with files that import from '@middlewares/errorHandler'.
+ * Re-exports AppError and asyncHandler for backward compatibility.
+ * Bridge patterns match both Polish and English error messages
+ * for backward compatibility during migration.
  */
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from './asyncHandler';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import pl from '../i18n/pl';
+import { pl } from '../i18n/pl';
 
-// Re-export for backward compatibility (auth.controller imports from here)
+// Re-export for backward compatibility
 export { AppError, asyncHandler };
 
 export function errorHandler(
@@ -22,8 +22,6 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   // ——— AppError (known, operational errors) ———
-  // FIX: Also check for statusCode property as fallback when instanceof fails
-  // (can happen with path aliases / different module instances)
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       success: false,
@@ -89,11 +87,11 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: auth service errors (nieprawidłowe dane logowania → 401) ———
+  // ——— Bridge: auth errors → 401 (PL + EN patterns) ———
   if (err.message && (
-    err.message.toLowerCase().includes('nieprawid\u0142owe dane logowania') ||
     err.message.toLowerCase().includes('invalid credentials') ||
-    err.message.toLowerCase().includes('invalid email or password')
+    err.message.toLowerCase().includes('nieprawidłowy email') ||
+    err.message.toLowerCase().includes('nieprawidłowe dane logowania')
   )) {
     res.status(401).json({
       success: false,
@@ -102,10 +100,10 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: inactive/blocked account → 403 ———
+  // ——— Bridge: inactive/blocked → 403 (PL + EN) ———
   if (err.message && (
-    err.message.toLowerCase().includes('nieaktywne') ||
     err.message.toLowerCase().includes('inactive') ||
+    err.message.toLowerCase().includes('nieaktywne') ||
     err.message.toLowerCase().includes('blocked') ||
     err.message.toLowerCase().includes('disabled')
   )) {
@@ -116,15 +114,15 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: password validation errors → 422 ———
+  // ——— Bridge: password validation → 422 (PL + EN) ———
   if (err.message && (
-    err.message.toLowerCase().includes('has\u0142o') ||
-    err.message.toLowerCase().includes('password')
-  ) && (
-    err.message.toLowerCase().includes('musi') ||
-    err.message.toLowerCase().includes('must') ||
-    err.message.toLowerCase().includes('weak') ||
-    err.message.toLowerCase().includes('too short')
+    err.message.toLowerCase().includes('hasło') ||
+    (err.message.toLowerCase().includes('password') && (
+      err.message.toLowerCase().includes('must') ||
+      err.message.toLowerCase().includes('weak') ||
+      err.message.toLowerCase().includes('too short') ||
+      err.message.toLowerCase().includes('requires')
+    ))
   )) {
     res.status(422).json({
       success: false,
@@ -133,7 +131,7 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: legacy service errors with 'not found' / 'nie znaleziono' pattern ———
+  // ——— Bridge: not found → 404 (PL + EN) ———
   if (err.message && (
     err.message.toLowerCase().includes('not found') ||
     err.message.toLowerCase().includes('nie znaleziono')
@@ -145,12 +143,12 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: legacy 'already exists' / 'już istnieje' conflict pattern ———
+  // ——— Bridge: conflict → 409 (PL + EN) ———
   if (err.message && (
     err.message.toLowerCase().includes('already exists') ||
     err.message.toLowerCase().includes('already booked') ||
-    err.message.toLowerCase().includes('ju\u017c istnieje') ||
-    err.message.toLowerCase().includes('ju\u017c zarezerwowany') ||
+    err.message.toLowerCase().includes('już istnieje') ||
+    err.message.toLowerCase().includes('już zajęty') ||
     err.message.toLowerCase().includes('conflict')
   )) {
     res.status(409).json({

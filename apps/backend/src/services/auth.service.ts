@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { validatePassword } from '@utils/password';
 import { generateToken } from '@middlewares/auth';
 import logger from '@utils/logger';
-import pl from '../i18n/pl';
+import { pl } from '../i18n/pl';
 
 export const authService = {
   async login(email: string, password: string) {
@@ -87,7 +87,7 @@ export const authService = {
     });
 
     if (existingUser) {
-      throw new Error(pl.auth.emailAlreadyExists);
+      throw new Error(pl.auth.userAlreadyExists);
     }
 
     validatePassword(data.password);

@@ -1,12 +1,11 @@
 /**
  * Role-Based Access Control Middleware
  * Restrict access based on user roles
- * 🇵🇱 Polish error messages
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '../types';
-import pl from '../i18n/pl';
+import { pl } from '../i18n/pl';
 
 /**
  * Middleware to check if user has required role
