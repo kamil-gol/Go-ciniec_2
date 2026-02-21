@@ -193,14 +193,57 @@ export class ReservationController {
   /**
    * Download reservation as PDF
    * GET /api/reservations/:id/pdf
+   *
+   * Maps Prisma `extras` relation → `reservationExtras` expected by pdf.service.ts
    */
   async downloadPDF(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const reservation = await reservationService.getReservationById(id);
+    const reservation = await reservationService.getReservationById(id) as any;
 
     if (!reservation) throw AppError.notFound('Reservation');
 
-    const pdfBuffer = await pdfService.generateReservationPDF(reservation);
+    // ═══ Map extras → reservationExtras for PDF compatibility ═══
+    // pdf.service.ts expects ReservationExtraForPDF[] on `reservationExtras`
+    // but reservation.service.ts returns raw Prisma data on `extras`
+    const extras = reservation.extras || [];
+    const reservationExtras = extras.map((e: any) => {
+      const unitPrice = e.customPrice !== null && e.customPrice !== undefined
+        ? Number(e.customPrice)
+        : Number(e.serviceItem.basePrice);
+      const quantity = e.quantity || 1;
+      let totalPrice: number;
+
+      if (e.serviceItem.priceType === 'PER_PERSON') {
+        totalPrice = unitPrice * quantity * (reservation.guests || 0);
+      } else if (e.serviceItem.priceType === 'FREE') {
+        totalPrice = 0;
+      } else {
+        // FLAT
+        totalPrice = unitPrice * quantity;
+      }
+      totalPrice = Math.round(totalPrice * 100) / 100;
+
+      return {
+        serviceItem: {
+          name: e.serviceItem.name,
+          priceType: e.serviceItem.priceType,
+          category: e.serviceItem.category || null,
+        },
+        quantity,
+        unitPrice,
+        totalPrice,
+        priceType: e.serviceItem.priceType,
+        note: e.note || null,
+        status: e.status || 'ACTIVE',
+      };
+    });
+
+    const pdfData = {
+      ...reservation,
+      reservationExtras,
+    };
+
+    const pdfBuffer = await pdfService.generateReservationPDF(pdfData);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
