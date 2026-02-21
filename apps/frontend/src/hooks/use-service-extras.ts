@@ -1,5 +1,3 @@
-// apps/frontend/src/hooks/use-service-extras.ts
-
 import {
   useQuery,
   useMutation,
@@ -33,9 +31,9 @@ const QUERY_KEYS = {
     ['reservation-extras', reservationId] as const,
 };
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // 📁 CATEGORIES — Queries
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 export function useServiceCategories(
   activeOnly: boolean = false
@@ -47,7 +45,7 @@ export function useServiceCategories(
       const response = await api.get(`/service-extras/categories${params}`);
       return response.data.data;
     },
-    staleTime: 30000,
+    staleTime: 5_000,
   });
 }
 
@@ -61,13 +59,13 @@ export function useServiceCategory(
       return response.data.data;
     },
     enabled: !!id,
-    staleTime: 30000,
+    staleTime: 5_000,
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // 📁 CATEGORIES — Mutations
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 export function useCreateCategory(): UseMutationResult<
   ServiceCategory,
@@ -80,8 +78,11 @@ export function useCreateCategory(): UseMutationResult<
       const response = await api.post('/service-extras/categories', data);
       return response.data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
     },
   });
 }
@@ -97,9 +98,12 @@ export function useUpdateCategory(): UseMutationResult<
       const response = await api.put(`/service-extras/categories/${id}`, data);
       return response.data.data;
     },
-    onSuccess: (_data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.category(id) });
+    onSuccess: async (_data, { id }) => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.category(id) });
     },
   });
 }
@@ -110,8 +114,11 @@ export function useDeleteCategory(): UseMutationResult<void, Error, string> {
     mutationFn: async (id: string) => {
       await api.delete(`/service-extras/categories/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
     },
   });
 }
@@ -129,15 +136,18 @@ export function useReorderCategories(): UseMutationResult<
       });
       return response.data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
     },
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // 📦 ITEMS — Queries
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 export function useServiceItems(
   activeOnly: boolean = false,
@@ -155,7 +165,7 @@ export function useServiceItems(
       const response = await api.get(`/service-extras/items${query}`);
       return response.data.data;
     },
-    staleTime: 30000,
+    staleTime: 5_000,
   });
 }
 
@@ -167,13 +177,13 @@ export function useServiceItem(id: string): UseQueryResult<ServiceItem> {
       return response.data.data;
     },
     enabled: !!id,
-    staleTime: 30000,
+    staleTime: 5_000,
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // 📦 ITEMS — Mutations
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 export function useCreateItem(): UseMutationResult<
   ServiceItem,
@@ -186,11 +196,17 @@ export function useCreateItem(): UseMutationResult<
       const response = await api.post('/service-extras/items', data);
       return response.data.data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.items });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.items,
+        refetchType: 'all',
+      });
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
       if (variables.categoryId) {
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.itemsByCategory(variables.categoryId),
         });
       }
@@ -209,10 +225,16 @@ export function useUpdateItem(): UseMutationResult<
       const response = await api.put(`/service-extras/items/${id}`, data);
       return response.data.data;
     },
-    onSuccess: (_data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.items });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.item(id) });
+    onSuccess: async (_data, { id }) => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.items,
+        refetchType: 'all',
+      });
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.item(id) });
     },
   });
 }
@@ -223,16 +245,22 @@ export function useDeleteItem(): UseMutationResult<void, Error, string> {
     mutationFn: async (id: string) => {
       await api.delete(`/service-extras/items/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.items });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.items,
+        refetchType: 'all',
+      });
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories,
+        refetchType: 'all',
+      });
     },
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // 🔗 RESERVATION EXTRAS — Queries
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 export function useReservationExtras(
   reservationId: string
@@ -246,13 +274,13 @@ export function useReservationExtras(
       return response.data;
     },
     enabled: !!reservationId,
-    staleTime: 10000,
+    staleTime: 5_000,
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // 🔗 RESERVATION EXTRAS — Mutations
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 export function useAssignExtra(
   reservationId: string
@@ -266,8 +294,8 @@ export function useAssignExtra(
       );
       return response.data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.reservationExtras(reservationId),
       });
     },
@@ -286,8 +314,8 @@ export function useBulkAssignExtras(
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.reservationExtras(reservationId),
       });
     },
@@ -310,8 +338,8 @@ export function useUpdateReservationExtra(
       );
       return response.data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.reservationExtras(reservationId),
       });
     },
@@ -328,8 +356,8 @@ export function useRemoveReservationExtra(
         `/service-extras/reservations/${reservationId}/extras/${extraId}`
       );
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.reservationExtras(reservationId),
       });
     },
