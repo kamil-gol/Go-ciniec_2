@@ -1,6 +1,6 @@
 /**
  * EventType Routes
- * Define routes for event type management
+ * Full CRUD + stats + predefined colors
  */
 declare const router: import("express-serve-static-core").Router;
 export default router;

@@ -1,122 +1,95 @@
 /**
  * EventType Controller
- * Handle HTTP requests for event type management
+ * Full CRUD + stats for event type management
  */
 import eventTypeService from '../services/eventType.service';
+import { AppError } from '../utils/AppError';
 export class EventTypeController {
-    /**
-     * Create a new event type
-     * POST /api/event-types
-     */
     async createEventType(req, res) {
-        try {
-            const data = req.body;
-            // Validate required fields
-            if (!data.name) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Event type name is required'
-                });
-                return;
-            }
-            const eventType = await eventTypeService.createEventType(data);
-            res.status(201).json({
-                success: true,
-                data: eventType,
-                message: 'Event type created successfully'
-            });
+        const { name, description, color, isActive } = req.body;
+        const userId = req.user?.id;
+        if (!userId) {
+            throw AppError.unauthorized('User not authenticated');
         }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to create event type'
-            });
+        if (!name) {
+            throw AppError.badRequest('Event type name is required');
         }
+        const data = { name, description, color, isActive };
+        const eventType = await eventTypeService.createEventType(data, userId);
+        res.status(201).json({
+            success: true,
+            data: eventType,
+            message: 'Event type created successfully'
+        });
     }
-    /**
-     * Get all event types
-     * GET /api/event-types
-     */
     async getEventTypes(req, res) {
-        try {
-            const eventTypes = await eventTypeService.getEventTypes();
-            res.status(200).json({
-                success: true,
-                data: eventTypes,
-                count: eventTypes.length
-            });
-        }
-        catch (error) {
-            res.status(500).json({
-                success: false,
-                error: error.message || 'Failed to fetch event types'
-            });
-        }
+        const activeOnly = req.query.isActive === 'true';
+        const eventTypes = await eventTypeService.getEventTypes(activeOnly);
+        res.status(200).json({
+            success: true,
+            data: eventTypes,
+            count: eventTypes.length
+        });
     }
-    /**
-     * Get event type by ID
-     * GET /api/event-types/:id
-     */
     async getEventTypeById(req, res) {
-        try {
-            const { id } = req.params;
-            const eventType = await eventTypeService.getEventTypeById(id);
-            res.status(200).json({
-                success: true,
-                data: eventType
-            });
-        }
-        catch (error) {
-            const statusCode = error.message === 'Event type not found' ? 404 : 500;
-            res.status(statusCode).json({
-                success: false,
-                error: error.message || 'Failed to fetch event type'
-            });
-        }
+        const { id } = req.params;
+        const eventType = await eventTypeService.getEventTypeById(id);
+        if (!eventType)
+            throw AppError.notFound('Event type');
+        res.status(200).json({
+            success: true,
+            data: eventType
+        });
     }
-    /**
-     * Update event type
-     * PUT /api/event-types/:id
-     */
     async updateEventType(req, res) {
-        try {
-            const { id } = req.params;
-            const data = req.body;
-            const eventType = await eventTypeService.updateEventType(id, data);
-            res.status(200).json({
-                success: true,
-                data: eventType,
-                message: 'Event type updated successfully'
-            });
+        const { id } = req.params;
+        const { name, description, color, isActive } = req.body;
+        const userId = req.user?.id;
+        if (!userId) {
+            throw AppError.unauthorized('User not authenticated');
         }
-        catch (error) {
-            const statusCode = error.message === 'Event type not found' ? 404 : 400;
-            res.status(statusCode).json({
-                success: false,
-                error: error.message || 'Failed to update event type'
-            });
-        }
+        const data = {};
+        if (name !== undefined)
+            data.name = name;
+        if (description !== undefined)
+            data.description = description;
+        if (color !== undefined)
+            data.color = color;
+        if (isActive !== undefined)
+            data.isActive = isActive;
+        const eventType = await eventTypeService.updateEventType(id, data, userId);
+        res.status(200).json({
+            success: true,
+            data: eventType,
+            message: 'Event type updated successfully'
+        });
     }
-    /**
-     * Delete event type
-     * DELETE /api/event-types/:id
-     */
     async deleteEventType(req, res) {
-        try {
-            const { id } = req.params;
-            await eventTypeService.deleteEventType(id);
-            res.status(200).json({
-                success: true,
-                message: 'Event type deleted successfully'
-            });
+        const { id } = req.params;
+        const userId = req.user?.id;
+        if (!userId) {
+            throw AppError.unauthorized('User not authenticated');
         }
-        catch (error) {
-            const statusCode = error.message === 'Event type not found' ? 404 : 400;
-            res.status(statusCode).json({
-                success: false,
-                error: error.message || 'Failed to delete event type'
-            });
-        }
+        await eventTypeService.deleteEventType(id, userId);
+        res.status(200).json({
+            success: true,
+            message: 'Event type deleted successfully'
+        });
+    }
+    async getEventTypeStats(_req, res) {
+        const stats = await eventTypeService.getEventTypeStats();
+        res.status(200).json({
+            success: true,
+            data: stats,
+            count: stats.length
+        });
+    }
+    async getPredefinedColors(_req, res) {
+        const colors = eventTypeService.getPredefinedColors();
+        res.status(200).json({
+            success: true,
+            data: colors
+        });
     }
 }
 export default new EventTypeController();

@@ -2,28 +2,21 @@
  * EventType Service
  * Business logic for event type management
  */
-import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse } from '../types/eventType.types';
+import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse, EventTypeStatsResponse } from '../types/eventType.types';
 export declare class EventTypeService {
-    /**
-     * Create a new event type
-     */
-    createEventType(data: CreateEventTypeDTO): Promise<EventTypeResponse>;
-    /**
-     * Get all event types
-     */
-    getEventTypes(): Promise<EventTypeResponse[]>;
-    /**
-     * Get event type by ID
-     */
-    getEventTypeById(id: string): Promise<EventTypeResponse>;
-    /**
-     * Update event type
-     */
-    updateEventType(id: string, data: UpdateEventTypeDTO): Promise<EventTypeResponse>;
-    /**
-     * Delete event type
-     */
-    deleteEventType(id: string): Promise<void>;
+    createEventType(data: CreateEventTypeDTO, userId: string): Promise<EventTypeResponse>;
+    getEventTypes(activeOnly?: boolean): Promise<EventTypeResponse[]>;
+    getEventTypeById(id: string): Promise<EventTypeResponse & {
+        _count: {
+            reservations: number;
+            menuTemplates: number;
+        };
+    }>;
+    updateEventType(id: string, data: UpdateEventTypeDTO, userId: string): Promise<EventTypeResponse>;
+    toggleActive(id: string, userId: string): Promise<EventTypeResponse>;
+    deleteEventType(id: string, userId: string): Promise<void>;
+    getEventTypeStats(): Promise<EventTypeStatsResponse[]>;
+    getPredefinedColors(): string[];
 }
 declare const _default: EventTypeService;
 export default _default;

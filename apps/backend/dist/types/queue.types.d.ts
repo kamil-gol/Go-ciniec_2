@@ -50,6 +50,15 @@ export interface MoveQueuePositionDTO {
     newPosition: number;
 }
 /**
+ * DTO for batch updating positions (atomic)
+ */
+export interface BatchUpdatePositionsDTO {
+    updates: Array<{
+        id: string;
+        position: number;
+    }>;
+}
+/**
  * Queue item response
  */
 export interface QueueItemResponse {

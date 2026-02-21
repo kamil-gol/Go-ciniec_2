@@ -1,0 +1,226 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - img [ref=e8]
+            - generic [ref=e11]:
+              - heading "Gościniec" [level=1] [ref=e12]
+              - paragraph [ref=e13]: Panel zarządzania
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+        - navigation [ref=e17]:
+          - list [ref=e18]:
+            - listitem [ref=e19]:
+              - link "Dashboard" [ref=e20] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e21]
+                - generic [ref=e26]: Dashboard
+            - listitem [ref=e27]:
+              - link "Rezerwacje" [ref=e28] [cursor=pointer]:
+                - /url: /dashboard/reservations
+                - img [ref=e29]
+                - generic [ref=e31]: Rezerwacje
+            - listitem [ref=e32]:
+              - link "Archiwum" [ref=e33] [cursor=pointer]:
+                - /url: /dashboard/archive
+                - img [ref=e34]
+                - generic [ref=e37]: Archiwum
+            - listitem [ref=e38]:
+              - link "Klienci" [ref=e39] [cursor=pointer]:
+                - /url: /dashboard/clients
+                - img [ref=e40]
+                - generic [ref=e45]: Klienci
+            - listitem [ref=e46]:
+              - link "Sale" [ref=e47] [cursor=pointer]:
+                - /url: /dashboard/halls
+                - img [ref=e48]
+                - generic [ref=e52]: Sale
+            - listitem [ref=e53]:
+              - link "Menu" [ref=e54] [cursor=pointer]:
+                - /url: /dashboard/menu
+                - img [ref=e55]
+                - generic [ref=e60]: Menu
+            - listitem [ref=e61]:
+              - link "Kolejka" [ref=e62] [cursor=pointer]:
+                - /url: /dashboard/queue
+                - img [ref=e63]
+                - generic [ref=e66]: Kolejka
+            - listitem [ref=e67]:
+              - link "Zaliczki" [ref=e68] [cursor=pointer]:
+                - /url: /dashboard/deposits
+                - img [ref=e69]
+                - generic [ref=e71]: Zaliczki
+            - listitem [ref=e72]:
+              - link "Typy Wydarzeń" [ref=e73] [cursor=pointer]:
+                - /url: /dashboard/event-types
+                - img [ref=e74]
+                - generic [ref=e83]: Typy Wydarzeń
+            - listitem [ref=e84]:
+              - link "Dziennik Audytu" [ref=e85] [cursor=pointer]:
+                - /url: /dashboard/audit-log
+                - img [ref=e86]
+                - generic [ref=e89]: Dziennik Audytu
+            - listitem [ref=e90]:
+              - link "Raporty" [ref=e91] [cursor=pointer]:
+                - /url: /dashboard/reports
+                - img [ref=e92]
+                - generic [ref=e94]: Raporty
+            - listitem [ref=e95]:
+              - link "Ustawienia" [ref=e96] [cursor=pointer]:
+                - /url: /dashboard/settings
+                - img [ref=e97]
+                - generic [ref=e100]: Ustawienia
+        - generic [ref=e102]:
+          - generic [ref=e103]: AS
+          - generic [ref=e104]:
+            - paragraph [ref=e105]: Admin System
+            - paragraph [ref=e106]: Administrator
+          - button "Wyloguj" [ref=e107] [cursor=pointer]:
+            - img [ref=e108]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - heading "Witaj, Admin! 👋" [level=1] [ref=e116]
+            - paragraph [ref=e117]: sobota, 21 lutego 2026
+          - generic [ref=e118]:
+            - button "Szukaj" [ref=e119] [cursor=pointer]:
+              - img [ref=e120]
+              - generic [ref=e123]: Szukaj...
+              - generic [ref=e124]: ⌘K
+            - button "Przełącz na ciemny motyw" [ref=e125] [cursor=pointer]:
+              - img [ref=e127]
+            - button "Powiadomienia" [ref=e130] [cursor=pointer]:
+              - img [ref=e131]
+              - generic [ref=e134]: "2"
+      - main [ref=e135]:
+        - generic [ref=e138]:
+          - generic [ref=e144]:
+            - generic [ref=e146]:
+              - img [ref=e148]
+              - generic [ref=e153]:
+                - heading "Panel Główny" [level=1] [ref=e154]
+                - paragraph [ref=e155]: Przeglądaj statystyki na żywo i zarządzaj rezerwacjami
+            - button "Odśwież" [ref=e157] [cursor=pointer]:
+              - img [ref=e158]
+              - text: Odśwież
+          - generic [ref=e163]:
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - paragraph [ref=e170]: Rezerwacje Dziś
+                - paragraph [ref=e171]: "1"
+                - generic [ref=e172]:
+                  - img [ref=e173]
+                  - generic [ref=e174]: 1 w tym tygodniu
+              - img [ref=e176]
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - paragraph [ref=e184]: W Kolejce
+                - paragraph [ref=e185]: "3"
+                - generic [ref=e186]:
+                  - img [ref=e187]
+                  - generic [ref=e188]: 1 rezerwacji w miesiącu
+              - img [ref=e190]
+            - generic [ref=e197]:
+              - generic [ref=e198]:
+                - paragraph [ref=e199]: Potwierdzone
+                - paragraph [ref=e200]: "0"
+                - generic [ref=e201]:
+                  - img [ref=e202]
+                  - generic [ref=e205]: ten miesiąc
+              - img [ref=e207]
+            - generic [ref=e214]:
+              - generic [ref=e215]:
+                - paragraph [ref=e216]: Przychód miesiąc
+                - paragraph [ref=e217]: 14 750 zł
+                - generic [ref=e218]:
+                  - img [ref=e219]
+                  - generic [ref=e220]: bez zmian vs poprzedni
+              - img [ref=e222]
+            - generic [ref=e228]:
+              - generic [ref=e229]:
+                - paragraph [ref=e230]: Klienci
+                - paragraph [ref=e231]: "19"
+                - generic [ref=e232]:
+                  - img [ref=e233]
+                  - generic [ref=e236]: +19 nowych ten miesiąc
+              - img [ref=e238]
+            - generic [ref=e247]:
+              - generic [ref=e248]:
+                - paragraph [ref=e249]: Oczekujące Zaliczki
+                - paragraph [ref=e250]: "3"
+                - generic [ref=e251]:
+                  - img [ref=e252]
+                  - generic [ref=e255]: 3000 zł do zapłaty
+              - img [ref=e257]
+          - generic [ref=e261]:
+            - generic [ref=e262]:
+              - heading "📅 Najbliższe Wydarzenia" [level=3] [ref=e263]
+              - link "Zobacz wszystkie" [ref=e264] [cursor=pointer]:
+                - /url: /dashboard/reservations
+                - text: Zobacz wszystkie
+                - img [ref=e265]
+            - generic [ref=e267]:
+              - generic [ref=e268] [cursor=pointer]:
+                - generic [ref=e269]:
+                  - generic [ref=e270]: Lut
+                  - generic [ref=e271]: "20"
+                - generic [ref=e272]:
+                  - generic [ref=e273]:
+                    - heading "Wesele" [level=4] [ref=e274]
+                    - generic [ref=e275]: 🏁 Zakończone
+                  - paragraph [ref=e276]: Marek Kowalski • 18:00 • Sala Taneczna • 105 os.
+                  - paragraph [ref=e277]: "💰 Wartość: 14 750 zł"
+                - img [ref=e278]
+              - generic [ref=e280] [cursor=pointer]:
+                - generic [ref=e281]:
+                  - generic [ref=e282]: Kwi
+                  - generic [ref=e283]: "25"
+                - generic [ref=e284]:
+                  - generic [ref=e285]:
+                    - heading "Urodziny" [level=4] [ref=e286]
+                    - generic [ref=e287]: 📋 W kolejce
+                  - paragraph [ref=e288]: Katarzyna Dąbrowska • 16:00 • Strzecha 1 • 60 os.
+                  - paragraph [ref=e289]: "💰 Zaliczka do zapłaty: 1500 zł"
+                - img [ref=e290]
+              - generic [ref=e292] [cursor=pointer]:
+                - generic [ref=e293]:
+                  - generic [ref=e294]: Maj
+                  - generic [ref=e295]: "10"
+                - generic [ref=e296]:
+                  - generic [ref=e297]:
+                    - heading "Komunia" [level=4] [ref=e298]
+                    - generic [ref=e299]: 📋 W kolejce
+                  - paragraph [ref=e300]: Piotr Wiśniewski • 14:00 • Sala Złota • 90 os.
+                  - paragraph [ref=e301]: "💰 Wartość: 9600 zł"
+                - img [ref=e302]
+              - generic [ref=e304] [cursor=pointer]:
+                - generic [ref=e305]:
+                  - generic [ref=e306]: Cze
+                  - generic [ref=e307]: "20"
+                - generic [ref=e308]:
+                  - generic [ref=e309]:
+                    - heading "Wesele" [level=4] [ref=e310]
+                    - generic [ref=e311]: 📋 W kolejce
+                  - paragraph [ref=e312]: Marek Kowalski • 18:00 • Sala Kryształowa • 140 os.
+                  - paragraph [ref=e313]: "💰 Wartość: 26 850 zł"
+                - img [ref=e314]
+              - generic [ref=e316] [cursor=pointer]:
+                - generic [ref=e317]:
+                  - generic [ref=e318]: Lip
+                  - generic [ref=e319]: "15"
+                - generic [ref=e320]:
+                  - generic [ref=e321]:
+                    - heading "Wesele" [level=4] [ref=e322]
+                    - generic [ref=e323]: ✅ Potwierdzone
+                  - paragraph [ref=e324]: Anna Nowak • 17:00 • Sala Taneczna • 130 os.
+                  - paragraph [ref=e325]: "💰 Wartość: 17 500 zł"
+                - img [ref=e326]
+  - region "Notifications alt+T"
+  - alert [ref=e328]
+```

@@ -1,287 +1,206 @@
 /**
  * Queue Controller
- * Handle HTTP requests for reservation queue management
+ * MIGRATED: AppError + no try/catch
+ * Updated: Phase 2 Audit — pass userId to all mutating service methods
  */
 import queueService from '../services/queue.service';
+import { AppError } from '../utils/AppError';
 export class QueueController {
     /**
      * Add reservation to queue (create RESERVED)
      * POST /api/queue/reserved
      */
     async addToQueue(req, res) {
-        try {
-            const data = req.body;
-            const userId = req.user?.id;
-            if (!userId) {
-                res.status(401).json({
-                    success: false,
-                    error: 'User not authenticated',
-                });
-                return;
-            }
-            // Validate required fields
-            if (!data.clientId || !data.reservationQueueDate || !data.guests) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Client ID, queue date, and number of guests are required',
-                });
-                return;
-            }
-            const queueItem = await queueService.addToQueue(data, userId);
-            res.status(201).json({
-                success: true,
-                data: queueItem,
-                message: `Dodano do kolejki na pozycję #${queueItem.position}`,
-            });
+        const data = req.body;
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        if (!data.clientId || !data.reservationQueueDate || !data.guests) {
+            throw AppError.badRequest('Client ID, queue date, and number of guests are required');
         }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to add to queue',
-            });
-        }
+        const queueItem = await queueService.addToQueue(data, userId);
+        res.status(201).json({
+            success: true,
+            data: queueItem,
+            message: `Dodano do kolejki na pozycję #${queueItem.position}`,
+        });
     }
     /**
      * Update queue reservation
      * PUT /api/queue/:id
      */
     async updateQueueReservation(req, res) {
-        try {
-            const { id } = req.params;
-            const data = req.body;
-            if (!id) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Reservation ID is required',
-                });
-                return;
-            }
-            const queueItem = await queueService.updateQueueReservation(id, data);
-            res.status(200).json({
-                success: true,
-                data: queueItem,
-                message: 'Wpis w kolejce zaktualizowany',
-            });
-        }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to update queue reservation',
-            });
-        }
+        const { id } = req.params;
+        const data = req.body;
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        const queueItem = await queueService.updateQueueReservation(id, data, userId);
+        res.status(200).json({
+            success: true,
+            data: queueItem,
+            message: 'Wpis w kolejce zaktualizowany',
+        });
     }
     /**
      * Get queue for specific date
      * GET /api/queue/:date
      */
     async getQueueForDate(req, res) {
-        try {
-            const { date } = req.params;
-            if (!date) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Date parameter is required',
-                });
-                return;
-            }
-            const queue = await queueService.getQueueForDate(date);
-            res.status(200).json({
-                success: true,
-                data: queue,
-                count: queue.length,
-            });
-        }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to get queue',
-            });
-        }
+        const { date } = req.params;
+        if (!date)
+            throw AppError.badRequest('Date parameter is required');
+        const queue = await queueService.getQueueForDate(date);
+        res.status(200).json({
+            success: true,
+            data: queue,
+            count: queue.length,
+        });
     }
     /**
      * Get all queues
      * GET /api/queue
      */
-    async getAllQueues(req, res) {
-        try {
-            const queues = await queueService.getAllQueues();
-            res.status(200).json({
-                success: true,
-                data: queues,
-                count: queues.length,
-            });
-        }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to get queues',
-            });
-        }
+    async getAllQueues(_req, res) {
+        const queues = await queueService.getAllQueues();
+        res.status(200).json({
+            success: true,
+            data: queues,
+            count: queues.length,
+        });
     }
     /**
      * Swap two queue positions
      * POST /api/queue/swap
      */
     async swapPositions(req, res) {
-        try {
-            const { reservationId1, reservationId2 } = req.body;
-            if (!reservationId1 || !reservationId2) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Both reservation IDs are required',
-                });
-                return;
-            }
-            await queueService.swapPositions(reservationId1, reservationId2);
-            res.status(200).json({
-                success: true,
-                message: 'Pozycje zostały zamienione',
-            });
+        const { reservationId1, reservationId2 } = req.body;
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        if (!reservationId1 || !reservationId2) {
+            throw AppError.badRequest('Both reservation IDs are required');
         }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to swap positions',
-            });
-        }
+        await queueService.swapPositions(reservationId1, reservationId2, userId);
+        res.status(200).json({
+            success: true,
+            message: 'Pozycje zostały zamienione',
+        });
     }
     /**
      * Move reservation to specific position
      * PUT /api/queue/:id/position
      */
     async moveToPosition(req, res) {
-        try {
-            const { id } = req.params;
-            const { newPosition } = req.body;
-            if (!id) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Reservation ID is required',
-                });
-                return;
-            }
-            if (!newPosition || newPosition < 1) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Valid position (>= 1) is required',
-                });
-                return;
-            }
-            await queueService.moveToPosition(id, newPosition);
-            res.status(200).json({
-                success: true,
-                message: `Przeniesiono na pozycję #${newPosition}`,
-            });
+        const { id } = req.params;
+        const { newPosition } = req.body;
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        if (newPosition === undefined || newPosition === null) {
+            throw AppError.badRequest('Position is required');
         }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to move reservation',
-            });
+        const position = typeof newPosition === 'string' ? parseInt(newPosition, 10) : newPosition;
+        if (!Number.isInteger(position)) {
+            throw AppError.badRequest('Position must be a valid integer');
         }
+        if (position < 1) {
+            throw AppError.badRequest('Position must be at least 1');
+        }
+        await queueService.moveToPosition(id, position, userId);
+        res.status(200).json({
+            success: true,
+            message: `Przeniesiono na pozycję #${position}`,
+        });
+    }
+    /**
+     * Batch update queue positions atomically
+     * POST /api/queue/batch-update-positions
+     */
+    async batchUpdatePositions(req, res) {
+        const { updates } = req.body;
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        if (!updates || !Array.isArray(updates) || updates.length === 0) {
+            throw AppError.badRequest('Updates array is required and must contain at least one item');
+        }
+        for (const update of updates) {
+            if (!update.id || typeof update.id !== 'string') {
+                throw AppError.badRequest('Each update must have a valid reservation ID');
+            }
+            if (!Number.isInteger(update.position) || update.position < 1) {
+                throw AppError.badRequest('Each update must have a valid position (integer >= 1)');
+            }
+        }
+        const result = await queueService.batchUpdatePositions(updates, userId);
+        res.status(200).json({
+            success: true,
+            data: result,
+            message: `Zaktualizowano ${result.updatedCount} pozycji w kolejce`,
+        });
     }
     /**
      * Rebuild queue positions for all dates
      * POST /api/queue/rebuild-positions
      */
     async rebuildPositions(req, res) {
-        try {
-            const result = await queueService.rebuildPositions();
-            res.status(200).json({
-                success: true,
-                data: result,
-                message: `Ponumerowano ${result.updatedCount} rezerwacji w ${result.dateCount} datach`,
-            });
-        }
-        catch (error) {
-            res.status(500).json({
-                success: false,
-                error: error.message || 'Failed to rebuild positions',
-            });
-        }
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        const result = await queueService.rebuildPositions(userId);
+        res.status(200).json({
+            success: true,
+            data: result,
+            message: `Ponumerowano ${result.updatedCount} rezerwacji w ${result.dateCount} datach`,
+        });
     }
     /**
      * Promote RESERVED to PENDING/CONFIRMED
      * PUT /api/queue/:id/promote
      */
     async promoteReservation(req, res) {
-        try {
-            const { id } = req.params;
-            const data = req.body;
-            if (!id) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Reservation ID is required',
-                });
-                return;
-            }
-            // Validate required fields
-            if (!data.hallId || !data.eventTypeId || !data.startDateTime || !data.endDateTime) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Hall, event type, start time, and end time are required',
-                });
-                return;
-            }
-            if (!data.pricePerAdult || data.adults < 1) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Price per adult and at least 1 adult are required',
-                });
-                return;
-            }
-            const reservation = await queueService.promoteReservation(id, data);
-            res.status(200).json({
-                success: true,
-                data: reservation,
-                message: 'Rezerwacja awansowana pomyślnie',
-            });
+        const { id } = req.params;
+        const data = req.body;
+        const userId = req.user?.id;
+        if (!userId)
+            throw AppError.unauthorized();
+        if (!data.hallId || !data.eventTypeId || !data.startDateTime || !data.endDateTime) {
+            throw AppError.badRequest('Hall, event type, start time, and end time are required');
         }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to promote reservation',
-            });
+        if (!data.pricePerAdult || data.adults < 1) {
+            throw AppError.badRequest('Price per adult and at least 1 adult are required');
         }
+        const reservation = await queueService.promoteReservation(id, data, userId);
+        res.status(200).json({
+            success: true,
+            data: reservation,
+            message: 'Rezerwacja awansowana pomyślnie',
+        });
     }
     /**
      * Get queue statistics
      * GET /api/queue/stats
      */
-    async getStats(req, res) {
-        try {
-            const stats = await queueService.getQueueStats();
-            res.status(200).json({
-                success: true,
-                data: stats,
-            });
-        }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                error: error.message || 'Failed to get statistics',
-            });
-        }
+    async getStats(_req, res) {
+        const stats = await queueService.getQueueStats();
+        res.status(200).json({
+            success: true,
+            data: stats,
+        });
     }
     /**
      * Manually trigger auto-cancel
      * POST /api/queue/auto-cancel
      */
     async autoCancelExpired(req, res) {
-        try {
-            const result = await queueService.autoCancelExpired();
-            res.status(200).json({
-                success: true,
-                data: result,
-                message: `Anulowano ${result.cancelledCount} przeterminowanych rezerwacji`,
-            });
-        }
-        catch (error) {
-            res.status(500).json({
-                success: false,
-                error: error.message || 'Failed to auto-cancel reservations',
-            });
-        }
+        const userId = req.user?.id;
+        const result = await queueService.autoCancelExpired(userId);
+        res.status(200).json({
+            success: true,
+            data: result,
+            message: `Anulowano ${result.cancelledCount} przeterminowanych rezerwacji`,
+        });
     }
 }
 export default new QueueController();

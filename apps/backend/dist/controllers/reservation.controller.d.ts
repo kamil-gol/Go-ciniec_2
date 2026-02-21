@@ -1,7 +1,8 @@
 /**
  * Reservation Controller
- * Handle HTTP requests for reservation management with advanced features
- * UPDATED: Full support for toddlers (0-3 years) age group
+ * Handle HTTP requests for reservation management
+ * MIGRATED: Uses AppError (no try/catch — errors forwarded by asyncHandler)
+ * Phase 4.3: Block cancellation of reservations with paid deposits
  */
 import { Request, Response } from 'express';
 export declare class ReservationController {
@@ -21,10 +22,18 @@ export declare class ReservationController {
      */
     getReservationById(req: Request, res: Response): Promise<void>;
     /**
+     * Check hall availability for a given time range
+     * GET /api/reservations/check-availability?hallId=X&startDateTime=...&endDateTime=...
+     */
+    checkAvailability(req: Request, res: Response): Promise<void>;
+    /**
+     * Download reservation as PDF
+     * GET /api/reservations/:id/pdf
+     */
+    downloadPDF(req: Request, res: Response): Promise<void>;
+    /**
      * Update reservation
      * PUT /api/reservations/:id
-     *
-     * Note: Requires 'reason' field (min 10 characters) if making changes to important fields
      */
     updateReservation(req: Request, res: Response): Promise<void>;
     /**
@@ -35,8 +44,19 @@ export declare class ReservationController {
     /**
      * Cancel reservation
      * DELETE /api/reservations/:id
+     * Phase 4.3: Blocks if reservation has paid deposits
      */
     cancelReservation(req: Request, res: Response): Promise<void>;
+    /**
+     * Archive reservation
+     * POST /api/reservations/:id/archive
+     */
+    archiveReservation(req: Request, res: Response): Promise<void>;
+    /**
+     * Unarchive reservation
+     * POST /api/reservations/:id/unarchive
+     */
+    unarchiveReservation(req: Request, res: Response): Promise<void>;
 }
 declare const _default: ReservationController;
 export default _default;

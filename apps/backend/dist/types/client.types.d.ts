@@ -7,7 +7,6 @@ export interface CreateClientDTO {
     lastName: string;
     email?: string;
     phone: string;
-    address?: string;
     notes?: string;
 }
 export interface UpdateClientDTO {
@@ -15,7 +14,6 @@ export interface UpdateClientDTO {
     lastName?: string;
     email?: string;
     phone?: string;
-    address?: string;
     notes?: string;
 }
 export interface ClientFilters {
@@ -27,7 +25,6 @@ export interface ClientResponse {
     lastName: string;
     email: string | null;
     phone: string;
-    address: string | null;
     notes: string | null;
     createdAt: Date;
     updatedAt: Date;

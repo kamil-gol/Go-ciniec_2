@@ -7,6 +7,13 @@ export declare const authService: {
             firstName: string;
             lastName: string;
             role: string;
+            assignedRole: {
+                id: string;
+                name: string;
+                slug: string;
+                color: string | null;
+            } | null;
+            permissions: string[];
         };
     }>;
     register(data: {
@@ -14,7 +21,7 @@ export declare const authService: {
         password: string;
         firstName: string;
         lastName: string;
-        role?: string;
+        roleId?: string;
     }): Promise<{
         token: string;
         user: {
@@ -23,7 +30,29 @@ export declare const authService: {
             firstName: string;
             lastName: string;
             role: string;
+            assignedRole: {
+                id: string;
+                name: string;
+                slug: string;
+                color: string | null;
+            } | null;
         };
+    }>;
+    getMe(userId: string): Promise<{
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        role: string;
+        isActive: boolean;
+        lastLoginAt: Date | null;
+        assignedRole: {
+            id: string;
+            name: string;
+            slug: string;
+            color: string | null;
+        } | null;
+        permissions: string[];
     }>;
 };
 //# sourceMappingURL=auth.service.d.ts.map

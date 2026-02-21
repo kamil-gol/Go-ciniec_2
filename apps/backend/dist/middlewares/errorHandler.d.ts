@@ -1,15 +1,12 @@
+/**
+ * Global Error Handler Middleware
+ *
+ * Also re-exports AppError and asyncHandler for backward compatibility
+ * with files that import from '@middlewares/errorHandler'.
+ */
 import { Request, Response, NextFunction } from 'express';
-export declare class AppError extends Error {
-    statusCode: number;
-    isOperational: boolean;
-    constructor(statusCode: number, message: string, isOperational?: boolean);
-}
-/**
- * Global error handling middleware
- */
-export declare const errorHandler: (err: Error | AppError, _req: Request, res: Response, _next: NextFunction) => void;
-/**
- * Wrapper for async route handlers to catch errors
- */
-export declare const asyncHandler: (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => (req: Request, res: Response, next: NextFunction) => void;
+import { AppError } from '../utils/AppError';
+import { asyncHandler } from './asyncHandler';
+export { AppError, asyncHandler };
+export declare function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void;
 //# sourceMappingURL=errorHandler.d.ts.map

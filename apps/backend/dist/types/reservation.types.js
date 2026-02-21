@@ -1,6 +1,7 @@
 /**
  * Reservation Types
  * Types and interfaces for reservation management
+ * UPDATED: Menu integration support
  */
 export var ReservationStatus;
 (function (ReservationStatus) {

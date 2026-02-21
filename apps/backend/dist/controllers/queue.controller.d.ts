@@ -1,6 +1,7 @@
 /**
  * Queue Controller
- * Handle HTTP requests for reservation queue management
+ * MIGRATED: AppError + no try/catch
+ * Updated: Phase 2 Audit — pass userId to all mutating service methods
  */
 import { Request, Response } from 'express';
 export declare class QueueController {
@@ -23,7 +24,7 @@ export declare class QueueController {
      * Get all queues
      * GET /api/queue
      */
-    getAllQueues(req: Request, res: Response): Promise<void>;
+    getAllQueues(_req: Request, res: Response): Promise<void>;
     /**
      * Swap two queue positions
      * POST /api/queue/swap
@@ -34,6 +35,11 @@ export declare class QueueController {
      * PUT /api/queue/:id/position
      */
     moveToPosition(req: Request, res: Response): Promise<void>;
+    /**
+     * Batch update queue positions atomically
+     * POST /api/queue/batch-update-positions
+     */
+    batchUpdatePositions(req: Request, res: Response): Promise<void>;
     /**
      * Rebuild queue positions for all dates
      * POST /api/queue/rebuild-positions
@@ -48,7 +54,7 @@ export declare class QueueController {
      * Get queue statistics
      * GET /api/queue/stats
      */
-    getStats(req: Request, res: Response): Promise<void>;
+    getStats(_req: Request, res: Response): Promise<void>;
     /**
      * Manually trigger auto-cancel
      * POST /api/queue/auto-cancel

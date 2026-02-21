@@ -1,40 +1,11 @@
 /**
  * Hall Service
  * Business logic for hall management
+ * UPDATED: isWholeVenue protection — cannot delete/deactivate "Cały Obiekt"
  */
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { logChange, diffObjects } from '../utils/audit-logger';
 export class HallService {
-    /**
-     * Create a new hall
-     */
-    async createHall(data) {
-        // Validate capacity
-        if (data.capacity <= 0) {
-            throw new Error('Capacity must be greater than 0');
-        }
-        // Validate price
-        if (data.pricePerPerson < 0) {
-            throw new Error('Price per person cannot be negative');
-        }
-        // Check if hall with same name exists
-        const existingHall = await prisma.hall.findFirst({
-            where: { name: data.name }
-        });
-        if (existingHall) {
-            throw new Error('Hall with this name already exists');
-        }
-        const hall = await prisma.hall.create({
-            data: {
-                name: data.name,
-                capacity: data.capacity,
-                description: data.description || null,
-                pricePerPerson: data.pricePerPerson,
-                isActive: data.isActive ?? true
-            }
-        });
-        return hall;
-    }
     /**
      * Get all halls with optional filters
      */
@@ -43,21 +14,15 @@ export class HallService {
         if (filters?.isActive !== undefined) {
             where.isActive = filters.isActive;
         }
-        if (filters?.minCapacity !== undefined) {
-            where.capacity = { ...where.capacity, gte: filters.minCapacity };
-        }
-        if (filters?.maxCapacity !== undefined) {
-            where.capacity = { ...where.capacity, lte: filters.maxCapacity };
-        }
         if (filters?.search) {
             where.OR = [
                 { name: { contains: filters.search, mode: 'insensitive' } },
-                { description: { contains: filters.search, mode: 'insensitive' } }
+                { description: { contains: filters.search, mode: 'insensitive' } },
             ];
         }
         const halls = await prisma.hall.findMany({
             where,
-            orderBy: { name: 'asc' }
+            orderBy: { name: 'asc' },
         });
         return halls;
     }
@@ -65,77 +30,164 @@ export class HallService {
      * Get hall by ID
      */
     async getHallById(id) {
-        const hall = await prisma.hall.findUnique({
-            where: { id }
-        });
-        if (!hall) {
+        const hall = await prisma.hall.findUnique({ where: { id } });
+        if (!hall)
             throw new Error('Hall not found');
+        return hall;
+    }
+    /**
+     * Get the "whole venue" hall
+     */
+    async getWholeVenueHall() {
+        const hall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
+        return hall;
+    }
+    /**
+     * Create new hall
+     */
+    async createHall(data, userId) {
+        // Only one hall can be isWholeVenue
+        if (data.isWholeVenue) {
+            const existing = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
+            if (existing) {
+                throw new Error('Sala "Cały Obiekt" już istnieje. Może być tylko jedna.');
+            }
         }
+        const hall = await prisma.hall.create({
+            data: {
+                name: data.name,
+                capacity: data.capacity,
+                description: data.description || null,
+                amenities: data.amenities || [],
+                images: data.images || [],
+                isActive: data.isActive !== undefined ? data.isActive : true,
+                isWholeVenue: data.isWholeVenue || false,
+            },
+        });
+        // Audit log
+        await logChange({
+            userId,
+            action: 'CREATE',
+            entityType: 'HALL',
+            entityId: hall.id,
+            details: {
+                description: `Utworzono salę: ${hall.name}`,
+                data: {
+                    name: hall.name,
+                    capacity: hall.capacity,
+                    isWholeVenue: hall.isWholeVenue,
+                    isActive: hall.isActive
+                }
+            }
+        });
         return hall;
     }
     /**
      * Update hall
+     * PROTECTED: Cannot deactivate or rename isWholeVenue hall
      */
-    async updateHall(id, data) {
-        // Check if hall exists
-        const existingHall = await prisma.hall.findUnique({
-            where: { id }
-        });
-        if (!existingHall) {
+    async updateHall(id, data, userId) {
+        const existingHall = await prisma.hall.findUnique({ where: { id } });
+        if (!existingHall)
             throw new Error('Hall not found');
+        // Protection for "Cały Obiekt"
+        if (existingHall.isWholeVenue) {
+            if (data.isActive === false) {
+                throw new Error('Nie można dezaktywować sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.');
+            }
+            if (data.name !== undefined && data.name !== existingHall.name) {
+                throw new Error('Nie można zmienić nazwy sali "Cały Obiekt".');
+            }
         }
-        // Validate capacity if provided
-        if (data.capacity !== undefined && data.capacity <= 0) {
-            throw new Error('Capacity must be greater than 0');
-        }
-        // Validate price if provided
-        if (data.pricePerPerson !== undefined && data.pricePerPerson < 0) {
-            throw new Error('Price per person cannot be negative');
-        }
-        // Check name uniqueness if name is being changed
-        if (data.name && data.name !== existingHall.name) {
-            const hallWithSameName = await prisma.hall.findFirst({
-                where: {
-                    name: data.name,
-                    id: { not: id }
+        const updateData = {};
+        if (data.name !== undefined)
+            updateData.name = data.name;
+        if (data.capacity !== undefined)
+            updateData.capacity = data.capacity;
+        if (data.description !== undefined)
+            updateData.description = data.description;
+        if (data.amenities !== undefined)
+            updateData.amenities = data.amenities;
+        if (data.images !== undefined)
+            updateData.images = data.images;
+        if (data.isActive !== undefined)
+            updateData.isActive = data.isActive;
+        const hall = await prisma.hall.update({
+            where: { id },
+            data: updateData,
+        });
+        // Audit log
+        const changes = diffObjects(existingHall, hall);
+        if (Object.keys(changes).length > 0) {
+            await logChange({
+                userId,
+                action: 'UPDATE',
+                entityType: 'HALL',
+                entityId: hall.id,
+                details: {
+                    description: `Zaktualizowano salę: ${hall.name}`,
+                    changes
                 }
             });
-            if (hallWithSameName) {
-                throw new Error('Hall with this name already exists');
-            }
+        }
+        return hall;
+    }
+    /**
+     * Toggle active status
+     */
+    async toggleActive(id, userId) {
+        const existingHall = await prisma.hall.findUnique({ where: { id } });
+        if (!existingHall)
+            throw new Error('Hall not found');
+        if (existingHall.isWholeVenue) {
+            throw new Error('Nie można dezaktywować sali "Cały Obiekt".');
         }
         const hall = await prisma.hall.update({
             where: { id },
-            data
+            data: { isActive: !existingHall.isActive },
+        });
+        // Audit log
+        await logChange({
+            userId,
+            action: 'TOGGLE_ACTIVE',
+            entityType: 'HALL',
+            entityId: hall.id,
+            details: {
+                description: `${hall.isActive ? 'Aktywowano' : 'Dezaktywowano'} salę: ${hall.name}`,
+                oldValue: existingHall.isActive,
+                newValue: hall.isActive
+            }
         });
         return hall;
     }
     /**
-     * Soft delete hall (set isActive to false)
+     * Delete hall (soft delete - deactivate)
+     * PROTECTED: Cannot delete isWholeVenue hall
      */
-    async deleteHall(id) {
-        // Check if hall exists
-        const existingHall = await prisma.hall.findUnique({
-            where: { id }
-        });
-        if (!existingHall) {
+    async deleteHall(id, userId) {
+        const existingHall = await prisma.hall.findUnique({ where: { id } });
+        if (!existingHall)
             throw new Error('Hall not found');
+        if (existingHall.isWholeVenue) {
+            throw new Error('Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.');
         }
-        // Check if hall has active reservations
-        const activeReservations = await prisma.reservation.count({
-            where: {
-                hallId: id,
-                status: 'CONFIRMED',
-                date: { gte: new Date() }
-            }
-        });
-        if (activeReservations > 0) {
-            throw new Error('Cannot delete hall with active reservations');
-        }
-        // Soft delete
         await prisma.hall.update({
             where: { id },
-            data: { isActive: false }
+            data: { isActive: false },
+        });
+        // Audit log
+        await logChange({
+            userId,
+            action: 'DELETE',
+            entityType: 'HALL',
+            entityId: id,
+            details: {
+                description: `Usunięto (dezaktywowano) salę: ${existingHall.name}`,
+                deletedData: {
+                    name: existingHall.name,
+                    capacity: existingHall.capacity
+                }
+            }
         });
     }
 }

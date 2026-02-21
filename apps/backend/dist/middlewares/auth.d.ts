@@ -13,7 +13,8 @@ export declare function verifyToken(token: string): JwtPayload;
  */
 export declare const authMiddleware: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => void;
 /**
- * Role-based access control middleware
+ * Role-based access control middleware (legacy)
+ * @deprecated Use requirePermission from permissions.ts instead
  */
 export declare const requireRole: (...roles: string[]) => (req: AuthenticatedRequest, _res: Response, next: NextFunction) => void;
 //# sourceMappingURL=auth.d.ts.map

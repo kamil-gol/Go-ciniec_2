@@ -1,56 +1,37 @@
 /**
  * Queue Service
  * Business logic for reservation queue management
+ * Updated: Phase 2 Audit — logChange() for all queue operations
+ * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM (19.02.2026)
+ * FIX: BUG8 — position > max and swap-self now throw AppError.badRequest (20.02.2026)
  */
 import { CreateReservedDTO, PromoteReservationDTO, QueueItemResponse, QueueStats, AutoCancelResult } from '../types/queue.types';
 export declare class QueueService {
-    /**
-     * Add reservation to queue (create RESERVED status)
-     */
     addToQueue(data: CreateReservedDTO, createdById: string): Promise<QueueItemResponse>;
-    /**
-     * Update queue reservation
-     */
-    updateQueueReservation(reservationId: string, data: Partial<CreateReservedDTO>): Promise<QueueItemResponse>;
-    /**
-     * Get queue for specific date
-     */
+    updateQueueReservation(reservationId: string, data: Partial<CreateReservedDTO>, userId: string): Promise<QueueItemResponse>;
     getQueueForDate(date: Date | string): Promise<QueueItemResponse[]>;
-    /**
-     * Get all queues (grouped by date)
-     */
     getAllQueues(): Promise<QueueItemResponse[]>;
-    /**
-     * Swap two reservations' positions
-     */
-    swapPositions(id1: string, id2: string): Promise<void>;
-    /**
-     * Move reservation to specific position
-     */
-    moveToPosition(reservationId: string, newPosition: number): Promise<void>;
-    /**
-     * Rebuild queue positions for all dates
-     * Renumbers all RESERVED reservations per date based on createdAt
-     */
-    rebuildPositions(): Promise<{
+    swapPositions(id1: string, id2: string, userId: string): Promise<void>;
+    moveToPosition(reservationId: string, newPosition: number, userId: string): Promise<void>;
+    batchUpdatePositions(updates: Array<{
+        id: string;
+        position: number;
+    }>, userId: string): Promise<{
+        updatedCount: number;
+    }>;
+    rebuildPositions(userId: string): Promise<{
         updatedCount: number;
         dateCount: number;
     }>;
-    /**
-     * Promote RESERVED reservation to PENDING/CONFIRMED
-     */
-    promoteReservation(reservationId: string, data: PromoteReservationDTO): Promise<any>;
-    /**
-     * Get queue statistics
-     */
+    promoteReservation(reservationId: string, data: PromoteReservationDTO, userId: string): Promise<any>;
     getQueueStats(): Promise<QueueStats>;
     /**
      * Auto-cancel expired RESERVED reservations
+     * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM
+     * Bug #7: Only cancels reservations with queue date BEFORE today
+     *   (today's entries are NOT cancelled)
      */
-    autoCancelExpired(): Promise<AutoCancelResult>;
-    /**
-     * Format queue item for response
-     */
+    autoCancelExpired(userId?: string): Promise<AutoCancelResult>;
     private formatQueueItem;
 }
 declare const _default: QueueService;

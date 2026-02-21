@@ -1,6 +1,7 @@
 /**
  * Hall Types
- * Types and interfaces for hall management
+ * Type definitions for hall management
+ * UPDATED: Added isWholeVenue flag for "Cały Obiekt" protection
  */
 export {};
 //# sourceMappingURL=hall.types.js.map

@@ -1,22 +1,19 @@
 import { authService } from '@services/auth.service';
-import { AppError, asyncHandler } from '@middlewares/errorHandler';
+import { AppError } from '@utils/AppError';
+import { asyncHandler } from '@middlewares/asyncHandler';
 import { getPasswordRequirements } from '@utils/password';
 export const authController = {
-    /**
-     * POST /api/auth/register
-     */
     register: asyncHandler(async (req, res) => {
         const { email, password, firstName, lastName } = req.body;
-        // Validation
         if (!email || !password || !firstName || !lastName) {
-            throw new AppError(400, 'Missing required fields: email, password, firstName, lastName');
+            throw AppError.badRequest('Missing required fields: email, password, firstName, lastName');
         }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            throw new AppError(400, 'Invalid email format');
+            throw AppError.badRequest('Invalid email format');
         }
         if (firstName.length < 2 || lastName.length < 2) {
-            throw new AppError(400, 'First and last name must be at least 2 characters');
+            throw AppError.badRequest('First and last name must be at least 2 characters');
         }
         const result = await authService.register({
             email,
@@ -24,52 +21,46 @@ export const authController = {
             firstName,
             lastName,
         });
-        const response = {
+        // FIX: token/user at root level for test compatibility
+        res.status(201).json({
             success: true,
             data: result,
+            token: result.token,
+            user: result.user,
             message: 'User registered successfully',
-        };
-        res.status(201).json(response);
+        });
     }),
-    /**
-     * POST /api/auth/login
-     */
     login: asyncHandler(async (req, res) => {
         const { email, password } = req.body;
         if (!email || !password) {
-            throw new AppError(400, 'Email and password are required');
+            throw AppError.badRequest('Email and password are required');
         }
         const result = await authService.login(email, password);
-        const response = {
+        // FIX: token/user at root level for test compatibility
+        res.json({
             success: true,
             data: result,
+            token: result.token,
+            user: result.user,
             message: 'Logged in successfully',
-        };
-        res.json(response);
+        });
     }),
-    /**
-     * GET /api/auth/me
-     */
     getMe: asyncHandler(async (req, res) => {
         if (!req.user) {
-            throw new AppError(401, 'User not authenticated');
+            throw AppError.unauthorized('User not authenticated');
         }
-        const response = {
+        const userData = await authService.getMe(req.user.id);
+        res.json({
             success: true,
-            data: { user: req.user },
-        };
-        res.json(response);
+            data: { user: userData },
+        });
     }),
-    /**
-     * GET /api/auth/password-requirements
-     */
     getPasswordRequirements: (_req, res) => {
         const requirements = getPasswordRequirements();
-        const response = {
+        res.json({
             success: true,
             data: { requirements },
-        };
-        res.json(response);
+        });
     },
 };
 //# sourceMappingURL=auth.controller.js.map

@@ -1,7 +1,19 @@
 /**
  * Reservation Types
  * Types and interfaces for reservation management
+ * UPDATED: Menu integration support
  */
+export interface MenuOptionSelection {
+    optionId: string;
+    quantity?: number;
+}
+export interface UpdateReservationMenuDTO {
+    menuPackageId?: string | null;
+    selectedOptions?: MenuOptionSelection[];
+    adultsCount?: number;
+    childrenCount?: number;
+    toddlersCount?: number;
+}
 export interface CreateReservationDTO {
     hallId: string;
     clientId: string;
@@ -11,10 +23,12 @@ export interface CreateReservationDTO {
     date?: string;
     startTime?: string;
     endTime?: string;
-    adults?: number;
-    children?: number;
-    toddlers?: number;
+    adults: number;
+    children: number;
+    toddlers: number;
     guests?: number;
+    menuPackageId?: string;
+    selectedOptions?: MenuOptionSelection[];
     pricePerAdult?: number;
     pricePerChild?: number;
     pricePerToddler?: number;
@@ -33,6 +47,9 @@ export interface CreateReservationDTO {
     };
     depositAmount?: number;
     depositDueDate?: string;
+    discountType?: 'PERCENTAGE' | 'FIXED';
+    discountValue?: number;
+    discountReason?: string;
 }
 export interface UpdateReservationDTO {
     startDateTime?: string;

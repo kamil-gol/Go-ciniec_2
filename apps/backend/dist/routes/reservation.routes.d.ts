@@ -1,6 +1,6 @@
 /**
  * Reservation Routes
- * Define routes for reservation management
+ * MIGRATED: asyncHandler + validateUUID
  */
 declare const router: import("express-serve-static-core").Router;
 export default router;

@@ -1,6 +1,6 @@
 /**
  * Hall Routes
- * Define routes for hall management
+ * MIGRATED: asyncHandler + validateUUID
  */
 declare const router: import("express-serve-static-core").Router;
 export default router;

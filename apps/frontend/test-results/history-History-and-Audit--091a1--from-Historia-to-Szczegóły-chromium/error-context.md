@@ -1,0 +1,186 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - img [ref=e8]
+            - generic [ref=e11]:
+              - heading "Gościniec" [level=1] [ref=e12]
+              - paragraph [ref=e13]: Panel zarządzania
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+        - navigation [ref=e17]:
+          - list [ref=e18]:
+            - listitem [ref=e19]:
+              - link "Dashboard" [ref=e20] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e21]
+                - generic [ref=e26]: Dashboard
+            - listitem [ref=e27]:
+              - link "Rezerwacje" [ref=e28] [cursor=pointer]:
+                - /url: /dashboard/reservations
+                - img [ref=e29]
+                - generic [ref=e31]: Rezerwacje
+            - listitem [ref=e32]:
+              - link "Archiwum" [ref=e33] [cursor=pointer]:
+                - /url: /dashboard/archive
+                - img [ref=e34]
+                - generic [ref=e37]: Archiwum
+            - listitem [ref=e38]:
+              - link "Klienci" [ref=e39] [cursor=pointer]:
+                - /url: /dashboard/clients
+                - img [ref=e40]
+                - generic [ref=e45]: Klienci
+            - listitem [ref=e46]:
+              - link "Sale" [ref=e47] [cursor=pointer]:
+                - /url: /dashboard/halls
+                - img [ref=e48]
+                - generic [ref=e52]: Sale
+            - listitem [ref=e53]:
+              - link "Menu" [ref=e54] [cursor=pointer]:
+                - /url: /dashboard/menu
+                - img [ref=e55]
+                - generic [ref=e60]: Menu
+            - listitem [ref=e61]:
+              - link "Kolejka" [ref=e62] [cursor=pointer]:
+                - /url: /dashboard/queue
+                - img [ref=e63]
+                - generic [ref=e66]: Kolejka
+            - listitem [ref=e67]:
+              - link "Zaliczki" [ref=e68] [cursor=pointer]:
+                - /url: /dashboard/deposits
+                - img [ref=e69]
+                - generic [ref=e71]: Zaliczki
+            - listitem [ref=e72]:
+              - link "Typy Wydarzeń" [ref=e73] [cursor=pointer]:
+                - /url: /dashboard/event-types
+                - img [ref=e74]
+                - generic [ref=e83]: Typy Wydarzeń
+            - listitem [ref=e84]:
+              - link "Dziennik Audytu" [ref=e85] [cursor=pointer]:
+                - /url: /dashboard/audit-log
+                - img [ref=e86]
+                - generic [ref=e89]: Dziennik Audytu
+            - listitem [ref=e90]:
+              - link "Raporty" [ref=e91] [cursor=pointer]:
+                - /url: /dashboard/reports
+                - img [ref=e92]
+                - generic [ref=e94]: Raporty
+            - listitem [ref=e95]:
+              - link "Ustawienia" [ref=e96] [cursor=pointer]:
+                - /url: /dashboard/settings
+                - img [ref=e97]
+                - generic [ref=e100]: Ustawienia
+        - generic [ref=e102]:
+          - generic [ref=e103]: AS
+          - generic [ref=e104]:
+            - paragraph [ref=e105]: Admin System
+            - paragraph [ref=e106]: Administrator
+          - button "Wyloguj" [ref=e107] [cursor=pointer]:
+            - img [ref=e108]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - heading "Witaj, Admin! 👋" [level=1] [ref=e116]
+            - paragraph [ref=e117]: sobota, 21 lutego 2026
+          - generic [ref=e118]:
+            - button "Szukaj" [ref=e119] [cursor=pointer]:
+              - img [ref=e120]
+              - generic [ref=e123]: Szukaj...
+              - generic [ref=e124]: ⌘K
+            - button "Przełącz na ciemny motyw" [ref=e125] [cursor=pointer]:
+              - img [ref=e127]
+            - button "Powiadomienia" [ref=e130] [cursor=pointer]:
+              - img [ref=e131]
+              - generic [ref=e134]: "2"
+      - main [ref=e135]:
+        - generic [ref=e138]:
+          - generic [ref=e141]:
+            - link "Powrót do listy" [ref=e142] [cursor=pointer]:
+              - /url: /dashboard/reservations
+              - button "Powrót do listy" [ref=e143]:
+                - img [ref=e144]
+                - text: Powrót do listy
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - generic [ref=e148]:
+                  - img [ref=e150]
+                  - generic [ref=e152]:
+                    - 'heading "Rezerwacja #dc2f8617" [level=1] [ref=e153]'
+                    - paragraph [ref=e154]: Szczegóły rezerwacji
+                - generic [ref=e155]:
+                  - generic [ref=e156]:
+                    - generic [ref=e157]:
+                      - img [ref=e158]
+                      - text: Potwierdzona
+                    - button [ref=e161] [cursor=pointer]:
+                      - img [ref=e162]
+                  - generic [ref=e165]:
+                    - img [ref=e166]
+                    - text: 20 lutego 2026
+              - button "Pobierz PDF" [ref=e169] [cursor=pointer]:
+                - img [ref=e170]
+                - generic [ref=e173]: Pobierz PDF
+          - generic [ref=e176]:
+            - button "Szczegóły" [ref=e177] [cursor=pointer]:
+              - img [ref=e178]
+              - text: Szczegóły
+            - button "Historia" [active] [ref=e180] [cursor=pointer]:
+              - img [ref=e181]
+              - text: Historia
+          - generic [ref=e187]:
+            - generic [ref=e189]:
+              - img [ref=e191]
+              - generic [ref=e195]:
+                - heading "Historia zmian" [level=2] [ref=e196]
+                - paragraph [ref=e197]: 3 wpisy
+            - generic [ref=e198]:
+              - generic [ref=e199]:
+                - img [ref=e202]
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - generic [ref=e208]: AUTO_CONFIRM
+                    - time [ref=e209]:
+                      - img [ref=e210]
+                      - text: 19.02.2026 22:53
+                  - paragraph [ref=e213]: Rezerwacja automatycznie potwierdzona po opłaceniu wszystkich zaliczek (Janek Jaro)
+                  - paragraph [ref=e214]: przez Admin Główny
+              - generic [ref=e215]:
+                - img [ref=e218]
+                - generic [ref=e222]:
+                  - generic [ref=e223]:
+                    - generic [ref=e224]:
+                      - generic [ref=e225]: Aktualizacja
+                      - button "Szczegóły" [ref=e226] [cursor=pointer]:
+                        - img [ref=e227]
+                        - text: Szczegóły
+                    - time [ref=e229]:
+                      - img [ref=e230]
+                      - text: 19.02.2026 22:53
+                  - paragraph [ref=e233]: "Zaktualizowano rezerwację: Janek Jaro"
+                  - paragraph [ref=e234]: "Powód: bo tak hugg"
+                  - paragraph [ref=e235]: przez Admin Główny
+              - generic [ref=e236]:
+                - img [ref=e239]
+                - generic [ref=e240]:
+                  - generic [ref=e241]:
+                    - generic [ref=e243]: Utworzenie
+                    - time [ref=e244]:
+                      - img [ref=e245]
+                      - text: 19.02.2026 22:34
+                  - paragraph [ref=e248]: "Utworzono rezerwację: Janek Jaro | Cały obiekt | Rocznica/Jubileusz"
+                  - paragraph [ref=e249]: przez Admin Główny
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e250]:
+        - button "Close toast" [ref=e251] [cursor=pointer]:
+          - img [ref=e252]
+        - img [ref=e256]
+        - generic [ref=e259]: "Nie znaleziono: Menu snapshot not found for this reservation"
+  - alert [ref=e260]
+```

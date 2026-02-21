@@ -2,27 +2,20 @@
  * Client Service
  * Business logic for client management
  */
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { logChange, diffObjects } from '../utils/audit-logger';
 export class ClientService {
-    /**
-     * Create a new client
-     */
-    async createClient(data) {
-        // Validate email if provided
+    async createClient(data, userId) {
         if (data.email && !this.isValidEmail(data.email)) {
             throw new Error('Invalid email format');
         }
-        // Phone is required
         if (!data.phone) {
             throw new Error('Phone number is required');
         }
-        // Validate phone
-        const phoneDigits = data.phone.replace(/\D/g, ''); // Remove all non-digits
+        const phoneDigits = data.phone.replace(/\D/g, '');
         if (phoneDigits.length < 9) {
             throw new Error('Phone number must contain at least 9 digits');
         }
-        // Check if client with same phone and name exists (to avoid duplicates)
         const existingClient = await prisma.client.findFirst({
             where: {
                 phone: data.phone,
@@ -39,15 +32,27 @@ export class ClientService {
                 lastName: data.lastName.trim(),
                 email: data.email?.trim() || null,
                 phone: data.phone.trim(),
-                address: data.address?.trim() || null,
                 notes: data.notes?.trim() || null
+            }
+        });
+        // Audit log
+        await logChange({
+            userId,
+            action: 'CREATE',
+            entityType: 'CLIENT',
+            entityId: client.id,
+            details: {
+                description: `Utworzono klienta: ${client.firstName} ${client.lastName}`,
+                data: {
+                    firstName: client.firstName,
+                    lastName: client.lastName,
+                    email: client.email,
+                    phone: client.phone
+                }
             }
         });
         return client;
     }
-    /**
-     * Get all clients with optional filters
-     */
     async getClients(filters) {
         const where = {};
         if (filters?.search) {
@@ -64,23 +69,26 @@ export class ClientService {
         });
         return clients;
     }
-    /**
-     * Get client by ID
-     */
     async getClientById(id) {
         const client = await prisma.client.findUnique({
             where: { id },
             include: {
                 reservations: {
-                    take: 5,
-                    orderBy: { date: 'desc' },
+                    take: 10,
+                    orderBy: { startDateTime: 'desc' },
                     select: {
                         id: true,
-                        date: true,
+                        startDateTime: true,
+                        endDateTime: true,
+                        guests: true,
+                        totalPrice: true,
                         status: true,
-                        eventType: { select: { name: true } },
-                        hall: { select: { name: true } }
+                        eventType: { select: { id: true, name: true } },
+                        hall: { select: { id: true, name: true } }
                     }
+                },
+                _count: {
+                    select: { reservations: true }
                 }
             }
         });
@@ -89,28 +97,19 @@ export class ClientService {
         }
         return client;
     }
-    /**
-     * Update client
-     */
-    async updateClient(id, data) {
-        // Check if client exists
-        const existingClient = await prisma.client.findUnique({
-            where: { id }
-        });
+    async updateClient(id, data, userId) {
+        const existingClient = await prisma.client.findUnique({ where: { id } });
         if (!existingClient) {
             throw new Error('Client not found');
         }
-        // Validate email if provided
         if (data.email && !this.isValidEmail(data.email)) {
             throw new Error('Invalid email format');
         }
-        // Validate phone if provided
         if (data.phone) {
             const phoneDigits = data.phone.replace(/\D/g, '');
             if (phoneDigits.length < 9) {
                 throw new Error('Phone number must contain at least 9 digits');
             }
-            // Check if another client with same phone and name exists
             const firstName = data.firstName || existingClient.firstName;
             const lastName = data.lastName || existingClient.lastName;
             const clientWithSameDetails = await prisma.client.findFirst({
@@ -134,42 +133,57 @@ export class ClientService {
             updateData.email = data.email?.trim() || null;
         if (data.phone !== undefined)
             updateData.phone = data.phone?.trim() || null;
-        if (data.address !== undefined)
-            updateData.address = data.address?.trim() || null;
         if (data.notes !== undefined)
             updateData.notes = data.notes?.trim() || null;
         const client = await prisma.client.update({
             where: { id },
             data: updateData
         });
+        // Audit log
+        const changes = diffObjects(existingClient, client);
+        if (Object.keys(changes).length > 0) {
+            await logChange({
+                userId,
+                action: 'UPDATE',
+                entityType: 'CLIENT',
+                entityId: client.id,
+                details: {
+                    description: `Zaktualizowano klienta: ${client.firstName} ${client.lastName}`,
+                    changes
+                }
+            });
+        }
         return client;
     }
-    /**
-     * Delete client (hard delete)
-     */
-    async deleteClient(id) {
-        // Check if client exists
-        const existingClient = await prisma.client.findUnique({
-            where: { id }
-        });
+    async deleteClient(id, userId) {
+        const existingClient = await prisma.client.findUnique({ where: { id } });
         if (!existingClient) {
             throw new Error('Client not found');
         }
-        // Check if client has any reservations
         const reservationCount = await prisma.reservation.count({
             where: { clientId: id }
         });
         if (reservationCount > 0) {
             throw new Error('Cannot delete client with existing reservations');
         }
-        // Hard delete
-        await prisma.client.delete({
-            where: { id }
+        await prisma.client.delete({ where: { id } });
+        // Audit log
+        await logChange({
+            userId,
+            action: 'DELETE',
+            entityType: 'CLIENT',
+            entityId: id,
+            details: {
+                description: `Usunięto klienta: ${existingClient.firstName} ${existingClient.lastName}`,
+                deletedData: {
+                    firstName: existingClient.firstName,
+                    lastName: existingClient.lastName,
+                    email: existingClient.email,
+                    phone: existingClient.phone
+                }
+            }
         });
     }
-    /**
-     * Validate email format
-     */
     isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
