@@ -33,6 +33,7 @@ validateEnv();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 /**
  * CORS Allowed Origins
@@ -178,8 +179,8 @@ export default app;
 // Start Server (skip in test mode)
 // ========================================
 if (process.env.NODE_ENV !== 'test') {
-  const server = app.listen(PORT, () => {
-    logger.info(`Server running on http://localhost:${PORT}`);
+  const server = app.listen(Number(PORT), HOST, () => {
+    logger.info(`Server running on http://${HOST}:${PORT}`);
     logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 
     // Setup cron jobs
