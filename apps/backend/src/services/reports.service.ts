@@ -22,28 +22,33 @@ import type {
 } from '@/types/reports.types';
 
 /**
- * Calculate extras revenue for a single reservation from its reservationExtras.
- * Supports FLAT (price × qty), PER_PERSON (price × qty × guests), FREE (0).
+ * Calculate extras revenue for a single reservation from its extras.
+ * Supports FLAT (price \u00d7 qty), PER_PERSON (price \u00d7 qty \u00d7 guests), FREE (0).
  */
 function calculateExtrasRevenue(
-  extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string; name: string; id: string } }>,
+  extras: Array<{ quantity: number; unitPrice: number | null; totalPrice: number | null; serviceItem: { basePrice: number; priceType: string; name: string; id: string } }>,
   guests: number
 ): { total: number; items: Array<{ serviceItemId: string; name: string; revenue: number }> } {
   let total = 0;
   const items: Array<{ serviceItemId: string; name: string; revenue: number }> = [];
 
   for (const extra of extras) {
-    const price = extra.customPrice !== null ? Number(extra.customPrice) : Number(extra.serviceItem.basePrice);
-    const qty = extra.quantity || 1;
+    // Prefer pre-calculated totalPrice, then compute from unitPrice
     let revenue = 0;
-
-    if (extra.serviceItem.priceType === 'PER_PERSON') {
-      revenue = price * qty * guests;
-    } else if (extra.serviceItem.priceType === 'FREE') {
-      revenue = 0;
+    if (extra.totalPrice !== null && extra.totalPrice !== undefined) {
+      revenue = Number(extra.totalPrice);
     } else {
-      // FLAT
-      revenue = price * qty;
+      const price = extra.unitPrice !== null ? Number(extra.unitPrice) : Number(extra.serviceItem.basePrice);
+      const qty = extra.quantity || 1;
+
+      if (extra.serviceItem.priceType === 'PER_PERSON') {
+        revenue = price * qty * guests;
+      } else if (extra.serviceItem.priceType === 'FREE') {
+        revenue = 0;
+      } else {
+        // FLAT
+        revenue = price * qty;
+      }
     }
 
     revenue = Math.round(revenue * 100) / 100;
@@ -89,7 +94,7 @@ class ReportsService {
       completedReservations,
       previousPeriodRevenue,
     ] = await Promise.all([
-      // All reservations in period — now with extras
+      // All reservations in period \u2014 now with extras
       prisma.reservation.findMany({
         where: whereClause,
         select: {
@@ -101,7 +106,7 @@ class ReportsService {
           guests: true,
           hall: { select: { id: true, name: true } },
           eventType: { select: { id: true, name: true } },
-          reservationExtras: {
+          extras: {
             include: {
               serviceItem: {
                 select: { id: true, name: true, basePrice: true, priceType: true }
@@ -136,7 +141,7 @@ class ReportsService {
     const serviceItemRevenueMap = new Map<string, { name: string; revenue: number; count: number }>();
 
     for (const r of reservations) {
-      const extras = (r as any).reservationExtras || [];
+      const extras = (r as any).extras || [];
       if (extras.length === 0) continue;
 
       const extrasCalc = calculateExtrasRevenue(extras, r.guests || 0);
@@ -343,7 +348,7 @@ class ReportsService {
         count: data.count,
         avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
       }))
-      .sort((a, b) => b.revenue - a.revenue); // Sort by revenue DESC
+      .sort((a, b) => b.revenue - a.revenue);
   }
 
   /**
@@ -374,7 +379,7 @@ class ReportsService {
         count: data.count,
         avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
       }))
-      .sort((a, b) => b.revenue - a.revenue); // Sort by revenue DESC
+      .sort((a, b) => b.revenue - a.revenue);
   }
 
   // ============================================
