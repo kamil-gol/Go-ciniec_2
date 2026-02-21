@@ -132,13 +132,13 @@ test.describe('Bug #8 Regression - Position Validation', () => {
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     const count = await queueItems.count();
     if (count > 0) {
-      const moveButton = adminPage.locator('button:has-text("Przenie\u015b")');
+      const moveButton = adminPage.locator('button:has-text("Przenieś")');
       if (await moveButton.count() > 0) {
         await moveButton.first().click();
         const positionInput = adminPage.locator('input[name="position"], input[name="newPosition"]');
         await positionInput.fill('999');
         await adminPage.click('button:has-text("Zapisz")');
-        await expect(adminPage.locator('.error-message, .toast-error')).toContainText(/Position must be between|Pozycja musi by\u0107/i);
+        await expect(adminPage.locator('.error-message, .toast-error')).toContainText(/Position must be between|Pozycja musi być/i);
       }
     }
   });
@@ -154,7 +154,7 @@ test.describe('Bug #8 Regression - Position Validation', () => {
     await adminPage.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' }).catch(() => {});
     const queueItems = adminPage.locator('[data-testid="queue-item"], .queue-item');
     if (await queueItems.count() > 0) {
-      const moveButton = adminPage.locator('button:has-text("Przenie\u015b")');
+      const moveButton = adminPage.locator('button:has-text("Przenieś")');
       if (await moveButton.count() > 0) {
         await moveButton.first().click();
         const inputType = await adminPage.locator('input[name="position"], input[name="newPosition"]').getAttribute('type');

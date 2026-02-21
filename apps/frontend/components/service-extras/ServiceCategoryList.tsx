@@ -50,8 +50,8 @@ import type {
 } from '@/types/service-extra.types';
 
 const PRICE_LABELS: Record<string, string> = {
-  FLAT: 'Kwota sta\u0142a',
-  PER_PERSON: 'Za osob\u0119',
+  FLAT: 'Kwota stała',
+  PER_PERSON: 'Za osobę',
   FREE: 'Gratis',
 };
 
@@ -119,8 +119,8 @@ export function ServiceCategoryList({
       await reorderCategories.mutateAsync(newOrder);
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 zmieni\u0107 kolejno\u015bci',
+        title: 'Błąd',
+        description: 'Nie udało się zmienić kolejności',
         variant: 'destructive',
       });
     }
@@ -132,15 +132,15 @@ export function ServiceCategoryList({
     try {
       if (deleteTarget.type === 'category') {
         await deleteCategory.mutateAsync(deleteTarget.id);
-        toast({ title: 'Kategoria usuni\u0119ta', description: deleteTarget.name });
+        toast({ title: 'Kategoria usunięta', description: deleteTarget.name });
       } else {
         await deleteItem.mutateAsync(deleteTarget.id);
-        toast({ title: 'Pozycja usuni\u0119ta', description: deleteTarget.name });
+        toast({ title: 'Pozycja usunięta', description: deleteTarget.name });
       }
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d usuwania',
-        description: error?.response?.data?.message || 'Nie mo\u017cna usun\u0105\u0107',
+        title: 'Błąd usuwania',
+        description: error?.response?.data?.message || 'Nie można usunąć',
         variant: 'destructive',
       });
     }
@@ -167,7 +167,7 @@ export function ServiceCategoryList({
                     <span className="font-medium">{item.name}</span>
                     {item.isExclusive && (
                       <Badge variant="outline" className="text-xs">
-                        Wy\u0142\u0105czna
+                        Wyłączna
                       </Badge>
                     )}
                     {!item.isActive && (
@@ -186,7 +186,7 @@ export function ServiceCategoryList({
                     <span>{PRICE_LABELS[item.priceType]}</span>
                     {item.priceType !== 'FREE' && (
                       <span className="font-medium">
-                        {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142
+                        {Number(item.basePrice).toLocaleString('pl-PL')} zł
                         {item.priceType === 'PER_PERSON' && '/os.'}
                       </span>
                     )}
@@ -395,7 +395,7 @@ function SortableCategoryCard({
                         <span className="text-sm font-medium">{item.name}</span>
                         {item.isExclusive && (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            Wy\u0142\u0105czna
+                            Wyłączna
                           </Badge>
                         )}
                         {item.requiresNote && (
@@ -413,7 +413,7 @@ function SortableCategoryCard({
                         {PRICE_LABELS[item.priceType]}
                         {item.priceType !== 'FREE' && (
                           <span className="ml-1 font-medium">
-                            {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142
+                            {Number(item.basePrice).toLocaleString('pl-PL')} zł
                             {item.priceType === 'PER_PERSON' && '/os.'}
                           </span>
                         )}
@@ -472,14 +472,14 @@ function DeleteConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            Potwierd\u017a usuni\u0119cie
+            Potwierdź usunięcie
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Czy na pewno chcesz usun\u0105\u0107{' '}
+            Czy na pewno chcesz usunąć{' '}
             <strong>{target?.name}</strong>?
             {target?.type === 'category' && (
               <span className="block mt-1 text-destructive">
-                Uwaga: usuni\u0119cie kategorii usunie r\u00f3wnie\u017c wszystkie pozycje w niej.
+                Uwaga: usunięcie kategorii usunie również wszystkie pozycje w niej.
               </span>
             )}
           </AlertDialogDescription>
@@ -491,7 +491,7 @@ function DeleteConfirmDialog({
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isLoading ? 'Usuwanie...' : 'Usu\u0144'}
+            {isLoading ? 'Usuwanie...' : 'Usuń'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
