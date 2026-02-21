@@ -77,3 +77,12 @@ FETCH_HEAD
 # Upload directories
 apps/backend/uploads/
 apps/frontend/.next/
+
+# Build output
+apps/backend/dist/
+dist/
+
+# Test artifacts  
+apps/frontend/playwright-report/
+apps/frontend/test-results/
+*.webm
