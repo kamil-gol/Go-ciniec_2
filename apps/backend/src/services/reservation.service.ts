@@ -577,7 +577,7 @@ export class ReservationService {
       where,
       include: {
         ...RESERVATION_INCLUDE,
-        reservationExtras: {
+        extras: {
           include: {
             serviceItem: {
               select: { id: true, name: true, basePrice: true, priceType: true }
@@ -596,7 +596,7 @@ export class ReservationService {
 
     // Enrich each reservation with computed extrasTotalPrice
     return reservations.map((r: any) => {
-      const extras = r.reservationExtras || [];
+      const extras = r.extras || [];
       const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
       return {
         ...r,
@@ -613,7 +613,7 @@ export class ReservationService {
         ...RESERVATION_INCLUDE,
         menuSnapshot: true,
         deposits: true,
-        reservationExtras: {
+        extras: {
           include: {
             serviceItem: {
               include: {
@@ -629,7 +629,7 @@ export class ReservationService {
     if (!reservation) throw new Error('Reservation not found');
 
     // Enrich with computed extrasTotalPrice
-    const extras = (reservation as any).reservationExtras || [];
+    const extras = (reservation as any).extras || [];
     const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
 
     return {
