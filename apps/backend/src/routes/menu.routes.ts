@@ -615,8 +615,8 @@ router.get(
   authMiddleware,
   requireStaff,
   validateUUID('packageId'),
-  asyncHandler(async (req, res) => {
-    await menuCourseController.listByPackage.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.listByPackage.call(menuCourseController, req, res, next);
   })
 );
 
@@ -631,8 +631,8 @@ router.get(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await menuCourseController.getById.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.getById.call(menuCourseController, req, res, next);
   })
 );
 
@@ -646,8 +646,8 @@ router.post(
   '/menu-courses',
   authMiddleware,
   requireAdmin,
-  asyncHandler(async (req, res) => {
-    await menuCourseController.create.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.create.call(menuCourseController, req, res, next);
   })
 );
 
@@ -663,8 +663,8 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await menuCourseController.update.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.update.call(menuCourseController, req, res, next);
   })
 );
 
@@ -679,8 +679,8 @@ router.delete(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await menuCourseController.delete.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.delete.call(menuCourseController, req, res, next);
   })
 );
 
@@ -696,8 +696,8 @@ router.post(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await menuCourseController.assignDishes.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.assignDishes.call(menuCourseController, req, res, next);
   })
 );
 
@@ -711,8 +711,8 @@ router.delete(
   '/menu-courses/:courseId/dishes/:dishId',
   authMiddleware,
   requireAdmin,
-  asyncHandler(async (req, res) => {
-    await menuCourseController.removeDish.call(menuCourseController, req, res);
+  asyncHandler(async (req, res, next) => {
+    await menuCourseController.removeDish.call(menuCourseController, req, res, next);
   })
 );
 
