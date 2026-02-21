@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Gift, FolderOpen, Package, Plus, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Gift, FolderOpen, Package, Plus, Search, Eye, EyeOff, TrendingUp, Sparkles } from 'lucide-react';
 import { useServiceCategories } from '@/hooks/use-service-extras';
 import { ServiceCategoryList } from '@/components/service-extras/ServiceCategoryList';
 import { ServiceCategoryForm } from '@/components/service-extras/ServiceCategoryForm';
 import { ServiceItemForm } from '@/components/service-extras/ServiceItemForm';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -14,6 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { moduleAccents } from '@/lib/design-tokens';
 import type { ServiceCategory, ServiceItem } from '@/types/service-extra.types';
 
 export default function ServiceExtrasPage() {
@@ -23,8 +27,47 @@ export default function ServiceExtrasPage() {
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
   const [editingItem, setEditingItem] = useState<ServiceItem | null>(null);
   const [preselectedCategoryId, setPreselectedCategoryId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
-  const { data: categories, isLoading } = useServiceCategories();
+  const { data: categories, isLoading } = useServiceCategories(!showInactive);
+  const accent = moduleAccents.serviceExtras;
+
+  // ── Computed stats ────────────────────────────────────
+  const stats = useMemo(() => {
+    if (!categories) return { total: 0, items: 0, active: 0, free: 0 };
+    const allItems = categories.flatMap((c) => c.items || []);
+    return {
+      total: categories.length,
+      items: allItems.length,
+      active: allItems.filter((i) => i.isActive).length,
+      free: allItems.filter((i) => i.priceType === 'FREE').length,
+    };
+  }, [categories]);
+
+  // ── Filtered categories ───────────────────────────────
+  const filteredCategories = useMemo(() => {
+    if (!categories) return [];
+    if (!search.trim()) return categories;
+    const q = search.toLowerCase();
+    return categories
+      .map((cat) => {
+        const nameMatch = cat.name.toLowerCase().includes(q);
+        const matchingItems = cat.items?.filter(
+          (item) =>
+            item.name.toLowerCase().includes(q) ||
+            item.description?.toLowerCase().includes(q)
+        );
+        if (nameMatch) return cat;
+        if (matchingItems && matchingItems.length > 0) {
+          return { ...cat, items: matchingItems };
+        }
+        return null;
+      })
+      .filter(Boolean) as ServiceCategory[];
+  }, [categories, search]);
+
+  const totalFilteredItems = filteredCategories.flatMap((c) => c.items || []).length;
 
   // ── Category actions ──────────────────────────────────
   const handleCreateCategory = () => {
@@ -62,19 +105,103 @@ export default function ServiceExtrasPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Gift className="h-8 w-8" />
-            Usługi dodatkowe
-          </h1>
-          <p className="text-muted-foreground">
-            Zarządzanie usługami dodatkowymi — tort, muzyka, wystrój, fotografia i inne
-          </p>
-        </div>
+    <PageLayout>
+      {/* Hero */}
+      <PageHero
+        accent={accent}
+        title="Usługi Dodatkowe"
+        subtitle="Zarządzanie usługami — tort, muzyka, wystrój, fotografia i inne"
+        icon={Gift}
+        action={
+          <div className="flex gap-2">
+            <Button
+              size="lg"
+              className="bg-white text-purple-600 hover:bg-white/90 shadow-xl"
+              onClick={handleCreateCategory}
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Nowa Kategoria
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/20"
+              onClick={() => handleCreateItem()}
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Nowa Pozycja
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <StatCard
+          label="Kategorie"
+          value={stats.total}
+          subtitle="W systemie"
+          icon={FolderOpen}
+          iconGradient="from-purple-500 to-fuchsia-500"
+          delay={0.1}
+        />
+        <StatCard
+          label="Pozycje"
+          value={stats.items}
+          subtitle="Łącznie usług"
+          icon={Package}
+          iconGradient="from-violet-500 to-purple-500"
+          delay={0.2}
+        />
+        <StatCard
+          label="Aktywne"
+          value={stats.active}
+          subtitle="Dostępne do wyboru"
+          icon={TrendingUp}
+          iconGradient="from-emerald-500 to-teal-500"
+          delay={0.3}
+        />
+        <StatCard
+          label="Gratis"
+          value={stats.free}
+          subtitle="Bezpłatne pozycje"
+          icon={Sparkles}
+          iconGradient="from-amber-500 to-orange-500"
+          delay={0.4}
+        />
       </div>
+
+      {/* Filters */}
+      <Card>
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
+              <Input
+                placeholder="Szukaj kategorii lub pozycji..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-12 h-12 text-base"
+              />
+            </div>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setShowInactive(!showInactive)}
+              className={showInactive
+                ? `bg-gradient-to-r ${accent.gradient} text-white border-transparent shadow-lg`
+                : ''
+              }
+            >
+              {showInactive ? (
+                <><EyeOff className="mr-2 h-5 w-5" />Wszystkie</>  
+              ) : (
+                <><Eye className="mr-2 h-5 w-5" />Tylko Aktywne</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
@@ -83,84 +210,102 @@ export default function ServiceExtrasPage() {
             <TabsTrigger value="categories" className="flex items-center gap-1.5">
               <FolderOpen className="h-4 w-4" />
               Kategorie
-              {categories && (
+              {filteredCategories.length > 0 && (
                 <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs">
-                  {categories.length}
+                  {filteredCategories.length}
                 </span>
               )}
             </TabsTrigger>
             <TabsTrigger value="items" className="flex items-center gap-1.5">
               <Package className="h-4 w-4" />
               Wszystkie pozycje
+              {totalFilteredItems > 0 && (
+                <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {totalFilteredItems}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
-
-          <div className="flex gap-2">
-            {activeTab === 'categories' && (
-              <Button onClick={handleCreateCategory}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nowa kategoria
-              </Button>
-            )}
-            {activeTab === 'items' && (
-              <Button onClick={() => handleCreateItem()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nowa pozycja
-              </Button>
-            )}
-          </div>
         </div>
 
         {/* Tab: Kategorie */}
         <TabsContent value="categories" className="mt-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : categories && categories.length > 0 ? (
-            <ServiceCategoryList
-              categories={categories}
-              onEditCategory={handleEditCategory}
-              onCreateItem={handleCreateItem}
-              onEditItem={handleEditItem}
-            />
+            <LoadingState variant="skeleton" rows={6} />
+          ) : filteredCategories.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Znaleziono{' '}
+                  <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                    {filteredCategories.length}
+                  </span>{' '}
+                  {filteredCategories.length === 1
+                    ? 'kategorię'
+                    : filteredCategories.length < 5
+                    ? 'kategorie'
+                    : 'kategorii'}
+                </p>
+              </div>
+              <ServiceCategoryList
+                categories={filteredCategories}
+                onEditCategory={handleEditCategory}
+                onCreateItem={handleCreateItem}
+                onEditItem={handleEditItem}
+              />
+            </>
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
-              <Gift className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-medium">Brak kategorii</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Utwórz pierwszą kategorię usług dodatkowych
-              </p>
-              <Button onClick={handleCreateCategory} className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
-                Nowa kategoria
-              </Button>
-            </div>
+            <EmptyState
+              icon={Gift}
+              title={search ? 'Nie znaleziono kategorii' : 'Brak kategorii'}
+              description={
+                search
+                  ? 'Spróbuj użyć innego wyszukiwania'
+                  : 'Utwórz pierwszą kategorię usług dodatkowych'
+              }
+              actionLabel={search ? undefined : 'Nowa Kategoria'}
+              onAction={search ? undefined : handleCreateCategory}
+            />
           )}
         </TabsContent>
 
         {/* Tab: Pozycje (flat list) */}
         <TabsContent value="items" className="mt-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : categories && categories.length > 0 ? (
-            <ServiceCategoryList
-              categories={categories}
-              onEditCategory={handleEditCategory}
-              onCreateItem={handleCreateItem}
-              onEditItem={handleEditItem}
-              flatItemView
-            />
+            <LoadingState variant="skeleton" rows={6} />
+          ) : filteredCategories.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Znaleziono{' '}
+                  <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                    {totalFilteredItems}
+                  </span>{' '}
+                  {totalFilteredItems === 1
+                    ? 'pozycję'
+                    : totalFilteredItems < 5
+                    ? 'pozycje'
+                    : 'pozycji'}
+                </p>
+              </div>
+              <ServiceCategoryList
+                categories={filteredCategories}
+                onEditCategory={handleEditCategory}
+                onCreateItem={handleCreateItem}
+                onEditItem={handleEditItem}
+                flatItemView
+              />
+            </>
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
-              <Package className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-medium">Brak pozycji</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Najpierw utwórz kategorię, potem dodaj pozycje
-              </p>
-            </div>
+            <EmptyState
+              icon={Package}
+              title={search ? 'Nie znaleziono pozycji' : 'Brak pozycji'}
+              description={
+                search
+                  ? 'Spróbuj użyć innego wyszukiwania'
+                  : 'Najpierw utwórz kategorię, potem dodaj pozycje'
+              }
+            />
           )}
         </TabsContent>
       </Tabs>
@@ -195,6 +340,6 @@ export default function ServiceExtrasPage() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }

@@ -7,7 +7,6 @@ import {
   Edit,
   Trash2,
   Plus,
-  GripVertical,
   Package,
   AlertTriangle,
 } from 'lucide-react';
@@ -176,7 +175,7 @@ export function ServiceCategoryList({
   // Default — accordion by category
   return (
     <div className="space-y-3">
-      {categories.map((category) => {
+      {categories.map((category, index) => {
         const isExpanded = expandedIds.has(category.id);
         const itemCount = category._count?.items ?? category.items?.length ?? 0;
 
@@ -188,7 +187,9 @@ export function ServiceCategoryList({
               onClick={() => toggleExpand(category.id)}
             >
               <div className="flex items-center gap-3">
-                <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+                <span className="text-xs font-mono text-muted-foreground/50 w-5 text-center">
+                  {index + 1}
+                </span>
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4" />
                 ) : (
