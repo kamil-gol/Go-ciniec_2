@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogIn, Mail, Lock, AlertCircle, Sparkles, Building2 } from 'lucide-react'
+import { LogIn, Mail, Lock, AlertCircle, Building2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -176,7 +176,7 @@ export default function LoginPage() {
                       ? 'border-error-500 focus:border-error-600 focus:ring-error-500/20'
                       : 'border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20'
                   } rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200`}
-                  placeholder="admin@gosciniecrodzinny.pl"
+                  placeholder="twoj@email.pl"
                   value={formData.email}
                   onChange={(e) => {
                     setFormData({ ...formData, email: e.target.value })
@@ -273,33 +273,6 @@ export default function LoginPage() {
               </span>
             </motion.button>
           </form>
-
-          {/* Demo Credentials */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-700"
-          >
-            <div className="flex items-start gap-2 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-xl border border-violet-200 dark:border-violet-800">
-              <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-violet-900 dark:text-violet-100 mb-1">
-                  Domyślne konto testowe
-                </p>
-                <div className="space-y-1">
-                  <p className="text-xs text-violet-700 dark:text-violet-300">
-                    <span className="font-medium">Email:</span>{' '}
-                    <code className="bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded">admin@gosciniecrodzinny.pl</code>
-                  </p>
-                  <p className="text-xs text-violet-700 dark:text-violet-300">
-                    <span className="font-medium">Hasło:</span>{' '}
-                    <code className="bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded">Admin123!@#</code>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
 
         {/* Footer */}

@@ -11,6 +11,14 @@ async function main() {
   console.log('\ud83c\udf31 Starting database seeding...');
   console.log('='.repeat(60));
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction) {
+    console.log('\n\u26a0\ufe0f  PRODUCTION MODE DETECTED');
+    console.log('\u26a0\ufe0f  Skipping E2E test data. Use seed-production.ts for production seeding.');
+    console.log('\u26a0\ufe0f  To seed test data anyway, run: NODE_ENV=development npx prisma db seed\n');
+  }
+
   try {
     // 0. Seed RBAC first (permissions, roles, user migration, company settings)
     console.log('\n\ud83d\udd10 STEP 0: Seeding RBAC (roles, permissions, company settings)...');
@@ -32,9 +40,14 @@ async function main() {
     console.log('\u2705 Seeded templates and packages');
 
     // 4. Seed E2E test data (halls, users, clients, reservations)
-    console.log('\n\ud83e\uddea STEP 4: Seeding E2E test data...');
-    await seedE2ETestData();
-    console.log('\u2705 Seeded E2E test data');
+    //    ⚠️ SKIPPED IN PRODUCTION — contains test users with known passwords
+    if (!isProduction) {
+      console.log('\n\ud83e\uddea STEP 4: Seeding E2E test data...');
+      await seedE2ETestData();
+      console.log('\u2705 Seeded E2E test data');
+    } else {
+      console.log('\n\u23ed\ufe0f  STEP 4: SKIPPED — E2E test data not seeded in production');
+    }
 
     // 5. Summary
     console.log('\n' + '='.repeat(60));
@@ -59,6 +72,11 @@ async function main() {
     console.log(`  \ud83d\udcb0 Deposits: ${stats.deposits}`);
     console.log(`  \ud83c\udff7\ufe0f  Dish Categories: ${stats.dishCategories}`);
     console.log('');
+
+    if (isProduction) {
+      console.log('\u26a0\ufe0f  REMINDER: No test users were created.');
+      console.log('\u26a0\ufe0f  Create your admin account manually or use seed-production.ts');
+    }
 
   } catch (error) {
     console.error('\u274c Seeding failed:', error);
