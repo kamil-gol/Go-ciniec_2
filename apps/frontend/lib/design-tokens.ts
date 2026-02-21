@@ -150,6 +150,17 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     badge: 'bg-neutral-100 dark:bg-neutral-900/30',
     badgeText: 'text-neutral-700 dark:text-neutral-300',
   },
+  serviceExtras: {
+    name: 'Usługi dodatkowe',
+    gradient: 'from-purple-600 via-violet-600 to-fuchsia-600',
+    gradientSubtle: 'from-purple-500/5 via-violet-500/5 to-fuchsia-500/5',
+    iconBg: 'from-purple-500 to-fuchsia-500',
+    text: 'text-purple-600',
+    textDark: 'dark:text-purple-400',
+    ring: 'ring-purple-500/20',
+    badge: 'bg-purple-100 dark:bg-purple-900/30',
+    badgeText: 'text-purple-700 dark:text-purple-300',
+  },
 } as const
 
 /**

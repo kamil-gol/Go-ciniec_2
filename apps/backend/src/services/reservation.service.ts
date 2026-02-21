@@ -39,6 +39,30 @@ const RESERVATION_INCLUDE = {
   createdBy: { select: { id: true, email: true } },
 } as const;
 
+/**
+ * Calculate extrasTotalPrice from reservation extras array.
+ * Supports FLAT (basePrice × quantity), PER_PERSON (basePrice × quantity × guests), FREE (0).
+ */
+function calculateExtrasTotalPrice(
+  extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string } }>,
+  guests: number
+): number {
+  let total = 0;
+  for (const extra of extras) {
+    const price = extra.customPrice !== null ? Number(extra.customPrice) : Number(extra.serviceItem.basePrice);
+    const qty = extra.quantity || 1;
+    if (extra.serviceItem.priceType === 'PER_PERSON') {
+      total += price * qty * guests;
+    } else if (extra.serviceItem.priceType === 'FREE') {
+      // free — no cost
+    } else {
+      // FLAT
+      total += price * qty;
+    }
+  }
+  return Math.round(total * 100) / 100;
+}
+
 export class ReservationService {
 
   async createReservation(data: CreateReservationDTO, userId: string): Promise<ReservationResponse> {
@@ -551,7 +575,16 @@ export class ReservationService {
 
     const reservations = await prisma.reservation.findMany({
       where,
-      include: RESERVATION_INCLUDE,
+      include: {
+        ...RESERVATION_INCLUDE,
+        reservationExtras: {
+          include: {
+            serviceItem: {
+              select: { id: true, name: true, basePrice: true, priceType: true }
+            }
+          }
+        }
+      },
       orderBy: [
         { startDateTime: 'asc' },
         { date: 'asc' },
@@ -561,7 +594,16 @@ export class ReservationService {
       skip: (page - 1) * pageSize,
     });
 
-    return reservations as any[];
+    // Enrich each reservation with computed extrasTotalPrice
+    return reservations.map((r: any) => {
+      const extras = r.reservationExtras || [];
+      const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
+      return {
+        ...r,
+        extrasTotalPrice,
+        extrasCount: extras.length,
+      };
+    }) as any[];
   }
 
   async getReservationById(id: string): Promise<ReservationResponse> {
@@ -570,12 +612,31 @@ export class ReservationService {
       include: {
         ...RESERVATION_INCLUDE,
         menuSnapshot: true,
-        deposits: true
+        deposits: true,
+        reservationExtras: {
+          include: {
+            serviceItem: {
+              include: {
+                category: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
       }
     });
 
     if (!reservation) throw new Error('Reservation not found');
-    return reservation as any;
+
+    // Enrich with computed extrasTotalPrice
+    const extras = (reservation as any).reservationExtras || [];
+    const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
+
+    return {
+      ...reservation,
+      extrasTotalPrice,
+      extrasCount: extras.length,
+    } as any;
   }
 
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {

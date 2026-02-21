@@ -5,8 +5,8 @@ import { Page, expect } from '@playwright/test';
  *
  * The reservations page is at /dashboard/reservations/list.
  * Create form opens inline via "Nowa Rezerwacja" button (no separate /new page).
- * Form is a 6-step wizard: Wydarzenie → Sala i termin → Go\u015bcie → Menu i ceny → Klient → Podsumowanie.
- * Navigation: "Dalej" / "Wstecz" buttons, final submit: "Utw\u00f3rz Rezerwacj\u0119".
+ * Form is a 6-step wizard: Wydarzenie → Sala i termin → Goście → Menu i ceny → Klient → Podsumowanie.
+ * Navigation: "Dalej" / "Wstecz" buttons, final submit: "Utwórz Rezerwację".
  */
 export class ReservationHelper {
   constructor(private page: Page) {}
@@ -63,7 +63,7 @@ export class ReservationHelper {
    */
   async getStatsCount(): Promise<number> {
     // Stats are rendered as StatCard components in a grid
-    // Each has a label like "Wszystkie", "Potwierdzone", "Oczekuj\u0105ce", "Ten miesi\u0105c"
+    // Each has a label like "Wszystkie", "Potwierdzone", "Oczekujące", "Ten miesiąc"
     const statsGrid = this.page.locator('.grid.grid-cols-2');
     return await statsGrid.locator('> div').count();
   }

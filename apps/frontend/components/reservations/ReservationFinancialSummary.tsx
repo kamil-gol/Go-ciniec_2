@@ -6,7 +6,7 @@ import {
   XCircle, ArrowDownUp, Banknote, Smartphone, CreditCard, Loader2,
   ExternalLink, CalendarDays, Undo2, Mail, TrendingUp, Receipt,
   Package, ShoppingCart, Users, Sparkles, ChevronDown, ChevronUp,
-  Timer,
+  Timer, Gift,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -20,6 +20,7 @@ import {
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, DepositStatus, PaymentMethod } from '@/lib/api/deposits'
 import { useReservationMenu } from '@/hooks/use-menu'
+import { useReservationExtras } from '@/hooks/use-service-extras'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { DiscountSection } from '@/components/reservations/DiscountSection'
@@ -164,6 +165,12 @@ export function ReservationFinancialSummary({
   const hasMenu = !!menuData?.snapshot
   const priceBreakdown = menuData?.priceBreakdown
 
+  // Service extras data
+  const { data: extrasData } = useReservationExtras(reservationId)
+  const extras = extrasData?.data || []
+  const activeExtras = extras.filter((e: any) => e.status !== 'CANCELLED')
+  const extrasTotalPrice = extrasData?.totalExtrasPrice || 0
+
   // Resolve prices: use menu snapshot prices when available, fallback to reservation props
   const effectivePricePerAdult = hasMenu && priceBreakdown?.packageCost?.adults?.priceEach != null
     ? priceBreakdown.packageCost.adults.priceEach
@@ -188,12 +195,12 @@ export function ReservationFinancialSummary({
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
   }, [startDateTime, endDateTime, extraHourRate])
 
-  // Effective total: use menu total when available, fallback to reservation prop, + extra hours
+  // Effective total: base + extra hours + service extras
   const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
     : totalPrice
   const extraHoursCost = extraHoursInfo?.extraCost || 0
-  const effectiveTotalPrice = baseTotalPrice + extraHoursCost
+  const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice
 
   // Discount: calculate final price after discount (Sprint 7)
   const activeDiscountAmount = Number(discountAmount) || 0
@@ -356,10 +363,10 @@ export function ReservationFinancialSummary({
             >
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm font-semibold">{'Koszty usług'}</span>
+                <span className="text-sm font-semibold">Koszty usług</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">{formatPLN(effectiveTotalPrice)}{' zł'}</span>
+                <span className="text-sm font-bold">{formatPLN(effectiveTotalPrice)} zł</span>
                 {showCostDetails ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </div>
             </button>
@@ -377,32 +384,32 @@ export function ReservationFinancialSummary({
                   <div className="space-y-2">
                     {adults > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{'Dorośli ('}{adults}{' × '}{formatPLN(effectivePricePerAdult)}{' zł)'}</span>
-                        <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)}{' zł'}</span>
+                        <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
+                        <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
                     {children > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{'Dzieci ('}{children}{' × '}{formatPLN(effectivePricePerChild)}{' zł)'}</span>
-                        <span className="font-semibold">{formatPLN(children * effectivePricePerChild)}{' zł'}</span>
+                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{'Maluchy ('}{toddlers}{' × '}{formatPLN(effectivePricePerToddler)}{' zł)'}</span>
-                        <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)}{' zł'}</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
+                        <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler === 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{'Maluchy ('}{toddlers}{')'}</span>
-                        <span className="font-semibold text-emerald-600">{'bezpłatnie'}</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers})</span>
+                        <span className="font-semibold text-emerald-600">bezpłatnie</span>
                       </div>
                     )}
                     <Separator className="my-2" />
                     <div className="flex justify-between text-sm font-semibold">
                       <span>Suma podstawowa</span>
-                      <span>{formatPLN(hasMenu && priceBreakdown ? priceBreakdown.packageCost.subtotal : (adults * effectivePricePerAdult + children * effectivePricePerChild + toddlers * effectivePricePerToddler))}{' zł'}</span>
+                      <span>{formatPLN(hasMenu && priceBreakdown ? priceBreakdown.packageCost.subtotal : (adults * effectivePricePerAdult + children * effectivePricePerChild + toddlers * effectivePricePerToddler))} zł</span>
                     </div>
                   </div>
                 </div>
@@ -420,13 +427,40 @@ export function ReservationFinancialSummary({
                           <span className="text-muted-foreground">
                             {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
                           </span>
-                          <span className="font-semibold">{formatPLN(opt.total)}{' zł'}</span>
+                          <span className="font-semibold">{formatPLN(opt.total)} zł</span>
                         </div>
                       ))}
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm font-semibold">
                         <span>Suma opcji</span>
-                        <span>{formatPLN(priceBreakdown.optionsSubtotal)}{' zł'}</span>
+                        <span>{formatPLN(priceBreakdown.optionsSubtotal)} zł</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Service Extras */}
+                {activeExtras.length > 0 && (
+                  <div className="bg-white dark:bg-black/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Gift className="h-4 w-4 text-violet-600" />
+                      <p className="text-sm font-semibold text-muted-foreground">Usługi dodatkowe</p>
+                    </div>
+                    <div className="space-y-2">
+                      {activeExtras.map((extra: any) => (
+                        <div key={extra.id} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground flex items-center gap-1.5">
+                            <span>{extra.serviceItem?.icon || '📦'}</span>
+                            {extra.serviceItem?.name || 'Pozycja'}
+                            {extra.quantity > 1 && ` (×${extra.quantity})`}
+                          </span>
+                          <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
+                        </div>
+                      ))}
+                      <Separator className="my-2" />
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Suma usług dodatkowych</span>
+                        <span>{formatPLN(extrasTotalPrice)} zł</span>
                       </div>
                     </div>
                   </div>
@@ -455,9 +489,9 @@ export function ReservationFinancialSummary({
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          {'Dodatkowe godziny ('}{extraHoursInfo.extraHours}{' × '}{formatPLN(extraHourRate)}{' zł/h)'}
+                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
                         </span>
-                        <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)}{' zł'}</span>
+                        <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
                       </div>
                     </div>
                   </div>
@@ -488,20 +522,26 @@ export function ReservationFinancialSummary({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 opacity-80" />
-                  <span className="font-bold">{'Razem do zapłaty'}</span>
+                  <span className="font-bold">Razem do zapłaty</span>
                 </div>
-                <span className="text-2xl font-bold">{formatPLN(finalTotalPrice)}{' zł'}</span>
+                <span className="text-2xl font-bold">{formatPLN(finalTotalPrice)} zł</span>
               </div>
               {hasActiveDiscount && (
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
-                  <span>{'w tym rabat'}</span>
-                  <span>-{formatPLN(activeDiscountAmount)}{' zł'}</span>
+                  <span>w tym rabat</span>
+                  <span>-{formatPLN(activeDiscountAmount)} zł</span>
+                </div>
+              )}
+              {extrasTotalPrice > 0 && (
+                <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+                  <span>w tym usługi dodatkowe ({activeExtras.length})</span>
+                  <span>+{formatPLN(extrasTotalPrice)} zł</span>
                 </div>
               )}
               {extraHoursInfo && extraHoursInfo.extraHours > 0 && (
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
-                  <span>{'w tym dopłata za '}{extraHoursInfo.extraHours}{' dodatkow'}{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
-                  <span>+{formatPLN(extraHoursInfo.extraCost)}{' zł'}</span>
+                  <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
+                  <span>+{formatPLN(extraHoursInfo.extraCost)} zł</span>
                 </div>
               )}
             </div>
@@ -514,10 +554,10 @@ export function ReservationFinancialSummary({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm font-semibold">{'Stan rozliczeń'}</span>
+                  <span className="text-sm font-semibold">Stan rozliczeń</span>
                 </div>
                 <span className="text-sm font-bold">
-                  {formatPLN(financials.totalPaid)} / {formatPLN(finalTotalPrice)}{' zł'}
+                  {formatPLN(financials.totalPaid)} / {formatPLN(finalTotalPrice)} zł
                 </span>
               </div>
 
@@ -536,7 +576,7 @@ export function ReservationFinancialSummary({
                 <div className="flex items-center gap-4 text-xs">
                   <span className="flex items-center gap-1">
                     <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
-                    {'Wpłacono'} ({financials.percentPaid}%)
+                    Wpłacono ({financials.percentPaid}%)
                   </span>
                   {financials.totalPending > 0 && (
                     <span className="flex items-center gap-1">
@@ -553,14 +593,14 @@ export function ReservationFinancialSummary({
 
               {financials.remaining > 0 && (
                 <div className="mt-3 flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <span className="text-sm font-medium text-amber-800 dark:text-amber-300">{'Pozostało do zapłaty'}</span>
-                  <span className="text-lg font-bold text-amber-800 dark:text-amber-300">{formatPLN(financials.remaining)}{' zł'}</span>
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-300">Pozostało do zapłaty</span>
+                  <span className="text-lg font-bold text-amber-800 dark:text-amber-300">{formatPLN(financials.remaining)} zł</span>
                 </div>
               )}
               {financials.remaining === 0 && financials.totalPaid > 0 && (
                 <div className="mt-3 flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{'Całkowicie opłacone!'}</span>
+                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Całkowicie opłacone!</span>
                 </div>
               )}
             </div>
@@ -622,11 +662,11 @@ export function ReservationFinancialSummary({
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center gap-2">
                               <span className="text-base font-bold tabular-nums">
-                                {Number(deposit.amount).toLocaleString('pl-PL')}{' zł'}
+                                {Number(deposit.amount).toLocaleString('pl-PL')} zł
                               </span>
                               {deposit.title && (
                                 <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                  {'— '}{deposit.title}
+                                  — {deposit.title}
                                 </span>
                               )}
                             </div>
@@ -654,7 +694,7 @@ export function ReservationFinancialSummary({
                             {isPending && (
                               <button onClick={() => handleOpenPay(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50 transition-colors">
-                                <CheckCircle2 className="h-3 w-3" /> {'Opłać'}
+                                <CheckCircle2 className="h-3 w-3" /> Opłać
                               </button>
                             )}
                             {isPaid && (
@@ -692,7 +732,7 @@ export function ReservationFinancialSummary({
                   className="w-full bg-rose-600 hover:bg-rose-700 text-white shadow-md"
                 >
                   <Plus className="mr-1.5 h-4 w-4" />
-                  {'Dodaj zaliczkę'}
+                  Dodaj zaliczkę
                 </Button>
 
                 {!depositsLoading && deposits.length > 0 && (
@@ -720,12 +760,12 @@ export function ReservationFinancialSummary({
               Nowa zaliczka
             </DialogTitle>
             <DialogDescription>
-              {'Sugerowana kwota: 30% ('}{formatPLN(Math.round(finalTotalPrice * 0.3))}{' zł)'}
+              Sugerowana kwota: 30% ({formatPLN(Math.round(finalTotalPrice * 0.3))} zł)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">{'Kwota (zł) *'}</Label>
+              <Label className="text-sm font-semibold">Kwota (zł) *</Label>
               <Input type="number" min="1" step="0.01" placeholder={`np. ${Math.round(finalTotalPrice * 0.3)}`}
                 value={createAmount} onChange={(e) => setCreateAmount(e.target.value)} className="h-10" />
               {createAmount && finalTotalPrice > 0 && (
@@ -735,11 +775,11 @@ export function ReservationFinancialSummary({
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">{'Termin płatności *'}</Label>
+              <Label className="text-sm font-semibold">Termin płatności *</Label>
               <Input type="date" value={createDueDate} onChange={(e) => setCreateDueDate(e.target.value)} className="h-10" />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">{'Tytuł (opcjonalnie)'}</Label>
+              <Label className="text-sm font-semibold">Tytuł (opcjonalnie)</Label>
               <Input placeholder="np. Zaliczka na wesele" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} className="h-10" />
             </div>
           </div>
@@ -747,7 +787,7 @@ export function ReservationFinancialSummary({
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>Anuluj</Button>
             <Button onClick={handleCreate} disabled={creating} className="bg-rose-600 hover:bg-rose-700 text-white">
               {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              {'Utwórz zaliczkę'}
+              Utwórz zaliczkę
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -761,7 +801,7 @@ export function ReservationFinancialSummary({
               <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              {'Potwierdź płatność'}
+              Potwierdź płatność
             </DialogTitle>
           </DialogHeader>
           {selectedDeposit && (
@@ -769,11 +809,11 @@ export function ReservationFinancialSummary({
               <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
                 <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota</p>
                 <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                  {Number(selectedDeposit.amount).toLocaleString('pl-PL')}{' zł'}
+                  {Number(selectedDeposit.amount).toLocaleString('pl-PL')} zł
                 </p>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">{'Metoda płatności'}</Label>
+                <Label className="text-sm font-semibold">Metoda płatności</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {paymentMethodOptions.map((m) => {
                     const Icon = m.icon
@@ -791,7 +831,7 @@ export function ReservationFinancialSummary({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">{'Data płatności'}</Label>
+                <Label className="text-sm font-semibold">Data płatności</Label>
                 <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} className="h-10" />
               </div>
             </div>
@@ -800,7 +840,7 @@ export function ReservationFinancialSummary({
             <Button variant="outline" onClick={() => setShowPayModal(false)}>Anuluj</Button>
             <Button onClick={handlePay} disabled={paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-              {'Potwierdź płatność'}
+              Potwierdź płatność
             </Button>
           </DialogFooter>
         </DialogContent>
