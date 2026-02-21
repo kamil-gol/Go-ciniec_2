@@ -483,6 +483,32 @@ export function CreateReservationForm({
       input.discountReason = (data.discountReason || '').trim()
     }
 
+    // Sprint 8: Service extras
+    if (selectedExtras.length > 0) {
+      input.serviceExtras = selectedExtras.map((extra) => {
+        const item = extra.serviceItem
+        let unitPrice = item.basePrice
+        let totalPrice = 0
+
+        if (item.priceType === 'FREE') {
+          unitPrice = 0
+          totalPrice = 0
+        } else if (item.priceType === 'PER_PERSON') {
+          totalPrice = item.basePrice * totalGuests * extra.quantity
+        } else {
+          // FLAT
+          totalPrice = item.basePrice * extra.quantity
+        }
+
+        return {
+          serviceItemId: item.id,
+          quantity: extra.quantity,
+          unitPrice,
+          totalPrice,
+        }
+      })
+    }
+
     try {
       if (onSubmitProp) {
         await onSubmitProp(input)
