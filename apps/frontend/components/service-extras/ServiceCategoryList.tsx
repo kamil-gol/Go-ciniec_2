@@ -60,7 +60,7 @@ import type {
   ServiceItem,
 } from '@/types/service-extra.types';
 
-// \u2500\u2500 Constants \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Constants
 
 const PRICE_LABELS: Record<string, string> = {
   FLAT: 'Kwota stała',
@@ -74,7 +74,7 @@ const PRICE_TYPE_STYLES: Record<string, string> = {
   FREE: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
 };
 
-// \u2500\u2500 Props \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Props
 
 interface ServiceCategoryListProps {
   categories: ServiceCategory[];
@@ -84,7 +84,7 @@ interface ServiceCategoryListProps {
   flatItemView?: boolean;
 }
 
-// \u2500\u2500 Main Component \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Main Component
 
 export function ServiceCategoryList({
   categories,
@@ -156,7 +156,7 @@ export function ServiceCategoryList({
     setDeleteTarget(null);
   };
 
-  // \u2550\u2550\u2550 FLAT ITEM VIEW (Table) \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+  // === FLAT ITEM VIEW (Table) ===
   if (flatItemView) {
     const allItems = categories.flatMap(
       (cat) => cat.items?.map((item) => ({ ...item, category: cat })) || []
@@ -170,7 +170,7 @@ export function ServiceCategoryList({
             <div key={item.id} className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg flex-shrink-0">{item.icon || '\ud83d\udce6'}</span>
+                  <span className="text-lg flex-shrink-0">{item.icon || '📦'}</span>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">{item.name}</p>
                     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
@@ -230,7 +230,7 @@ export function ServiceCategoryList({
                 <TableRow key={item.id} className="group hover:bg-purple-50/40 dark:hover:bg-purple-900/10 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <span className="text-lg">{item.icon || '\ud83d\udce6'}</span>
+                      <span className="text-lg">{item.icon || '📦'}</span>
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{item.name}</p>
                         {item.description && (
@@ -260,7 +260,7 @@ export function ServiceCategoryList({
                         {item.priceType === 'PER_PERSON' && <span className="text-xs text-neutral-400 ml-0.5">/os.</span>}
                       </span>
                     ) : (
-                      <span className="text-sm text-neutral-300 dark:text-neutral-600">\u2014</span>
+                      <span className="text-sm text-neutral-300 dark:text-neutral-600">—</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -302,7 +302,7 @@ export function ServiceCategoryList({
     );
   }
 
-  // \u2550\u2550\u2550 CATEGORIES VIEW (DnD Table) \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+  // === CATEGORIES VIEW (DnD Table) ===
   return (
     <DndContext
       sensors={sensors}
@@ -369,7 +369,7 @@ export function ServiceCategoryList({
   );
 }
 
-// \u2500\u2500 Sortable Category Row (Desktop) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Sortable Category Row (Desktop)
 
 interface CategoryRowProps {
   category: ServiceCategory;
@@ -443,7 +443,7 @@ function SortableCategoryRows({
               className="h-3 w-3 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
               style={{ backgroundColor: category.color || '#94a3b8' }}
             />
-            <span className="text-lg flex-shrink-0">{category.icon || '\ud83d\udcc1'}</span>
+            <span className="text-lg flex-shrink-0">{category.icon || '📁'}</span>
             <div className="min-w-0">
               <p className="font-semibold text-sm truncate">{category.name}</p>
               {category.description && (
@@ -500,7 +500,7 @@ function SortableCategoryRows({
           <TableCell></TableCell>
           <TableCell>
             <div className="flex items-center gap-3 pl-8">
-              <span className="text-base">{item.icon || '\ud83d\udce6'}</span>
+              <span className="text-base">{item.icon || '📦'}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="font-medium text-sm truncate">{item.name}</p>
@@ -532,7 +532,7 @@ function SortableCategoryRows({
           <TableCell></TableCell>
           <TableCell>
             {item.isActive ? (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400">\u2713</span>
+              <span className="text-xs text-emerald-600 dark:text-emerald-400">✓</span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                 Nieaktywna
@@ -561,7 +561,7 @@ function SortableCategoryRows({
               <Package className="h-4 w-4" />
               Brak pozycji
               <Button variant="link" size="sm" className="h-auto p-0 text-purple-600" onClick={() => onCreateItem(category.id)}>
-                \u2014 dodaj pierwszą
+                — dodaj pierwszą
               </Button>
             </div>
           </TableCell>
@@ -571,7 +571,7 @@ function SortableCategoryRows({
   );
 }
 
-// \u2500\u2500 Mobile Category Card \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Mobile Category Card
 
 function MobileCategoryCard({
   category,
@@ -595,7 +595,7 @@ function MobileCategoryCard({
             className="h-3 w-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: category.color || '#94a3b8' }}
           />
-          <span className="text-lg flex-shrink-0">{category.icon || '\ud83d\udcc1'}</span>
+          <span className="text-lg flex-shrink-0">{category.icon || '📁'}</span>
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate">{category.name}</p>
             <p className="text-xs text-neutral-500">{itemCount} pozycji</p>
@@ -618,12 +618,12 @@ function MobileCategoryCard({
       {isExpanded && category.items && category.items.map((item) => (
         <div key={item.id} className="px-4 py-2.5 pl-14 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-800/20 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span>{item.icon || '\ud83d\udce6'}</span>
+            <span>{item.icon || '📦'}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{item.name}</p>
               <p className="text-xs text-neutral-500">
                 {PRICE_LABELS[item.priceType]}
-                {item.priceType !== 'FREE' && ` \u00b7 ${Number(item.basePrice).toLocaleString('pl-PL')} zł`}
+                {item.priceType !== 'FREE' && ` · ${Number(item.basePrice).toLocaleString('pl-PL')} zł`}
               </p>
             </div>
           </div>
@@ -641,7 +641,7 @@ function MobileCategoryCard({
   );
 }
 
-// \u2500\u2500 Delete Confirm Dialog \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Delete Confirm Dialog
 
 function DeleteConfirmDialog({
   target,

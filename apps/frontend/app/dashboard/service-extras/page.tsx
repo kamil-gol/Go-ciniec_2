@@ -51,7 +51,7 @@ export default function ServiceExtrasPage() {
   const { data: categories, isLoading } = useServiceCategories(!showInactive);
   const accent = moduleAccents.serviceExtras;
 
-  // \u2500\u2500 Computed stats \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Computed stats
   const stats = useMemo(() => {
     if (!categories) return { total: 0, items: 0, active: 0, free: 0 };
     const allItems = categories.flatMap((c) => c.items || []);
@@ -63,7 +63,7 @@ export default function ServiceExtrasPage() {
     };
   }, [categories]);
 
-  // \u2500\u2500 Filtered categories \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Filtered categories
   const filteredCategories = useMemo(() => {
     if (!categories) return [];
     if (!search.trim()) return categories;
@@ -87,7 +87,7 @@ export default function ServiceExtrasPage() {
 
   const totalFilteredItems = filteredCategories.flatMap((c) => c.items || []).length;
 
-  // \u2500\u2500 Category actions \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Category actions
   const handleCreateCategory = () => {
     setEditingCategory(null);
     setCategoryFormOpen(true);
@@ -101,7 +101,7 @@ export default function ServiceExtrasPage() {
     setEditingCategory(null);
   };
 
-  // \u2500\u2500 Item actions \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Item actions
   const handleCreateItem = (categoryId?: string) => {
     setEditingItem(null);
     setPreselectedCategoryId(categoryId || null);
@@ -118,7 +118,7 @@ export default function ServiceExtrasPage() {
     setPreselectedCategoryId(null);
   };
 
-  // \u2500\u2500 Filter buttons \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Filter buttons
   const viewButtons: { label: string; value: ViewMode; count: number; icon: React.ElementType }[] = [
     { label: 'Kategorie', value: 'categories', count: filteredCategories.length, icon: FolderOpen },
     { label: 'Wszystkie pozycje', value: 'items', count: totalFilteredItems, icon: Package },
@@ -130,7 +130,7 @@ export default function ServiceExtrasPage() {
       <PageHero
         accent={accent}
         title="Usługi Dodatkowe"
-        subtitle="Zarządzanie usługami \u2014 tort, muzyka, wystrój, fotografia i inne"
+        subtitle="Zarządzanie usługami — tort, muzyka, wystrój, fotografia i inne"
         icon={Gift}
         action={
           <div className="flex gap-2">
@@ -190,7 +190,7 @@ export default function ServiceExtrasPage() {
         />
       </div>
 
-      {/* Main Card \u2014 Deposits-style */}
+      {/* Main Card — Deposits-style */}
       <Card className="overflow-hidden">
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
