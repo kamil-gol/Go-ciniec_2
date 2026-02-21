@@ -4,6 +4,19 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 export async function seedE2ETestData() {
+  // ⚠️ SECURITY: Block in production to prevent test accounts with known passwords
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  seedE2ETestData() skipped — not allowed in production');
+    console.warn('   Set NODE_ENV=development to seed test data');
+    return {
+      halls: [],
+      users: [],
+      clients: [],
+      reservations: [],
+      deposits: [],
+    };
+  }
+
   console.log('\ud83e\uddea Starting E2E test data seeding...\n');
 
   // Clean up in correct order (respecting foreign keys)
@@ -41,12 +54,20 @@ export async function seedE2ETestData() {
   console.log(`   \u2705 Created ${createdHalls.length} halls`);
 
   // 2. USERS
+  // 🔒 SECURITY: Read passwords from env variables with dev-only fallbacks
   console.log('\n\ud83d\udc65 Seeding Users...');
+
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin123!@#';
+  const employeePassword = process.env.SEED_EMPLOYEE_PASSWORD || 'Pracownik123!';
+
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.warn('   \u26a0\ufe0f  SEED_ADMIN_PASSWORD not set — using default dev password');
+  }
 
   const usersData = [
     {
       email: 'admin@gosciniecrodzinny.pl',
-      password: await bcrypt.hash('Admin123!@#', 10),
+      password: await bcrypt.hash(adminPassword, 12),
       firstName: 'Admin',
       lastName: 'G\u0142\u00f3wny',
       legacyRole: 'ADMIN',
@@ -55,7 +76,7 @@ export async function seedE2ETestData() {
     },
     {
       email: 'pracownik1@gosciniecrodzinny.pl',
-      password: await bcrypt.hash('Pracownik123!', 10),
+      password: await bcrypt.hash(employeePassword, 12),
       firstName: 'Anna',
       lastName: 'Kowalska',
       legacyRole: 'EMPLOYEE',
@@ -64,7 +85,7 @@ export async function seedE2ETestData() {
     },
     {
       email: 'pracownik2@gosciniecrodzinny.pl',
-      password: await bcrypt.hash('Pracownik123!', 10),
+      password: await bcrypt.hash(employeePassword, 12),
       firstName: 'Jan',
       lastName: 'Nowak',
       legacyRole: 'EMPLOYEE',
@@ -82,6 +103,7 @@ export async function seedE2ETestData() {
   } else {
     console.log('   \u26a0\ufe0f  RBAC roles not found \u2014 users created without roleId (run rbac seed first)');
   }
+  // 🔒 SECURITY: Do NOT log passwords to console
 
   // 3. CLIENTS
   console.log('\n\ud83d\udc64 Seeding Clients...');

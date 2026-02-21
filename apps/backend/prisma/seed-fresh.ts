@@ -106,6 +106,13 @@ function formatDate(date: Date): string {
 // MAIN SEED FUNCTION
 // ============================================
 async function main() {
+  // ⚠️ SECURITY: Block in production
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ seed-fresh.ts is NOT meant for production!');
+    console.error('   Use seed-production.ts instead.');
+    process.exit(1);
+  }
+
   console.log('🗑️  Czyszczenie bazy danych...')
   
   // Usuń wszystkie dane (w odpowiedniej kolejności - foreign keys)
@@ -125,9 +132,12 @@ async function main() {
   // ============================================
   console.log('👤 Tworzenie użytkownika systemowego...')
   
-  // Generate proper bcrypt hash for password: Admin123!@#
-  const adminPassword = 'Admin123!@#'
-  const hashedPassword = bcrypt.hashSync(adminPassword, 10)
+  // 🔒 SECURITY: Read password from env variable, fallback only in dev
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin123!@#'
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.warn('⚠️  SEED_ADMIN_PASSWORD not set — using default dev password');
+  }
+  const hashedPassword = bcrypt.hashSync(adminPassword, 12)
   
   const systemUser = await prisma.user.create({
     data: {
@@ -140,7 +150,7 @@ async function main() {
     },
   })
   console.log(`✅ Utworzono użytkownika: ${systemUser.email}`)
-  console.log(`   Hasło: ${adminPassword}\n`)
+  // 🔒 SECURITY: Do NOT log password to console
 
   // ============================================
   // 1. SALE
@@ -377,9 +387,9 @@ async function main() {
   console.log(`⏳ Kolejka:           ${queueCount}`)
   console.log('═══════════════════════════════════════')
   console.log('✅ Seed zakończony pomyślnie!')
-  console.log('\n🔑 Dane logowania:')
-  console.log('   Email: admin@gosciniecrodzinny.pl')
-  console.log('   Hasło: Admin123!@#')
+  // 🔒 SECURITY: Credentials are NOT logged to console
+  console.log('\n🔑 Konto admina zostało utworzone.')
+  console.log('   Hasło ustawione z zmiennej SEED_ADMIN_PASSWORD.')
 }
 
 main()
