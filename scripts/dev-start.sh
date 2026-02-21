@@ -20,11 +20,16 @@ log() { echo -e "${GREEN}[DEV]${NC} $1"; }
 warn() { echo -e "${YELLOW}[DEV]${NC} $1"; }
 info() { echo -e "${CYAN}[DEV]${NC} $1"; }
 
-# Check .env.dev exists
+# Load .env.dev variables
 if [ ! -f "$ENV_FILE" ]; then
   echo "❌ .env.dev not found at $ENV_FILE"
   exit 1
 fi
+
+# Export all variables from .env.dev
+set -a
+source "$ENV_FILE"
+set +a
 
 show_help() {
   echo ""
@@ -38,17 +43,17 @@ show_help() {
   echo "    db:logs   Show dev container logs"
   echo "    migrate   Sync dev DB schema (prisma db push)"
   echo "    seed      Seed dev DB (full + service extras)"
-  echo "    backend   Start backend API on :4001"
-  echo "    frontend  Start frontend on :4000"
+  echo "    backend   Start backend API on :${API_PORT:-4001}"
+  echo "    frontend  Start frontend on :${WEB_PORT:-4000}"
   echo "    all       Start everything (db + migrate + seed + backend)"
   echo "    status    Show running dev services"
   echo "    reset     Drop dev DB and recreate"
   echo ""
   echo "  Ports:"
-  echo "    PostgreSQL  :5434  (prod :5432)"
-  echo "    Redis       :6380  (prod :6379)"
-  echo "    Backend     :4001  (prod :3001)"
-  echo "    Frontend    :4000  (prod :3000)"
+  echo "    PostgreSQL  :${DB_PORT:-5434}  (prod :5432)"
+  echo "    Redis       :${REDIS_PORT:-6380}  (prod :6379)"
+  echo "    Backend     :${API_PORT:-4001}  (prod :3001)"
+  echo "    Frontend    :${WEB_PORT:-4000}  (prod :3000)"
   echo ""
 }
 
@@ -59,8 +64,8 @@ cmd_db() {
   until docker exec rezerwacje-db-dev pg_isready -U rezerwacje_dev -d rezerwacje_dev > /dev/null 2>&1; do
     sleep 1
   done
-  log "✅ Dev PostgreSQL ready on port 5434"
-  log "✅ Dev Redis ready on port 6380"
+  log "✅ Dev PostgreSQL ready on port ${DB_PORT:-5434}"
+  log "✅ Dev Redis ready on port ${REDIS_PORT:-6380}"
 }
 
 cmd_db_stop() {
@@ -84,7 +89,7 @@ cmd_migrate() {
 
   # Also apply SQL functions from migration 0002
   log "Applying SQL functions..."
-  PGPASSWORD=rezerwacje_dev_2026 psql -h localhost -p 5434 -U rezerwacje_dev -d rezerwacje_dev \
+  PGPASSWORD="${DB_PASSWORD}" psql -h localhost -p "${DB_PORT:-5434}" -U "${DB_USER}" -d "${DB_NAME}" \
     -f "$PROJECT_ROOT/apps/backend/prisma/migrations/0002_queue_sql_functions/migration.sql" \
     2>/dev/null && log "✅ SQL functions applied" || warn "⚠️  SQL functions skipped (psql not available or already applied)"
 }
@@ -99,15 +104,16 @@ cmd_seed() {
 }
 
 cmd_backend() {
-  log "Starting backend on :4001..."
+  log "Starting backend on :${API_PORT:-4001}..."
   cd "$PROJECT_ROOT/apps/backend"
   npx dotenv -e "$ENV_FILE" -- npx tsx watch src/index.ts
 }
 
 cmd_frontend() {
-  log "Starting frontend on :4000..."
+  log "Starting frontend on :${WEB_PORT:-4000}..."
+  log "API URL: ${NEXT_PUBLIC_API_URL}"
   cd "$PROJECT_ROOT/apps/frontend"
-  PORT=4000 NEXT_PUBLIC_API_URL=http://localhost:4001/api npm run dev
+  PORT=${WEB_PORT:-4000} NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" npm run dev
 }
 
 cmd_all() {
@@ -118,8 +124,9 @@ cmd_all() {
   log "========================================"
   log "✅ Dev environment ready!"
   log "========================================"
-  info "Backend:  http://localhost:4001"
-  info "Frontend: http://localhost:4000  (start in separate terminal)"
+  info "Backend:  http://localhost:${API_PORT:-4001}"
+  info "Frontend: http://localhost:${WEB_PORT:-4000}"
+  info "API URL:  ${NEXT_PUBLIC_API_URL}"
   log "========================================"
   log ""
   log "Starting backend..."
@@ -131,7 +138,7 @@ cmd_status() {
   docker compose -f "$DC_FILE" ps
   echo ""
   info "Port usage:"
-  for port in 5434 6380 4001 4000; do
+  for port in ${DB_PORT:-5434} ${REDIS_PORT:-6380} ${API_PORT:-4001} ${WEB_PORT:-4000}; do
     pid=$(lsof -ti:$port 2>/dev/null || true)
     if [ -n "$pid" ]; then
       log "  :$port — PID $pid ($(ps -p $pid -o comm= 2>/dev/null || echo 'docker'))"
