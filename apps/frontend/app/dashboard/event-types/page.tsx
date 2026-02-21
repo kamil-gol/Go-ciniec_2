@@ -102,7 +102,7 @@ export default function EventTypesPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           label="Typy wydarzeń"
           value={eventTypes.length}
@@ -139,8 +139,8 @@ export default function EventTypesPage() {
 
       {/* Filters */}
       <Card>
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
               <Input

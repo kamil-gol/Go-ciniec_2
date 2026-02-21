@@ -1,6 +1,7 @@
 /**
  * Queue Controller
  * MIGRATED: AppError + no try/catch
+ * Updated: Phase 2 Audit — pass userId to all mutating service methods
  */
 
 import { Request, Response } from 'express';
@@ -44,8 +45,11 @@ export class QueueController {
   async updateQueueReservation(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const data = req.body;
+    const userId = req.user?.id;
 
-    const queueItem = await queueService.updateQueueReservation(id, data);
+    if (!userId) throw AppError.unauthorized();
+
+    const queueItem = await queueService.updateQueueReservation(id, data, userId);
 
     res.status(200).json({
       success: true,
@@ -92,12 +96,15 @@ export class QueueController {
    */
   async swapPositions(req: Request, res: Response): Promise<void> {
     const { reservationId1, reservationId2 }: SwapQueuePositionsDTO = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
 
     if (!reservationId1 || !reservationId2) {
       throw AppError.badRequest('Both reservation IDs are required');
     }
 
-    await queueService.swapPositions(reservationId1, reservationId2);
+    await queueService.swapPositions(reservationId1, reservationId2, userId);
 
     res.status(200).json({
       success: true,
@@ -112,6 +119,9 @@ export class QueueController {
   async moveToPosition(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { newPosition } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
 
     if (newPosition === undefined || newPosition === null) {
       throw AppError.badRequest('Position is required');
@@ -127,7 +137,7 @@ export class QueueController {
       throw AppError.badRequest('Position must be at least 1');
     }
 
-    await queueService.moveToPosition(id, position);
+    await queueService.moveToPosition(id, position, userId);
 
     res.status(200).json({
       success: true,
@@ -141,6 +151,9 @@ export class QueueController {
    */
   async batchUpdatePositions(req: Request, res: Response): Promise<void> {
     const { updates }: BatchUpdatePositionsDTO = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
 
     if (!updates || !Array.isArray(updates) || updates.length === 0) {
       throw AppError.badRequest('Updates array is required and must contain at least one item');
@@ -155,7 +168,7 @@ export class QueueController {
       }
     }
 
-    const result = await queueService.batchUpdatePositions(updates);
+    const result = await queueService.batchUpdatePositions(updates, userId);
 
     res.status(200).json({
       success: true,
@@ -168,8 +181,12 @@ export class QueueController {
    * Rebuild queue positions for all dates
    * POST /api/queue/rebuild-positions
    */
-  async rebuildPositions(_req: Request, res: Response): Promise<void> {
-    const result = await queueService.rebuildPositions();
+  async rebuildPositions(req: Request, res: Response): Promise<void> {
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
+
+    const result = await queueService.rebuildPositions(userId);
 
     res.status(200).json({
       success: true,
@@ -185,6 +202,9 @@ export class QueueController {
   async promoteReservation(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const data: PromoteReservationDTO = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
 
     if (!data.hallId || !data.eventTypeId || !data.startDateTime || !data.endDateTime) {
       throw AppError.badRequest('Hall, event type, start time, and end time are required');
@@ -194,7 +214,7 @@ export class QueueController {
       throw AppError.badRequest('Price per adult and at least 1 adult are required');
     }
 
-    const reservation = await queueService.promoteReservation(id, data);
+    const reservation = await queueService.promoteReservation(id, data, userId);
 
     res.status(200).json({
       success: true,
@@ -220,8 +240,9 @@ export class QueueController {
    * Manually trigger auto-cancel
    * POST /api/queue/auto-cancel
    */
-  async autoCancelExpired(_req: Request, res: Response): Promise<void> {
-    const result = await queueService.autoCancelExpired();
+  async autoCancelExpired(req: Request, res: Response): Promise<void> {
+    const userId = req.user?.id;
+    const result = await queueService.autoCancelExpired(userId);
 
     res.status(200).json({
       success: true,

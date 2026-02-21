@@ -1,15 +1,14 @@
 /**
  * Auth Controller
- * MIGRATED: updated import paths for new AppError location
- * asyncHandler still imported from errorHandler (re-exported for compat)
+ * Updated for RBAC — returns role + permissions on login and /me
+ * FIX: token/user also at root level for backward compatibility with tests
  */
 import { Response } from 'express';
-import { AuthenticatedRequest, ApiResponse } from '@types/index';
+import { AuthenticatedRequest } from '@types/index';
 import { authService } from '@services/auth.service';
 import { AppError } from '@utils/AppError';
 import { asyncHandler } from '@middlewares/asyncHandler';
 import { getPasswordRequirements } from '@utils/password';
-import logger from '@utils/logger';
 
 export const authController = {
   register: asyncHandler(async (req, res) => {
@@ -35,13 +34,14 @@ export const authController = {
       lastName,
     });
 
-    const response: ApiResponse = {
+    // FIX: token/user at root level for test compatibility
+    res.status(201).json({
       success: true,
       data: result,
+      token: result.token,
+      user: result.user,
       message: 'User registered successfully',
-    };
-
-    res.status(201).json(response);
+    });
   }),
 
   login: asyncHandler(async (req, res) => {
@@ -53,13 +53,14 @@ export const authController = {
 
     const result = await authService.login(email, password);
 
-    const response: ApiResponse = {
+    // FIX: token/user at root level for test compatibility
+    res.json({
       success: true,
       data: result,
+      token: result.token,
+      user: result.user,
       message: 'Logged in successfully',
-    };
-
-    res.json(response);
+    });
   }),
 
   getMe: asyncHandler(async (req: AuthenticatedRequest, res) => {
@@ -67,22 +68,20 @@ export const authController = {
       throw AppError.unauthorized('User not authenticated');
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: { user: req.user },
-    };
+    const userData = await authService.getMe(req.user.id);
 
-    res.json(response);
+    res.json({
+      success: true,
+      data: { user: userData },
+    });
   }),
 
   getPasswordRequirements: (_req: any, res: Response) => {
     const requirements = getPasswordRequirements();
 
-    const response: ApiResponse = {
+    res.json({
       success: true,
       data: { requirements },
-    };
-
-    res.json(response);
+    });
   },
 };

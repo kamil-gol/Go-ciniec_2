@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, PackagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { PageLayout, PageHero, EmptyState } from '@/components/shared';
+import { moduleAccents } from '@/lib/design-tokens';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -38,6 +40,7 @@ export default function AddonGroupsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<AddonGroup>>({});
   const { toast } = useToast();
+  const accent = moduleAccents.menu;
 
   useEffect(() => {
     fetchGroups();
@@ -88,10 +91,10 @@ export default function AddonGroupsPage() {
 
   const handleSave = async () => {
     try {
-      const url = editingId === 'new' 
-        ? `${API_URL}/api/addon-groups` 
+      const url = editingId === 'new'
+        ? `${API_URL}/api/addon-groups`
         : `${API_URL}/api/addon-groups/${editingId}`;
-      
+
       const method = editingId === 'new' ? 'POST' : 'PUT';
 
       const res = await fetch(url, {
@@ -149,32 +152,26 @@ export default function AddonGroupsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container py-8">
-        <div className="text-center">Ładowanie...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Grupy dodatków</h1>
-          <p className="text-muted-foreground mt-2">
-            Zarządzaj grupami dodatków do pakietów menu
-          </p>
-        </div>
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Dodaj grupę
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHero
+        accent={accent}
+        title="Grupy dodatków"
+        subtitle="Zarządzaj grupami dodatków do pakietów menu"
+        icon={PackagePlus}
+        backHref="/dashboard/menu"
+        backLabel="Powrót do Menu"
+        action={
+          <Button onClick={handleCreate} className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
+            <Plus className="h-5 w-5 sm:mr-2" />
+            <span className="hidden sm:inline">Dodaj grupę</span>
+          </Button>
+        }
+      />
 
       {editingId && (
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">
+        <Card className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">
             {editingId === 'new' ? 'Nowa grupa dodatków' : 'Edytuj grupę dodatków'}
           </h2>
           <div className="grid gap-4">
@@ -199,7 +196,7 @@ export default function AddonGroupsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="minSelect">Min wybór</Label>
                 <Input
@@ -210,7 +207,6 @@ export default function AddonGroupsPage() {
                   onChange={(e) => setFormData({ ...formData, minSelect: parseInt(e.target.value) })}
                 />
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="maxSelect">Max wybór</Label>
                 <Input
@@ -223,7 +219,7 @@ export default function AddonGroupsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="priceType">Typ ceny *</Label>
                 <Select
@@ -241,7 +237,6 @@ export default function AddonGroupsPage() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="basePrice">Cena bazowa (zł)</Label>
                 <Input
@@ -255,7 +250,7 @@ export default function AddonGroupsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="icon">Ikona</Label>
                 <Input
@@ -265,7 +260,6 @@ export default function AddonGroupsPage() {
                   placeholder="np. cocktail, wine"
                 />
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="displayOrder">Kolejność</Label>
                 <Input
@@ -286,42 +280,40 @@ export default function AddonGroupsPage() {
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                 className="h-4 w-4"
               />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                Aktywna
-              </Label>
+              <Label htmlFor="isActive" className="cursor-pointer">Aktywna</Label>
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={!formData.name}>
-                <Save className="mr-2 h-4 w-4" />
-                Zapisz
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleSave} disabled={!formData.name} className="sm:w-auto">
+                <Save className="mr-2 h-4 w-4" /> Zapisz
               </Button>
-              <Button variant="outline" onClick={handleCancel}>
-                <X className="mr-2 h-4 w-4" />
-                Anuluj
+              <Button variant="outline" onClick={handleCancel} className="sm:w-auto">
+                <X className="mr-2 h-4 w-4" /> Anuluj
               </Button>
             </div>
           </div>
         </Card>
       )}
 
-      <div className="grid gap-4">
-        {groups.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            Brak grup dodatków. Kliknij "Dodaj grupę" aby utworzyć pierwszą.
-          </Card>
+      <div className="grid gap-3 sm:gap-4">
+        {!loading && groups.length === 0 ? (
+          <EmptyState
+            icon={PackagePlus}
+            title="Brak grup dodatków"
+            description='Kliknij "Dodaj grupę" aby utworzyć pierwszą.'
+            actionLabel="Dodaj grupę"
+            onAction={handleCreate}
+          />
         ) : (
           groups.map((group) => (
-            <Card key={group.id} className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{group.name}</h3>
+            <Card key={group.id} className="p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold truncate">{group.name}</h3>
                   {group.description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {group.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{group.description}</p>
                   )}
-                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-muted-foreground">
                     <span>Wybór: {group.minSelect}-{group.maxSelect}</span>
                     <span>Typ: {group.priceType}</span>
                     <span>Cena: {group.basePrice} zł</span>
@@ -330,24 +322,14 @@ export default function AddonGroupsPage() {
                     </span>
                   </div>
                   {group.addons.length > 0 && (
-                    <div className="mt-2 text-sm">
-                      Dania: {group.addons.length}
-                    </div>
+                    <div className="mt-2 text-xs sm:text-sm">Dania: {group.addons.length}</div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(group)}
-                  >
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(group)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(group.id)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(group.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -356,6 +338,6 @@ export default function AddonGroupsPage() {
           ))
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

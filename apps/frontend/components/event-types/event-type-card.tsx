@@ -88,7 +88,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
                 {eventType.name}
               </h3>
               {!eventType.isActive && (
-                <Badge variant="secondary" className="text-xs mt-0.5">
+                <Badge variant="default" className="text-xs mt-0.5 bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
                   Nieaktywny
                 </Badge>
               )}

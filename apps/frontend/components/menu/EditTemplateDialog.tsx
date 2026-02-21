@@ -51,7 +51,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
         variant: template.variant || '',
         eventTypeId: template.eventTypeId,
         validFrom: template.validFrom.split('T')[0],
-        validTo: template.validTo.split('T')[0],
+        validTo: template.validTo?.split('T')[0] || '',
         isActive: template.isActive,
       })
     }
@@ -69,7 +69,7 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
           variant: formData.variant || undefined,
           eventTypeId: formData.eventTypeId,
           validFrom: formData.validFrom,
-          validTo: formData.validTo,
+          validTo: formData.validTo || undefined,
           isActive: formData.isActive,
         },
       })
@@ -163,13 +163,12 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="validTo">Ważny do *</Label>
+                <Label htmlFor="validTo">Ważny do</Label>
                 <Input
                   id="validTo"
                   type="date"
                   value={formData.validTo}
                   onChange={(e) => setFormData({ ...formData, validTo: e.target.value })}
-                  required
                 />
               </div>
             </div>

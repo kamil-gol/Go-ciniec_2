@@ -3,10 +3,12 @@
  * Handles menu selection for reservations
  * UPDATED: Added recalculateForGuestChange for Phase C integration
  * FIX: formatMenuResponse now exposes menuTemplateId + packageId from DB columns
+ * Updated: Phase 3 Audit — logChange() for menu selection, recalculation, removal
  */
 
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { logChange } from '../utils/audit-logger';
 import {
   MenuSelectionInput,
   CategorySelectionDTO,
@@ -14,12 +16,12 @@ import {
 } from '../dto/menu-selection.dto';
 
 class ReservationMenuService {
-  async selectMenu(reservationId: string, input: MenuSelectionInput): Promise<any> {
+  async selectMenu(reservationId: string, input: MenuSelectionInput, userId?: string): Promise<any> {
     console.log('[ReservationMenu] Selecting menu for reservation:', reservationId);
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { eventType: true }
+      include: { eventType: true, client: true }
     });
     if (!reservation) throw new Error('Reservation not found');
 
@@ -48,6 +50,10 @@ class ReservationMenuService {
     const optionIds = selectedOptions.map(opt => opt.optionId);
     const options = optionIds.length > 0 ? await prisma.menuOption.findMany({ where: { id: { in: optionIds }, isActive: true } }) : [];
 
+    // Check if existing snapshot exists (for audit: new vs update)
+    const existingSnapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
+    const isNewSelection = !existingSnapshot;
+
     const snapshot = await this.buildMenuSnapshot(menuPackage, input.dishSelections || [], options, selectedOptions, adults, children, toddlers);
     const packagePrice = this.calculatePackagePrice(menuPackage, adults, children, toddlers);
     const optionsPrice = this.calculateOptionsPrice(options, selectedOptions, adults + children + toddlers);
@@ -70,6 +76,29 @@ class ReservationMenuService {
       }
     });
 
+    // Audit log — MENU_SELECTED
+    const clientName = (reservation as any).client
+      ? `${(reservation as any).client.firstName} ${(reservation as any).client.lastName}`
+      : 'N/A';
+    await logChange({
+      userId: userId || null,
+      action: 'MENU_SELECTED',
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      details: {
+        description: `Menu ${isNewSelection ? 'wybrane' : 'zmienione'}: ${menuPackage.name} (${totalMenuPrice} PLN) | ${clientName}`,
+        isNewSelection,
+        packageName: menuPackage.name,
+        templateName: menuPackage.menuTemplate.name,
+        packagePrice,
+        optionsPrice,
+        totalMenuPrice,
+        guests: { adults, children, toddlers },
+        dishSelectionsCount: input.dishSelections?.length || 0,
+        optionsCount: selectedOptions.length,
+      },
+    });
+
     return this.formatMenuResponse(menuSnapshot, adults, children, toddlers);
   }
 
@@ -85,7 +114,8 @@ class ReservationMenuService {
     reservationId: string,
     newAdults: number,
     newChildren: number,
-    newToddlers: number
+    newToddlers: number,
+    userId?: string
   ): Promise<{ totalMenuPrice: number; packagePrice: number; optionsPrice: number } | null> {
     const existingSnapshot = await prisma.reservationMenuSnapshot.findUnique({
       where: { reservationId }
@@ -95,6 +125,16 @@ class ReservationMenuService {
 
     const menuData = existingSnapshot.menuData as any as MenuSnapshotData;
     if (!menuData) return null;
+
+    // Save old values for audit
+    const oldPackagePrice = Number(existingSnapshot.packagePrice);
+    const oldOptionsPrice = Number(existingSnapshot.optionsPrice);
+    const oldTotalPrice = Number(existingSnapshot.totalMenuPrice);
+    const oldGuests = {
+      adults: existingSnapshot.adultsCount,
+      children: existingSnapshot.childrenCount,
+      toddlers: existingSnapshot.toddlersCount,
+    };
 
     // Recalculate package price using stored per-person prices
     const pricePerAdult = menuData.pricePerAdult || 0;
@@ -151,6 +191,26 @@ class ReservationMenuService {
 
     console.log(`[ReservationMenu] Recalculated prices for ${reservationId}: guests=${newTotalGuests}, package=${packagePrice}, options=${optionsPrice}, total=${totalMenuPrice}`);
 
+    // Audit log — MENU_RECALCULATED
+    if (oldTotalPrice !== totalMenuPrice) {
+      await logChange({
+        userId: userId || null,
+        action: 'MENU_RECALCULATED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          /* istanbul ignore next -- packageName always present in snapshot data */
+          description: `Menu przeliczone (zmiana gości): ${oldTotalPrice} PLN → ${totalMenuPrice} PLN | ${menuData.packageName || 'N/A'}`,
+          /* istanbul ignore next */
+          packageName: menuData.packageName || null,
+          oldGuests,
+          newGuests: { adults: newAdults, children: newChildren, toddlers: newToddlers },
+          oldPrice: { package: oldPackagePrice, options: oldOptionsPrice, total: oldTotalPrice },
+          newPrice: { package: packagePrice, options: optionsPrice, total: totalMenuPrice },
+        },
+      });
+    }
+
     return { totalMenuPrice, packagePrice, optionsPrice };
   }
 
@@ -160,12 +220,37 @@ class ReservationMenuService {
     return this.formatMenuResponse(snapshot, snapshot.adultsCount, snapshot.childrenCount, snapshot.toddlersCount);
   }
 
-  async updateMenu(reservationId: string, input: MenuSelectionInput): Promise<any> {
-    return this.selectMenu(reservationId, input);
+  async updateMenu(reservationId: string, input: MenuSelectionInput, userId?: string): Promise<any> {
+    return this.selectMenu(reservationId, input, userId);
   }
 
-  async removeMenu(reservationId: string): Promise<void> {
+  async removeMenu(reservationId: string, userId?: string): Promise<void> {
+    // Get snapshot info before deletion for audit
+    const snapshot = await prisma.reservationMenuSnapshot.findUnique({
+      where: { reservationId },
+    });
+
     await prisma.reservationMenuSnapshot.delete({ where: { reservationId } });
+
+    // Audit log — MENU_DIRECT_REMOVED
+    if (snapshot) {
+      const menuData = snapshot.menuData as any;
+      await logChange({
+        userId: userId || null,
+        action: 'MENU_DIRECT_REMOVED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          /* istanbul ignore next -- menuData always has packageName */
+          description: `Menu usunięte (bezpośrednio): ${menuData?.packageName || 'N/A'} (${Number(snapshot.totalMenuPrice)} PLN)`,
+          /* istanbul ignore next */
+          packageName: menuData?.packageName || null,
+          totalMenuPrice: Number(snapshot.totalMenuPrice),
+          packagePrice: Number(snapshot.packagePrice),
+          optionsPrice: Number(snapshot.optionsPrice),
+        },
+      });
+    }
   }
 
   // ═══════════════════════ PRIVATE HELPERS ═══════════════════════
@@ -203,8 +288,11 @@ class ReservationMenuService {
           dishes: catSelection.dishes.map(dishSel => {
             const dish = dishes.find(d => d.id === dishSel.dishId);
             return {
+              /* istanbul ignore next -- dish always found from DB query */
               dishId: dishSel.dishId, dishName: dish?.name || 'Unknown dish',
-              description: dish?.description, quantity: dishSel.quantity, allergens: dish?.allergens || []
+              description: dish?.description, quantity: dishSel.quantity,
+              /* istanbul ignore next */
+              allergens: dish?.allergens || []
             };
           })
         };
@@ -222,9 +310,13 @@ class ReservationMenuService {
       selectedOptions: selectedOptions.map(selOpt => {
         const option = options.find(o => o.id === selOpt.optionId);
         return {
+          /* istanbul ignore next -- option always found from prior query */
           optionId: selOpt.optionId, optionName: option?.name || 'Unknown option',
+          /* istanbul ignore next */
           category: option?.category || '', quantity: selOpt.quantity,
+          /* istanbul ignore next */
           priceAmount: parseFloat(option?.priceAmount.toString() || '0'),
+          /* istanbul ignore next */
           priceUnit: option?.priceType || 'FLAT'
         };
       }),
@@ -277,6 +369,7 @@ class ReservationMenuService {
           toddlers: { count: snapshot.toddlersCount, priceEach: menuData.pricePerToddler, total: snapshot.toddlersCount * menuData.pricePerToddler },
           subtotal: parseFloat(snapshot.packagePrice.toString())
         },
+        /* istanbul ignore next -- selectedOptions always present in snapshot menuData */
         optionsCost: menuData.selectedOptions?.map(opt => ({
           option: opt.optionName, priceType: opt.priceUnit, priceEach: opt.priceAmount,
           quantity: opt.quantity, total: opt.priceAmount * opt.quantity

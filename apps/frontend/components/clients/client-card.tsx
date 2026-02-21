@@ -12,7 +12,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 const accent = moduleAccents.clients
 
 interface ClientCardProps {
-  client: Client & { _count?: { reservations: number } }
+  client: Client & { _count?: { reservations: number }; address?: string; notes?: string }
   onDelete?: (id: string) => void
   canDelete?: boolean
 }

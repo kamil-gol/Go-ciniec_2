@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 const chromiumExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 export default defineConfig({
-  testDir: './e2e/specs',
+  testDir: './e2e',
   
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -95,21 +95,26 @@ export default defineConfig({
       },
       {
         name: 'webkit',
+        timeout: 60000,
         use: { 
           ...devices['Desktop Safari'],
           viewport: { width: 1920, height: 1080 },
+          navigationTimeout: 45000,
         },
       },
       {
         name: 'mobile-chrome',
+        timeout: 60000,
         use: { 
           ...devices['Pixel 5'],
         },
       },
       {
         name: 'mobile-safari',
+        timeout: 60000,
         use: { 
           ...devices['iPhone 12'],
+          navigationTimeout: 45000,
         },
       },
     ] : []),

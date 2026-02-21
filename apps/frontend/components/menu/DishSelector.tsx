@@ -259,7 +259,7 @@ export function DishSelector({
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+                  <div className="relative h-3 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden shadow-inner">
                     <div 
                       className={`h-full transition-all duration-300 ${
                         total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
@@ -301,16 +301,16 @@ export function DishSelector({
                         key={dish.id}
                         className={`relative p-5 border-3 rounded-xl transition-all duration-200 ${
                           isDisabled
-                            ? 'opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                            ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
                             : isSelected 
                               ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-lg scale-[1.02] cursor-pointer' 
-                              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-300 hover:shadow-md hover:scale-[1.01] cursor-pointer'
+                              : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-md hover:scale-[1.01] cursor-pointer'
                         }`}
                         onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
                       >
                         {/* Disabled Indicator */}
                         {isDisabled && (
-                          <div className="absolute top-3 right-3 w-7 h-7 bg-gray-400 rounded-full flex items-center justify-center">
+                          <div className="absolute top-3 right-3 w-7 h-7 bg-neutral-400 rounded-full flex items-center justify-center">
                             <Lock className="h-4 w-4 text-white" />
                           </div>
                         )}
@@ -326,10 +326,10 @@ export function DishSelector({
                           {/* Custom Checkbox */}
                           <div className={`flex-shrink-0 mt-1 w-7 h-7 rounded-lg border-3 flex items-center justify-center transition-all duration-200 ${
                             isDisabled
-                              ? 'bg-gray-300 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                              ? 'bg-neutral-300 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600'
                               : isSelected
                                 ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-md'
-                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                                : 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 group-hover:border-blue-400'
                           }`}>
                             {isSelected && (
                               <CheckCircle2 className="h-5 w-5 text-white" strokeWidth={3} />
@@ -339,16 +339,16 @@ export function DishSelector({
                           <div className="flex-1 min-w-0">
                             <h4 className={`font-bold text-base mb-1 ${
                               isDisabled
-                                ? 'text-gray-400 dark:text-gray-600'
+                                ? 'text-neutral-400 dark:text-neutral-600'
                                 : isSelected 
                                   ? 'text-blue-900 dark:text-blue-100' 
-                                  : 'text-gray-900 dark:text-gray-100'
+                                  : 'text-neutral-900 dark:text-neutral-100'
                             }`}>
                               {dish.name}
                             </h4>
                             {dish.description && (
                               <p className={`text-sm mt-1 line-clamp-2 ${
-                                isDisabled ? 'text-gray-400' : 'text-muted-foreground'
+                                isDisabled ? 'text-neutral-400' : 'text-muted-foreground'
                               }`}>
                                 {dish.description}
                               </p>
@@ -371,7 +371,7 @@ export function DishSelector({
 
                             {/* Quantity Selector */}
                             {isSelected && (
-                              <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
+                              <div className="mt-4 p-3 bg-white dark:bg-neutral-800 rounded-lg border-2 border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
                                 <label className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 block">
                                   Ilość porcji:
                                 </label>
@@ -382,7 +382,7 @@ export function DishSelector({
                                     dish.id, 
                                     parseFloat(e.target.value)
                                   )}
-                                  className="w-full px-4 py-2.5 border-2 border-blue-300 dark:border-blue-700 rounded-lg text-base font-bold bg-white dark:bg-gray-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+                                  className="w-full px-4 py-2.5 border-2 border-blue-300 dark:border-blue-700 rounded-lg text-base font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
                                 >
                                   {quantityOptions.map(opt => (
                                     <option key={opt} value={opt}>

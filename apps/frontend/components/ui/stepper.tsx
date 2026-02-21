@@ -63,7 +63,7 @@ export function Stepper({
                     isActive && 'border-primary-500 bg-primary-500 text-white shadow-lg shadow-primary-500/30',
                     isCompleted && 'border-green-500 bg-green-500 text-white',
                     isPast && !isCompleted && 'border-primary-300 bg-primary-100 text-primary-600',
-                    !isActive && !isCompleted && !isPast && 'border-secondary-300 bg-white text-secondary-400',
+                    !isActive && !isCompleted && !isPast && 'border-secondary-300 bg-white text-neutral-400',
                     isClickable && !isActive && 'group-hover:border-primary-400 group-hover:bg-primary-50'
                   )}
                   animate={isActive ? { scale: [1, 1.05, 1] } : {}}
@@ -83,13 +83,13 @@ export function Stepper({
                       'text-xs font-medium transition-colors',
                       isActive && 'text-primary-700',
                       isCompleted && 'text-green-700',
-                      !isActive && !isCompleted && 'text-secondary-500'
+                      !isActive && !isCompleted && 'text-neutral-500'
                     )}
                   >
                     {step.title}
                   </p>
                   {step.isOptional && (
-                    <p className="text-[10px] text-secondary-400">opcjonalny</p>
+                    <p className="text-[10px] text-neutral-400">opcjonalny</p>
                   )}
                 </div>
               </div>
@@ -117,7 +117,7 @@ export function Stepper({
       {/* Mobile stepper — compact */}
       <div className="md:hidden">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-secondary-700">
+          <p className="text-sm font-medium text-neutral-700">
             Krok {currentStep + 1} z {steps.length}
           </p>
           <p className="text-sm font-semibold text-primary-600">
@@ -222,8 +222,8 @@ export function StepNavigation({
         className={cn(
           'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors',
           isFirstStep
-            ? 'text-secondary-300 cursor-not-allowed'
-            : 'text-secondary-700 hover:bg-secondary-100'
+            ? 'text-neutral-300 cursor-not-allowed'
+            : 'text-neutral-700 hover:bg-secondary-100'
         )}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

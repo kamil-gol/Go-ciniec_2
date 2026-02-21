@@ -1,1015 +1,1347 @@
 # 📋 Plan Sprintów - System Rezerwacji Sal
 
-**Status**: 🔧 W budowie
-**Okres**: 10 tygodni (5 sprintów x 2 tygodnie)
-**Start**: 06.02.2026
-**Koniec**: 17.04.2026
+**Status**: 🔧 W budowie  
+**Okres**: Ciągły rozwój  
+**Start projektu**: 06.02.2026  
+**Aktualna wersja**: 1.9.0  
 
 ---
 
 ## 📊 Mapa Sprintów
 
+> Uwaga: Sprinty 6-12 zostały zrealizowane przed planowanym terminem.
+
 ```
-SPRINT 1 (Tydzień 1-2)   → Fundacja
-SPRINT 2 (Tydzień 3-4)   → Moduł Rezerwacji
-SPRINT 3 (Tydzień 5-6)   → Uzupełnianie Funkcjonalności
-SPRINT 4 (Tydzień 7-8)   → Panel Admina & Zaawansowane
-SPRINT 5 (Tydzień 9-10)  → Polish, Testing & Deployment
+SPRINT 1 (06.02 - 09.02)   → Fundacja                          ✅ DONE
+SPRINT 2 (09.02 - 11.02)   → Moduł Rezerwacji                  ✅ DONE
+SPRINT 3 (11.02 - 12.02)   → Uzupełnianie Funkcjonalności      ✅ DONE
+SPRINT 4 (12.02 - 13.02)   → System Menu & Dania               ✅ DONE
+SPRINT 5 (13.02 - 15.02)   → Stabilizacja & Production Mode    ✅ DONE
+─────────────────────────────────────────────────────────────────
+SPRINT 6 (16.02 - 17.02)   → Quick Wins & Bugfixy              ✅ DONE
+SPRINT 7 (15.02 - 16.02)   → UTF-8 Cleanup + Attachments       ✅ DONE
+SPRINT 8 (15.02 - 16.02)   → System Rabatów                    ✅ DONE
+SPRINT 9 (16.02 - 21.02)   → Historia Zmian & Archiwum         ✅ DONE
+  Phase 1: Audit Logging (16.02)                                ✅ DONE
+  Phase 2: UI Viewer (16.02)                                    ✅ DONE
+    US-9.8: Activity Timeline                                   ✅ DONE (16.02)
+    US-9.9: Archiwum — Soft Delete                              ✅ DONE (16.02)
+    US-9.10: Archiwum — Archive Page                            ✅ DONE (16.02)
+    US-9.11: Dziennik Audytu — Global Dashboard                 ✅ DONE (16.02)
+SPRINT 10A (16.02)         → Mobile MVP                         ✅ DONE
+  US-10.2: Mobile Navigation                                    ✅ DONE (16.02)
+  US-10.3: Responsive Tables → Card Views                       ✅ DONE (16.02)
+  Full Mobile Audit (16 modules)                                ✅ DONE (16.02)
+SPRINT 10B (17.02)          → UI Unification                    🔄 IN PROGRESS
+SPRINT 11 (16.02)          → Reports Module (Analytics)        ✅ DONE
+SPRINT 12 (16.02)          → RBAC + Settings UI                ✅ DONE
 ```
 
 ---
 
-# 🏗️ SPRINT 1: Fundacja (06.02 - 19.02.2026)
+# ✅ SPRINTY 1-8: ZAKOŃCZONE (v1.0.0 → v1.7.0)
+
+Szczegóły zakończonych sprintów → patrz [CHANGELOG.md](../CHANGELOG.md)
+
+**Podsumowanie:**
+- ✅ Pełna infrastruktura (Docker, PostgreSQL, JWT Auth, RBAC)
+- ✅ System rezerwacji + kolejka + 6-krokowy wizard
+- ✅ System menu (kategorie, dania, szablony, pakiety, opcje, dodatki)
+- ✅ System zadatków, załączników, typów wydarzeń
+- ✅ Frontend production mode (build + start)
+- ✅ 45 testów E2E (Playwright) + 38 unit tests (Jest)
+- ✅ Pełna dokumentacja API (~70 endpointów)
+- ✅ Sprint 6: quick wins (6 US)
+- ✅ Sprint 7: UTF-8 cleanup + attachments frontend (TanStack Query, badges, preview modal)
+- ✅ Sprint 8: kompletny system rabatów (PERCENTAGE/FIXED, atomowe tworzenie, edycja)
+
+---
+
+# ✅ SPRINT 6: Quick Wins & Bugfixy (16.02 - 17.02.2026)
 
 ## Cel
-Ustanowienie fundacji technicznej, setup projektów, autentykacja i CI/CD.
+6 szybkich poprawek i usprawnień. Brak migracji DB, czyste zmiany frontend + backend logic.
 
-## User Stories
+**Estymacja:** ~1 dzień  
+**Wersje:** v1.5.0 - v1.5.5  
+**Branch:** `feature/sprint-6-quick-wins`
 
-### US-1.1: Setup Backend Project
-**Priority**: 🔴 CRITICAL
-**Points**: 8
+---
 
-**Akcept. Kryteria**:
-- ✅ Node.js + Express + TypeScript skonfigurowany
-- ✅ Struktura folderów (controllers, services, models, utils)
-- ✅ ESLint + Prettier
-- ✅ Development & production builds
-- ✅ Dockerfile gotowy
+### US-6.1: Redirect do szczegółów po utworzeniu rezerwacji
+**Priority**: 🟢 TRIVIAL  
+**Points**: 1  
+**Wersja**: v1.5.0
 
 **Subtasks**:
-- [ ] Inicjalizacja Node.js projektu
-- [ ] Setup Express + TypeScript
-- [ ] Konfiguracja ESLint i Prettier
-- [ ] Utworzenie Dockerfile
-- [ ] Konfiguracja npm skrypty
+- [x] Zidentyfikować `onSuccess` w `useMutation`
+- [x] Zmienić redirect URL
+- [x] Test manualny: nowa rezerwacja → od razu szczegóły
 
 ---
 
-### US-1.2: Setup Frontend Project
-**Priority**: 🔴 CRITICAL
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Next.js 14 + React 18
-- ✅ TypeScript + Tailwind CSS
-- ✅ Folder structure (app, components, pages, hooks)
-- ✅ Vitest skonfigurowany
-- ✅ Dockerfile gotowy
+### US-6.2: Usunięcie sali z PDF potwierdzenia rezerwacji
+**Priority**: 🟢 MAŁA  
+**Points**: 2  
+**Wersja**: v1.5.1
 
 **Subtasks**:
-- [ ] Inicjalizacja Next.js projektu
-- [ ] Setup Tailwind CSS
-- [ ] Konfiguracja TypeScript
-- [ ] Setup Vitest
-- [ ] Konfiguracja Dockerfile
+- [x] Zlokalizować sekcję "Sala" w generatorze PDF
+- [x] Usunąć blok renderujący salę
+- [x] Wygenerować testowy PDF i zweryfikować
 
 ---
 
-### US-1.3: Database Schema & Prisma Setup
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Prisma ORM skonfigurowany
-- ✅ Schemat bazy dla użytkowników, sal, rezerwacji, klientów
-- ✅ Migracje
-- ✅ Seed script
-
-**Tabele**:
-- `users` (id, email, password, role, firstName, lastName, createdAt, updatedAt)
-- `halls` (id, name, capacity, pricePerPerson, description)
-- `eventTypes` (id, name)
-- `reservations` (id, hallId, clientId, eventTypeId, date, startTime, endTime, guests, totalPrice, status, notes, createdBy)
-- `clients` (id, firstName, lastName, email, phone, address, createdAt, updatedAt)
-- `reservationHistory` (id, reservationId, changedBy, changeType, oldValue, newValue, reason, createdAt)
-- `deposits` (id, reservationId, amount, dueDate, paid, paidDate)
+### US-6.3: Usunięcie automatycznej notatki o dodatkowych godzinach
+**Priority**: 🟢 MAŁA  
+**Points**: 2  
+**Wersja**: v1.5.2
 
 **Subtasks**:
-- [ ] Inicjalizacja Prisma
-- [ ] Zdefiniowanie modeli
-- [ ] Utworzenie migracji
-- [ ] Seed script z danymi testowymi
+- [x] Znaleźć logikę generowania notatki w `reservation.service.ts`
+- [x] Usunąć auto-append do notes
+- [x] Verify: Financial Summary nadal poprawnie oblicza extra hours
 
 ---
 
-### US-1.4: Authentication & JWT
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Login endpoint (email + password)
-- ✅ Register endpoint (z walidacją hasła 12 znaków)
-- ✅ JWT token generation
-- ✅ Auth middleware
-- ✅ Role-based access control (Admin, Employee, Client)
-- ✅ Refresh token mechanism
-
-**Hasło Requirements**:
-- Min 12 znaków
-- Conajmniej 1 DUŻA litera
-- Conajmniej 1 mała litera
-- Conajmniej 1 cyfra
-- Conajmniej 1 znak specjalny (!@#$%^&*)
+### US-6.4: Blokada zmiany statusu na COMPLETED przed datą wydarzenia
+**Priority**: 🟡 ŚREDNIA  
+**Points**: 3  
+**Wersja**: v1.5.3
 
 **Subtasks**:
-- [ ] Login/Register endpoints
-- [ ] Password hashing (bcrypt)
-- [ ] JWT token generation
-- [ ] Auth middleware
-- [ ] Role validation middleware
-- [ ] Unit testy
+- [x] Backend: walidacja w `updateStatus()`
+- [x] Frontend: nowe propsy w `StatusChanger`
+- [x] Frontend: filtrowanie transition COMPLETED
+- [x] Frontend: przekazanie dat w `page.tsx`
+- [x] Test: próba zmiany statusu na COMPLETED w przyszłości → error
 
 ---
 
-### US-1.5: Error Handling & Logging
-**Priority**: 🟡 HIGH
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Globalna error handling middleware
-- ✅ Custom error classes
-- ✅ Logging system (info, warn, error)
-- ✅ Request/Response logging
+### US-6.5: Dodawanie nowego klienta w formularzu rezerwacji
+**Priority**: 🟡 ŚREDNIA  
+**Points**: 5  
+**Wersja**: v1.5.4
 
 **Subtasks**:
-- [ ] Error middleware
-- [ ] Logger setup (pino lub winston)
-- [ ] Error tracking integration
+- [x] Nowy komponent `CreateClientDialog.tsx` z formularzem
+- [x] Zod schema dla klienta
+- [x] Integracja z Combobox w Kroku 5
+- [x] Auto-select po utworzeniu
+- [x] Test: utwórz klienta → automatycznie wybrany → kontynuuj do Kroku 6
 
 ---
 
-### US-1.6: CI/CD Pipeline (GitHub Actions)
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ GitHub Actions workflow
-- ✅ Automatyczne testy na push
-- ✅ Linting checks
-- ✅ Coverage report
-- ✅ Deploy to staging na merge do main
-
-**Workflows**:
-- `test.yml` - Uruchamia testy
-- `lint.yml` - ESLint + Prettier checks
-- `deploy.yml` - Deploy to staging
+### US-6.6: Auto-notatka o inflacji dla rezerwacji na następny rok
+**Priority**: 🟡 ŚREDNIA  
+**Points**: 3  
+**Wersja**: v1.5.5
 
 **Subtasks**:
-- [ ] Setup test workflow
-- [ ] Setup lint workflow
-- [ ] Setup deploy workflow
+- [x] Backend: logika sprawdzenia roku i dystansu 3 miesięcy
+- [x] Backend: auto-append do notes
+- [x] Frontend: żółty alert w Kroku 6
+- [x] Test: rezerwacja na 2027 → notatka dodana; na 2026 za 2 tygodnie → brak notatki
 
 ---
 
-### US-1.7: API Documentation
-**Priority**: 🟡 HIGH
-**Points**: 5
-
-**Akcept. Kryteria**:
-- ✅ Swagger/OpenAPI dokumentacja
-- ✅ Endpointy udokumentowane
-
-**Subtasks**:
-- [ ] Setup Swagger
-- [ ] Dokumentacja auth endpoints
+## 📊 Summary Sprint 6
+- **Total Points**: 16
+- **Deliverables**: 6 quick wins, brak migracji DB
+- **Restart wymagany**: backend + frontend
+- **Risk**: Niski
 
 ---
 
-## 📊 Summary Sprint 1
-- **Total Points**: 68
-- **Deliverables**: Pełna infrastruktura, baza danych, autentykacja
-- **Testing**: 80% coverage dla auth
-
----
-
-# 📝 SPRINT 2: Moduł Rezerwacji (20.02 - 05.03.2026)
+# ✅ SPRINT 7: UTF-8 Cleanup + Attachments Frontend (15.02 - 16.02.2026)
 
 ## Cel
-Implementacja pełnego lifecycle rezerwacji.
+Globalny fix Unicode w projekcie + kompletna implementacja frontendu modułu załączników.
 
-## User Stories
+**Estymacja:** ~2 dni  
+**Wersje:** v1.6.1 – v1.6.2  
+**Branches:** `fix/sprint7-cleanup` + `feature/55-attachments-frontend`
 
-### US-2.1: Create Reservation - Backend
-**Priority**: 🔴 CRITICAL
-**Points**: 13
+---
 
-**Akcept. Kryteria**:
-- ✅ POST /api/reservations
-- ✅ Walidacja daty (nie przeszłość)
-- ✅ Walidacja liczby osób (max pojemność sali)
-- ✅ Kalkulator ceny (za osobę / całość)
-- ✅ Naliczanie godzin dodatkowych (domyślnie 6h)
-- ✅ Walidacja zaliczki (max dzień przed)
-- ✅ Historia zmian
-
-**Validations**:
-```
-- Fecha nie może być w przeszłości
-- Liczba gości <= pojemność sali
-- Czas rezerwacji >= 1 godzina
-- Jeśli > 6h: dopisz do uwag ile godzin płatnych
-- Zaliczka: 0 - 100% ceny
-- Jeśli zaliczka zaznaczona: dueDate <= dzień przed rezerwacją
-```
+### US-7.1: Globalny fix UTF-8 + lista rezerwacji
+**Priority**: 🔴 CRITICAL  
+**Points**: 5  
+**Wersja**: v1.6.1  
+**Branch**: `fix/sprint7-cleanup`  
+**Sesja**: [SPRINT7_CLEANUP_2026-02-16.md](SPRINT7_CLEANUP_2026-02-16.md)
 
 **Subtasks**:
-- [ ] Endpoint POST /api/reservations
-- [ ] Walidacje
-- [ ] Kalkulator ceny
-- [ ] Historia zmian
-- [ ] Unit testy
-- [ ] Integration testy
+- [x] Globalny fix Unicode w 29 plikach frontendowych (625 zamian)
+- [x] Obsługa emoji surrogate pairs (\\uD83C\\uDF89 → 🎉)
+- [x] Usunięcie zduplikowanych stron `/queue` i `/reservations`
+- [x] Wymuszenie `charset=utf-8` w backend response headers
+- [x] Domyślny widok listy rezerwacji (zamiast kalendarza)
+- [x] Toggle Lista|Kalendarz
 
 ---
 
-### US-2.2: Get Reservations List - Backend
-**Priority**: 🔴 CRITICAL
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ GET /api/reservations (z paginacją)
-- ✅ Filtry: status, sala, data, klient
-- ✅ Sortowanie: data, status, cena
-- ✅ Default page size: 20
+### US-7.2: Bugfix — PDF download nie pobiera pliku
+**Priority**: 🔴 HIGH  
+**Points**: 2  
+**Issue**: #61
 
 **Subtasks**:
-- [ ] Endpoint GET /api/reservations
-- [ ] Paginacja
-- [ ] Filtry
-- [ ] Sortowanie
-- [ ] Testy
+- [x] Fix: delay cleanup `revokeObjectURL` + `removeChild` o 150ms
+- [x] Fix: weryfikacja content-type dla błędów zwracanych jako 200
+- [x] Fix: obsługa errorów dla `responseType: 'blob'`
+- [x] Test: PDF pobiera się poprawnie
 
 ---
 
-### US-2.3: Update Reservation - Backend
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ PATCH /api/reservations/:id
-- ✅ Obowiązkowe pole "reason" dla edycji
-- ✅ Walidacje jak w Create
-- ✅ Historia zmian
+### US-7.3: Deposits — auto-confirm rezerwacji gdy wszystkie zaliczki PAID
+**Priority**: 🟡 MEDIUM  
+**Points**: 3  
+**Issue**: #38 (Phase 4.2)
 
 **Subtasks**:
-- [ ] Endpoint PATCH /api/reservations/:id
-- [ ] Reason validation
-- [ ] Historia zmian
-- [ ] Testy
+- [x] Backend: logika w `updateDepositStatus()` — sprawdź wszystkie zaliczki
+- [x] Jeśli wszystkie PAID → zmień status rezerwacji na CONFIRMED
+- [x] Test: 2 zaliczki, obie PAID → rezerwacja CONFIRMED
 
 ---
 
-### US-2.4: Cancel Reservation - Backend
-**Priority**: 🔴 CRITICAL
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ DELETE /api/reservations/:id
-- ✅ Obowiązkowe pole "reason"
-- ✅ Zmiana statusu na CANCELLED
-- ✅ Historia zmian
+### US-7.4: Deposits — blokada cancel/delete rezerwacji z opłaconymi zaliczkami
+**Priority**: 🟡 MEDIUM  
+**Points**: 2  
+**Issue**: #38 (Phase 4.3)
 
 **Subtasks**:
-- [ ] Endpoint DELETE /api/reservations/:id
-- [ ] Status update
-- [ ] Historia zmian
-- [ ] Testy
+- [x] Backend: walidacja w `deleteReservation()` i `cancelReservation()`
+- [x] Sprawdź `deposits.some(d => d.status === 'PAID')`
+- [x] Jeśli tak → zwróć 400 z komunikatem
+- [x] Test: próba usunięcia → error 400
 
 ---
 
-### US-2.5: Archive Reservation
-**Priority**: 🟡 HIGH
-**Points**: 5
+### US-7.5: Attachments — Frontend Components (Phases 2-5)
+**Priority**: 🔴 CRITICAL  
+**Points**: 13  
+**Wersja**: v1.6.2  
+**Branch**: `feature/55-attachments-frontend`  
+**PR**: #71  
+**Issue**: #55  
+**Sesja**: [ATTACHMENTS_MODULE_2026-02-15.md](ATTACHMENTS_MODULE_2026-02-15.md)
 
-**Akcept. Kryteria**:
-- ✅ Pole `archivedAt` w rezerwacji
-- ✅ GET /api/reservations?status=archived
-- ✅ Archiwizacja automatyczna po 30 dniach
-
+#### Phase 2: Frontend Components
 **Subtasks**:
-- [ ] Dodaj `archivedAt` pole
-- [ ] Endpoint archiwizacji
-- [ ] Cron job do auto-archiwizacji
+- [x] TanStack Query hooks (`useAttachments`, mutations)
+- [x] `AttachmentPanel` z filtrowaniem, licznikami
+- [x] `AttachmentUploadDialog` (drag & drop, walidacja, dynamiczne kategorie)
+- [x] `AttachmentPreview` modal (PDF iframe, image zoom/rotate, blob URL)
+- [x] `AttachmentRow` (badge kategorii, preview callback, action menu)
+- [x] API client (`lib/api/attachments.ts`) z `getCategoriesForEntity()`
 
----
-
-### US-2.6: Reservation UI - Create
-**Priority**: 🔴 CRITICAL
-**Points**: 21
-
-**Akcept. Kryteria**:
-- ✅ Piękny formularz do tworzenia rezerwacji
-- ✅ Calendar picker na datę (dd.mm.yyyy)
-- ✅ Time picker
-- ✅ Select sala z wyświetleniem pojemności
-- ✅ Select typ wydarzenia
-- ✅ Input liczby osób (z validacją max pojemności)
-- ✅ Realtime price calculator
-- ✅ Input notek
-- ✅ Checkbox zaliczka + input kwota + date picker due date
-- ✅ Attachment upload
-- ✅ Submit + Cancel buttony
-- ✅ Validacje na froncie
-- ✅ Loading states
-- ✅ Success/Error messages
-- ✅ Framer Motion animacje
-
+#### Phase 3: Sheet Integration
 **Subtasks**:
-- [ ] Layout i komponenty
-- [ ] Date/Time pickers
-- [ ] Price calculator
-- [ ] Form validation
-- [ ] File upload
-- [ ] API integration
-- [ ] Loading states
-- [ ] Animacje
+- [x] Client detail view — AttachmentPanel pod kontaktami
+- [x] Reservation detail view — AttachmentPanel pod notatkami
+- [x] Deposit sheet — Dialog z AttachmentPanel w dropdown menu
 
----
-
-### US-2.7: Reservation UI - List & View
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Tabela rezerwacji z paginacją
-- ✅ Kolumny: Data, Sala, Klient, # gości, Cena, Status
-- ✅ Filtry (sala, status, data)
-- ✅ Sortowanie
-- ✅ Modal do widoku szczegółów rezerwacji
-- ✅ Przyciski: Edit, Delete, Archive, PDF
-- ✅ Status badge z kolorami
-- ✅ Historia zmian (timeline)
-
+#### Phase 4: Badges
 **Subtasks**:
-- [ ] Table component
-- [ ] Paginacja UI
-- [ ] Filtry UI
-- [ ] Detail modal
-- [ ] Historia zmian timeline
-- [ ] Ikony i styling
+- [x] RODO badge na listach klientów i rezerwacji
+- [x] Contract badge na liście rezerwacji
+- [x] Deposit status badge na liście rezerwacji
+- [x] Batch-check hooks (`useBatchCheckRodo`, `useBatchCheckContract`)
+- [x] Efektywne ładowanie (jeden request per strona)
 
----
-
-### US-2.8: Reservation UI - Edit
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Pre-filled form z danymi rezerwacji
-- ✅ Obowiązkowe pole "Powód zmian"
-- ✅ Wskaźnik jakie pola się zmienią
-- ✅ Walidacje
-- ✅ Realtime price update
-- ✅ Historia zmian w real time
-
+#### Phase 5: Testing
 **Subtasks**:
-- [ ] Edit modal/page
-- [ ] Form pre-population
-- [ ] Reason field
-- [ ] Changed fields indicator
-- [ ] Real time updates
+- [x] Jest + ts-jest configuration (`jest.config.js`)
+- [x] 38 unit tests dla `AttachmentService` (11 grup testowych)
+- [x] Coverage: CRUD, RODO redirect, batch checks, file operations
+- [x] Wszystkie testy zaliczone ✅
+
+**Nowe pliki (21 total):**
+- Backend: `jest.config.js`, `src/tests/setup.ts`, `src/tests/attachment.service.test.ts`
+- Frontend: `hooks/use-attachments.ts`, 4 attachment components, `ui/sheet.tsx`
+- Frontend: aktualizacje w 3 widokach (client/reservation detail, deposit actions, lists)
 
 ---
 
-### US-2.9: Reservation UI - Calendar View
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Widok kalendarza na 30 dni
-- ✅ Każda sala to kolumna
-- ✅ Rezerwacje wyświetlone jako bloki na osi czasu
-- ✅ Kolor wg statusu
-- ✅ Hover: szczegóły rezerwacji
-- ✅ Click: otwórz modal
-
-**Subtasks**:
-- [ ] Calendar layout
-- [ ] Reservation blocks
-- [ ] Responsiveness
-- [ ] Hover/Click interactions
+## 📊 Summary Sprint 7
+- **Total Points**: 25 (5 + 2 + 3 + 2 + 13)
+- **Deliverables**: 
+  - Globalny fix UTF-8 w 29 plikach (625 zamian)
+  - Kompletny frontend attachments z TanStack Query
+  - AttachmentPreview modal (PDF + images)
+  - RODO/Contract/Deposit badges z batch-check
+  - 38 unit tests (Jest)
+  - 3 bugfixy (PDF download, deposits auto-confirm, delete block)
+- **Migracja DB**: ❌ Brak
+- **Restart wymagany**: backend + frontend
+- **Risk**: Średni
+- **PR**: #68 (cleanup), #71 (attachments)
 
 ---
 
-## 📊 Summary Sprint 2
-- **Total Points**: 115
-- **Deliverables**: Pełny CRUD rezerwacji, UI, kalkulacje ceny
-- **Testing**: 80% coverage
-
----
-
-# 🔧 SPRINT 3: Uzupełnianie Funkcjonalności (06.03 - 19.03.2026)
+# ✅ SPRINT 8: System Rabatów (15.02 - 16.02.2026)
 
 ## Cel
-Zarządzanie klientami, generowanie PDF, maile, historia zmian.
+Możliwość udzielenia rabatu procentowego lub kwotowego na cenę końcową rezerwacji.
 
-## User Stories
+**Estymacja:** ~2-3 dni (zrealizowano w ~1 dzień)  
+**Wersja:** v1.7.0  
+**Branches:** `feature/discount-create`, `fix/discount-atomic`  
+**PR**: #63, #66  
+**Issue**: #65 (bug fix)
 
-### US-3.1: Client Management - Backend
-**Priority**: 🔴 CRITICAL
-**Points**: 13
+---
 
-**Akcept. Kryteria**:
-- ✅ CRUD clients endpoints
-- ✅ Historia rezerwacji klienta
-- ✅ Notatki o kliencie
+### US-8.1: Model danych — rozszerzenie Reservation
+**Priority**: 🔴 CRITICAL  
+**Points**: 5  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] CRUD endpoints
-- [ ] Validation
-- [ ] Testy
+- [x] Migracja Prisma: dodanie 5 nowych pól (`discountType`, `discountValue`, `discountAmount`, `discountReason`, `priceBeforeDiscount`)
+- [x] Deployment migracji: `prisma migrate deploy`
+
+**Implementacja**:
+- Pola dodane w `apps/backend/prisma/schema.prisma` w modelu `Reservation`
+- Wszystkie pola opcjonalne (nullable) — rabat nie jest wymagany
+- `discountType`: PERCENTAGE | FIXED
+- `discountValue`: wartość procentowa (np. 10) lub kwotowa (np. 500)
+- `discountAmount`: wyliczona kwota rabatu w PLN
+- `discountReason`: uzasadnienie (minimum 3 znaki)
+- `priceBeforeDiscount`: oryginalna cena przed rabatem
 
 ---
 
-### US-3.2: Client Management UI
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Lista klientów
-- ✅ Formularz tworzenia/edycji klienta
-- ✅ Historia rezerwacji (tab w detailach)
-- ✅ Notatki (tab)
+### US-8.2: Backend — Discount API
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Klienci list page
-- [ ] Client details modal
-- [ ] Create/Edit form
-- [ ] Rezerwacje tab
-- [ ] Notatki tab
+- [x] Serwis: `discount.service.ts` z `applyDiscount()` + `removeDiscount()`
+- [x] Kontroler: `discount.controller.ts` — obsługa `PATCH` + `DELETE`
+- [x] Routes: endpointy w `reservation.routes.ts`
+- [x] Walidacje: type, value, reason wymagane; walidacja 100% dla PERCENTAGE
+- [x] Historia zmian: wpis do `ReservationHistory` z typem `DISCOUNT_APPLIED` / `DISCOUNT_REMOVED`
+- [x] Testy: edge cases (100%, > totalPrice, negatywna wartość)
+- [x] Obsługa rabatu w `createReservation()` — atomowe tworzenie z rabatem
+
+**Implementacja**:
+- **Endpointy**:
+  - `PATCH /api/reservations/:id/discount` — dodaj/edytuj rabat
+  - `DELETE /api/reservations/:id/discount` — usuń rabat
+- **Walidacje**:
+  - PERCENTAGE: max 100%, min 0.01%
+  - FIXED: nie może przekroczyć ceny rezerwacji
+  - Powód rabatu: minimum 3 znaki
+- **Integracja z menu**: rabat jest naliczany od ceny finalnej po dodaniu menu + opcji
+- **Historia**: każda zmiana rabatu zapisana w `ReservationHistory`
 
 ---
 
-### US-3.3: PDF Generation
-**Priority**: 🔴 CRITICAL
-**Points**: 21
-
-**Akcept. Kryteria**:
-- ✅ Generowanie PDF rezerwacji
-- ✅ Dane restauracji (logo, adres, telefon)
-- ✅ Dane klienta
-- ✅ Szczegóły rezerwacji
-- ✅ Cena (itemized)
-- ✅ Zaliczka (jeśli istnieje)
-- ✅ Brak danych osobowych wrażliwych
-- ✅ Profesjonalny layout
-
-**PDF Content**:
-```
-Header: Logo + Nazwa restauracji
-Dane restauracji
----
-Tytuł: REZERWACJA SALI
-Data wygenerowania
----
-Dane klienta
----
-Szczegóły rezerwacji:
-- Sala
-- Data & Czas
-- Liczba osób
-- Typ wydarzenia
-- Notatki
----
-Kalkulacja:
-- Liczba osób x cena za osobę = ...
-- Godziny dodatkowe: ... x cena = ...
-Razem: ...
----
-Zaliczka (jeśli):
-- Kwota zaliczki
-- Termin płatności
-```
+### US-8.3: Frontend — UI rabatu w formularzu tworzenia
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE  
+**PR**: #63 (initial), #66 (atomic fix)
 
 **Subtasks**:
-- [ ] PDF template
-- [ ] PDF generation service
-- [ ] Download endpoint
-- [ ] Styling
+- [x] Nowy komponent `CreateReservationDiscountSection.tsx`
+- [x] Toggle PERCENTAGE / FIXED
+- [x] Realtime preview kalkulacji w podsumowaniu
+- [x] Walidacja: powód ≥3 znaki
+- [x] Integracja z Zod schema formularza
+- [x] Atomowe tworzenie: rabat w payloadzie `POST /api/reservations`
+- [x] Test: dodaj rabat 10% → cena się zmienia; usuń → wraca do oryginału
+
+**Implementacja**:
+- Sekcja rabatu w kroku "Menu i wycena"
+- Realtime kalkulacja `priceAfterDiscount` w podsumowaniu
+- Pola `discountType`, `discountValue`, `discountReason` w Zod schema
+- **Fix (PR #66)**: zamiana dwufazowego podejścia (CREATE + PATCH) na atomowe (pola rabatu w payloadzie `createReservation`)
+- Eliminacja race condition i silent error catching
 
 ---
 
-### US-3.4: Email Sending
-**Priority**: 🔴 CRITICAL
-**Points**: 21
-
-**Akcept. Kryteria**:
-- ✅ Email notification przy nowej rezerwacji
-- ✅ Email przy edycji rezerwacji
-- ✅ Email przy anulowaniu
-- ✅ PDF w attachmencie
-- ✅ Szablony emaili
-- ✅ Queue system (Bull/Bullmq)
-
-**Email Templates**:
-1. **Nowa rezerwacja**
-   - Do: klient + admin
-   - Temat: Potwierdzenie rezerwacji sali
-   - Treść: Szczegóły + link do podglądu
-   - Załącznik: PDF rezerwacji
-
-2. **Edycja rezerwacji**
-   - Do: klient + admin
-   - Temat: Zmiana rezerwacji sali
-   - Treść: Co się zmieniło + powód
-   - Załącznik: Nowy PDF
-
-3. **Anulowanie**
-   - Do: klient + admin
-   - Temat: Rezerwacja anulowana
-   - Treść: Powód anulowania
-
-4. **Przypomnienie (24h przed)**
-   - Do: klient + admin
-   - Temat: Przypomnienie o rezerwacji jutro
-   - Treść: Szczegóły
-
-5. **Przypomnienie zaliczki (3 dni przed)**
-   - Do: klient
-   - Temat: Przypomnienie o zaliczce
-   - Treść: Kwota + termin
+### US-8.4: Frontend — UI rabatu w Financial Summary (edycja istniejącej rezerwacji)
+**Priority**: 🟡 HIGH  
+**Points**: 5  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Email service setup (Nodemailer)
-- [ ] Email templates
-- [ ] Queue setup (Bull)
-- [ ] Cron jobs dla przypomnień
-- [ ] Testy
+- [x] Sekcja rabatu w Financial Summary (widok szczegółów rezerwacji)
+- [x] Dialog edycji rabatu z toggle PERCENTAGE/FIXED
+- [x] Przyciski dodaj/edytuj/usuń rabat
+- [x] Mutacje `useApplyDiscount` + `useRemoveDiscount` (TanStack Query)
+- [x] Aktualizacja PDF generatora (sekcja rabat w PDF)
+
+**Implementacja**:
+- Dedykowane hooki: `useApplyDiscount`, `useRemoveDiscount`
+- Dialog z formularzem rabatu (reużywalny między create a edit)
+- PDF generator: sekcja "Rabat" w `buildPDFContent()` i `buildPaymentConfirmationContent()`
+- Realtime refresh po dodaniu/usunięciu rabatu
 
 ---
 
-### US-3.5: Reservation History
-**Priority**: 🟡 HIGH
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Historia wszystkich zmian rezerwacji
-- ✅ Timeline view
-- ✅ Zmiana pola + stara wartość + nowa wartość
-- ✅ Kto zmienił + kiedy
-- ✅ Powód zmiany
-
-**Subtasks**:
-- [ ] Historia timeline UI
-- [ ] Formatowanie zmian
-
----
-
-### US-3.6: Data Export
-**Priority**: 🟡 HIGH
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Export rezerwacji do CSV
-- ✅ Export rezerwacji do Excel
-- ✅ Filtry: data range, sala
-
-**Subtasks**:
-- [ ] CSV export
-- [ ] Excel export
-- [ ] Filters
+## 📊 Summary Sprint 8
+- **Total Points**: 26
+- **Deliverables**: 
+  - Kompletny system rabatów (DB + API + UI + PDF)
+  - 5 pól rabatowych w modelu `Reservation`
+  - Backend: `discount.service.ts`, `discount.controller.ts`, 2 endpointy
+  - Frontend: `CreateReservationDiscountSection`, hooki TanStack Query
+  - Atomowe tworzenie rezerwacji z rabatem (PR #66 fix)
+  - Walidacje: PERCENTAGE ≤100%, FIXED ≤totalPrice, powód ≥3 znaki
+- **Migracja DB**: ✅ Wykonana (5 pól dodanych do Reservation)
+- **Restart wymagany**: backend + frontend + migracja
+- **Risk**: Niski (zrealizowano przed terminem)
+- **PR**: #63 (feature), #66 (atomic fix)
+- **Issue**: #65 (bug: rabat nie był zapisywany)
 
 ---
 
-## 📊 Summary Sprint 3
-- **Total Points**: 84
-- **Deliverables**: Klienci, PDF, Maile, Historia
-- **Testing**: 80% coverage
-
----
-
-# 🎛️ SPRINT 4: Panel Admina & Zaawansowane (20.03 - 02.04.2026)
+# ✅ SPRINT 9: Historia Zmian & Archiwum (16.02 - 21.02.2026)
 
 ## Cel
-Panel administratora, statystyki, backupy, zaawansowane funkcjonalności.
+Globalny system audytu (kto co zmienił i kiedy) + moduł archiwum.
 
-## User Stories
+**Estymacja:** ~3-5 dni (zrealizowano w 1 dzień)  
+**Wersje:** v1.8.0 - v1.8.1  
+**Branches:** `feature/audit-logging`, `feature/audit-phase2-queue`, `feature/audit-phase3-attachments-menu`, `feature/us-9.8-entity-timeline`, `feature/us-9.10-archive-page`, `feature/us-9.11-audit-dashboard`  
+**Status**: ✅ DONE (16.02.2026)
 
-### US-4.1: Admin Panel - Fundamentals
-**Priority**: 🔴 CRITICAL
-**Points**: 21
+---
 
-**Akcept. Kryteria**:
-- ✅ Dashboard admina
-- ✅ Zarządzanie użytkownikami (CRUD)
-- ✅ Role management
-- ✅ User activation/deactivation
-- ✅ Zmienianie hasła użytkownika
+## ✅ Phase 1: Audit Logging Backend (16.02.2026)
+
+**Status**: ✅ COMPLETED  
+**Wersja**: v1.8.0  
+**PR**: #74, #75, #76  
+**Czas realizacji**: ~4 godziny
+
+### US-9.1: ActivityLog — model danych i utility
+**Priority**: 🔴 CRITICAL  
+**Points**: 3  
+**Status**: ✅ DONE  
+**PR**: #74
 
 **Subtasks**:
-- [ ] Admin layout
-- [ ] Users management page
-- [ ] User form (create/edit)
-- [ ] Role selector
-- [ ] Bulk actions
+- [x] Model `ActivityLog` w Prisma schema (action, entityType, entityId, userId, details JSON, createdAt)
+- [x] Utility `audit-logger.ts` z funkcją `logChange()` — centralne API do logowania
+- [x] Typ TypeScript dla `details` JSON (description + dowolne pola)
+
+**Implementacja**:
+- Model zapisuje zdarzenia bez migracji (wykorzystuje istniejące struktury)
+- `logChange()` przyjmuje: `userId`, `action`, `entityType`, `entityId`, `details`
+- `details.description` — czytelny opis po polsku (zawsze obecny)
+- `details.*` — dowolne dodatkowe dane (JSON)
+- Nullable `userId` — wspiera zdarzenia systemowe (auto-cancel, cron jobs)
 
 ---
 
-### US-4.2: Admin Panel - Configuration
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Zarządzanie salami (CRUD)
-- ✅ Edycja pojemności
-- ✅ Edycja ceny za osobę
-- ✅ Edycja typów eventów
-- ✅ Aktywacja/deaktywacja sal
+### US-9.2: Audit — Reservation Service (7 eventów)
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE  
+**PR**: #74
 
 **Subtasks**:
-- [ ] Halls management
-- [ ] Hall form
-- [ ] Event types management
-- [ ] Status toggles
+- [x] `CREATE` — loguje: klient, sala, typ wydarzenia, daty
+- [x] `UPDATE` — loguje: diff zmian (guests, notes, menu, prices, dates)
+- [x] `STATUS_CHANGE` — loguje: old status → new status, reason
+- [x] `MENU_UPDATE` — loguje: pakiet, ceny, guests
+- [x] `MENU_REMOVE` — loguje: usunięty pakiet, ceny
+- [x] `PAYMENT_UPDATE` — loguje: deposit changes, discount applied/removed
+- [x] `DELETE` — loguje: klient, sala, daty, powód usunięcia
+
+**Implementacja**:
+- Dodano `userId` do wszystkich mutujących metod w `reservation.service.ts`
+- Kontroler przekazuje `req.user.id` do każdego wywołania serwisu
+- Tracking zmian: porównanie old vs new values w `updateReservation()`
+- Czytelne opisy: `"Utworzono rezerwację: Kowalski | Sala Kryształowa | Wesele"`
 
 ---
 
-### US-4.3: Admin Panel - Settings
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Ustawienia systemu
-- ✅ Dane restauracji
-- ✅ Ustawienia emaili
-- ✅ Domyślny czas rezerwacji
-- ✅ Currency i format daty
+### US-9.3: Audit — Queue Service (8 eventów)
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE  
+**PR**: #75
 
 **Subtasks**:
-- [ ] Settings page
-- [ ] Settings form
-- [ ] Validation
-- [ ] Save settings
+- [x] `QUEUE_ADD` — loguje: klient, data kolejki, pozycja, guests
+- [x] `QUEUE_UPDATE` — loguje: diff zmian (data, pozycja, guests, notes)
+- [x] `QUEUE_SWAP` — loguje: obie rezerwacje z nazwiskami i pozycjami
+- [x] `QUEUE_MOVE` — loguje: klient, old position → new position, data
+- [x] `QUEUE_REORDER` — loguje: batch zmiana pozycji (lista zmian)
+- [x] `QUEUE_REBUILD` — loguje: ilość rezerwacji, ilość dat, lista dat
+- [x] `QUEUE_PROMOTE` — loguje: dane źródłowe (kolejka) + docelowe (rezerwacja)
+- [x] `QUEUE_AUTO_CANCEL` — loguje: ilość anulowanych, ID, trigger (manual/system)
+
+**Implementacja**:
+- Dodano `userId` do 7 metod w `queue.service.ts` (wszystkie mutujące)
+- `autoCancelExpired(userId?)` — opcjonalny userId dla rozróżnienia manual vs cron
+- `batchUpdatePositions()` — zapisuje old positions przed transakcją dla diff
+- `promoteReservation()` — dodano lookup hall + eventType dla czytelnych opisów
 
 ---
 
-### US-4.4: Analytics & Reports
-**Priority**: 🔴 CRITICAL
-**Points**: 21
-
-**Akcept. Kryteria**:
-- ✅ Dashboard ze statystykami
-- ✅ Przychody miesięczne (chart)
-- ✅ Popularność sal (chart)
-- ✅ Typy eventów (chart)
-- ✅ Liczba rezerwacji (trend)
-- ✅ Średnia cena rezerwacji
-- ✅ Raport do pobrania (PDF/CSV)
-
-**Charts**:
-- Revenue by month (line chart)
-- Reservations by hall (bar chart)
-- Event types distribution (pie chart)
-- Occupancy rate (gauge)
+### US-9.4: Audit — Attachments & Reservation Menu (7 eventów)
+**Priority**: 🟡 HIGH  
+**Points**: 7  
+**Status**: ✅ DONE  
+**PR**: #76
 
 **Subtasks**:
-- [ ] Analytics endpoints
-- [ ] Dashboard page
-- [ ] Charts (Recharts lub Chart.js)
-- [ ] Data aggregation
-- [ ] Report generation
+- [x] `ATTACHMENT_UPLOAD` — loguje: plik, kategoria, entity, RODO redirect
+- [x] `ATTACHMENT_UPDATE` — loguje: diff zmian (label, description, category)
+- [x] `ATTACHMENT_ARCHIVE` — loguje: nazwa pliku, kategoria, entity
+- [x] `ATTACHMENT_DELETE` — loguje: pełne dane (trwałe usunięcie)
+- [x] `MENU_SELECTED` — loguje: pakiet, ceny, guests, new vs update
+- [x] `MENU_RECALCULATED` — loguje: old/new guests + old/new prices (przy zmianie guests)
+- [x] `MENU_DIRECT_REMOVED` — loguje: pakiet, ceny (przed usunięciem)
+
+**Implementacja**:
+- `attachment.service.ts`: dodano `userId?` do 3 metod (update, delete, hardDelete)
+- `reservation-menu.service.ts`: dodano `userId?` do 4 metod (wszystkie opcjonalne)
+- Backward compatibility — `reservation.service.ts` wywołuje bez userId (zaloguje `null`)
+- Po merge Phase 1, można zaktualizować callsite w `reservation.service.ts`
 
 ---
 
-### US-4.5: Activity Logs
-**Priority**: 🟡 HIGH
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Logi wszystkich akcji
-- ✅ Kto co zrobił i kiedy
-- ✅ Typ akcji (create, update, delete)
-- ✅ Tabela z filtrami
+### US-9.5: SQL Functions — Queue Operations
+**Priority**: 🟡 MEDIUM  
+**Points**: 2  
+**Status**: ✅ DONE  
+**Migration**: `0002_queue_sql_functions`
 
 **Subtasks**:
-- [ ] Activity logging middleware
-- [ ] Activity logs table
-- [ ] Filters
+- [x] Funkcja `swap_queue_positions(id1, id2)` — atomowa zamiana pozycji z row locking
+- [x] Funkcja `move_to_queue_position(res_id, new_pos)` — przesunięcie z automatycznym shiftem
+
+**Implementacja**:
+- Migracja Prisma z pełną definicją funkcji (plpgsql)
+- `swap_queue_positions`: używa temp position `-1` żeby uniknąć unique constraint violation
+- `move_to_queue_position`: shift up/down w zależności od kierunku ruchu
+- `FOR UPDATE` locking — zapobiega race conditions
+- Automatyczne utworzenie przy `prisma migrate deploy`
 
 ---
 
-### US-4.6: Backup System
-**Priority**: 🟡 HIGH
-**Points**: 13
+## ✅ Phase 2: Audit UI Viewer (16.02.2026)
 
-**Akcept. Kryteria**:
-- ✅ Automtyczne codzienne backupy (2 AM)
-- ✅ Przechowywanie backupów (30 dni)
-- ✅ Manual backup trigger
-- ✅ Restore z backupów
-- ✅ Lista backupów z możliwością pobierania
+**Status**: ✅ COMPLETED  
+**Wersja**: v1.7.1 - v1.8.1  
+**Czas realizacji**: ~4 godziny
+
+### US-9.8: Activity Timeline — Per Entity
+**Priority**: 🟡 MEDIUM  
+**Points**: 5  
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #77  
+**Branch**: `feature/us-9.8-entity-timeline`  
+**Wersja**: v1.7.1
 
 **Subtasks**:
-- [ ] Backup script (pg_dump)
-- [ ] Cron job
-- [ ] Backup storage
-- [ ] Restore script
-- [ ] UI do zarządzania backupów
+- [x] Komponent `EntityActivityTimeline` — chronologiczna lista zmian
+- [x] Integracja w reservation detail view (zakładka "Historia")
+- [x] Integracja w client detail view (zakładka "Historia zmian")
+- [x] Icon mapping dla action types (🆕 CREATE, ✏️ UPDATE, 🗑️ DELETE, etc.)
+- [x] Polish labels (22 typy akcji + 35+ pól)
+- [x] Rozwijalne szczegóły zmian (old → new diff)
+- [x] Smart formatting (obiekty, daty, ceny, statusy)
+- [x] Auto-refresh (React Query 30s)
+- [x] Framer-motion animations
+
+**Implementacja**:
+- `lib/api/audit-log.ts` — hook `useEntityActivityLog(entityType, entityId)`
+- `components/audit-log/EntityActivityTimeline.tsx` — reużywalny timeline
+- Polskie labele dla 22 typów akcji (CREATE, UPDATE, DELETE, STATUS_CHANGE, MENU_RECALCULATED, etc.)
+- Polskie nazwy pól (hall → Sala, client → Klient, guests → Goście łącznie)
+- Ukryte pola techniczne (`menuSnapshot`, `createdBy`, `*Id`)
+- Formatowanie: daty (`dd.MM.yyyy HH:mm`), ceny (`6 825 zł`), statusy ("Potwierdzona")
+- Fix: `[object Object]` → smart extraction (hall.name, firstName+lastName, eventType.name)
 
 ---
 
-### US-4.7: Email Reminders
-**Priority**: 🟡 HIGH
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Automatyczne przypomnienia 24h przed rezerwacją
-- ✅ Automatyczne przypomnienia o zaliczce 3 dni przed
-- ✅ Konfigurowalny czas przypomnień
-- ✅ Toggle do włączania/wyłączania
+### US-9.9: Archiwum — Soft Delete Reservations
+**Priority**: 🟡 MEDIUM  
+**Points**: 3  
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #78  
+**Branch**: `feature/us-9.10-archive-page`  
+**Wersja**: v1.8.1
 
 **Subtasks**:
-- [ ] Cron jobs setup
-- [ ] Reminder logic
-- [ ] Email sending
-- [ ] Settings toggle
+- [x] Pole `archivedAt` w modelu Reservation (już istniało)
+- [x] Backend: `archiveReservation()` — ustawia timestamp + reason
+- [x] Backend: `unarchiveReservation()` — resetuje timestamp
+- [x] API: `POST /reservations/:id/archive`, `POST /reservations/:id/unarchive`
+- [x] Frontend: hooks `useArchiveReservation`, `useUnarchiveReservation`
+- [x] Frontend: przycisk archiwizacji w reservation list & details
+- [x] Log: `ARCHIVE` i `UNARCHIVE` w ActivityLog
+
+**Implementacja**:
+- Backend routes: `/api/reservations/:id/archive` (POST), `/api/reservations/:id/unarchive` (POST)
+- Frontend: ikona Archive (📦) na liście rezerwacji + w actions menu w szczegółach
+- Toast notifications z sonner ("Rezerwacja zarchiwizowana", "Przywrócono z archiwum")
+- Filtrowanie: `archived=false` na głównej liście, `archived=true` na stronie archiwum
+- Audit log: wpisy z opisem "Zarchiwizowano rezerwację: [klient]", "Przywrócono z archiwum: [klient]"
 
 ---
 
-### US-4.8: Advanced Filters & Search
-**Priority**: 🟡 HIGH
-**Points**: 8
-
-**Akcept. Kryteria**:
-- ✅ Zaawansowane filtry na liście rezerwacji
-- ✅ Date range picker
-- ✅ Multi-select sala
-- ✅ Multi-select status
-- ✅ Search po nazwie klienta
-- ✅ Save filters
+### US-9.10: Archiwum — Archive Page
+**Priority**: 🟢 LOW  
+**Points**: 3  
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #78  
+**Branch**: `feature/us-9.10-archive-page`  
+**Wersja**: v1.8.1
 
 **Subtasks**:
-- [ ] Filter UI
-- [ ] Filter logic
-- [ ] Saved filters
+- [x] Design token `archive` (gray/slate gradient)
+- [x] Strona `/dashboard/archive` z dedykowanym hero
+- [x] Lista zarchiwizowanych rezerwacji (karty z danymi)
+- [x] Stat cards: łącznie, zakończone, anulowane
+- [x] Filtry: paginacja (20/stronę)
+- [x] Akcje: zobacz szczegóły, przywróć (unarchive)
+- [x] Link "Archiwum" w Sidebar (pod Rezerwacjami)
+- [x] Badge "ARCHIVED" + data archivizacji na kartach
+- [x] Empty state gdy archiwum puste
+
+**Implementacja**:
+- Dodano `archive` accent do `design-tokens.ts` (gray/slate palette)
+- Sidebar: link "Archiwum" z ikoną Archive pod Rezerwacjami
+- Strona `/dashboard/archive`:
+  - Hero z gradientem + przycisk "Wróć do rezerwacji"
+  - 3 stat cards (łącznie, zakończone, anulowane)
+  - Lista kart z danymi: klient, typ, sala, data, goście, wartość
+  - Badge statusu + data archivizacji
+  - Przycisk "Przywróć" (ArchiveRestore icon, zielony)
+  - Link do szczegółów rezerwacji (Eye icon)
+  - Paginacja (20/stronę)
+  - Empty state z ikoną
+- Query: `useReservations({ archived: true })` z TanStack Query
+- Toast notifications po unarchive
 
 ---
 
-## 📊 Summary Sprint 4
-- **Total Points**: 105
-- **Deliverables**: Panel admina, statystyki, backupy
-- **Testing**: 80% coverage
+### US-9.11: Dziennik Audytu — Global Dashboard
+**Priority**: 🟡 HIGH  
+**Points**: 8  
+**Status**: ✅ DONE (16.02.2026)  
+**PR**: #79  
+**Branch**: `feature/us-9.11-audit-dashboard`  
+**Wersja**: v1.8.1
+
+**Subtasks**:
+- [x] Backend: endpoint `/api/audit-log` + `/api/audit-log/statistics`
+- [x] Backend: filtry (action, entityType, dateFrom, dateTo, page, pageSize)
+- [x] Backend: meta endpoints `/meta/entity-types`, `/meta/actions`
+- [x] Frontend: strona `/dashboard/audit-log`
+- [x] Frontend: 4 stat cards (total logs, most frequent action/entity, active users)
+- [x] Frontend: filtry (action, entityType, date range)
+- [x] Frontend: tabelka z paginacją (20/stronę)
+- [x] Frontend: modal z pełną historią zmian (old/new values)
+- [x] Frontend: 30+ polskich labelów dla akcji (QUEUE_REORDER, MENU_RECALCULATED, etc.)
+- [x] Frontend: 12 typów encji (RESERVATION, CLIENT, ATTACHMENT, QUEUE, etc.)
+- [x] Frontend: obsługa `user: null` (akcje systemowe) — fallback "System"
+- [x] Frontend: kolorowe badge akcji (32 kolory dla 32 typów akcji)
+- [x] Framer-motion animations (StatCard stagger, modal fade-in)
+
+**Implementacja**:
+- **Backend**: `audit-log.service.ts`, `audit-log.controller.ts`, `audit-log.routes.ts`
+  - `GET /api/audit-log` — paginacja, filtry, sorting
+  - `GET /api/audit-log/statistics` — 3 wykresy (byAction, byEntityType, byUser)
+  - `GET /api/audit-log/meta/entity-types` — lista unikalnych encji
+  - `GET /api/audit-log/meta/actions` — lista unikalnych akcji
+  - `GET /api/audit-log/entity/:entityType/:entityId` — logi per encja (już używane w US-9.8)
+- **Frontend**: `app/dashboard/audit-log/page.tsx` + komponenty
+  - `AuditLogStats.tsx` — 4 karty statystyk z `framer-motion` stagger
+  - `AuditLogFilters.tsx` — 4 filtry (action, entityType, dateFrom, dateTo)
+  - `AuditLogTable.tsx` — tabelka z kolumnami: data, użytkownik, akcja, typ, opis
+  - `AuditLogDetails.tsx` — modal z pełnym diff (old/new values)
+  - Polskie etykiety dla 30+ akcji (wszystkie typy z backend)
+  - Polskie etykiety dla 12 typów encji
+  - 32 kolory badgeów (actionColors map) — każda akcja unikalna
+  - Optional chaining `log.user?.firstName` — obsługa null ("System", "Akcja automatyczna")
+- **Framer Motion**: 
+  - StatCard: `initial={{ opacity: 0, y: 16 }}` → `animate={{ opacity: 1, y: 0 }}` z delay 0.1s/0.2s/0.3s/0.4s
+  - Modal: fade-in animacja
+  - Hover effects na kartach
+- **Fixes**:
+  - `TypeError: Cannot read properties of null (reading 'firstName')` — dodano optional chaining + fallback labels
+  - Pełna polonizacja wszystkich 30+ akcji (QUEUE_REORDER → "Zmiana kolejności", MENU_RECALCULATED → "Przeliczenie menu")
+
+**Przykłady polskich labelów**:
+- BASIC: CREATE → "Utworzenie", UPDATE → "Aktualizacja", DELETE → "Usunięcie", TOGGLE → "Przełączenie"
+- STATUS: ARCHIVE → "Archiwizacja", UNARCHIVE → "Przywrócenie", STATUS_CHANGE → "Zmiana statusu"
+- MENU: MENU_SELECTED → "Wybór menu", MENU_RECALCULATED → "Przeliczenie menu", MENU_DIRECT_REMOVED → "Bezpośrednie usunięcie menu"
+- QUEUE: QUEUE_REORDER → "Zmiana kolejności", QUEUE_REBUILD → "Przebudowa kolejki", QUEUE_AUTO_CANCEL → "Auto-anulowanie z kolejki"
+- PAYMENT: MARK_PAID → "Oznaczenie płatności", PAYMENT_UPDATE → "Aktualizacja płatności"
+- ATTACHMENTS: ATTACHMENT_UPLOAD → "Wgranie załącznika", ATTACHMENT_ARCHIVE → "Archiwizacja załącznika"
+- AUTH: LOGIN → "Logowanie", LOGOUT → "Wylogowanie"
 
 ---
 
-# ✅ SPRINT 5: Polish, Testing & Deployment (03.04 - 17.04.2026)
+## 📊 Summary Sprint 9
+- **Total Points**: 42 (Phase 1: 28, Phase 2: 19 [5+3+3+8])
+- **Deliverables**: 
+  - 22 typy eventów w `ActivityLog`
+  - Utility `audit-logger.ts` — centralne API
+  - 3 serwisy z pełnym audit coverage (reservation, queue, attachments+menu)
+  - 2 SQL functions w migracji Prisma (swap, move)
+  - Timeline per entity (rezerwacja, klient) — `EntityActivityTimeline.tsx`
+  - Polskie labele dla 22 akcji + 35 pól + smart formatting
+  - Archiwum: backend API (archive/unarchive) + frontend page
+  - Design token `archive` + sidebar link
+  - Stat cards + lista kart + paginacja
+  - **Globalny dashboard audytu** — `/dashboard/audit-log`
+  - **4 karty statystyk** (total, action, entity, users)
+  - **Filtry** (action, entity, date range)
+  - **Tabelka paginowana** (20/stronę)
+  - **Modal szczegółów** (old/new diff)
+  - **30+ polskich labelów akcji** + 12 typów encji
+  - **32 kolory badgeów** (actionColors)
+  - **Obsługa `user: null`** (akcje systemowe)
+  - **Framer-motion** (stagger animations)
+- **Testy**: Wszystkie manualne testy zaliczone (archiwizacja, przywróć, timeline, audit dashboard)
+- **Migracja DB**: ✅ 0002_queue_sql_functions
+- **Restart wymagany**: backend (kod + migracja) + frontend
+- **Risk**: Niski (zakończono przed terminem)
+- **PR**: #74 (reservation audit), #75 (queue audit), #76 (attachments+menu audit), #77 (timeline), #78 (archive), #79 (audit dashboard)
+
+---
+
+# ✅ SPRINT 10A: Mobile MVP (16.02.2026)
 
 ## Cel
-Testy, optymizacja, dokumentacja, deployment do produkcji.
+Pełna responsywność mobilna dla wszystkich 16 modułów systemu + mobilna nawigacja.
 
-## User Stories
+**Estymacja:** ~3-5 dni (zrealizowano w ~6 godzin)  
+**Wersja:** v1.9.0  
+**Branch:** `feature/sprint-10a-mobile-mvp`  
+**PR**: #82  
+**Status**: ✅ DONE (16.02.2026)  
+**Czas realizacji**: ~6 godzin
 
-### US-5.1: Unit Tests - Backend
-**Priority**: 🔴 CRITICAL
-**Points**: 21
+---
 
-**Akcept. Kryteria**:
-- ✅ 80%+ code coverage
-- ✅ Testy wszystkich serwisów
-- ✅ Testy kontrolerów
-- ✅ Testy walidacji
-- ✅ Testy kalkulacji ceny
-- ✅ Testy auth
+### US-10.2: Mobile Navigation (Hamburger + Sheet Sidebar)
+**Priority**: 🔴 CRITICAL  
+**Points**: 10  
+**Status**: ✅ DONE (16.02.2026)
 
 **Subtasks**:
-- [ ] Services tests
-- [ ] Controllers tests
-- [ ] Utils tests
-- [ ] Auth tests
-- [ ] Email service tests
-- [ ] Coverage report
+- [x] DashboardLayout: responsive padding (`pl-0 lg:pl-[280px]`)
+- [x] Sidebar: `hidden lg:flex` desktop + Sheet overlay mobile
+- [x] Header: hamburger button (`lg:hidden`) z Sheet trigger
+- [x] Auto-close mobile sidebar on navigation (usePathname listener)
+- [x] Responsive welcome header (text-2xl → text-xl sm:text-2xl)
+- [x] Wszystkie 12 modułów w mobilnym menu (Dashboard, Rezerwacje, Archiwum, Klienci, Sale, Menu, Kolejka, Zaliczki, Typy wydarzeń, Dziennik audytu, Raporty, Ustawienia)
+
+**Implementacja**:
+- **DashboardLayout** (`apps/frontend/app/dashboard/layout.tsx`):
+  - State: `sidebarOpen` + `setSidebarOpen`
+  - Responsive padding: `pl-0 lg:pl-[280px]` — brak paddingu na mobile, 280px na desktop
+  - Przekazanie `sidebarOpen` + `setSidebarOpen` do Header
+- **Sidebar** (`apps/frontend/components/layout/Sidebar.tsx`):
+  - Desktop: `hidden lg:flex fixed left-0 top-0 h-screen w-[280px]`
+  - Mobile: Sheet component z pełnym sidebarem wewnątrz
+  - Wszystkie 12 nav items z ikonami + badges
+  - Fix kolejności i ikon (commit 238ff85):
+    1. Dashboard, 2. Rezerwacje, 3. Archiwum, 4. Klienci, 5. Sale
+    6. Menu, 7. Kolejka, 8. Zaliczki (DollarSign), 9. Typy Wydarzeń (Theater)
+    10. Dziennik Audytu (FileText), 11. Raporty, 12. Ustawienia
+- **Header** (`apps/frontend/components/layout/Header.tsx`):
+  - Hamburger button: `lg:hidden` — widoczny tylko na mobile
+  - Sheet trigger w hamburger button
+  - Responsive welcome: `text-2xl → text-xl sm:text-2xl`
+- **Auto-close**: `usePathname()` listener — zamyka Sheet po kliknięciu w link
+- **Post-merge fixes** (commits po #82):
+  - commit b184336: dodano brakujące nav items (Raporty, Archiwum, Typy wydarzeń)
+  - commit 238ff85: przywrócono oryginalną kolejność i ikony (12 modułów)
+  - commit fc0a92a: fix PageHero (backHref/backLabel props dla menu subpages)
+  - commit 20fbbb3: fix EmptyState (actionHref prop dla link-based CTA)
+
+**Files changed**:
+- `apps/frontend/app/dashboard/layout.tsx` — responsive padding + state
+- `apps/frontend/components/layout/Sidebar.tsx` — Sheet mobile + hidden lg:flex desktop
+- `apps/frontend/components/layout/Header.tsx` — hamburger button + Sheet trigger
+- `apps/frontend/components/ui/sheet.tsx` — Shadcn Sheet component (nowy)
 
 ---
 
-### US-5.2: Unit Tests - Frontend
-**Priority**: 🔴 CRITICAL
-**Points**: 21
-
-**Akcept. Kryteria**:
-- ✅ 75%+ code coverage
-- ✅ Testy komponentów
-- ✅ Testy form
-- ✅ Testy hooków
-- ✅ Testy utils
-- ✅ Snapshot tests
+### US-10.3: Responsive Tables → Card Views
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE (16.02.2026)
 
 **Subtasks**:
-- [ ] Components tests
-- [ ] Forms tests
-- [ ] Hooks tests
-- [ ] Utils tests
-- [ ] Snapshot tests
-- [ ] Coverage report
+- [x] AuditLogTable: `hidden md:block` table + `md:hidden` mobile cards
+- [x] DepositsList: `hidden md:block` table + `md:hidden` mobile cards
+- [x] ReservationsList: już card-based, refined responsive (text sizes, spacing)
+- [x] ClientsList: już card-based, refined responsive (text sizes, spacing)
+- [x] Queue: już card-based, refined responsive
+- [x] Archive: już card-based, refined responsive
+
+**Implementacja**:
+- **AuditLogTable** (`apps/frontend/app/dashboard/audit-log/page.tsx`):
+  - Table: `hidden md:block` — ukryta na mobile
+  - Mobile cards: `md:hidden` — widoczne tylko na mobile
+  - Card layout: avatar, użytkownik, akcja badge, opis, data
+  - Action button: "Zobacz szczegóły" → otwiera modal
+- **DepositsList** (`apps/frontend/components/deposits/DepositsList.tsx`):
+  - Table: `hidden md:block` — ukryta na mobile
+  - Mobile cards: `md:hidden` — widoczne tylko na mobile
+  - Card layout: kwota (duża), status badge, typ, termin, actions
+  - Action dropdown: "Oznacz jako zapłacona", "Zobacz rezerwację"
+- **ReservationsList** — już card-based, drobne poprawki:
+  - Status badge: responsive sizing
+  - Actions: mobile-friendly spacing
+- **ClientsList** — już card-based, drobne poprawki:
+  - RODO badge: responsive positioning
+  - Contact info: responsive text sizes
+- **Queue** — już card-based, refined
+- **Archive** — już card-based, refined
+
+**Files changed**:
+- `apps/frontend/app/dashboard/audit-log/page.tsx` — dual render (table + cards)
+- `apps/frontend/components/deposits/DepositsList.tsx` — dual render (table + cards)
+- `apps/frontend/components/reservations/ReservationsList.tsx` — responsive refinement
+- `apps/frontend/components/clients/ClientsList.tsx` — responsive refinement
 
 ---
 
-### US-5.3: Integration Tests
-**Priority**: 🔴 CRITICAL
-**Points**: 21
+### Full Mobile Audit (16 Modules)
+**Priority**: 🟡 HIGH  
+**Points**: 12  
+**Status**: ✅ DONE (16.02.2026)
 
-**Akcept. Kryteria**:
-- ✅ Testy API endpoints
-- ✅ Testy bazy danych
-- ✅ Testy transakcji
-- ✅ Testy z testową bazą
+**Audytowane moduły**:
+1. ✅ Dashboard — stat cards grid (grid-cols-1 → grid-cols-2 md:grid-cols-4)
+2. ✅ Rezerwacje (lista + szczegóły) — już responsive
+3. ✅ Archiwum — stat cards grid + cards list
+4. ✅ Klienci (lista + szczegóły) — już responsive
+5. ✅ Sale — stat cards grid + form headings (text-xl sm:text-2xl)
+6. ✅ Menu — wszystkie subpages (pakiety, kategorie, dania, dodatki, opcje)
+7. ✅ Kolejka — cards list + filters (flex-col sm:flex-row)
+8. ✅ Zaliczki — dual render (table + cards)
+9. ✅ Typy wydarzeń — form headings + padding (p-4 sm:p-6)
+10. ✅ Załączniki — attachment panel responsive
+11. ✅ Dziennik audytu — dual render (table + cards)
+12. ✅ Raporty — tabs + filters responsive
+13. ✅ Ustawienia — 3 tabs responsive (users table, roles, company form)
+14. ✅ Create Reservation Wizard — wszystkie 6 kroków responsive
+15. ✅ Dialogi — wszystkie modals responsive (max-w-[95vw] sm:max-w-lg)
+16. ✅ PDF Generator — bez zmian (backend only)
+
+**Zmiany globalne (wszystkie moduły)**:
+- **Stats grids**: `grid-cols-1 → grid-cols-2 md:grid-cols-4`
+  - 1 kolumna na xs, 2 na small, 4 na md+
+  - Moduły: Dashboard, Halls, Archive, Reports
+- **Padding**: `p-6/p-8 → p-4 sm:p-6 / p-4 sm:p-8`
+  - Mniejsze padddingi na mobile
+  - Moduły: wszystkie pages (16 total)
+- **Form headings**: `text-2xl → text-xl sm:text-2xl`
+  - Mniejsze nagłówki na mobile
+  - Moduły: Halls, EventTypes, Settings, Forms
+- **Filter flex**: `md:flex-row → sm:flex-row`
+  - Wcześniejsze przejście do row layout
+  - Moduły: Queue, Reservations, Clients, Archive, AuditLog
+- **Dialogs**: `max-w-lg → max-w-[95vw] sm:max-w-lg`
+  - Pełna szerokość na mobile z małym marginesem
+  - Wszystkie Dialog components (20+ total)
+
+**Files changed** (ponad 30 plików):
+- Layout: `DashboardLayout.tsx`, `Sidebar.tsx`, `Header.tsx`
+- Pages: 12 main pages + 15 subpages
+- Components: wszystkie forms, dialogs, cards, tables
+
+---
+
+### Post-Merge UTF-8 Fixes
+**Priority**: 🔴 CRITICAL  
+**Points**: 3  
+**Status**: ✅ DONE (16.02.2026)
+
+**Commity**:
+- `690bc58` (16.02, 23:23) — fix: replace all Unicode escapes with UTF-8 Polish characters across frontend
+- `8be9866` (16.02, 23:06) — fix: replace all Unicode escapes with UTF-8 Polish characters across frontend
+- `3fb61f5` (16.02, 19:05) — fix: replace all Unicode escapes with UTF-8 Polish characters across frontend
+
+**Problem**:
+- Unicode escape sequences (`\u0105` dla ą, `\u0119` dla ę, etc.) pojawiły się ponownie po niektórych merge
+- Emoji surrogate pairs (`\uD83C\uDF89` zamiast 🎉)
+
+**Rozwiązanie**:
+- Globalny fix we WSZYSTKICH plikach frontendowych
+- Zamiana escape sequences na właściwe znaki UTF-8
+- Razem ~625 zamian w 29 plikach
+- Pełna lista plików w commit 690bc58
+
+**Files fixed** (29 total):
+- Reports: `page.tsx` (przywrócony z UTF-8)
+- Menu: wszystkie subpages (categories, dishes, packages, options, add-ons)
+- Forms: CreateReservationForm, wszystkie dialogi
+- Components: PageHero, EmptyState, Sidebar, inne
+
+---
+
+## 📊 Summary Sprint 10A
+- **Total Points**: 33 (10 + 8 + 12 + 3)
+- **Deliverables**: 
+  - **Mobile Navigation**:
+    - Hamburger menu z Sheet overlay
+    - Desktop sidebar `hidden lg:flex`
+    - Auto-close on navigate
+    - Wszystkie 12 modułów w menu
+  - **Responsive Tables**:
+    - AuditLogTable: dual render (table desktop + cards mobile)
+    - DepositsList: dual render (table desktop + cards mobile)
+    - Pozostałe listy: refined responsive
+  - **Full Mobile Audit**:
+    - 16 modułów audytowanych
+    - Stats grids: 1 → 2 → 4 kolumny
+    - Responsive padding (p-4 sm:p-6)
+    - Responsive headings (text-xl sm:text-2xl)
+    - Responsive filters (flex-col sm:flex-row)
+    - Responsive dialogs (max-w-[95vw] sm:max-w-lg)
+  - **UTF-8 Fixes**:
+    - Globalny fix w 29 plikach (625 zamian)
+    - Emoji surrogate pairs → proper UTF-8
+  - **Post-merge fixes**:
+    - Dodano brakujące nav items (Raporty, Archiwum, Typy)
+    - Przywrócono oryginalną kolejność i ikony (12 modułów)
+    - Fix PageHero (backHref prop)
+    - Fix EmptyState (actionHref prop)
+- **Migracja DB**: ❌ Brak
+- **Restart wymagany**: frontend only
+- **Risk**: Niski (zrealizowano przed terminem w 6h)
+- **PR**: #82
+- **Post-merge commits**: 5 commits (b184336, 238ff85, fc0a92a, 20fbbb3, 690bc58)
+
+---
+
+# 🔄 SPRINT 10B: UI Unification (17.02.2026 →)
+
+## Cel
+Spójny wygląd wszystkich modułów (kolory, typography, spacing, shadows) + dark mode support.
+
+**Estymacja:** ~3-5 dni  
+**Wersja:** v1.10.0  
+**Branch:** `feature/ui-unification`  
+**Status**: 🔄 IN PROGRESS (2/5 faz ukończonych)
+
+**Zakres**:
+- Design system refinement (colors, typography, spacing scale)
+- Component library unification (buttons, badges, cards)
+- Dark mode support (Tailwind + CSS variables)
+- Animation consistency (Framer Motion presets)
+- Accessibility audit (ARIA labels, keyboard navigation)
+
+---
+
+# ✅ SPRINT 11: Reports Module — Analytics (16.02.2026)
+
+## Cel
+Kompleksowy moduł raportów z analityką przychodów i zajętości + eksport do Excel/PDF.
+
+**Estymacja:** ~3-4 dni (zrealizowano w ~5 godzin)  
+**Wersja:** v1.0.0 (Reports Module)  
+**Branch:** `feature/reports-module`  
+**Status**: ✅ DONE (16.02.2026, 18:24-19:13)  
+**Dokumentacja**: [REPORTS_MODULE_2026-02-16.md](REPORTS_MODULE_2026-02-16.md)
+
+---
+
+### US-11.1: Revenue Analytics — Backend Service
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Database tests
-- [ ] API endpoint tests
-- [ ] Transaction tests
-- [ ] Setup test database
+- [x] Serwis `reports.service.ts` z `getRevenueReport()`
+- [x] Breakdown by period (day/week/month/year)
+- [x] Revenue by hall ranking
+- [x] Revenue by event type ranking
+- [x] Growth % calculation vs previous period
+- [x] Filtering: dateFrom, dateTo, groupBy, hallId, eventTypeId
+- [x] Parallel queries z `Promise.all` dla performance
+
+**Implementacja**:
+- **Metryki summary**: totalRevenue, avgPerReservation, growthPercent, maxRevenueDay, pendingRevenue
+- **Breakdown**: okres + przychód + liczba rezerwacji + średnia
+- **Rankings**: wg sali i typu wydarzenia (revenue + count)
+- **Filtry**: zakres dat, grupowanie (day/week/month/year), sala, typ wydarzenia
 
 ---
 
-### US-5.4: E2E Tests
-**Priority**: 🔴 CRITICAL
-**Points**: 34
-
-**Akcept. Kryteria**:
-- ✅ E2E test: Login flow
-- ✅ E2E test: Create reservation
-- ✅ E2E test: Edit reservation
-- ✅ E2E test: Cancel reservation
-- ✅ E2E test: Generate PDF
-- ✅ E2E test: Client management
-- ✅ E2E test: Admin panel
-- ✅ E2E test: Analytics
-- ✅ E2E test: Email sending
-- ✅ E2E test: Validations
+### US-11.2: Occupancy Analytics — Backend Service
+**Priority**: 🔴 CRITICAL  
+**Points**: 7  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Login E2E test
-- [ ] Reservation flow E2E tests
-- [ ] Client management E2E tests
-- [ ] Admin panel E2E tests
-- [ ] Download PDF E2E test
-- [ ] Form validations E2E tests
+- [x] Metoda `getOccupancyReport()` w `reports.service.ts`
+- [x] Occupancy % calculation (dni z rezerwacją / total dni)
+- [x] Peak day of week analysis
+- [x] Peak hour analysis (0-23)
+- [x] Hall rankings by occupancy + reservation count
+- [x] Average guests per reservation by hall
+
+**Implementacja**:
+- **Summary**: avgOccupancy, peakDay, peakHall, totalReservations, totalDaysInPeriod
+- **Hall stats**: occupancy %, liczba rezerwacji, średnia gości
+- **Peak analysis**: hourly distribution + weekday distribution
+- **Filters**: dateFrom, dateTo, hallId (optional)
 
 ---
 
-### US-5.5: Performance Optimization
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Frontend: Lighthouse score > 90
-- ✅ Database query optimization
-- ✅ Image optimization
-- ✅ Code splitting (Next.js)
-- ✅ Caching strategy
-- ✅ Lazy loading
+### US-11.3: Export Service — Excel & PDF
+**Priority**: 🟡 HIGH  
+**Points**: 5  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Lighthouse audit
-- [ ] Query optimization
-- [ ] Code splitting
-- [ ] Image optimization
-- [ ] Caching setup
+- [x] Instalacja `exceljs@^4.4.0`
+- [x] Serwis `reports-export.service.ts` z 4 metodami:
+  - `exportRevenueToExcel()`
+  - `exportRevenueToPDF()`
+  - `exportOccupancyToExcel()`
+  - `exportOccupancyToPDF()`
+- [x] Excel: headers, data tables, summary sections, styling
+- [x] PDF: title, metadata, formatted tables, Polish fonts (DejaVu)
+- [x] Controller: 4 endpointy exportu
+- [x] Routes: `/api/reports/export/*`
+
+**Implementacja**:
+- **Excel (ExcelJS)**: 
+  - Arkusz 1: Podsumowanie
+  - Arkusz 2: Szczegóły
+  - Formatowanie: nagłówki, wycentrowanie, bold
+  - Auto-formatting: currency, percentages
+- **PDF (PDFKit)**: 
+  - Format A4 portrait
+  - Nagłówek + metadata
+  - Tabele z danymi
+  - Polskie czcionki (DejaVu)
+- **Endpointy**:
+  - `GET /api/reports/export/revenue/excel`
+  - `GET /api/reports/export/revenue/pdf`
+  - `GET /api/reports/export/occupancy/excel`
+  - `GET /api/reports/export/occupancy/pdf`
 
 ---
 
-### US-5.6: Security Audit
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ OWASP top 10 review
-- ✅ XSS protection
-- ✅ CSRF protection
-- ✅ SQL injection protection
-- ✅ Rate limiting
-- ✅ Security headers
+### US-11.4: Reports Layout + Filters
+**Priority**: 🟡 HIGH  
+**Points**: 8  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Security audit
-- [ ] CORS setup
-- [ ] Rate limiting
-- [ ] Security headers (helmet.js)
-- [ ] Input sanitization
+- [x] Strona `/dashboard/reports` z 2 tabami (Revenue, Occupancy)
+- [x] DateRange picker z presetami (this month, last month, this year, last year)
+- [x] GroupBy selector (day/week/month/year)
+- [x] Hall filter dropdown
+- [x] EventType filter dropdown
+- [x] Hook `useReports.ts` z TanStack Query
+- [x] Export buttons (Excel, PDF) z download handlers
+
+**Implementacja**:
+- Hero z gradientem + stat cards
+- Filtry w karcie z Shadcn UI components
+- Presety dat dla wygody ("Ten miesiąc", "Ostatni miesiąc", "Ten rok", "Ostatni rok")
+- Realtime query przy zmianie filtrów (debounce 300ms)
+- Loading states + error handling
+- Polish language UI
 
 ---
 
-### US-5.7: Documentation
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ API documentation (Swagger)
-- ✅ Deployment guide
-- ✅ Architecture guide
-- ✅ Development guide
-- ✅ Database schema docs
-- ✅ Troubleshooting guide
+### US-11.5: Revenue Tab — Frontend UI
+**Priority**: 🔴 CRITICAL  
+**Points**: 10  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] API docs
-- [ ] Deployment guide
-- [ ] Architecture docs
-- [ ] Dev setup guide
-- [ ] Database schema docs
+- [x] Summary cards (4): Total Revenue, Avg/Rezerwacja, Growth %, Max Day
+- [x] Breakdown table: okres + przychód + liczba + średnia
+- [x] Revenue by Hall table: sala + przychód + liczba
+- [x] Revenue by Event Type table: typ + przychód + liczba
+- [x] Export buttons (Excel, PDF)
+- [x] Polish formatting: ceny (`6 825 zł`), percentages
+
+**Implementacja**:
+- Stat cards z ikonami (TrendingUp, DollarSign, BarChart, Calendar)
+- Tabele z Shadcn Table component
+- Responsive design (mobile-friendly)
+- Empty states gdy brak danych
+- Loading skeletons
 
 ---
 
-### US-5.8: UI/UX Polish
-**Priority**: 🟡 HIGH
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Framer Motion animacje
-- ✅ Loading states
-- ✅ Error handling UX
-- ✅ Accessibility (WCAG 2.1 AA)
-- ✅ Responsive design
-- ✅ Dark mode support
-- ✅ Keyboard navigation
+### US-11.6: Occupancy Tab — Frontend UI
+**Priority**: 🔴 CRITICAL  
+**Points**: 7  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Animations polish
-- [ ] Loading states
-- [ ] Error messages
-- [ ] Accessibility audit
-- [ ] Mobile responsive
-- [ ] Dark mode
+- [x] Summary cards (4): Avg Occupancy, Peak Day, Peak Hall, Total Reservations
+- [x] Occupancy by Hall table: sala + occupancy % + liczba + avg gości
+- [x] Peak Hours table: godzina + liczba rezerwacji
+- [x] Peak Days table: dzień tygodnia + liczba rezerwacji
+- [x] Export buttons (Excel, PDF)
+- [x] Polish formatting: percentages, day names
+
+**Implementacja**:
+- Stat cards z percentages i day names
+- 3 tabele z różnymi metrykami
+- Ranking sal po occupancy %
+- Peak analysis (hours 0-23, days Mon-Sun)
+- Responsive layout
 
 ---
 
-### US-5.9: Deployment & DevOps
-**Priority**: 🔴 CRITICAL
-**Points**: 21
+## 📊 Summary Sprint 11
+- **Total Points**: 45 (8+7+5+8+10+7)
+- **Deliverables**:
+  - **Backend**: 2 serwisy (reports, reports-export), 1 controller, 6 endpointów
+  - **Frontend**: 1 strona, 3 hooki custom, kompletny UI z filtrami
+  - **Funkcjonalności**:
+    - Revenue report: breakdown, rankings, growth %
+    - Occupancy report: hall stats, peak analysis
+    - Excel export (ExcelJS) — 2 arkusze, styled
+    - PDF export (PDFKit) — A4, Polish fonts
+  - **Dokumentacja**: [REPORTS_MODULE_2026-02-16.md](REPORTS_MODULE_2026-02-16.md) (17.6 KB)
+  - **Kod**: ~1200 linii TypeScript (backend + frontend)
+- **Migracja DB**: ❌ Brak (wykorzystuje istniejące modele)
+- **Restart wymagany**: backend + frontend
+- **Risk**: Niski (zrealizowano przed terminem w 5h)
+- **Dependencies**: `exceljs@^4.4.0` (już zainstalowany)
+- **Files**:
+  - Backend (6): `reports.types.ts`, `reports.service.ts`, `reports-export.service.ts`, `reports.controller.ts`, `reports.routes.ts`, aktualizacja `server.ts`
+  - Frontend (3): `app/dashboard/reports/page.tsx`, `hooks/use-reports.ts`, `types/reports.types.ts`
 
-**Akcept. Kryteria**:
-- ✅ Docker images optymalizowane
-- ✅ Docker compose production ready
-- ✅ Environment setup
-- ✅ Database migrations automated
-- ✅ SSL/HTTPS setup
-- ✅ Domain configuration
-- ✅ CDN setup
-- ✅ Monitoring (optional)
+---
+
+# ✅ SPRINT 12: RBAC + Settings UI (16.02.2026)
+
+## Cel
+System kontroli dostępu oparty na rolach z UI zarządzania użytkownikami, rolami i ustawieniami firmy.
+
+**Estymacja:** ~4-5 dni (zrealizowano w ~3 godziny)  
+**Wersja:** v1.0.0 (RBAC Module)  
+**Branch:** `feature/rbac-settings`  
+**Status**: ✅ DONE (16.02.2026, 20:20-21:30)  
+**Dokumentacja**: [RBAC_SYSTEM.md](RBAC_SYSTEM.md)
+
+---
+
+### US-12.1: RBAC — Modele bazodanowe
+**Priority**: 🔴 CRITICAL  
+**Points**: 5  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] Docker optimization
-- [ ] Environment setup
-- [ ] Database migration automation
-- [ ] SSL certificates
-- [ ] Domain DNS config
-- [ ] CDN setup
-- [ ] Nginx reverse proxy
+- [x] Model `Role` w Prisma (name, slug, color, isSystem)
+- [x] Model `Permission` (slug, description, module)
+- [x] Model `RolePermission` (many-to-many)
+- [x] Model `CompanySettings` (singleton z danymi firmy)
+- [x] Relacja `User.roleId` → `Role`
+- [x] Backward compatibility: pole `legacyRole`
+
+**Implementacja**:
+- Format uprawnień: `moduł:akcja` (np. `reservations:create`)
+- 5 ról systemowych: Administrator, Kierownik, Pracownik, Podgląd, Koordynator
+- 13 modułów, 49 uprawnień
+- Role systemowe (`isSystem: true`) nie mogą być usunięte
 
 ---
 
-### US-5.10: Final QA & Release
-**Priority**: 🔴 CRITICAL
-**Points**: 13
-
-**Akcept. Kryteria**:
-- ✅ Smoke tests
-- ✅ Regression tests
-- ✅ User acceptance testing
-- ✅ Release notes
-- ✅ Go-live checklist
+### US-12.2: RBAC — Seed Script
+**Priority**: 🔴 CRITICAL  
+**Points**: 3  
+**Status**: ✅ DONE
 
 **Subtasks**:
-- [ ] QA testing
-- [ ] Regression tests
-- [ ] Release notes
-- [ ] Go-live checklist
-- [ ] Support documentation
+- [x] Seed `rbac.seed.ts` z definicjami ról i uprawnień
+- [x] 5 ról: admin (42 perm), manager (39), employee (17), viewer (9), koordynator (0)
+- [x] 49 uprawnień w 13 modułach
+- [x] Automatyczna migracja legacy → RBAC
+- [x] Integracja z `npm run db:seed`
+
+**Implementacja**:
+- Moduły: Dashboard, Rezerwacje, Archiwum, Klienci, Sale, Menu, Kolejka, Zaliczki, Typy wydarzeń, Załączniki, Dziennik audytu, Raporty, Ustawienia
+- Mapowanie legacy: `ADMIN` → admin, `EMPLOYEE` → employee
+- Seed uruchamiany przy każdym `prisma migrate deploy`
 
 ---
 
-## 📊 Summary Sprint 5
-- **Total Points**: 183
-- **Deliverables**: Pełne testowanie, dokumentacja, deployment
-- **Testing**: 80% backend, 75% frontend
-- **Final Status**: 🚀 PRODUCTION READY
+### US-12.3: RBAC — Permission Middleware
+**Priority**: 🔴 CRITICAL  
+**Points**: 8  
+**Status**: ✅ DONE
+
+**Subtasks**:
+- [x] Middleware `requirePermission(...permissions)` — wymaga wszystkich
+- [x] Middleware `requireAnyPermission(...permissions)` — wymaga co najmniej jednego
+- [x] Middleware `attachPermissionCheck(...permissions)` — nie blokuje, dołącza wynik
+- [x] Cache uprawnień (TTL: 5min, invalidation on role change)
+- [x] Helper `invalidatePermissionCache(userId)`
+- [x] Integracja z `authMiddleware`
+
+**Implementacja**:
+- Cache w pamięci z TTL 5 minut
+- Automatyczna invalidacja przy zmianie roli/uprawnień
+- Obsługa legacy fallback (jeśli `roleId` null → sprawdź `legacyRole`)
+- Error 403 Forbidden gdy brak uprawnień
 
 ---
 
-# 📊 Podsumowanie Wszystkich Sprintów
+### US-12.4: Settings API — Users, Roles, Permissions, Company
+**Priority**: 🔴 CRITICAL  
+**Points**: 13  
+**Status**: ✅ DONE
 
-| Sprint | Temat | Points | Tygodnie | Status |
-|--------|-------|--------|----------|--------|
-| 1 | Fundacja | 68 | 1-2 | 🔳 TODO |
-| 2 | Rezerwacje | 115 | 3-4 | 🔳 TODO |
-| 3 | Funkcjonalności | 84 | 5-6 | 🔳 TODO |
-| 4 | Admin & Analytics | 105 | 7-8 | 🔳 TODO |
-| 5 | Polish & Deploy | 183 | 9-10 | 🔳 TODO |
-| **RAZEM** | | **555** | **10** | |
+**Subtasks**:
+- [x] Users API (7 endpointów):
+  - `GET /users` — lista + filtry + search
+  - `POST /users` — utwórz
+  - `PUT /users/:id` — edytuj
+  - `PATCH /users/:id/password` — zmień hasło
+  - `PATCH /users/:id/toggle-active` — aktywuj/dezaktywuj
+  - `DELETE /users/:id` — soft delete
+- [x] Roles API (5 endpointów):
+  - `GET /roles` — lista z licznikiem użytkowników
+  - `POST /roles` — utwórz rolę
+  - `PUT /roles/:id` — edytuj
+  - `PUT /roles/:id/permissions` — zaktualizuj uprawnienia
+  - `DELETE /roles/:id` — usuń (jeśli nie systemowa)
+- [x] Permissions API (2 endpointy):
+  - `GET /permissions` — flat list
+  - `GET /permissions/grouped` — grouped by module
+- [x] Company API (2 endpointy):
+  - `GET /company` — dane firmy
+  - `PUT /company` — aktualizuj
+- [x] Serwisy: users, roles, permissions, company-settings
+- [x] Kontrolery: users, roles, permissions, company-settings
+- [x] Routes: `/api/settings/*`
+- [x] Audit log integration
+
+**Implementacja**:
+- Wszystkie endpointy chronione `authMiddleware` + permission middleware
+- Users: filtry (role, status, search), paginacja
+- Roles: walidacja usuwania (nie można usunąć systemowej + sprawdź czy są użytkownicy)
+- Company: singleton record (upsert)
+- Audit log: wszystkie akcje CRUD logowane
 
 ---
 
-# 🎯 Key Metrics
+### US-12.5: Settings UI — 3 Tabs (Users, Roles, Company)
+**Priority**: 🔴 CRITICAL  
+**Points**: 16  
+**Status**: ✅ DONE
 
-- **Total Story Points**: 555
-- **Estimated Duration**: 10 weeks (5 sprints)
-- **Team Size**: 1 Full-stack developer (can be scaled)
-- **Code Coverage**: 80% backend, 75% frontend
-- **Testing**: Unit + Integration + E2E
-- **Documentation**: Full API, deployment, architecture
+**Subtasks**:
+- [x] Strona `/dashboard/settings` z 3 tabami
+- [x] **UsersTab**:
+  - Tabela z filtrowaniem (rola, status) i wyszukiwaniem
+  - Dialog dodawania/edycji użytkownika
+  - Dialog zmiany hasła
+  - Toggle aktywności (Switch)
+  - Usuwanie z potwierdzeniem (AlertDialog)
+  - Badge z rolą (kolorowy)
+  - Data ostatniego logowania
+- [x] **RolesTab**:
+  - Lista ról z licznikiem użytkowników
+  - Rozwijana macierz uprawnień per rola (Collapsible)
+  - Checkboxy dla każdego uprawnienia
+  - Bulk select/deselect per moduł
+  - Dialog dodawania/edycji roli
+  - Usuwanie niestandardowych ról (AlertDialog)
+  - Ochrona systemowych ról
+- [x] **CompanyTab**:
+  - Formularz z danymi firmy (13 pól)
+  - Walidacja NIP (10 cyfr), REGON (9 lub 14 cyfr)
+  - Dropdown waluta + strefa czasowa
+  - Zapis z potwierdzeniem (toast)
+- [x] API client `lib/api/settings.ts`
+- [x] Hooki TanStack Query (mutations + queries)
+- [x] Polish language UI
+
+**Implementacja**:
+- **UsersTab**: 
+  - Tabela Shadcn Table
+  - Filtry: Select (role), ToggleGroup (status), Input (search)
+  - Actions: Edit (Pencil icon), Password (Key icon), Toggle (Switch), Delete (Trash icon)
+  - Dialog z formularzem: email, firstName, lastName, role (Select), password (optional przy edit)
+- **RolesTab**:
+  - Karty dla każdej roli z Collapsible
+  - Macierz uprawnień: 13 sekcji (modules) × N checkboxów
+  - Bulk actions: "Zaznacz wszystkie", "Odznacz wszystkie" per moduł
+  - Dialog roli: name, slug, description, color (ColorPicker)
+- **CompanyTab**:
+  - Grid 2-column form
+  - Pola: name, taxId (NIP), regon, street, postalCode, city, phone, email, website, currency, timezone, invoicePrefix, receiptPrefix
+  - Walidacja: required fields, NIP regex, REGON regex
+- **Components**: 6 nowych (UsersTab, UserFormDialog, ChangePasswordDialog, RolesTab, RoleFormDialog, CompanyTab)
 
 ---
 
-**Last Updated**: 06.02.2026
-**Project Status**: 🔧 In Planning Phase
+## 📊 Summary Sprint 12
+- **Total Points**: 45 (5+3+8+13+16)
+- **Deliverables**:
+  - **Backend**: 
+    - 4 modele Prisma (Role, Permission, RolePermission, CompanySettings)
+    - Seed script: 5 ról, 49 uprawnień, 13 modułów
+    - 3 middleware (requirePermission, requireAnyPermission, attachPermissionCheck)
+    - Cache z TTL 5min + invalidation
+    - 4 serwisy (users, roles, permissions, company)
+    - 4 kontrolery
+    - 16 endpointów API (`/api/settings/*`)
+    - Audit log integration
+  - **Frontend**:
+    - Strona `/dashboard/settings` z 3 tabami
+    - 6 komponentów UI (UsersTab, RolesTab, CompanyTab + dialogi)
+    - API client + hooki TanStack Query
+    - Pełna polonizacja
+    - Responsive design
+- **Dokumentacja**: [RBAC_SYSTEM.md](RBAC_SYSTEM.md) (12.4 KB)
+- **Migracja DB**: ✅ Dodane 4 modele (bez migracji — wykorzystuje istniejące struktury)
+- **Restart wymagany**: backend + frontend + seed
+- **Risk**: Niski (zrealizowano przed terminem w 3h)
+- **Files**:
+  - Backend (13): Prisma schema, seed, constants, middlewares, types, 4 serwisy, 4 kontrolery, routes
+  - Frontend (7): page.tsx, 6 komponentów, lib/api/settings.ts
+
+---
+
+# 📊 Podsumowanie Sprintów 6-12
+
+| Sprint | Temat | Points | Estymacja | Czas realny | Wersja | Status |
+|--------|-------|--------|-----------|-------------|--------|--------|
+| 6 | Quick Wins & Bugfixy | 16 | ~1 dzień | ~1 dzień | v1.5.0-v1.5.5 | ✅ DONE |
+| 7 | UTF-8 Cleanup + Attachments | 25 | ~2 dni | ~1 dzień | v1.6.1-v1.6.2 | ✅ DONE |
+| 8 | System Rabatów | 26 | ~2-3 dni | ~1 dzień | v1.7.0 | ✅ DONE |
+| 9.1 | Audit Logging Backend | 28 | ~1 dzień | ~4h | v1.8.0 | ✅ DONE |
+| 9.2 | Audit UI + Archive + Dashboard | 19 | ~1 dzień | ~4h | v1.8.1 | ✅ DONE |
+| 10A | Mobile MVP | 33 | ~3-5 dni | ~6h | v1.9.0 | ✅ DONE |
+| 10B | UI Unification | TBD | ~3-5 dni | ~4h (2/5 faz) | v1.10.0 | 🔄 IN PROGRESS |
+| 11 | Reports Module | 45 | ~3-4 dni | ~5h | Reports v1.0.0 | ✅ DONE |
+| 12 | RBAC + Settings UI | 45 | ~4-5 dni | ~3h | RBAC v1.0.0 | ✅ DONE |
+| **RAZEM** | | **237** | **~20-29 dni** | **~3 dni** | | **8/9 DONE** |
+
+**Velocity Sprint 10A-12:**
+- Sprint 10A: 33 punkty / 6h = **5.5 pkt/h** 🚀
+- Sprint 11: 45 punktów / 5h = **9 pkt/h** 🚀
+- Sprint 12: 45 punktów / 3h = **15 pkt/h** 🚀🚀
+- Średnia Sprinty 10A-12: **9.8 pkt/h** (ponad 3x szybciej niż estymacja)
+
+---
+
+**Last Updated**: 17.02.2026, 22:45 CET  
+**Project Status**: 🔄 Sprint 10B IN PROGRESS (2/5 faz) — Fazy 1+3 Dark Mode DONE, Fazy 2/4/5 TODO  
+**Version**: v1.9.0 → v1.10.0 (UI Unification in progress)  
+**Remaining**: Faza 2 (Design Tokens v2), Faza 4 (Animacje), Faza 5 (Accessibility)

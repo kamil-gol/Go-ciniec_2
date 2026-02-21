@@ -6,6 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import hallService from '../services/hall.service';
+import { AppError } from '../utils/AppError';
 
 class HallController {
   /**
@@ -48,13 +49,18 @@ class HallController {
   async createHall(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const data = req.body;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        throw AppError.unauthorized('User not authenticated');
+      }
 
       if (!data.name || !data.capacity) {
         res.status(400).json({ success: false, message: 'Name and capacity are required' });
         return;
       }
 
-      const hall = await hallService.createHall(data);
+      const hall = await hallService.createHall(data, userId);
       res.status(201).json({ success: true, data: hall });
     } catch (error) {
       next(error);
@@ -66,7 +72,13 @@ class HallController {
    */
   async updateHall(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const hall = await hallService.updateHall(req.params.id, req.body);
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        throw AppError.unauthorized('User not authenticated');
+      }
+
+      const hall = await hallService.updateHall(req.params.id, req.body, userId);
       res.json({ success: true, data: hall });
     } catch (error) {
       next(error);
@@ -78,7 +90,13 @@ class HallController {
    */
   async deleteHall(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await hallService.deleteHall(req.params.id);
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        throw AppError.unauthorized('User not authenticated');
+      }
+
+      await hallService.deleteHall(req.params.id, userId);
       res.json({ success: true, message: 'Hall deactivated successfully' });
     } catch (error) {
       next(error);

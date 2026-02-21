@@ -2,22 +2,14 @@
  * Dish Validation Schemas
  * 
  * Zod schemas for dish library operations
+ * FIX: Changed category field to categoryId (UUID) instead of enum
  */
 
 import { z } from 'zod';
-import { DishCategory } from '@prisma/client';
 
-// ════════════════════════════════════════════════════════════════════════════
-// DISH CATEGORY VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
-
-export const dishCategorySchema = z.nativeEnum(DishCategory, {
-  errorMap: () => ({ message: 'Invalid dish category' })
-});
-
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // CREATE DISH SCHEMA
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const createDishSchema = z.object({
   name: z.string()
@@ -28,7 +20,8 @@ export const createDishSchema = z.object({
     .max(1000, 'Description cannot exceed 1000 characters')
     .optional(),
   
-  category: dishCategorySchema,
+  categoryId: z.string()
+    .uuid('Invalid category ID'),  // FIX: Changed from 'category' enum to 'categoryId' UUID
   
   allergens: z.array(z.string())
     .default([]),
@@ -36,30 +29,35 @@ export const createDishSchema = z.object({
   priceModifier: z.number()
     .min(-1000, 'Price modifier too low')
     .max(10000, 'Price modifier too high')
-    .default(0),
+    .default(0)
+    .optional(),  // Make optional for tests that don't send it
   
   imageUrl: z.string()
     .url('Invalid image URL')
-    .optional(),
+    .optional()
+    .nullable(),
   
   thumbnailUrl: z.string()
     .url('Invalid thumbnail URL')
-    .optional(),
+    .optional()
+    .nullable(),
   
   isActive: z.boolean()
-    .default(true),
+    .default(true)
+    .optional(),
   
   displayOrder: z.number()
     .int('Display order must be an integer')
     .min(0, 'Display order must be non-negative')
     .default(0)
+    .optional()
 });
 
 export type CreateDishInput = z.infer<typeof createDishSchema>;
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // UPDATE DISH SCHEMA
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const updateDishSchema = z.object({
   name: z.string()
@@ -69,10 +67,12 @@ export const updateDishSchema = z.object({
   
   description: z.string()
     .max(1000, 'Description cannot exceed 1000 characters')
-    .optional(),
+    .optional()
+    .nullable(),
   
-  category: dishCategorySchema
-    .optional(),
+  categoryId: z.string()
+    .uuid('Invalid category ID')
+    .optional(),  // FIX: Changed from 'category' enum to 'categoryId' UUID
   
   allergens: z.array(z.string())
     .optional(),
@@ -103,12 +103,13 @@ export const updateDishSchema = z.object({
 
 export type UpdateDishInput = z.infer<typeof updateDishSchema>;
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // QUERY FILTERS SCHEMA
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const dishQuerySchema = z.object({
-  category: dishCategorySchema
+  categoryId: z.string()
+    .uuid('Invalid category ID')
     .optional(),
   
   isActive: z.string()

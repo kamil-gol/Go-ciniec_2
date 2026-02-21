@@ -1,85 +1,37 @@
+# ============================================
+# Docker Compose — Base Infrastructure
+# ============================================
+# This file defines shared infrastructure only.
+# Use with an environment-specific override:
+#
+#   Dev:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   Test: docker compose -f docker-compose.yml -f docker-compose.test.yml up
+#
+# Or use Makefile shortcuts: make dev / make prod / make test-all
+# ============================================
+
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: rezerwacje-db
     environment:
-      POSTGRES_USER: ${DB_USER:-rezerwacje}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-rezerwacje_secure_pass_2026}
-      POSTGRES_DB: ${DB_NAME:-rezerwacje}
+      POSTGRES_USER: ${DB_USER:?Set DB_USER in .env file}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env file}
+      POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env file}
       POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
     ports:
       - '${DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - rezerwacje-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-rezerwacje} -d ${DB_NAME:-rezerwacje}']
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Backend API
-  backend:
-    build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
-    container_name: rezerwacje-api
-    environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      PORT: ${API_PORT:-3001}
-      DATABASE_URL: postgresql://${DB_USER:-rezerwacje}:${DB_PASSWORD:-rezerwacje_secure_pass_2026}@postgres:5432/${DB_NAME:-rezerwacje}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-your-email@gmail.com}
-      SMTP_PASS: ${SMTP_PASS:-your-app-password}
-      SMTP_FROM: ${SMTP_FROM:-noreply@gosciniecrodzinny.pl}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      # Restaurant branding (used in PDF generation)
-      RESTAURANT_NAME: ${RESTAURANT_NAME:-Gosciniec Rodzinny}
-      RESTAURANT_ADDRESS: ${RESTAURANT_ADDRESS:-ul. Przykladowa 123, 00-000 Miasto}
-      RESTAURANT_PHONE: ${RESTAURANT_PHONE:-+48 123 456 789}
-      RESTAURANT_EMAIL: ${RESTAURANT_EMAIL:-kontakt@gosciniecrodzinny.pl}
-      RESTAURANT_WEBSITE: ${RESTAURANT_WEBSITE:-www.gosciniecrodzinny.pl}
-      RESTAURANT_NIP: ${RESTAURANT_NIP:-123-456-78-90}
-    ports:
-      - '${API_PORT:-3001}:3001'
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./apps/backend:/app
-      - ./apps/backend/uploads:/app/uploads
-      - ./apps/backend/backups:/app/backups
-    networks:
-      - rezerwacje-network
-    command: npm run dev
-
-  # Frontend
-  frontend:
-    build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile.dev
-    container_name: rezerwacje-web
-    environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://62.171.189.172:3001/api}
-      NEXT_PUBLIC_APP_NAME: 'Rezerwacje Gosciniec Rodzinny'
-    ports:
-      - '${WEB_PORT:-3000}:3000'
-    depends_on:
-      - backend
-    volumes:
-      - ./apps/frontend:/app
-      - /app/.next
-    networks:
-      - rezerwacje-network
-    command: npm run dev
-
-  # Redis (for caching, session management, task queue)
   redis:
     image: redis:7-alpine
     container_name: rezerwacje-cache

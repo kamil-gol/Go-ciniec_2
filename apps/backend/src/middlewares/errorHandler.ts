@@ -20,8 +20,19 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   // ——— AppError (known, operational errors) ———
+  // FIX: Also check for statusCode property as fallback when instanceof fails
+  // (can happen with path aliases / different module instances)
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  if ('statusCode' in err && typeof (err as any).statusCode === 'number') {
+    const statusCode = (err as any).statusCode;
+    res.status(statusCode).json({
       success: false,
       error: err.message,
     });
@@ -72,6 +83,45 @@ export function errorHandler(
     res.status(400).json({
       success: false,
       error: 'Invalid data provided',
+    });
+    return;
+  }
+
+  // ——— Bridge: auth service errors (Invalid credentials → 401) ———
+  if (err.message && (
+    err.message.toLowerCase().includes('invalid credentials') ||
+    err.message.toLowerCase().includes('invalid email or password')
+  )) {
+    res.status(401).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  // ——— Bridge: inactive/blocked account → 403 ———
+  if (err.message && (
+    err.message.toLowerCase().includes('inactive') ||
+    err.message.toLowerCase().includes('blocked') ||
+    err.message.toLowerCase().includes('disabled')
+  )) {
+    res.status(403).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  // ——— Bridge: password validation errors → 422 ———
+  if (err.message && err.message.toLowerCase().includes('password') && (
+    err.message.toLowerCase().includes('must') ||
+    err.message.toLowerCase().includes('weak') ||
+    err.message.toLowerCase().includes('too short') ||
+    err.message.toLowerCase().includes('requires')
+  )) {
+    res.status(422).json({
+      success: false,
+      error: err.message,
     });
     return;
   }

@@ -14,6 +14,7 @@ import {
   Smartphone,
   CreditCard,
   Loader2,
+  Paperclip,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,11 +42,19 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
+import AttachmentPanel from '@/components/attachments/attachment-panel'
 
 interface DepositActionsProps {
   deposit: Deposit
@@ -62,6 +71,7 @@ const paymentMethods: { value: PaymentMethod; label: string; icon: React.Element
 export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showPayDialog, setShowPayDialog] = useState(false)
+  const [showAttachments, setShowAttachments] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TRANSFER')
   const [paidAt, setPaidAt] = useState(new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(false)
@@ -157,6 +167,9 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
   const isPaid = deposit.status === 'PAID'
   const isCancelled = deposit.status === 'CANCELLED'
   const clientEmail = deposit.reservation?.client?.email
+  const clientName = deposit.reservation?.client
+    ? `${deposit.reservation.client.firstName} ${deposit.reservation.client.lastName}`
+    : null
 
   return (
     <>
@@ -232,6 +245,17 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
 
           <DropdownMenuSeparator />
 
+          {/* Attachments — opens Sheet */}
+          <DropdownMenuItem
+            onClick={() => setShowAttachments(true)}
+            className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"
+          >
+            <Paperclip className="mr-2 h-4 w-4 text-violet-600" />
+            Załączniki
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
             className="text-red-600 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
@@ -263,9 +287,9 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                 {Number(deposit.amount).toLocaleString('pl-PL')} zł
               </p>
-              {deposit.reservation?.client && (
+              {clientName && (
                 <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-                  {deposit.reservation.client.firstName} {deposit.reservation.client.lastName}
+                  {clientName}
                 </p>
               )}
             </div>
@@ -323,6 +347,32 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Attachments Sheet — slides in from right */}
+      <Sheet open={showAttachments} onOpenChange={setShowAttachments}>
+        <SheetContent side="right" className="sm:max-w-xl w-full p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-200 dark:border-neutral-700 flex-shrink-0">
+            <SheetTitle className="flex items-center gap-2">
+              <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
+                <Paperclip className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              </div>
+              Załączniki zaliczki
+            </SheetTitle>
+            <SheetDescription>
+              {clientName
+                ? `${clientName} — ${Number(deposit.amount).toLocaleString('pl-PL')} zł`
+                : `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł`}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-2 pb-2">
+            <AttachmentPanel
+              entityType="DEPOSIT"
+              entityId={deposit.id}
+              title="Załączniki"
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Delete Confirm */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

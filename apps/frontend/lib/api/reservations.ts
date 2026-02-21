@@ -17,6 +17,7 @@ export interface ReservationsFilters {
   clientId?: string
   dateFrom?: string
   dateTo?: string
+  archived?: boolean // NEW: Filter for archived reservations
   sortBy?: 'date' | 'createdAt' | 'totalPrice'
   sortOrder?: 'asc' | 'desc'
 }
@@ -92,8 +93,14 @@ export const reservationsApi = {
   },
 
   // Archive reservation
-  archive: async (id: string): Promise<Reservation> => {
-    const { data } = await apiClient.post(`/reservations/${id}/archive`)
+  archive: async (id: string, reason?: string): Promise<Reservation> => {
+    const { data } = await apiClient.post(`/reservations/${id}/archive`, { reason })
+    return data.data || data
+  },
+
+  // Unarchive reservation (NEW)
+  unarchive: async (id: string, reason?: string): Promise<Reservation> => {
+    const { data } = await apiClient.post(`/reservations/${id}/unarchive`, { reason })
     return data.data || data
   },
 
@@ -133,8 +140,11 @@ export const downloadReservationPDF = async (id: string): Promise<void> => {
   link.download = `rezerwacja-${id}.pdf`
   document.body.appendChild(link)
   link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
+  // Delay cleanup to allow browser to initiate the download
+  setTimeout(() => {
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }, 150)
 }
 
 // React Query Hooks
@@ -217,7 +227,21 @@ export const useArchiveReservation = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => reservationsApi.archive(id),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => 
+      reservationsApi.archive(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
+    },
+  })
+}
+
+// Unarchive reservation (NEW)
+export const useUnarchiveReservation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => 
+      reservationsApi.unarchive(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [RESERVATIONS_QUERY_KEY] })
     },

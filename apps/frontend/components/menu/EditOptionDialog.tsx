@@ -41,6 +41,26 @@ const CATEGORIES = [
   'Inne',
 ]
 
+// Map from MenuOption priceType to form priceType
+function mapPriceTypeToForm(priceType: string): 'PER_PERSON' | 'FIXED' | 'FREE' {
+  switch (priceType) {
+    case 'PER_PERSON': return 'PER_PERSON'
+    case 'FLAT': return 'FIXED'
+    case 'FREE': return 'FREE'
+    default: return 'PER_PERSON'
+  }
+}
+
+// Map from form priceType back to API priceType
+function mapPriceTypeToApi(priceType: string): 'PER_PERSON' | 'FLAT' | 'FREE' {
+  switch (priceType) {
+    case 'PER_PERSON': return 'PER_PERSON'
+    case 'FIXED': return 'FLAT'
+    case 'FREE': return 'FREE'
+    default: return 'PER_PERSON'
+  }
+}
+
 export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialogProps) {
   const updateMutation = useUpdateOption()
   
@@ -49,7 +69,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
     description: '',
     category: 'Alkohol',
     priceAmount: '',
-    priceType: 'PER_PERSON' as 'PER_PERSON' | 'FIXED',
+    priceType: 'PER_PERSON' as 'PER_PERSON' | 'FIXED' | 'FREE',
   })
 
   // Populate form when option changes
@@ -60,7 +80,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
         description: option.description || '',
         category: option.category,
         priceAmount: option.priceAmount.toString(),
-        priceType: option.priceType,
+        priceType: mapPriceTypeToForm(option.priceType),
       })
     }
   }, [option])
@@ -77,7 +97,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
           description: formData.description || undefined,
           category: formData.category,
           priceAmount: parseFloat(formData.priceAmount),
-          priceType: formData.priceType,
+          priceType: mapPriceTypeToApi(formData.priceType),
         },
       })
       
@@ -162,6 +182,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
                 value={formData.priceAmount}
                 onChange={(e) => setFormData({ ...formData, priceAmount: e.target.value })}
                 required
+                disabled={formData.priceType === 'FREE'}
               />
             </div>
 
@@ -170,7 +191,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
               <Label htmlFor="priceType">Typ ceny *</Label>
               <Select
                 value={formData.priceType}
-                onValueChange={(value: 'PER_PERSON' | 'FIXED') => 
+                onValueChange={(value: 'PER_PERSON' | 'FIXED' | 'FREE') => 
                   setFormData({ ...formData, priceType: value })
                 }
               >
@@ -180,6 +201,7 @@ export function EditOptionDialog({ open, onOpenChange, option }: EditOptionDialo
                 <SelectContent>
                   <SelectItem value="PER_PERSON">Za osobę</SelectItem>
                   <SelectItem value="FIXED">Stała cena</SelectItem>
+                  <SelectItem value="FREE">Gratis</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse, EventTypeStatsResponse } from '../types/eventType.types';
+import { logChange, diffObjects } from '../utils/audit-logger';
 
 // Predefined colors for event types
 const PREDEFINED_COLORS = [
@@ -27,7 +28,7 @@ function isValidColor(color: string): boolean {
 }
 
 export class EventTypeService {
-  async createEventType(data: CreateEventTypeDTO): Promise<EventTypeResponse> {
+  async createEventType(data: CreateEventTypeDTO, userId: string): Promise<EventTypeResponse> {
     if (!data.name || data.name.trim().length === 0) {
       throw new Error('Event type name is required');
     }
@@ -50,6 +51,22 @@ export class EventTypeService {
         description: data.description?.trim() || null,
         color: data.color || null,
         isActive: data.isActive !== undefined ? data.isActive : true,
+      }
+    });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CREATE',
+      entityType: 'EVENT_TYPE',
+      entityId: eventType.id,
+      details: {
+        description: `Utworzono typ wydarzenia: ${eventType.name}`,
+        data: {
+          name: eventType.name,
+          color: eventType.color,
+          isActive: eventType.isActive
+        }
       }
     });
 
@@ -84,7 +101,7 @@ export class EventTypeService {
     return eventType as any;
   }
 
-  async updateEventType(id: string, data: UpdateEventTypeDTO): Promise<EventTypeResponse> {
+  async updateEventType(id: string, data: UpdateEventTypeDTO, userId: string): Promise<EventTypeResponse> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
     if (!existingType) throw new Error('Event type not found');
 
@@ -115,10 +132,50 @@ export class EventTypeService {
       data: updateData
     });
 
+    // Audit log
+    const changes = diffObjects(existingType, eventType);
+    if (Object.keys(changes).length > 0) {
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'EVENT_TYPE',
+        entityId: eventType.id,
+        details: {
+          description: `Zaktualizowano typ wydarzenia: ${eventType.name}`,
+          changes
+        }
+      });
+    }
+
     return eventType as EventTypeResponse;
   }
 
-  async deleteEventType(id: string): Promise<void> {
+  async toggleActive(id: string, userId: string): Promise<EventTypeResponse> {
+    const existingType = await prisma.eventType.findUnique({ where: { id } });
+    if (!existingType) throw new Error('Event type not found');
+
+    const eventType = await prisma.eventType.update({
+      where: { id },
+      data: { isActive: !existingType.isActive }
+    });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'TOGGLE_ACTIVE',
+      entityType: 'EVENT_TYPE',
+      entityId: eventType.id,
+      details: {
+        description: `${eventType.isActive ? 'Aktywowano' : 'Dezaktywowano'} typ wydarzenia: ${eventType.name}`,
+        oldValue: existingType.isActive,
+        newValue: eventType.isActive
+      }
+    });
+
+    return eventType as EventTypeResponse;
+  }
+
+  async deleteEventType(id: string, userId: string): Promise<void> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
     if (!existingType) throw new Error('Event type not found');
 
@@ -139,6 +196,21 @@ export class EventTypeService {
     }
 
     await prisma.eventType.delete({ where: { id } });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'DELETE',
+      entityType: 'EVENT_TYPE',
+      entityId: id,
+      details: {
+        description: `Usunięto typ wydarzenia: ${existingType.name}`,
+        deletedData: {
+          name: existingType.name,
+          color: existingType.color
+        }
+      }
+    });
   }
 
   async getEventTypeStats(): Promise<EventTypeStatsResponse[]> {

@@ -6,6 +6,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { CreateHallDTO, UpdateHallDTO, HallResponse } from '../types/hall.types';
+import { logChange, diffObjects } from '../utils/audit-logger';
 
 export class HallService {
   /**
@@ -53,7 +54,7 @@ export class HallService {
   /**
    * Create new hall
    */
-  async createHall(data: CreateHallDTO): Promise<HallResponse> {
+  async createHall(data: CreateHallDTO, userId: string): Promise<HallResponse> {
     // Only one hall can be isWholeVenue
     if (data.isWholeVenue) {
       const existing = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
@@ -74,6 +75,23 @@ export class HallService {
       },
     });
 
+    // Audit log
+    await logChange({
+      userId,
+      action: 'CREATE',
+      entityType: 'HALL',
+      entityId: hall.id,
+      details: {
+        description: `Utworzono salę: ${hall.name}`,
+        data: {
+          name: hall.name,
+          capacity: hall.capacity,
+          isWholeVenue: hall.isWholeVenue,
+          isActive: hall.isActive
+        }
+      }
+    });
+
     return hall as any;
   }
 
@@ -81,7 +99,7 @@ export class HallService {
    * Update hall
    * PROTECTED: Cannot deactivate or rename isWholeVenue hall
    */
-  async updateHall(id: string, data: UpdateHallDTO): Promise<HallResponse> {
+  async updateHall(id: string, data: UpdateHallDTO, userId: string): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
     if (!existingHall) throw new Error('Hall not found');
 
@@ -108,6 +126,53 @@ export class HallService {
       data: updateData,
     });
 
+    // Audit log
+    const changes = diffObjects(existingHall, hall);
+    if (Object.keys(changes).length > 0) {
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'HALL',
+        entityId: hall.id,
+        details: {
+          description: `Zaktualizowano salę: ${hall.name}`,
+          changes
+        }
+      });
+    }
+
+    return hall as any;
+  }
+
+  /**
+   * Toggle active status
+   */
+  async toggleActive(id: string, userId: string): Promise<HallResponse> {
+    const existingHall = await prisma.hall.findUnique({ where: { id } });
+    if (!existingHall) throw new Error('Hall not found');
+
+    if (existingHall.isWholeVenue) {
+      throw new Error('Nie można dezaktywować sali "Cały Obiekt".');
+    }
+
+    const hall = await prisma.hall.update({
+      where: { id },
+      data: { isActive: !existingHall.isActive },
+    });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'TOGGLE_ACTIVE',
+      entityType: 'HALL',
+      entityId: hall.id,
+      details: {
+        description: `${hall.isActive ? 'Aktywowano' : 'Dezaktywowano'} salę: ${hall.name}`,
+        oldValue: existingHall.isActive,
+        newValue: hall.isActive
+      }
+    });
+
     return hall as any;
   }
 
@@ -115,7 +180,7 @@ export class HallService {
    * Delete hall (soft delete - deactivate)
    * PROTECTED: Cannot delete isWholeVenue hall
    */
-  async deleteHall(id: string): Promise<void> {
+  async deleteHall(id: string, userId: string): Promise<void> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
     if (!existingHall) throw new Error('Hall not found');
 
@@ -126,6 +191,21 @@ export class HallService {
     await prisma.hall.update({
       where: { id },
       data: { isActive: false },
+    });
+
+    // Audit log
+    await logChange({
+      userId,
+      action: 'DELETE',
+      entityType: 'HALL',
+      entityId: id,
+      details: {
+        description: `Usunięto (dezaktywowano) salę: ${existingHall.name}`,
+        deletedData: {
+          name: existingHall.name,
+          capacity: existingHall.capacity
+        }
+      }
     });
   }
 }

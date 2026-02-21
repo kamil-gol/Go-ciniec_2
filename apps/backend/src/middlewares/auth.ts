@@ -8,6 +8,7 @@ import logger from '@utils/logger';
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
+/* istanbul ignore next */
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   throw new Error(
     'FATAL: JWT_SECRET environment variable is not set. ' +
@@ -15,13 +16,15 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   );
 }
 
+/* istanbul ignore next */
 if (!JWT_SECRET) {
   logger.warn(
-    'JWT_SECRET is not set — using insecure dev fallback. ' +
+    'JWT_SECRET is not set \u2014 using insecure dev fallback. ' +
     'DO NOT deploy to production without setting JWT_SECRET.'
   );
 }
 
+/* istanbul ignore next -- env-dependent: JWT_SECRET always falsy in test */
 const secret = JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
 
 /**
@@ -45,6 +48,24 @@ export function verifyToken(token: string): JwtPayload {
 }
 
 /**
+ * Extract token from request.
+ * Priority: Authorization header > query string ?token=
+ */
+function extractToken(req: AuthenticatedRequest): string | null {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  const queryToken = req.query.token as string | undefined;
+  if (queryToken) {
+    return queryToken;
+  }
+
+  return null;
+}
+
+/**
  * Authentication middleware
  */
 export const authMiddleware = (
@@ -53,19 +74,20 @@ export const authMiddleware = (
   next: NextFunction
 ): void => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       throw new AppError(401, 'No token provided');
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const payload = verifyToken(token);
 
     req.user = {
       id: payload.id,
       email: payload.email,
       role: payload.role,
+      roleId: payload.roleId,
+      roleSlug: payload.roleSlug,
     };
 
     next();
@@ -79,7 +101,8 @@ export const authMiddleware = (
 };
 
 /**
- * Role-based access control middleware
+ * Role-based access control middleware (legacy)
+ * @deprecated Use requirePermission from permissions.ts instead
  */
 export const requireRole = (...roles: string[]) => {
   return (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {

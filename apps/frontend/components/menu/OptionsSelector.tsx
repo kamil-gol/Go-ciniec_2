@@ -91,7 +91,7 @@ export function OptionsSelector({
 
   if (!options || options.length === 0) {
     return (
-      <div className="text-center py-12 bg-white dark:bg-gray-950 rounded-2xl border-2">
+      <div className="text-center py-12 bg-white dark:bg-neutral-950 rounded-2xl border-2">
         <p className="text-muted-foreground">Brak dostępnych opcji dodatkowych</p>
       </div>
     );
@@ -107,7 +107,7 @@ export function OptionsSelector({
           placeholder="Szukaj opcji..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-12 pr-10 h-14 text-lg bg-white dark:bg-gray-950 border-2 focus:ring-4 focus:ring-green-500/20"
+          className="pl-12 pr-10 h-14 text-lg bg-white dark:bg-neutral-950 border-2 focus:ring-4 focus:ring-green-500/20"
         />
         {searchQuery && (
           <button
@@ -132,7 +132,7 @@ export function OptionsSelector({
               'cursor-pointer text-sm px-4 py-2 transition-all',
               selectedCategory === null
                 ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
             )}
             onClick={() => setSelectedCategory(null)}
           >
@@ -146,7 +146,7 @@ export function OptionsSelector({
                 'cursor-pointer text-sm px-4 py-2 transition-all',
                 selectedCategory === category.name
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
               )}
               onClick={() => setSelectedCategory(category.name)}
             >
@@ -187,7 +187,7 @@ export function OptionsSelector({
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-white dark:bg-gray-950 rounded-2xl border-2">
+        <div className="text-center py-12 bg-white dark:bg-neutral-950 rounded-2xl border-2">
           <p className="text-muted-foreground">Brak opcji pasujących do filtrów</p>
         </div>
       )}

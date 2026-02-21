@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 export default function MenuDemoPage() {
   const [activeTab, setActiveTab] = useState<'components' | 'flow'>('components');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>();
+  const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
 
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ isActive: true });
   const { data: packages } = useMenuPackages(selectedTemplateId);
@@ -160,7 +161,9 @@ export default function MenuDemoPage() {
                     <OptionCard
                       key={option.id}
                       option={option}
+                      quantity={optionQuantities[option.id] || 0}
                       onQuantityChange={(id, qty) => {
+                        setOptionQuantities(prev => ({ ...prev, [id]: qty }));
                         if (qty > 0) {
                           toast.success(`Dodano: ${option.name} (×${qty})`);
                         }
@@ -190,6 +193,9 @@ export default function MenuDemoPage() {
           /* Selection Flow */
           <div className="mx-auto max-w-6xl">
             <MenuSelectionFlow
+              adults={50}
+              children={10}
+              toddlers={5}
               onComplete={(selection) => {
                 console.log('Selection completed:', selection);
                 toast.success('✅ Wybór menu zakończony!', {

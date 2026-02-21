@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import reservationController from '../controllers/reservation.controller';
 import { reservationMenuController } from '../controllers/reservationMenu.controller';
+import { discountController } from '../controllers/discount.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
@@ -117,9 +118,9 @@ router.patch(
   })
 );
 
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MENU SELECTION ENDPOINTS
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * @route   POST /api/reservations/:id/menu
@@ -181,7 +182,75 @@ router.delete(
   })
 );
 
-// ═══════════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💰 DISCOUNT ENDPOINTS (Sprint 7)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * @route   PATCH /api/reservations/:id/discount
+ * @desc    Apply or update discount on reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.patch(
+  '/:id/discount',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await discountController.applyDiscount(req, res);
+  })
+);
+
+/**
+ * @route   DELETE /api/reservations/:id/discount
+ * @desc    Remove discount from reservation
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.delete(
+  '/:id/discount',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await discountController.removeDiscount(req, res);
+  })
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🗄️ ARCHIVE ENDPOINTS (Sprint 8)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * @route   POST /api/reservations/:id/archive
+ * @desc    Archive reservation (set archivedAt timestamp)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post(
+  '/:id/archive',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.archiveReservation(req, res);
+  })
+);
+
+/**
+ * @route   POST /api/reservations/:id/unarchive
+ * @desc    Restore reservation from archive (remove archivedAt timestamp)
+ * @access  Staff (ADMIN + EMPLOYEE)
+ */
+router.post(
+  '/:id/unarchive',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await reservationController.unarchiveReservation(req, res);
+  })
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * @route   DELETE /api/reservations/:id

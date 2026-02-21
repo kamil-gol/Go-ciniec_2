@@ -29,15 +29,15 @@ export const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>
     return (
       <div className="space-y-1">
         {label && (
-          <label className="block text-sm font-medium text-secondary-700">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
             {label}
           </label>
         )}
         <SelectPrimitive.Root value={value} onValueChange={onValueChange}>
           <SelectPrimitive.Trigger
             className={cn(
-              "flex h-10 w-full items-center justify-between rounded-md border border-secondary-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-              error && "border-red-500",
+              "flex h-10 w-full items-center justify-between rounded-md border border-secondary-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+              error && "border-red-500 dark:border-red-500",
               className
             )}
             {...(props as any)}
@@ -49,7 +49,7 @@ export const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>
           </SelectPrimitive.Trigger>
           <SelectPrimitive.Portal>
             <SelectPrimitive.Content
-              className="relative z-50 max-h-96 min-w-[24rem] overflow-hidden rounded-md border bg-white shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
+              className="relative z-50 max-h-96 min-w-[24rem] overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
               position="popper"
             >
               <SelectPrimitive.Viewport className="p-1">
@@ -58,11 +58,11 @@ export const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>
                     key={option.value}
                     value={option.value}
                     disabled={option.disabled}
-                    className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-2.5 pl-8 pr-2 text-sm outline-none hover:bg-secondary-100 focus:bg-secondary-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 whitespace-normal break-words"
+                    className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-2.5 pl-8 pr-2 text-sm outline-none hover:bg-secondary-100 dark:hover:bg-neutral-700 focus:bg-secondary-100 dark:focus:bg-neutral-700 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 whitespace-normal break-words"
                   >
                     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                       <SelectPrimitive.ItemIndicator>
-                        <Check className="h-4 w-4 text-primary-600" />
+                        <Check className="h-4 w-4 text-primary-600 dark:text-primary-400" />
                       </SelectPrimitive.ItemIndicator>
                     </span>
                     <SelectPrimitive.ItemText className="break-words">
@@ -75,7 +75,7 @@ export const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>
           </SelectPrimitive.Portal>
         </SelectPrimitive.Root>
         {error && (
-          <p className="text-xs text-red-600">{error}</p>
+          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
         )}
         {/* Hidden native select for react-hook-form compatibility */}
         <select

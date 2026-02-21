@@ -1,0 +1,88 @@
+# ============================================
+# Docker Compose — Test Environment
+# ============================================
+# Usage: docker compose -f docker-compose.test.yml -p rezerwacje-test up
+#    or: make test-unit / make test-integration / make test-all
+#
+# Features:
+#   - Isolated test database on port 5433 (tmpfs for speed)
+#   - Separate network from dev/prod
+#   - Disposable containers
+# ============================================
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: rezerwacje-db-test
+    environment:
+      POSTGRES_DB: rezerwacje_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
+    ports:
+      - '5433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test -d rezerwacje_test']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - test-network
+
+  backend-test:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: rezerwacje-backend-test
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@postgres-test:5432/rezerwacje_test
+      JWT_SECRET: test-secret-key-do-not-use-in-production
+      JWT_REFRESH_SECRET: test-refresh-secret-key
+      PORT: 0
+      LOG_LEVEL: silent
+      RESTAURANT_NAME: Test Restaurant
+      RESTAURANT_ADDRESS: ul. Testowa 1, 00-000 Test
+      RESTAURANT_PHONE: +48 000 000 000
+      RESTAURANT_EMAIL: test@test.pl
+      RESTAURANT_WEBSITE: www.test.pl
+      RESTAURANT_NIP: 000-000-00-00
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      SMTP_USER: test
+      SMTP_PASS: test
+      SMTP_FROM: test@test.pl
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    networks:
+      - test-network
+    command: sh -c "npx prisma generate && npm run test:unit"
+
+  frontend-test:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: rezerwacje-frontend-test
+    environment:
+      NODE_ENV: test
+      NEXT_PUBLIC_API_URL: http://backend-test:3001/api
+      NEXT_PUBLIC_APP_NAME: Rezerwacje Test
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - test-network
+    command: npx vitest run --reporter=verbose
+
+networks:
+  test-network:
+    driver: bridge

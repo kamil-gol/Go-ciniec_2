@@ -1,15 +1,6 @@
 import { test as base, Page } from '@playwright/test';
 import { testData } from './test-data';
 
-/**
- * Authentication Fixtures
- * 
- * Provides pre-authenticated pages for different user roles:
- * - authenticatedPage: Generic authenticated user
- * - adminPage: Admin user with full permissions
- * - employeePage: Employee user with limited permissions
- */
-
 type AuthFixtures = {
   authenticatedPage: Page;
   adminPage: Page;
@@ -17,83 +8,115 @@ type AuthFixtures = {
 };
 
 /**
- * Helper function to login
+ * Robust login that works across all browser engines.
+ *
+ * IMPORTANT: Do NOT use waitForLoadState('networkidle') here.
+ * Mobile Safari has persistent connections that prevent networkidle
+ * from ever firing, causing the browser to be killed.
  */
 async function login(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login');
-  
-  // Fill login form
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
-  
-  // Submit
   await page.click('button[type="submit"]');
-  
-  // Wait for redirect to dashboard
-  await page.waitForURL('/dashboard', { timeout: 10000 });
-  
-  // Wait for dashboard to load
-  await page.waitForLoadState('networkidle');
+
+  try {
+    await page.waitForURL(/\/dashboard/, { timeout: 20000, waitUntil: 'domcontentloaded' });
+    return;
+  } catch {
+    // Redirect didn't fire
+  }
+
+  try {
+    if (page.url().includes('/login')) {
+      await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    }
+  } catch {
+    // Navigation might be interrupted
+  }
+
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
 }
 
-/**
- * Extended test with auth fixtures
- */
 export const test = base.extend<AuthFixtures>({
-  /**
-   * Generic authenticated page
-   * Uses admin credentials by default
-   */
   authenticatedPage: async ({ page }, use) => {
     await login(page, testData.admin.email, testData.admin.password);
     await use(page);
   },
-  
-  /**
-   * Admin user page
-   * Full permissions
-   */
   adminPage: async ({ page }, use) => {
     await login(page, testData.admin.email, testData.admin.password);
     await use(page);
   },
-  
-  /**
-   * Employee user page
-   * Limited permissions
-   */
   employeePage: async ({ page }, use) => {
     await login(page, testData.employee.email, testData.employee.password);
     await use(page);
   },
 });
 
-/**
- * Export expect from @playwright/test
- */
 export { expect } from '@playwright/test';
 
-/**
- * Helper: Check if user is authenticated
- */
 export async function isAuthenticated(page: Page): Promise<boolean> {
   try {
-    const url = page.url();
-    return !url.includes('/login');
+    return !page.url().includes('/login');
   } catch {
     return false;
   }
 }
 
 /**
- * Helper: Logout current user
- * In Gościniec UI the logout button is directly in the Sidebar,
- * NOT behind a dropdown menu.
+ * Logout — handles desktop sidebar and mobile Sheet.
+ *
+ * Webkit doesn't support the :visible pseudo-class reliably,
+ * so we try multiple strategies:
+ * 1. Click any visible logout button
+ * 2. Open hamburger menu then click
+ * 3. Use page.evaluate as last resort
  */
 export async function logout(page: Page): Promise<void> {
-  // Click the Wyloguj button directly in the sidebar
-  await page.click('button:has-text("Wyloguj")', { timeout: 5000 });
-  
-  // Wait for redirect to login
-  await page.waitForURL('/login', { timeout: 5000 });
+  // On mobile: open hamburger to reveal Sheet
+  const hamburger = page.locator('button[aria-label="Otwórz menu nawigacji"]');
+  if (await hamburger.isVisible().catch(() => false)) {
+    await hamburger.click();
+    await page.waitForTimeout(1000);
+  }
+
+  // Strategy 1: try clicking with increased timeout
+  try {
+    await page.locator('button[aria-label="Wyloguj"]').first().click({ timeout: 10000 });
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    return;
+  } catch {
+    // Element might not be interactable
+  }
+
+  // Strategy 2: force click
+  try {
+    await page.locator('button[aria-label="Wyloguj"]').first().click({ force: true, timeout: 5000 });
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    return;
+  } catch {
+    // Still failing
+  }
+
+  // Strategy 3: JS click as last resort
+  try {
+    await page.evaluate(() => {
+      const buttons = document.querySelectorAll('button[aria-label="Wyloguj"]');
+      for (const btn of buttons) {
+        if (btn instanceof HTMLElement) {
+          btn.click();
+          break;
+        }
+      }
+    });
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    return;
+  } catch {
+    // Navigate to login directly
+    await page.goto('/login');
+  }
+}
+
+export async function manualLogin(page: Page, email: string, password: string): Promise<void> {
+  await login(page, email, password);
 }

@@ -38,7 +38,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const assignMutation = useAssignDishes()
   const removeMutation = useRemoveDish()
 
-  const assignedDishIds = new Set(course?.options?.map(opt => opt.dish.id) || [])
+  const assignedDishIds = new Set(course?.options?.map(opt => opt.dish?.id).filter(Boolean) || [])
 
   useEffect(() => {
     if (open && course) {
@@ -50,7 +50,7 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const filteredDishes = allDishes.filter(dish => 
     !assignedDishIds.has(dish.id) && (
       dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dish.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      (dish.category && String(dish.category).toLowerCase().includes(searchQuery.toLowerCase()))
     )
   )
 
@@ -142,11 +142,11 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                     <div className="flex-1 min-w-0 pr-2">
                       <div className="flex items-center gap-2 mb-1">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                        <p className="font-semibold truncate">{option.dish.name}</p>
+                        <p className="font-semibold truncate">{option.dish?.name}</p>
                       </div>
-                      {option.dish.category && (
-                        <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs">
-                          {CATEGORY_LABELS[option.dish.category] || option.dish.category}
+                      {option.dish?.category && (
+                        <Badge variant="default" className="border border-emerald-300 bg-transparent text-emerald-700 text-xs">
+                          {CATEGORY_LABELS[String(option.dish.category)] || String(option.dish.category)}
                         </Badge>
                       )}
                     </div>
@@ -154,8 +154,8 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                       size="sm"
                       variant="ghost"
                       className="flex-shrink-0 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 rounded-lg transition-colors"
-                      onClick={() => handleRemove(option.dish.id, option.dish.name)}
-                      disabled={isPending}
+                      onClick={() => option.dish && handleRemove(option.dish.id, option.dish.name)}
+                      disabled={isPending || !option.dish}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -227,15 +227,15 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
                         </p>
                         {dish.category && (
                           <Badge 
-                            variant="outline" 
+                            variant="default" 
                             className={cn(
-                              "text-xs mb-2",
+                              "text-xs mb-2 bg-transparent border",
                               isSelected 
                                 ? "border-emerald-400 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50" 
                                 : "border-muted-foreground/30"
                             )}
                           >
-                            {CATEGORY_LABELS[dish.category] || dish.category}
+                            {CATEGORY_LABELS[String(dish.category)] || String(dish.category)}
                           </Badge>
                         )}
                         {dish.description && (

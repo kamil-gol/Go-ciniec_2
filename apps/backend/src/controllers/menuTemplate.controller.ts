@@ -1,7 +1,5 @@
 /**
- * Menu Template Controller
- * 
- * HTTP handlers for menu template operations
+ * Menu Template Controller - with userId for audit
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -9,6 +7,7 @@ import { menuService } from '../services/menu.service';
 import { pdfService } from '../services/pdf.service';
 import type { MenuCardPDFData } from '../services/pdf.service';
 import { prisma } from '@/lib/prisma';
+import { AppError } from '../utils/AppError';
 import {
   createMenuTemplateSchema,
   updateMenuTemplateSchema,
@@ -19,10 +18,6 @@ import { z } from 'zod';
 
 export class MenuTemplateController {
 
-  /**
-   * GET /api/menu-templates
-   * List all menu templates with optional filters
-   */
   async list(req: Request, res: Response, next: NextFunction) {
     try {
       const filters = menuTemplateQuerySchema.parse(req.query);
@@ -50,10 +45,6 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * GET /api/menu-templates/:id
-   * Get single menu template by ID
-   */
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
@@ -75,10 +66,6 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * GET /api/menu-templates/active/:eventTypeId
-   * Get active menu template for event type
-   */
   async getActive(req: Request, res: Response, next: NextFunction) {
     try {
       const { eventTypeId } = req.params;
@@ -106,15 +93,14 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * POST /api/menu-templates
-   * Create new menu template (ADMIN only)
-   */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const data = createMenuTemplateSchema.parse(req.body);
+      const userId = (req as any).user?.id;
 
-      const template = await menuService.createMenuTemplate(data);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      const template = await menuService.createMenuTemplate(data, userId);
 
       return res.status(201).json({
         success: true,
@@ -133,17 +119,15 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * PUT /api/menu-templates/:id
-   * Update menu template (ADMIN only)
-   */
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-
       const data = updateMenuTemplateSchema.parse(req.body);
+      const userId = (req as any).user?.id;
 
-      const template = await menuService.updateMenuTemplate(id, data);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      const template = await menuService.updateMenuTemplate(id, data, userId);
 
       return res.status(200).json({
         success: true,
@@ -168,15 +152,14 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * DELETE /api/menu-templates/:id
-   * Delete menu template (ADMIN only)
-   */
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const userId = (req as any).user?.id;
 
-      await menuService.deleteMenuTemplate(id);
+      if (!userId) throw AppError.unauthorized('User not authenticated');
+
+      await menuService.deleteMenuTemplate(id, userId);
 
       return res.status(200).json({
         success: true,
@@ -199,22 +182,20 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * POST /api/menu-templates/:id/duplicate
-   * Duplicate menu template with all packages and options (ADMIN only)
-   */
   async duplicate(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-
       const data = duplicateMenuTemplateSchema.parse(req.body);
+      const userId = (req as any).user?.id;
+
+      if (!userId) throw AppError.unauthorized('User not authenticated');
 
       const template = await menuService.duplicateMenuTemplate(id, {
         name: data.newName,
         variant: data.newVariant,
         validFrom: data.validFrom,
         validTo: data.validTo
-      });
+      }, userId);
 
       return res.status(201).json({
         success: true,
@@ -239,10 +220,6 @@ export class MenuTemplateController {
     }
   }
 
-  /**
-   * GET /api/menu-templates/:id/pdf
-   * Download menu card PDF for a template
-   */
   async downloadPdf(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -252,12 +229,10 @@ export class MenuTemplateController {
       const template = await menuService.getMenuTemplateById(id);
       console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${template.packages?.length || 0}`);
 
-      // Fetch category settings (= courses) + dishes for each package
       const packagesWithCourses = await Promise.all(
         (template.packages || []).map(async (pkg: any) => {
           console.log(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
 
-          // Get PackageCategorySettings with DishCategory and Dishes
           const categorySettings = await prisma.packageCategorySettings.findMany({
             where: { packageId: pkg.id, isEnabled: true },
             include: {

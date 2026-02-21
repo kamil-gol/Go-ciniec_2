@@ -2,10 +2,12 @@
  * Reservation Controller
  * Handle HTTP requests for reservation management
  * MIGRATED: Uses AppError (no try/catch — errors forwarded by asyncHandler)
+ * Phase 4.3: Block cancellation of reservations with paid deposits
  */
 
 import { Request, Response } from 'express';
 import reservationService from '../services/reservation.service';
+import depositService from '../services/deposit.service';
 import { pdfService } from '../services/pdf.service';
 import { AppError } from '../utils/AppError';
 import { PrismaClient } from '@prisma/client';
@@ -258,6 +260,17 @@ export class ReservationController {
       throw AppError.badRequest('Status is required');
     }
 
+    // ═══ Phase 4.3: Block cancellation if reservation has paid deposits ═══
+    if (data.status === 'CANCELLED') {
+      const depositCheck = await depositService.checkPaidDepositsBeforeCancel(id);
+      if (depositCheck.hasPaidDeposits) {
+        throw AppError.badRequest(
+          `Nie można anulować rezerwacji z opłaconymi zaliczkami (${depositCheck.paidCount} zaliczek na łączną kwotę ${depositCheck.paidTotal.toFixed(2)} PLN). ` +
+          `Najpierw cofnij płatności zaliczek.`
+        );
+      }
+    }
+
     const reservation = await reservationService.updateStatus(id, data, userId);
 
     res.status(200).json({
@@ -270,6 +283,7 @@ export class ReservationController {
   /**
    * Cancel reservation
    * DELETE /api/reservations/:id
+   * Phase 4.3: Blocks if reservation has paid deposits
    */
   async cancelReservation(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
@@ -278,11 +292,58 @@ export class ReservationController {
 
     if (!userId) throw AppError.unauthorized();
 
+    // ═══ Phase 4.3: Block cancellation if reservation has paid deposits ═══
+    const depositCheck = await depositService.checkPaidDepositsBeforeCancel(id);
+    if (depositCheck.hasPaidDeposits) {
+      throw AppError.badRequest(
+        `Nie można anulować rezerwacji z opłaconymi zaliczkami (${depositCheck.paidCount} zaliczek na łączną kwotę ${depositCheck.paidTotal.toFixed(2)} PLN). ` +
+        `Najpierw cofnij płatności zaliczek.`
+      );
+    }
+
     await reservationService.cancelReservation(id, userId, reason);
 
     res.status(200).json({
       success: true,
       message: 'Reservation cancelled successfully'
+    });
+  }
+
+  /**
+   * Archive reservation
+   * POST /api/reservations/:id/archive
+   */
+  async archiveReservation(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
+
+    await reservationService.archiveReservation(id, userId, reason);
+
+    res.status(200).json({
+      success: true,
+      message: 'Reservation archived successfully'
+    });
+  }
+
+  /**
+   * Unarchive reservation
+   * POST /api/reservations/:id/unarchive
+   */
+  async unarchiveReservation(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw AppError.unauthorized();
+
+    await reservationService.unarchiveReservation(id, userId, reason);
+
+    res.status(200).json({
+      success: true,
+      message: 'Reservation restored from archive successfully'
     });
   }
 }

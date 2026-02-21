@@ -23,11 +23,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   FileText,
-  ArrowLeft,
   Plus,
   Edit,
   Trash2,
-  Copy,
   Package,
   Calendar,
   Eye,
@@ -35,13 +33,14 @@ import {
   Printer,
   Loader2,
 } from 'lucide-react'
-import Link from 'next/link'
 import { useMenuTemplates, useDeleteMenuTemplate } from '@/hooks/use-menu-templates'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { MenuTemplateDialog } from '@/components/menu/MenuTemplateDialog'
 import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 import { toast } from 'sonner'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { moduleAccents } from '@/lib/design-tokens'
 
 export default function MenuTemplatesPage() {
   const [selectedEventType, setSelectedEventType] = useState<string>('all')
@@ -51,12 +50,12 @@ export default function MenuTemplatesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [templateToDelete, setTemplateToDelete] = useState<MenuTemplate | null>(null)
   const [pdfLoading, setPdfLoading] = useState<string | null>(null)
+  const accent = moduleAccents.menu
 
   const { data: eventTypes = [] } = useEventTypes()
   const { data: allTemplates = [], isLoading } = useMenuTemplates()
   const deleteMutation = useDeleteMenuTemplate()
 
-  // Filter templates
   const templates = allTemplates.filter((t) => {
     if (selectedEventType !== 'all' && t.eventTypeId !== selectedEventType) return false
     if (!showInactive && !t.isActive) return false
@@ -98,7 +97,6 @@ export default function MenuTemplatesPage() {
     }
   }
 
-  /** Helper: get package count from either _count or packages array */
   const getPackageCount = (template: MenuTemplate): number => {
     if (template._count?.packages !== undefined) return template._count.packages
     if (template.packages) return template.packages.length
@@ -112,247 +110,156 @@ export default function MenuTemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Premium Hero Section */}
-      <div className="relative overflow-hidden rounded-b-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl">
-        <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-        
-        <div className="container mx-auto px-6 py-12 relative z-10">
-          <Link href="/dashboard/menu">
-            <Button variant="ghost" className="text-white hover:bg-white/20 mb-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Powrót do Menu
-            </Button>
-          </Link>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">
-                <FileText className="h-10 w-10" />
-              </div>
-              <div>
-                <h1 className="text-5xl font-bold tracking-tight">Szablony Menu</h1>
-                <p className="text-white/90 text-lg mt-2">Konfiguruj szablony menu dla typów wydarzeń</p>
-              </div>
-            </div>
+    <PageLayout>
+      <PageHero
+        accent={accent}
+        title="Szablony Menu"
+        subtitle="Konfiguruj szablony menu dla typów wydarzeń"
+        icon={FileText}
+        backHref="/dashboard/menu"
+        backLabel="Powrót do Menu"
+        action={
+          <Button
+            size="lg"
+            onClick={handleCreate}
+            className="bg-white text-blue-600 hover:bg-white/90 shadow-xl"
+          >
+            <Plus className="h-5 w-5 sm:mr-2" />
+            <span className="hidden sm:inline">Nowy szablon</span>
+          </Button>
+        }
+      />
 
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Szablony w systemie" icon={FileText} iconGradient="from-blue-500 to-indigo-500" delay={0.1} />
+        <StatCard label="Aktywne" value={stats.active} subtitle="Gotowe do użycia" icon={Eye} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
+        <StatCard label="Nieaktywne" value={stats.inactive} subtitle="Wyłączone" icon={EyeOff} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Filtruj po typie wydarzenia</label>
+              <Select value={selectedEventType} onValueChange={setSelectedEventType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Wszystkie typy</SelectItem>
+                  {eventTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
-              size="lg"
-              onClick={handleCreate}
-              className="bg-white text-blue-600 hover:bg-white/90 shadow-lg"
+              variant={showInactive ? 'default' : 'outline'}
+              onClick={() => setShowInactive(!showInactive)}
+              className="w-full sm:w-auto"
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Nowy szablon
+              {showInactive ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+              {showInactive ? 'Pokaz wszystkie' : 'Pokaz nieaktywne'}
             </Button>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Quick Stats */}
-          <div className="flex gap-6 mt-8">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/20">
-              <FileText className="h-5 w-5" />
-              <div>
-                <p className="text-xs text-white/80">Wszystkie</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/20">
-              <Eye className="h-5 w-5" />
-              <div>
-                <p className="text-xs text-white/80">Aktywne</p>
-                <p className="text-2xl font-bold">{stats.active}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/20">
-              <EyeOff className="h-5 w-5" />
-              <div>
-                <p className="text-xs text-white/80">Nieaktywne</p>
-                <p className="text-2xl font-bold">{stats.inactive}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-12">
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex gap-4 items-center">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">
-                  Filtruj po typie wydarzenia
-                </label>
-                <Select value={selectedEventType} onValueChange={setSelectedEventType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Wszystkie typy</SelectItem>
-                    {eventTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-end">
-                <Button
-                  variant={showInactive ? 'default' : 'outline'}
-                  onClick={() => setShowInactive(!showInactive)}
-                >
-                  {showInactive ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
-                  {showInactive ? 'Pokaz wszystkie' : 'Pokaz nieaktywne'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Templates Grid */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Wczytywanie szablonów...</p>
-          </div>
-        ) : templates.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Brak szablonów</h3>
-              <p className="text-muted-foreground mb-6">
-                {selectedEventType !== 'all'
-                  ? 'Brak szablonów dla wybranego typu wydarzenia'
-                  : 'Zacznij od stworzenia pierwszego szablonu menu'}
-              </p>
-              <Button onClick={handleCreate}>
-                <Plus className="h-4 w-4 mr-2" />
-                Utwórz szablon
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((template) => (
-              <Card
-                key={template.id}
-                className="hover:shadow-lg transition-shadow border-2"
-                style={{
-                  borderColor: template.eventType?.color || undefined,
-                  opacity: template.isActive ? 1 : 0.6,
-                }}
-              >
-                <CardContent className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold mb-1">{template.name}</h3>
-                      {template.variant && (
-                        <p className="text-sm text-muted-foreground">{template.variant}</p>
-                      )}
-                    </div>
-                    {!template.isActive && (
-                      <Badge variant="secondary">Nieaktywny</Badge>
+      {/* Templates Grid */}
+      {isLoading ? (
+        <LoadingState variant="skeleton" rows={6} message="Wczytywanie szablonów..." />
+      ) : templates.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Brak szablonów"
+          description={selectedEventType !== 'all' ? 'Brak szablonów dla wybranego typu wydarzenia' : 'Zacznij od stworzenia pierwszego szablonu menu'}
+          actionLabel="Utwórz szablon"
+          onAction={handleCreate}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {templates.map((template) => (
+            <Card
+              key={template.id}
+              className="hover:shadow-lg transition-shadow border-2"
+              style={{
+                borderColor: template.eventType?.color || undefined,
+                opacity: template.isActive ? 1 : 0.6,
+              }}
+            >
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-bold mb-1 truncate">{template.name}</h3>
+                    {template.variant && (
+                      <p className="text-sm text-muted-foreground truncate">{template.variant}</p>
                     )}
                   </div>
-
-                  {/* Event Type */}
-                  <div className="mb-4">
-                    <Badge
-                      style={{
-                        backgroundColor: template.eventType?.color || undefined,
-                        color: 'white',
-                      }}
-                    >
-                      {template.eventType?.name || 'Brak typu'}
-                    </Badge>
-                  </div>
-
-                  {/* Description */}
-                  {template.description && (
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {template.description}
-                    </p>
+                  {!template.isActive && (
+                    <Badge className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 ml-2 flex-shrink-0">Nieaktywny</Badge>
                   )}
+                </div>
 
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+                <div className="mb-4">
+                  <Badge style={{ backgroundColor: template.eventType?.color || undefined, color: 'white' }}>
+                    {template.eventType?.name || 'Brak typu'}
+                  </Badge>
+                </div>
+
+                {template.description && (
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{template.description}</p>
+                )}
+
+                <div className="flex items-center gap-3 sm:gap-4 mb-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Package className="h-4 w-4 flex-shrink-0" />
+                    <span>{getPackageCount(template)} pakietów</span>
+                  </div>
+                  {(template.validFrom || template.validTo) && (
                     <div className="flex items-center gap-1">
-                      <Package className="h-4 w-4" />
-                      <span>{getPackageCount(template)} pakietów</span>
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span>Terminowy</span>
                     </div>
-                    {(template.validFrom || template.validTo) && (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>Terminowy</span>
-                      </div>
-                    )}
-                  </div>
+                  )}
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleEdit(template)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edytuj
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDownloadPdf(template)}
-                      disabled={pdfLoading === template.id}
-                      title="Drukuj kartę menu"
-                    >
-                      {pdfLoading === template.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Printer className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(template)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(template)}>
+                    <Edit className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Edytuj</span>
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kartę menu">
+                    {pdfLoading === template.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDelete(template)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Dialogs */}
-      <MenuTemplateDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        template={editingTemplate}
-      />
+      <MenuTemplateDialog open={dialogOpen} onOpenChange={setDialogOpen} template={editingTemplate} />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Czy na pewno chcesz usunąć?</AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon "{templateToDelete?.name}" zostanie trwale usunięty.
-              Wszystkie powiązane pakiety również zostaną usunięte.
+              Szablon "{templateToDelete?.name}" zostanie trwale usunięty. Wszystkie powiązane pakiety również zostaną usunięte.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
-              Usuń
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">Usuń</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageLayout>
   )
 }

@@ -10,23 +10,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🔐 RBAC SYSTEM — Roles & Granular Permissions
+// ═══════════════════════════════════════════════════════════════
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(50)
+  slug        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  color       String?  @db.VarChar(20)
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  module      String   @db.VarChar(50)
+  action      String   @db.VarChar(50)
+  slug        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  roles       RolePermission[]
+
+  @@unique([module, action])
+  @@index([module])
+}
+
+model RolePermission {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  createdAt    DateTime   @default(now())
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model CompanySettings {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyName     String   @db.VarChar(255)
+  nip             String?  @db.VarChar(20)
+  regon           String?  @db.VarChar(20)
+  address         String?  @db.Text
+  city            String?  @db.VarChar(100)
+  postalCode      String?  @db.VarChar(10)
+  phone           String?  @db.VarChar(20)
+  email           String?  @db.VarChar(255)
+  website         String?  @db.VarChar(255)
+  logoUrl         String?  @db.Text
+  defaultCurrency String   @default("PLN") @db.VarChar(3)
+  timezone        String   @default("Europe/Warsaw") @db.VarChar(50)
+  invoicePrefix   String?  @db.VarChar(20)
+  receiptPrefix   String?  @db.VarChar(20)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 👤 USER
+// ═══════════════════════════════════════════════════════════════
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String   @unique @db.VarChar(255)
   password  String   @db.VarChar(255)
   firstName String   @db.VarChar(100)
   lastName  String   @db.VarChar(100)
-  role      String   @default("EMPLOYEE") @db.VarChar(20)
+
+  // Legacy role field — kept for backward compatibility during migration
+  // Will be removed after full RBAC migration is complete
+  legacyRole String?  @map("role") @db.VarChar(20)
+
+  // New RBAC role relation
+  roleId    String?  @db.Uuid
+  assignedRole Role?  @relation(fields: [roleId], references: [id])
+
   isActive  Boolean  @default(true)
+  lastLoginAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   createdReservations  Reservation[]          @relation("CreatedBy")
   createdHistories     ReservationHistory[]   @relation("ChangedBy")
   activityLogs         ActivityLog[]
+  uploadedAttachments  Attachment[]           @relation("UploadedBy")
 
   @@index([email])
-  @@index([role])
+  @@index([roleId])
 }
 
 model Hall {
@@ -118,6 +203,12 @@ model Reservation {
   pricePerChild   Decimal  @default(0) @db.Decimal(10, 2)
   pricePerToddler Decimal  @default(0) @db.Decimal(10, 2)
   totalPrice      Decimal  @db.Decimal(10, 2)
+
+  discountType        String?   @db.VarChar(20)
+  discountValue       Decimal?  @db.Decimal(10, 2)
+  discountAmount      Decimal?  @db.Decimal(10, 2)
+  discountReason      String?   @db.Text
+  priceBeforeDiscount Decimal?  @db.Decimal(10, 2)
   
   status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime?
@@ -132,6 +223,9 @@ model Reservation {
   attachments     String[] @db.Text
   archivedAt      DateTime?
 
+  // Service Extras — total cost of all extras (independent from menu)
+  extrasTotalPrice Decimal  @default(0) @db.Decimal(10, 2)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -143,6 +237,7 @@ model Reservation {
   history         ReservationHistory[]
   deposits        Deposit[]
   menuSnapshot    ReservationMenuSnapshot?
+  extras          ReservationExtra[]
 
   @@index([date])
   @@index([startDateTime])
@@ -178,7 +273,7 @@ model ReservationHistory {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 💰 DEPOSIT SYSTEM - synced with actual DB structure
+// 💰 DEPOSIT SYSTEM
 // ═══════════════════════════════════════════════════════════════
 
 model Deposit {
@@ -318,6 +413,7 @@ model MenuPackage {
   menuTemplate    MenuTemplate @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
   packageOptions  MenuPackageOption[]
   categorySettings PackageCategorySettings[]
+  courses         MenuCourse[]
   priceHistory    MenuPriceHistory[]
   
   @@index([menuTemplateId])
@@ -382,6 +478,54 @@ model MenuPackageOption {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 🍽️ MENU COURSES — Per-package course structure
+// ═══════════════════════════════════════════════════════════════
+
+model MenuCourse {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packageId     String   @db.Uuid
+
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+
+  minSelect     Int      @default(1) @db.SmallInt
+  maxSelect     Int      @default(1) @db.SmallInt
+  isRequired    Boolean  @default(true)
+  displayOrder  Int      @default(0) @db.SmallInt
+  icon          String?  @db.VarChar(50)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  package       MenuPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  options       MenuCourseOption[]
+
+  @@index([packageId])
+  @@index([displayOrder])
+}
+
+model MenuCourseOption {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId       String   @db.Uuid
+  dishId        String   @db.Uuid
+
+  customPrice   Decimal? @db.Decimal(10, 2)
+  isDefault     Boolean  @default(false)
+  isRecommended Boolean  @default(false)
+  displayOrder  Int      @default(0) @db.SmallInt
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  course        MenuCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dish          Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, dishId])
+  @@index([courseId])
+  @@index([dishId])
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 🍽️ DISH LIBRARY & DYNAMIC CATEGORY SYSTEM
 // ═══════════════════════════════════════════════════════════════
 
@@ -424,6 +568,7 @@ model Dish {
   
   category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   addonGroups   AddonGroupDish[]
+  courseOptions  MenuCourseOption[]
   
   @@index([categoryId])
   @@index([isActive])
@@ -556,4 +701,122 @@ model MenuPriceHistory {
   @@index([packageId])
   @@index([optionId])
   @@index([effectiveFrom])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📎 ATTACHMENT SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+model Attachment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  entityType    String   @db.VarChar(50)
+  entityId      String   @db.Uuid
+
+  category      String   @db.VarChar(50)
+  label         String?  @db.VarChar(255)
+
+  originalName  String   @db.VarChar(255)
+  storedName    String   @db.VarChar(255)
+  mimeType      String   @db.VarChar(100)
+  sizeBytes     Int
+  storagePath   String   @db.Text
+
+  uploadedById  String   @db.Uuid
+  description   String?  @db.Text
+  isArchived    Boolean  @default(false)
+  version       Int      @default(1) @db.SmallInt
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  uploadedBy    User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([category])
+  @@index([uploadedById])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🎁 SERVICE EXTRAS — venue decoration, music, cake, etc.
+// Independent from Menu system — can be assigned without menu
+// ═══════════════════════════════════════════════════════════════
+
+model ServiceCategory {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  name          String   @db.VarChar(100)
+  slug          String   @unique @db.VarChar(50)
+  description   String?  @db.Text
+  icon          String?  @db.VarChar(20)
+  color         String?  @db.VarChar(50)
+
+  displayOrder  Int      @default(0) @db.SmallInt
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items         ServiceItem[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([displayOrder])
+}
+
+model ServiceItem {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId    String   @db.Uuid
+
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+
+  priceType     String   @db.VarChar(20)   // FLAT | PER_PERSON | FREE
+  basePrice     Decimal  @default(0) @db.Decimal(10, 2)
+
+  icon          String?  @db.VarChar(50)
+  displayOrder  Int      @default(0) @db.SmallInt
+
+  isExclusive   Boolean  @default(false)   // only one item from category
+  requiresNote  Boolean  @default(false)   // e.g. "describe your own cake"
+  noteLabel     String?  @db.VarChar(255)  // custom label for note field
+
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category      ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  reservationExtras ReservationExtra[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([priceType])
+}
+
+model ReservationExtra {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId   String   @db.Uuid
+  serviceItemId   String   @db.Uuid
+
+  quantity        Int      @default(1) @db.SmallInt
+  unitPrice       Decimal  @db.Decimal(10, 2)   // snapshot of price at assignment time
+  priceType       String   @db.VarChar(20)       // snapshot of price type
+  totalPrice      Decimal  @db.Decimal(10, 2)   // calculated total
+
+  note            String?  @db.Text
+  status          String   @default("PENDING") @db.VarChar(20)  // PENDING | CONFIRMED | CANCELLED
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  serviceItem     ServiceItem @relation(fields: [serviceItemId], references: [id], onDelete: Restrict)
+
+  @@unique([reservationId, serviceItemId])
+  @@index([reservationId])
+  @@index([serviceItemId])
+  @@index([status])
 }

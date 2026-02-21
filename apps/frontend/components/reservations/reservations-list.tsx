@@ -4,16 +4,17 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useReservations } from '@/hooks/use-reservations'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
 import { formatDate, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
 import {
-  Eye, Edit, Trash2, Archive, FileText, ChevronLeft, ChevronRight,
+  Eye, Trash2, Archive, ArchiveRestore, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
-  Phone, Mail, CheckCircle2, AlertTriangle
+  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert,
+  Loader2, Sparkles
 } from 'lucide-react'
-import { ReservationDetailsModal } from './reservation-details-modal'
-import { EditReservationModal } from './edit-reservation-modal'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import { format, parseISO, isSameDay } from 'date-fns'
@@ -24,6 +25,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 import { LoadingState } from '@/components/shared'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit } from '@/lib/api/deposits'
+import { batchCheckContract, batchCheckRodo } from '@/lib/api/attachments'
 
 const accent = moduleAccents.reservations
 
@@ -59,7 +61,7 @@ function getGuestBreakdown(reservation: any): {
   return { adults, children, toddlers, total }
 }
 
-// ═══ Deposit Badge Helper ═══
+// Deposit Badge Helper
 function DepositBadge({ deposits }: { deposits: Deposit[] }) {
   const active = deposits.filter(d => d.status !== 'CANCELLED')
   if (active.length === 0) return null
@@ -87,7 +89,6 @@ function DepositBadge({ deposits }: { deposits: Deposit[] }) {
     )
   }
 
-  // Pending
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
       <Clock className="h-3 w-3" />
@@ -96,20 +97,83 @@ function DepositBadge({ deposits }: { deposits: Deposit[] }) {
   )
 }
 
+// Extras Badge Helper
+function ExtrasBadge({ extrasCount, extrasTotalPrice }: { extrasCount?: number; extrasTotalPrice?: number }) {
+  if (!extrasCount || extrasCount === 0) return null
+
+  const priceLabel = extrasTotalPrice && extrasTotalPrice > 0
+    ? ` · ${extrasTotalPrice.toLocaleString('pl-PL')} zł`
+    : ''
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800">
+      <Sparkles className="h-3 w-3" />
+      {extrasCount} {extrasCount === 1 ? 'extra' : 'extras'}{priceLabel}
+    </span>
+  )
+}
+
+// Contract Badge Helper
+function ContractBadge({ hasContract }: { hasContract: boolean | undefined }) {
+  if (hasContract === undefined) return null
+
+  if (hasContract) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+        <FileCheck className="h-3 w-3" />
+        Umowa
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700">
+      <FileX className="h-3 w-3" />
+      Brak umowy
+    </span>
+  )
+}
+
+// RODO Badge Helper
+function RodoBadge({ hasRodo }: { hasRodo: boolean | undefined }) {
+  if (hasRodo === undefined) return null
+
+  if (hasRodo) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800">
+        <ShieldCheck className="h-3 w-3" />
+        RODO
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+      <ShieldAlert className="h-3 w-3" />
+      Brak RODO
+    </span>
+  )
+}
+
 export function ReservationsList() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
-  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
-  const [editingReservationId, setEditingReservationId] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const [depositMap, setDepositMap] = useState<Record<string, Deposit[]>>({})
+  const [contractMap, setContractMap] = useState<Record<string, boolean>>({})
+  const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
+  const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
+
+  const archiveMutation = useArchiveReservation()
+  const unarchiveMutation = useUnarchiveReservation()
 
   const { data, isLoading, error, refetch } = useReservations({
     page,
     pageSize: 20,
     status: statusFilter === 'ALL' ? undefined : statusFilter,
+    archived: showArchived,
   })
 
-  // Fetch all deposits once and group by reservationId
   useEffect(() => {
     depositsApi.getAll().then(deposits => {
       const map: Record<string, Deposit[]> = {}
@@ -121,6 +185,29 @@ export function ReservationsList() {
     }).catch(console.error)
   }, [])
 
+  const allReservations = data?.data || []
+  const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
+
+  useEffect(() => {
+    if (reservations.length === 0) return
+
+    const reservationIds = reservations.map((r: any) => r.id)
+    batchCheckContract(reservationIds)
+      .then(setContractMap)
+      .catch(console.error)
+
+    const clientIds = [...new Set(
+      reservations
+        .map((r: any) => r.clientId || r.client?.id)
+        .filter(Boolean)
+    )] as string[]
+    if (clientIds.length > 0) {
+      batchCheckRodo(clientIds)
+        .then(setRodoMap)
+        .catch(console.error)
+    }
+  }, [data])
+
   const statusOptions = [
     { value: 'ALL', label: 'Wszystkie statusy' },
     { value: 'PENDING', label: 'Oczekujące' },
@@ -129,27 +216,77 @@ export function ReservationsList() {
     { value: 'CANCELLED', label: 'Anulowane' },
   ]
 
-  const handleEdit = (reservationId: string) => setEditingReservationId(reservationId)
-  const handleEditSuccess = () => refetch()
-
   const handleGeneratePDF = async (reservationId: string) => {
     try {
+      setGeneratingPdfId(reservationId)
       toast.info('Generowanie PDF...')
+      const response = await apiClient.get(`/reservations/${reservationId}/pdf`, {
+        responseType: 'blob',
+      })
+
+      const contentType = response.headers?.['content-type'] || ''
+      if (contentType.includes('application/json')) {
+        const text = await new Blob([response.data]).text()
+        const errorData = JSON.parse(text)
+        throw new Error(errorData.error || 'Serwer zwrócił błąd zamiast PDF')
+      }
+
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `rezerwacja_${reservationId.slice(0, 8)}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }, 150)
       toast.success('PDF wygenerowany pomyślnie')
-    } catch (error) {
-      toast.error('Błąd podczas generowania PDF')
+    } catch (error: any) {
+      console.error('PDF generation error:', error)
+      if (error?.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text()
+          const errorData = JSON.parse(text)
+          toast.error(errorData.error || 'Błąd podczas generowania PDF')
+        } catch {
+          toast.error('Błąd podczas generowania PDF')
+        }
+      } else {
+        toast.error(error?.response?.data?.error || error?.message || 'Błąd podczas generowania PDF')
+      }
+    } finally {
+      setGeneratingPdfId(null)
     }
   }
 
   const handleArchive = async (reservationId: string) => {
-    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
-    try {
-      await apiClient.patch(`/reservations/${reservationId}`, { archivedAt: new Date().toISOString() })
-      toast.success('Rezerwacja zarchiwizowana')
-      refetch()
-    } catch (error) {
-      toast.error('Błąd podczas archiwizacji')
-    }
+    toast.promise(
+      archiveMutation.mutateAsync({ id: reservationId, reason: 'Zarchiwizowano przez użytkownika' }),
+      {
+        loading: 'Archiwizowanie rezerwacji...',
+        success: () => {
+          refetch()
+          return 'Rezerwacja została zarchiwizowana'
+        },
+        error: 'Błąd podczas archiwizacji rezerwacji',
+      }
+    )
+  }
+
+  const handleUnarchive = async (reservationId: string) => {
+    toast.promise(
+      unarchiveMutation.mutateAsync({ id: reservationId, reason: 'Przywrócono z archiwum' }),
+      {
+        loading: 'Przywracanie rezerwacji...',
+        success: () => {
+          refetch()
+          return 'Rezerwacja została przywrócona z archiwum'
+        },
+        error: 'Błąd podczas przywracania rezerwacji',
+      }
+    )
   }
 
   const handleDelete = async (reservationId: string, status: string) => {
@@ -157,7 +294,10 @@ export function ReservationsList() {
       toast.error('Nie można usunąć potwierdzonej rezerwacji. Anuluj ją najpierw.')
       return
     }
-    if (!confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')) return
+    
+    const confirmed = window.confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')
+    if (!confirmed) return
+
     try {
       await apiClient.delete(`/reservations/${reservationId}`)
       toast.success('Rezerwacja anulowana')
@@ -179,8 +319,6 @@ export function ReservationsList() {
     )
   }
 
-  const allReservations = data?.data || []
-  const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
   const totalPages = data?.totalPages || 1
 
   const reservationsByDate = reservations.reduce((acc: any, res: any) => {
@@ -196,9 +334,9 @@ export function ReservationsList() {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="w-64">
+      {/* Filters — responsive wrap */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-64">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
             <SelectTrigger className="h-11 rounded-xl border-neutral-200 dark:border-neutral-700">
               <SelectValue placeholder="Filtruj po statusie" />
@@ -210,8 +348,22 @@ export function ReservationsList() {
             </SelectContent>
           </Select>
         </div>
+        
+        {/* Archive Toggle */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+          <Switch
+            id="show-archived"
+            checked={showArchived}
+            onCheckedChange={setShowArchived}
+          />
+          <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm">
+            <span className="hidden sm:inline">Pokaż zarchiwizowane</span>
+            <span className="sm:hidden">Archiwum</span>
+          </Label>
+        </div>
+        
         <div className="flex-1" />
-        <div className="text-sm text-neutral-500 dark:text-neutral-400">
+        <div className="text-sm text-neutral-500 dark:text-neutral-400 w-full sm:w-auto">
           Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji
         </div>
       </div>
@@ -270,15 +422,19 @@ export function ReservationsList() {
                   {dateReservations.map((reservation: any) => {
                     const guestInfo = getGuestBreakdown(reservation)
                     const resDeposits = depositMap[reservation.id] || []
+                    const hasContract = contractMap[reservation.id]
+                    const clientId = reservation.clientId || reservation.client?.id
+                    const hasRodo = clientId ? rodoMap[clientId] : undefined
+                    const isPdfGenerating = generatingPdfId === reservation.id
 
                     return (
-                      <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+                      <div key={reservation.id} className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden active:scale-[0.99]">
                         <div className={cn(
-                          'p-6',
+                          'p-4 sm:p-6',
                           `bg-gradient-to-r ${accent.gradientSubtle}`
                         )}>
-                          {/* Header: Time + Status + Deposit Badge */}
-                          <div className="flex items-start justify-between gap-4 mb-4">
+                          {/* Header: Time + Status + Badges — stacks on mobile */}
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-4">
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 'p-2 rounded-xl bg-gradient-to-br shadow-sm',
@@ -296,7 +452,16 @@ export function ReservationsList() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {reservation.archivedAt && (
+                                <Badge variant="secondary" className="bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                                  <Archive className="h-3 w-3 mr-1" />
+                                  Zarchiwizowane
+                                </Badge>
+                              )}
+                              <RodoBadge hasRodo={hasRodo} />
+                              <ContractBadge hasContract={hasContract} />
+                              <ExtrasBadge extrasCount={reservation.extrasCount} extrasTotalPrice={reservation.extrasTotalPrice} />
                               <DepositBadge deposits={resDeposits} />
                               <Badge className={getStatusColor(reservation.status)}>
                                 {getStatusLabel(reservation.status)}
@@ -358,13 +523,18 @@ export function ReservationsList() {
                               <div className="font-bold text-lg text-green-600 dark:text-green-400">
                                 {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
                               </div>
+                              {reservation.extrasTotalPrice > 0 && (
+                                <div className="text-xs text-violet-600 dark:text-violet-400">
+                                  w tym extras: {formatCurrency(reservation.extrasTotalPrice)}
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {/* Actions Bar */}
-                          <div className="flex items-center justify-between pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
+                          {/* Actions Bar — stacks on mobile */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
                             {reservation.client && (
-                              <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
                                 {reservation.client.phone && (
                                   <div className="flex items-center gap-1">
                                     <Phone className="h-3 w-3" />{reservation.client.phone}
@@ -372,47 +542,55 @@ export function ReservationsList() {
                                 )}
                                 {reservation.client.email && (
                                   <div className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />{reservation.client.email}
+                                    <Mail className="h-3 w-3" />
+                                    <span className="truncate max-w-[180px] sm:max-w-none">{reservation.client.email}</span>
                                   </div>
                                 )}
                               </div>
                             )}
 
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 self-end sm:self-auto">
                               <Link href={`/dashboard/reservations/${reservation.id}`}>
-                                <Button size="sm" variant="ghost" title="Zobacz szczegóły" className="rounded-lg">
+                                <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" className="rounded-lg">
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </Link>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleEdit(reservation.id)}
-                                title="Edytuj rezerwację"
-                                disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-                                className="rounded-lg"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
                                 onClick={() => handleGeneratePDF(reservation.id)}
                                 title="Generuj PDF"
                                 className="rounded-lg"
+                                disabled={isPdfGenerating}
                               >
-                                <FileText className="w-4 h-4" />
+                                {isPdfGenerating ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <FileText className="w-4 h-4" />
+                                )}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleArchive(reservation.id)}
-                                title="Archiwizuj"
-                                disabled={reservation.status === 'CANCELLED'}
-                                className="rounded-lg"
-                              >
-                                <Archive className="w-4 h-4" />
-                              </Button>
+                              {!reservation.archivedAt ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleArchive(reservation.id)}
+                                  title="Zarchiwizuj"
+                                  disabled={reservation.status === 'CANCELLED'}
+                                  className="rounded-lg"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleUnarchive(reservation.id)}
+                                  title="Przywróć z archiwum"
+                                  className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                                >
+                                  <ArchiveRestore className="w-4 h-4" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -436,9 +614,9 @@ export function ReservationsList() {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination — responsive */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Strona <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> z <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong>
           </p>
@@ -465,25 +643,6 @@ export function ReservationsList() {
             </Button>
           </div>
         </div>
-      )}
-
-      {/* Details Modal */}
-      {selectedReservationId && (
-        <ReservationDetailsModal
-          reservationId={selectedReservationId}
-          open={!!selectedReservationId}
-          onClose={() => setSelectedReservationId(null)}
-        />
-      )}
-
-      {/* Edit Modal */}
-      {editingReservationId && (
-        <EditReservationModal
-          reservationId={editingReservationId}
-          open={!!editingReservationId}
-          onClose={() => setEditingReservationId(null)}
-          onSuccess={handleEditSuccess}
-        />
       )}
     </div>
   )

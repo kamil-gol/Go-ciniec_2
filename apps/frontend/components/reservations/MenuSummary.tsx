@@ -118,8 +118,8 @@ export function MenuSummary({ menuData, onEdit, showEdit = true }: MenuSummaryPr
                 <ChefHat className="h-5 w-5 text-orange-600" />
                 <h4 className="font-semibold">Wybrane dania</h4>
                 <Badge variant="secondary" className="ml-auto">
-                  {dishSelections.reduce((sum, cat) => 
-                    sum + cat.dishes.reduce((s, d) => s + d.quantity, 0), 0
+                  {dishSelections.reduce((sum: number, cat: any) => 
+                    sum + cat.dishes.reduce((s: number, d: any) => s + d.quantity, 0), 0
                   )} porcji
                 </Badge>
               </div>

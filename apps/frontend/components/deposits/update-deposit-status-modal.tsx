@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { depositsApi } from '@/lib/api/deposits'
 import { toast } from 'sonner'
 import { DollarSign, Calendar, CreditCard } from 'lucide-react'
@@ -99,11 +99,11 @@ export function UpdateDepositStatusModal({
 
         <div className="space-y-6 p-6">
           {/* Current amount */}
-          <div className="flex items-center gap-3 p-4 bg-secondary-50 rounded-lg">
-            <DollarSign className="w-6 h-6 text-primary-600" />
+          <div className="flex items-center gap-3 p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg">
+            <DollarSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             <div>
-              <p className="text-sm text-secondary-600">Kwota zaliczki</p>
-              <p className="text-2xl font-bold text-primary-600">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Kwota zaliczki</p>
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                 {deposit.amount.toFixed(2)} zł
               </p>
             </div>
@@ -112,35 +112,47 @@ export function UpdateDepositStatusModal({
           {/* If marking as PAID - show form */}
           {!deposit.paid && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-secondary-500" />
-                <Select
-                  label="Sposób płatności"
-                  options={paymentMethodOptions}
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sposób płatności</label>
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Wybierz sposób płatności" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethodOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-secondary-500" />
-                <Input
-                  type="datetime-local"
-                  label="Data i czas płatności"
-                  value={paidAt}
-                  onChange={(e) => setPaidAt(e.target.value)}
-                />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data i czas płatności</label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                  <Input
+                    type="datetime-local"
+                    value={paidAt}
+                    onChange={(e) => setPaidAt(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
               </div>
             </div>
           )}
 
           {/* If marking as UNPAID - show confirmation */}
           {deposit.paid && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-900">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <p className="text-sm text-amber-900 dark:text-amber-200">
                 Czy na pewno chcesz cofnąć status zapłaty tej zaliczki?
               </p>
-              <p className="text-xs text-amber-700 mt-2">
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
                 Zostanie oznaczona jako nieopłacona i będzie wymagała ponownego potwierdzenia płatności.
               </p>
             </div>

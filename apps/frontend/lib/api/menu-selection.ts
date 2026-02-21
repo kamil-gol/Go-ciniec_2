@@ -4,7 +4,7 @@
  * Frontend API methods for reservation menu management
  */
 
-import api from './client';
+import { apiClient } from '@/lib/api-client';
 import {
   MenuSelectionInput,
   ReservationMenuResponse,
@@ -19,7 +19,7 @@ export async function selectReservationMenu(
   reservationId: string,
   input: MenuSelectionInput
 ): Promise<ReservationMenuResponse> {
-  const response = await api.post<ApiResponse<ReservationMenuResponse>>(
+  const response = await apiClient.post<ApiResponse<ReservationMenuResponse>>(
     `/reservations/${reservationId}/menu`,
     input
   );
@@ -33,7 +33,7 @@ export async function selectReservationMenu(
 export async function getReservationMenu(
   reservationId: string
 ): Promise<ReservationMenuResponse> {
-  const response = await api.get<ApiResponse<ReservationMenuResponse>>(
+  const response = await apiClient.get<ApiResponse<ReservationMenuResponse>>(
     `/reservations/${reservationId}/menu`
   );
   return response.data.data;
@@ -47,7 +47,7 @@ export async function updateReservationMenu(
   reservationId: string,
   input: MenuSelectionInput
 ): Promise<ReservationMenuResponse> {
-  const response = await api.put<ApiResponse<ReservationMenuResponse>>(
+  const response = await apiClient.put<ApiResponse<ReservationMenuResponse>>(
     `/reservations/${reservationId}/menu`,
     input
   );
@@ -61,5 +61,5 @@ export async function updateReservationMenu(
 export async function deleteReservationMenu(
   reservationId: string
 ): Promise<void> {
-  await api.delete(`/reservations/${reservationId}/menu`);
+  await apiClient.delete(`/reservations/${reservationId}/menu`);
 }

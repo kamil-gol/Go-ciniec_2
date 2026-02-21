@@ -8,8 +8,6 @@ package-lock.json
 # Testing
 /coverage
 /.nyc_output
-jest.config.js
-vitest.config.ts
 
 # Production
 /build
@@ -17,8 +15,12 @@ vitest.config.ts
 /.next
 out/
 
-# Environment variables
+# ============================================
+# Environment variables — ONLY .env.example is committed
+# ============================================
 .env
+.env.dev
+.env.prod
 .env.local
 .env.*.local
 .env.development.local
@@ -50,9 +52,6 @@ yarn-error.log*
 *.sqlite
 *.sqlite3
 
-# Docker
-.dockerignore
-
 # OS
 Thumbs.db
 .DS_Store
@@ -68,3 +67,21 @@ temp/
 # Backup files
 *.backup
 *.bak
+
+# Generated artifacts — never commit
+*.pdf
+*.xlsx
+FETCH_HEAD
+
+# Upload directories
+apps/backend/uploads/
+apps/frontend/.next/
+
+# Build output
+apps/backend/dist/
+dist/
+
+# Test artifacts
+apps/frontend/playwright-report/
+apps/frontend/test-results/
+*.webm

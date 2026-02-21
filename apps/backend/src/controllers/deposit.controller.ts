@@ -1,6 +1,5 @@
 /**
- * Deposit Controller
- * Full CRUD + mark-paid/unpaid + stats + overdue + PDF download + send email
+ * Deposit Controller - with userId for audit
  */
 
 import { Request, Response } from 'express';
@@ -36,10 +35,6 @@ export const getDeposit = async (req: Request, res: Response): Promise<void> => 
   res.json({ success: true, data: deposit });
 };
 
-/**
- * GET /api/deposits/:id/pdf
- * Download payment confirmation PDF for a paid deposit
- */
 export const downloadDepositPdf = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const deposit = await depositService.getById(id);
@@ -86,10 +81,6 @@ export const downloadDepositPdf = async (req: Request, res: Response): Promise<v
   res.send(pdfBuffer);
 };
 
-/**
- * POST /api/deposits/:id/send-email
- * Manually send confirmation email with PDF to client
- */
 export const sendDepositEmail = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const result = await depositService.sendConfirmationEmail(id);
@@ -105,13 +96,16 @@ export const getReservationDeposits = async (req: Request, res: Response): Promi
 export const createDeposit = async (req: Request, res: Response): Promise<void> => {
   const { reservationId } = req.params;
   const body = createDepositSchema.parse(req.body);
+  const userId = (req as any).user?.id;
+
+  if (!userId) throw AppError.unauthorized('User not authenticated');
 
   const deposit = await depositService.create({
     reservationId,
     amount: body.amount,
     dueDate: body.dueDate,
     notes: body.notes,
-  });
+  }, userId);
 
   res.status(201).json({ success: true, data: deposit });
 };
@@ -119,33 +113,51 @@ export const createDeposit = async (req: Request, res: Response): Promise<void> 
 export const updateDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const body = updateDepositSchema.parse(req.body);
+  const userId = (req as any).user?.id;
 
-  const deposit = await depositService.update(id, body);
+  if (!userId) throw AppError.unauthorized('User not authenticated');
+
+  const deposit = await depositService.update(id, body, userId);
   res.json({ success: true, data: deposit });
 };
 
 export const deleteDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const result = await depositService.delete(id);
+  const userId = (req as any).user?.id;
+
+  if (!userId) throw AppError.unauthorized('User not authenticated');
+
+  const result = await depositService.delete(id, userId);
   res.json(result);
 };
 
 export const markDepositAsPaid = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const body = markPaidSchema.parse(req.body);
+  const userId = (req as any).user?.id;
 
-  const deposit = await depositService.markAsPaid(id, body);
+  if (!userId) throw AppError.unauthorized('User not authenticated');
+
+  const deposit = await depositService.markAsPaid(id, body, userId);
   res.json({ success: true, data: deposit });
 };
 
 export const markDepositAsUnpaid = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const deposit = await depositService.markAsUnpaid(id);
+  const userId = (req as any).user?.id;
+
+  if (!userId) throw AppError.unauthorized('User not authenticated');
+
+  const deposit = await depositService.markAsUnpaid(id, userId);
   res.json({ success: true, data: deposit });
 };
 
 export const cancelDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const deposit = await depositService.cancel(id);
+  const userId = (req as any).user?.id;
+
+  if (!userId) throw AppError.unauthorized('User not authenticated');
+
+  const deposit = await depositService.cancel(id, userId);
   res.json({ success: true, data: deposit });
 };
