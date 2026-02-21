@@ -1,18 +1,16 @@
-# ========================================
+# ============================================
 # Docker Compose — Test Environment
-# ========================================
-# Uruchamianie:
-#   make test-unit          # unit testy backend
-#   make test-integration   # integration testy backend (z bazą)
-#   make test-frontend      # component testy frontend
-#   make test-all           # wszystko
-#   make test-down          # zatrzymaj kontenery testowe
-# ========================================
+# ============================================
+# Usage: docker compose -f docker-compose.test.yml -p rezerwacje-test up
+#    or: make test-unit / make test-integration / make test-all
+#
+# Features:
+#   - Isolated test database on port 5433 (tmpfs for speed)
+#   - Separate network from dev/prod
+#   - Disposable containers
+# ============================================
 
 services:
-  # ----------------------------------------
-  # Testowa baza PostgreSQL (port 5433)
-  # ----------------------------------------
   postgres-test:
     image: postgres:16-alpine
     container_name: rezerwacje-db-test
@@ -29,17 +27,15 @@ services:
       timeout: 3s
       retries: 5
     tmpfs:
-      - /var/lib/postgresql/data  # RAM disk — szybsze testy
+      - /var/lib/postgresql/data
     networks:
       - test-network
 
-  # ----------------------------------------
-  # Backend Test Runner
-  # ----------------------------------------
   backend-test:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
+      target: dev
     container_name: rezerwacje-backend-test
     environment:
       NODE_ENV: test
@@ -67,16 +63,13 @@ services:
       - /app/node_modules
     networks:
       - test-network
-    # Domyślna komenda: unit testy (nadpisywana w Makefile)
     command: sh -c "npx prisma generate && npm run test:unit"
 
-  # ----------------------------------------
-  # Frontend Test Runner
-  # ----------------------------------------
   frontend-test:
     build:
       context: ./apps/frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
+      target: dev
     container_name: rezerwacje-frontend-test
     environment:
       NODE_ENV: test
