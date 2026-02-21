@@ -1,10 +1,12 @@
 /**
  * Role-Based Access Control Middleware
  * Restrict access based on user roles
+ * 🇵🇱 Polish error messages
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '../types';
+import pl from '../i18n/pl';
 
 /**
  * Middleware to check if user has required role
@@ -15,7 +17,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Authentication required'
+        error: pl.auth.authRequired
       });
       return;
     }
@@ -24,7 +26,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        error: 'Insufficient permissions'
+        error: pl.auth.insufficientPermissions
       });
       return;
     }

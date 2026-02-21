@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { AuthenticatedRequest, JwtPayload } from '@types/index';
 import { AppError } from './errorHandler';
 import logger from '@utils/logger';
+import pl from '../i18n/pl';
 
 // Fail-fast: crash on startup if JWT_SECRET is missing in production
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -43,7 +44,7 @@ export function verifyToken(token: string): JwtPayload {
   try {
     return jwt.verify(token, secret) as JwtPayload;
   } catch (error) {
-    throw new AppError(401, 'Invalid or expired token');
+    throw new AppError(401, pl.auth.tokenInvalid);
   }
 }
 
@@ -77,7 +78,7 @@ export const authMiddleware = (
     const token = extractToken(req);
 
     if (!token) {
-      throw new AppError(401, 'No token provided');
+      throw new AppError(401, pl.auth.noToken);
     }
 
     const payload = verifyToken(token);
@@ -95,7 +96,7 @@ export const authMiddleware = (
     if (error instanceof AppError) {
       next(error);
     } else {
-      next(new AppError(401, 'Authentication failed'));
+      next(new AppError(401, pl.auth.authFailed));
     }
   }
 };
@@ -107,13 +108,13 @@ export const authMiddleware = (
 export const requireRole = (...roles: string[]) => {
   return (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
     if (!req.user) {
-      next(new AppError(401, 'User not authenticated'));
+      next(new AppError(401, pl.auth.authRequired));
       return;
     }
 
     if (!roles.includes(req.user.role)) {
-      logger.warn(`Unauthorized access attempt by ${req.user.email} (${req.user.role})`);
-      next(new AppError(403, 'Insufficient permissions'));
+      logger.warn(`Brak uprawnie\u0144: ${req.user.email} (${req.user.role})`);
+      next(new AppError(403, pl.auth.insufficientPermissions));
       return;
     }
 

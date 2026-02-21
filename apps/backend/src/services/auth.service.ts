@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { validatePassword } from '@utils/password';
 import { generateToken } from '@middlewares/auth';
 import logger from '@utils/logger';
+import pl from '../i18n/pl';
 
 export const authService = {
   async login(email: string, password: string) {
@@ -20,16 +21,16 @@ export const authService = {
     });
 
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new Error(pl.auth.invalidCredentials);
     }
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      throw new Error('Invalid credentials');
+      throw new Error(pl.auth.invalidCredentials);
     }
 
     if (!user.isActive) {
-      throw new Error('User account is inactive');
+      throw new Error(pl.auth.userInactive);
     }
 
     // Build permission list
@@ -86,7 +87,7 @@ export const authService = {
     });
 
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error(pl.auth.emailAlreadyExists);
     }
 
     validatePassword(data.password);
@@ -159,7 +160,7 @@ export const authService = {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error(pl.auth.userNotFound);
     }
 
     const permissions = user.assignedRole

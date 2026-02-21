@@ -1,6 +1,7 @@
 /**
  * Custom Application Error class
  * Replaces fragile string-matching on error.message for HTTP status codes
+ * 🇵🇱 Polish defaults for user-facing error messages
  */
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -16,7 +17,7 @@ export class AppError extends Error {
     if (typeof messageOrCode === 'number') {
       // Legacy: new AppError(400, 'message')
       statusCode = messageOrCode;
-      message = typeof codeOrMessage === 'string' ? codeOrMessage : 'Error';
+      message = typeof codeOrMessage === 'string' ? codeOrMessage : 'Błąd';
     } else {
       // New: new AppError('message', 400)
       message = messageOrCode;
@@ -37,23 +38,23 @@ export class AppError extends Error {
     return new AppError(message, 400);
   }
 
-  static unauthorized(message = 'User not authenticated'): AppError {
+  static unauthorized(message = 'Wymagane uwierzytelnienie'): AppError {
     return new AppError(message, 401);
   }
 
-  static forbidden(message = 'Access denied'): AppError {
+  static forbidden(message = 'Brak dost\u0119pu'): AppError {
     return new AppError(message, 403);
   }
 
-  static notFound(resource = 'Resource'): AppError {
-    return new AppError(`${resource} not found`, 404);
+  static notFound(resource = 'Zas\u00f3b'): AppError {
+    return new AppError(`Nie znaleziono: ${resource}`, 404);
   }
 
   static conflict(message: string): AppError {
     return new AppError(message, 409);
   }
 
-  static internal(message = 'Internal server error'): AppError {
+  static internal(message = 'Wewn\u0119trzny b\u0142\u0105d serwera'): AppError {
     return new AppError(message, 500, false);
   }
 }
