@@ -15,8 +15,8 @@
 # ============================================
 # Compose file combinations
 # ============================================
-COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
-COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
+COMPOSE_DEV  = docker compose -p rezerwacje-dev -f docker-compose.yml -f docker-compose.dev.yml
+COMPOSE_PROD = docker compose -p rezerwacje-prod -f docker-compose.yml -f docker-compose.prod.yml
 COMPOSE_TEST = docker compose -f docker-compose.test.yml -p rezerwacje-test
 
 # ============================================
@@ -101,8 +101,18 @@ logs-backend:
 logs-frontend:
 	$(COMPOSE_DEV) --env-file .env.dev logs -f frontend
 
+logs-prod:
+	$(COMPOSE_PROD) --env-file .env.prod logs -f
+
+logs-prod-backend:
+	$(COMPOSE_PROD) --env-file .env.prod logs -f backend
+
 status:
-	docker compose ps
+	@echo "\n=== PROD ==="
+	@$(COMPOSE_PROD) --env-file .env.prod ps 2>/dev/null || echo "  (not running)"
+	@echo "\n=== DEV ==="
+	@$(COMPOSE_DEV) --env-file .env.dev ps 2>/dev/null || echo "  (not running)"
+	@echo ""
 
 # ============================================
 # Full Cleanup
@@ -122,12 +132,12 @@ help:
 	@echo "  Go-ciniec_2 — Docker Commands"
 	@echo "  ============================================"
 	@echo ""
-	@echo "  DEVELOPMENT:"
+	@echo "  DEVELOPMENT (ports 4000/4001):"
 	@echo "    make dev                Start dev environment (hot-reload)"
 	@echo "    make dev-build          Rebuild & start dev environment"
 	@echo "    make dev-down           Stop dev environment"
 	@echo ""
-	@echo "  PRODUCTION:"
+	@echo "  PRODUCTION (ports 3000/3001):"
 	@echo "    make prod               Start production (detached)"
 	@echo "    make prod-build         Rebuild & start production"
 	@echo "    make prod-down          Stop production"
@@ -143,8 +153,9 @@ help:
 	@echo ""
 	@echo "  UTILITIES:"
 	@echo "    make logs               Follow all logs (dev)"
-	@echo "    make logs-backend       Follow backend logs"
-	@echo "    make logs-frontend      Follow frontend logs"
-	@echo "    make status             Show running containers"
+	@echo "    make logs-backend       Follow backend logs (dev)"
+	@echo "    make logs-prod          Follow all logs (prod)"
+	@echo "    make logs-prod-backend  Follow backend logs (prod)"
+	@echo "    make status             Show running containers (both envs)"
 	@echo "    make down               Stop everything & cleanup"
 	@echo ""
