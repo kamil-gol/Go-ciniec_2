@@ -22,6 +22,7 @@ import attachmentRoutes from '@/routes/attachment.routes';
 import auditLogRoutes from '@/routes/audit-log.routes';
 import reportsRoutes from '@/routes/reports.routes';
 import settingsRoutes from '@/routes/settings.routes';
+import serviceExtraRoutes from '@/routes/serviceExtra.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -145,6 +146,11 @@ app.use('/api/dishes', dishRoutes);
  * Dish Categories Routes
  */
 app.use('/api/dish-categories', dishCategoryRoutes);
+
+/**
+ * Service Extras Routes
+ */
+app.use('/api/service-extras', serviceExtraRoutes);
 
 /**
  * 404 Handler
