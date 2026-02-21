@@ -9,7 +9,7 @@ test.describe('Autentykacja', () => {
 
   test('should display login page correctly', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.locator('h1')).toContainText(/Go\u015bciniec/i);
+    await expect(page.locator('h1')).toContainText(/Gościniec/i);
     await expect(page.locator('h2')).toContainText(/Zaloguj/i);
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
@@ -127,7 +127,7 @@ test.describe('Autentykacja', () => {
     }
 
     // Try opening hamburger (mobile)
-    const hamburger = adminPage.locator('button[aria-label="Otw\u00f3rz menu nawigacji"]');
+    const hamburger = adminPage.locator('button[aria-label="Otwórz menu nawigacji"]');
     if (await hamburger.isVisible().catch(() => false)) {
       await hamburger.click();
       await adminPage.waitForTimeout(1000);

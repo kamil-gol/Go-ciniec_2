@@ -34,13 +34,13 @@ export const testData = {
     },
     {
       firstName: 'Piotr',
-      lastName: 'Wi\u015bniewski',
+      lastName: 'Wiśniewski',
       email: 'piotr.wisniewski@example.com',
       phone: '+48345678901',
     },
     {
       firstName: 'Maria',
-      lastName: 'W\u00f3jcik',
+      lastName: 'Wójcik',
       email: 'maria.wojcik@example.com',
       phone: '+48456789012',
     },
@@ -67,7 +67,7 @@ export const testData = {
       guestsChildren0to3: 5,
       eventType: 'Urodziny',
       birthdayAge: 30,
-      hall: 'Sala Ma\u0142a',
+      hall: 'Sala Mała',
       notes: 'Birthday party test',
     },
     anniversary: {
@@ -79,7 +79,7 @@ export const testData = {
       guestsChildren0to3: 0,
       eventType: 'Rocznica/Jubileusz',
       anniversaryYears: 25,
-      anniversaryType: '\u015alub',
+      anniversaryType: 'Ślub',
       hall: 'Sala Bankietowa',
       notes: '25th wedding anniversary',
     },
@@ -112,7 +112,7 @@ export const testData = {
   ],
   halls: [
     { name: 'Sala Bankietowa', capacity: 150 },
-    { name: 'Sala Ma\u0142a', capacity: 50 },
+    { name: 'Sala Mała', capacity: 50 },
   ],
   statuses: [
     'PENDING',
@@ -185,7 +185,7 @@ export const TEST_RESERVATIONS = {
     toddlers: 0,
     notes: 'Test anniversary reservation',
     birthdayAge: undefined as number | undefined,
-    anniversaryOccasion: '\u015alub',
+    anniversaryOccasion: 'Ślub',
     anniversaryYear: 25,
   },
 };

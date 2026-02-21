@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
@@ -141,7 +140,7 @@ describe('ReservationForm', () => {
 
       const submitButton = screen.queryByRole('button', { name: /zapisz|utwórz|dodaj/i })
       if (submitButton) {
-        await userEvent.click(submitButton)
+        fireEvent.click(submitButton)
         await waitFor(() => {
           const errorMessages = screen.queryAllByRole('alert')
           // Form should show validation errors or prevent submission
@@ -156,10 +155,10 @@ describe('ReservationForm', () => {
 
       const guestInput = screen.queryByLabelText(/goś/i) || screen.queryByPlaceholderText(/goś/i)
       if (guestInput) {
-        await userEvent.clear(guestInput)
-        await userEvent.type(guestInput, '-5')
+        fireEvent.change(guestInput, { target: { value: '' } })
+        fireEvent.change(guestInput, { target: { value: '-5' } })
         const submitButton = screen.queryByRole('button', { name: /zapisz|utwórz|dodaj/i })
-        if (submitButton) await userEvent.click(submitButton)
+        if (submitButton) fireEvent.click(submitButton)
 
         await waitFor(() => {
           // Should not accept negative values

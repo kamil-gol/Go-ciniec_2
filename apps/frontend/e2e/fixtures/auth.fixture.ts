@@ -74,7 +74,7 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
  */
 export async function logout(page: Page): Promise<void> {
   // On mobile: open hamburger to reveal Sheet
-  const hamburger = page.locator('button[aria-label="Otw\u00f3rz menu nawigacji"]');
+  const hamburger = page.locator('button[aria-label="Otwórz menu nawigacji"]');
   if (await hamburger.isVisible().catch(() => false)) {
     await hamburger.click();
     await page.waitForTimeout(1000);

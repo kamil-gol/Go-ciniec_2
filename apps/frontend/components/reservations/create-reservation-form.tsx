@@ -38,6 +38,8 @@ import {
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { CreateReservationDiscountSection } from '@/components/reservations/CreateReservationDiscountSection'
+import { CreateReservationExtrasSection } from '@/components/service-extras/CreateReservationExtrasSection'
+import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
 import { useQueryClient } from '@tanstack/react-query'
 
 // ═══ STEP CONFIGURATION ═══
@@ -159,6 +161,7 @@ export function CreateReservationForm({
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
+  const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([])
 
   const { data: halls } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
@@ -281,7 +284,23 @@ export function CreateReservationForm({
   }, [durationHours])
 
   const extraHoursCost = extraHours * EXTRA_HOUR_RATE
-  const totalWithExtras = calculatedPrice + extraHoursCost
+
+  // Stage 3: Calculate total from selected service extras
+  const extrasTotal = useMemo(() => {
+    let total = 0
+    for (const extra of selectedExtras) {
+      const item = extra.serviceItem
+      if (item.priceType === 'FREE') continue
+      if (item.priceType === 'PER_PERSON') {
+        total += item.basePrice * totalGuests * extra.quantity
+      } else {
+        total += item.basePrice * extra.quantity
+      }
+    }
+    return total
+  }, [selectedExtras, totalGuests])
+
+  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal
 
   const discountAmount = useMemo(() => {
     if (!discountEnabled || discountValue <= 0 || totalWithExtras <= 0) return 0
@@ -464,6 +483,32 @@ export function CreateReservationForm({
       input.discountReason = (data.discountReason || '').trim()
     }
 
+    // Sprint 8: Service extras
+    if (selectedExtras.length > 0) {
+      input.serviceExtras = selectedExtras.map((extra) => {
+        const item = extra.serviceItem
+        let unitPrice = item.basePrice
+        let totalPrice = 0
+
+        if (item.priceType === 'FREE') {
+          unitPrice = 0
+          totalPrice = 0
+        } else if (item.priceType === 'PER_PERSON') {
+          totalPrice = item.basePrice * totalGuests * extra.quantity
+        } else {
+          // FLAT
+          totalPrice = item.basePrice * extra.quantity
+        }
+
+        return {
+          serviceItemId: item.id,
+          quantity: extra.quantity,
+          unitPrice,
+          totalPrice,
+        }
+      })
+    }
+
     try {
       if (onSubmitProp) {
         await onSubmitProp(input)
@@ -549,6 +594,15 @@ export function CreateReservationForm({
               <span className="font-medium">{formatCurrency(extraHoursCost)}</span>
             </div>
           )}
+          {extrasTotal > 0 && (
+            <div className="flex justify-between text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/20 -mx-4 px-4 py-2">
+              <span className="flex items-center gap-1">
+                <Package className="w-3.5 h-3.5" />
+                Usługi dodatkowe ({selectedExtras.length})
+              </span>
+              <span className="font-medium">+{formatCurrency(extrasTotal)}</span>
+            </div>
+          )}
           <div className="flex justify-between pt-2 border-t border-primary-300 dark:border-primary-700">
             <span className="font-semibold text-neutral-900 dark:text-neutral-100">Cena całkowita:</span>
             <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formatCurrency(totalWithExtras)}</span>
@@ -564,7 +618,7 @@ export function CreateReservationForm({
         </div>
       </motion.div>
     )
-  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage])
 
   // ═════════════════════════════════════════════════════════
   // STEP RENDERERS
@@ -997,6 +1051,13 @@ export function CreateReservationForm({
         register={register}
         totalPrice={totalWithExtras}
       />
+
+      {/* Service Extras — Sprint 8 */}
+      <CreateReservationExtrasSection
+        selectedExtras={selectedExtras}
+        onExtrasChange={setSelectedExtras}
+        totalGuests={totalGuests}
+      />
     </div>
   )
 
@@ -1170,6 +1231,41 @@ export function CreateReservationForm({
           </div>
         )}
       </div>
+
+      {/* Service extras compact view — Stage 3 */}
+      {selectedExtras.length > 0 && (
+        <div className="cursor-pointer" onClick={() => goToStep(3)}>
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Usługi dodatkowe</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+              • {selectedExtras.length} {selectedExtras.length === 1 ? 'usługa' : selectedExtras.length < 5 ? 'usługi' : 'usług'}
+            </span>
+          </div>
+          <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-1">
+            {selectedExtras.map((extra) => (
+              <div key={extra.serviceItem.id} className="flex justify-between text-sm">
+                <span className="text-neutral-700 dark:text-neutral-300">
+                  {extra.serviceItem.name} {extra.quantity > 1 ? `×${extra.quantity}` : ''}
+                </span>
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                  {extra.serviceItem.priceType === 'FREE'
+                    ? 'Gratis'
+                    : extra.serviceItem.priceType === 'PER_PERSON'
+                      ? formatCurrency(extra.serviceItem.basePrice * totalGuests * extra.quantity)
+                      : formatCurrency(extra.serviceItem.basePrice * extra.quantity)}
+                </span>
+              </div>
+            ))}
+            {extrasTotal > 0 && (
+              <div className="flex justify-between text-sm font-semibold border-t border-rose-200 dark:border-rose-700 pt-1 mt-1">
+                <span className="text-neutral-800 dark:text-neutral-200">Razem usługi dodatkowe</span>
+                <span className="text-rose-600 dark:text-rose-400">+{formatCurrency(extrasTotal)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
         <Controller name="confirmationDeadline" control={control} render={({ field }) => (

@@ -13,7 +13,7 @@ import {
   Eye, Trash2, Archive, ArchiveRestore, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
   Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert,
-  Loader2
+  Loader2, Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
@@ -93,6 +93,22 @@ function DepositBadge({ deposits }: { deposits: Deposit[] }) {
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
       <Clock className="h-3 w-3" />
       Zaliczka: {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} / ` : ''}{totalAmount.toLocaleString('pl-PL')} zł
+    </span>
+  )
+}
+
+// Extras Badge Helper
+function ExtrasBadge({ extrasCount, extrasTotalPrice }: { extrasCount?: number; extrasTotalPrice?: number }) {
+  if (!extrasCount || extrasCount === 0) return null
+
+  const priceLabel = extrasTotalPrice && extrasTotalPrice > 0
+    ? ` · ${extrasTotalPrice.toLocaleString('pl-PL')} zł`
+    : ''
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800">
+      <Sparkles className="h-3 w-3" />
+      {extrasCount} {extrasCount === 1 ? 'extra' : 'extras'}{priceLabel}
     </span>
   )
 }
@@ -445,6 +461,7 @@ export function ReservationsList() {
                               )}
                               <RodoBadge hasRodo={hasRodo} />
                               <ContractBadge hasContract={hasContract} />
+                              <ExtrasBadge extrasCount={reservation.extrasCount} extrasTotalPrice={reservation.extrasTotalPrice} />
                               <DepositBadge deposits={resDeposits} />
                               <Badge className={getStatusColor(reservation.status)}>
                                 {getStatusLabel(reservation.status)}
@@ -506,6 +523,11 @@ export function ReservationsList() {
                               <div className="font-bold text-lg text-green-600 dark:text-green-400">
                                 {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
                               </div>
+                              {reservation.extrasTotalPrice > 0 && (
+                                <div className="text-xs text-violet-600 dark:text-violet-400">
+                                  w tym extras: {formatCurrency(reservation.extrasTotalPrice)}
+                                </div>
+                              )}
                             </div>
                           </div>
 

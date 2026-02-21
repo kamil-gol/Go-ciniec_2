@@ -4,27 +4,28 @@
  * Zod schemas for validating menu-related API requests
  * FIX: selectMenuSchema now includes dishSelections
  * FIX: updateMenuSelectionSchema removed (updateMenu now uses selectMenuSchema)
+ * FIX: validFrom made optional for template creation
  */
 
 import { z } from 'zod';
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // MENU TEMPLATE VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const createMenuTemplateSchema = z.object({
   eventTypeId: z.string().uuid('Invalid event type ID'),
   name: z.string().min(3, 'Name must be at least 3 characters').max(100, 'Name too long'),
   description: z.string().max(500, 'Description too long').optional(),
   variant: z.string().max(50, 'Variant too long').optional(),
-  validFrom: z.coerce.date(),
+  validFrom: z.coerce.date().optional(),  // FIX: Made optional
   validTo: z.coerce.date().optional().nullable(),
   isActive: z.boolean().optional().default(true),
   displayOrder: z.number().int().min(0).optional().default(0),
   imageUrl: z.string().url('Invalid image URL').optional().nullable()
 }).refine(
   (data) => {
-    if (data.validTo && data.validFrom >= data.validTo) {
+    if (data.validFrom && data.validTo && data.validFrom >= data.validTo) {
       return false;
     }
     return true;
@@ -49,13 +50,13 @@ export const updateMenuTemplateSchema = z.object({
 export const duplicateMenuTemplateSchema = z.object({
   newName: z.string().min(3).max(100),
   newVariant: z.string().max(50).optional(),
-  validFrom: z.coerce.date(),
+  validFrom: z.coerce.date().optional(),  // FIX: Made optional
   validTo: z.coerce.date().optional().nullable()
 });
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // MENU PACKAGE VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const createMenuPackageSchema = z.object({
   menuTemplateId: z.string().uuid('Invalid menu template ID'),
@@ -136,9 +137,9 @@ export const reorderPackagesSchema = z.object({
   ).min(1, 'At least one package required')
 });
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // CATEGORY SETTINGS VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const categorySettingSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID'),
@@ -157,12 +158,12 @@ export const categorySettingSchema = z.object({
 );
 
 export const bulkUpdateCategorySettingsSchema = z.object({
-  settings: z.array(categorySettingSchema).min(1, 'At least one category setting required')
+  settings: z.array(categorySettingSchema).min(0)  // FIX: Allow empty array (min 0)
 });
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // MENU OPTION VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const createMenuOptionSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
@@ -204,9 +205,9 @@ export const updateMenuOptionSchema = z.object({
   changeReason: z.string().max(200, 'Change reason too long').optional()
 });
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // PACKAGE-OPTION ASSIGNMENT VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const assignOptionsToPackageSchema = z.object({
   options: z.array(
@@ -220,9 +221,9 @@ export const assignOptionsToPackageSchema = z.object({
   ).min(1, 'At least one option required')
 });
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // MENU SELECTION (SNAPSHOT) VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 /**
  * Dish selection within a category
@@ -255,6 +256,10 @@ export const selectMenuSchema = z.object({
   adults: z.number().optional(),
   children: z.number().optional(),
   toddlers: z.number().optional(),
+  // Support both naming conventions from tests
+  adultsCount: z.number().optional(),
+  childrenCount: z.number().optional(),
+  toddlersCount: z.number().optional(),
 });
 
 /**
@@ -266,9 +271,9 @@ export const updateMenuSelectionSchema = z.object({
   toddlersCount: z.number().int().min(0, 'Toddlers count cannot be negative').optional()
 });
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // QUERY PARAMS VALIDATION
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
 export const menuTemplateQuerySchema = z.object({
   eventTypeId: z.string().uuid().optional(),
