@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
@@ -139,7 +138,6 @@ describe('CreateReservationExtrasSection', () => {
       if (!CreateReservationExtrasSection) return
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
-      // FLAT items show "1 500" or "1500" somewhere
       const flatPriceEl = screen.queryByText(/1[\s.,]?500/)
       expect(flatPriceEl).toBeTruthy()
     })
@@ -166,13 +164,12 @@ describe('CreateReservationExtrasSection', () => {
       if (!CreateReservationExtrasSection) return
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
-      // Find add buttons (+ icon buttons)
       const addButtons = screen.queryAllByRole('button').filter(
         (btn) => btn.textContent?.includes('+') || btn.getAttribute('aria-label')?.includes('dodaj')
       )
 
       if (addButtons.length > 0) {
-        await userEvent.click(addButtons[0])
+        fireEvent.click(addButtons[0])
         expect(defaultProps.onExtrasChange).toHaveBeenCalled()
       }
     })
@@ -186,7 +183,7 @@ describe('CreateReservationExtrasSection', () => {
       )
 
       if (addButtons.length > 0) {
-        await userEvent.click(addButtons[0])
+        fireEvent.click(addButtons[0])
         const callArgs = defaultProps.onExtrasChange.mock.calls[0]?.[0]
         if (callArgs && callArgs.length > 0) {
           expect(callArgs[0]).toHaveProperty('serviceItem')
@@ -210,7 +207,6 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
-      // Find remove buttons (trash icon, × icon, or "usuń")
       const removeButtons = screen.queryAllByRole('button').filter(
         (btn) =>
           btn.textContent?.includes('×') ||
@@ -220,12 +216,11 @@ describe('CreateReservationExtrasSection', () => {
       )
 
       if (removeButtons.length > 0) {
-        await userEvent.click(removeButtons[0])
+        fireEvent.click(removeButtons[0])
         expect(defaultProps.onExtrasChange).toHaveBeenCalled()
 
         const callArgs = defaultProps.onExtrasChange.mock.calls[0]?.[0]
         if (callArgs) {
-          // After removal, should not contain the removed item
           const hasRemovedItem = callArgs.some(
             (extra: any) => extra.serviceItem.id === 'si-1'
           )
@@ -248,7 +243,6 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
-      // Should display the quantity somewhere
       const qtyDisplay = screen.queryByText('2') || screen.queryByDisplayValue('2')
       expect(qtyDisplay).toBeTruthy()
     })
@@ -265,13 +259,12 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
-      // Find increment button (usually "+" near the quantity)
       const incrementButtons = screen.queryAllByRole('button').filter(
         (btn) => btn.textContent === '+'
       )
 
       if (incrementButtons.length > 0) {
-        await userEvent.click(incrementButtons[0])
+        fireEvent.click(incrementButtons[0])
         if (defaultProps.onExtrasChange.mock.calls.length > 0) {
           const callArgs = defaultProps.onExtrasChange.mock.calls[0]?.[0]
           if (callArgs) {
@@ -299,7 +292,6 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
-      // Both selected items should be visible
       expect(screen.queryByText('Dekoracja sali')).toBeTruthy()
       expect(screen.queryByText('Parking')).toBeTruthy()
     })
@@ -316,7 +308,6 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
-      // Should show the total somewhere (1500 PLN for FLAT × 1)
       const totalElement = screen.queryByText(/1[\s.,]?500/)
       expect(totalElement).toBeTruthy()
     })
