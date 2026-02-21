@@ -3,6 +3,7 @@
 /**
  * Reports Service
  * Business logic for revenue, occupancy, and other reports
+ * Updated: extras revenue tracking in revenue reports
  */
 
 import { prisma } from '@/lib/prisma';
@@ -20,6 +21,39 @@ import type {
   PeakDayOfWeekItem,
 } from '@/types/reports.types';
 
+/**
+ * Calculate extras revenue for a single reservation from its reservationExtras.
+ * Supports FLAT (price × qty), PER_PERSON (price × qty × guests), FREE (0).
+ */
+function calculateExtrasRevenue(
+  extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string; name: string; id: string } }>,
+  guests: number
+): { total: number; items: Array<{ serviceItemId: string; name: string; revenue: number }> } {
+  let total = 0;
+  const items: Array<{ serviceItemId: string; name: string; revenue: number }> = [];
+
+  for (const extra of extras) {
+    const price = extra.customPrice !== null ? Number(extra.customPrice) : Number(extra.serviceItem.basePrice);
+    const qty = extra.quantity || 1;
+    let revenue = 0;
+
+    if (extra.serviceItem.priceType === 'PER_PERSON') {
+      revenue = price * qty * guests;
+    } else if (extra.serviceItem.priceType === 'FREE') {
+      revenue = 0;
+    } else {
+      // FLAT
+      revenue = price * qty;
+    }
+
+    revenue = Math.round(revenue * 100) / 100;
+    total += revenue;
+    items.push({ serviceItemId: extra.serviceItem.id, name: extra.serviceItem.name, revenue });
+  }
+
+  return { total: Math.round(total * 100) / 100, items };
+}
+
 class ReportsService {
   // ============================================
   // REVENUE REPORTS
@@ -27,8 +61,7 @@ class ReportsService {
 
   /**
    * Get comprehensive revenue report with breakdown
-   * @param filters - date range, groupBy, hall, eventType
-   * @returns Revenue report with summary, breakdown, rankings
+   * Now includes extras revenue tracking
    */
   async getRevenueReport(filters: RevenueReportFilters): Promise<RevenueReport> {
     const {
@@ -56,7 +89,7 @@ class ReportsService {
       completedReservations,
       previousPeriodRevenue,
     ] = await Promise.all([
-      // All reservations in period
+      // All reservations in period — now with extras
       prisma.reservation.findMany({
         where: whereClause,
         select: {
@@ -68,6 +101,13 @@ class ReportsService {
           guests: true,
           hall: { select: { id: true, name: true } },
           eventType: { select: { id: true, name: true } },
+          reservationExtras: {
+            include: {
+              serviceItem: {
+                select: { id: true, name: true, basePrice: true, priceType: true }
+              }
+            }
+          },
         },
         orderBy: { date: 'asc' },
       }),
@@ -90,6 +130,36 @@ class ReportsService {
     const avgRevenuePerReservation = totalReservations > 0
       ? totalRevenue / totalReservations
       : 0;
+
+    // Calculate extras revenue
+    let totalExtrasRevenue = 0;
+    const serviceItemRevenueMap = new Map<string, { name: string; revenue: number; count: number }>();
+
+    for (const r of reservations) {
+      const extras = (r as any).reservationExtras || [];
+      if (extras.length === 0) continue;
+
+      const extrasCalc = calculateExtrasRevenue(extras, r.guests || 0);
+      totalExtrasRevenue += extrasCalc.total;
+
+      for (const item of extrasCalc.items) {
+        const existing = serviceItemRevenueMap.get(item.serviceItemId) || { name: item.name, revenue: 0, count: 0 };
+        existing.revenue += item.revenue;
+        existing.count += 1;
+        serviceItemRevenueMap.set(item.serviceItemId, existing);
+      }
+    }
+
+    // Build byServiceItem ranking
+    const byServiceItem = Array.from(serviceItemRevenueMap.entries())
+      .map(([serviceItemId, data]) => ({
+        serviceItemId,
+        name: data.name,
+        revenue: Math.round(data.revenue * 100) / 100,
+        count: data.count,
+        avgRevenue: data.count > 0 ? Math.round((data.revenue / data.count) * 100) / 100 : 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
 
     // Find max revenue day
     const revenueByDay = this.groupRevenueByDay(reservations);
@@ -127,12 +197,14 @@ class ReportsService {
         totalReservations,
         completedReservations,
         pendingRevenue: Math.round(pendingRevenue * 100) / 100,
+        extrasRevenue: Math.round(totalExtrasRevenue * 100) / 100,
       },
       breakdown,
       byHall,
       byEventType,
+      byServiceItem,
       filters,
-    };
+    } as any;
   }
 
   /**

@@ -3,6 +3,7 @@
 /**
  * Reports Export Service
  * Generate Excel (XLSX) and PDF files from report data
+ * Updated: extras revenue columns in exports
  */
 
 import ExcelJS from 'exceljs';
@@ -19,8 +20,7 @@ class ReportsExportService {
 
   /**
    * Export revenue report to Excel (XLSX)
-   * @param report - Revenue report data
-   * @returns Buffer of Excel file
+   * Now includes extras revenue section
    */
   async exportRevenueToExcel(report: RevenueReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -63,6 +63,14 @@ class ReportsExportService {
     sheet.addRow(['Ukończone rezerwacje', report.summary.completedReservations]);
     sheet.addRow(['Oczekujący przychód', this.formatCurrency(report.summary.pendingRevenue)]);
     sheet.addRow(['Wzrost %', `${report.summary.growthPercent}%`]);
+
+    // Extras revenue in summary
+    const extrasRevenue = (report.summary as any).extrasRevenue;
+    if (extrasRevenue !== undefined && extrasRevenue > 0) {
+      const extrasRow = sheet.addRow(['Przychody z usług dodatkowych (extras)', this.formatCurrency(extrasRevenue)]);
+      extrasRow.getCell(1).font = { bold: true, color: { argb: 'FF7C3AED' } };
+      extrasRow.getCell(2).font = { bold: true, color: { argb: 'FF7C3AED' } };
+    }
 
     // Breakdown by period
     if (report.breakdown.length > 0) {
@@ -137,6 +145,37 @@ class ReportsExportService {
       });
     }
 
+    // Revenue by service item (extras)
+    const byServiceItem = (report as any).byServiceItem;
+    if (byServiceItem && byServiceItem.length > 0) {
+      sheet.addRow([]);
+      const extrasHeader = sheet.addRow(['PRZYCHODY Z USŁUG DODATKOWYCH', '']);
+      extrasHeader.font = { bold: true, size: 12, color: { argb: 'FF7C3AED' } };
+      extrasHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF5F3FF' },
+      };
+
+      const colHeader = sheet.addRow(['Usługa', 'Przychód', 'Użyć', 'Śr. przychód']);
+      colHeader.font = { bold: true };
+
+      byServiceItem.forEach((item: any) => {
+        sheet.addRow([
+          item.name,
+          this.formatCurrency(item.revenue),
+          item.count,
+          this.formatCurrency(item.avgRevenue),
+        ]);
+      });
+
+      // Total row
+      if (extrasRevenue > 0) {
+        const totalRow = sheet.addRow(['RAZEM EXTRAS', this.formatCurrency(extrasRevenue), '', '']);
+        totalRow.font = { bold: true, color: { argb: 'FF7C3AED' } };
+      }
+    }
+
     // Generate buffer
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
@@ -144,8 +183,6 @@ class ReportsExportService {
 
   /**
    * Export occupancy report to Excel (XLSX)
-   * @param report - Occupancy report data
-   * @returns Buffer of Excel file
    */
   async exportOccupancyToExcel(report: OccupancyReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -259,8 +296,7 @@ class ReportsExportService {
 
   /**
    * Export revenue report to PDF
-   * @param report - Revenue report data
-   * @returns Buffer of PDF file
+   * Now includes extras revenue section
    */
   async exportRevenueToPDF(report: RevenueReport): Promise<Buffer> {
     return new Promise((resolve, reject) => {
@@ -292,6 +328,15 @@ class ReportsExportService {
         doc.text(`Ukończone rezerwacje: ${report.summary.completedReservations}`);
         doc.text(`Oczekujący przychód: ${this.formatCurrency(report.summary.pendingRevenue)}`);
         doc.text(`Wzrost: ${report.summary.growthPercent}%`);
+
+        // Extras revenue in summary
+        const extrasRevenue = (report.summary as any).extrasRevenue;
+        if (extrasRevenue !== undefined && extrasRevenue > 0) {
+          doc.font('Helvetica-Bold')
+            .fillColor('#7C3AED')
+            .text(`Przychody z usług dodatkowych: ${this.formatCurrency(extrasRevenue)}`);
+          doc.font('Helvetica').fillColor('#000000');
+        }
         doc.moveDown();
 
         // Breakdown by period
@@ -321,6 +366,25 @@ class ReportsExportService {
           report.byEventType.slice(0, 10).forEach(item => {
             doc.text(`${item.eventTypeName}: ${this.formatCurrency(item.revenue)} (${item.count} rez.)`);
           });
+          doc.moveDown();
+        }
+
+        // By service item (extras)
+        const byServiceItem = (report as any).byServiceItem;
+        if (byServiceItem && byServiceItem.length > 0) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .fillColor('#7C3AED')
+            .text('Usługi dodatkowe — przychody');
+          doc.fontSize(10).font('Helvetica').fillColor('#000000');
+          byServiceItem.slice(0, 15).forEach((item: any) => {
+            doc.text(`${item.name}: ${this.formatCurrency(item.revenue)} (${item.count}× użyte, śr. ${this.formatCurrency(item.avgRevenue)})`);
+          });
+          if (extrasRevenue > 0) {
+            doc.font('Helvetica-Bold')
+              .fillColor('#7C3AED')
+              .text(`Razem extras: ${this.formatCurrency(extrasRevenue)}`);
+            doc.font('Helvetica').fillColor('#000000');
+          }
         }
 
         doc.end();
@@ -332,8 +396,6 @@ class ReportsExportService {
 
   /**
    * Export occupancy report to PDF
-   * @param report - Occupancy report data
-   * @returns Buffer of PDF file
    */
   async exportOccupancyToPDF(report: OccupancyReport): Promise<Buffer> {
     return new Promise((resolve, reject) => {

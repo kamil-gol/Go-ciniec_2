@@ -1,0 +1,51 @@
+# docker-compose.dev.yml
+# Development environment — runs alongside production
+# Ports: PostgreSQL 5434, Redis 6380, Backend 4001, Frontend 4000
+
+services:
+  # Dev PostgreSQL — osobna baza, port 5434
+  postgres-dev:
+    image: postgres:16-alpine
+    container_name: rezerwacje-db-dev
+    environment:
+      POSTGRES_USER: rezerwacje_dev
+      POSTGRES_PASSWORD: rezerwacje_dev_2026
+      POSTGRES_DB: rezerwacje_dev
+      POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - rezerwacje-dev-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rezerwacje_dev -d rezerwacje_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Dev Redis — port 6380
+  redis-dev:
+    image: redis:7-alpine
+    container_name: rezerwacje-cache-dev
+    ports:
+      - '6380:6379'
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - rezerwacje-dev-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  rezerwacje-dev-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local

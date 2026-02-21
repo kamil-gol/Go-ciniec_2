@@ -6,6 +6,8 @@
 -- swap_queue_positions: Atomically swap positions of two reservations
 -- Uses temporary position -1 to avoid unique constraint violations
 -- ═══════════════════════════════════════════════════════════════════
+DROP FUNCTION IF EXISTS swap_queue_positions(UUID, UUID);
+
 CREATE OR REPLACE FUNCTION swap_queue_positions(id1 UUID, id2 UUID)
 RETURNS VOID AS $$
 DECLARE
@@ -32,6 +34,8 @@ $$ LANGUAGE plpgsql;
 -- move_to_queue_position: Move a reservation to a specific position
 -- Shifts other reservations on the same date accordingly
 -- ═══════════════════════════════════════════════════════════════════
+DROP FUNCTION IF EXISTS move_to_queue_position(UUID, INTEGER);
+
 CREATE OR REPLACE FUNCTION move_to_queue_position(res_id UUID, new_pos INTEGER)
 RETURNS VOID AS $$
 DECLARE

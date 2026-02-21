@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
+import { ReservationExtrasPanel } from '@/components/service-extras/ReservationExtrasPanel'
 import {
   StatusChanger,
   EditableHallCard,
@@ -348,6 +349,9 @@ export default function ReservationDetailsPage() {
                   toddlers={reservation.toddlers || 0}
                 />
               )}
+
+              {/* Service Extras */}
+              <ReservationExtrasPanel reservationId={reservation.id} />
 
               {/* Notes */}
               <EditableNotesCard

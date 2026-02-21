@@ -114,6 +114,30 @@ export interface MenuSnapshot {
   updatedAt: string
 }
 
+// Re-export Service Extras types
+export type {
+  ServicePriceType,
+  ExtraStatus,
+  ServiceCategory,
+  ServiceItem,
+  ReservationExtra,
+  CreateServiceCategoryInput,
+  UpdateServiceCategoryInput,
+  CreateServiceItemInput,
+  UpdateServiceItemInput,
+  AssignExtraInput,
+  BulkAssignExtrasInput,
+  UpdateReservationExtraInput,
+  ServiceExtrasListResponse,
+  ReservationExtrasResponse,
+} from './service-extra.types'
+
+export {
+  PRICE_TYPE_LABELS,
+  EXTRA_STATUS_LABELS,
+  EXTRA_STATUS_COLORS,
+} from './service-extra.types'
+
 // Reservation types
 export enum ReservationStatus {
   PENDING = 'PENDING',
@@ -164,6 +188,11 @@ export interface Reservation {
   
   // Menu Integration 🆕 NEW!
   menuSnapshot?: MenuSnapshot // Menu snapshot if menu package selected
+  
+  // Service Extras Integration 🆕 NEW!
+  reservationExtras?: import('./service-extra.types').ReservationExtra[] // Extras assigned to this reservation
+  extrasCount?: number              // Number of extras (from _count)
+  extrasTotalPrice?: number         // Sum of all extras prices
   
   // Status related
   status: ReservationStatus
