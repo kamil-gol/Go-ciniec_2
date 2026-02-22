@@ -73,11 +73,11 @@ export default function DishCategoriesPage() {
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.slug) {
-      toast.error('Nazwa i slug są wymagane')
+      toast.error('Nazwa i slug s\u0105 wymagane')
       return
     }
     if (formData.displayOrder < 0) {
-      toast.error('Kolejność nie może być ujemna')
+      toast.error('Kolejno\u015b\u0107 nie mo\u017ce by\u0107 ujemna')
       return
     }
     try {
@@ -88,27 +88,27 @@ export default function DishCategoriesPage() {
       }
       handleClose()
     } catch (error: any) {
-      toast.error(error?.message || 'Wystąpił błąd')
+      toast.error(error?.message || 'Wyst\u0105pi\u0142 b\u0142\u0105d')
     }
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Czy na pewno chcesz usunąć kategorię "${name}"?`)) return
+    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 kategori\u0119 "${name}"?`)) return
     try {
       await deleteMutation.mutateAsync(id)
     } catch (error: any) {
-      toast.error(error?.message || 'Nie udało się usunąć kategorii')
+      toast.error(error?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 kategorii')
     }
   }
 
   const colorOptions = [
     { value: 'bg-red-100 text-red-700', label: 'Czerwony' },
-    { value: 'bg-orange-100 text-orange-700', label: 'Pomarańczowy' },
-    { value: 'bg-yellow-100 text-yellow-700', label: 'Żółty' },
+    { value: 'bg-orange-100 text-orange-700', label: 'Pomara\u0144czowy' },
+    { value: 'bg-yellow-100 text-yellow-700', label: '\u017b\u00f3\u0142ty' },
     { value: 'bg-green-100 text-green-700', label: 'Zielony' },
     { value: 'bg-blue-100 text-blue-700', label: 'Niebieski' },
     { value: 'bg-purple-100 text-purple-700', label: 'Fioletowy' },
-    { value: 'bg-pink-100 text-pink-700', label: 'Różowy' },
+    { value: 'bg-pink-100 text-pink-700', label: 'R\u00f3\u017cowy' },
     { value: 'bg-neutral-100 text-neutral-700', label: 'Szary' },
   ]
 
@@ -116,11 +116,11 @@ export default function DishCategoriesPage() {
     <PageLayout>
       <PageHero
         accent={accent}
-        title="Kategorie Dań"
-        subtitle="Zarządzaj kategoriami w systemie"
+        title="Kategorie Da\u0144"
+        subtitle="Zarz\u0105dzaj kategoriami w systemie"
         icon={Tags}
         backHref="/dashboard/menu"
-        backLabel="Powrót do Menu"
+        backLabel="Powr\u00f3t do Menu"
         action={
           <Button
             size="lg"
@@ -128,7 +128,7 @@ export default function DishCategoriesPage() {
             className="bg-white text-purple-600 hover:bg-white/90 shadow-xl"
           >
             <Plus className="h-5 w-5 sm:mr-2" />
-            <span className="hidden sm:inline">Dodaj Kategorię</span>
+            <span className="hidden sm:inline">Dodaj Kategori\u0119</span>
           </Button>
         }
       />
@@ -138,19 +138,19 @@ export default function DishCategoriesPage() {
         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-900 dark:text-blue-100">
-            <p className="font-semibold mb-1">Kolejność wyświetlania</p>
-            <p>Kategorie są sortowane po numerze kolejności (niższa = wcześniej). Kilka kategorii może mieć tę samą kolejność - wtedy są sortowane alfabetycznie.</p>
+            <p className="font-semibold mb-1">Kolejno\u015b\u0107 wy\u015bwietlania</p>
+            <p>Kategorie s\u0105 sortowane po numerze kolejno\u015bci (ni\u017csza = wcze\u015bniej). Kilka kategorii mo\u017ce mie\u0107 t\u0119 sam\u0105 kolejno\u015b\u0107 - wtedy s\u0105 sortowane alfabetycznie.</p>
           </div>
         </div>
       )}
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}</DialogTitle>
+            <DialogTitle>{editingCategory ? 'Edytuj Kategori\u0119' : 'Nowa Kategoria'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 pt-4 overflow-y-auto flex-1 pr-1">
             <div className="space-y-2">
               <Label htmlFor="name">Nazwa (polska)</Label>
               <Input id="name" placeholder="Zupy" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
@@ -158,7 +158,7 @@ export default function DishCategoriesPage() {
             <div className="space-y-2">
               <Label htmlFor="slug">Slug (unikalny identyfikator)</Label>
               <Input id="slug" placeholder="SOUP" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value.toUpperCase() })} disabled={!!editingCategory} />
-              <p className="text-xs text-muted-foreground">Używany w kodzie - tylko duże litery, bez spacji</p>
+              <p className="text-xs text-muted-foreground">U\u017cywany w kodzie - tylko du\u017ce litery, bez spacji</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="icon">Ikona (emoji)</Label>
@@ -180,9 +180,9 @@ export default function DishCategoriesPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="order">Kolejność wyświetlania</Label>
+              <Label htmlFor="order">Kolejno\u015b\u0107 wy\u015bwietlania</Label>
               <Input id="order" type="number" min="0" value={formData.displayOrder} onChange={(e) => setFormData({ ...formData, displayOrder: Math.max(0, parseInt(e.target.value) || 0) })} />
-              <p className="text-xs text-muted-foreground">Obecne kolejności: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}</p>
+              <p className="text-xs text-muted-foreground">Obecne kolejno\u015bci: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}</p>
             </div>
             <div className="flex gap-2 pt-4">
               <Button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
@@ -197,13 +197,13 @@ export default function DishCategoriesPage() {
 
       {/* Content */}
       {isLoading ? (
-        <LoadingState variant="skeleton" rows={6} message="Ładowanie kategorii..." />
+        <LoadingState variant="skeleton" rows={6} message="\u0141adowanie kategorii..." />
       ) : categories.length === 0 ? (
         <EmptyState
           icon={Tags}
           title="Brak kategorii"
-          description="Dodaj pierwszą kategorię dań"
-          actionLabel="Dodaj kategorię"
+          description="Dodaj pierwsz\u0105 kategori\u0119 da\u0144"
+          actionLabel="Dodaj kategori\u0119"
           onAction={handleCreate}
         />
       ) : (
@@ -226,7 +226,7 @@ export default function DishCategoriesPage() {
                   <div className="flex flex-col gap-2 text-sm text-muted-foreground mt-2">
                     <Badge className={`w-fit border ${category.color}`}>{category.name}</Badge>
                     <div className="text-xs">Slug: <span className="font-mono text-muted-foreground/70">{category.slug}</span></div>
-                    <div className="text-xs">Kolejność: {category.displayOrder}</div>
+                    <div className="text-xs">Kolejno\u015b\u0107: {category.displayOrder}</div>
                   </div>
                 </CardHeader>
               </div>
