@@ -3,6 +3,9 @@
  * Simplified: only added userId params + audit logChange() for key operations.
  * Full original logic preserved.
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
+ *
+ * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
+ * Options/extras are now handled via the ServiceExtras system.
  */
 
 import { Prisma } from '@prisma/client';
@@ -12,15 +15,10 @@ import { MENU_CRUD } from '../i18n/pl';
 import { 
   MenuTemplate, 
   MenuPackage, 
-  MenuOption,
-  MenuPackageOption,
   CreateMenuTemplateInput,
   UpdateMenuTemplateInput,
   CreateMenuPackageInput,
   UpdateMenuPackageInput,
-  CreateMenuOptionInput,
-  UpdateMenuOptionInput,
-  AssignOptionsToPackageInput
 } from '../types/menu.types';
 
 export class MenuService {
@@ -59,9 +57,6 @@ export class MenuService {
         eventType: true,
         packages: {
           orderBy: { displayOrder: 'asc' },
-          include: {
-            packageOptions: { include: { option: true }, orderBy: { displayOrder: 'asc' } }
-          }
         }
       }
     });
@@ -79,9 +74,6 @@ export class MenuService {
         eventType: true,
         packages: {
           orderBy: { displayOrder: 'asc' },
-          include: {
-            packageOptions: { include: { option: true }, orderBy: { displayOrder: 'asc' } }
-          }
         }
       }
     });
@@ -155,7 +147,7 @@ export class MenuService {
       action: 'DELETE',
       entityType: 'MENU_TEMPLATE',
       entityId: id,
-      details: { description: `Usunięto szablon menu: ${existing.name}`, deletedData: { name: existing.name } }
+      details: { description: `Usuni\u0119to szablon menu: ${existing.name}`, deletedData: { name: existing.name } }
     });
   }
 
@@ -174,7 +166,7 @@ export class MenuService {
     });
 
     for (const pkg of original.packages) {
-      const newPackage = await prisma.menuPackage.create({
+      await prisma.menuPackage.create({
         data: {
           menuTemplateId: newTemplate.id, name: pkg.name, description: pkg.description,
           shortDescription: pkg.shortDescription, pricePerAdult: pkg.pricePerAdult,
@@ -184,15 +176,6 @@ export class MenuService {
           displayOrder: pkg.displayOrder, isPopular: pkg.isPopular, isRecommended: pkg.isRecommended
         }
       });
-
-      for (const pkgOpt of pkg.packageOptions) {
-        await prisma.menuPackageOption.create({
-          data: {
-            packageId: newPackage.id, optionId: pkgOpt.optionId, customPrice: pkgOpt.customPrice,
-            isRequired: pkgOpt.isRequired, isDefault: pkgOpt.isDefault, displayOrder: pkgOpt.displayOrder
-          }
-        });
-      }
     }
 
     await logChange({
@@ -200,19 +183,18 @@ export class MenuService {
       action: 'DUPLICATE',
       entityType: 'MENU_TEMPLATE',
       entityId: newTemplate.id,
-      details: { description: `Zduplikowano szablon menu: ${original.name} → ${newData.name}`, sourceId: id }
+      details: { description: `Zduplikowano szablon menu: ${original.name} \u2192 ${newData.name}`, sourceId: id }
     });
 
     return this.getMenuTemplateById(newTemplate.id);
   }
 
-  // ═══════════════════════════ MENU PACKAGES ═══════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MENU PACKAGES \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
   async getAllPackages() {
     return prisma.menuPackage.findMany({
       include: {
         menuTemplate: { select: { id: true, name: true, eventType: { select: { id: true, name: true } } } },
-        packageOptions: { include: { option: true }, orderBy: { displayOrder: 'asc' } },
         categorySettings: true
       },
       orderBy: [{ menuTemplateId: 'asc' }, { displayOrder: 'asc' }]
@@ -223,7 +205,6 @@ export class MenuService {
     return prisma.menuPackage.findMany({
       where: { menuTemplateId: templateId },
       include: {
-        packageOptions: { include: { option: true }, orderBy: { displayOrder: 'asc' } },
         categorySettings: true
       },
       orderBy: { displayOrder: 'asc' }
@@ -240,7 +221,6 @@ export class MenuService {
       where: { menuTemplateId: { in: templates.map(t => t.id) } },
       include: {
         menuTemplate: { select: { id: true, name: true, eventType: { select: { id: true, name: true } } } },
-        packageOptions: { include: { option: true }, orderBy: { displayOrder: 'asc' } },
         categorySettings: true
       },
       orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }]
@@ -252,7 +232,6 @@ export class MenuService {
       where: { id },
       include: {
         menuTemplate: true,
-        packageOptions: { include: { option: true }, orderBy: { displayOrder: 'asc' } },
         categorySettings: true
       }
     });
@@ -313,7 +292,7 @@ export class MenuService {
         badgeText: data.badgeText, displayOrder: data.displayOrder,
         isPopular: data.isPopular, isRecommended: data.isRecommended
       },
-      include: { menuTemplate: true, packageOptions: { include: { option: true } }, categorySettings: true }
+      include: { menuTemplate: true, categorySettings: true }
     });
 
     for (const change of priceChanges) {
@@ -353,7 +332,7 @@ export class MenuService {
       action: 'DELETE',
       entityType: 'MENU_PACKAGE',
       entityId: id,
-      details: { description: `Usunięto pakiet menu: ${existing.name}` }
+      details: { description: `Usuni\u0119to pakiet menu: ${existing.name}` }
     });
   }
 
@@ -366,124 +345,9 @@ export class MenuService {
     return { success: true, updated: orders.length };
   }
 
-  // ═══════════════════════════ MENU OPTIONS ═══════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 PRICE HISTORY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
-  async getOptions(filters?: { category?: string; isActive?: boolean; search?: string }) {
-    const where: Prisma.MenuOptionWhereInput = {};
-    if (filters?.category) where.category = filters.category;
-    if (filters?.isActive !== undefined) where.isActive = filters.isActive;
-    if (filters?.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { description: { contains: filters.search, mode: 'insensitive' } }
-      ];
-    }
-
-    return prisma.menuOption.findMany({
-      where,
-      orderBy: [{ category: 'asc' }, { displayOrder: 'asc' }, { name: 'asc' }]
-    });
-  }
-
-  async getOptionById(id: string) {
-    const option = await prisma.menuOption.findUnique({ where: { id } });
-    if (!option) throw new Error(MENU_CRUD.OPTION_NOT_FOUND);
-    return option;
-  }
-
-  async createOption(data: CreateMenuOptionInput, userId: string) {
-    const option = await prisma.menuOption.create({
-      data: {
-        name: data.name, description: data.description, shortDescription: data.shortDescription,
-        category: data.category, priceType: data.priceType, priceAmount: data.priceAmount,
-        allowMultiple: data.allowMultiple ?? false, maxQuantity: data.maxQuantity ?? undefined,
-        icon: data.icon, imageUrl: data.imageUrl, displayOrder: data.displayOrder ?? 0,
-        isActive: data.isActive ?? true
-      }
-    });
-
-    await logChange({
-      userId,
-      action: 'CREATE',
-      entityType: 'MENU_OPTION',
-      entityId: option.id,
-      details: { description: `Utworzono opcję menu: ${option.name}`, data: { name: option.name, category: option.category, priceAmount: option.priceAmount } }
-    });
-
-    return option;
-  }
-
-  async updateOption(id: string, data: UpdateMenuOptionInput, userId: string) {
-    const currentOption = await prisma.menuOption.findUnique({ where: { id }, select: { name: true, priceAmount: true } });
-    if (!currentOption) throw new Error(MENU_CRUD.OPTION_NOT_FOUND);
-
-    if (data.priceAmount !== undefined && data.priceAmount !== currentOption.priceAmount.toNumber()) {
-      await prisma.menuPriceHistory.create({
-        data: {
-          entityType: 'OPTION', entityId: id, optionId: id,
-          fieldName: 'priceAmount', oldValue: currentOption.priceAmount.toNumber(),
-          newValue: data.priceAmount, changeReason: data.changeReason, effectiveFrom: new Date()
-        }
-      });
-    }
-
-    const option = await prisma.menuOption.update({
-      where: { id },
-      data: {
-        name: data.name, description: data.description, shortDescription: data.shortDescription,
-        category: data.category, priceType: data.priceType, priceAmount: data.priceAmount,
-        allowMultiple: data.allowMultiple, maxQuantity: data.maxQuantity ?? undefined, icon: data.icon,
-        imageUrl: data.imageUrl, displayOrder: data.displayOrder, isActive: data.isActive
-      }
-    });
-
-    await logChange({
-      userId,
-      action: 'UPDATE',
-      entityType: 'MENU_OPTION',
-      entityId: id,
-      details: { description: `Zaktualizowano opcję menu: ${option.name}` }
-    });
-
-    return option;
-  }
-
-  async deleteOption(id: string, userId: string) {
-    const existing = await prisma.menuOption.findUnique({ where: { id }, select: { name: true } });
-    if (!existing) throw new Error(MENU_CRUD.OPTION_NOT_FOUND);
-
-    const usageCount = await prisma.reservationMenuSnapshot.count({
-      where: { menuData: { path: ['selectedOptions'], array_contains: [{ optionId: id }] } }
-    });
-    if (usageCount > 0) throw new Error(MENU_CRUD.CANNOT_DELETE_OPTION(usageCount));
-    await prisma.menuPackageOption.deleteMany({ where: { optionId: id } });
-
-    await prisma.menuOption.delete({ where: { id } });
-
-    await logChange({
-      userId,
-      action: 'DELETE',
-      entityType: 'MENU_OPTION',
-      entityId: id,
-      details: { description: `Usunięto opcję menu: ${existing.name}` }
-    });
-  }
-
-  // ═══════════════════════════ PACKAGE-OPTION RELATIONSHIPS ═══════════════════════════
-
-  async assignOptionsToPackage(packageId: string, data: AssignOptionsToPackageInput) {
-    await prisma.menuPackageOption.deleteMany({ where: { packageId } });
-    await prisma.menuPackageOption.createMany({
-      data: data.options.map((opt, index) => ({
-        packageId, optionId: opt.optionId, customPrice: opt.customPrice,
-        isRequired: opt.isRequired ?? false, isDefault: opt.isDefault ?? false,
-        displayOrder: opt.displayOrder ?? index
-      }))
-    });
-    return this.getPackageById(packageId);
-  }
-
-  async getPriceHistory(entityType: 'PACKAGE' | 'OPTION', entityId: string) {
+  async getPriceHistory(entityType: 'PACKAGE', entityId: string) {
     return prisma.menuPriceHistory.findMany({
       where: { entityType, entityId },
       orderBy: { effectiveFrom: 'desc' }
