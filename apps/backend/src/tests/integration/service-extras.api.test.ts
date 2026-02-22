@@ -86,9 +86,10 @@ async function createReservation(overrides: Record<string, any> = {}) {
   const hall = await prismaTest.hall.findFirst();
   const eventType = await prismaTest.eventType.findFirst();
   const client = await prismaTest.client.findFirst();
+  const user = await prismaTest.user.findFirst();
 
-  if (!hall || !eventType || !client) {
-    throw new Error('Seed data missing: hall, eventType or client');
+  if (!hall || !eventType || !client || !user) {
+    throw new Error('Seed data missing: hall, eventType, client or user');
   }
 
   return prismaTest.reservation.create({
@@ -96,10 +97,12 @@ async function createReservation(overrides: Record<string, any> = {}) {
       hallId: hall.id,
       eventTypeId: eventType.id,
       clientId: client.id,
+      createdById: user.id,
       date: '2026-06-15',
-      timeFrom: '16:00',
-      timeTo: '23:00',
-      guestCount: 100,
+      startTime: '16:00',
+      endTime: '23:00',
+      guests: 100,
+      totalPrice: 10000,
       status: 'CONFIRMED',
       ...overrides,
     },
@@ -1191,7 +1194,7 @@ describe('Price Calculations', () => {
   beforeEach(async () => {
     const catRes = await createCategory();
     categoryId = catRes.body.data.id;
-    const reservation = await createReservation({ guestCount: 80 });
+    const reservation = await createReservation({ guests: 80 });
     reservationId = reservation.id;
   });
 
