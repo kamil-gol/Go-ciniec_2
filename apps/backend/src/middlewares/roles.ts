@@ -23,7 +23,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
     }
 
     // Check if user has required role
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role as UserRole)) {
       res.status(403).json({
         success: false,
         error: AUTH.INSUFFICIENT_PERMISSIONS,

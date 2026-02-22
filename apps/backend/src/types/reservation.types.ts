@@ -106,6 +106,12 @@ export interface UpdateReservationDTO {
   children?: number; // 4-12 years
   toddlers?: number; // 0-3 years
   guests?: number;
+
+  // ═══════════════════════════════════════════════════════════════
+  // MENU INTEGRATION
+  // ═══════════════════════════════════════════════════════════════
+  menuPackageId?: string | null; // null to remove menu package
+  selectedOptions?: MenuOptionSelection[]; // Updated menu options
   
   // Pricing
   pricePerAdult?: number;

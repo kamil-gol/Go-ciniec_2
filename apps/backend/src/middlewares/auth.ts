@@ -12,7 +12,7 @@
  */
 import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { AuthenticatedRequest, JwtPayload } from '@types/index';
+import { AuthenticatedRequest, JwtPayload } from '../types';
 import { AppError } from './errorHandler';
 import logger from '@utils/logger';
 import { AUTH } from '../i18n/pl';
