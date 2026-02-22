@@ -76,6 +76,15 @@ export function CreateReservationExtrasSection({
     return map
   }, [itemsArray])
 
+  // Lookup: is a category exclusive?
+  const exclusiveCategoryIds = useMemo(() => {
+    const set = new Set<string>()
+    for (const cat of categoriesArray) {
+      if (cat.isExclusive) set.add(cat.id)
+    }
+    return set
+  }, [categoriesArray])
+
   const selectedMap = useMemo(() => {
     const map = new Map<string, SelectedExtra>()
     for (const extra of selectedExtras) {
@@ -109,9 +118,14 @@ export function CreateReservationExtrasSection({
 
   const toggleItem = useCallback((item: ServiceItem) => {
     if (selectedMap.has(item.id)) {
+      // Deselect
       onExtrasChange(selectedExtras.filter(e => e.serviceItemId !== item.id))
     } else {
-      if (item.isExclusive) {
+      // Select — check if category is exclusive
+      const isCategoryExclusive = exclusiveCategoryIds.has(item.categoryId)
+
+      if (isCategoryExclusive) {
+        // Exclusive category: replace any existing item from this category
         const filtered = selectedExtras.filter(
           e => e.serviceItem.categoryId !== item.categoryId
         )
@@ -120,16 +134,14 @@ export function CreateReservationExtrasSection({
           { serviceItemId: item.id, serviceItem: item, quantity: 1, note: '' },
         ])
       } else {
-        const filtered = selectedExtras.filter(
-          e => !(e.serviceItem.categoryId === item.categoryId && e.serviceItem.isExclusive)
-        )
+        // Non-exclusive: just add
         onExtrasChange([
-          ...filtered,
+          ...selectedExtras,
           { serviceItemId: item.id, serviceItem: item, quantity: 1, note: '' },
         ])
       }
     }
-  }, [selectedExtras, selectedMap, onExtrasChange])
+  }, [selectedExtras, selectedMap, onExtrasChange, exclusiveCategoryIds])
 
   const updateQuantity = useCallback((serviceItemId: string, delta: number) => {
     onExtrasChange(
@@ -169,7 +181,7 @@ export function CreateReservationExtrasSection({
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200">
-              Usługi dodatkowe ({selectedExtras.length})
+              Us\u0142ugi dodatkowe ({selectedExtras.length})
             </span>
           </div>
           <span className="font-bold text-rose-600 dark:text-rose-400">
@@ -208,10 +220,10 @@ export function CreateReservationExtrasSection({
             <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
           </div>
           <div className="text-left">
-            <span className="font-medium text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</span>
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">Us\u0142ugi dodatkowe</span>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {selectedExtras.length > 0
-                ? `Wybrano ${selectedExtras.length} \u2014 łącznie ${formatCurrency(extrasTotal)}`
+                ? `Wybrano ${selectedExtras.length} \u2014 \u0142\u0105cznie ${formatCurrency(extrasTotal)}`
                 : 'Opcjonalnie: DJ, fotograf, torty, dekoracje...'}
             </p>
           </div>
@@ -243,13 +255,13 @@ export function CreateReservationExtrasSection({
             {isLoading ? (
               <div className="flex items-center justify-center py-8 gap-2">
                 <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-neutral-500">Ładowanie katalogu usług...</span>
+                <span className="text-sm text-neutral-500">\u0141adowanie katalogu us\u0142ug...</span>
               </div>
             ) : categoriesArray.length === 0 ? (
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Brak dostępnych usług dodatkowych. Skonfiguruj katalog w Ustawienia \u2192 Usługi dodatkowe.
+                  Brak dost\u0119pnych us\u0142ug dodatkowych. Skonfiguruj katalog w Ustawienia \u2192 Us\u0142ugi dodatkowe.
                 </p>
               </div>
             ) : (
@@ -261,6 +273,7 @@ export function CreateReservationExtrasSection({
                   const isOpen = expandedCategories.has(category.id)
                   const selectedInCategory = categoryItems.filter(item => selectedMap.has(item.id))
                   const icon = CATEGORY_ICONS[category.slug] || '\uD83D\uDCE6'
+                  const isCategoryExclusive = category.isExclusive
 
                   return (
                     <div
@@ -285,6 +298,12 @@ export function CreateReservationExtrasSection({
                           <span className="text-xs text-neutral-400">
                             ({categoryItems.length})
                           </span>
+                          {isCategoryExclusive && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                              Wy\u0142\u0105czna
+                            </Badge>
+                          )}
                           {selectedInCategory.length > 0 && (
                             <Badge variant="secondary" className="text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400">
                               {selectedInCategory.length} wybr.
@@ -337,12 +356,6 @@ export function CreateReservationExtrasSection({
                                           <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
                                             {item.name}
                                           </span>
-                                          {item.isExclusive && (
-                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                                              Exclusive
-                                            </Badge>
-                                          )}
                                           {item.requiresNote && (
                                             <MessageSquare className="w-3 h-3 text-neutral-400" />
                                           )}
@@ -379,7 +392,7 @@ export function CreateReservationExtrasSection({
                                     >
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                          <span className="text-xs text-neutral-500">Ilość:</span>
+                                          <span className="text-xs text-neutral-500">Ilo\u015b\u0107:</span>
                                           <div className="flex items-center gap-1">
                                             <button
                                               type="button"
@@ -415,7 +428,7 @@ export function CreateReservationExtrasSection({
                                             value={selected.note}
                                             onChange={(e) => updateNote(item.id, e.target.value)}
                                             onClick={(e) => e.stopPropagation()}
-                                            placeholder={item.noteLabel || 'Dodaj notatkę...'}
+                                            placeholder={item.noteLabel || 'Dodaj notatk\u0119...'}
                                             className="flex-1 text-xs px-2 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
                                           />
                                         </div>
@@ -428,7 +441,7 @@ export function CreateReservationExtrasSection({
                                           className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-1"
                                         >
                                           <MessageSquare className="w-3 h-3" />
-                                          Dodaj notatkę
+                                          Dodaj notatk\u0119
                                         </button>
                                       )}
                                     </motion.div>
@@ -453,7 +466,7 @@ export function CreateReservationExtrasSection({
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                       <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                        {selectedExtras.length} {selectedExtras.length === 1 ? 'usługa' : selectedExtras.length < 5 ? 'usługi' : 'usług'}
+                        {selectedExtras.length} {selectedExtras.length === 1 ? 'us\u0142uga' : selectedExtras.length < 5 ? 'us\u0142ugi' : 'us\u0142ug'}
                       </span>
                     </div>
                     <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
