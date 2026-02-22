@@ -9,7 +9,9 @@ import { UserRole } from '../types';
 import { AUTH } from '../i18n/pl';
 
 /**
- * Middleware to check if user has required role
+ * Middleware to check if user has required role.
+ * Comparison is case-insensitive to support both legacy uppercase roles
+ * ('ADMIN', 'EMPLOYEE') and RBAC slugs ('admin', 'employee').
  */
 export const requireRole = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -22,8 +24,11 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
       return;
     }
 
-    // Check if user has required role
-    if (!allowedRoles.includes(req.user.role as UserRole)) {
+    // Case-insensitive role comparison
+    const userRole = (req.user.role || '').toUpperCase();
+    const allowed = allowedRoles.map(r => r.toUpperCase());
+
+    if (!allowed.includes(userRole as UserRole)) {
       res.status(403).json({
         success: false,
         error: AUTH.INSUFFICIENT_PERMISSIONS,
