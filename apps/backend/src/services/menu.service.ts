@@ -153,17 +153,21 @@ export class MenuService {
       action: 'DELETE',
       entityType: 'MENU_TEMPLATE',
       entityId: id,
-      details: { description: `Usunięto szablon menu: ${existing.name}`, deletedData: { name: existing.name } }
+      details: { description: `Usuni\u0119to szablon menu: ${existing.name}`, deletedData: { name: existing.name } }
     });
   }
 
-  async duplicateMenuTemplate(id: string, newData: { name: string; variant?: string; validFrom: Date; validTo?: Date }, userId: string) {
+  async duplicateMenuTemplate(
+    id: string,
+    newData: { name: string; variant?: string; validFrom?: Date; validTo?: Date | null },
+    userId: string
+  ) {
     const original = await this.getMenuTemplateById(id);
     const newTemplate = await prisma.menuTemplate.create({
       data: {
         eventTypeId: original.eventTypeId, name: newData.name, description: original.description,
-        variant: newData.variant ?? original.variant, validFrom: newData.validFrom,
-        validTo: newData.validTo, isActive: true, displayOrder: original.displayOrder
+        variant: newData.variant ?? original.variant, validFrom: newData.validFrom ?? new Date(),
+        validTo: newData.validTo ?? undefined, isActive: true, displayOrder: original.displayOrder
       }
     });
 
@@ -194,13 +198,13 @@ export class MenuService {
       action: 'DUPLICATE',
       entityType: 'MENU_TEMPLATE',
       entityId: newTemplate.id,
-      details: { description: `Zduplikowano szablon menu: ${original.name} → ${newData.name}`, sourceId: id }
+      details: { description: `Zduplikowano szablon menu: ${original.name} \u2192 ${newData.name}`, sourceId: id }
     });
 
     return this.getMenuTemplateById(newTemplate.id);
   }
 
-  // ═══════════════════════ MENU PACKAGES ═══════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MENU PACKAGES \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
   async getAllPackages() {
     return prisma.menuPackage.findMany({
@@ -347,7 +351,7 @@ export class MenuService {
       action: 'DELETE',
       entityType: 'MENU_PACKAGE',
       entityId: id,
-      details: { description: `Usunięto pakiet menu: ${existing.name}` }
+      details: { description: `Usuni\u0119to pakiet menu: ${existing.name}` }
     });
   }
 
@@ -360,7 +364,7 @@ export class MenuService {
     return { success: true, updated: orders.length };
   }
 
-  // ═══════════════════════ MENU OPTIONS ═══════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MENU OPTIONS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
   async getOptions(filters?: { category?: string; isActive?: boolean; search?: string }) {
     const where: Prisma.MenuOptionWhereInput = {};
@@ -401,7 +405,7 @@ export class MenuService {
       action: 'CREATE',
       entityType: 'MENU_OPTION',
       entityId: option.id,
-      details: { description: `Utworzono opcję menu: ${option.name}`, data: { name: option.name, category: option.category, priceAmount: option.priceAmount } }
+      details: { description: `Utworzono opcj\u0119 menu: ${option.name}`, data: { name: option.name, category: option.category, priceAmount: option.priceAmount } }
     });
 
     return option;
@@ -436,7 +440,7 @@ export class MenuService {
       action: 'UPDATE',
       entityType: 'MENU_OPTION',
       entityId: id,
-      details: { description: `Zaktualizowano opcję menu: ${option.name}` }
+      details: { description: `Zaktualizowano opcj\u0119 menu: ${option.name}` }
     });
 
     return option;
@@ -459,11 +463,11 @@ export class MenuService {
       action: 'DELETE',
       entityType: 'MENU_OPTION',
       entityId: id,
-      details: { description: `Usunięto opcję menu: ${existing.name}` }
+      details: { description: `Usuni\u0119to opcj\u0119 menu: ${existing.name}` }
     });
   }
 
-  // ═══════════════════════ PACKAGE-OPTION RELATIONSHIPS ═══════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 PACKAGE-OPTION RELATIONSHIPS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
   async assignOptionsToPackage(packageId: string, data: AssignOptionsToPackageInput) {
     await prisma.menuPackageOption.deleteMany({ where: { packageId } });

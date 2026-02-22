@@ -5,6 +5,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { menuService } from '../services/menu.service';
 import { AppError } from '../utils/AppError';
+import { CreateMenuPackageInput, UpdateMenuPackageInput } from '../types/menu.types';
 import {
   createMenuPackageSchema,
   updateMenuPackageSchema,
@@ -95,7 +96,7 @@ export class MenuPackageController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = createMenuPackageSchema.parse(req.body);
+      const data = createMenuPackageSchema.parse(req.body) as unknown as CreateMenuPackageInput;
       const userId = (req as any).user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
@@ -122,7 +123,7 @@ export class MenuPackageController {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const data = updateMenuPackageSchema.parse(req.body);
+      const data = updateMenuPackageSchema.parse(req.body) as unknown as UpdateMenuPackageInput;
       const userId = (req as any).user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
