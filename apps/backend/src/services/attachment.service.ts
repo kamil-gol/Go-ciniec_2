@@ -7,11 +7,13 @@
  * This ensures all RODO documents are in one place per client.
  * 
  * Updated: Phase 3 Audit — logChange() for all CRUD operations
+ * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
+import { ATTACHMENT } from '../i18n/pl';
 import { CreateAttachmentDTO, UpdateAttachmentDTO, AttachmentFilters } from '../types/attachment.types';
 import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../constants/attachmentCategories';
 import { UPLOAD_BASE } from '../middlewares/upload';
@@ -272,7 +274,7 @@ class AttachmentService {
     });
 
     if (!attachment) {
-      throw AppError.notFound('Attachment');
+      throw AppError.notFound(ATTACHMENT.NOT_FOUND);
     }
 
     return attachment;
