@@ -1,173 +1,152 @@
 /**
- * 🇵🇱 Centralne tłumaczenia — język polski
+ * 🇵🇱 Centralny słownik tłumaczeń — Go-ciniec_2
  *
- * Wszystkie komunikaty błędów, walidacji i odpowiedzi API w jednym miejscu.
- * Import: import { pl } from '@/i18n/pl';
+ * Wszystkie komunikaty widoczne dla użytkownika powinny być importowane z tego pliku.
+ * Dzięki temu:
+ * - Jedno miejsce do edycji
+ * - Spójny język w całej aplikacji
+ * - Łatwe dodanie kolejnego języka w przyszłości
  */
 
-export const pl = {
-  // ════════════════════════════════════════
-  // Uwierzytelnianie (Auth)
-  // ════════════════════════════════════════
-  auth: {
-    invalidCredentials: 'Nieprawidłowy email lub hasło',
-    userInactive: 'Konto użytkownika jest nieaktywne',
-    userAlreadyExists: 'Użytkownik z tym adresem email już istnieje',
-    userNotFound: 'Nie znaleziono użytkownika',
-    tokenInvalid: 'Nieprawidłowy lub wygasły token',
-    noToken: 'Brak tokena uwierzytelniającego',
-    authFailed: 'Uwierzytelnienie nie powiodło się',
-    authRequired: 'Wymagane uwierzytelnienie',
-    insufficientPermissions: 'Niewystarczające uprawnienia',
-    sessionExpired: 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie',
-  },
-
-  // ════════════════════════════════════════
-  // Hasła (Password)
-  // ════════════════════════════════════════
-  password: {
-    tooShort: 'Hasło musi mieć co najmniej 12 znaków',
-    needsUppercase: 'Hasło musi zawierać co najmniej jedną wielką literę',
-    needsLowercase: 'Hasło musi zawierać co najmniej jedną małą literę',
-    needsDigit: 'Hasło musi zawierać co najmniej jedną cyfrę',
-    needsSpecial: 'Hasło musi zawierać co najmniej jeden znak specjalny (!@#$%^&*)',
-    requirements: [
-      'Minimum 12 znaków',
-      'Co najmniej 1 wielka litera (A-Z)',
-      'Co najmniej 1 mała litera (a-z)',
-      'Co najmniej 1 cyfra (0-9)',
-      'Co najmniej 1 znak specjalny (!@#$%^&*)',
-    ],
-  },
-
-  // ════════════════════════════════════════
-  // Błędy ogólne (Generic errors)
-  // ════════════════════════════════════════
-  errors: {
-    validationError: 'Błąd walidacji',
-    duplicateValue: (field: string) => `Zduplikowana wartość dla: ${field}`,
-    recordNotFound: 'Nie znaleziono rekordu',
-    referencedNotExist: 'Powiązany rekord nie istnieje',
-    invalidData: 'Podano nieprawidłowe dane',
-    internalError: 'Wewnętrzny błąd serwera',
-    accessDenied: 'Brak dostępu',
-  },
-
-  // ════════════════════════════════════════
-  // Rezerwacje (Reservations)
-  // ════════════════════════════════════════
-  reservation: {
-    hallClientEventRequired: 'Sala, klient i typ wydarzenia są wymagane',
-    dateTimeRequired: 'Wymagane jest podanie startDateTime/endDateTime lub date/startTime/endTime',
-    hallNotFound: 'Nie znaleziono sali',
-    hallNotActive: 'Sala jest nieaktywna',
-    clientNotFound: 'Nie znaleziono klienta',
-    eventTypeNotFound: 'Nie znaleziono typu wydarzenia',
-    atLeastOnePerson: 'Wymagana jest co najmniej jedna osoba (dorośli, dzieci lub małe dzieci)',
-    guestsExceedCapacity: (guests: number, capacity: number) =>
-      `Liczba gości (${guests}) przekracza pojemność sali (${capacity})`,
-    menuPackageNotFound: 'Nie znaleziono wybranego pakietu menu',
-    packageMinGuests: (min: number) => `Ten pakiet wymaga minimum ${min} gości`,
-    packageMaxGuests: (max: number) => `Ten pakiet dopuszcza maksymalnie ${max} gości`,
-    priceRequired: 'Cena za osobę dorosłą i dziecko jest wymagana gdy nie wybrano pakietu menu',
-    dateMustBeFuture: 'Data rezerwacji musi być w przyszłości',
-    endAfterStart: 'Godzina zakończenia musi być po godzinie rozpoczęcia',
-    timeSlotBooked: 'Ten termin jest już zajęty dla wybranej sali. Wybierz inny termin.',
-    confirmationDeadline: 'Termin potwierdzenia musi być co najmniej 1 dzień przed wydarzeniem',
-    notFound: 'Nie znaleziono rezerwacji',
-    cannotUpdateCompleted: 'Nie można edytować zakończonej rezerwacji',
-    cannotUpdateCancelled: 'Nie można edytować anulowanej rezerwacji',
-    cannotUpdateMenuCompletedCancelled: 'Nie można zmienić menu zakończonej lub anulowanej rezerwacji',
-    menuRemovedSuccess: 'Menu usunięte pomyślnie',
-    menuUpdatedSuccess: 'Menu zaktualizowane pomyślnie',
-    invalidMenuData: 'Nieprawidłowe dane aktualizacji menu',
-    optionNotFound: (id: string) => `Nie znaleziono opcji ${id}`,
-    optionNotActive: (name: string) => `Opcja ${name} jest nieaktywna`,
-    optionMaxQuantity: (max: number, name: string) => `Maksymalna ilość ${name}: ${max}`,
-    optionNoMultiple: (name: string) => `Opcja ${name} nie pozwala na wielokrotny wybór`,
-    reasonRequired: 'Powód zmian jest wymagany (minimum 10 znaków)',
-    cannotChangeStatus: (from: string, to: string) => `Nie można zmienić statusu z ${from} na ${to}`,
-    alreadyCancelled: 'Rezerwacja jest już anulowana',
-    cannotCancelCompleted: 'Nie można anulować zakończonej rezerwacji',
-    alreadyArchived: 'Rezerwacja jest już zarchiwizowana',
-    notArchived: 'Rezerwacja nie jest zarchiwizowana',
-    cannotCompleteBeforeEvent: 'Nie można zakończyć rezerwacji przed datą wydarzenia',
-    // History entries
-    history: {
-      created: 'Rezerwacja utworzona',
-      createdWithMenu: (name: string) => `Rezerwacja utworzona z pakietem menu: ${name}`,
-      menuRemoved: 'Menu usunięte z rezerwacji',
-      menuUpdated: (name: string) => `Menu zaktualizowane na: ${name}`,
-      statusChanged: 'Zmiana statusu',
-      cancelled: 'Rezerwacja anulowana',
-      archived: 'Rezerwacja zarchiwizowana',
-      restored: 'Rezerwacja przywrócona z archiwum',
-    },
-  },
-
-  // ════════════════════════════════════════
-  // Klienci (Clients)
-  // ════════════════════════════════════════
-  client: {
-    notFound: 'Nie znaleziono klienta',
-    invalidEmail: 'Nieprawidłowy format adresu email',
-    phoneRequired: 'Numer telefonu jest wymagany',
-    phoneMinDigits: 'Numer telefonu musi zawierać co najmniej 9 cyfr',
-    cannotDeleteWithReservations: 'Nie można usunąć klienta z istniejącymi rezerwacjami',
-  },
-
-  // ════════════════════════════════════════
-  // Sale (Halls)
-  // ════════════════════════════════════════
-  hall: {
-    notFound: 'Nie znaleziono sali',
-    notActive: 'Sala jest nieaktywna',
-  },
-
-  // ════════════════════════════════════════
-  // Zaliczki (Deposits)
-  // ════════════════════════════════════════
-  deposit: {
-    notFound: 'Nie znaleziono zaliczki',
-    reservationNotFound: 'Nie znaleziono rezerwacji',
-  },
-
-  // ════════════════════════════════════════
-  // Typy wydarzeń (Event Types)
-  // ════════════════════════════════════════
-  eventType: {
-    notFound: 'Nie znaleziono typu wydarzenia',
-  },
-
-  // ════════════════════════════════════════
-  // Menu
-  // ════════════════════════════════════════
-  menu: {
-    packageNotFound: 'Nie znaleziono pakietu menu',
-    templateNotFound: 'Nie znaleziono szablonu menu',
-  },
-
-  // ════════════════════════════════════════
-  // Zasoby — dla AppError.notFound(resource)
-  // ════════════════════════════════════════
-  resources: {
-    user: 'Użytkownik',
-    reservation: 'Rezerwacja',
-    deposit: 'Zaliczka',
-    hall: 'Sala',
-    client: 'Klient',
-    eventType: 'Typ wydarzenia',
-    role: 'Rola',
-    menu: 'Menu',
-    menuPackage: 'Pakiet menu',
-    menuTemplate: 'Szablon menu',
-    option: 'Opcja',
-    dish: 'Danie',
-    discount: 'Rabat',
-    attachment: 'Załącznik',
-    permission: 'Uprawnienie',
-    default: 'Zasób',
-  },
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+export const AUTH = {
+  INVALID_CREDENTIALS: 'Nieprawidłowe dane logowania',
+  USER_INACTIVE: 'Konto użytkownika jest nieaktywne',
+  USER_NOT_FOUND: 'Nie znaleziono użytkownika',
+  EMAIL_EXISTS: 'Użytkownik z tym adresem email już istnieje',
+  TOKEN_INVALID: 'Nieprawidłowy lub wygasły token',
+  NO_TOKEN: 'Brak tokena uwierzytelniającego',
+  AUTH_FAILED: 'Uwierzytelnienie nie powiodło się',
+  AUTH_REQUIRED: 'Wymagane uwierzytelnienie',
+  INSUFFICIENT_PERMISSIONS: 'Niewystarczające uprawnienia',
+  SESSION_EXPIRED: 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie',
 } as const;
 
-export default pl;
+// ═══════════════════════════════════════
+// ERRORS (globalny error handler)
+// ═══════════════════════════════════════
+export const ERRORS = {
+  VALIDATION_ERROR: 'Błąd walidacji',
+  DUPLICATE_VALUE: (field: string) => `Zduplikowana wartość dla: ${field}`,
+  RECORD_NOT_FOUND: 'Nie znaleziono rekordu',
+  REFERENCED_NOT_EXIST: 'Powiązany rekord nie istnieje',
+  INVALID_DATA: 'Podano nieprawidłowe dane',
+  INTERNAL_ERROR: 'Wewnętrzny błąd serwera',
+  NOT_FOUND: (resource: string) => `${resource} — nie znaleziono`,
+  ACCESS_DENIED: 'Brak dostępu',
+} as const;
+
+// ═══════════════════════════════════════
+// PASSWORD
+// ═══════════════════════════════════════
+export const PASSWORD = {
+  TOO_SHORT: 'Hasło musi mieć co najmniej 12 znaków',
+  NEEDS_UPPERCASE: 'Hasło musi zawierać co najmniej jedną wielką literę',
+  NEEDS_LOWERCASE: 'Hasło musi zawierać co najmniej jedną małą literę',
+  NEEDS_DIGIT: 'Hasło musi zawierać co najmniej jedną cyfrę',
+  NEEDS_SPECIAL: 'Hasło musi zawierać co najmniej jeden znak specjalny (!@#$%^&*)',
+  REQUIREMENTS: [
+    'Minimum 12 znaków',
+    'Co najmniej 1 wielka litera (A-Z)',
+    'Co najmniej 1 mała litera (a-z)',
+    'Co najmniej 1 cyfra (0-9)',
+    'Co najmniej 1 znak specjalny (!@#$%^&*)',
+  ],
+} as const;
+
+// ═══════════════════════════════════════
+// RESERVATION
+// ═══════════════════════════════════════
+export const RESERVATION = {
+  NOT_FOUND: 'Nie znaleziono rezerwacji',
+  HALL_CLIENT_EVENT_REQUIRED: 'Sala, klient i typ wydarzenia są wymagane',
+  DATE_FORMAT_REQUIRED: 'Wymagane jest podanie startDateTime/endDateTime lub date/startTime/endTime',
+  DATE_IN_FUTURE: 'Data rezerwacji musi być w przyszłości',
+  END_AFTER_START: 'Godzina zakończenia musi być po godzinie rozpoczęcia',
+  TIME_SLOT_BOOKED: 'Ten termin jest już zajęty dla wybranej sali. Wybierz inny termin.',
+  GUESTS_REQUIRED: 'Wymagana jest co najmniej jedna osoba (dorośli, dzieci lub maluchy)',
+  GUESTS_EXCEED_CAPACITY: (guests: number, capacity: number) =>
+    `Liczba gości (${guests}) przekracza pojemność sali (${capacity})`,
+  CANNOT_UPDATE_COMPLETED: 'Nie można edytować zakończonej rezerwacji',
+  CANNOT_UPDATE_CANCELLED: 'Nie można edytować anulowanej rezerwacji',
+  ALREADY_CANCELLED: 'Rezerwacja jest już anulowana',
+  CANNOT_CANCEL_COMPLETED: 'Nie można anulować zakończonej rezerwacji',
+  ALREADY_ARCHIVED: 'Rezerwacja jest już zarchiwizowana',
+  NOT_ARCHIVED: 'Rezerwacja nie jest zarchiwizowana',
+  REASON_REQUIRED: 'Powód zmian jest wymagany (minimum 10 znaków)',
+  CONFIRMATION_DEADLINE: 'Termin potwierdzenia musi być co najmniej 1 dzień przed wydarzeniem',
+  STATUS_TRANSITION_INVALID: (from: string, to: string) =>
+    `Nie można zmienić statusu z ${from} na ${to}`,
+  PRICE_REQUIRED: 'Cena za dorosłego i za dziecko jest wymagana gdy nie wybrano pakietu menu',
+  CANNOT_COMPLETE_BEFORE_EVENT: 'Nie można zakończyć rezerwacji przed datą wydarzenia',
+} as const;
+
+// ═══════════════════════════════════════
+// MENU
+// ═══════════════════════════════════════
+export const MENU = {
+  PACKAGE_NOT_FOUND: 'Nie znaleziono wybranego pakietu menu',
+  MIN_GUESTS: (min: number) => `Ten pakiet wymaga minimum ${min} gości`,
+  MAX_GUESTS: (max: number) => `Ten pakiet pozwala na maksimum ${max} gości`,
+  OPTION_NOT_FOUND: (id: string) => `Nie znaleziono opcji ${id}`,
+  OPTION_INACTIVE: (name: string) => `Opcja ${name} jest nieaktywna`,
+  OPTION_MAX_QTY: (max: number, name: string) => `Maksimum ${max} sztuk opcji ${name}`,
+  OPTION_NO_MULTIPLE: (name: string) => `Opcja ${name} nie pozwala na wielokrotny wybór`,
+  CANNOT_UPDATE_MENU: 'Nie można zmienić menu dla zakończonej lub anulowanej rezerwacji',
+  INVALID_MENU_DATA: 'Nieprawidłowe dane aktualizacji menu',
+  MENU_REMOVED: 'Menu zostało usunięte z rezerwacji',
+  MENU_UPDATED: 'Menu zostało zaktualizowane',
+} as const;
+
+// ═══════════════════════════════════════
+// HALL
+// ═══════════════════════════════════════
+export const HALL = {
+  NOT_FOUND: 'Nie znaleziono sali',
+  NOT_ACTIVE: 'Sala jest nieaktywna',
+} as const;
+
+// ═══════════════════════════════════════
+// CLIENT
+// ═══════════════════════════════════════
+export const CLIENT = {
+  NOT_FOUND: 'Nie znaleziono klienta',
+  INVALID_EMAIL: 'Nieprawidłowy format adresu email',
+  PHONE_REQUIRED: 'Numer telefonu jest wymagany',
+  PHONE_MIN_DIGITS: 'Numer telefonu musi zawierać co najmniej 9 cyfr',
+  CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć klienta posiadającego rezerwacje',
+} as const;
+
+// ═══════════════════════════════════════
+// DEPOSIT
+// ═══════════════════════════════════════
+export const DEPOSIT = {
+  NOT_FOUND: 'Nie znaleziono zaliczki',
+  AMOUNT_POSITIVE: 'Kwota zaliczki musi być większa od 0',
+  CANNOT_EDIT_PAID: 'Nie można edytować opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.',
+  CANNOT_DELETE_PAID: 'Nie można usunąć opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.',
+  CANNOT_CANCEL_PAID: 'Nie można anulować opłaconej zaliczki. Najpierw cofnij płatność.',
+  ALREADY_PAID: 'Ta zaliczka jest już oznaczona jako opłacona',
+  NOT_PAID: 'Ta zaliczka nie jest oznaczona jako opłacona',
+  EMAIL_ONLY_PAID: 'Email potwierdzenia można wysłać tylko dla opłaconej zaliczki',
+  CLIENT_NO_EMAIL: 'Klient nie ma przypisanego adresu email',
+  DELETED: 'Zaliczka została usunięta',
+  EXCEEDS_PRICE: (sum: number, price: number, available: number) =>
+    `Suma zaliczek (${sum} PLN) przekracza cenę rezerwacji (${price} PLN, w tym usługi dodatkowe). Dostępne do zaliczki: ${available.toFixed(2)} PLN`,
+} as const;
+
+// ═══════════════════════════════════════
+// EVENT TYPE
+// ═══════════════════════════════════════
+export const EVENT_TYPE = {
+  NOT_FOUND: 'Nie znaleziono typu wydarzenia',
+} as const;
+
+// ═══════════════════════════════════════
+// UUID VALIDATION
+// ═══════════════════════════════════════
+export const VALIDATION = {
+  INVALID_UUID: (param: string) => `Nieprawidłowy format identyfikatora: ${param}`,
+} as const;

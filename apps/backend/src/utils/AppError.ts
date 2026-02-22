@@ -1,7 +1,11 @@
 /**
  * Custom Application Error class
- * Polish-first error messages for Gościniec Rodzinny
+ * Replaces fragile string-matching on error.message for HTTP status codes
+ *
+ * 🇵🇱 Polskie defaulty — importowane z i18n/pl.ts
  */
+import { ERRORS, AUTH } from '../i18n/pl';
+
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
@@ -16,7 +20,7 @@ export class AppError extends Error {
     if (typeof messageOrCode === 'number') {
       // Legacy: new AppError(400, 'message')
       statusCode = messageOrCode;
-      message = typeof codeOrMessage === 'string' ? codeOrMessage : 'Błąd';
+      message = typeof codeOrMessage === 'string' ? codeOrMessage : 'Error';
     } else {
       // New: new AppError('message', 400)
       message = messageOrCode;
@@ -31,29 +35,29 @@ export class AppError extends Error {
     Object.setPrototypeOf(this, AppError.prototype);
   }
 
-  // ——— Factory methods — polskie domyślne komunikaty ———
+  // ——— Factory methods for common errors ———
 
   static badRequest(message: string): AppError {
     return new AppError(message, 400);
   }
 
-  static unauthorized(message = 'Wymagane uwierzytelnienie'): AppError {
+  static unauthorized(message = AUTH.AUTH_REQUIRED): AppError {
     return new AppError(message, 401);
   }
 
-  static forbidden(message = 'Brak dostępu'): AppError {
+  static forbidden(message = ERRORS.ACCESS_DENIED): AppError {
     return new AppError(message, 403);
   }
 
   static notFound(resource = 'Zasób'): AppError {
-    return new AppError(`${resource} — nie znaleziono`, 404);
+    return new AppError(ERRORS.NOT_FOUND(resource), 404);
   }
 
   static conflict(message: string): AppError {
     return new AppError(message, 409);
   }
 
-  static internal(message = 'Wewnętrzny błąd serwera'): AppError {
+  static internal(message = ERRORS.INTERNAL_ERROR): AppError {
     return new AppError(message, 500, false);
   }
 }

@@ -1,18 +1,18 @@
 /**
- * Global Error Handler Middleware — Polish-first
+ * Global Error Handler Middleware
  *
- * Re-exports AppError and asyncHandler for backward compatibility.
- * Bridge patterns match both Polish and English error messages
- * for backward compatibility during migration.
+ * 🇵🇱 Spolonizowany — wszystkie komunikaty po polsku
+ * Also re-exports AppError and asyncHandler for backward compatibility
+ * with files that import from '@middlewares/errorHandler'.
  */
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from './asyncHandler';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { pl } from '../i18n/pl';
+import { ERRORS } from '../i18n/pl';
 
-// Re-export for backward compatibility
+// Re-export for backward compatibility (auth.controller imports from here)
 export { AppError, asyncHandler };
 
 export function errorHandler(
@@ -22,6 +22,8 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   // ——— AppError (known, operational errors) ———
+  // FIX: Also check for statusCode property as fallback when instanceof fails
+  // (can happen with path aliases / different module instances)
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       success: false,
@@ -43,7 +45,7 @@ export function errorHandler(
   if (err instanceof z.ZodError) {
     res.status(400).json({
       success: false,
-      error: pl.errors.validationError,
+      error: ERRORS.VALIDATION_ERROR,
       details: err.errors,
     });
     return;
@@ -56,21 +58,21 @@ export function errorHandler(
         const target = (err.meta?.target as string[])?.join(', ') || 'pole';
         res.status(409).json({
           success: false,
-          error: pl.errors.duplicateValue(target),
+          error: ERRORS.DUPLICATE_VALUE(target),
         });
         return;
       }
       case 'P2025': {
         res.status(404).json({
           success: false,
-          error: pl.errors.recordNotFound,
+          error: ERRORS.RECORD_NOT_FOUND,
         });
         return;
       }
       case 'P2003': {
         res.status(400).json({
           success: false,
-          error: pl.errors.referencedNotExist,
+          error: ERRORS.REFERENCED_NOT_EXIST,
         });
         return;
       }
@@ -82,16 +84,17 @@ export function errorHandler(
   if (err instanceof Prisma.PrismaClientValidationError) {
     res.status(400).json({
       success: false,
-      error: pl.errors.invalidData,
+      error: ERRORS.INVALID_DATA,
     });
     return;
   }
 
-  // ——— Bridge: auth errors → 401 (PL + EN patterns) ———
+  // ——— Bridge: auth service errors (Invalid credentials / Nieprawidłowe dane) → 401 ———
   if (err.message && (
     err.message.toLowerCase().includes('invalid credentials') ||
-    err.message.toLowerCase().includes('nieprawidłowy email') ||
-    err.message.toLowerCase().includes('nieprawidłowe dane logowania')
+    err.message.toLowerCase().includes('invalid email or password') ||
+    err.message.toLowerCase().includes('nieprawidłowe dane logowania') ||
+    err.message.toLowerCase().includes('nieprawidłowy lub wygasły token')
   )) {
     res.status(401).json({
       success: false,
@@ -100,7 +103,7 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: inactive/blocked → 403 (PL + EN) ———
+  // ——— Bridge: inactive/blocked account → 403 ———
   if (err.message && (
     err.message.toLowerCase().includes('inactive') ||
     err.message.toLowerCase().includes('nieaktywne') ||
@@ -114,15 +117,15 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: password validation → 422 (PL + EN) ———
+  // ——— Bridge: password validation errors → 422 ———
   if (err.message && (
-    err.message.toLowerCase().includes('hasło') ||
     (err.message.toLowerCase().includes('password') && (
       err.message.toLowerCase().includes('must') ||
       err.message.toLowerCase().includes('weak') ||
       err.message.toLowerCase().includes('too short') ||
       err.message.toLowerCase().includes('requires')
-    ))
+    )) ||
+    err.message.toLowerCase().includes('hasło musi')
   )) {
     res.status(422).json({
       success: false,
@@ -131,7 +134,7 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: not found → 404 (PL + EN) ———
+  // ——— Bridge: legacy service errors with 'not found' / 'nie znaleziono' pattern ———
   if (err.message && (
     err.message.toLowerCase().includes('not found') ||
     err.message.toLowerCase().includes('nie znaleziono')
@@ -143,7 +146,7 @@ export function errorHandler(
     return;
   }
 
-  // ——— Bridge: conflict → 409 (PL + EN) ———
+  // ——— Bridge: legacy 'already exists' / 'już istnieje' conflict pattern ———
   if (err.message && (
     err.message.toLowerCase().includes('already exists') ||
     err.message.toLowerCase().includes('already booked') ||
@@ -165,7 +168,7 @@ export function errorHandler(
     success: false,
     error:
       process.env.NODE_ENV === 'production'
-        ? pl.errors.internalError
-        : err.message || pl.errors.internalError,
+        ? ERRORS.INTERNAL_ERROR
+        : err.message || ERRORS.INTERNAL_ERROR,
   });
 }
