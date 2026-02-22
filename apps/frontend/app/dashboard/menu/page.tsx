@@ -30,10 +30,10 @@ export default function MenuDashboardPage() {
   }
 
   const navCards = [
-    { href: '/dashboard/menu/dishes', icon: ChefHat, title: 'Biblioteka Dań', desc: 'Zarządzaj daniami w systemie', stat: `${stats.dishes} dań • ${stats.categories} kategorii`, gradient: 'from-emerald-500 to-teal-500', hoverText: 'text-emerald-600 dark:text-emerald-400' },
-    { href: '/dashboard/menu/categories', icon: Tags, title: 'Kategorie Dań', desc: 'Zarządzaj kategoriami dań', stat: `${stats.categories} kategorii`, gradient: 'from-violet-500 to-purple-500', hoverText: 'text-violet-600 dark:text-violet-400' },
-    { href: '/dashboard/menu/templates', icon: FileText, title: 'Szablony Menu', desc: 'Konfiguruj szablony dla wydarzeń', stat: `${stats.templates} szablonów • ${stats.activeTemplates} aktywnych`, gradient: 'from-blue-500 to-indigo-500', hoverText: 'text-blue-600 dark:text-blue-400' },
-    { href: '/dashboard/menu/packages', icon: Package, title: 'Pakiety', desc: 'Zarządzaj pakietami menu', stat: `${stats.packages} pakietów`, gradient: 'from-amber-500 to-orange-500', hoverText: 'text-amber-600 dark:text-amber-400' },
+    { href: '/dashboard/menu/templates', icon: FileText, title: 'Szablony Menu', desc: 'Konfiguruj szablony dla wydarze\u0144', stat: `${stats.templates} szablon\u00f3w \u2022 ${stats.activeTemplates} aktywnych`, gradient: 'from-blue-500 to-indigo-500', hoverText: 'text-blue-600 dark:text-blue-400' },
+    { href: '/dashboard/menu/packages', icon: Package, title: 'Pakiety', desc: 'Zarz\u0105dzaj pakietami menu', stat: `${stats.packages} pakiet\u00f3w`, gradient: 'from-amber-500 to-orange-500', hoverText: 'text-amber-600 dark:text-amber-400' },
+    { href: '/dashboard/menu/categories', icon: Tags, title: 'Kategorie Da\u0144', desc: 'Zarz\u0105dzaj kategoriami da\u0144', stat: `${stats.categories} kategorii`, gradient: 'from-violet-500 to-purple-500', hoverText: 'text-violet-600 dark:text-violet-400' },
+    { href: '/dashboard/menu/dishes', icon: ChefHat, title: 'Biblioteka Da\u0144', desc: 'Zarz\u0105dzaj daniami w systemie', stat: `${stats.dishes} da\u0144 \u2022 ${stats.categories} kategorii`, gradient: 'from-emerald-500 to-teal-500', hoverText: 'text-emerald-600 dark:text-emerald-400' },
   ]
 
   return (
@@ -41,8 +41,8 @@ export default function MenuDashboardPage() {
       {/* Hero */}
       <PageHero
         accent={accent}
-        title="Moduł Menu"
-        subtitle="Kompleksowe zarządzanie menu, pakietami i szablonami"
+        title="Modu\u0142 Menu"
+        subtitle="Kompleksowe zarz\u0105dzanie menu, pakietami i szablonami"
         icon={UtensilsCrossed}
         stats={[
           { icon: ChefHat, label: 'Dania', value: stats.dishes },
@@ -76,7 +76,7 @@ export default function MenuDashboardPage() {
                         <p className="text-sm text-neutral-400 dark:text-neutral-500">{card.stat}</p>
                       </div>
                       <div className={`flex items-center gap-2 ${card.hoverText} font-medium mt-4 group-hover:gap-4 transition-all`}>
-                        Otwórz <ArrowRight className="h-4 w-4" />
+                        Otw\u00f3rz <ArrowRight className="h-4 w-4" />
                       </div>
                     </CardContent>
                   </div>
