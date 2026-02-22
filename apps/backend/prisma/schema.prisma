@@ -109,9 +109,29 @@ model User {
   createdHistories     ReservationHistory[]   @relation("ChangedBy")
   activityLogs         ActivityLog[]
   uploadedAttachments  Attachment[]           @relation("UploadedBy")
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([email])
   @@index([roleId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🔑 PASSWORD RESET TOKENS
+// ═══════════════════════════════════════════════════════════════
+
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String    @unique @db.VarChar(255)
+  userId    String    @db.Uuid
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Hall {
