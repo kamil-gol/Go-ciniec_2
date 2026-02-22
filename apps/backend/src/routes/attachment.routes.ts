@@ -24,8 +24,8 @@ router.post(
   authMiddleware,
   requireStaff,
   uploadSingle,
-  asyncHandler(async (req, res) => {
-    await attachmentController.upload(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.upload(req, res, next);
   })
 );
 
@@ -37,8 +37,8 @@ router.get(
   '/',
   authMiddleware,
   requireStaff,
-  asyncHandler(async (req, res) => {
-    await attachmentController.getByEntity(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.getByEntity(req, res, next);
   })
 );
 
@@ -50,8 +50,8 @@ router.get(
   '/check',
   authMiddleware,
   requireStaff,
-  asyncHandler(async (req, res) => {
-    await attachmentController.check(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.check(req, res, next);
   })
 );
 
@@ -63,8 +63,8 @@ router.post(
   '/batch-check-rodo',
   authMiddleware,
   requireStaff,
-  asyncHandler(async (req, res) => {
-    await attachmentController.batchCheckRodo(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.batchCheckRodo(req, res, next);
   })
 );
 
@@ -76,8 +76,8 @@ router.post(
   '/batch-check-contract',
   authMiddleware,
   requireStaff,
-  asyncHandler(async (req, res) => {
-    await attachmentController.batchCheckContract(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.batchCheckContract(req, res, next);
   })
 );
 
@@ -90,8 +90,8 @@ router.get(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await attachmentController.download(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.download(req, res, next);
   })
 );
 
@@ -104,8 +104,8 @@ router.patch(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await attachmentController.update(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.update(req, res, next);
   })
 );
 
@@ -118,8 +118,8 @@ router.delete(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await attachmentController.delete(req, res);
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.delete(req, res, next);
   })
 );
 
