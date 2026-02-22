@@ -1,7 +1,7 @@
 /**
  * Unit tests for menu.service.ts
- * Covers: Templates CRUD, Packages CRUD, Options CRUD,
- *         duplicateTemplate, assignOptionsToPackage, reorderPackages, priceHistory
+ * Covers: Templates CRUD, Packages CRUD, duplicateTemplate, reorderPackages, priceHistory
+ * NOTE: MenuOption & MenuPackageOption removed — Options CRUD tests removed
  * Issue: #98
  */
 
@@ -20,18 +20,6 @@ const mockPrisma = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-  },
-  menuOption: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  menuPackageOption: {
-    deleteMany: jest.fn(),
-    createMany: jest.fn(),
-    create: jest.fn(),
   },
   menuPriceHistory: {
     create: jest.fn(),
@@ -67,14 +55,7 @@ const mockPackage = {
   includedItems: ['Zupa', 'Drugie'], minGuests: 50, maxGuests: 200,
   color: '#gold', icon: 'star', badgeText: 'Popularny', imageUrl: null,
   displayOrder: 0, isPopular: true, isRecommended: false,
-  menuTemplate: mockTemplate, packageOptions: [], categorySettings: [],
-};
-
-const mockOption = {
-  id: 'opt-1', name: 'Bar otwarty', description: 'Open bar', shortDescription: 'Bar',
-  category: 'DRINKS', priceType: 'PER_PERSON' as const,
-  priceAmount: { toNumber: () => 50 }, allowMultiple: false, maxQuantity: 1,
-  icon: 'wine', imageUrl: null, displayOrder: 0, isActive: true,
+  menuTemplate: mockTemplate, categorySettings: [],
 };
 
 describe('MenuService', () => {
@@ -102,7 +83,7 @@ describe('MenuService', () => {
   });
 
   describe('getMenuTemplateById', () => {
-    it('should return template with packages and options', async () => {
+    it('should return template with packages', async () => {
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(mockTemplate);
       const result = await menuService.getMenuTemplateById('tmpl-1');
       expect(result.id).toBe('tmpl-1');
@@ -123,7 +104,7 @@ describe('MenuService', () => {
 
     it('should throw when no active menu found', async () => {
       mockPrisma.menuTemplate.findFirst.mockResolvedValue(null);
-      await expect(menuService.getActiveMenuForEventType('evt-1')).rejects.toThrow(/No active menu/);
+      await expect(menuService.getActiveMenuForEventType('evt-1')).rejects.toThrow(/No active menu|Brak aktywnego/);
     });
   });
 
@@ -173,7 +154,7 @@ describe('MenuService', () => {
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(mockTemplate);
       mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(3);
       await expect(menuService.deleteMenuTemplate('tmpl-1', userId))
-        .rejects.toThrow(/Cannot delete.*3 reservation/);
+        .rejects.toThrow(/Cannot delete|Nie można usunąć.*3/);
     });
 
     it('should throw when template not found', async () => {
@@ -183,15 +164,14 @@ describe('MenuService', () => {
   });
 
   describe('duplicateMenuTemplate', () => {
-    it('should duplicate template with packages and options', async () => {
+    it('should duplicate template with packages (no packageOptions)', async () => {
       const originalWithPkgs = {
         ...mockTemplate,
-        packages: [{ ...mockPackage, packageOptions: [{ optionId: 'opt-1', customPrice: null, isRequired: false, isDefault: false, displayOrder: 0 }] }],
+        packages: [mockPackage],
       };
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(originalWithPkgs);
       mockPrisma.menuTemplate.create.mockResolvedValue({ ...mockTemplate, id: 'tmpl-2', name: 'Kopia' });
       mockPrisma.menuPackage.create.mockResolvedValue({ ...mockPackage, id: 'pkg-2' });
-      mockPrisma.menuPackageOption.create.mockResolvedValue({});
       // getMenuTemplateById after duplication
       mockPrisma.menuTemplate.findUnique
         .mockResolvedValueOnce(originalWithPkgs)
@@ -302,7 +282,7 @@ describe('MenuService', () => {
     it('should throw when package is in use', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPackage);
       mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(5);
-      await expect(menuService.deletePackage('pkg-1', userId)).rejects.toThrow(/Cannot delete.*5 reservation/);
+      await expect(menuService.deletePackage('pkg-1', userId)).rejects.toThrow(/Cannot delete|Nie można usunąć.*5/);
     });
   });
 
@@ -318,103 +298,7 @@ describe('MenuService', () => {
     });
   });
 
-  // ═══════════ OPTIONS ═══════════
-  describe('getOptions', () => {
-    it('should return filtered options', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([mockOption]);
-      const result = await menuService.getOptions({ category: 'DRINKS', isActive: true });
-      expect(result).toHaveLength(1);
-    });
-
-    it('should apply search filter', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
-      await menuService.getOptions({ search: 'bar' });
-      expect(mockPrisma.menuOption.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ OR: expect.any(Array) }) })
-      );
-    });
-  });
-
-  describe('getOptionById', () => {
-    it('should return option', async () => {
-      mockPrisma.menuOption.findUnique.mockResolvedValue(mockOption);
-      const result = await menuService.getOptionById('opt-1');
-      expect(result.id).toBe('opt-1');
-    });
-
-    it('should throw when not found', async () => {
-      mockPrisma.menuOption.findUnique.mockResolvedValue(null);
-      await expect(menuService.getOptionById('x')).rejects.toThrow('Option not found');
-    });
-  });
-
-  describe('createOption', () => {
-    it('should create option and log', async () => {
-      mockPrisma.menuOption.create.mockResolvedValue(mockOption);
-      await menuService.createOption({
-        name: 'Bar otwarty', category: 'DRINKS', priceType: 'PER_PERSON', priceAmount: 50,
-      }, userId);
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'CREATE', entityType: 'MENU_OPTION' })
-      );
-    });
-  });
-
-  describe('updateOption', () => {
-    it('should update and track price change', async () => {
-      mockPrisma.menuOption.findUnique.mockResolvedValue(mockOption);
-      mockPrisma.menuOption.update.mockResolvedValue({ ...mockOption, priceAmount: { toNumber: () => 75 } });
-      await menuService.updateOption('opt-1', { priceAmount: 75 }, userId);
-      expect(mockPrisma.menuPriceHistory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ fieldName: 'priceAmount', oldValue: 50, newValue: 75 })
-        })
-      );
-    });
-
-    it('should throw when option not found', async () => {
-      mockPrisma.menuOption.findUnique.mockResolvedValue(null);
-      await expect(menuService.updateOption('x', { name: 'Y' }, userId)).rejects.toThrow('Option not found');
-    });
-  });
-
-  describe('deleteOption', () => {
-    it('should delete unused option and cleanup packageOptions', async () => {
-      mockPrisma.menuOption.findUnique.mockResolvedValue(mockOption);
-      mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(0);
-      mockPrisma.menuPackageOption.deleteMany.mockResolvedValue({});
-      mockPrisma.menuOption.delete.mockResolvedValue(undefined);
-      await menuService.deleteOption('opt-1', userId);
-      expect(mockPrisma.menuPackageOption.deleteMany).toHaveBeenCalledWith({ where: { optionId: 'opt-1' } });
-      expect(mockPrisma.menuOption.delete).toHaveBeenCalled();
-    });
-
-    it('should throw when option is in use', async () => {
-      mockPrisma.menuOption.findUnique.mockResolvedValue(mockOption);
-      mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(2);
-      await expect(menuService.deleteOption('opt-1', userId)).rejects.toThrow(/Cannot delete.*2 reservation/);
-    });
-  });
-
-  // ═══════════ PACKAGE-OPTION RELATIONSHIPS ═══════════
-  describe('assignOptionsToPackage', () => {
-    it('should replace all options for package', async () => {
-      mockPrisma.menuPackageOption.deleteMany.mockResolvedValue({});
-      mockPrisma.menuPackageOption.createMany.mockResolvedValue({ count: 2 });
-      mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPackage);
-
-      await menuService.assignOptionsToPackage('pkg-1', {
-        options: [
-          { optionId: 'opt-1', isRequired: true },
-          { optionId: 'opt-2' },
-        ],
-      });
-
-      expect(mockPrisma.menuPackageOption.deleteMany).toHaveBeenCalledWith({ where: { packageId: 'pkg-1' } });
-      expect(mockPrisma.menuPackageOption.createMany).toHaveBeenCalled();
-    });
-  });
-
+  // ═══════════ PRICE HISTORY ═══════════
   describe('getPriceHistory', () => {
     it('should return price history for entity', async () => {
       mockPrisma.menuPriceHistory.findMany.mockResolvedValue([{ id: 'ph-1' }]);
