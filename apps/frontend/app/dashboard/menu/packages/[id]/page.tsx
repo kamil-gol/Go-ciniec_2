@@ -89,9 +89,7 @@ export default function EditPackagePage() {
         menuTemplateId={pkg.menuTemplateId}
         initialData={pkg as any}
         onSuccess={() => {
-          router.push(
-            `/dashboard/menu/packages?templateId=${pkg.menuTemplateId}`
-          );
+          router.push('/dashboard/menu/packages');
         }}
       />
     </div>
