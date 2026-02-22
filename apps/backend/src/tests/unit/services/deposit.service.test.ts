@@ -127,7 +127,7 @@ describe('DepositService', () => {
 
       const result = await depositService.create(createInput, userId);
 
-      expect(result.id).toBe('new-dep-1');
+      expect(result!.id).toBe('new-dep-1');
       expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO "Deposit"'),
         'res-1', 2000, 2000, '2026-05-01'
@@ -175,7 +175,7 @@ describe('DepositService', () => {
       mockPrisma.deposit.findUnique.mockResolvedValue({ ...mockDeposit, id: 'new-dep-2' });
 
       const result = await depositService.create(createInput, userId);
-      expect(result.id).toBe('new-dep-2');
+      expect(result!.id).toBe('new-dep-2');
     });
   });
 
