@@ -42,7 +42,7 @@ const mockPkg = {
 
 const mockOption = {
   id: 'opt-1', name: 'Bar otwarty', description: 'Open bar',
-  category: 'DRINKS', priceType: 'PER_PERSON',
+  category: 'DRINKS', priceType: 'PER_PERSON' as const,
   priceAmount: { toNumber: () => 50 }, icon: 'wine',
 };
 
@@ -53,8 +53,8 @@ const mockSnapshotData = {
   pricePerAdult: 250, pricePerChild: 150, pricePerToddler: 0,
   includedItems: ['Zupa', 'Drugie'], packageColor: '#gold', packageIcon: 'star',
   selectedOptions: [
-    { optionId: 'opt-1', name: 'Bar otwarty', description: 'Open bar',
-      category: 'DRINKS', priceType: 'PER_PERSON', priceAmount: 50, quantity: 1, icon: 'wine' }
+    { optionId: 'opt-1', name: 'Bar otwarty', description: 'Open bar' as string | null,
+      category: 'DRINKS', priceType: 'PER_PERSON' as const, priceAmount: 50, quantity: 1, icon: 'wine' as string | null }
   ],
   dishSelections: [],
 };
@@ -90,8 +90,8 @@ describe('MenuSnapshotService', () => {
       const dataWithFlat = {
         ...mockSnapshotData,
         selectedOptions: [{
-          optionId: 'opt-2', name: 'Dekoracja', description: '',
-          category: 'DECOR', priceType: 'FLAT', priceAmount: 1000, quantity: 2, icon: null,
+          optionId: 'opt-2', name: 'Dekoracja', description: null as string | null,
+          category: 'DECOR', priceType: 'FLAT' as const, priceAmount: 1000, quantity: 2, icon: null as string | null,
         }],
       };
       const result = menuSnapshotService.calculatePriceBreakdown(dataWithFlat, 50, 0, 0);
@@ -102,8 +102,8 @@ describe('MenuSnapshotService', () => {
       const dataWithFree = {
         ...mockSnapshotData,
         selectedOptions: [{
-          optionId: 'opt-3', name: 'Parking', description: '',
-          category: 'OTHER', priceType: 'FREE', priceAmount: 0, quantity: 1, icon: null,
+          optionId: 'opt-3', name: 'Parking', description: null as string | null,
+          category: 'OTHER', priceType: 'FREE' as const, priceAmount: 0, quantity: 1, icon: null as string | null,
         }],
       };
       const result = menuSnapshotService.calculatePriceBreakdown(dataWithFree, 50, 0, 0);

@@ -4,7 +4,7 @@
  */
 
 jest.mock('../../../lib/prisma', () => {
-  const mock = {
+  const mock: any = {
     client: { findUnique: jest.fn() },
     hall: { findUnique: jest.fn() },
     eventType: { findUnique: jest.fn() },
@@ -20,7 +20,7 @@ jest.mock('../../../lib/prisma', () => {
     },
     $executeRaw: jest.fn(),
     $queryRaw: jest.fn(),
-    $transaction: jest.fn((fn: any) => fn(mock)),
+    $transaction: jest.fn((fn: any): any => fn(mock)),
   };
   return { prisma: mock, __esModule: true, default: mock };
 });
