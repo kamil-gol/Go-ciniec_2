@@ -135,7 +135,7 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
       await menu.goToMenuManagement();
       await menu.waitForTemplatesLoaded();
 
-      const pricePattern = page.locator('text=/\\d+\\s*z\u0142/');
+      const pricePattern = page.locator('text=/\\d+\\s*zł/');
       const count = await pricePattern.count();
 
       // Menu page may or may not show prices directly
@@ -155,7 +155,7 @@ test.describe('Menu Calculator in Reservation Wizard', () => {
         await page.waitForTimeout(500);
 
         // Soft check — some pages show prices, others don't
-        await page.locator('text=/cen|z\u0142|PLN|pakiet/i').first().isVisible().catch(() => false);
+        await page.locator('text=/cen|zł|PLN|pakiet/i').first().isVisible().catch(() => false);
       }
     });
   });

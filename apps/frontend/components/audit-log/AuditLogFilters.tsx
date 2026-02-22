@@ -28,52 +28,52 @@ const actionLabels: Record<string, string> = {
   // Basic CRUD
   CREATE: 'Utworzenie',
   UPDATE: 'Aktualizacja',
-  DELETE: 'Usuni\u0119cie',
-  TOGGLE: 'Prze\u0142\u0105czenie',
+  DELETE: 'Usunięcie',
+  TOGGLE: 'Przełączenie',
   // Status
   STATUS_CHANGE: 'Zmiana statusu',
   CANCEL: 'Anulowanie',
   ARCHIVE: 'Archiwizacja',
-  UNARCHIVE: 'Przywr\u00f3cenie',
-  RESTORE: 'Przywr\u00f3cenie',
+  UNARCHIVE: 'Przywrócenie',
+  RESTORE: 'Przywrócenie',
   // Menu
   MENU_UPDATE: 'Aktualizacja menu',
   MENU_UPDATED: 'Aktualizacja menu',
-  MENU_REMOVE: 'Usuni\u0119cie menu',
-  MENU_REMOVED: 'Usuni\u0119cie menu',
-  MENU_SELECTED: 'Wyb\u00f3r menu',
+  MENU_REMOVE: 'Usunięcie menu',
+  MENU_REMOVED: 'Usunięcie menu',
+  MENU_SELECTED: 'Wybór menu',
   MENU_RECALCULATED: 'Przeliczenie menu',
-  MENU_DIRECT_REMOVED: 'Bezpo\u015brednie usuni\u0119cie menu',
+  MENU_DIRECT_REMOVED: 'Bezpośrednie usunięcie menu',
   // Payment & Deposits
-  PAYMENT_UPDATE: 'Aktualizacja p\u0142atno\u015bci',
-  MARK_PAID: 'Oznaczenie p\u0142atno\u015bci',
+  PAYMENT_UPDATE: 'Aktualizacja płatności',
+  MARK_PAID: 'Oznaczenie płatności',
   DEPOSIT_CANCELLED: 'Anulowanie zaliczki',
   // Discount
   DISCOUNT_APPLIED: 'Naliczenie rabatu',
-  DISCOUNT_REMOVED: 'Usuni\u0119cie rabatu',
+  DISCOUNT_REMOVED: 'Usunięcie rabatu',
   // Queue
   QUEUE_ADD: 'Dodanie do kolejki',
   QUEUE_UPDATE: 'Aktualizacja w kolejce',
-  QUEUE_REMOVE: 'Usuni\u0119cie z kolejki',
+  QUEUE_REMOVE: 'Usunięcie z kolejki',
   QUEUE_SWAP: 'Zamiana pozycji',
   QUEUE_MOVE: 'Przeniesienie w kolejce',
-  QUEUE_REORDER: 'Zmiana kolejno\u015bci',
+  QUEUE_REORDER: 'Zmiana kolejności',
   QUEUE_REBUILD: 'Przebudowa kolejki',
   QUEUE_PROMOTE: 'Awans z kolejki',
   QUEUE_AUTO_CANCEL: 'Auto-anulowanie z kolejki',
   // Attachments
-  ATTACHMENT_UPLOAD: 'Wgranie za\u0142\u0105cznika',
-  ATTACHMENT_ADD: 'Dodanie za\u0142\u0105cznika',
-  ATTACHMENT_UPDATE: 'Aktualizacja za\u0142\u0105cznika',
-  ATTACHMENT_ARCHIVE: 'Archiwizacja za\u0142\u0105cznika',
-  ATTACHMENT_DELETE: 'Usuni\u0119cie za\u0142\u0105cznika',
+  ATTACHMENT_UPLOAD: 'Wgranie załącznika',
+  ATTACHMENT_ADD: 'Dodanie załącznika',
+  ATTACHMENT_UPDATE: 'Aktualizacja załącznika',
+  ATTACHMENT_ARCHIVE: 'Archiwizacja załącznika',
+  ATTACHMENT_DELETE: 'Usunięcie załącznika',
   // Auth
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
-  PASSWORD_RESET_REQUESTED: '\u017b\u0105danie resetu has\u0142a',
-  PASSWORD_RESET_COMPLETED: 'Reset has\u0142a',
+  PASSWORD_RESET_REQUESTED: 'Żądanie resetu hasła',
+  PASSWORD_RESET_COMPLETED: 'Reset hasła',
   // Settings
-  COMPANY_SETTINGS_UPDATED: 'Aktualizacja ustawie\u0144',
+  COMPANY_SETTINGS_UPDATED: 'Aktualizacja ustawień',
 };
 
 const entityTypeLabels: Record<string, string> = {
@@ -82,17 +82,17 @@ const entityTypeLabels: Record<string, string> = {
   ROOM: 'Sala',
   HALL: 'Sala',
   MENU: 'Menu',
-  USER: 'U\u017cytkownik',
+  USER: 'Użytkownik',
   DEPOSIT: 'Zaliczka',
   EVENT_TYPE: 'Typ wydarzenia',
-  ATTACHMENT: 'Za\u0142\u0105cznik',
+  ATTACHMENT: 'Załącznik',
   QUEUE: 'Kolejka',
   DISH: 'Danie',
   MENU_TEMPLATE: 'Szablon menu',
   CompanySettings: 'Ustawienia firmy',
-  ServiceExtra: 'Us\u0142uga dodatkowa',
-  ServiceCategory: 'Kategoria us\u0142ug',
-  ServiceItem: 'Pozycja us\u0142ugi',
+  ServiceExtra: 'Usługa dodatkowa',
+  ServiceCategory: 'Kategoria usług',
+  ServiceItem: 'Pozycja usługi',
 };
 
 interface Props {
@@ -205,7 +205,7 @@ export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
               {startDate ? (
                 format(startDate, 'd MMMM yyyy', { locale: pl })
               ) : (
-                <span>Wybierz dat\u0119</span>
+                <span>Wybierz datę</span>
               )}
             </Button>
           </PopoverTrigger>
@@ -237,7 +237,7 @@ export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
               {endDate ? (
                 format(endDate, 'd MMMM yyyy', { locale: pl })
               ) : (
-                <span>Wybierz dat\u0119</span>
+                <span>Wybierz datę</span>
               )}
             </Button>
           </PopoverTrigger>
