@@ -67,7 +67,7 @@ class AuthService {
     });
 
     const signOptions: SignOptions = {
-      expiresIn: JWT_EXPIRES_IN as string & {},
+      expiresIn: JWT_EXPIRES_IN as any,
     };
 
     const token = jwt.sign(
@@ -90,7 +90,7 @@ class AuthService {
       action: 'LOGIN',
       entityType: 'USER',
       entityId: user.id,
-      details: { description: `U\u017cytkownik zalogowa\u0142 si\u0119: ${user.email}` },
+      details: { description: `Użytkownik zalogował się: ${user.email}` },
     });
 
     logger.info(`User logged in: ${user.email}`);

@@ -174,7 +174,7 @@ export class MenuService {
           shortDescription: pkg.shortDescription, pricePerAdult: pkg.pricePerAdult,
           pricePerChild: pkg.pricePerChild, pricePerToddler: pkg.pricePerToddler,
           includedItems: pkg.includedItems, minGuests: pkg.minGuests, maxGuests: pkg.maxGuests,
-          color: pkg.color, icon: pkg.icon, badgeText: pkg.badgeText, imageUrl: pkg.imageUrl,
+          color: pkg.color, icon: pkg.icon, badgeText: pkg.badgeText,
           displayOrder: pkg.displayOrder, isPopular: pkg.isPopular, isRecommended: pkg.isRecommended
         }
       });
@@ -261,7 +261,7 @@ export class MenuService {
         shortDescription: data.shortDescription, pricePerAdult: data.pricePerAdult,
         pricePerChild: data.pricePerChild, pricePerToddler: data.pricePerToddler,
         includedItems: data.includedItems ?? [], minGuests: data.minGuests, maxGuests: data.maxGuests,
-        color: data.color, icon: data.icon, badgeText: data.badgeText, imageUrl: data.imageUrl,
+        color: data.color, icon: data.icon, badgeText: data.badgeText,
         displayOrder: data.displayOrder ?? 0, isPopular: data.isPopular ?? false,
         isRecommended: data.isRecommended ?? false
       },
@@ -304,7 +304,7 @@ export class MenuService {
         pricePerAdult: data.pricePerAdult, pricePerChild: data.pricePerChild,
         pricePerToddler: data.pricePerToddler, includedItems: data.includedItems,
         minGuests: data.minGuests, maxGuests: data.maxGuests, color: data.color, icon: data.icon,
-        badgeText: data.badgeText, imageUrl: data.imageUrl, displayOrder: data.displayOrder,
+        badgeText: data.badgeText, displayOrder: data.displayOrder,
         isPopular: data.isPopular, isRecommended: data.isRecommended
       },
       include: { menuTemplate: true, packageOptions: { include: { option: true } }, categorySettings: true }
@@ -390,7 +390,7 @@ export class MenuService {
       data: {
         name: data.name, description: data.description, shortDescription: data.shortDescription,
         category: data.category, priceType: data.priceType, priceAmount: data.priceAmount,
-        allowMultiple: data.allowMultiple ?? false, maxQuantity: data.maxQuantity,
+        allowMultiple: data.allowMultiple ?? false, maxQuantity: data.maxQuantity ?? undefined,
         icon: data.icon, imageUrl: data.imageUrl, displayOrder: data.displayOrder ?? 0,
         isActive: data.isActive ?? true
       }
@@ -426,7 +426,7 @@ export class MenuService {
       data: {
         name: data.name, description: data.description, shortDescription: data.shortDescription,
         category: data.category, priceType: data.priceType, priceAmount: data.priceAmount,
-        allowMultiple: data.allowMultiple, maxQuantity: data.maxQuantity, icon: data.icon,
+        allowMultiple: data.allowMultiple, maxQuantity: data.maxQuantity ?? undefined, icon: data.icon,
         imageUrl: data.imageUrl, displayOrder: data.displayOrder, isActive: data.isActive
       }
     });
