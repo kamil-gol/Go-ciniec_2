@@ -63,10 +63,10 @@ describe('AppError', () => {
   });
 
   describe('unauthorized()', () => {
-    it('should create 401 error with default message', () => {
+    it('should create 401 error with default message (PL)', () => {
       const err = AppError.unauthorized();
       expect(err.statusCode).toBe(401);
-      expect(err.message).toBe('User not authenticated');
+      expect(err.message).toBe('Wymagane uwierzytelnienie');
     });
 
     it('should create 401 error with custom message', () => {
@@ -77,10 +77,10 @@ describe('AppError', () => {
   });
 
   describe('forbidden()', () => {
-    it('should create 403 error with default message', () => {
+    it('should create 403 error with default message (PL)', () => {
       const err = AppError.forbidden();
       expect(err.statusCode).toBe(403);
-      expect(err.message).toBe('Access denied');
+      expect(err.message).toBe('Brak dost\u0119pu');
     });
 
     it('should create 403 error with custom message', () => {
@@ -90,15 +90,15 @@ describe('AppError', () => {
   });
 
   describe('notFound()', () => {
-    it('should create 404 with default "Resource not found"', () => {
+    it('should create 404 with default resource (PL)', () => {
       const err = AppError.notFound();
       expect(err.statusCode).toBe(404);
-      expect(err.message).toBe('Resource not found');
+      expect(err.message).toBe('Zas\u00f3b \u2014 nie znaleziono');
     });
 
     it('should create 404 with custom resource name', () => {
-      const err = AppError.notFound('Client');
-      expect(err.message).toBe('Client not found');
+      const err = AppError.notFound('Klient');
+      expect(err.message).toBe('Klient \u2014 nie znaleziono');
     });
   });
 
@@ -111,10 +111,10 @@ describe('AppError', () => {
   });
 
   describe('internal()', () => {
-    it('should create 500 error with isOperational = false', () => {
+    it('should create 500 error with isOperational = false (PL)', () => {
       const err = AppError.internal();
       expect(err.statusCode).toBe(500);
-      expect(err.message).toBe('Internal server error');
+      expect(err.message).toBe('Wewn\u0119trzny b\u0142\u0105d serwera');
       expect(err.isOperational).toBe(false);
     });
 
