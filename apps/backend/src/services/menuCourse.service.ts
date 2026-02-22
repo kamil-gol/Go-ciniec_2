@@ -1,10 +1,12 @@
 /**
  * Menu Course Service
  * Handles all business logic for menu course operations
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { dishService } from './dish.service';
+import { MENU_COURSE, MENU_CRUD } from '../i18n/pl';
 
 export interface CreateMenuCourseInput {
   packageId: string;
@@ -50,13 +52,13 @@ export class MenuCourseService {
       where: { id },
       include: { options: { include: { dish: true }, orderBy: { displayOrder: 'asc' } } }
     });
-    if (!course) throw new Error('Course not found');
+    if (!course) throw new Error(MENU_COURSE.NOT_FOUND);
     return course;
   }
 
   async create(data: CreateMenuCourseInput) {
     const packageExists = await prisma.menuPackage.findUnique({ where: { id: data.packageId } });
-    if (!packageExists) throw new Error('Package not found');
+    if (!packageExists) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
 
     return prisma.menuCourse.create({
       data: {
@@ -94,7 +96,7 @@ export class MenuCourseService {
     if (foundDishes.length !== dishIds.length) {
       const foundIds = foundDishes.map(d => d.id);
       const missingIds = dishIds.filter(id => !foundIds.includes(id));
-      throw new Error(`Dishes not found: ${missingIds.join(', ')}`);
+      throw new Error(`Nie znaleziono dań: ${missingIds.join(', ')}`);
     }
 
     await prisma.$transaction(async (tx) => {
@@ -114,7 +116,7 @@ export class MenuCourseService {
   async removeDish(courseId: string, dishId: string) {
     await this.getById(courseId);
     const assignment = await prisma.menuCourseOption.findFirst({ where: { courseId, dishId } });
-    if (!assignment) throw new Error('Dish not assigned to this course');
+    if (!assignment) throw new Error('Danie nie jest przypisane do tego kursu');
     return prisma.menuCourseOption.delete({ where: { id: assignment.id } });
   }
 
@@ -136,7 +138,7 @@ export class MenuCourseService {
         }
       }
     });
-    if (!course) throw new Error('Course not found');
+    if (!course) throw new Error(MENU_COURSE.NOT_FOUND);
     return course;
   }
 
