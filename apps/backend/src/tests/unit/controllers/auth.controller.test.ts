@@ -6,7 +6,8 @@
  */
 
 jest.mock('../../../services/auth.service', () => ({
-  authService: {
+  __esModule: true,
+  default: {
     register: jest.fn(),
     login: jest.fn(),
     getMe: jest.fn(),
@@ -24,7 +25,7 @@ jest.mock('../../../utils/logger', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
-import { authService } from '../../../services/auth.service';
+import authService from '../../../services/auth.service';
 import { authController } from '../../../controllers/auth.controller';
 
 const svc = authService as any;

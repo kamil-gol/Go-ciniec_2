@@ -5,7 +5,7 @@
  */
 import bcrypt from 'bcryptjs';
 
-// ── Mocks ────────────────────────────────────────────────
+// ── Mocks ────────────────────────────────────────────────────
 const mockPrisma = {
   user: {
     findUnique: jest.fn(),
@@ -31,11 +31,11 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-import { authService } from '@services/auth.service';
+import authService from '@services/auth.service';
 import { generateToken } from '@middlewares/auth';
 import { validatePassword } from '@utils/password';
 
-// ── Fixtures ─────────────────────────────────────────────
+// ── Fixtures ─────────────────────────────────────────────────
 const hashedPassword = bcrypt.hashSync('Test1234!', 10);
 
 const mockUserWithRole = {
@@ -77,7 +77,7 @@ const mockInactiveUser = {
   isActive: false,
 };
 
-// ── Tests ────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────
 describe('authService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
