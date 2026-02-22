@@ -12,7 +12,7 @@ const VALID_CATEGORIES = [
   'DECORATION', 'ENTERTAINMENT', 'OTHER',
 ] as const;
 
-const VALID_PRICE_TYPES = ['PER_PERSON', 'PER_ITEM', 'FLAT'] as const;
+const VALID_PRICE_TYPES = ['PER_PERSON', 'FLAT', 'FREE'] as const;
 
 class MenuOptionController {
 
@@ -69,7 +69,7 @@ class MenuOptionController {
     try {
       const {
         name, description, shortDescription, category, priceType, priceAmount,
-        allowMultiple, maxQuantity, icon, imageUrl, thumbnailUrl, isActive, displayOrder,
+        allowMultiple, maxQuantity, icon, imageUrl, isActive, displayOrder,
       } = req.body;
       const userId = (req as any).user?.id;
 
@@ -102,8 +102,8 @@ class MenuOptionController {
         name, description, shortDescription, category, priceType,
         priceAmount: priceAmount || 0,
         allowMultiple: allowMultiple || false,
-        maxQuantity: maxQuantity || 1,
-        icon, imageUrl, thumbnailUrl,
+        maxQuantity: maxQuantity || null,
+        icon, imageUrl,
         isActive: isActive !== undefined ? isActive : true,
         displayOrder: displayOrder || 0,
       }, userId);
