@@ -30,24 +30,31 @@ router.get('/me', authMiddleware, authController.getMe);
  */
 router.get('/password-requirements', authController.getPasswordRequirements);
 
+// ═══════════════════════════════════════════
+// 🔑 PASSWORD RESET & CHANGE (#124)
+// ═══════════════════════════════════════════
+
 /**
  * POST /api/auth/forgot-password
  * Request password reset email
  * Body: { email }
+ * Public — no auth required
  */
 router.post('/forgot-password', authController.forgotPassword);
 
 /**
  * POST /api/auth/reset-password
  * Reset password using token from email
- * Body: { token, password }
+ * Body: { token, newPassword }
+ * Public — no auth required
  */
 router.post('/reset-password', authController.resetPassword);
 
 /**
  * PATCH /api/auth/change-password
- * Change password from dashboard (requires authentication)
+ * Change password for authenticated user
  * Body: { oldPassword, newPassword }
+ * Requires: authMiddleware
  */
 router.patch('/change-password', authMiddleware, authController.changePassword);
 
