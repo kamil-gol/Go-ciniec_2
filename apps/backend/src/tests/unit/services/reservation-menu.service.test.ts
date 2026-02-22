@@ -1,12 +1,13 @@
 /**
  * ReservationMenuService — Unit Tests
+ * NOTE: menuOption mock removed — MenuOption model no longer in Prisma.
+ * Options are passed via input data, not looked up from DB.
  */
 
 jest.mock('../../../lib/prisma', () => {
   const mock = {
     reservation: { findUnique: jest.fn() },
     menuPackage: { findUnique: jest.fn() },
-    menuOption: { findMany: jest.fn() },
     reservationMenuSnapshot: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
@@ -65,24 +66,6 @@ const MENU_PACKAGE = {
   ],
 };
 
-const OPTION_PER_PERSON = {
-  id: 'opt-001',
-  name: 'Bar Premium',
-  category: 'BAR',
-  priceAmount: { toString: () => '50' },
-  priceType: 'PER_PERSON',
-  isActive: true,
-};
-
-const OPTION_FLAT = {
-  id: 'opt-002',
-  name: 'Dekoracje',
-  category: 'DECOR',
-  priceAmount: { toString: () => '500' },
-  priceType: 'FLAT',
-  isActive: true,
-};
-
 const SNAPSHOT_DB = {
   id: 'snap-001',
   reservationId: 'res-001',
@@ -120,7 +103,6 @@ beforeEach(() => {
 
   mockPrisma.reservation.findUnique.mockResolvedValue(RESERVATION);
   mockPrisma.menuPackage.findUnique.mockResolvedValue(MENU_PACKAGE);
-  mockPrisma.menuOption.findMany.mockResolvedValue([OPTION_PER_PERSON, OPTION_FLAT]);
   mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
   mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(SNAPSHOT_DB);
   mockPrisma.reservationMenuSnapshot.update.mockResolvedValue(SNAPSHOT_DB);
@@ -137,8 +119,8 @@ describe('ReservationMenuService', () => {
       const result = await reservationMenuService.selectMenu('res-001', {
         packageId: 'pkg-001',
         selectedOptions: [
-          { optionId: 'opt-001', quantity: 1 },
-          { optionId: 'opt-002', quantity: 1 },
+          { optionId: 'opt-001', quantity: 1, name: 'Bar Premium', category: 'BAR', priceAmount: 50, priceType: 'PER_PERSON' },
+          { optionId: 'opt-002', quantity: 1, name: 'Dekoracje', category: 'DECOR', priceAmount: 500, priceType: 'FLAT' },
         ],
       }, TEST_USER);
 
