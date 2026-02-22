@@ -158,43 +158,43 @@ export default function PackagesListPage() {
                     </div>
                   </div>
 
-                  {/* Pricing Section */}
-                  <div className="px-4 sm:px-6 py-3 sm:py-5 bg-neutral-50/80 dark:bg-neutral-800/50 border-y border-neutral-100 dark:border-neutral-800">
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                      <div className="bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-sm">
-                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
-                          <div className="p-1 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md sm:rounded-lg">
+                  {/* Pricing Section — responsive overflow fix */}
+                  <div className="px-4 sm:px-6 py-3 sm:py-5 bg-neutral-50/80 dark:bg-neutral-800/50 border-y border-neutral-100 dark:border-neutral-800 overflow-hidden">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+                      <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2 overflow-hidden">
+                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[10px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400">Dorośli</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Dorośli</span>
                         </div>
-                        <div className="flex items-baseline gap-0.5 sm:gap-1">
-                          <span className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{pkg.pricePerAdult}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-500">zł</span>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-base sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{pkg.pricePerAdult}</span>
+                          <span className="text-[9px] sm:text-xs text-neutral-500">zł</span>
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-sm">
-                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
-                          <div className="p-1 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-md sm:rounded-lg">
+                      <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2 overflow-hidden">
+                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[10px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400">Dzieci</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Dzieci</span>
                         </div>
-                        <div className="flex items-baseline gap-0.5 sm:gap-1">
-                          <span className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-500">zł</span>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-base sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild}</span>
+                          <span className="text-[9px] sm:text-xs text-neutral-500">zł</span>
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-sm">
-                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
-                          <div className="p-1 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md sm:rounded-lg">
+                      <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2 overflow-hidden">
+                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded sm:rounded-lg flex-shrink-0">
                             <Baby className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[10px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400">Maluchy</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Maluchy</span>
                         </div>
-                        <div className="flex items-baseline gap-0.5 sm:gap-1">
-                          <span className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-500">zł</span>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler}</span>
+                          <span className="text-[9px] sm:text-xs text-neutral-500">zł</span>
                         </div>
                       </div>
                     </div>
@@ -225,7 +225,7 @@ export default function PackagesListPage() {
                       className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg text-sm sm:text-base transition-all"
                     >
                       <Edit className="w-4 h-4" />
-                      <span className="hidden sm:inline">Edytuj</span>
+                      Edytuj
                     </Link>
                     <button
                       onClick={() => handleDelete(pkg.id, pkg.name)}
