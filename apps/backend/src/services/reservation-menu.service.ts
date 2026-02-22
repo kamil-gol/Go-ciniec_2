@@ -4,11 +4,13 @@
  * UPDATED: Added recalculateForGuestChange for Phase C integration
  * FIX: formatMenuResponse now exposes menuTemplateId + packageId from DB columns
  * Updated: Phase 3 Audit — logChange() for menu selection, recalculation, removal
+ * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { logChange } from '../utils/audit-logger';
+import { RESERVATION, MENU, MENU_SELECTION } from '../i18n/pl';
 import {
   MenuSelectionInput,
   CategorySelectionDTO,
@@ -23,7 +25,7 @@ class ReservationMenuService {
       where: { id: reservationId },
       include: { eventType: true, client: true }
     });
-    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
 
     const adults = input.adults ?? reservation.adults;
     const children = input.children ?? reservation.children;
@@ -40,7 +42,7 @@ class ReservationMenuService {
         }
       }
     });
-    if (!menuPackage) throw new Error('Menu package not found');
+    if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
 
     if (input.dishSelections && input.dishSelections.length > 0) {
       await this.validateDishSelections(input.dishSelections, menuPackage.categorySettings);
@@ -216,7 +218,7 @@ class ReservationMenuService {
 
   async getReservationMenu(reservationId: string): Promise<any> {
     const snapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
-    if (!snapshot) throw new Error('Menu not selected for this reservation');
+    if (!snapshot) throw new Error(MENU_SELECTION.NOT_SELECTED);
     return this.formatMenuResponse(snapshot, snapshot.adultsCount, snapshot.childrenCount, snapshot.toddlersCount);
   }
 
@@ -253,7 +255,7 @@ class ReservationMenuService {
     }
   }
 
-  // ═══════════════════════ PRIVATE HELPERS ═══════════════════════
+  // ═══════════════════════════ PRIVATE HELPERS ═══════════════════════════
 
   private async validateDishSelections(dishSelections: CategorySelectionDTO[], categorySettings: any[]): Promise<void> {
     const errors: string[] = [];
@@ -263,13 +265,13 @@ class ReservationMenuService {
       const minSelect = parseFloat(categorySetting.minSelect.toString());
       const maxSelect = parseFloat(categorySetting.maxSelect.toString());
       if (categorySetting.isRequired && totalQuantity < minSelect) {
-        errors.push(`Category "${categorySetting.category.name}" requires minimum ${minSelect} selections (got ${totalQuantity})`);
+        errors.push(MENU_SELECTION.CATEGORY_MIN(categorySetting.category.name, minSelect, totalQuantity));
       }
       if (totalQuantity > maxSelect) {
-        errors.push(`Category "${categorySetting.category.name}" allows maximum ${maxSelect} selections (got ${totalQuantity})`);
+        errors.push(MENU_SELECTION.CATEGORY_MAX(categorySetting.category.name, maxSelect, totalQuantity));
       }
     }
-    if (errors.length > 0) throw new Error(`Menu selection validation failed: ${errors.join('; ')}`);
+    if (errors.length > 0) throw new Error(`${MENU_SELECTION.VALIDATION_FAILED}: ${errors.join('; ')}`);
   }
 
   private async buildMenuSnapshot(
@@ -289,7 +291,7 @@ class ReservationMenuService {
             const dish = dishes.find(d => d.id === dishSel.dishId);
             return {
               /* istanbul ignore next -- dish always found from DB query */
-              dishId: dishSel.dishId, dishName: dish?.name || 'Unknown dish',
+              dishId: dishSel.dishId, dishName: dish?.name || MENU_SELECTION.UNKNOWN_DISH,
               description: dish?.description, quantity: dishSel.quantity,
               /* istanbul ignore next */
               allergens: dish?.allergens || []
@@ -311,7 +313,7 @@ class ReservationMenuService {
         const option = options.find(o => o.id === selOpt.optionId);
         return {
           /* istanbul ignore next -- option always found from prior query */
-          optionId: selOpt.optionId, optionName: option?.name || 'Unknown option',
+          optionId: selOpt.optionId, optionName: option?.name || MENU_SELECTION.UNKNOWN_OPTION,
           /* istanbul ignore next */
           category: option?.category || '', quantity: selOpt.quantity,
           /* istanbul ignore next */

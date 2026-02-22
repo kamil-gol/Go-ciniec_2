@@ -135,6 +135,20 @@ export const MENU_CRUD = {
 } as const;
 
 // ═══════════════════════════════════════
+// MENU SELECTION (walidacja wyboru dań w menu)
+// ═══════════════════════════════════════
+export const MENU_SELECTION = {
+  NOT_SELECTED: 'Menu nie zostało wybrane dla tej rezerwacji',
+  CATEGORY_MIN: (name: string, min: number, got: number) =>
+    `Kategoria "${name}" wymaga minimum ${min} wyborów (wybrano ${got})`,
+  CATEGORY_MAX: (name: string, max: number, got: number) =>
+    `Kategoria "${name}" pozwala na maksimum ${max} wyborów (wybrano ${got})`,
+  VALIDATION_FAILED: 'Błąd walidacji wyboru menu',
+  UNKNOWN_DISH: 'Nieznane danie',
+  UNKNOWN_OPTION: 'Nieznana opcja',
+} as const;
+
+// ═══════════════════════════════════════
 // HALL
 // ═══════════════════════════════════════
 export const HALL = {
@@ -195,13 +209,10 @@ export const EVENT_TYPE = {
 // QUEUE (kolejka rezerwacji)
 // ═══════════════════════════════════════
 export const QUEUE = {
-  // Walidacja danych wejściowych
   CLIENT_DATE_GUESTS_REQUIRED: 'Klient, data kolejki i liczba gości są wymagane',
   GUESTS_MIN_ONE: 'Liczba gości musi wynosić co najmniej 1',
   INVALID_DATE_FORMAT: 'Nieprawidłowy format daty',
   DATE_NOT_IN_PAST: 'Data kolejki nie może być w przeszłości',
-
-  // Operacje na pozycjach
   NOT_FOUND: 'Nie znaleziono rezerwacji',
   ONLY_RESERVED: 'Można modyfikować tylko rezerwacje ze statusem RESERVED',
   ONLY_RESERVED_SWAP: 'Można zamieniać tylko rezerwacje ze statusem RESERVED',
@@ -217,8 +228,6 @@ export const QUEUE = {
     `Pozycja ${pos} jest nieprawidłowa. W kolejce na ten dzień jest ${total} rezerwacji.`,
   POSITION_TAKEN: (pos: number) =>
     `Pozycja ${pos} jest już zajęta. Odśwież stronę i spróbuj ponownie.`,
-
-  // Batch update
   AT_LEAST_ONE_UPDATE: 'Wymagana jest co najmniej jedna aktualizacja',
   EACH_NEEDS_ID: 'Każda aktualizacja musi zawierać identyfikator rezerwacji',
   INVALID_POSITION: (pos: number, id: string) =>
@@ -228,15 +237,11 @@ export const QUEUE = {
   NO_QUEUE_DATE_FOR: (id: string) => `Rezerwacja ${id} nie ma przypisanej daty kolejki`,
   ALL_SAME_DATE: 'Wszystkie rezerwacje muszą być z tego samego dnia',
   DUPLICATE_POSITIONS: 'Wykryto zduplikowane pozycje w aktualizacji',
-
-  // Promocja z kolejki
   ONLY_RESERVED_PROMOTE: 'Można awansować tylko rezerwacje ze statusem RESERVED',
   HALL_EVENT_DATES_REQUIRED: 'Sala, typ wydarzenia, godzina rozpoczęcia i zakończenia są wymagane',
   INVALID_DATETIME: 'Nieprawidłowy format daty/godziny',
   END_AFTER_START: 'Godzina zakończenia musi być po godzinie rozpoczęcia',
   HALL_ALREADY_BOOKED: 'Sala jest już zarezerwowana w tym terminie',
-
-  // Konflikty równoległe
   CONCURRENT_MODIFICATION: 'Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.',
   POSITION_CONFLICT: 'Wykryto konflikt pozycji. Odśwież stronę i spróbuj ponownie.',
 } as const;
@@ -252,7 +257,6 @@ export const SERVICE_EXTRA = {
   CATEGORY_SLUG_EXISTS: 'Kategoria o tym slugu już istnieje',
   CATEGORY_DELETED: 'Kategoria została usunięta',
   CATEGORY_HAS_ITEMS: 'Nie można usunąć kategorii zawierającej usługi',
-
   ITEM_NOT_FOUND: 'Nie znaleziono usługi',
   ITEM_NAME_REQUIRED: 'Nazwa usługi jest wymagana',
   ITEM_SLUG_REQUIRED: 'Slug usługi jest wymagany',
@@ -261,7 +265,6 @@ export const SERVICE_EXTRA = {
   ITEM_INVALID_PRICE_TYPE: 'Nieprawidłowy typ ceny. Dozwolone: FLAT, PER_PERSON, FREE',
   ITEM_INVALID_STATUS: 'Nieprawidłowy status. Dozwolone: ACTIVE, INACTIVE, SEASONAL',
   ITEM_DELETED: 'Usługa została usunięta',
-
   EXTRA_NOT_FOUND: 'Nie znaleziono usługi dodatkowej w rezerwacji',
   EXTRA_ALREADY_ADDED: 'Ta usługa jest już dodana do rezerwacji',
   EXTRA_EXCLUSIVE: (name: string) =>
@@ -333,13 +336,10 @@ export const ATTACHMENT = {
 // PDF (etykiety w generowanym PDF)
 // ═══════════════════════════════════════
 export const PDF_LABELS = {
-  // Nagłówek
   TITLE: 'Potwierdzenie rezerwacji',
   RESERVATION_NUMBER: 'Numer rezerwacji',
   CREATED_AT: 'Data utworzenia',
   STATUS: 'Status',
-
-  // Dane klienta
   CLIENT_DATA: 'Dane klienta',
   FIRST_NAME: 'Imię',
   LAST_NAME: 'Nazwisko',
@@ -347,8 +347,6 @@ export const PDF_LABELS = {
   PHONE: 'Telefon',
   COMPANY: 'Firma',
   NIP: 'NIP',
-
-  // Szczegóły rezerwacji
   RESERVATION_DETAILS: 'Szczegóły rezerwacji',
   HALL: 'Sala',
   EVENT_TYPE: 'Typ wydarzenia',
@@ -358,16 +356,12 @@ export const PDF_LABELS = {
   CHILDREN: 'Dzieci',
   TODDLERS: 'Maluchy',
   TOTAL_GUESTS: 'Łącznie gości',
-
-  // Cennik
   PRICING: 'Cennik',
   PRICE_PER_ADULT: 'Cena za dorosłego',
   PRICE_PER_CHILD: 'Cena za dziecko',
   PRICE_PER_TODDLER: 'Cena za malucha',
   TOTAL_PRICE: 'Cena łącznie',
   CURRENCY: 'PLN',
-
-  // Rabat
   DISCOUNT_SECTION: 'Rabat',
   DISCOUNT_TYPE: 'Typ rabatu',
   DISCOUNT_PERCENTAGE: 'Procentowy',
@@ -376,8 +370,6 @@ export const PDF_LABELS = {
   DISCOUNT_REASON: 'Powód rabatu',
   PRICE_BEFORE_DISCOUNT: 'Cena przed rabatem',
   PRICE_AFTER_DISCOUNT: 'Cena po rabacie',
-
-  // Menu
   MENU_SECTION: 'Menu',
   MENU_PACKAGE: 'Pakiet menu',
   MENU_TEMPLATE: 'Szablon menu',
@@ -385,8 +377,6 @@ export const PDF_LABELS = {
   PACKAGE_PRICE: 'Cena pakietu',
   OPTIONS_PRICE: 'Cena opcji',
   TOTAL_MENU_PRICE: 'Łączna cena menu',
-
-  // Usługi dodatkowe
   EXTRAS_SECTION: 'Usługi dodatkowe',
   EXTRAS_NAME: 'Usługa',
   EXTRAS_CATEGORY: 'Kategoria',
@@ -394,8 +384,6 @@ export const PDF_LABELS = {
   EXTRAS_UNIT_PRICE: 'Cena jednostkowa',
   EXTRAS_SUBTOTAL: 'Wartość',
   EXTRAS_TOTAL: 'Łącznie usługi dodatkowe',
-
-  // Zaliczki
   DEPOSITS_SECTION: 'Zaliczki',
   DEPOSIT_AMOUNT: 'Kwota zaliczki',
   DEPOSIT_DUE_DATE: 'Termin płatności',
@@ -405,19 +393,13 @@ export const PDF_LABELS = {
   DEPOSIT_OVERDUE: 'Przeterminowana',
   DEPOSIT_CANCELLED: 'Anulowana',
   DEPOSIT_PAYMENT_METHOD: 'Metoda płatności',
-
-  // Metody płatności
   PAYMENT_CASH: 'Gotówka',
   PAYMENT_TRANSFER: 'Przelew',
   PAYMENT_CARD: 'Karta',
   PAYMENT_BLIK: 'BLIK',
   PAYMENT_OTHER: 'Inna',
-
-  // Uwagi
   NOTES_SECTION: 'Uwagi',
   CONFIRMATION_DEADLINE: 'Termin potwierdzenia',
-
-  // Stopka
   FOOTER_GENERATED: 'Dokument wygenerowany automatycznie',
   FOOTER_PAGE: 'Strona',
   FOOTER_OF: 'z',
@@ -433,8 +415,6 @@ export const REPORTS = {
   NO_DATA: 'Brak danych do wygenerowania raportu',
   EXPORT_FAILED: 'Nie udało się wyeksportować raportu',
   GENERATED: 'Raport został wygenerowany',
-
-  // Nagłówki kolumn eksportu
   COL_RESERVATION_ID: 'ID rezerwacji',
   COL_CLIENT_NAME: 'Klient',
   COL_HALL: 'Sala',
@@ -452,8 +432,6 @@ export const REPORTS = {
   COL_CREATED_AT: 'Utworzono',
   COL_NOTES: 'Uwagi',
   COL_DISCOUNT: 'Rabat',
-
-  // Nazwy arkuszy
   SHEET_RESERVATIONS: 'Rezerwacje',
   SHEET_SUMMARY: 'Podsumowanie',
 } as const;
