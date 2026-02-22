@@ -2,6 +2,7 @@
  * Reservation Service - with full Audit Logging
  * Business logic for reservation management with advanced features
  * Updated: Phase 1 Audit — logChange() for menu updates + cascade cancel
+ * Updated: Sprint 8 — service extras creation during reservation
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
@@ -151,32 +152,39 @@ export class ReservationService {
     const packagePrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
     const totalPrice = packagePrice + optionsPrice;
 
+    // Sprint 8: Calculate service extras total (must be before discount so discount covers extras)
+    let extrasTotal = 0;
+    if (data.serviceExtras && data.serviceExtras.length > 0) {
+      extrasTotal = data.serviceExtras.reduce((sum, e) => sum + e.totalPrice, 0);
+    }
+    const totalWithExtras = totalPrice + extrasTotal;
+
     // ═══ Discount handling (Sprint 7 — applied atomically during creation) ═══
     let discountTypeVal: string | null = null;
     let discountValueNum: number | null = null;
     let discountAmountVal: number | null = null;
     let discountReasonVal: string | null = null;
     let priceBeforeDiscountVal: number | null = null;
-    let finalTotalPrice = totalPrice;
+    let finalTotalPrice = totalWithExtras;
 
     if (data.discountType && data.discountValue && data.discountValue > 0
         && data.discountReason && data.discountReason.trim().length >= 3) {
       discountTypeVal = data.discountType;
       discountValueNum = data.discountValue;
       discountReasonVal = data.discountReason.trim();
-      priceBeforeDiscountVal = totalPrice;
+      priceBeforeDiscountVal = totalWithExtras;
 
       if (data.discountType === 'PERCENTAGE') {
         if (data.discountValue > 100) throw new Error('Rabat procentowy nie mo\u017ce przekroczy\u0107 100%');
-        discountAmountVal = Math.round(totalPrice * data.discountValue / 100 * 100) / 100;
+        discountAmountVal = Math.round(totalWithExtras * data.discountValue / 100 * 100) / 100;
       } else {
         discountAmountVal = data.discountValue;
-        if (discountAmountVal > totalPrice) {
-          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie mo\u017ce przekroczy\u0107 ceny (${totalPrice} PLN)`);
+        if (discountAmountVal > totalWithExtras) {
+          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie mo\u017ce przekroczy\u0107 ceny (${totalWithExtras} PLN)`);
         }
       }
 
-      finalTotalPrice = Math.round((totalPrice - discountAmountVal) * 100) / 100;
+      finalTotalPrice = Math.round((totalWithExtras - discountAmountVal) * 100) / 100;
     }
 
     let notes = data.notes || '';
@@ -282,6 +290,38 @@ export class ReservationService {
       });
     }
 
+    // Sprint 8: Create service extras records
+    if (data.serviceExtras && data.serviceExtras.length > 0) {
+      const serviceItemIds = data.serviceExtras.map(e => e.serviceItemId);
+      const serviceItems = await prisma.serviceItem.findMany({
+        where: { id: { in: serviceItemIds } },
+      });
+      const itemMap = new Map(serviceItems.map((i: any) => [i.id, i]));
+
+      for (const extra of data.serviceExtras) {
+        const item = itemMap.get(extra.serviceItemId) as any;
+        if (!item) continue;
+
+        await prisma.reservationExtra.create({
+          data: {
+            reservationId: reservation.id,
+            serviceItemId: extra.serviceItemId,
+            quantity: extra.quantity,
+            unitPrice: extra.unitPrice,
+            priceType: item.priceType,
+            totalPrice: extra.totalPrice,
+            status: 'PENDING',
+          },
+        });
+      }
+
+      // Update extrasTotalPrice on reservation
+      await prisma.reservation.update({
+        where: { id: reservation.id },
+        data: { extrasTotalPrice: extrasTotal },
+      });
+    }
+
     const depositData = data.deposit || (data.depositAmount && data.depositDueDate ? {
       amount: data.depositAmount,
       dueDate: data.depositDueDate
@@ -306,8 +346,8 @@ export class ReservationService {
     await this.createHistoryEntry(
       reservation.id, userId, 'CREATED', null, null, null,
       menuPackage
-        ? `Utworzono rezerwacj\u0119 z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
-        : `Utworzono rezerwacj\u0119${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
+        ? `Utworzono rezerwacj\u0119 z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}`
+        : `Utworzono rezerwacj\u0119${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}`
     );
 
     // Audit log
@@ -324,6 +364,8 @@ export class ReservationService {
           eventTypeId: data.eventTypeId,
           guests,
           totalPrice: finalTotalPrice,
+          extrasTotal: extrasTotal > 0 ? extrasTotal : undefined,
+          extrasCount: data.serviceExtras?.length || 0,
           startDateTime: data.startDateTime,
           endDateTime: data.endDateTime
         }

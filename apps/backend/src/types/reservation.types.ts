@@ -89,6 +89,16 @@ export interface CreateReservationDTO {
   discountType?: 'PERCENTAGE' | 'FIXED';
   discountValue?: number;
   discountReason?: string;
+
+  // ═══════════════════════════════════════════════════════════════
+  // SERVICE EXTRAS (Sprint 8 - created during reservation)
+  // ═══════════════════════════════════════════════════════════════
+  serviceExtras?: Array<{
+    serviceItemId: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
 }
 
 export interface UpdateReservationDTO {
