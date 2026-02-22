@@ -18,6 +18,7 @@
 import nodemailer from 'nodemailer';
 import logger from '@utils/logger';
 import companySettingsService from './company-settings.service';
+import { PASSWORD_RESET } from '../i18n/pl';
 
 // ═══════════════════════════════════════════
 // Types
@@ -81,6 +82,12 @@ export interface ReservationConfirmationData {
   depositAmount?: string;
   depositDueDate?: string;
   notes?: string;
+}
+
+export interface PasswordResetEmailData {
+  userName: string;
+  resetUrl: string;
+  expiryHours: number;
 }
 
 // ═══════════════════════════════════════════
@@ -191,6 +198,42 @@ const emailService = {
       logger.error(`[Email] Failed to send to ${options.to}: ${error.message}`);
       return false;
     }
+  },
+
+  /**
+   * Send password reset email with reset link
+   */
+  async sendPasswordResetEmail(to: string, data: PasswordResetEmailData): Promise<boolean> {
+    const company = await getCompanyInfo();
+    const subject = PASSWORD_RESET.EMAIL_SUBJECT;
+
+    const html = buildHtmlTemplate({
+      title: 'Resetowanie hasła',
+      preheader: 'Kliknij link, aby zresetować swoje hasło',
+      companyName: company.name,
+      body: `
+        <p>Dzień dobry, <strong>${data.userName}</strong>,</p>
+        <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w systemie ${company.name}.</p>
+        <p>Kliknij poniższy przycisk, aby ustawić nowe hasło:</p>
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${data.resetUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;border-radius:10px;box-shadow:0 4px 12px rgba(124,58,237,0.3);">
+            🔐 Ustaw nowe hasło
+          </a>
+        </div>
+        <p style="color:#6b7280;font-size:13px;">Jeśli przycisk nie działa, skopiuj i wklej ten link w przeglądarce:</p>
+        <p style="word-break:break-all;color:#7c3aed;font-size:13px;">${data.resetUrl}</p>
+        <div style="margin-top:24px;padding:16px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;">
+          <p style="margin:0;color:#d97706;font-weight:600;font-size:14px;">⏰ Link wygasa za ${data.expiryHours} godzinę</p>
+          <p style="margin:4px 0 0;color:#92400e;font-size:13px;">Po wygaśnięciu konieczne będzie wygenerowanie nowego linku.</p>
+        </div>
+        <div style="margin-top:24px;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+          <p style="margin:0;color:#6b7280;font-size:13px;">🛡️ Jeśli nie prosiłeś(-aś) o zmianę hasła, zignoruj tę wiadomość. Twoje konto pozostanie bezpieczne.</p>
+        </div>
+      `,
+      footer: company.footerText,
+    });
+
+    return this.send({ to, subject, html });
   },
 
   /**
