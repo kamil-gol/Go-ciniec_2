@@ -28,6 +28,7 @@ import {
   GripVertical,
   Package,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -168,7 +169,7 @@ export function ServiceCategoryList({
             <div key={item.id} className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg flex-shrink-0">{item.icon || '📦'}</span>
+                  <span className="text-lg flex-shrink-0">{item.icon || '\uD83D\uDCE6'}</span>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">{item.name}</p>
                     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
@@ -228,7 +229,7 @@ export function ServiceCategoryList({
                 <TableRow key={item.id} className="group hover:bg-purple-50/40 dark:hover:bg-purple-900/10 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <span className="text-lg">{item.icon || '📦'}</span>
+                      <span className="text-lg">{item.icon || '\uD83D\uDCE6'}</span>
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{item.name}</p>
                         {item.description && (
@@ -258,7 +259,7 @@ export function ServiceCategoryList({
                         {item.priceType === 'PER_PERSON' && <span className="text-xs text-neutral-400 ml-0.5">/os.</span>}
                       </span>
                     ) : (
-                      <span className="text-sm text-neutral-300 dark:text-neutral-600">—</span>
+                      <span className="text-sm text-neutral-300 dark:text-neutral-600">\u2014</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -441,9 +442,17 @@ function SortableCategoryRows({
               className="h-3 w-3 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
               style={{ backgroundColor: category.color || '#94a3b8' }}
             />
-            <span className="text-lg flex-shrink-0">{category.icon || '📁'}</span>
+            <span className="text-lg flex-shrink-0">{category.icon || '\uD83D\uDCC1'}</span>
             <div className="min-w-0">
-              <p className="font-semibold text-sm truncate">{category.name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-semibold text-sm truncate">{category.name}</p>
+                {category.isExclusive && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Wyłączna
+                  </span>
+                )}
+              </div>
               {category.description && (
                 <p className="text-xs text-neutral-500 truncate max-w-[250px]">{category.description}</p>
               )}
@@ -498,15 +507,10 @@ function SortableCategoryRows({
           <TableCell></TableCell>
           <TableCell>
             <div className="flex items-center gap-3 pl-8">
-              <span className="text-base">{item.icon || '📦'}</span>
+              <span className="text-base">{item.icon || '\uD83D\uDCE6'}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="font-medium text-sm truncate">{item.name}</p>
-                  {item.isExclusive && (
-                    <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300">
-                      Wyłączna
-                    </span>
-                  )}
                   {item.requiresNote && (
                     <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-300">
                       Notatka
@@ -530,7 +534,7 @@ function SortableCategoryRows({
           <TableCell></TableCell>
           <TableCell>
             {item.isActive ? (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400">✓</span>
+              <span className="text-xs text-emerald-600 dark:text-emerald-400">\u2713</span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                 Nieaktywna
@@ -559,7 +563,7 @@ function SortableCategoryRows({
               <Package className="h-4 w-4" />
               Brak pozycji
               <Button variant="link" size="sm" className="h-auto p-0 text-purple-600" onClick={() => onCreateItem(category.id)}>
-                — dodaj pierwszą
+                \u2014 dodaj pierwszą
               </Button>
             </div>
           </TableCell>
@@ -593,9 +597,17 @@ function MobileCategoryCard({
             className="h-3 w-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: category.color || '#94a3b8' }}
           />
-          <span className="text-lg flex-shrink-0">{category.icon || '📁'}</span>
+          <span className="text-lg flex-shrink-0">{category.icon || '\uD83D\uDCC1'}</span>
           <div className="min-w-0">
-            <p className="font-semibold text-sm truncate">{category.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-sm truncate">{category.name}</p>
+              {category.isExclusive && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  Wył.
+                </span>
+              )}
+            </div>
             <p className="text-xs text-neutral-500">{itemCount} pozycji</p>
           </div>
         </div>
@@ -616,12 +628,12 @@ function MobileCategoryCard({
       {isExpanded && category.items && category.items.map((item) => (
         <div key={item.id} className="px-4 py-2.5 pl-14 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-800/20 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span>{item.icon || '📦'}</span>
+            <span>{item.icon || '\uD83D\uDCE6'}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{item.name}</p>
               <p className="text-xs text-neutral-500">
                 {PRICE_LABELS[item.priceType]}
-                {item.priceType !== 'FREE' && ` · ${Number(item.basePrice).toLocaleString('pl-PL')} zł`}
+                {item.priceType !== 'FREE' && ` \u00b7 ${Number(item.basePrice).toLocaleString('pl-PL')} zł`}
               </p>
             </div>
           </div>

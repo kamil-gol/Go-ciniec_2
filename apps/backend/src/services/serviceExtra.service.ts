@@ -101,6 +101,7 @@ export class ServiceExtraService {
         color: data.color || null,
         displayOrder,
         isActive: data.isActive !== undefined ? data.isActive : true,
+        isExclusive: data.isExclusive ?? false,
       },
       include: {
         _count: { select: { items: true } },
@@ -114,7 +115,7 @@ export class ServiceExtraService {
       entityId: category.id,
       details: {
         description: `Utworzono kategori\u0119 us\u0142ug: ${category.name}`,
-        data: { name: category.name, slug: category.slug },
+        data: { name: category.name, slug: category.slug, isExclusive: category.isExclusive },
       },
     });
 
@@ -147,6 +148,7 @@ export class ServiceExtraService {
     if (data.color !== undefined) updateData.color = data.color;
     if (data.displayOrder !== undefined) updateData.displayOrder = data.displayOrder;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.isExclusive !== undefined) updateData.isExclusive = data.isExclusive;
 
     const category = await prisma.serviceCategory.update({
       where: { id },
@@ -304,7 +306,6 @@ export class ServiceExtraService {
         basePrice: data.priceType === 'FREE' ? 0 : (data.basePrice ?? 0),
         icon: data.icon || null,
         displayOrder,
-        isExclusive: data.isExclusive ?? false,
         requiresNote: data.requiresNote ?? false,
         noteLabel: data.noteLabel?.trim() || null,
         isActive: data.isActive !== undefined ? data.isActive : true,
@@ -348,7 +349,6 @@ export class ServiceExtraService {
     if (data.basePrice !== undefined) updateData.basePrice = data.basePrice;
     if (data.icon !== undefined) updateData.icon = data.icon;
     if (data.displayOrder !== undefined) updateData.displayOrder = data.displayOrder;
-    if (data.isExclusive !== undefined) updateData.isExclusive = data.isExclusive;
     if (data.requiresNote !== undefined) updateData.requiresNote = data.requiresNote;
     if (data.noteLabel !== undefined) updateData.noteLabel = data.noteLabel?.trim() || null;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
@@ -469,38 +469,42 @@ export class ServiceExtraService {
       throw new Error(`Pole "${item.noteLabel || 'Uwagi'}" jest wymagane dla tej pozycji`);
     }
 
-    // Handle exclusive items — remove other items from same category
-    if (item.isExclusive) {
+    // Handle exclusive categories — only 1 item from this category per reservation
+    // When category.isExclusive is true, adding a new item auto-replaces the existing one
+    if (item.category?.isExclusive) {
       const existingFromCategory = await prisma.reservationExtra.findMany({
         where: {
           reservationId,
           serviceItem: { categoryId: item.categoryId },
         },
+        include: { serviceItem: true },
       });
 
       if (existingFromCategory.length > 0) {
+        // Auto-replace: remove existing item(s) from this exclusive category
         await prisma.reservationExtra.deleteMany({
           where: {
             id: { in: existingFromCategory.map((e) => e.id) },
           },
         });
-      }
-    } else {
-      // Check if there's an exclusive item already assigned in this category
-      const exclusiveExists = await prisma.reservationExtra.findFirst({
-        where: {
-          reservationId,
-          serviceItem: {
-            categoryId: item.categoryId,
-            isExclusive: true,
-          },
-        },
-      });
 
-      if (exclusiveExists) {
-        throw new Error(
-          `W tej kategorii jest ju\u017c wybrana wy\u0142\u0105czna opcja. Usu\u0144 j\u0105 przed dodaniem innej.`
-        );
+        // Log the auto-replacement
+        const replacedNames = existingFromCategory.map(e => e.serviceItem?.name || 'Nieznana').join(', ');
+        await logChange({
+          userId,
+          action: 'UPDATE',
+          entityType: 'RESERVATION',
+          entityId: reservationId,
+          details: {
+            description: `Automatycznie zast\u0105piono w kategorii wy\u0142\u0105cznej "${item.category.name}": ${replacedNames} \u2192 ${item.name}`,
+            field: 'extras',
+            data: {
+              categoryName: item.category.name,
+              replaced: replacedNames,
+              newItem: item.name,
+            },
+          },
+        });
       }
     }
 

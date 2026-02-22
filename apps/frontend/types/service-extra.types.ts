@@ -32,6 +32,7 @@ export interface ServiceCategory {
   color: string | null;
   displayOrder: number;
   isActive: boolean;
+  isExclusive: boolean;
   createdAt: string;
   updatedAt: string;
   items?: ServiceItem[];
@@ -46,6 +47,7 @@ export interface CreateServiceCategoryInput {
   color?: string;
   displayOrder?: number;
   isActive?: boolean;
+  isExclusive?: boolean;
 }
 
 export interface UpdateServiceCategoryInput {
@@ -56,6 +58,7 @@ export interface UpdateServiceCategoryInput {
   color?: string | null;
   displayOrder?: number;
   isActive?: boolean;
+  isExclusive?: boolean;
 }
 
 // Item
@@ -69,7 +72,6 @@ export interface ServiceItem {
   basePrice: number;
   icon: string | null;
   displayOrder: number;
-  isExclusive: boolean;
   requiresNote: boolean;
   noteLabel: string | null;
   isActive: boolean;
@@ -86,7 +88,6 @@ export interface CreateServiceItemInput {
   basePrice?: number;
   icon?: string;
   displayOrder?: number;
-  isExclusive?: boolean;
   requiresNote?: boolean;
   noteLabel?: string;
   isActive?: boolean;
@@ -99,7 +100,6 @@ export interface UpdateServiceItemInput {
   basePrice?: number;
   icon?: string | null;
   displayOrder?: number;
-  isExclusive?: boolean;
   requiresNote?: boolean;
   noteLabel?: string | null;
   isActive?: boolean;

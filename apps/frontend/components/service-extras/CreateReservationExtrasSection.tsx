@@ -76,6 +76,15 @@ export function CreateReservationExtrasSection({
     return map
   }, [itemsArray])
 
+  // Lookup: is a category exclusive?
+  const exclusiveCategoryIds = useMemo(() => {
+    const set = new Set<string>()
+    for (const cat of categoriesArray) {
+      if (cat.isExclusive) set.add(cat.id)
+    }
+    return set
+  }, [categoriesArray])
+
   const selectedMap = useMemo(() => {
     const map = new Map<string, SelectedExtra>()
     for (const extra of selectedExtras) {
@@ -109,9 +118,14 @@ export function CreateReservationExtrasSection({
 
   const toggleItem = useCallback((item: ServiceItem) => {
     if (selectedMap.has(item.id)) {
+      // Deselect
       onExtrasChange(selectedExtras.filter(e => e.serviceItemId !== item.id))
     } else {
-      if (item.isExclusive) {
+      // Select — check if category is exclusive
+      const isCategoryExclusive = exclusiveCategoryIds.has(item.categoryId)
+
+      if (isCategoryExclusive) {
+        // Exclusive category: replace any existing item from this category
         const filtered = selectedExtras.filter(
           e => e.serviceItem.categoryId !== item.categoryId
         )
@@ -120,16 +134,14 @@ export function CreateReservationExtrasSection({
           { serviceItemId: item.id, serviceItem: item, quantity: 1, note: '' },
         ])
       } else {
-        const filtered = selectedExtras.filter(
-          e => !(e.serviceItem.categoryId === item.categoryId && e.serviceItem.isExclusive)
-        )
+        // Non-exclusive: just add
         onExtrasChange([
-          ...filtered,
+          ...selectedExtras,
           { serviceItemId: item.id, serviceItem: item, quantity: 1, note: '' },
         ])
       }
     }
-  }, [selectedExtras, selectedMap, onExtrasChange])
+  }, [selectedExtras, selectedMap, onExtrasChange, exclusiveCategoryIds])
 
   const updateQuantity = useCallback((serviceItemId: string, delta: number) => {
     onExtrasChange(
@@ -261,6 +273,7 @@ export function CreateReservationExtrasSection({
                   const isOpen = expandedCategories.has(category.id)
                   const selectedInCategory = categoryItems.filter(item => selectedMap.has(item.id))
                   const icon = CATEGORY_ICONS[category.slug] || '\uD83D\uDCE6'
+                  const isCategoryExclusive = category.isExclusive
 
                   return (
                     <div
@@ -285,6 +298,12 @@ export function CreateReservationExtrasSection({
                           <span className="text-xs text-neutral-400">
                             ({categoryItems.length})
                           </span>
+                          {isCategoryExclusive && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                              Wyłączna
+                            </Badge>
+                          )}
                           {selectedInCategory.length > 0 && (
                             <Badge variant="secondary" className="text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400">
                               {selectedInCategory.length} wybr.
@@ -337,12 +356,6 @@ export function CreateReservationExtrasSection({
                                           <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
                                             {item.name}
                                           </span>
-                                          {item.isExclusive && (
-                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                                              Exclusive
-                                            </Badge>
-                                          )}
                                           {item.requiresNote && (
                                             <MessageSquare className="w-3 h-3 text-neutral-400" />
                                           )}
