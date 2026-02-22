@@ -1,5 +1,7 @@
 /**
  * Menu Template Controller - with userId for audit
+ * NOTE: MenuOption/packageOptions removed from Prisma.
+ * PDF options section now returns empty array.
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -228,10 +230,11 @@ export class MenuTemplateController {
       console.log(`[MenuTemplate PDF] Starting PDF generation for template ${id}`);
 
       const template = await menuService.getMenuTemplateById(id);
-      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${template.packages?.length || 0}`);
+      const templateAny = template as any;
+      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${templateAny.packages?.length || 0}`);
 
       const packagesWithCourses = await Promise.all(
-        (template.packages || []).map(async (pkg: any) => {
+        (templateAny.packages || []).map(async (pkg: any) => {
           console.log(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
 
           const categorySettings = await prisma.packageCategorySettings.findMany({
@@ -276,14 +279,8 @@ export class MenuTemplateController {
                 isRecommended: false,
               })),
             })),
-            options: (pkg.packageOptions || []).map((po: any) => ({
-              name: po.option?.name || 'Nieznana opcja',
-              description: po.option?.description || null,
-              category: po.option?.category || 'OTHER',
-              priceType: po.option?.priceType || 'FLAT',
-              priceAmount: Number(po.customPrice ?? po.option?.priceAmount ?? 0),
-              isRequired: po.isRequired,
-            })),
+            // MenuOption/packageOptions removed — options section empty
+            options: [],
           };
         })
       );
