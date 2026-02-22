@@ -2,11 +2,13 @@
  * Reservation Service - with full Audit Logging
  * Business logic for reservation management with advanced features
  * Updated: Phase 1 Audit — logChange() for menu updates + cascade cancel
+ * Updated: Phase 2 i18n — full Polish error messages
  */
 
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { pl } from '../i18n/pl';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -67,7 +69,7 @@ export class ReservationService {
 
   async createReservation(data: CreateReservationDTO, userId: string): Promise<ReservationResponse> {
     if (!data.hallId || !data.clientId || !data.eventTypeId) {
-      throw new Error('Hall, client, and event type are required');
+      throw new Error(pl.reservation.hallClientEventRequired);
     }
 
     await this.validateUserId(userId);
@@ -76,18 +78,18 @@ export class ReservationService {
     const hasLegacyFormat = data.date && data.startTime && data.endTime;
     
     if (!hasNewFormat && !hasLegacyFormat) {
-      throw new Error('Either startDateTime/endDateTime or date/startTime/endTime are required');
+      throw new Error(pl.reservation.dateTimeRequired);
     }
 
     const hall = await prisma.hall.findUnique({ where: { id: data.hallId } });
-    if (!hall) throw new Error('Hall not found');
-    if (!hall.isActive) throw new Error('Hall is not active');
+    if (!hall) throw new Error(pl.reservation.hallNotFound);
+    if (!hall.isActive) throw new Error(pl.reservation.hallNotActive);
 
     const client = await prisma.client.findUnique({ where: { id: data.clientId } });
-    if (!client) throw new Error('Client not found');
+    if (!client) throw new Error(pl.reservation.clientNotFound);
 
     const eventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId } });
-    if (!eventType) throw new Error('Event type not found');
+    if (!eventType) throw new Error(pl.reservation.eventTypeNotFound);
 
     const customValidation = validateCustomEventFields(eventType.name, data);
     if (!customValidation.valid) throw new Error(customValidation.error);
@@ -97,12 +99,12 @@ export class ReservationService {
     let toddlers = data.toddlers ?? 0;
 
     if (adults === 0 && children === 0 && toddlers === 0) {
-      throw new Error('At least one person is required (adults, children, or toddlers)');
+      throw new Error(pl.reservation.atLeastOnePerson);
     }
 
     const guests = calculateTotalGuests(adults, children, toddlers);
     if (guests > hall.capacity) {
-      throw new Error(`Number of guests (${guests}) exceeds hall capacity (${hall.capacity})`);
+      throw new Error(pl.reservation.guestsExceedCapacity(guests, hall.capacity));
     }
 
     let pricePerAdult: number;
@@ -121,12 +123,12 @@ export class ReservationService {
         }
       });
 
-      if (!menuPackage) throw new Error('Selected menu package not found');
+      if (!menuPackage) throw new Error(pl.reservation.menuPackageNotFound);
       if (menuPackage.minGuests && guests < menuPackage.minGuests) {
-        throw new Error(`This package requires at least ${menuPackage.minGuests} guests`);
+        throw new Error(pl.reservation.packageMinGuests(menuPackage.minGuests));
       }
       if (menuPackage.maxGuests && guests > menuPackage.maxGuests) {
-        throw new Error(`This package allows maximum ${menuPackage.maxGuests} guests`);
+        throw new Error(pl.reservation.packageMaxGuests(menuPackage.maxGuests));
       }
 
       pricePerAdult = Number(menuPackage.pricePerAdult);
@@ -139,7 +141,7 @@ export class ReservationService {
       }
     } else {
       if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
-        throw new Error('Price per adult and per child are required when no menu package is selected');
+        throw new Error(pl.reservation.priceRequired);
       }
       pricePerAdult = data.pricePerAdult;
       pricePerChild = data.pricePerChild;
@@ -182,11 +184,11 @@ export class ReservationService {
       const startDT = new Date(data.startDateTime);
       const endDT = new Date(data.endDateTime);
       
-      if (startDT < new Date()) throw new Error('Reservation date must be in the future');
-      if (startDT >= endDT) throw new Error('End time must be after start time');
+      if (startDT < new Date()) throw new Error(pl.reservation.dateMustBeFuture);
+      if (startDT >= endDT) throw new Error(pl.reservation.endAfterStart);
 
       const hasOverlap = await this.checkDateTimeOverlap(data.hallId, startDT, endDT);
-      if (hasOverlap) throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
+      if (hasOverlap) throw new Error(pl.reservation.timeSlotBooked);
 
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
@@ -201,11 +203,11 @@ export class ReservationService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      if (reservationDate < today) throw new Error('Reservation date must be in the future');
-      if (data.startTime >= data.endTime) throw new Error('End time must be after start time');
+      if (reservationDate < today) throw new Error(pl.reservation.dateMustBeFuture);
+      if (data.startTime >= data.endTime) throw new Error(pl.reservation.endAfterStart);
 
       const hasOverlap = await this.checkOverlap(data.hallId, data.date, data.startTime, data.endTime);
-      if (hasOverlap) throw new Error('This time slot is already booked for the selected hall');
+      if (hasOverlap) throw new Error(pl.reservation.timeSlotBooked);
 
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
@@ -221,7 +223,7 @@ export class ReservationService {
       const deadline = new Date(data.confirmationDeadline);
       const eventStart = new Date(data.startDateTime);
       if (!validateConfirmationDeadline(deadline, eventStart)) {
-        throw new Error('Confirmation deadline must be at least 1 day before the event');
+        throw new Error(pl.reservation.confirmationDeadline);
       }
     }
 
@@ -304,8 +306,8 @@ export class ReservationService {
     await this.createHistoryEntry(
       reservation.id, userId, 'CREATED', null, null, null,
       menuPackage
-        ? `Reservation created with menu package: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
-        : `Reservation created${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
+        ? `${pl.reservation.history.createdWithMenu(menuPackage.name)}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
+        : `${pl.reservation.history.created}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
     );
 
     // Audit log
@@ -343,9 +345,9 @@ export class ReservationService {
       include: { menuSnapshot: true, client: true, hall: true }
     });
 
-    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation) throw new Error(pl.reservation.notFound);
     if (reservation.status === ReservationStatus.COMPLETED || reservation.status === ReservationStatus.CANCELLED) {
-      throw new Error('Cannot update menu for completed or cancelled reservations');
+      throw new Error(pl.reservation.cannotUpdateMenuCompletedCancelled);
     }
 
     const clientName = reservation.client
@@ -360,7 +362,6 @@ export class ReservationService {
     const guests = calculateTotalGuests(adults, children, toddlers);
 
     if (data.menuPackageId === null) {
-      // Get old package name before removal
       /* istanbul ignore next -- defensive: menuData always has packageName */
       const oldPackageName = reservation.menuSnapshot
         ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || 'Nieznany pakiet'
@@ -372,7 +373,7 @@ export class ReservationService {
       if (reservation.menuSnapshot) {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
       }
-      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Menu package', 'None', 'Menu removed from reservation');
+      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', pl.reservation.history.menuRemoved);
 
       // Audit log — MENU_REMOVED
       await logChange({
@@ -387,7 +388,7 @@ export class ReservationService {
         },
       });
 
-      return { message: 'Menu removed successfully' };
+      return { message: pl.reservation.menuRemovedSuccess };
     }
 
     if (data.menuPackageId) {
@@ -396,12 +397,12 @@ export class ReservationService {
         include: { menuTemplate: true, packageOptions: { include: { option: true } } }
       });
 
-      if (!menuPackage) throw new Error('Menu package not found');
+      if (!menuPackage) throw new Error(pl.reservation.menuPackageNotFound);
       if (menuPackage.minGuests && guests < menuPackage.minGuests) {
-        throw new Error(`This package requires at least ${menuPackage.minGuests} guests`);
+        throw new Error(pl.reservation.packageMinGuests(menuPackage.minGuests));
       }
       if (menuPackage.maxGuests && guests > menuPackage.maxGuests) {
-        throw new Error(`This package allows maximum ${menuPackage.maxGuests} guests`);
+        throw new Error(pl.reservation.packageMaxGuests(menuPackage.maxGuests));
       }
 
       let selectedOptions: any[] = [];
@@ -455,8 +456,8 @@ export class ReservationService {
 
       await this.createHistoryEntry(
         reservationId, userId, 'MENU_UPDATED', 'menu',
-        reservation.menuSnapshot ? 'Previous package' : 'None',
-        menuPackage.name, `Menu updated to: ${menuPackage.name}`
+        reservation.menuSnapshot ? 'Poprzedni pakiet' : 'Brak',
+        menuPackage.name, pl.reservation.history.menuUpdated(menuPackage.name)
       );
 
       // Audit log — MENU_UPDATED
@@ -478,10 +479,10 @@ export class ReservationService {
         },
       });
 
-      return { message: 'Menu updated successfully', totalPrice: totalMenuPrice };
+      return { message: pl.reservation.menuUpdatedSuccess, totalPrice: totalMenuPrice };
     }
 
-    throw new Error('Invalid menu update data');
+    throw new Error(pl.reservation.invalidMenuData);
   }
 
   private async processSelectedOptions(
@@ -500,16 +501,16 @@ export class ReservationService {
     for (const selection of selections) {
       const option = optionMap.get(selection.optionId);
 
-      if (!option) throw new Error(`Option ${selection.optionId} not found`);
-      if (!option.isActive) throw new Error(`Option ${option.name} is not active`);
+      if (!option) throw new Error(pl.reservation.optionNotFound(selection.optionId));
+      if (!option.isActive) throw new Error(pl.reservation.optionNotActive(option.name));
 
       const quantity = selection.quantity ?? 1;
       if (option.allowMultiple) {
         if (option.maxQuantity && quantity > option.maxQuantity) {
-          throw new Error(`Maximum ${option.maxQuantity} of ${option.name} allowed`);
+          throw new Error(pl.reservation.optionMaxQuantity(option.maxQuantity, option.name));
         }
       } else if (quantity > 1) {
-        throw new Error(`Option ${option.name} does not allow multiple selections`);
+        throw new Error(pl.reservation.optionNoMultiple(option.name));
       }
 
       processed.push({
@@ -626,7 +627,7 @@ export class ReservationService {
       }
     });
 
-    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation) throw new Error(pl.reservation.notFound);
 
     // Enrich with computed extrasTotalPrice
     const extras = (reservation as any).extras || [];
@@ -647,9 +648,9 @@ export class ReservationService {
       include: { hall: true, eventType: true, menuSnapshot: true, client: true }
     });
 
-    if (!existingReservation) throw new Error('Reservation not found');
-    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error('Cannot update completed reservation');
-    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error('Cannot update cancelled reservation');
+    if (!existingReservation) throw new Error(pl.reservation.notFound);
+    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(pl.reservation.cannotUpdateCompleted);
+    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(pl.reservation.cannotUpdateCancelled);
 
     if (data.menuPackageId !== undefined) {
       if (data.menuPackageId === null) {
@@ -667,7 +668,7 @@ export class ReservationService {
     const detectedChanges = detectReservationChanges(existingReservation, data);
     if (detectedChanges.length > 0) {
       if (!data.reason || data.reason.length < 10) {
-        throw new Error('Reason is required for changes (minimum 10 characters)');
+        throw new Error(pl.reservation.reasonRequired);
       }
     }
 
@@ -680,7 +681,7 @@ export class ReservationService {
 
     if (data.startDateTime) {
       const newStart = new Date(data.startDateTime);
-      if (newStart < new Date()) throw new Error('Reservation date must be in the future');
+      if (newStart < new Date()) throw new Error(pl.reservation.dateMustBeFuture);
       updateData.startDateTime = newStart;
     }
     if (data.endDateTime) updateData.endDateTime = new Date(data.endDateTime);
@@ -688,11 +689,11 @@ export class ReservationService {
     const finalStart = data.startDateTime ? new Date(data.startDateTime) : existingReservation.startDateTime;
     const finalEnd = data.endDateTime ? new Date(data.endDateTime) : existingReservation.endDateTime;
     
-    if (finalStart && finalEnd && finalStart >= finalEnd) throw new Error('End time must be after start time');
+    if (finalStart && finalEnd && finalStart >= finalEnd) throw new Error(pl.reservation.endAfterStart);
 
     if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
       const hasOverlap = await this.checkDateTimeOverlap(existingReservation.hallId!, finalStart, finalEnd, id);
-      if (hasOverlap) throw new Error('This time slot is already booked for the selected hall. Please choose a different time.');
+      if (hasOverlap) throw new Error(pl.reservation.timeSlotBooked);
       await this.checkWholeVenueConflict(existingReservation.hallId!, finalStart, finalEnd, id);
     }
 
@@ -708,7 +709,7 @@ export class ReservationService {
     if (guestsChanged) {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
       if (existingReservation.hall && updateData.guests > existingReservation.hall.capacity) {
-        throw new Error(`Number of guests (${updateData.guests}) exceeds hall capacity (${existingReservation.hall.capacity})`);
+        throw new Error(pl.reservation.guestsExceedCapacity(updateData.guests, existingReservation.hall.capacity));
       }
     }
 
@@ -743,7 +744,7 @@ export class ReservationService {
       const deadline = new Date(data.confirmationDeadline);
       const eventStart = finalStart || (data.startDateTime ? new Date(data.startDateTime) : null);
       if (eventStart && !validateConfirmationDeadline(deadline, eventStart)) {
-        throw new Error('Confirmation deadline must be at least 1 day before the event');
+        throw new Error(pl.reservation.confirmationDeadline);
       }
       updateData.confirmationDeadline = deadline;
     }
@@ -765,7 +766,7 @@ export class ReservationService {
 
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
-      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'various', 'various', `${data.reason}\n\nChanges:\n${changesSummary}`);
+      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
     }
 
     // Audit log
@@ -791,7 +792,7 @@ export class ReservationService {
     await this.validateUserId(userId);
 
     const existingReservation = await prisma.reservation.findUnique({ where: { id }, include: { client: true, hall: true } });
-    if (!existingReservation) throw new Error('Reservation not found');
+    if (!existingReservation) throw new Error(pl.reservation.notFound);
 
     this.validateStatusTransition(existingReservation.status, data.status);
 
@@ -802,7 +803,7 @@ export class ReservationService {
           ? new Date(existingReservation.date)
           : null;
       if (eventDate && eventDate > new Date()) {
-        throw new Error('Nie można zakończyć rezerwacji przed datą wydarzenia');
+        throw new Error(pl.reservation.cannotCompleteBeforeEvent);
       }
     }
 
@@ -826,7 +827,7 @@ export class ReservationService {
             newValue: data.status,
             reason: data.reason
               ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
-              : `Status changed${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
+              : `${pl.reservation.history.statusChanged}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
           }
         });
 
@@ -856,7 +857,7 @@ export class ReservationService {
       include: RESERVATION_INCLUDE
     });
 
-    await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Status changed');
+    await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || pl.reservation.history.statusChanged);
 
     // Audit log
     await logChange({
@@ -879,9 +880,9 @@ export class ReservationService {
     await this.validateUserId(userId);
 
     const existingReservation = await prisma.reservation.findUnique({ where: { id }, include: { client: true, hall: true } });
-    if (!existingReservation) throw new Error('Reservation not found');
-    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error('Reservation is already cancelled');
-    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error('Cannot cancel completed reservation');
+    if (!existingReservation) throw new Error(pl.reservation.notFound);
+    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(pl.reservation.alreadyCancelled);
+    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(pl.reservation.cannotCancelCompleted);
 
     await prisma.$transaction(async (tx) => {
       await tx.reservation.update({
@@ -901,7 +902,7 @@ export class ReservationService {
           newValue: ReservationStatus.CANCELLED,
           reason: reason
             ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
-            : `Reservation cancelled${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
+            : `${pl.reservation.history.cancelled}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
         }
       });
     });
@@ -930,8 +931,8 @@ export class ReservationService {
       include: { client: true, hall: true }
     });
 
-    if (!reservation) throw new Error('Reservation not found');
-    if (reservation.archivedAt) throw new Error('Reservation is already archived');
+    if (!reservation) throw new Error(pl.reservation.notFound);
+    if (reservation.archivedAt) throw new Error(pl.reservation.alreadyArchived);
 
     await prisma.reservation.update({
       where: { id },
@@ -941,7 +942,7 @@ export class ReservationService {
     await this.createHistoryEntry(
       id, userId, 'ARCHIVED', 'archivedAt',
       'null', new Date().toISOString(),
-      reason || 'Reservation archived'
+      reason || pl.reservation.history.archived
     );
 
     // Audit log
@@ -969,8 +970,8 @@ export class ReservationService {
       include: { client: true, hall: true }
     });
 
-    if (!reservation) throw new Error('Reservation not found');
-    if (!reservation.archivedAt) throw new Error('Reservation is not archived');
+    if (!reservation) throw new Error(pl.reservation.notFound);
+    if (!reservation.archivedAt) throw new Error(pl.reservation.notArchived);
 
     await prisma.reservation.update({
       where: { id },
@@ -980,7 +981,7 @@ export class ReservationService {
     await this.createHistoryEntry(
       id, userId, 'UNARCHIVED', 'archivedAt',
       reservation.archivedAt.toISOString(), 'null',
-      reason || 'Reservation restored from archive'
+      reason || pl.reservation.history.restored
     );
 
     // Audit log
@@ -1142,7 +1143,7 @@ export class ReservationService {
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
+      throw new AppError(401, pl.auth.sessionExpired);
     }
   }
 
@@ -1192,7 +1193,7 @@ export class ReservationService {
       [ReservationStatus.CANCELLED]: []
     };
     if (!validTransitions[currentStatus]?.includes(newStatus)) {
-      throw new Error(`Cannot change status from ${currentStatus} to ${newStatus}`);
+      throw new Error(pl.reservation.cannotChangeStatus(currentStatus, newStatus));
     }
   }
 
