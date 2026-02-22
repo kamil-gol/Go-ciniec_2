@@ -5,11 +5,13 @@
  * 
  * Extras are independent from the Menu system — they can be added
  * to a reservation at any stage, without selecting a menu first.
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { SERVICE_EXTRA, RESERVATION } from '../i18n/pl';
 import {
   CreateServiceCategoryDTO,
   UpdateServiceCategoryDTO,
@@ -62,24 +64,24 @@ export class ServiceExtraService {
       },
     });
 
-    if (!category) throw new Error('Service category not found');
+    if (!category) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
     return category as any;
   }
 
   async createCategory(data: CreateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
     if (!data.name || data.name.trim().length === 0) {
-      throw new Error('Category name is required');
+      throw new Error(SERVICE_EXTRA.CATEGORY_NAME_REQUIRED);
     }
 
     if (!data.slug || !SLUG_REGEX.test(data.slug)) {
-      throw new Error('Invalid slug format. Use lowercase letters, numbers and hyphens (e.g. "wedding-cake")');
+      throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_FORMAT);
     }
 
     const existing = await prisma.serviceCategory.findUnique({
       where: { slug: data.slug },
     });
     if (existing) {
-      throw new Error('Category with this slug already exists');
+      throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_EXISTS);
     }
 
     // Auto display order
@@ -122,20 +124,20 @@ export class ServiceExtraService {
 
   async updateCategory(id: string, data: UpdateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
     const existing = await prisma.serviceCategory.findUnique({ where: { id } });
-    if (!existing) throw new Error('Service category not found');
+    if (!existing) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error('Category name cannot be empty');
+      throw new Error(SERVICE_EXTRA.CATEGORY_NAME_REQUIRED);
     }
 
     if (data.slug !== undefined) {
       if (!SLUG_REGEX.test(data.slug)) {
-        throw new Error('Invalid slug format');
+        throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_FORMAT);
       }
       const slugTaken = await prisma.serviceCategory.findFirst({
         where: { slug: data.slug, id: { not: id } },
       });
-      if (slugTaken) throw new Error('Category with this slug already exists');
+      if (slugTaken) throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_EXISTS);
     }
 
     const updateData: Record<string, any> = {};
@@ -178,7 +180,7 @@ export class ServiceExtraService {
       where: { id },
       include: { _count: { select: { items: true } } },
     });
-    if (!existing) throw new Error('Service category not found');
+    if (!existing) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
 
     // Check if any items in this category are used in reservations
     const usedInReservations = await prisma.reservationExtra.count({
@@ -252,7 +254,7 @@ export class ServiceExtraService {
       include: { category: true },
     });
 
-    if (!item) throw new Error('Service item not found');
+    if (!item) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
     return item as any;
   }
 
@@ -271,18 +273,18 @@ export class ServiceExtraService {
 
   async createItem(data: CreateServiceItemDTO, userId: string): Promise<ServiceItemResponse> {
     if (!data.name || data.name.trim().length === 0) {
-      throw new Error('Item name is required');
+      throw new Error(SERVICE_EXTRA.ITEM_NAME_REQUIRED);
     }
 
     if (!VALID_PRICE_TYPES.includes(data.priceType)) {
-      throw new Error(`Invalid price type. Use: ${VALID_PRICE_TYPES.join(', ')}`);
+      throw new Error(SERVICE_EXTRA.ITEM_INVALID_PRICE_TYPE);
     }
 
     // Verify category exists
     const category = await prisma.serviceCategory.findUnique({
       where: { id: data.categoryId },
     });
-    if (!category) throw new Error('Service category not found');
+    if (!category) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
 
     // Auto display order
     let displayOrder = data.displayOrder;
@@ -330,14 +332,14 @@ export class ServiceExtraService {
       where: { id },
       include: { category: true },
     });
-    if (!existing) throw new Error('Service item not found');
+    if (!existing) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error('Item name cannot be empty');
+      throw new Error(SERVICE_EXTRA.ITEM_NAME_REQUIRED);
     }
 
     if (data.priceType !== undefined && !VALID_PRICE_TYPES.includes(data.priceType)) {
-      throw new Error(`Invalid price type. Use: ${VALID_PRICE_TYPES.join(', ')}`);
+      throw new Error(SERVICE_EXTRA.ITEM_INVALID_PRICE_TYPE);
     }
 
     const updateData: Record<string, any> = {};
@@ -385,7 +387,7 @@ export class ServiceExtraService {
       where: { id },
       include: { category: true },
     });
-    if (!existing) throw new Error('Service item not found');
+    if (!existing) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
 
     const usedInReservations = await prisma.reservationExtra.count({
       where: { serviceItemId: id },
@@ -419,7 +421,7 @@ export class ServiceExtraService {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
-    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation) throw new Error(SERVICE_EXTRA.RESERVATION_NOT_FOUND);
 
     const extras = await prisma.reservationExtra.findMany({
       where: { reservationId },
@@ -454,18 +456,18 @@ export class ServiceExtraService {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
-    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation) throw new Error(SERVICE_EXTRA.RESERVATION_NOT_FOUND);
 
     const item = await prisma.serviceItem.findUnique({
       where: { id: data.serviceItemId },
       include: { category: true },
     });
-    if (!item) throw new Error('Service item not found');
-    if (!item.isActive) throw new Error('Service item is not active');
+    if (!item) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
+    if (!item.isActive) throw new Error(SERVICE_EXTRA.ITEM_INVALID_STATUS);
 
     // Check if item requires a note
     if (item.requiresNote && (!data.note || data.note.trim().length === 0)) {
-      throw new Error(`Pole "${item.noteLabel || 'Uwagi'}" jest wymagane dla tej pozycji`);
+      throw new Error(SERVICE_EXTRA.EXTRA_REQUIRES_NOTE(item.noteLabel || 'Uwagi'));
     }
 
     // Handle exclusive items — remove other items from same category
@@ -497,9 +499,7 @@ export class ServiceExtraService {
       });
 
       if (exclusiveExists) {
-        throw new Error(
-          `W tej kategorii jest już wybrana wyłączna opcja. Usuń ją przed dodaniem innej.`
-        );
+        throw new Error(SERVICE_EXTRA.EXTRA_EXCLUSIVE(item.category?.name || item.name));
       }
     }
 
@@ -509,7 +509,7 @@ export class ServiceExtraService {
     });
 
     if (existingExtra) {
-      throw new Error('Ta pozycja jest już dodana do rezerwacji');
+      throw new Error(SERVICE_EXTRA.EXTRA_ALREADY_ADDED);
     }
 
     // Calculate price
@@ -633,15 +633,15 @@ export class ServiceExtraService {
       where: { id: extraId, reservationId },
       include: { serviceItem: true },
     });
-    if (!existing) throw new Error('Reservation extra not found');
+    if (!existing) throw new Error(SERVICE_EXTRA.EXTRA_NOT_FOUND);
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
-    if (!reservation) throw new Error('Reservation not found');
+    if (!reservation) throw new Error(SERVICE_EXTRA.RESERVATION_NOT_FOUND);
 
     if (data.status !== undefined && !VALID_STATUSES.includes(data.status)) {
-      throw new Error(`Invalid status. Use: ${VALID_STATUSES.join(', ')}`);
+      throw new Error(SERVICE_EXTRA.ITEM_INVALID_STATUS);
     }
 
     const updateData: Record<string, any> = {};
@@ -716,7 +716,7 @@ export class ServiceExtraService {
       where: { id: extraId, reservationId },
       include: { serviceItem: true },
     });
-    if (!existing) throw new Error('Reservation extra not found');
+    if (!existing) throw new Error(SERVICE_EXTRA.EXTRA_NOT_FOUND);
 
     await prisma.reservationExtra.delete({ where: { id: extraId } });
 
