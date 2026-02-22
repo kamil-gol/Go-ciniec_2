@@ -1,16 +1,14 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
-  UtensilsCrossed, ChefHat, Package, Sparkles, FileText, Tags,
-  TrendingUp, ArrowRight,
+  UtensilsCrossed, ChefHat, Package, FileText, Tags,
+  ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useMenuTemplates } from '@/hooks/use-menu'
 import { useDishes } from '@/hooks/use-dishes'
 import { useDishCategories } from '@/hooks/use-dish-categories'
-import { useMenuOptions } from '@/hooks/use-menu-options'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { motion } from 'framer-motion'
@@ -19,7 +17,6 @@ export default function MenuDashboardPage() {
   const { data: templates = [] } = useMenuTemplates()
   const { data: dishes = [] } = useDishes()
   const { data: categories = [] } = useDishCategories()
-  const { data: options = [] } = useMenuOptions()
   const accent = moduleAccents.menu
 
   const allPackages = templates.flatMap(t => t.packages || [])
@@ -29,25 +26,12 @@ export default function MenuDashboardPage() {
     templates: templates.length,
     packages: allPackages.length,
     categories: categories.length,
-    options: options.length,
     activeTemplates: templates.filter(t => t.isActive).length,
-    activeOptions: options.filter(o => o.isActive).length,
   }
-
-  const dishCategories = dishes.reduce((acc: any, dish: any) => {
-    const categoryName = dish.category?.name || 'Inne'
-    acc[categoryName] = (acc[categoryName] || 0) + 1
-    return acc
-  }, {})
-
-  const topCategories = Object.entries(dishCategories)
-    .sort((a: any, b: any) => b[1] - a[1])
-    .slice(0, 3)
 
   const navCards = [
     { href: '/dashboard/menu/dishes', icon: ChefHat, title: 'Biblioteka Dań', desc: 'Zarządzaj daniami w systemie', stat: `${stats.dishes} dań • ${stats.categories} kategorii`, gradient: 'from-emerald-500 to-teal-500', hoverText: 'text-emerald-600 dark:text-emerald-400' },
     { href: '/dashboard/menu/categories', icon: Tags, title: 'Kategorie Dań', desc: 'Zarządzaj kategoriami dań', stat: `${stats.categories} kategorii`, gradient: 'from-violet-500 to-purple-500', hoverText: 'text-violet-600 dark:text-violet-400' },
-    { href: '/dashboard/menu/options', icon: Sparkles, title: 'Opcje Menu', desc: 'Dodatkowe opcje do pakietów', stat: `${stats.options} opcji • ${stats.activeOptions} aktywnych`, gradient: 'from-rose-500 to-pink-500', hoverText: 'text-rose-600 dark:text-rose-400' },
     { href: '/dashboard/menu/templates', icon: FileText, title: 'Szablony Menu', desc: 'Konfiguruj szablony dla wydarzeń', stat: `${stats.templates} szablonów • ${stats.activeTemplates} aktywnych`, gradient: 'from-blue-500 to-indigo-500', hoverText: 'text-blue-600 dark:text-blue-400' },
     { href: '/dashboard/menu/packages', icon: Package, title: 'Pakiety', desc: 'Zarządzaj pakietami menu', stat: `${stats.packages} pakietów`, gradient: 'from-amber-500 to-orange-500', hoverText: 'text-amber-600 dark:text-amber-400' },
   ]
@@ -58,12 +42,12 @@ export default function MenuDashboardPage() {
       <PageHero
         accent={accent}
         title="Moduł Menu"
-        subtitle="Kompleksowe zarządzanie menu, pakietami i opcjami"
+        subtitle="Kompleksowe zarządzanie menu, pakietami i szablonami"
         icon={UtensilsCrossed}
         stats={[
           { icon: ChefHat, label: 'Dania', value: stats.dishes },
           { icon: FileText, label: 'Szablony', value: stats.templates },
-          { icon: Sparkles, label: 'Opcje', value: stats.options },
+          { icon: Package, label: 'Pakiety', value: stats.packages },
         ]}
       />
 
