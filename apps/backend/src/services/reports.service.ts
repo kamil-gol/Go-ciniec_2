@@ -4,7 +4,7 @@
  * Reports Service
  * Business logic for revenue, occupancy, and other reports
  * Updated: extras revenue tracking in revenue reports
- * 🇵🇱 Spolonizowany — polskie nazwy dni tygodnia
+ * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
 import { prisma } from '@/lib/prisma';
@@ -433,7 +433,7 @@ class ReportsService {
     // Peak day of week analysis
     const peakDaysOfWeek = this.analyzePeakDaysOfWeek(reservations);
     /* istanbul ignore next -- empty when no reservations in period */
-    const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'N/A';
+    const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'Brak danych';
 
     // Peak hour analysis
     const peakHours = this.analyzePeakHours(reservations);
@@ -464,7 +464,7 @@ class ReportsService {
    * Analyze peak days of week
    */
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
-    const dayNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+    const dayNames = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
     const counts = new Map<number, number>();
 
     reservations.forEach(r => {
