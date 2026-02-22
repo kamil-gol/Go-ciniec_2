@@ -128,7 +128,7 @@ export class MenuCourseService {
             dish: {
               select: {
                 id: true, name: true, description: true, category: true,
-                allergens: true, priceModifier: true, imageUrl: true, thumbnailUrl: true
+                allergens: true, imageUrl: true, thumbnailUrl: true
               }
             }
           },

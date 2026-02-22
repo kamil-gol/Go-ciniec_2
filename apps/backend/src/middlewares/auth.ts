@@ -45,7 +45,7 @@ const secret = JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
  */
 export function generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
   return jwt.sign(payload, secret, {
-    expiresIn: JWT_EXPIRY,
+    expiresIn: JWT_EXPIRY as any,
   });
 }
 
