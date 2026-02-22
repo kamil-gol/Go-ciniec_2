@@ -21,11 +21,19 @@ export interface CategorySelectionDTO {
 }
 
 /**
- * Selected menu option with quantity
+ * Selected menu option with quantity.
+ * Required: optionId + quantity.
+ * Optional fields are used by snapshot/service enrichment.
  */
 export interface SelectedOptionDTO {
   optionId: string;
   quantity: number;
+  name?: string;
+  description?: string | null;
+  category?: string;
+  priceType?: 'PER_PERSON' | 'FLAT' | 'FREE';
+  priceAmount?: number;
+  icon?: string | null;
 }
 
 /**

@@ -11,7 +11,6 @@ jest.mock('../../../services/menu.service', () => ({
     updatePackage: jest.fn(),
     deletePackage: jest.fn(),
     reorderPackages: jest.fn(),
-    assignOptionsToPackage: jest.fn(),
   },
 }));
 
@@ -19,7 +18,6 @@ jest.mock('../../../validation/menu.validation', () => ({
   createMenuPackageSchema: { parse: jest.fn((d: any) => d) },
   updateMenuPackageSchema: { parse: jest.fn((d: any) => d) },
   reorderPackagesSchema: { parse: jest.fn((d: any) => d) },
-  assignOptionsToPackageSchema: { parse: jest.fn((d: any) => d) },
 }));
 
 import { MenuPackageController } from '../../../controllers/menuPackage.controller';
@@ -136,22 +134,6 @@ describe('MenuPackageController', () => {
       svc.reorderPackages.mockResolvedValue([]);
       const response = res();
       await controller.reorder(req({ body: { packageOrders: [] } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(200);
-    });
-  });
-
-  describe('assignOptions()', () => {
-    it('should return 404 when package not found', async () => {
-      svc.assignOptionsToPackage.mockRejectedValue(new Error('Package not found'));
-      const response = res();
-      await controller.assignOptions(req({ params: { id: 'x' }, body: {} }), response, next);
-      expect(response.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 200', async () => {
-      svc.assignOptionsToPackage.mockResolvedValue({ id: 'p-1' });
-      const response = res();
-      await controller.assignOptions(req({ params: { id: 'p-1' }, body: { options: [] } }), response, next);
       expect(response.status).toHaveBeenCalledWith(200);
     });
   });
