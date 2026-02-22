@@ -52,13 +52,13 @@ class PackageCategoryService {
 
   async create(data: CreateCategorySettingInput) {
     const existing = await prisma.packageCategorySettings.findUnique({
-      where: { packageId_category: { packageId: data.packageId, category: data.category } }
+      where: { packageId_categoryId: { packageId: data.packageId, categoryId: data.category.id } }
     });
     if (existing) throw new Error('Category setting already exists for this package');
 
     return prisma.packageCategorySettings.create({
       data: {
-        packageId: data.packageId, category: data.category, minSelect: data.minSelect ?? 1,
+        packageId: data.packageId, category: { connect: { id: data.category.id } }, minSelect: data.minSelect ?? 1,
         maxSelect: data.maxSelect ?? 1, isRequired: data.isRequired ?? true,
         isEnabled: data.isEnabled ?? true, displayOrder: data.displayOrder ?? 0,
         customLabel: data.customLabel ?? null
@@ -79,7 +79,7 @@ class PackageCategoryService {
     const results = [];
     for (const settingData of input.settings) {
       const existing = await prisma.packageCategorySettings.findUnique({
-        where: { packageId_category: { packageId, category: settingData.category } }
+        where: { packageId_categoryId: { packageId, categoryId: settingData.category.id } }
       });
       if (existing) {
         const updated = await prisma.packageCategorySettings.update({
