@@ -44,26 +44,17 @@ export const menuApi = {
   // MENU TEMPLATES
   // ────────────────────────────────────────
 
-  /**
-   * Get all menu templates
-   */
   getTemplates: async (filters?: MenuTemplateFilters): Promise<ApiResponse<MenuTemplate[]>> => {
     const query = filters ? buildQueryParams(filters) : '';
     const { data } = await apiClient.get<ApiResponse<MenuTemplate[]>>(`/menu-templates${query}`);
     return data;
   },
 
-  /**
-   * Get single menu template by ID
-   */
   getTemplate: async (id: string): Promise<ApiResponse<MenuTemplate>> => {
     const { data } = await apiClient.get<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`);
     return data;
   },
 
-  /**
-   * Get active menu template for event type
-   */
   getActiveTemplate: async (eventTypeId: string): Promise<ApiResponse<MenuTemplate>> => {
     const { data } = await apiClient.get<ApiResponse<MenuTemplate>>(
       `/menu-templates/active/${eventTypeId}`
@@ -71,25 +62,16 @@ export const menuApi = {
     return data;
   },
 
-  /**
-   * Create new menu template
-   */
   createTemplate: async (input: any): Promise<ApiResponse<MenuTemplate>> => {
     const { data } = await apiClient.post<ApiResponse<MenuTemplate>>('/menu-templates', input);
     return data;
   },
 
-  /**
-   * Update menu template
-   */
   updateTemplate: async (id: string, input: any): Promise<ApiResponse<MenuTemplate>> => {
     const { data } = await apiClient.put<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`, input);
     return data;
   },
 
-  /**
-   * Delete menu template
-   */
   deleteTemplate: async (id: string): Promise<ApiResponse<{ message: string }>> => {
     const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/menu-templates/${id}`);
     return data;
@@ -99,9 +81,6 @@ export const menuApi = {
   // MENU PACKAGES
   // ────────────────────────────────────────
 
-  /**
-   * Get all packages for a menu template
-   */
   getPackages: async (templateId: string): Promise<ApiResponse<MenuPackage[]>> => {
     const { data } = await apiClient.get<ApiResponse<MenuPackage[]>>(
       `/menu-packages/template/${templateId}`
@@ -109,17 +88,11 @@ export const menuApi = {
     return data;
   },
 
-  /**
-   * Get single package by ID
-   */
   getPackage: async (id: string): Promise<ApiResponse<MenuPackage>> => {
     const { data } = await apiClient.get<ApiResponse<MenuPackage>>(`/menu-packages/${id}`);
     return data;
   },
 
-  /**
-   * Get categories with dishes for a package
-   */
   getPackageCategories: async (packageId: string): Promise<ApiResponse<any>> => {
     const { data } = await apiClient.get<ApiResponse<any>>(
       `/menu-packages/${packageId}/categories`
@@ -127,25 +100,16 @@ export const menuApi = {
     return data;
   },
 
-  /**
-   * Create new menu package
-   */
   createPackage: async (input: any): Promise<ApiResponse<MenuPackage>> => {
     const { data } = await apiClient.post<ApiResponse<MenuPackage>>('/menu-packages', input);
     return data;
   },
 
-  /**
-   * Update menu package
-   */
   updatePackage: async (id: string, input: any): Promise<ApiResponse<MenuPackage>> => {
     const { data } = await apiClient.put<ApiResponse<MenuPackage>>(`/menu-packages/${id}`, input);
     return data;
   },
 
-  /**
-   * Delete menu package
-   */
   deletePackage: async (id: string): Promise<ApiResponse<{ message: string }>> => {
     const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/menu-packages/${id}`);
     return data;
@@ -155,42 +119,27 @@ export const menuApi = {
   // MENU OPTIONS
   // ────────────────────────────────────────
 
-  /**
-   * Get all menu options
-   */
   getOptions: async (filters?: MenuOptionFilters): Promise<ApiResponse<MenuOption[]>> => {
     const query = filters ? buildQueryParams(filters) : '';
     const { data } = await apiClient.get<ApiResponse<MenuOption[]>>(`/menu-options${query}`);
     return data;
   },
 
-  /**
-   * Get single option by ID
-   */
   getOption: async (id: string): Promise<ApiResponse<MenuOption>> => {
     const { data } = await apiClient.get<ApiResponse<MenuOption>>(`/menu-options/${id}`);
     return data;
   },
 
-  /**
-   * Create new menu option
-   */
   createOption: async (input: any): Promise<ApiResponse<MenuOption>> => {
     const { data } = await apiClient.post<ApiResponse<MenuOption>>('/menu-options', input);
     return data;
   },
 
-  /**
-   * Update menu option
-   */
   updateOption: async (id: string, input: any): Promise<ApiResponse<MenuOption>> => {
     const { data } = await apiClient.put<ApiResponse<MenuOption>>(`/menu-options/${id}`, input);
     return data;
   },
 
-  /**
-   * Delete menu option
-   */
   deleteOption: async (id: string): Promise<ApiResponse<{ message: string }>> => {
     const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/menu-options/${id}`);
     return data;
@@ -200,10 +149,6 @@ export const menuApi = {
   // RESERVATION MENU SELECTION
   // ────────────────────────────────────────
 
-  /**
-   * Select menu for reservation (initial selection)
-   * Uses POST /reservations/:id/menu
-   */
   selectMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
@@ -215,10 +160,6 @@ export const menuApi = {
     return data;
   },
 
-  /**
-   * Update menu selection for reservation
-   * Uses PUT /reservations/:id/menu
-   */
   updateMenu: async (
     reservationId: string,
     selection: MenuSelectionInput
@@ -231,20 +172,20 @@ export const menuApi = {
   },
 
   /**
-   * Get menu snapshot for reservation
+   * Get menu snapshot for reservation.
+   * Uses _silent flag to suppress 404 toast — no menu is a valid state,
+   * not an error. The hook handles null gracefully.
    */
   getReservationMenu: async (
     reservationId: string
   ): Promise<ApiResponse<ReservationMenuResponse>> => {
     const { data } = await apiClient.get<ApiResponse<ReservationMenuResponse>>(
-      `/reservations/${reservationId}/menu`
+      `/reservations/${reservationId}/menu`,
+      { _silent: true } as any
     );
     return data;
   },
 
-  /**
-   * Update guest counts for reservation menu
-   */
   updateGuestCounts: async (
     reservationId: string,
     counts: {
@@ -260,9 +201,6 @@ export const menuApi = {
     return data;
   },
 
-  /**
-   * Remove menu selection from reservation
-   */
   removeMenu: async (reservationId: string): Promise<ApiResponse<{ message: string }>> => {
     const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(
       `/reservations/${reservationId}/menu`

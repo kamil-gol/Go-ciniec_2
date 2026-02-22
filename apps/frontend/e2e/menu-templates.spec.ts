@@ -49,7 +49,7 @@ test.describe('Menu Templates Management', () => {
       await menu.waitForTemplatesLoaded();
 
       const addButton = page.locator(
-        'button:has-text("Nowy"), button:has-text("Dodaj"), button:has-text("Utw\u00f3rz"), a:has-text("Nowy")'
+        'button:has-text("Nowy"), button:has-text("Dodaj"), button:has-text("Utwórz"), a:has-text("Nowy")'
       );
 
       // UI may not be implemented yet — skip gracefully

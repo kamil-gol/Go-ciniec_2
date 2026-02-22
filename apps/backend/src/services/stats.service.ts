@@ -2,6 +2,7 @@
  * Stats Service
  * Dashboard statistics — real-time queries from database
  * Updated: extras revenue included in KPIs (#4)
+ * Updated: OR conditions with startDateTime fallback (#7)
  */
 
 import { prisma } from '@/lib/prisma';
@@ -21,6 +22,59 @@ export interface DashboardOverview {
   pendingDepositsCount: number;
   pendingDepositsAmount: number;
   activeHalls: number;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATE HELPERS — Reservation has both `date` (VarChar) and
+// `startDateTime` (DateTime). Some records might have only one
+// populated. We query with OR to cover both.
+// ═══════════════════════════════════════════════════════════════
+
+/** Build a Prisma WHERE for "date equals X" using both fields */
+function dateEquals(dateStr: string) {
+  const dayStart = new Date(dateStr + 'T00:00:00.000Z');
+  const dayEnd = new Date(dateStr + 'T23:59:59.999Z');
+  return {
+    OR: [
+      { date: dateStr },
+      { date: null, startDateTime: { gte: dayStart, lte: dayEnd } },
+    ],
+  };
+}
+
+/** Build a Prisma WHERE for "date in range [from, toLt)" using both fields */
+function dateRange(from: string, toLt: string) {
+  const rangeStart = new Date(from + 'T00:00:00.000Z');
+  const rangeEnd = new Date(toLt + 'T00:00:00.000Z');
+  return {
+    OR: [
+      { date: { gte: from, lt: toLt } },
+      { date: null, startDateTime: { gte: rangeStart, lt: rangeEnd } },
+    ],
+  };
+}
+
+/** Build a Prisma WHERE for "date in range [from, to]" (inclusive) using both fields */
+function dateRangeInclusive(from: string, to: string) {
+  const rangeStart = new Date(from + 'T00:00:00.000Z');
+  const rangeEnd = new Date(to + 'T23:59:59.999Z');
+  return {
+    OR: [
+      { date: { gte: from, lte: to } },
+      { date: null, startDateTime: { gte: rangeStart, lte: rangeEnd } },
+    ],
+  };
+}
+
+/** Build a Prisma WHERE for "date >= X" using both fields */
+function dateGte(dateStr: string) {
+  const dayStart = new Date(dateStr + 'T00:00:00.000Z');
+  return {
+    OR: [
+      { date: { gte: dateStr } },
+      { date: null, startDateTime: { gte: dayStart } },
+    ],
+  };
 }
 
 class StatsService {
@@ -68,26 +122,26 @@ class StatsService {
       pendingDeposits,
       activeHalls,
     ] = await Promise.all([
-      // Rezerwacje dziś (nie-anulowane)
+      // Rezerwacje dziś (nie-anulowane) — OR: date || startDateTime
       prisma.reservation.count({
         where: {
-          date: todayStr,
+          ...dateEquals(todayStr),
           status: { not: 'CANCELLED' },
         },
       }),
 
-      // Rezerwacje ten tydzień
+      // Rezerwacje ten tydzień — OR: date || startDateTime
       prisma.reservation.count({
         where: {
-          date: { gte: weekStartStr, lte: weekEndStr },
+          ...dateRangeInclusive(weekStartStr, weekEndStr),
           status: { not: 'CANCELLED' },
         },
       }),
 
-      // Rezerwacje ten miesiąc
+      // Rezerwacje ten miesiąc — OR: date || startDateTime
       prisma.reservation.count({
         where: {
-          date: { gte: monthStartStr, lt: monthEndStr },
+          ...dateRange(monthStartStr, monthEndStr),
           status: { not: 'CANCELLED' },
         },
       }),
@@ -97,10 +151,10 @@ class StatsService {
         where: { status: 'RESERVED' },
       }),
 
-      // Potwierdzone ten miesiąc
+      // Potwierdzone ten miesiąc — OR: date || startDateTime
       prisma.reservation.count({
         where: {
-          date: { gte: monthStartStr, lt: monthEndStr },
+          ...dateRange(monthStartStr, monthEndStr),
           status: 'CONFIRMED',
         },
       }),
@@ -109,7 +163,7 @@ class StatsService {
       prisma.reservation.aggregate({
         _sum: { totalPrice: true, extrasTotalPrice: true },
         where: {
-          date: { gte: monthStartStr, lt: monthEndStr },
+          ...dateRange(monthStartStr, monthEndStr),
           status: { not: 'CANCELLED' },
         },
       }),
@@ -118,7 +172,7 @@ class StatsService {
       prisma.reservation.aggregate({
         _sum: { totalPrice: true, extrasTotalPrice: true },
         where: {
-          date: { gte: prevMonthStartStr, lt: prevMonthEndStr },
+          ...dateRange(prevMonthStartStr, prevMonthEndStr),
           status: { not: 'CANCELLED' },
         },
       }),
@@ -185,16 +239,18 @@ class StatsService {
   /**
    * Get upcoming reservations (from today onwards)
    * Includes relations: Hall, Client, EventType, pending Deposits
+   * Sort: startDateTime first (handles null-date records), then date/startTime
    */
   async getUpcoming(limit: number = 10) {
     const todayStr = new Date().toISOString().split('T')[0];
 
     const reservations = await prisma.reservation.findMany({
       where: {
-        date: { gte: todayStr },
+        ...dateGte(todayStr),
         status: { not: 'CANCELLED' },
       },
       orderBy: [
+        { startDateTime: 'asc' },
         { date: 'asc' },
         { startTime: 'asc' },
       ],

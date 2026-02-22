@@ -12,10 +12,10 @@ import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 
 const clientSchema = z.object({
-  firstName: z.string().min(1, 'Imi\u0119 jest wymagane'),
+  firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
-  email: z.string().email('Nieprawid\u0142owy adres email').optional().or(z.literal('')),
-  phone: z.string().min(9, 'Numer telefonu powinien mie\u0107 co najmniej 9 cyfr'),
+  email: z.string().email('Nieprawidłowy adres email').optional().or(z.literal('')),
+  phone: z.string().min(9, 'Numer telefonu powinien mieć co najmniej 9 cyfr'),
 })
 
 type ClientFormData = z.infer<typeof clientSchema>
@@ -51,18 +51,18 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
 
       if (response.data.success) {
         const newClient = response.data.data
-        toast.success('Klient dodany pomy\u015blnie!')
+        toast.success('Klient dodany pomyślnie!')
         reset()
         onSuccess(newClient)
         onClose()
       } else {
-        throw new Error(response.data.error || 'Nieznany b\u0142\u0105d')
+        throw new Error(response.data.error || 'Nieznany błąd')
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error ||
                           error.response?.data?.message ||
                           error.message ||
-                          'B\u0142\u0105d podczas dodawania klienta'
+                          'Błąd podczas dodawania klienta'
       toast.error(errorMessage)
     } finally {
       setLoading(false)
@@ -86,7 +86,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-6 pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">Imi\u0119</Label>
+              <Label htmlFor="firstName">Imię</Label>
               <Input
                 id="firstName"
                 placeholder="Jan"

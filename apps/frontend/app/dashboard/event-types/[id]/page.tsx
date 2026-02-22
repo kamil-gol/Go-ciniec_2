@@ -40,8 +40,8 @@ export default function EventTypeDetailPage() {
     } catch (error: any) {
       console.error('Error loading event type:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 typu wydarzenia',
+        title: 'Błąd',
+        description: 'Nie udało się załadować typu wydarzenia',
         variant: 'destructive',
       })
       router.push('/dashboard/event-types')
@@ -57,11 +57,11 @@ export default function EventTypeDetailPage() {
       await updateEventType(eventType.id, { isActive: checked })
       toast({
         title: checked ? 'Aktywowany' : 'Dezaktywowany',
-        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'zosta\u0142 dezaktywowany'}`,
+        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
       })
       loadEventType()
     } catch (error: any) {
-      toast({ title: 'B\u0142\u0105d', description: 'Nie uda\u0142o si\u0119 zmieni\u0107 statusu', variant: 'destructive' })
+      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
     } finally {
       setToggling(false)
     }
@@ -110,7 +110,7 @@ export default function EventTypeDetailPage() {
             <Link href="/dashboard/event-types">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -152,7 +152,7 @@ export default function EventTypeDetailPage() {
                   </Badge>
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <FileText className="h-3 w-3 mr-1" />
-                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablon\u00f3w'} menu
+                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablonów'} menu
                   </Badge>
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function EventTypeDetailPage() {
                   onClick={() => setDeleteOpen(true)}
                 >
                   <Trash2 className="mr-2 h-5 w-5" />
-                  Usu\u0144
+                  Usuń
                 </Button>
                 <Button
                   size="lg"
@@ -247,7 +247,7 @@ export default function EventTypeDetailPage() {
                 <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
-                Powi\u0105zania
+                Powiązania
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -269,7 +269,7 @@ export default function EventTypeDetailPage() {
                     </Button>
                   </Link>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center">Brak powi\u0105zanych rezerwacji</p>
+                  <p className="text-xs text-muted-foreground text-center">Brak powiązanych rezerwacji</p>
                 )}
               </div>
 
@@ -291,16 +291,16 @@ export default function EventTypeDetailPage() {
                     </Button>
                   </Link>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center">Brak powi\u0105zanych szablon\u00f3w</p>
+                  <p className="text-xs text-muted-foreground text-center">Brak powiązanych szablonów</p>
                 )}
               </div>
 
               {reservationCount === 0 && templateCount === 0 && (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">
-                    Ten typ nie ma jeszcze \u017cadnych powi\u0105za\u0144.
+                    Ten typ nie ma jeszcze żadnych powiązań.
                     <br />
-                    Zostanie u\u017cyty przy tworzeniu rezerwacji lub szablon\u00f3w menu.
+                    Zostanie użyty przy tworzeniu rezerwacji lub szablonów menu.
                   </p>
                 </div>
               )}

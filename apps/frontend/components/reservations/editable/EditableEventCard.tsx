@@ -23,6 +23,30 @@ import { pl } from 'date-fns/locale'
 const STANDARD_HOURS = 6
 const EXTRA_HOUR_RATE = 500
 
+// ── UTC helpers ─────────────────────────────────────────────────────────
+// Backend stores datetime as UTC. Browser's Date auto-converts to local
+// timezone (CET = UTC+1), which caused the +1 h display bug.
+// These helpers extract values directly from the ISO/UTC representation.
+
+/** Extract "HH:mm" in UTC from an ISO string or Date */
+function utcTime(dt: string | Date): string {
+  const d = typeof dt === 'string' ? new Date(dt) : dt
+  return d.toISOString().slice(11, 16)
+}
+
+/** Extract "YYYY-MM-DD" in UTC from an ISO string or Date */
+function utcDate(dt: string | Date): string {
+  const d = typeof dt === 'string' ? new Date(dt) : dt
+  return d.toISOString().slice(0, 10)
+}
+
+/** Create a local Date whose calendar values match the UTC date (for date-fns format) */
+function utcDateForDisplay(dt: string | Date): Date {
+  const d = typeof dt === 'string' ? new Date(dt) : dt
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+}
+// ────────────────────────────────────────────────────────────────────────
+
 interface EditableEventCardProps {
   reservationId: string
   eventTypeId: string
@@ -48,15 +72,14 @@ export function EditableEventCard({
   anniversaryOccasion: initialAnniversaryOccasion,
   onUpdated,
 }: EditableEventCardProps) {
-  const parseDate = (dt: string | null) => dt ? new Date(dt) : null
-  const initStart = parseDate(initialStart)
-  const initEnd = parseDate(initialEnd)
+  const initStart = initialStart ? new Date(initialStart) : null
+  const initEnd = initialEnd ? new Date(initialEnd) : null
 
   const [eventTypeId, setEventTypeId] = useState(initialEventTypeId)
-  const [startDate, setStartDate] = useState(initStart ? initStart.toISOString().split('T')[0] : '')
-  const [startTime, setStartTime] = useState(initStart ? initStart.toTimeString().slice(0, 5) : '')
-  const [endDate, setEndDate] = useState(initEnd ? initEnd.toISOString().split('T')[0] : '')
-  const [endTime, setEndTime] = useState(initEnd ? initEnd.toTimeString().slice(0, 5) : '')
+  const [startDate, setStartDate] = useState(initStart ? utcDate(initStart) : '')
+  const [startTime, setStartTime] = useState(initStart ? utcTime(initStart) : '')
+  const [endDate, setEndDate] = useState(initEnd ? utcDate(initEnd) : '')
+  const [endTime, setEndTime] = useState(initEnd ? utcTime(initEnd) : '')
   const [customEventType, setCustomEventType] = useState(initialCustom || '')
   const [birthdayAge, setBirthdayAge] = useState(initialBirthdayAge || 0)
   const [anniversaryYear, setAnniversaryYear] = useState(initialAnniversaryYear || 0)
@@ -78,8 +101,8 @@ export function EditableEventCard({
 
   const durationHours = useMemo(() => {
     if (startDate && startTime && endDate && endTime) {
-      const start = new Date(`${startDate}T${startTime}`)
-      const end = new Date(`${endDate}T${endTime}`)
+      const start = new Date(`${startDate}T${startTime}:00.000Z`)
+      const end = new Date(`${endDate}T${endTime}:00.000Z`)
       const diffMs = end.getTime() - start.getTime()
       return Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10
     }
@@ -90,22 +113,22 @@ export function EditableEventCard({
 
   useEffect(() => {
     if (startDate && startTime && !endDate && !endTime) {
-      const start = new Date(`${startDate}T${startTime}`)
+      const start = new Date(`${startDate}T${startTime}:00.000Z`)
       const end = new Date(start.getTime() + 6 * 60 * 60 * 1000)
-      setEndDate(end.toISOString().split('T')[0])
-      setEndTime(end.toTimeString().slice(0, 5))
+      setEndDate(utcDate(end))
+      setEndTime(utcTime(end))
     }
   }, [startDate, startTime, endDate, endTime])
 
   useEffect(() => {
     setEventTypeId(initialEventTypeId)
-    if (initStart) {
-      setStartDate(initStart.toISOString().split('T')[0])
-      setStartTime(initStart.toTimeString().slice(0, 5))
+    if (initialStart) {
+      setStartDate(utcDate(initialStart))
+      setStartTime(utcTime(initialStart))
     }
-    if (initEnd) {
-      setEndDate(initEnd.toISOString().split('T')[0])
-      setEndTime(initEnd.toTimeString().slice(0, 5))
+    if (initialEnd) {
+      setEndDate(utcDate(initialEnd))
+      setEndTime(utcTime(initialEnd))
     }
     setCustomEventType(initialCustom || '')
     setBirthdayAge(initialBirthdayAge || 0)
@@ -121,7 +144,7 @@ export function EditableEventCard({
     const startDT = `${startDate}T${startTime}:00`
     const endDT = `${endDate}T${endTime}:00`
 
-    if (new Date(endDT) <= new Date(startDT)) {
+    if (new Date(`${endDT}Z`) <= new Date(`${startDT}Z`)) {
       throw new Error('Czas zakończenia musi być po czasie rozpoczęcia')
     }
 
@@ -145,13 +168,13 @@ export function EditableEventCard({
 
   const handleCancel = () => {
     setEventTypeId(initialEventTypeId)
-    if (initStart) {
-      setStartDate(initStart.toISOString().split('T')[0])
-      setStartTime(initStart.toTimeString().slice(0, 5))
+    if (initialStart) {
+      setStartDate(utcDate(initialStart))
+      setStartTime(utcTime(initialStart))
     }
-    if (initEnd) {
-      setEndDate(initEnd.toISOString().split('T')[0])
-      setEndTime(initEnd.toTimeString().slice(0, 5))
+    if (initialEnd) {
+      setEndDate(utcDate(initialEnd))
+      setEndTime(utcTime(initialEnd))
     }
     setCustomEventType(initialCustom || '')
     setBirthdayAge(initialBirthdayAge || 0)
@@ -159,7 +182,7 @@ export function EditableEventCard({
     setAnniversaryOccasion(initialAnniversaryOccasion || '')
   }
 
-  const eventDate = initStart
+  const eventDateForDisplay = initialStart ? utcDateForDisplay(initialStart) : null
 
   return (
     <EditableCard
@@ -180,15 +203,15 @@ export function EditableEventCard({
                 {initialBirthdayAge && <p className="text-sm text-muted-foreground mt-1">{initialBirthdayAge}. urodziny</p>}
                 {initialAnniversaryYear && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    {initialAnniversaryYear}. rocznica{initialAnniversaryOccasion ? ` — ${initialAnniversaryOccasion}` : ''}
+                    {initialAnniversaryYear}. rocznica{initialAnniversaryOccasion ? ` \u2014 ${initialAnniversaryOccasion}` : ''}
                   </p>
                 )}
               </div>
-              {eventDate && (
+              {eventDateForDisplay && (
                 <div>
                   <p className="text-sm text-muted-foreground">Data wydarzenia</p>
                   <p className="text-lg font-semibold">
-                    {format(eventDate, 'EEEE, dd MMMM yyyy', { locale: pl })}
+                    {format(eventDateForDisplay, 'EEEE, dd MMMM yyyy', { locale: pl })}
                   </p>
                 </div>
               )}
@@ -196,7 +219,7 @@ export function EditableEventCard({
                 <div>
                   <p className="text-sm text-muted-foreground">Godziny</p>
                   <p className="text-lg font-semibold">
-                    {format(new Date(initialStart), 'HH:mm')} - {format(new Date(initialEnd), 'HH:mm')}
+                    {utcTime(initialStart)} - {utcTime(initialEnd)}
                   </p>
                 </div>
               )}
@@ -324,7 +347,7 @@ export function EditableEventCard({
                   durationHours > STANDARD_HOURS ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'
                 }`}>
                   Czas trwania: {durationHours}h
-                  {extraHours > 0 && ` (${extraHours}h ponad standard — dopłata ${extraHours * EXTRA_HOUR_RATE} PLN)`}
+                  {extraHours > 0 && ` (${extraHours}h ponad standard \u2014 dopłata ${extraHours * EXTRA_HOUR_RATE} PLN)`}
                 </span>
               </motion.div>
             )}

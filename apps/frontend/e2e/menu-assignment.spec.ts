@@ -48,7 +48,7 @@ test.describe('Menu Assignment to Reservation', () => {
           await reservation.nextStep();
 
           await expect(
-            page.locator('text=Wybierz sal\u0119 i termin')
+            page.locator('text=Wybierz salę i termin')
           ).toBeVisible({ timeout: 5000 });
         }
       }

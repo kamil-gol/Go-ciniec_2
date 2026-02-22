@@ -3,6 +3,7 @@
  * 
  * Custom hooks for data fetching and mutations
  * UPDATED: Phase C — all mutation hooks invalidate both menu AND reservation queries
+ * UPDATED: Polonized all user-facing strings
  */
 
 import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
@@ -250,7 +251,7 @@ export function useEventTypes() {
     queryFn: async () => {
       const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const response = await fetch(`${baseURL}/event-types`);
-      if (!response.ok) throw new Error('Failed to fetch event types');
+      if (!response.ok) throw new Error('Nie udało się pobrać typów wydarzeń');
       return response.json();
     },
     select: (response) => response.data || response,
@@ -262,8 +263,8 @@ export function useEventTypes() {
 // ══════════════════════════════════════════════════════════════════
 
 /**
- * Get reservation menu with price breakdown
- * Returns null when menu is not selected (not an error).
+ * Pobierz menu rezerwacji z podziałem cenowym.
+ * Zwraca null gdy menu nie jest wybrane (nie jest to błąd).
  */
 export function useReservationMenu(reservationId: string | undefined) {
   return useQuery({
@@ -273,12 +274,13 @@ export function useReservationMenu(reservationId: string | undefined) {
         const response = await menuApi.getReservationMenu(reservationId!);
         return response;
       } catch (error: any) {
+        // 404 = brak menu — to normalny stan, nie błąd
         if (
           error.response?.status === 404 ||
           error.response?.data?.error?.includes('Menu not selected') ||
+          error.response?.data?.error?.includes('Nie znaleziono') ||
           error.message?.includes('Menu not selected')
         ) {
-          console.log('ℹ️ Menu not selected for reservation:', reservationId);
           return null;
         }
         throw error;
@@ -291,7 +293,7 @@ export function useReservationMenu(reservationId: string | undefined) {
 }
 
 /**
- * Select menu for reservation
+ * Wybierz menu dla rezerwacji
  */
 export function useSelectMenu() {
   const queryClient = useQueryClient();
@@ -317,7 +319,7 @@ export function useSelectMenu() {
 }
 
 /**
- * Update reservation menu
+ * Zaktualizuj menu rezerwacji
  */
 export function useUpdateReservationMenu() {
   const queryClient = useQueryClient();
@@ -343,7 +345,7 @@ export function useUpdateReservationMenu() {
 }
 
 /**
- * Delete reservation menu
+ * Usuń menu rezerwacji
  */
 export function useDeleteReservationMenu() {
   const queryClient = useQueryClient();
@@ -363,8 +365,8 @@ export function useDeleteReservationMenu() {
 }
 
 /**
- * Update guest counts for reservation menu
- * Phase C: Now also invalidates reservation query so totalPrice refreshes
+ * Zaktualizuj liczbę gości dla menu rezerwacji
+ * Faza C: Invaliduje również query rezerwacji aby odświeżyć totalPrice
  */
 export function useUpdateGuestCounts() {
   const queryClient = useQueryClient();
@@ -383,14 +385,12 @@ export function useUpdateGuestCounts() {
     }) => menuApi.updateGuestCounts(reservationId, counts),
     
     onSuccess: (data, variables) => {
-      // Invalidate BOTH menu and reservation caches
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(variables.reservationId),
       });
       queryClient.invalidateQueries({
         queryKey: ['reservations', variables.reservationId],
       });
-      // Also invalidate the reservations list
       queryClient.invalidateQueries({
         queryKey: ['reservations'],
         exact: false,
@@ -400,8 +400,8 @@ export function useUpdateGuestCounts() {
 }
 
 /**
- * Remove menu selection from reservation
- * Phase C: Now also invalidates reservation query for price sync
+ * Usuń wybór menu z rezerwacji
+ * Faza C: Invaliduje również query rezerwacji dla synchronizacji cen
  */
 export function useRemoveMenu() {
   const queryClient = useQueryClient();
@@ -413,7 +413,6 @@ export function useRemoveMenu() {
       queryClient.invalidateQueries({
         queryKey: menuKeys.reservationMenu(reservationId),
       });
-      // Also invalidate reservation to sync totalPrice
       queryClient.invalidateQueries({
         queryKey: ['reservations', reservationId],
       });

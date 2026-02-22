@@ -5,6 +5,7 @@
  * FIX: selectMenuSchema now includes dishSelections
  * FIX: updateMenuSelectionSchema removed (updateMenu now uses selectMenuSchema)
  * FIX: validFrom made optional for template creation
+ * FIX: description made nullable in createMenuTemplateSchema for consistency
  */
 
 import { z } from 'zod';
@@ -16,9 +17,9 @@ import { z } from 'zod';
 export const createMenuTemplateSchema = z.object({
   eventTypeId: z.string().uuid('Invalid event type ID'),
   name: z.string().min(3, 'Name must be at least 3 characters').max(100, 'Name too long'),
-  description: z.string().max(500, 'Description too long').optional(),
-  variant: z.string().max(50, 'Variant too long').optional(),
-  validFrom: z.coerce.date().optional(),  // FIX: Made optional
+  description: z.string().max(500, 'Description too long').optional().nullable(),
+  variant: z.string().max(50, 'Variant too long').optional().nullable(),
+  validFrom: z.coerce.date().optional().nullable(),
   validTo: z.coerce.date().optional().nullable(),
   isActive: z.boolean().optional().default(true),
   displayOrder: z.number().int().min(0).optional().default(0),
