@@ -102,12 +102,12 @@ export class MenuHelper {
   }
 
   async confirmDishes() {
-    await this.page.click('button:has-text("Zatwierd\u017a wyb\u00f3r")');
+    await this.page.click('button:has-text("Zatwierdź wybór")');
     await this.page.waitForTimeout(300);
   }
 
   async confirmOptions() {
-    await this.page.click('button:has-text("Zatwierd\u017a wyb\u00f3r")');
+    await this.page.click('button:has-text("Zatwierdź wybór")');
     await this.page.waitForTimeout(300);
   }
 

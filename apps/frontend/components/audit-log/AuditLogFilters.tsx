@@ -32,18 +32,25 @@ const actionLabels: Record<string, string> = {
   TOGGLE: 'Przełączenie',
   // Status
   STATUS_CHANGE: 'Zmiana statusu',
+  CANCEL: 'Anulowanie',
   ARCHIVE: 'Archiwizacja',
   UNARCHIVE: 'Przywrócenie',
   RESTORE: 'Przywrócenie',
   // Menu
   MENU_UPDATE: 'Aktualizacja menu',
+  MENU_UPDATED: 'Aktualizacja menu',
   MENU_REMOVE: 'Usunięcie menu',
+  MENU_REMOVED: 'Usunięcie menu',
   MENU_SELECTED: 'Wybór menu',
   MENU_RECALCULATED: 'Przeliczenie menu',
   MENU_DIRECT_REMOVED: 'Bezpośrednie usunięcie menu',
-  // Payment
+  // Payment & Deposits
   PAYMENT_UPDATE: 'Aktualizacja płatności',
   MARK_PAID: 'Oznaczenie płatności',
+  DEPOSIT_CANCELLED: 'Anulowanie zaliczki',
+  // Discount
+  DISCOUNT_APPLIED: 'Naliczenie rabatu',
+  DISCOUNT_REMOVED: 'Usunięcie rabatu',
   // Queue
   QUEUE_ADD: 'Dodanie do kolejki',
   QUEUE_UPDATE: 'Aktualizacja w kolejce',
@@ -63,6 +70,10 @@ const actionLabels: Record<string, string> = {
   // Auth
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
+  PASSWORD_RESET_REQUESTED: 'Żądanie resetu hasła',
+  PASSWORD_RESET_COMPLETED: 'Reset hasła',
+  // Settings
+  COMPANY_SETTINGS_UPDATED: 'Aktualizacja ustawień',
 };
 
 const entityTypeLabels: Record<string, string> = {
@@ -78,6 +89,10 @@ const entityTypeLabels: Record<string, string> = {
   QUEUE: 'Kolejka',
   DISH: 'Danie',
   MENU_TEMPLATE: 'Szablon menu',
+  CompanySettings: 'Ustawienia firmy',
+  ServiceExtra: 'Usługa dodatkowa',
+  ServiceCategory: 'Kategoria usług',
+  ServiceItem: 'Pozycja usługi',
 };
 
 interface Props {

@@ -1,6 +1,7 @@
 /**
  * Addon Group Service
  * Business logic for managing addon groups and their dishes
+ * 🇵🇱 Spolonizowany — komunikaty po polsku
  */
 
 import { prisma } from '@/lib/prisma';
@@ -61,7 +62,7 @@ class AddonGroupService {
       where: { id },
       include: { addons: { include: { dish: true }, orderBy: { displayOrder: 'asc' } } },
     });
-    if (!group) throw new Error('Addon group not found');
+    if (!group) throw new Error('Nie znaleziono grupy dodatków');
     return group;
   }
 
@@ -84,7 +85,7 @@ class AddonGroupService {
 
   async update(id: string, data: UpdateAddonGroupInput) {
     const existing = await prisma.addonGroup.findUnique({ where: { id } });
-    if (!existing) throw new Error('Addon group not found');
+    if (!existing) throw new Error('Nie znaleziono grupy dodatków');
 
     return prisma.addonGroup.update({
       where: { id },
@@ -96,14 +97,14 @@ class AddonGroupService {
   async delete(id: string) {
     const group = await prisma.addonGroup.findUnique({ where: { id } });
     /* istanbul ignore next -- delete always called with valid existing group ID */
-    if (!group) throw new Error('Addon group not found');
+    if (!group) throw new Error('Nie znaleziono grupy dodatków');
     await prisma.addonGroup.delete({ where: { id } });
     return { success: true };
   }
 
   async assignDishes(groupId: string, input: AssignDishesToGroupInput) {
     const group = await prisma.addonGroup.findUnique({ where: { id: groupId } });
-    if (!group) throw new Error('Addon group not found');
+    if (!group) throw new Error('Nie znaleziono grupy dodatków');
 
     await prisma.addonGroupDish.deleteMany({ where: { groupId } });
 
@@ -126,7 +127,7 @@ class AddonGroupService {
 
   async removeDish(groupId: string, dishId: string) {
     const assignment = await prisma.addonGroupDish.findFirst({ where: { groupId, dishId } });
-    if (!assignment) throw new Error('Dish not found in addon group');
+    if (!assignment) throw new Error('Nie znaleziono dania w grupie dodatków');
     await prisma.addonGroupDish.delete({ where: { id: assignment.id } });
     return { success: true };
   }

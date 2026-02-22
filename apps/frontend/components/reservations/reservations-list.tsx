@@ -30,17 +30,39 @@ import { batchCheckContract, batchCheckRodo } from '@/lib/api/attachments'
 const accent = moduleAccents.reservations
 
 // Helper functions
+
+/**
+ * Extract a Date for grouping purposes, using UTC components so that
+ * timezone offset never shifts the date (e.g. 23:00 UTC stays on the
+ * same calendar day instead of jumping to the next day in CET).
+ */
 function getFormattedDate(reservation: any): Date | null {
-  if (reservation.startDateTime) return new Date(reservation.startDateTime)
-  if (reservation.date) return new Date(reservation.date)
+  if (reservation.startDateTime) {
+    const d = new Date(reservation.startDateTime)
+    // Build a local Date from UTC year/month/day to avoid TZ shift
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  }
+  if (reservation.date) {
+    // Plain date string — parse without TZ conversion
+    return new Date(reservation.date + 'T00:00:00')
+  }
   return null
 }
 
+/**
+ * Format the time range using UTC hours/minutes.
+ * Backend stores user-chosen times as UTC (18:00 means 18:00:00.000Z),
+ * so we must NOT let the browser convert to local time (+1h in CET).
+ */
 function getFormattedTimeRange(reservation: any): string {
   if (reservation.startDateTime && reservation.endDateTime) {
     const start = new Date(reservation.startDateTime)
     const end = new Date(reservation.endDateTime)
-    return `${start.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
+    const sh = String(start.getUTCHours()).padStart(2, '0')
+    const sm = String(start.getUTCMinutes()).padStart(2, '0')
+    const eh = String(end.getUTCHours()).padStart(2, '0')
+    const em = String(end.getUTCMinutes()).padStart(2, '0')
+    return `${sh}:${sm} - ${eh}:${em}`
   }
   if (reservation.startTime && reservation.endTime) {
     return `${reservation.startTime} - ${reservation.endTime}`

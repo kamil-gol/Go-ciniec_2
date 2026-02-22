@@ -146,11 +146,11 @@ export default function DishCategoriesPage() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 pt-4 overflow-y-auto flex-1 pr-1">
             <div className="space-y-2">
               <Label htmlFor="name">Nazwa (polska)</Label>
               <Input id="name" placeholder="Zupy" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />

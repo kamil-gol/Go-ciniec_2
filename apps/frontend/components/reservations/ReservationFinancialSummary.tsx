@@ -195,16 +195,24 @@ export function ReservationFinancialSummary({
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
   }, [startDateTime, endDateTime, extraHourRate])
 
-  // Effective total: base + extra hours + service extras
+  // ── DISCOUNT: compute early so we can restore the pre-discount base ──
+  const activeDiscountAmount = Number(discountAmount) || 0
+  const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
+
+  // ── EFFECTIVE TOTAL: base + extra hours + service extras ──
+  // IMPORTANT: Backend's totalPrice already includes discount when one is
+  // active (e.g. 5025 - 100 = 4925). If we used that as the base and then
+  // subtracted the discount again we'd get 4825 (double discount).
+  // Fix: when a discount exists, use priceBeforeDiscount as the base.
   const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
-    : totalPrice
+    : (hasActiveDiscount && priceBeforeDiscount != null && Number(priceBeforeDiscount) > 0)
+      ? Number(priceBeforeDiscount)
+      : totalPrice
   const extraHoursCost = extraHoursInfo?.extraCost || 0
   const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice
 
-  // Discount: calculate final price after discount (Sprint 7)
-  const activeDiscountAmount = Number(discountAmount) || 0
-  const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
+  // Final price after discount (single subtraction, never double)
   const finalTotalPrice = hasActiveDiscount
     ? Math.max(0, effectiveTotalPrice - activeDiscountAmount)
     : effectiveTotalPrice
@@ -249,7 +257,7 @@ export function ReservationFinancialSummary({
     loadDeposits()
   }, [loadDeposits])
 
-  // Calculations — use finalTotalPrice (after discount) for balance
+  // Calculations \u2014 use finalTotalPrice (after discount) for balance
   const financials = useMemo(() => {
     const activeDeposits = deposits.filter(d => d.status !== 'CANCELLED')
     const totalPaid = activeDeposits.reduce((sum, d) => sum + Number(d.paidAmount || 0), 0)
@@ -384,19 +392,19 @@ export function ReservationFinancialSummary({
                   <div className="space-y-2">
                     {adults > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
+                        <span className="text-muted-foreground">Dorośli ({adults} \u00d7 {formatPLN(effectivePricePerAdult)} zł)</span>
                         <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
                     {children > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="text-muted-foreground">Dzieci ({children} \u00d7 {formatPLN(effectivePricePerChild)} zł)</span>
                         <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers} \u00d7 {formatPLN(effectivePricePerToddler)} zł)</span>
                         <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
                       </div>
                     )}
@@ -425,7 +433,7 @@ export function ReservationFinancialSummary({
                       {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
+                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} \u00d7 ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
                           </span>
                           <span className="font-semibold">{formatPLN(opt.total)} zł</span>
                         </div>
@@ -450,9 +458,9 @@ export function ReservationFinancialSummary({
                       {activeExtras.map((extra: any) => (
                         <div key={extra.id} className="flex justify-between text-sm">
                           <span className="text-muted-foreground flex items-center gap-1.5">
-                            <span>{extra.serviceItem?.icon || '📦'}</span>
+                            <span>{extra.serviceItem?.icon || '\ud83d\udce6'}</span>
                             {extra.serviceItem?.name || 'Pozycja'}
-                            {extra.quantity > 1 && ` (×${extra.quantity})`}
+                            {extra.quantity > 1 && ` (\u00d7${extra.quantity})`}
                           </span>
                           <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
                         </div>
@@ -489,7 +497,7 @@ export function ReservationFinancialSummary({
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
+                          Dodatkowe godziny ({extraHoursInfo.extraHours} \u00d7 {formatPLN(extraHourRate)} zł/h)
                         </span>
                         <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
                       </div>
@@ -499,7 +507,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* DISCOUNT SECTION (Sprint 7) — uses effectiveTotalPrice as base */}
+            {/* DISCOUNT SECTION (Sprint 7) \u2014 uses effectiveTotalPrice as base */}
             {status && (
               <div className="mb-3">
                 <DiscountSection
@@ -517,7 +525,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* TOTAL — uses finalTotalPrice (after discount) */}
+            {/* TOTAL \u2014 uses finalTotalPrice (after discount) */}
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -547,7 +555,7 @@ export function ReservationFinancialSummary({
             </div>
           </div>
 
-          {/* DEPOSITS + BALANCE — uses finalTotalPrice */}
+          {/* DEPOSITS + BALANCE \u2014 uses finalTotalPrice */}
           <div className="px-6 pb-6">
             {/* Balance bar */}
             <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
@@ -666,7 +674,7 @@ export function ReservationFinancialSummary({
                               </span>
                               {deposit.title && (
                                 <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                  — {deposit.title}
+                                  \u2014 {deposit.title}
                                 </span>
                               )}
                             </div>

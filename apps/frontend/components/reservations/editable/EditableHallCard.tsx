@@ -16,6 +16,15 @@ import { useCheckAvailability } from '@/hooks/use-check-availability'
 import { useUpdateReservation } from '@/lib/api/reservations'
 import { toast } from 'sonner'
 
+/** Extract "HH:mm" in UTC from an ISO datetime string */
+function utcTime(iso: string): string {
+  try {
+    return new Date(iso).toISOString().slice(11, 16)
+  } catch {
+    return ''
+  }
+}
+
 interface EditableHallCardProps {
   reservationId: string
   hallId: string
@@ -138,7 +147,7 @@ export function EditableHallCard({
                 Pojemność: {selectedCapacity} osób
                 {totalGuests > selectedCapacity && (
                   <span className="text-red-600 dark:text-red-400 font-medium">
-                    {' '}— Uwaga! Gości: {totalGuests} (przekroczenie!)
+                    {' '}\u2014 Uwaga! Gości: {totalGuests} (przekroczenie!)
                   </span>
                 )}
               </p>
@@ -176,11 +185,10 @@ export function EditableHallCard({
                         Kolizja z istniejącą rezerwacją!
                       </span>
                     </div>
-                    {availability?.conflicts?.map((c) => (
+                    {availability?.conflicts?.map((c: any) => (
                       <div key={c.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
-                        • {c.clientName} — {c.eventType} (
-                        {new Date(c.startDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}–
-                        {new Date(c.endDateTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })})
+                        \u2022 {c.clientName} \u2014 {c.eventType} (
+                        {utcTime(c.startDateTime)}\u2013{utcTime(c.endDateTime)})
                       </div>
                     ))}
                   </div>

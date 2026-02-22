@@ -40,12 +40,17 @@ class ApiClient {
     )
 
     // Response interceptor for error handling
+    // Supports _silent config flag to suppress toast for expected errors
+    // Usage: apiClient.get('/url', { _silent: true } as any)
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
         if (isDev) {
           console.error('[API Error]', error.config?.url, error.response?.status)
         }
+
+        // Check if the caller wants to suppress error toasts
+        const isSilent = (error.config as any)?._silent === true
         
         if (error.response) {
           const message = (error.response.data as any)?.error || (error.response.data as any)?.message || 'Wystąpił błąd'
@@ -67,29 +72,25 @@ class ApiClient {
             setTimeout(() => {
               window.location.href = '/login'
             }, 1500)
-          } else if (error.response.status === 403) {
+          } else if (error.response.status === 403 && !isSilent) {
             toast.error('Brak uprawnień do wykonania tej operacji', {
               duration: 4000
             })
-          } else if (error.response.status === 404) {
+          } else if (error.response.status === 404 && !isSilent) {
             toast.error(`Nie znaleziono: ${message}`, {
               duration: 4000
             })
-          } else if (error.response.status >= 500) {
+          } else if (error.response.status >= 500 && !isSilent) {
             toast.error('Błąd serwera. Spróbuj ponownie później.', {
               duration: 5000,
               description: message
             })
-          } else if (error.response.status === 400) {
-            toast.error(message, {
-              duration: 4000
-            })
-          } else {
+          } else if (!isSilent && error.response.status !== 404 && error.response.status !== 403 && error.response.status < 500) {
             toast.error(message, {
               duration: 4000
             })
           }
-        } else if (error.request) {
+        } else if (error.request && !isSilent) {
           toast.error('Brak połączenia z serwerem', {
             duration: 5000,
             description: 'Sprawdź połączenie internetowe lub skontaktuj się z administratorem'

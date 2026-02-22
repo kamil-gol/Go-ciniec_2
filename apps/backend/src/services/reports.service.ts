@@ -4,6 +4,7 @@
  * Reports Service
  * Business logic for revenue, occupancy, and other reports
  * Updated: extras revenue tracking in revenue reports
+ * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
 import { prisma } from '@/lib/prisma';
@@ -23,7 +24,7 @@ import type {
 
 /**
  * Calculate extras revenue for a single reservation from its extras.
- * Supports FLAT (price \u00d7 qty), PER_PERSON (price \u00d7 qty \u00d7 guests), FREE (0).
+ * Supports FLAT (price × qty), PER_PERSON (price × qty × guests), FREE (0).
  */
 function calculateExtrasRevenue(
   extras: Array<{ quantity: number; unitPrice: number | null; totalPrice: number | null; serviceItem: { basePrice: number; priceType: string; name: string; id: string } }>,
@@ -94,7 +95,7 @@ class ReportsService {
       completedReservations,
       previousPeriodRevenue,
     ] = await Promise.all([
-      // All reservations in period \u2014 now with extras
+      // All reservations in period — now with extras
       prisma.reservation.findMany({
         where: whereClause,
         select: {
@@ -432,7 +433,7 @@ class ReportsService {
     // Peak day of week analysis
     const peakDaysOfWeek = this.analyzePeakDaysOfWeek(reservations);
     /* istanbul ignore next -- empty when no reservations in period */
-    const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'N/A';
+    const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'Brak danych';
 
     // Peak hour analysis
     const peakHours = this.analyzePeakHours(reservations);
@@ -463,7 +464,7 @@ class ReportsService {
    * Analyze peak days of week
    */
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNames = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
     const counts = new Map<number, number>();
 
     reservations.forEach(r => {
