@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -273,6 +274,16 @@ export default function LoginPage() {
               </span>
             </motion.button>
           </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
+            >
+              Nie pamiętam hasła
+            </Link>
+          </div>
         </motion.div>
 
         {/* Footer */}
@@ -282,7 +293,7 @@ export default function LoginPage() {
           transition={{ delay: 0.7 }}
           className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
         >
-          <p>© 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
+          <p>&copy; 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
         </motion.div>
       </motion.div>
     </div>
