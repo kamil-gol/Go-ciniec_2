@@ -1,6 +1,7 @@
 /**
  * MenuService — Unit Tests: Templates + Packages
  * Część 1/2 testów modułu Menu
+ * NOTE: MenuPackageOption removed — mock and related assertions cleaned up
  */
 
 jest.mock('../../../lib/prisma', () => {
@@ -19,11 +20,6 @@ jest.mock('../../../lib/prisma', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-    },
-    menuPackageOption: {
-      create: jest.fn(),
-      createMany: jest.fn(),
-      deleteMany: jest.fn(),
     },
     menuPriceHistory: {
       create: jest.fn(),
@@ -86,7 +82,6 @@ const PACKAGE = {
   isPopular: true,
   isRecommended: false,
   menuTemplate: TEMPLATE,
-  packageOptions: [],
   categorySettings: [],
 };
 
@@ -109,7 +104,6 @@ beforeEach(() => {
   mockPrisma.menuPackage.update.mockResolvedValue(PACKAGE);
   mockPrisma.menuPackage.delete.mockResolvedValue(PACKAGE);
 
-  mockPrisma.menuPackageOption.create.mockResolvedValue({});
   mockPrisma.menuPriceHistory.create.mockResolvedValue({});
   mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(0);
 });
@@ -135,7 +129,7 @@ describe('MenuService', () => {
   });
 
   describe('getMenuTemplateById()', () => {
-    it('should return template with packages and options', async () => {
+    it('should return template with packages', async () => {
       const result = await service.getMenuTemplateById('tpl-001');
       expect(result.id).toBe('tpl-001');
     });
@@ -218,16 +212,18 @@ describe('MenuService', () => {
   });
 
   describe('duplicateMenuTemplate()', () => {
-    it('should create copy with packages and options', async () => {
-      // Original has packages with packageOptions
+    it('should create copy with packages (no packageOptions)', async () => {
+      // Original has packages — no packageOptions in new schema
       mockPrisma.menuTemplate.findUnique.mockResolvedValue({
         ...TEMPLATE,
-        packages: [{
-          ...PACKAGE,
-          packageOptions: [{ optionId: 'opt-1', customPrice: null, isRequired: false, isDefault: true, displayOrder: 0 }],
-        }],
+        packages: [PACKAGE],
       });
       mockPrisma.menuPackage.create.mockResolvedValue({ id: 'pkg-new' });
+
+      // After duplication, getMenuTemplateById is called
+      mockPrisma.menuTemplate.findUnique
+        .mockResolvedValueOnce({ ...TEMPLATE, packages: [PACKAGE] })
+        .mockResolvedValueOnce({ ...TEMPLATE, id: 'tpl-new', name: 'Kopia', packages: [] });
 
       const result = await service.duplicateMenuTemplate('tpl-001', {
         name: 'Kopia', validFrom: new Date(),
@@ -235,7 +231,6 @@ describe('MenuService', () => {
 
       expect(mockPrisma.menuTemplate.create).toHaveBeenCalledTimes(1);
       expect(mockPrisma.menuPackage.create).toHaveBeenCalledTimes(1);
-      expect(mockPrisma.menuPackageOption.create).toHaveBeenCalledTimes(1);
       expect(logChange).toHaveBeenCalledWith(expect.objectContaining({ action: 'DUPLICATE' }));
     });
   });
@@ -243,7 +238,7 @@ describe('MenuService', () => {
   // ═══ PACKAGES ═══
 
   describe('getPackageById()', () => {
-    it('should return package with options', async () => {
+    it('should return package', async () => {
       const result = await service.getPackageById('pkg-001');
       expect(result.id).toBe('pkg-001');
     });
