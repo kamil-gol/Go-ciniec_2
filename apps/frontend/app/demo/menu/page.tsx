@@ -12,7 +12,6 @@ import { useState } from 'react';
 import { 
   MenuCard,
   PackageCard,
-  OptionCard,
   PriceBreakdown,
   MenuSelectionFlow,
   MenuSummary
@@ -20,18 +19,15 @@ import {
 import { 
   useMenuTemplates, 
   useMenuPackages, 
-  useMenuOptions 
 } from '@/hooks/use-menu';
 import { toast } from 'sonner';
 
 export default function MenuDemoPage() {
   const [activeTab, setActiveTab] = useState<'components' | 'flow'>('components');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>();
-  const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>({});
 
   const { data: templates, isLoading: templatesLoading } = useMenuTemplates({ isActive: true });
   const { data: packages } = useMenuPackages(selectedTemplateId);
-  const { data: options } = useMenuOptions({ isActive: true });
 
   const samplePriceBreakdown = {
     packageCost: {
@@ -54,7 +50,7 @@ export default function MenuDemoPage() {
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-            🎨 Menu Components Demo
+            \uD83C\uDFA8 Menu Components Demo
           </h1>
           <p className="mt-2 text-neutral-600 dark:text-neutral-400">
             Interactive showcase of all menu system components
@@ -145,40 +141,11 @@ export default function MenuDemoPage() {
               </section>
             )}
 
-            {/* OptionCard Section */}
-            {options && options.length > 0 && (
-              <section>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                    3. OptionCard
-                  </h2>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Display menu options with quantity selector
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  {options.slice(0, 5).map(option => (
-                    <OptionCard
-                      key={option.id}
-                      option={option}
-                      quantity={optionQuantities[option.id] || 0}
-                      onQuantityChange={(id, qty) => {
-                        setOptionQuantities(prev => ({ ...prev, [id]: qty }));
-                        if (qty > 0) {
-                          toast.success(`Dodano: ${option.name} (×${qty})`);
-                        }
-                      }}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* PriceBreakdown Section */}
             <section>
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                  4. PriceBreakdown
+                  3. PriceBreakdown
                 </h2>
                 <p className="text-neutral-600 dark:text-neutral-400">
                   Display detailed price calculation
@@ -198,8 +165,8 @@ export default function MenuDemoPage() {
               toddlers={5}
               onComplete={(selection) => {
                 console.log('Selection completed:', selection);
-                toast.success('✅ Wybór menu zakończony!', {
-                  description: `${selection.template.name} - ${selection.package.name}`,
+                toast.success('\u2705 Wyb\u00f3r menu zako\u0144czony!', {
+                  description: `Template: ${selection.templateId}, Package: ${selection.packageId}`,
                 });
               }}
             />
@@ -211,7 +178,7 @@ export default function MenuDemoPage() {
       <div className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
           <p>
-            📚 Documentation:{' '}
+            \uD83D\uDCDA Documentation:{' '}
             <a
               href="https://github.com/kamil-gol/Go-ciniec_2/blob/main/apps/frontend/components/menu/README.md"
               target="_blank"
@@ -222,7 +189,7 @@ export default function MenuDemoPage() {
             </a>
           </p>
           <p className="mt-2">
-            🚀 API Status: Connected to <code>http://localhost:3001/api</code>
+            \uD83D\uDE80 API Status: Connected to <code>http://localhost:3001/api</code>
           </p>
         </div>
       </div>

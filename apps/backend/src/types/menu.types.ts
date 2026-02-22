@@ -1,14 +1,18 @@
 /**
  * Menu System TypeScript Types
  * 
- * Type definitions for menu templates, packages, options, and snapshots
+ * Type definitions for menu templates, packages, and snapshots
+ * 
+ * NOTE: MenuOption and MenuPackageOption Prisma models were removed.
+ * Options are now handled via the ServiceExtras system.
+ * Legacy type interfaces kept for backward compatibility where needed.
  */
 
-import { MenuTemplate, MenuPackage, MenuOption, MenuPackageOption } from '@prisma/client';
+import { MenuTemplate, MenuPackage } from '@prisma/client';
 
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // MENU TEMPLATE TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
 export interface CreateMenuTemplateInput {
   eventTypeId: string;
@@ -33,9 +37,9 @@ export interface UpdateMenuTemplateInput {
   imageUrl?: string | null;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // MENU PACKAGE TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
 export interface CreateMenuPackageInput {
   menuTemplateId: string;
@@ -77,10 +81,11 @@ export interface UpdateMenuPackageInput {
   changeReason?: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MENU OPTION TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// LEGACY MENU OPTION TYPES (Prisma models removed, interfaces kept for compat)
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
+/** @deprecated Use ServiceExtras system instead */
 export interface CreateMenuOptionInput {
   name: string;
   description?: string;
@@ -96,6 +101,7 @@ export interface CreateMenuOptionInput {
   isActive?: boolean;
 }
 
+/** @deprecated Use ServiceExtras system instead */
 export interface UpdateMenuOptionInput {
   name?: string;
   description?: string | null;
@@ -112,10 +118,7 @@ export interface UpdateMenuOptionInput {
   changeReason?: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PACKAGE-OPTION ASSIGNMENT TYPES
-// ═══════════════════════════════════════════════════════════════════════════
-
+/** @deprecated Use ServiceExtras system instead */
 export interface AssignOptionsToPackageInput {
   options: Array<{
     optionId: string;
@@ -126,9 +129,9 @@ export interface AssignOptionsToPackageInput {
   }>;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // DISH SELECTION TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
 export interface DishSelectionItem {
   dishId: string;
@@ -140,9 +143,9 @@ export interface CategoryDishSelection {
   dishes: DishSelectionItem[];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // SNAPSHOT TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
 export interface MenuSnapshotData {
   // Template info
@@ -162,7 +165,7 @@ export interface MenuSnapshotData {
   packageColor: string | null;
   packageIcon: string | null;
 
-  // Selected options
+  // Selected options (legacy — kept for snapshot backward compat)
   selectedOptions: Array<{
     optionId: string;
     name: string;
@@ -174,7 +177,7 @@ export interface MenuSnapshotData {
     icon: string | null;
   }>;
 
-  // Dish selections (added for full menu persistence)
+  // Dish selections
   dishSelections?: CategoryDishSelection[];
 }
 
@@ -225,6 +228,4 @@ export interface MenuPriceBreakdown {
 export type {
   MenuTemplate,
   MenuPackage,
-  MenuOption,
-  MenuPackageOption
 };
