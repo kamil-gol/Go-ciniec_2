@@ -62,13 +62,13 @@ class ReservationMenuService {
     const menuSnapshot = await prisma.reservationMenuSnapshot.upsert({
       where: { reservationId },
       create: {
-        reservationId, menuData: snapshot as Prisma.InputJsonValue,
+        reservationId, menuData: snapshot as unknown as Prisma.InputJsonValue,
         menuTemplateId: menuPackage.menuTemplateId, packageId: menuPackage.id,
         packagePrice, optionsPrice, totalMenuPrice,
         adultsCount: adults, childrenCount: children, toddlersCount: toddlers
       },
       update: {
-        menuData: snapshot as Prisma.InputJsonValue,
+        menuData: snapshot as unknown as Prisma.InputJsonValue,
         menuTemplateId: menuPackage.menuTemplateId, packageId: menuPackage.id,
         packagePrice, optionsPrice, totalMenuPrice,
         adultsCount: adults, childrenCount: children, toddlersCount: toddlers,
@@ -178,7 +178,7 @@ class ReservationMenuService {
     await prisma.reservationMenuSnapshot.update({
       where: { reservationId },
       data: {
-        menuData: updatedMenuData as Prisma.InputJsonValue,
+        menuData: updatedMenuData as unknown as Prisma.InputJsonValue,
         packagePrice,
         optionsPrice,
         totalMenuPrice,

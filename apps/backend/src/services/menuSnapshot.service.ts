@@ -104,7 +104,7 @@ export class MenuSnapshotService {
         const option = options.find(o => o.id === selectedOpt.optionId)!;
         return {
           optionId: option.id, name: option.name, description: option.description,
-          category: option.category, priceType: option.priceType,
+          category: option.category, priceType: option.priceType as "PER_PERSON" | "FLAT" | "FREE",
           priceAmount: option.priceAmount.toNumber(), quantity: selectedOpt.quantity,
           icon: option.icon
         };
@@ -186,7 +186,7 @@ export class MenuSnapshotService {
   async getSnapshotByReservationId(reservationId: string) {
     const snapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
     if (!snapshot) throw new Error('Menu snapshot not found for this reservation');
-    const menuData = snapshot.menuData as MenuSnapshotData;
+    const menuData = snapshot.menuData as unknown as MenuSnapshotData;
     const priceBreakdown = this.calculatePriceBreakdown(menuData, snapshot.adultsCount, snapshot.childrenCount, snapshot.toddlersCount);
     return { snapshot, priceBreakdown };
   }
@@ -194,7 +194,7 @@ export class MenuSnapshotService {
   async updateSnapshot(reservationId: string, updates: { adultsCount?: number; childrenCount?: number; toddlersCount?: number }) {
     const existing = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
     if (!existing) throw new Error('Snapshot not found');
-    const menuData = existing.menuData as MenuSnapshotData;
+    const menuData = existing.menuData as unknown as MenuSnapshotData;
     const adultsCount = updates.adultsCount ?? existing.adultsCount;
     const childrenCount = updates.childrenCount ?? existing.childrenCount;
     const toddlersCount = updates.toddlersCount ?? existing.toddlersCount;
@@ -235,7 +235,7 @@ export class MenuSnapshotService {
     const snapshots = await prisma.reservationMenuSnapshot.findMany({ select: { menuData: true } });
     const optionCounts: Record<string, { name: string; count: number }> = {};
     snapshots.forEach(snapshot => {
-      const menuData = snapshot.menuData as MenuSnapshotData;
+      const menuData = snapshot.menuData as unknown as MenuSnapshotData;
       menuData.selectedOptions.forEach(opt => {
         /* istanbul ignore next */
         if (!optionCounts[opt.optionId]) optionCounts[opt.optionId] = { name: opt.name, count: 0 };
@@ -249,7 +249,7 @@ export class MenuSnapshotService {
     const snapshots = await prisma.reservationMenuSnapshot.findMany({ select: { menuData: true } });
     const packageCounts: Record<string, { name: string; count: number }> = {};
     snapshots.forEach(snapshot => {
-      const menuData = snapshot.menuData as MenuSnapshotData;
+      const menuData = snapshot.menuData as unknown as MenuSnapshotData;
       const pkgId = menuData.packageId;
       /* istanbul ignore next */
       if (!packageCounts[pkgId]) packageCounts[pkgId] = { name: menuData.packageName, count: 0 };
