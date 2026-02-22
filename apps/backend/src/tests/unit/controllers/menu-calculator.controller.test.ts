@@ -68,7 +68,7 @@ describe('menu-calculator.controller', () => {
       const res = mockRes();
       mockFindUnique.mockResolvedValue(PKG);
       await calculatePrice({ body: { packageId: 'pkg-1', adults: 5, children: 0, toddlers: 0 } } as Request, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.warnings).toBeDefined();
       expect(data.warnings[0]).toContain('minimum');
     });
@@ -77,7 +77,7 @@ describe('menu-calculator.controller', () => {
       const res = mockRes();
       mockFindUnique.mockResolvedValue(PKG);
       await calculatePrice({ body: { packageId: 'pkg-1', adults: 250, children: 0, toddlers: 0 } } as Request, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.warnings[0]).toContain('maximum');
     });
 
@@ -85,7 +85,7 @@ describe('menu-calculator.controller', () => {
       const res = mockRes();
       mockFindUnique.mockResolvedValue({ ...PKG, minGuests: null, maxGuests: null });
       await calculatePrice({ body: { packageId: 'pkg-1', adults: 50, children: 10, toddlers: 5 } } as Request, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.priceBreakdown.adultsSubtotal).toBe(10000);
       expect(data.priceBreakdown.childrenSubtotal).toBe(1000);
       expect(data.priceBreakdown.toddlersSubtotal).toBe(0);
@@ -115,7 +115,7 @@ describe('menu-calculator.controller', () => {
           ],
         },
       } as Request, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.optionsDetails).toHaveLength(5);
       expect(data.optionsDetails[0].calculatedPrice).toBe(150);
       expect(data.optionsDetails[1].calculatedPrice).toBe(200);
@@ -139,7 +139,7 @@ describe('menu-calculator.controller', () => {
           ],
         },
       } as Request, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.optionsDetails[0].calculatedPrice).toBe(999); // customPrice
       expect(data.warnings[0]).toContain('missing');
     });
@@ -164,7 +164,7 @@ describe('menu-calculator.controller', () => {
       const res = mockRes();
       mockFindMany.mockResolvedValue([{ id: 'p1' }]);
       await getAvailablePackages({ query: { eventTypeId: 'et1' } } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.count).toBe(1);
       expect(data.date).toBeNull();
     });
@@ -173,7 +173,7 @@ describe('menu-calculator.controller', () => {
       const res = mockRes();
       mockFindMany.mockResolvedValue([]);
       await getAvailablePackages({ query: { eventTypeId: 'et1', date: '2026-06-15' } } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.date).toBe('2026-06-15');
     });
 
@@ -214,7 +214,7 @@ describe('menu-calculator.controller', () => {
         params: { optionId: 'o1' },
         query: { adults: '10', children: '5', toddlers: '0', quantity: '1' },
       } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.calculatedPrice).toBe(750); // 50 * 15 * 1
     });
 
@@ -225,7 +225,7 @@ describe('menu-calculator.controller', () => {
         params: { optionId: 'o1' },
         query: { adults: '10', children: '5' },
       } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.calculatedPrice).toBe(200); // 20 * 10 * 1
     });
 
@@ -236,7 +236,7 @@ describe('menu-calculator.controller', () => {
         params: { optionId: 'o1' },
         query: { adults: '10', children: '5' },
       } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.calculatedPrice).toBe(75); // 15 * 5 * 1
     });
 
@@ -247,7 +247,7 @@ describe('menu-calculator.controller', () => {
         params: { optionId: 'o1' },
         query: { adults: '10', children: '5', quantity: '2' },
       } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.calculatedPrice).toBe(750); // (30*10 + 30*0.5*5)*2 = 375*2
     });
 
@@ -258,7 +258,7 @@ describe('menu-calculator.controller', () => {
         params: { optionId: 'o1' },
         query: { adults: '10', quantity: '3' },
       } as any, res);
-      const data = res.json.mock.calls[0][0];
+      const data = (res.json as jest.Mock).mock.calls[0][0];
       expect(data.calculatedPrice).toBe(1500); // 500 * 3
     });
 
