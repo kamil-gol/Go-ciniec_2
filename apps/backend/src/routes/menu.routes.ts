@@ -6,16 +6,17 @@
  *
  * IMPORTANT: All asyncHandler wrappers MUST pass (req, res, next) and forward
  * next to controller methods. Controllers use next(error) for non-handled errors.
+ * 
+ * NOTE: Addon Groups and Menu Options routes removed — functionality replaced
+ * by ServiceExtras system (see serviceExtra.routes.ts)
  */
 
 import { Router } from 'express';
 import { menuTemplateController } from '../controllers/menuTemplate.controller';
 import { menuPackageController } from '../controllers/menuPackage.controller';
-import { menuOptionController } from '../controllers/menuOption.controller';
 import { reservationMenuController } from '../controllers/reservationMenu.controller';
 import { menuCourseController } from '../controllers/menuCourse.controller';
 import { packageCategoryController } from '../controllers/packageCategory.controller';
-import { addonGroupController } from '../controllers/addonGroup.controller';
 import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
@@ -256,129 +257,6 @@ router.delete(
   validateUUID('id'),
   asyncHandler(async (req, res) => {
     await packageCategoryController.delete.call(packageCategoryController, req, res);
-  })
-);
-
-// ═════════════════════════════════════════════════════════════════
-// ADDON GROUPS
-// ═════════════════════════════════════════════════════════════════
-
-router.get(
-  '/addon-groups',
-  authMiddleware,
-  requireStaff,
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.list.call(addonGroupController, req, res, next);
-  })
-);
-
-router.get(
-  '/addon-groups/:id',
-  authMiddleware,
-  requireStaff,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.getById.call(addonGroupController, req, res, next);
-  })
-);
-
-router.post(
-  '/addon-groups',
-  authMiddleware,
-  requireAdmin,
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.create.call(addonGroupController, req, res, next);
-  })
-);
-
-router.put(
-  '/addon-groups/:id',
-  authMiddleware,
-  requireAdmin,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.update.call(addonGroupController, req, res, next);
-  })
-);
-
-router.delete(
-  '/addon-groups/:id',
-  authMiddleware,
-  requireAdmin,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.delete.call(addonGroupController, req, res, next);
-  })
-);
-
-router.put(
-  '/addon-groups/:id/dishes',
-  authMiddleware,
-  requireAdmin,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.assignDishes.call(addonGroupController, req, res, next);
-  })
-);
-
-router.delete(
-  '/addon-groups/:groupId/dishes/:dishId',
-  authMiddleware,
-  requireAdmin,
-  asyncHandler(async (req, res, next) => {
-    await addonGroupController.removeDish.call(addonGroupController, req, res, next);
-  })
-);
-
-// ═════════════════════════════════════════════════════════════════
-// MENU OPTIONS
-// ═════════════════════════════════════════════════════════════════
-
-router.get(
-  '/menu-options',
-  authMiddleware,
-  requireStaff,
-  asyncHandler(async (req, res, next) => {
-    await menuOptionController.list.call(menuOptionController, req, res, next);
-  })
-);
-
-router.get(
-  '/menu-options/:id',
-  authMiddleware,
-  requireStaff,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await menuOptionController.getById.call(menuOptionController, req, res, next);
-  })
-);
-
-router.post(
-  '/menu-options',
-  authMiddleware,
-  requireAdmin,
-  asyncHandler(async (req, res, next) => {
-    await menuOptionController.create.call(menuOptionController, req, res, next);
-  })
-);
-
-router.put(
-  '/menu-options/:id',
-  authMiddleware,
-  requireAdmin,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await menuOptionController.update.call(menuOptionController, req, res, next);
-  })
-);
-
-router.delete(
-  '/menu-options/:id',
-  authMiddleware,
-  requireAdmin,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await menuOptionController.delete.call(menuOptionController, req, res, next);
   })
 );
 
