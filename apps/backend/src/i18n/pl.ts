@@ -28,15 +28,14 @@ export const AUTH = {
 // PASSWORD RESET
 // ═══════════════════════════════════════
 export const PASSWORD_RESET = {
-  EMAIL_SENT: 'Jeśli podany adres email istnieje w systemie, wysłaliśmy link do resetowania hasła.',
-  TOKEN_INVALID: 'Link do resetowania hasła jest nieprawidłowy lub wygasł. Wygeneruj nowy link.',
-  TOKEN_USED: 'Ten link do resetowania hasła został już użyty. Wygeneruj nowy link.',
-  TOKEN_EXPIRED: 'Link do resetowania hasła wygasł. Wygeneruj nowy link.',
-  PASSWORD_CHANGED: 'Hasło zostało zmienione pomyślnie. Możesz się teraz zalogować.',
-  OLD_PASSWORD_WRONG: 'Podane obecne hasło jest nieprawidłowe.',
-  SAME_PASSWORD: 'Nowe hasło musi się różnić od obecnego.',
-  PASSWORD_UPDATED: 'Hasło zostało zaktualizowane pomyślnie.',
-  EMAIL_SUBJECT: 'Resetowanie hasła — Gościniec',
+  EMAIL_SENT: 'Jeśli podany adres email istnieje w systemie, wysłaliśmy link do resetowania hasła',
+  TOKEN_INVALID: 'Link do resetowania hasła jest nieprawidłowy lub wygasł',
+  TOKEN_USED: 'Ten link do resetowania hasła został już wykorzystany',
+  TOKEN_EXPIRED: 'Link do resetowania hasła wygasł. Wygeneruj nowy.',
+  PASSWORD_CHANGED: 'Hasło zostało zmienione pomyślnie',
+  OLD_PASSWORD_WRONG: 'Aktualne hasło jest nieprawidłowe',
+  SAME_PASSWORD: 'Nowe hasło nie może być takie samo jak obecne',
+  RESET_SUBJECT: 'Resetowanie hasła — Gościniec',
 } as const;
 
 // ═══════════════════════════════════════
