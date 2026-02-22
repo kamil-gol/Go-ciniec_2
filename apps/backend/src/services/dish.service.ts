@@ -1,11 +1,13 @@
 /**
  * Dish Service
  * Business logic for dish management
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { Dish, DishCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { DISH } from '../i18n/pl';
 
 export type DishWithCategory = Dish & { category: DishCategory };
 
@@ -69,10 +71,10 @@ class DishService {
 
   async create(data: CreateDishInput, userId: string): Promise<DishWithCategory> {
     const existing = await prisma.dish.findFirst({ where: { name: data.name } });
-    if (existing) throw new Error(`Dish with name "${data.name}" already exists`);
+    if (existing) throw new Error(`Danie o nazwie "${data.name}" już istnieje`);
 
     const category = await prisma.dishCategory.findUnique({ where: { id: data.categoryId } });
-    if (!category) throw new Error(`Category with ID ${data.categoryId} not found`);
+    if (!category) throw new Error(`Nie znaleziono kategorii o ID ${data.categoryId}`);
 
     const dish = await prisma.dish.create({
       data: {
@@ -107,18 +109,18 @@ class DishService {
 
   async update(id: string, data: UpdateDishInput, userId: string): Promise<DishWithCategory> {
     const existing = await this.findOne(id);
-    if (!existing) throw new Error(`Dish with ID ${id} not found`);
+    if (!existing) throw new Error(DISH.NOT_FOUND);
 
     if (data.name) {
       const nameConflict = await prisma.dish.findFirst({
         where: { name: data.name, NOT: { id } },
       });
-      if (nameConflict) throw new Error(`Dish with name "${data.name}" already exists`);
+      if (nameConflict) throw new Error(`Danie o nazwie "${data.name}" już istnieje`);
     }
 
     if (data.categoryId) {
       const category = await prisma.dishCategory.findUnique({ where: { id: data.categoryId } });
-      if (!category) throw new Error(`Category with ID ${data.categoryId} not found`);
+      if (!category) throw new Error(`Nie znaleziono kategorii o ID ${data.categoryId}`);
     }
 
     const dish = await prisma.dish.update({
@@ -147,7 +149,7 @@ class DishService {
 
   async toggleActive(id: string, userId: string): Promise<DishWithCategory> {
     const existing = await this.findOne(id);
-    if (!existing) throw new Error(`Dish with ID ${id} not found`);
+    if (!existing) throw new Error(DISH.NOT_FOUND);
 
     const dish = await prisma.dish.update({
       where: { id },
@@ -173,7 +175,7 @@ class DishService {
 
   async remove(id: string, userId: string): Promise<void> {
     const existing = await this.findOne(id);
-    if (!existing) throw new Error(`Dish with ID ${id} not found`);
+    if (!existing) throw new Error(DISH.NOT_FOUND);
 
     await prisma.dish.delete({ where: { id } });
 

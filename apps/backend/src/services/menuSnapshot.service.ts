@@ -3,6 +3,7 @@
  * Creates and manages immutable menu snapshots for reservations.
  * FIX: dishSelections enriched with dish/category names from DB
  * FIX: menuTemplateId/packageId saved in DB columns (not just JSONB)
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { Prisma } from '@prisma/client';
@@ -12,6 +13,7 @@ import {
   CreateMenuSnapshotInput,
   MenuPriceBreakdown
 } from '../types/menu.types';
+import { MENU_CRUD } from '../i18n/pl';
 
 export class MenuSnapshotService {
 
@@ -20,13 +22,13 @@ export class MenuSnapshotService {
       where: { id: input.packageId },
       include: { menuTemplate: { include: { eventType: true } } }
     });
-    if (!pkg) throw new Error('Package not found');
+    if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
 
     const optionIds = input.selectedOptions.map(opt => opt.optionId);
     const options = optionIds.length > 0 
       ? await prisma.menuOption.findMany({ where: { id: { in: optionIds } } })
       : [];
-    if (options.length !== optionIds.length) throw new Error('Some options not found');
+    if (options.length !== optionIds.length) throw new Error('Nie znaleziono niektórych opcji menu');
 
     // ── Enrich dishSelections with names from DB ──
     let enrichedDishSelections: any[] = [];
@@ -136,7 +138,7 @@ export class MenuSnapshotService {
 
   /**
    * Replace entire snapshot (delete old + create new).
-   * Used when user changes package, options, or dishes via "Zmien" flow.
+   * Used when user changes package, options, or dishes via "Zmień" flow.
    */
   async replaceSnapshot(input: CreateMenuSnapshotInput) {
     const existing = await prisma.reservationMenuSnapshot.findUnique({
@@ -185,7 +187,7 @@ export class MenuSnapshotService {
 
   async getSnapshotByReservationId(reservationId: string) {
     const snapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
-    if (!snapshot) throw new Error('Menu snapshot not found for this reservation');
+    if (!snapshot) throw new Error('Nie znaleziono snapshotu menu dla tej rezerwacji');
     const menuData = snapshot.menuData as unknown as MenuSnapshotData;
     const priceBreakdown = this.calculatePriceBreakdown(menuData, snapshot.adultsCount, snapshot.childrenCount, snapshot.toddlersCount);
     return { snapshot, priceBreakdown };
@@ -193,7 +195,7 @@ export class MenuSnapshotService {
 
   async updateSnapshot(reservationId: string, updates: { adultsCount?: number; childrenCount?: number; toddlersCount?: number }) {
     const existing = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
-    if (!existing) throw new Error('Snapshot not found');
+    if (!existing) throw new Error('Nie znaleziono snapshotu menu');
     const menuData = existing.menuData as unknown as MenuSnapshotData;
     const adultsCount = updates.adultsCount ?? existing.adultsCount;
     const childrenCount = updates.childrenCount ?? existing.childrenCount;
