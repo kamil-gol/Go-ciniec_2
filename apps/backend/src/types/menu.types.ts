@@ -10,9 +10,9 @@
 
 import { MenuTemplate, MenuPackage } from '@prisma/client';
 
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 // MENU TEMPLATE TYPES
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface CreateMenuTemplateInput {
   eventTypeId: string;
@@ -37,9 +37,9 @@ export interface UpdateMenuTemplateInput {
   imageUrl?: string | null;
 }
 
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 // MENU PACKAGE TYPES
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface CreateMenuPackageInput {
   menuTemplateId: string;
@@ -81,57 +81,9 @@ export interface UpdateMenuPackageInput {
   changeReason?: string;
 }
 
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-// LEGACY MENU OPTION TYPES (Prisma models removed, interfaces kept for compat)
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-
-/** @deprecated Use ServiceExtras system instead */
-export interface CreateMenuOptionInput {
-  name: string;
-  description?: string;
-  shortDescription?: string;
-  category: string;
-  priceType: 'PER_PERSON' | 'FLAT' | 'FREE';
-  priceAmount: number;
-  allowMultiple?: boolean;
-  maxQuantity?: number | null;
-  icon?: string | null;
-  imageUrl?: string | null;
-  displayOrder?: number;
-  isActive?: boolean;
-}
-
-/** @deprecated Use ServiceExtras system instead */
-export interface UpdateMenuOptionInput {
-  name?: string;
-  description?: string | null;
-  shortDescription?: string | null;
-  category?: string;
-  priceType?: 'PER_PERSON' | 'FLAT' | 'FREE';
-  priceAmount?: number;
-  allowMultiple?: boolean;
-  maxQuantity?: number | null;
-  icon?: string | null;
-  imageUrl?: string | null;
-  displayOrder?: number;
-  isActive?: boolean;
-  changeReason?: string;
-}
-
-/** @deprecated Use ServiceExtras system instead */
-export interface AssignOptionsToPackageInput {
-  options: Array<{
-    optionId: string;
-    customPrice?: number | null;
-    isRequired?: boolean;
-    isDefault?: boolean;
-    displayOrder?: number;
-  }>;
-}
-
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 // DISH SELECTION TYPES
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface DishSelectionItem {
   dishId: string;
@@ -143,9 +95,30 @@ export interface CategoryDishSelection {
   dishes: DishSelectionItem[];
 }
 
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
+// SELECTED OPTION DTO
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * DTO for selected options in snapshot input.
+ * Required: optionId + quantity.
+ * Optional fields are used by menuSnapshot.service to enrich snapshot data.
+ * If omitted, the service falls back to defaults.
+ */
+export interface SelectedOptionDTO {
+  optionId: string;
+  quantity: number;
+  name?: string;
+  description?: string | null;
+  category?: string;
+  priceType?: 'PER_PERSON' | 'FLAT' | 'FREE';
+  priceAmount?: number;
+  icon?: string | null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SNAPSHOT TYPES
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface MenuSnapshotData {
   // Template info
@@ -184,10 +157,7 @@ export interface MenuSnapshotData {
 export interface CreateMenuSnapshotInput {
   reservationId: string;
   packageId: string;
-  selectedOptions: Array<{
-    optionId: string;
-    quantity: number;
-  }>;
+  selectedOptions: SelectedOptionDTO[];
   dishSelections?: CategoryDishSelection[];
   adultsCount: number;
   childrenCount: number;

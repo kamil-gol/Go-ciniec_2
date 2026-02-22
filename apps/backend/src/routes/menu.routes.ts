@@ -7,8 +7,8 @@
  * IMPORTANT: All asyncHandler wrappers MUST pass (req, res, next) and forward
  * next to controller methods. Controllers use next(error) for non-handled errors.
  * 
- * NOTE: Addon Groups and Menu Options routes removed — functionality replaced
- * by ServiceExtras system (see serviceExtra.routes.ts)
+ * NOTE: Addon Groups, Menu Options, and assignOptions routes removed —
+ * functionality replaced by ServiceExtras system (see serviceExtra.routes.ts)
  */
 
 import { Router } from 'express';
@@ -184,16 +184,6 @@ router.delete(
   validateUUID('id'),
   asyncHandler(async (req, res, next) => {
     await menuPackageController.delete.call(menuPackageController, req, res, next);
-  })
-);
-
-router.post(
-  '/menu-packages/:id/options',
-  authMiddleware,
-  requireAdmin,
-  validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await menuPackageController.assignOptions.call(menuPackageController, req, res, next);
   })
 );
 

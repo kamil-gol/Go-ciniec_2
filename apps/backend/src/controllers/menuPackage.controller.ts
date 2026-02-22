@@ -1,5 +1,8 @@
 /**
  * Menu Package Controller - with userId for audit
+ *
+ * NOTE: assignOptions method removed — MenuOption/MenuPackageOption
+ * models no longer exist. Options handled via ServiceExtras system.
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -10,7 +13,6 @@ import {
   createMenuPackageSchema,
   updateMenuPackageSchema,
   reorderPackagesSchema,
-  assignOptionsToPackageSchema
 } from '../validation/menu.validation';
 import { z } from 'zod';
 
@@ -200,36 +202,6 @@ export class MenuPackageController {
           success: false,
           error: 'Validation error',
           details: error.errors
-        });
-      }
-      next(error);
-    }
-  }
-
-  async assignOptions(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { id } = req.params;
-      const data = assignOptionsToPackageSchema.parse(req.body);
-
-      const pkg = await menuService.assignOptionsToPackage(id, data);
-
-      return res.status(200).json({
-        success: true,
-        data: pkg,
-        message: 'Options assigned successfully'
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          details: error.errors
-        });
-      }
-      if (error instanceof Error && error.message === 'Package not found') {
-        return res.status(404).json({
-          success: false,
-          error: 'Package not found'
         });
       }
       next(error);
