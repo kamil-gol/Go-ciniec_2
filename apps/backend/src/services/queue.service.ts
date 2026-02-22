@@ -4,14 +4,13 @@
  * Updated: Phase 2 Audit — logChange() for all queue operations
  * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM (19.02.2026)
  * FIX: BUG8 — position > max and swap-self now throw AppError.badRequest (20.02.2026)
- * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
+ * 🇵🇱 Spolonizowany — komunikaty po polsku
  */
 
 import { ReservationStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
-import { QUEUE, CLIENT } from '../i18n/pl';
 import {
   CreateReservedDTO,
   PromoteReservationDTO,
@@ -48,20 +47,20 @@ const withRetry = async <T>(
 export class QueueService {
   async addToQueue(data: CreateReservedDTO, createdById: string): Promise<QueueItemResponse> {
     if (!data.clientId || !data.reservationQueueDate || !data.guests) {
-      throw new Error(QUEUE.CLIENT_DATE_GUESTS_REQUIRED);
+      throw new Error('Klient, data kolejki i liczba go\u015bci s\u0105 wymagane');
     }
-    if (data.guests < 1) throw new Error(QUEUE.GUESTS_MIN_ONE);
+    if (data.guests < 1) throw new Error('Liczba go\u015bci musi wynosi\u0107 co najmniej 1');
 
     const queueDate = new Date(data.reservationQueueDate);
-    if (isNaN(queueDate.getTime())) throw new Error(QUEUE.INVALID_DATE_FORMAT);
+    if (isNaN(queueDate.getTime())) throw new Error('Nieprawid\u0142owy format daty kolejki');
     queueDate.setHours(0, 0, 0, 0);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (queueDate < today) throw new Error(QUEUE.DATE_NOT_IN_PAST);
+    if (queueDate < today) throw new Error('Data kolejki nie mo\u017ce by\u0107 w przesz\u0142o\u015bci');
 
     const client = await prisma.client.findUnique({ where: { id: data.clientId } });
-    if (!client) throw new Error(CLIENT.NOT_FOUND);
+    if (!client) throw new Error('Nie znaleziono klienta');
 
     const startOfDay = new Date(queueDate); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(queueDate); endOfDay.setHours(23, 59, 59, 999);
@@ -99,7 +98,7 @@ export class QueueService {
         entityType: 'RESERVATION',
         entityId: reservation.id,
         details: {
-          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} gości`,
+          description: `Dodano do kolejki: ${client.firstName} ${client.lastName} | ${queueDate.toISOString().split('T')[0]} | poz. #${nextPosition} | ${data.guests} go\u015bci`,
           clientId: data.clientId,
           clientName: `${client.firstName} ${client.lastName}`,
           queueDate: queueDate.toISOString().split('T')[0],
@@ -111,7 +110,7 @@ export class QueueService {
       return this.formatQueueItem(reservation);
     } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new Error(QUEUE.POSITION_TAKEN(nextPosition));
+        throw new Error(`Pozycja ${nextPosition} jest ju\u017c zaj\u0119ta dla tej daty. Spr\u00f3buj ponownie.`);
       }
       throw error;
     }
@@ -122,8 +121,8 @@ export class QueueService {
       where: { id: reservationId },
       include: { client: true },
     });
-    if (!existing) throw new Error(QUEUE.NOT_FOUND);
-    if (existing.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.ONLY_RESERVED);
+    if (!existing) throw new Error('Nie znaleziono rezerwacji');
+    if (existing.status !== ReservationStatus.RESERVED) throw new Error('Mo\u017cna edytowa\u0107 tylko rezerwacje ze statusem RESERVED');
 
     const oldDate = existing.reservationQueueDate;
     const oldPosition = existing.reservationQueuePosition;
@@ -133,7 +132,7 @@ export class QueueService {
 
     if (data.clientId) {
       const client = await prisma.client.findUnique({ where: { id: data.clientId } });
-      if (!client) throw new Error(CLIENT.NOT_FOUND);
+      if (!client) throw new Error('Nie znaleziono klienta');
       if (data.clientId !== existing.clientId) {
         changes.clientId = { old: existing.clientId, new: data.clientId };
       }
@@ -142,10 +141,10 @@ export class QueueService {
 
     if (data.reservationQueueDate) {
       const queueDate = new Date(data.reservationQueueDate);
-      if (isNaN(queueDate.getTime())) throw new Error(QUEUE.INVALID_DATE_FORMAT);
+      if (isNaN(queueDate.getTime())) throw new Error('Nieprawid\u0142owy format daty kolejki');
       queueDate.setHours(0, 0, 0, 0);
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      if (queueDate < today) throw new Error(QUEUE.DATE_NOT_IN_PAST);
+      if (queueDate < today) throw new Error('Data kolejki nie mo\u017ce by\u0107 w przesz\u0142o\u015bci');
 
       const oldDateNormalized = oldDate ? new Date(oldDate.getFullYear(), oldDate.getMonth(), oldDate.getDate()) : null;
       const newDateNormalized = new Date(queueDate.getFullYear(), queueDate.getMonth(), queueDate.getDate());
@@ -169,7 +168,7 @@ export class QueueService {
     }
 
     if (data.guests !== undefined) {
-      if (data.guests < 1) throw new Error(QUEUE.GUESTS_MIN_ONE);
+      if (data.guests < 1) throw new Error('Liczba go\u015bci musi wynosi\u0107 co najmniej 1');
       if (data.guests !== existing.guests) {
         changes.guests = { old: existing.guests, new: data.guests };
       }
@@ -224,7 +223,7 @@ export class QueueService {
 
   async getQueueForDate(date: Date | string): Promise<QueueItemResponse[]> {
     const queueDate = new Date(date);
-    if (isNaN(queueDate.getTime())) throw new Error(QUEUE.INVALID_DATE_FORMAT);
+    if (isNaN(queueDate.getTime())) throw new Error('Nieprawid\u0142owy format daty');
     const startOfDay = new Date(queueDate); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(queueDate); endOfDay.setHours(23, 59, 59, 999);
 
@@ -249,19 +248,19 @@ export class QueueService {
   }
 
   async swapPositions(id1: string, id2: string, userId: string): Promise<void> {
-    if (!id1 || !id2) throw AppError.badRequest(QUEUE.BOTH_IDS_REQUIRED);
-    if (id1 === id2) throw AppError.badRequest(QUEUE.CANNOT_SWAP_SELF);
+    if (!id1 || !id2) throw AppError.badRequest('Oba identyfikatory rezerwacji s\u0105 wymagane');
+    if (id1 === id2) throw AppError.badRequest('Nie mo\u017cna zamieni\u0107 rezerwacji z sam\u0105 sob\u0105');
 
     const [res1, res2] = await Promise.all([
       prisma.reservation.findUnique({ where: { id: id1 }, include: { client: true } }),
       prisma.reservation.findUnique({ where: { id: id2 }, include: { client: true } })
     ]);
-    if (!res1 || !res2) throw new Error(QUEUE.ONE_OR_BOTH_NOT_FOUND);
+    if (!res1 || !res2) throw new Error('Nie znaleziono jednej lub obu rezerwacji');
     if (res1.status !== ReservationStatus.RESERVED || res2.status !== ReservationStatus.RESERVED) {
-      throw new Error(QUEUE.ONLY_RESERVED_SWAP);
+      throw new Error('Mo\u017cna zamienia\u0107 tylko rezerwacje ze statusem RESERVED');
     }
     if (res1.reservationQueueDate?.toDateString() !== res2.reservationQueueDate?.toDateString()) {
-      throw new Error(QUEUE.SAME_DATE_REQUIRED);
+      throw new Error('Mo\u017cna zamienia\u0107 tylko rezerwacje z tego samego dnia');
     }
 
     const pos1 = res1.reservationQueuePosition;
@@ -273,9 +272,9 @@ export class QueueService {
       });
     } catch (error: any) {
       if (error.message?.includes('lock') || error.code === 'P2034') {
-        throw new Error(QUEUE.CONCURRENT_MODIFICATION);
+        throw new Error('Inny u\u017cytkownik modyfikuje kolejk\u0119. Od\u015bwie\u017c stron\u0119 i spr\u00f3buj ponownie.');
       }
-      if (error.code === 'P2002') throw new Error(QUEUE.POSITION_CONFLICT);
+      if (error.code === 'P2002') throw new Error('Wykryto konflikt pozycji. Od\u015bwie\u017c stron\u0119 i spr\u00f3buj ponownie.');
       throw error;
     }
 
@@ -293,7 +292,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: id1,
       details: {
-        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) ↔ ${client2Name} (#${pos2}) | ${queueDate}`,
+        description: `Zamieniono pozycje w kolejce: ${client1Name} (#${pos1}) \u2194 ${client2Name} (#${pos2}) | ${queueDate}`,
         reservation1: { id: id1, clientName: client1Name, oldPosition: pos1 },
         reservation2: { id: id2, clientName: client2Name, oldPosition: pos2 },
         queueDate,
@@ -302,18 +301,18 @@ export class QueueService {
   }
 
   async moveToPosition(reservationId: string, newPosition: number, userId: string): Promise<void> {
-    if (!reservationId) throw new Error(QUEUE.RESERVATION_ID_REQUIRED);
+    if (!reservationId) throw new Error('Identyfikator rezerwacji jest wymagany');
     if (!newPosition || !Number.isInteger(newPosition) || newPosition < 1) {
-      throw new Error(QUEUE.POSITION_POSITIVE_INT);
+      throw new Error('Pozycja musi by\u0107 dodatni\u0105 liczb\u0105 ca\u0142kowit\u0105 (>= 1)');
     }
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       select: { id: true, status: true, reservationQueueDate: true, reservationQueuePosition: true, clientId: true }
     });
-    if (!reservation) throw new Error(QUEUE.NOT_FOUND);
-    if (reservation.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.ONLY_RESERVED_MOVE);
-    if (!reservation.reservationQueueDate) throw new Error(QUEUE.NO_QUEUE_DATE);
+    if (!reservation) throw new Error('Nie znaleziono rezerwacji');
+    if (reservation.status !== ReservationStatus.RESERVED) throw new Error('Mo\u017cna przenosi\u0107 tylko rezerwacje ze statusem RESERVED');
+    if (!reservation.reservationQueueDate) throw new Error('Rezerwacja nie ma przypisanej daty kolejki');
 
     const oldPosition = reservation.reservationQueuePosition;
 
@@ -323,7 +322,7 @@ export class QueueService {
       where: { status: ReservationStatus.RESERVED, reservationQueueDate: { gte: startOfDay, lte: endOfDay } }
     });
     if (newPosition > totalCount) {
-      throw AppError.badRequest(QUEUE.POSITION_INVALID(newPosition, totalCount));
+      throw AppError.badRequest(`Pozycja ${newPosition} jest nieprawid\u0142owa. W kolejce na t\u0119 dat\u0119 jest tylko ${totalCount} rezerwacji.`);
     }
     if (reservation.reservationQueuePosition === newPosition) return;
 
@@ -333,10 +332,10 @@ export class QueueService {
       });
     } catch (error: any) {
       if (error.message?.includes('lock') || error.code === 'P2034') {
-        throw new Error(QUEUE.CONCURRENT_MODIFICATION);
+        throw new Error('Inny u\u017cytkownik modyfikuje kolejk\u0119. Od\u015bwie\u017c stron\u0119 i spr\u00f3buj ponownie.');
       }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new Error(QUEUE.POSITION_TAKEN(newPosition));
+        throw new Error(`Pozycja ${newPosition} jest ju\u017c zaj\u0119ta. Od\u015bwie\u017c stron\u0119 i spr\u00f3buj ponownie.`);
       }
       throw error;
     }
@@ -351,7 +350,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} → #${newPosition} | ${queueDate}`,
+        description: `Przeniesiono w kolejce: ${clientName} | #${oldPosition} \u2192 #${newPosition} | ${queueDate}`,
         clientName,
         oldPosition,
         newPosition,
@@ -361,11 +360,11 @@ export class QueueService {
   }
 
   async batchUpdatePositions(updates: Array<{ id: string; position: number }>, userId: string): Promise<{ updatedCount: number }> {
-    if (!updates || updates.length === 0) throw new Error(QUEUE.AT_LEAST_ONE_UPDATE);
+    if (!updates || updates.length === 0) throw new Error('Wymagana jest co najmniej jedna aktualizacja');
     for (const update of updates) {
-      if (!update.id) throw new Error(QUEUE.EACH_NEEDS_ID);
+      if (!update.id) throw new Error('Ka\u017cda aktualizacja musi zawiera\u0107 identyfikator rezerwacji');
       if (!Number.isInteger(update.position) || update.position < 1) {
-        throw new Error(QUEUE.INVALID_POSITION(update.position, update.id));
+        throw new Error(`Nieprawid\u0142owa pozycja ${update.position} dla rezerwacji ${update.id}`);
       }
     }
 
@@ -375,20 +374,20 @@ export class QueueService {
         where: { id: { in: reservationIds } },
         select: { id: true, status: true, reservationQueueDate: true, reservationQueuePosition: true }
       });
-      if (reservations.length !== updates.length) throw new Error(QUEUE.SOME_NOT_FOUND);
+      if (reservations.length !== updates.length) throw new Error('Nie znaleziono jednej lub wi\u0119cej rezerwacji');
 
       for (const res of reservations) {
-        if (res.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.NOT_RESERVED_STATUS(res.id));
-        if (!res.reservationQueueDate) throw new Error(QUEUE.NO_QUEUE_DATE_FOR(res.id));
+        if (res.status !== ReservationStatus.RESERVED) throw new Error(`Rezerwacja ${res.id} nie ma statusu RESERVED`);
+        if (!res.reservationQueueDate) throw new Error(`Rezerwacja ${res.id} nie ma przypisanej daty kolejki`);
       }
 
       const firstDate = reservations[0].reservationQueueDate?.toDateString();
       for (const res of reservations) {
-        if (res.reservationQueueDate?.toDateString() !== firstDate) throw new Error(QUEUE.ALL_SAME_DATE);
+        if (res.reservationQueueDate?.toDateString() !== firstDate) throw new Error('Wszystkie rezerwacje musz\u0105 by\u0107 z tego samego dnia');
       }
 
       const positions = updates.map(u => u.position);
-      if (positions.length !== new Set(positions).size) throw new Error(QUEUE.DUPLICATE_POSITIONS);
+      if (positions.length !== new Set(positions).size) throw new Error('Wykryto zduplikowane pozycje w aktualizacjach');
 
       // Save old positions for audit
       const oldPositions = new Map(reservations.map(r => [r.id, r.reservationQueuePosition]));
@@ -418,7 +417,7 @@ export class QueueService {
       entityType: 'RESERVATION',
       entityId: updates[0]?.id || 'batch',
       details: {
-        description: `Zmieniono kolejność ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
+        description: `Zmieniono kolejno\u015b\u0107 ${result.updatedCount} rezerwacji w kolejce | ${queueDate}`,
         queueDate,
         updatedCount: result.updatedCount,
         positionChanges,
@@ -479,20 +478,20 @@ export class QueueService {
       where: { id: reservationId },
       include: { client: true },
     });
-    if (!reservation) throw new Error(QUEUE.NOT_FOUND);
-    if (reservation.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.ONLY_RESERVED_PROMOTE);
+    if (!reservation) throw new Error('Nie znaleziono rezerwacji');
+    if (reservation.status !== ReservationStatus.RESERVED) throw new Error('Mo\u017cna awansowa\u0107 tylko rezerwacje ze statusem RESERVED');
 
     const oldQueueDate = reservation.reservationQueueDate;
     const oldPosition = reservation.reservationQueuePosition;
 
     if (!data.hallId || !data.eventTypeId || !data.startDateTime || !data.endDateTime) {
-      throw new Error(QUEUE.HALL_EVENT_DATES_REQUIRED);
+      throw new Error('Sala, typ wydarzenia, godzina rozpocz\u0119cia i zako\u0144czenia s\u0105 wymagane');
     }
 
     const startDateTime = new Date(data.startDateTime);
     const endDateTime = new Date(data.endDateTime);
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) throw new Error(QUEUE.INVALID_DATETIME);
-    if (endDateTime <= startDateTime) throw new Error(QUEUE.END_AFTER_START);
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) throw new Error('Nieprawid\u0142owy format daty/godziny');
+    if (endDateTime <= startDateTime) throw new Error('Godzina zako\u0144czenia musi by\u0107 p\u00f3\u017aniejsza ni\u017c godzina rozpocz\u0119cia');
 
     const conflictingReservation = await prisma.reservation.findFirst({
       where: {
@@ -505,7 +504,7 @@ export class QueueService {
         ]
       }
     });
-    if (conflictingReservation) throw new Error(QUEUE.HALL_ALREADY_BOOKED);
+    if (conflictingReservation) throw new Error('Sala jest ju\u017c zarezerwowana w tym terminie');
 
     const hall = await prisma.hall.findUnique({ where: { id: data.hallId }, select: { name: true } });
     const eventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId }, select: { name: true } });
