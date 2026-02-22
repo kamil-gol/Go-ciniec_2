@@ -8,6 +8,7 @@ import { pdfService } from '../services/pdf.service';
 import type { MenuCardPDFData } from '../services/pdf.service';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
+import { CreateMenuTemplateInput, UpdateMenuTemplateInput } from '../types/menu.types';
 import {
   createMenuTemplateSchema,
   updateMenuTemplateSchema,
@@ -95,7 +96,7 @@ export class MenuTemplateController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = createMenuTemplateSchema.parse(req.body);
+      const data = createMenuTemplateSchema.parse(req.body) as unknown as CreateMenuTemplateInput;
       const userId = (req as any).user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
@@ -122,7 +123,7 @@ export class MenuTemplateController {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const data = updateMenuTemplateSchema.parse(req.body);
+      const data = updateMenuTemplateSchema.parse(req.body) as unknown as UpdateMenuTemplateInput;
       const userId = (req as any).user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
@@ -194,7 +195,7 @@ export class MenuTemplateController {
         name: data.newName,
         variant: data.newVariant,
         validFrom: data.validFrom,
-        validTo: data.validTo
+        validTo: data.validTo ?? undefined
       }, userId);
 
       return res.status(201).json({
