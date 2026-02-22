@@ -1,11 +1,13 @@
 /**
  * EventType Service
  * Business logic for event type management
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse, EventTypeStatsResponse } from '../types/eventType.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { EVENT_TYPE } from '../i18n/pl';
 
 // Predefined colors for event types
 const PREDEFINED_COLORS = [
@@ -30,11 +32,11 @@ function isValidColor(color: string): boolean {
 export class EventTypeService {
   async createEventType(data: CreateEventTypeDTO, userId: string): Promise<EventTypeResponse> {
     if (!data.name || data.name.trim().length === 0) {
-      throw new Error('Event type name is required');
+      throw new Error(EVENT_TYPE.NAME_REQUIRED);
     }
 
     if (data.color && !isValidColor(data.color)) {
-      throw new Error('Invalid color format. Use hex format (e.g. #FF5733)');
+      throw new Error(EVENT_TYPE.INVALID_COLOR);
     }
 
     const existingType = await prisma.eventType.findFirst({
@@ -42,7 +44,7 @@ export class EventTypeService {
     });
 
     if (existingType) {
-      throw new Error('Event type with this name already exists');
+      throw new Error(EVENT_TYPE.NAME_EXISTS);
     }
 
     const eventType = await prisma.eventType.create({
@@ -97,27 +99,27 @@ export class EventTypeService {
       }
     });
 
-    if (!eventType) throw new Error('Event type not found');
+    if (!eventType) throw new Error(EVENT_TYPE.NOT_FOUND);
     return eventType as any;
   }
 
   async updateEventType(id: string, data: UpdateEventTypeDTO, userId: string): Promise<EventTypeResponse> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
-    if (!existingType) throw new Error('Event type not found');
+    if (!existingType) throw new Error(EVENT_TYPE.NOT_FOUND);
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error('Event type name cannot be empty');
+      throw new Error(EVENT_TYPE.NAME_EMPTY);
     }
 
     if (data.color !== undefined && data.color !== null && !isValidColor(data.color)) {
-      throw new Error('Invalid color format. Use hex format (e.g. #FF5733)');
+      throw new Error(EVENT_TYPE.INVALID_COLOR);
     }
 
     if (data.name && data.name.trim() !== existingType.name) {
       const typeWithSameName = await prisma.eventType.findFirst({
         where: { name: data.name.trim(), id: { not: id } }
       });
-      if (typeWithSameName) throw new Error('Event type with this name already exists');
+      if (typeWithSameName) throw new Error(EVENT_TYPE.NAME_EXISTS);
     }
 
     const updateData: Record<string, any> = {};
@@ -152,7 +154,7 @@ export class EventTypeService {
 
   async toggleActive(id: string, userId: string): Promise<EventTypeResponse> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
-    if (!existingType) throw new Error('Event type not found');
+    if (!existingType) throw new Error(EVENT_TYPE.NOT_FOUND);
 
     const eventType = await prisma.eventType.update({
       where: { id },
@@ -177,14 +179,14 @@ export class EventTypeService {
 
   async deleteEventType(id: string, userId: string): Promise<void> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
-    if (!existingType) throw new Error('Event type not found');
+    if (!existingType) throw new Error(EVENT_TYPE.NOT_FOUND);
 
     const reservationCount = await prisma.reservation.count({
       where: { eventTypeId: id }
     });
 
     if (reservationCount > 0) {
-      throw new Error(`Cannot delete event type that is used in ${reservationCount} reservation(s)`);
+      throw new Error(EVENT_TYPE.CANNOT_DELETE_WITH_RESERVATIONS(reservationCount));
     }
 
     const menuTemplateCount = await prisma.menuTemplate.count({
@@ -192,7 +194,7 @@ export class EventTypeService {
     });
 
     if (menuTemplateCount > 0) {
-      throw new Error(`Cannot delete event type that has ${menuTemplateCount} menu template(s). Remove templates first.`);
+      throw new Error(EVENT_TYPE.CANNOT_DELETE_WITH_TEMPLATES(menuTemplateCount));
     }
 
     await prisma.eventType.delete({ where: { id } });

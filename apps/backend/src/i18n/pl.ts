@@ -200,8 +200,13 @@ export const DEPOSIT = {
 export const EVENT_TYPE = {
   NOT_FOUND: 'Nie znaleziono typu wydarzenia',
   NAME_REQUIRED: 'Nazwa typu wydarzenia jest wymagana',
+  NAME_EMPTY: 'Nazwa typu wydarzenia nie może być pusta',
   NAME_EXISTS: 'Typ wydarzenia o tej nazwie już istnieje',
-  CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć typu wydarzenia posiadającego rezerwacje',
+  INVALID_COLOR: 'Nieprawidłowy format koloru. Użyj formatu hex (np. #FF5733)',
+  CANNOT_DELETE_WITH_RESERVATIONS: (count: number) =>
+    `Nie można usunąć typu wydarzenia używanego w ${count} rezerwacji(ach)`,
+  CANNOT_DELETE_WITH_TEMPLATES: (count: number) =>
+    `Nie można usunąć typu wydarzenia posiadającego ${count} szablon(ów) menu. Najpierw usuń szablony.`,
   DELETED: 'Typ wydarzenia został usunięty',
 } as const;
 
