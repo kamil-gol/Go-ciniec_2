@@ -83,6 +83,12 @@ export interface ReservationConfirmationData {
   notes?: string;
 }
 
+export interface PasswordResetEmailData {
+  firstName: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+}
+
 // ═══════════════════════════════════════════
 // Company Info Helper
 // ═══════════════════════════════════════════
@@ -458,6 +464,37 @@ const emailService = {
     }] : undefined;
 
     return this.send({ to, subject, html, attachments });
+  },
+
+  /**
+   * Send password reset email with CTA button
+   */
+  async sendPasswordResetEmail(to: string, data: PasswordResetEmailData): Promise<boolean> {
+    const company = await getCompanyInfo();
+    const subject = `🔑 Resetowanie hasła — ${company.name}`;
+
+    const html = buildHtmlTemplate({
+      title: 'Resetowanie hasła',
+      preheader: 'Kliknij link aby ustawić nowe hasło',
+      companyName: company.name,
+      body: `
+        <p>Dzień dobry, <strong>${data.firstName}</strong>,</p>
+        <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta.</p>
+        <p>Kliknij poniższy przycisk, aby ustawić nowe hasło:</p>
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${data.resetUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;font-weight:600;font-size:16px;text-decoration:none;border-radius:10px;box-shadow:0 4px 12px rgba(124,58,237,0.3);">
+            Ustaw nowe hasło
+          </a>
+        </div>
+        <p style="color:#6b7280;font-size:14px;">Link jest ważny przez <strong>${data.expiresInMinutes} minut</strong>. Po tym czasie konieczne będzie wygenerowanie nowego.</p>
+        <p style="color:#6b7280;font-size:14px;">Jeśli nie prosiłeś o zmianę hasła, zignoruj tę wiadomość — Twoje konto pozostanie bezpieczne.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+        <p style="color:#9ca3af;font-size:12px;">Jeśli przycisk nie działa, skopiuj i wklej ten link w przeglądarkę:<br /><a href="${data.resetUrl}" style="color:#7c3aed;word-break:break-all;">${data.resetUrl}</a></p>
+      `,
+      footer: company.footerText,
+    });
+
+    return this.send({ to, subject, html });
   },
 
   /**

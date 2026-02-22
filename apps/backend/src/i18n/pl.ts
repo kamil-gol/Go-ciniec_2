@@ -25,6 +25,20 @@ export const AUTH = {
 } as const;
 
 // ═══════════════════════════════════════
+// PASSWORD RESET
+// ═══════════════════════════════════════
+export const PASSWORD_RESET = {
+  EMAIL_SENT: 'Jeśli podany adres email istnieje w systemie, wysłaliśmy link do resetowania hasła',
+  TOKEN_INVALID: 'Link do resetowania hasła jest nieprawidłowy lub wygasł',
+  TOKEN_USED: 'Ten link do resetowania hasła został już wykorzystany',
+  TOKEN_EXPIRED: 'Link do resetowania hasła wygasł. Wygeneruj nowy.',
+  PASSWORD_CHANGED: 'Hasło zostało zmienione pomyślnie',
+  OLD_PASSWORD_WRONG: 'Aktualne hasło jest nieprawidłowe',
+  SAME_PASSWORD: 'Nowe hasło nie może być takie samo jak obecne',
+  RESET_SUBJECT: 'Resetowanie hasła — Gościniec',
+} as const;
+
+// ═══════════════════════════════════════
 // ERRORS (globalny error handler)
 // ═══════════════════════════════════════
 export const ERRORS = {

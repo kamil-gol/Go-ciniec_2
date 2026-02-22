@@ -1,6 +1,7 @@
 /**
  * Auth Controller
  * Updated for RBAC — returns role + permissions on login and /me
+ * Password reset & change handlers added for #124
  * FIX: token/user also at root level for backward compatibility with tests
  */
 import { Response } from 'express';
@@ -9,6 +10,7 @@ import authService from '../services/auth.service';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validatePassword } from '../utils/password';
+import { PASSWORD_RESET } from '../i18n/pl';
 
 export const authController = {
   register: asyncHandler(async (req, res) => {
@@ -84,4 +86,77 @@ export const authController = {
       data: { requirements },
     });
   },
+
+  // ═══════════════════════════════════════════
+  // 🔑 PASSWORD RESET & CHANGE (#124)
+  // ═══════════════════════════════════════════
+
+  /**
+   * POST /api/auth/forgot-password
+   * Body: { email }
+   * Always returns 200 (anti-enumeration)
+   */
+  forgotPassword: asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+      throw AppError.badRequest('Adres email jest wymagany');
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw AppError.badRequest('Nieprawidłowy format adresu email');
+    }
+
+    await authService.forgotPassword(email);
+
+    // Always success — never reveal if email exists
+    res.json({
+      success: true,
+      message: PASSWORD_RESET.EMAIL_SENT,
+    });
+  }),
+
+  /**
+   * POST /api/auth/reset-password
+   * Body: { token, newPassword }
+   */
+  resetPassword: asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      throw AppError.badRequest('Token i nowe hasło są wymagane');
+    }
+
+    await authService.resetPassword(token, newPassword);
+
+    res.json({
+      success: true,
+      message: PASSWORD_RESET.PASSWORD_CHANGED,
+    });
+  }),
+
+  /**
+   * PATCH /api/auth/change-password
+   * Body: { oldPassword, newPassword }
+   * Requires: authMiddleware
+   */
+  changePassword: asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (!req.user) {
+      throw AppError.unauthorized('User not authenticated');
+    }
+
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      throw AppError.badRequest('Aktualne hasło i nowe hasło są wymagane');
+    }
+
+    await authService.changePassword(req.user.id, oldPassword, newPassword);
+
+    res.json({
+      success: true,
+      message: PASSWORD_RESET.PASSWORD_CHANGED,
+    });
+  }),
 };
