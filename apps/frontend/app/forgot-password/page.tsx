@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      setError('Nieprawid\u0142owy format adresu email')
+      setError('Nieprawidłowy format adresu email')
       setLoading(false)
       return
     }
@@ -34,10 +34,10 @@ export default function ForgotPasswordPage() {
     try {
       await apiClient.post('/auth/forgot-password', { email })
       setSent(true)
-      toast.success('Sprawd\u017a swoj\u0105 skrzynk\u0119 email')
+      toast.success('Sprawdź swoją skrzynkę email')
     } catch (error: any) {
       console.error('Forgot password error:', error)
-      const errorMessage = error.response?.data?.error || 'Wyst\u0105pi\u0142 b\u0142\u0105d. Spr\u00f3buj ponownie.'
+      const errorMessage = error.response?.data?.error || 'Wystąpił błąd. Spróbuj ponownie.'
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2"
           >
-            Go\u015bciniec Rodzinny
+            Gościniec Rodzinny
           </motion.h1>
         </div>
 
@@ -99,13 +99,13 @@ export default function ForgotPasswordPage() {
                   <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
-                  Sprawd\u017a swoj\u0105 skrzynk\u0119
+                  Sprawdź swoją skrzynkę
                 </h2>
                 <p className="text-neutral-600 dark:text-neutral-400 mb-2">
-                  Je\u015bli konto z adresem <strong className="text-neutral-900 dark:text-neutral-100">{email}</strong> istnieje w naszym systemie, wys\u0142ali\u015bmy link do resetowania has\u0142a.
+                  Jeśli konto z adresem <strong className="text-neutral-900 dark:text-neutral-100">{email}</strong> istnieje w naszym systemie, wysłaliśmy link do resetowania hasła.
                 </p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-500 mb-6">
-                  Link jest wa\u017cny przez 60 minut. Sprawd\u017a te\u017c folder spam.
+                  Link jest ważny przez 60 minut. Sprawdź też folder spam.
                 </p>
 
                 <Link
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Wr\u00f3\u0107 do logowania
+                  Wróć do logowania
                 </Link>
               </motion.div>
             ) : (
@@ -127,10 +127,10 @@ export default function ForgotPasswordPage() {
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                     <Mail className="h-6 w-6 text-violet-600" />
-                    Resetuj has\u0142o
+                    Resetuj hasło
                   </h2>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                    Podaj adres email powi\u0105zany z Twoim kontem
+                    Podaj adres email powiązany z Twoim kontem
                   </p>
                 </div>
 
@@ -191,12 +191,12 @@ export default function ForgotPasswordPage() {
                       {loading ? (
                         <>
                           <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Wysy\u0142anie...
+                          Wysyłanie...
                         </>
                       ) : (
                         <>
                           <Send className="h-5 w-5" />
-                          Wy\u015blij link resetuj\u0105cy
+                          Wyślij link resetujący
                         </>
                       )}
                     </span>
@@ -210,7 +210,7 @@ export default function ForgotPasswordPage() {
                     className="inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Wr\u00f3\u0107 do logowania
+                    Wróć do logowania
                   </Link>
                 </div>
               </motion.div>
@@ -225,7 +225,7 @@ export default function ForgotPasswordPage() {
           transition={{ delay: 0.7 }}
           className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
         >
-          <p>\u00a9 2026 Go\u015bciniec Rodzinny. Wszystkie prawa zastrze\u017cone.</p>
+          <p>&copy; 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
         </motion.div>
       </motion.div>
     </div>

@@ -9,9 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Lock, ArrowLeft, AlertCircle, Building2, KeyRound, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react'
 
 const PASSWORD_REQUIREMENTS = [
-  { label: 'Minimum 12 znak\u00f3w', test: (p: string) => p.length >= 12 },
+  { label: 'Minimum 12 znaków', test: (p: string) => p.length >= 12 },
   { label: 'Co najmniej 1 wielka litera (A-Z)', test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'Co najmniej 1 ma\u0142a litera (a-z)', test: (p: string) => /[a-z]/.test(p) },
+  { label: 'Co najmniej 1 mała litera (a-z)', test: (p: string) => /[a-z]/.test(p) },
   { label: 'Co najmniej 1 cyfra (0-9)', test: (p: string) => /[0-9]/.test(p) },
   { label: 'Co najmniej 1 znak specjalny (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p) },
 ]
@@ -45,7 +45,7 @@ function ResetPasswordContent() {
   // Redirect if no token
   useEffect(() => {
     if (!token) {
-      toast.error('Brak tokena resetowania has\u0142a')
+      toast.error('Brak tokena resetowania hasła')
       router.replace('/forgot-password')
     }
   }, [token, router])
@@ -56,13 +56,13 @@ function ResetPasswordContent() {
     setError('')
 
     if (!allPassed) {
-      setError('Has\u0142o nie spe\u0142nia wszystkich wymaga\u0144')
+      setError('Hasło nie spełnia wszystkich wymagań')
       setLoading(false)
       return
     }
 
     if (!passwordsMatch) {
-      setError('Has\u0142a nie s\u0105 identyczne')
+      setError('Hasła nie są identyczne')
       setLoading(false)
       return
     }
@@ -73,7 +73,7 @@ function ResetPasswordContent() {
         newPassword: formData.newPassword,
       })
       setSuccess(true)
-      toast.success('Has\u0142o zosta\u0142o zmienione!')
+      toast.success('Hasło zostało zmienione!')
 
       // Auto-redirect to login after 3 seconds
       setTimeout(() => {
@@ -81,7 +81,7 @@ function ResetPasswordContent() {
       }, 3000)
     } catch (error: any) {
       console.error('Reset password error:', error)
-      const errorMessage = error.response?.data?.error || 'Wyst\u0105pi\u0142 b\u0142\u0105d. Spr\u00f3buj ponownie.'
+      const errorMessage = error.response?.data?.error || 'Wystąpił błąd. Spróbuj ponownie.'
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -120,7 +120,7 @@ function ResetPasswordContent() {
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2"
           >
-            Go\u015bciniec Rodzinny
+            Gościniec Rodzinny
           </motion.h1>
         </div>
 
@@ -145,13 +145,13 @@ function ResetPasswordContent() {
                   <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
-                  Has\u0142o zmienione!
+                  Hasło zmienione!
                 </h2>
                 <p className="text-neutral-600 dark:text-neutral-400 mb-2">
-                  Twoje has\u0142o zosta\u0142o pomy\u015blnie zaktualizowane.
+                  Twoje hasło zostało pomyślnie zaktualizowane.
                 </p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-500 mb-6">
-                  Za chwil\u0119 zostaniesz przekierowany do logowania...
+                  Za chwilę zostaniesz przekierowany do logowania...
                 </p>
 
                 <Link
@@ -159,7 +159,7 @@ function ResetPasswordContent() {
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Zaloguj si\u0119
+                  Zaloguj się
                 </Link>
               </motion.div>
             ) : (
@@ -173,10 +173,10 @@ function ResetPasswordContent() {
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                     <KeyRound className="h-6 w-6 text-violet-600" />
-                    Nowe has\u0142o
+                    Nowe hasło
                   </h2>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                    Ustaw nowe has\u0142o do swojego konta
+                    Ustaw nowe hasło do swojego konta
                   </p>
                 </div>
 
@@ -201,7 +201,7 @@ function ResetPasswordContent() {
                   {/* New Password Field */}
                   <div>
                     <label htmlFor="newPassword" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                      Nowe has\u0142o
+                      Nowe hasło
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -214,7 +214,7 @@ function ResetPasswordContent() {
                         autoComplete="new-password"
                         autoFocus
                         className="w-full pl-12 pr-12 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200"
-                        placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                        placeholder="••••••••••••"
                         value={formData.newPassword}
                         onChange={(e) => {
                           setFormData({ ...formData, newPassword: e.target.value })
@@ -260,7 +260,7 @@ function ResetPasswordContent() {
                   {/* Confirm Password Field */}
                   <div>
                     <label htmlFor="confirmPassword" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                      Powt\u00f3rz has\u0142o
+                      Powtórz hasło
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -284,7 +284,7 @@ function ResetPasswordContent() {
                               : 'border-error-400 focus:border-error-500 focus:ring-error-500/20'
                             : 'border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20'
                         } rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200`}
-                        placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                        placeholder="••••••••••••"
                         value={formData.confirmPassword}
                         onChange={(e) => {
                           setFormData({ ...formData, confirmPassword: e.target.value })
@@ -308,7 +308,7 @@ function ResetPasswordContent() {
                           className="mt-2 text-sm text-error-600 dark:text-error-400 flex items-center gap-1"
                         >
                           <AlertCircle className="h-4 w-4" />
-                          Has\u0142a nie s\u0105 identyczne
+                          Hasła nie są identyczne
                         </motion.p>
                       )}
                     </AnimatePresence>
@@ -332,7 +332,7 @@ function ResetPasswordContent() {
                       ) : (
                         <>
                           <KeyRound className="h-5 w-5" />
-                          Ustaw nowe has\u0142o
+                          Ustaw nowe hasło
                         </>
                       )}
                     </span>
@@ -346,7 +346,7 @@ function ResetPasswordContent() {
                     className="inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Wr\u00f3\u0107 do logowania
+                    Wróć do logowania
                   </Link>
                 </div>
               </motion.div>
@@ -361,7 +361,7 @@ function ResetPasswordContent() {
           transition={{ delay: 0.7 }}
           className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
         >
-          <p>\u00a9 2026 Go\u015bciniec Rodzinny. Wszystkie prawa zastrze\u017cone.</p>
+          <p>&copy; 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
         </motion.div>
       </motion.div>
     </div>
