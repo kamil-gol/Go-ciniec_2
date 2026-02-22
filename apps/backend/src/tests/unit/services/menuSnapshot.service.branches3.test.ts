@@ -4,11 +4,11 @@
  *   - line 53: empty allDishIds (ternary false branch in Promise.all)
  *   - line 226: duplicate option counting in getPopularOptions
  *   - line 239: duplicate package counting in getPopularPackages
+ * NOTE: menuOption mock removed — MenuOption model no longer in Prisma
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     menuPackage: { findUnique: jest.fn() },
-    menuOption: { findMany: jest.fn() },
     dish: { findMany: jest.fn() },
     dishCategory: { findMany: jest.fn() },
     reservationMenuSnapshot: {
@@ -40,7 +40,6 @@ describe('MenuSnapshotService — createSnapshot empty allDishIds (line 53)', ()
     };
 
     mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-    mockPrisma.menuOption.findMany.mockResolvedValue([]);
     mockPrisma.dishCategory.findMany.mockResolvedValue([
       { id: 'cat-1', name: 'Zupy', icon: '🍲' },
     ]);

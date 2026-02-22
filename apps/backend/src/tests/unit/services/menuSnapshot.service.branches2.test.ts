@@ -3,12 +3,11 @@
  * Lines 47-53: empty dishIds/categoryIds ternary ([] branches)
  * Line 226: null aggregate averages (?? 0)
  * Line 239: duplicate option counting (if already exists)
+ * NOTE: menuOption mock removed — MenuOption model no longer in Prisma
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     menuPackage: { findUnique: jest.fn() },
-    menuOption: { findMany: jest.fn() },
-    menuCourse: { findMany: jest.fn() },
     dish: { findMany: jest.fn() },
     dishCategory: { findMany: jest.fn() },
     reservationMenuSnapshot: {
@@ -42,7 +41,6 @@ describe('MenuSnapshotService — createSnapshot empty dish/category arrays (lin
       menuTemplate: { name: 'Template', variant: 'A', eventType: { name: 'Wesele' } },
     };
     mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-    mockPrisma.menuOption.findMany.mockResolvedValue([]);
 
     // dishSelections with categories but NO dishes → allDishIds will be empty
     mockPrisma.dish.findMany.mockResolvedValue([]);
@@ -77,7 +75,6 @@ describe('MenuSnapshotService — createSnapshot empty dish/category arrays (lin
       menuTemplate: { name: 'Template', variant: 'B', eventType: { name: 'Komunia' } },
     };
     mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-    mockPrisma.menuOption.findMany.mockResolvedValue([]);
     mockPrisma.reservationMenuSnapshot.create.mockResolvedValue({ id: 'snap2' });
 
     // No dishSelections at all → enrichedDishSelections stays []
