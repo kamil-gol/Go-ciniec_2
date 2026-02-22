@@ -11,7 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class SelectedOptionDto {
   @ApiProperty({ description: 'Menu option ID' })
   @IsUUID()
-  optionId: string;
+  optionId!: string;
 
   @ApiProperty({ description: 'Quantity of this option', minimum: 1, default: 1 })
   @IsInt()
@@ -27,22 +27,22 @@ export class SelectedOptionDto {
 export class MenuCalculatorRequestDto {
   @ApiProperty({ description: 'Menu package ID' })
   @IsUUID()
-  packageId: string;
+  packageId!: string;
 
   @ApiProperty({ description: 'Number of adults', minimum: 0, default: 0 })
   @IsInt()
   @Min(0)
-  adults: number;
+  adults!: number;
 
   @ApiProperty({ description: 'Number of children', minimum: 0, default: 0 })
   @IsInt()
   @Min(0)
-  children: number;
+  children!: number;
 
   @ApiProperty({ description: 'Number of toddlers', minimum: 0, default: 0 })
   @IsInt()
   @Min(0)
-  toddlers: number;
+  toddlers!: number;
 
   @ApiPropertyOptional({ description: 'Selected menu options', type: [SelectedOptionDto] })
   @IsOptional()
@@ -54,83 +54,83 @@ export class MenuCalculatorRequestDto {
 
 export class PriceBreakdownDto {
   @ApiProperty({ description: 'Price per adult' })
-  pricePerAdult: number;
+  pricePerAdult!: number;
 
   @ApiProperty({ description: 'Price per child' })
-  pricePerChild: number;
+  pricePerChild!: number;
 
   @ApiProperty({ description: 'Price per toddler' })
-  pricePerToddler: number;
+  pricePerToddler!: number;
 
   @ApiProperty({ description: 'Number of adults' })
-  adultsCount: number;
+  adultsCount!: number;
 
   @ApiProperty({ description: 'Number of children' })
-  childrenCount: number;
+  childrenCount!: number;
 
   @ApiProperty({ description: 'Number of toddlers' })
-  toddlersCount: number;
+  toddlersCount!: number;
 
   @ApiProperty({ description: 'Subtotal for adults' })
-  adultsSubtotal: number;
+  adultsSubtotal!: number;
 
   @ApiProperty({ description: 'Subtotal for children' })
-  childrenSubtotal: number;
+  childrenSubtotal!: number;
 
   @ApiProperty({ description: 'Subtotal for toddlers' })
-  toddlersSubtotal: number;
+  toddlersSubtotal!: number;
 
   @ApiProperty({ description: 'Total package price' })
-  packageTotal: number;
+  packageTotal!: number;
 }
 
 export class OptionPriceDetailDto {
   @ApiProperty({ description: 'Option ID' })
-  optionId: string;
+  optionId!: string;
 
   @ApiProperty({ description: 'Option name' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Option category' })
-  category: string;
+  category!: string;
 
   @ApiProperty({ description: 'Price type (PER_PERSON, PER_ADULT, PER_CHILD, FLAT_FEE)' })
-  priceType: string;
+  priceType!: string;
 
   @ApiProperty({ description: 'Base price amount' })
-  priceAmount: number;
+  priceAmount!: number;
 
   @ApiProperty({ description: 'Quantity selected' })
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({ description: 'Calculated price for this option' })
-  calculatedPrice: number;
+  calculatedPrice!: number;
 }
 
 export class MenuCalculatorResponseDto {
   @ApiProperty({ description: 'Package ID' })
-  packageId: string;
+  packageId!: string;
 
   @ApiProperty({ description: 'Package name' })
-  packageName: string;
+  packageName!: string;
 
   @ApiProperty({ description: 'Package price breakdown', type: PriceBreakdownDto })
-  priceBreakdown: PriceBreakdownDto;
+  priceBreakdown!: PriceBreakdownDto;
 
   @ApiProperty({ description: 'Options price details', type: [OptionPriceDetailDto] })
-  optionsDetails: OptionPriceDetailDto[];
+  optionsDetails!: OptionPriceDetailDto[];
 
   @ApiProperty({ description: 'Total options price' })
-  optionsTotal: number;
+  optionsTotal!: number;
 
   @ApiProperty({ description: 'Total guests count' })
-  totalGuests: number;
+  totalGuests!: number;
 
   @ApiProperty({ description: 'Grand total price (package + options)' })
-  grandTotal: number;
+  grandTotal!: number;
 
   @ApiProperty({ description: 'Average price per guest' })
-  averagePerGuest: number;
+  averagePerGuest!: number;
 
   @ApiPropertyOptional({ description: 'Validation warnings', type: [String] })
   warnings?: string[];
