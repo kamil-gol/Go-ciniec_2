@@ -5,6 +5,9 @@
  * FIX: formatMenuResponse now exposes menuTemplateId + packageId from DB columns
  * Updated: Phase 3 Audit — logChange() for menu selection, recalculation, removal
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
+ *
+ * NOTE: MenuOption model removed from Prisma.
+ * Options are now passed via input data, no DB lookup for MenuOption.
  */
 
 import { Prisma } from '@prisma/client';
@@ -49,16 +52,14 @@ class ReservationMenuService {
     }
 
     const selectedOptions = input.selectedOptions || [];
-    const optionIds = selectedOptions.map(opt => opt.optionId);
-    const options = optionIds.length > 0 ? await prisma.menuOption.findMany({ where: { id: { in: optionIds }, isActive: true } }) : [];
 
     // Check if existing snapshot exists (for audit: new vs update)
     const existingSnapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
     const isNewSelection = !existingSnapshot;
 
-    const snapshot = await this.buildMenuSnapshot(menuPackage, input.dishSelections || [], options, selectedOptions, adults, children, toddlers);
+    const snapshot = await this.buildMenuSnapshot(menuPackage, input.dishSelections || [], selectedOptions, adults, children, toddlers);
     const packagePrice = this.calculatePackagePrice(menuPackage, adults, children, toddlers);
-    const optionsPrice = this.calculateOptionsPrice(options, selectedOptions, adults + children + toddlers);
+    const optionsPrice = this.calculateOptionsPrice(selectedOptions, adults + children + toddlers);
     const totalMenuPrice = packagePrice + optionsPrice;
 
     const menuSnapshot = await prisma.reservationMenuSnapshot.upsert({
@@ -108,7 +109,7 @@ class ReservationMenuService {
    * Recalculate menu prices when guest counts change.
    * Reuses existing snapshot (same package, dishes, options) but
    * recalculates all prices with new guest counts.
-   * 
+   *
    * Called automatically from reservation.service.ts when guests are updated.
    * Returns the new totalMenuPrice for the reservation to use.
    */
@@ -261,7 +262,7 @@ class ReservationMenuService {
     const errors: string[] = [];
     for (const categorySetting of categorySettings) {
       const selection = dishSelections.find(s => s.categoryId === categorySetting.categoryId);
-      const totalQuantity = selection ? selection.dishes.reduce((sum, d) => sum + d.quantity, 0) : 0;
+      const totalQuantity = selection ? selection.dishes.reduce((sum: number, d: any) => sum + d.quantity, 0) : 0;
       const minSelect = parseFloat(categorySetting.minSelect.toString());
       const maxSelect = parseFloat(categorySetting.maxSelect.toString());
       if (categorySetting.isRequired && totalQuantity < minSelect) {
@@ -275,19 +276,19 @@ class ReservationMenuService {
   }
 
   private async buildMenuSnapshot(
-    menuPackage: any, dishSelections: CategorySelectionDTO[], options: any[],
+    menuPackage: any, dishSelections: CategorySelectionDTO[],
     selectedOptions: any[], adults: number, children: number, toddlers: number
   ): Promise<MenuSnapshotData> {
     const enrichedDishSelections = await Promise.all(
       dishSelections.map(async (catSelection) => {
         const categorySetting = menuPackage.categorySettings.find((cs: any) => cs.categoryId === catSelection.categoryId);
         if (!categorySetting) return null;
-        const dishIds = catSelection.dishes.map(d => d.dishId);
+        const dishIds = catSelection.dishes.map((d: any) => d.dishId);
         const dishes = await prisma.dish.findMany({ where: { id: { in: dishIds }, isActive: true } });
         return {
           categoryId: catSelection.categoryId,
           categoryName: categorySetting.category.name,
-          dishes: catSelection.dishes.map(dishSel => {
+          dishes: catSelection.dishes.map((dishSel: any) => {
             const dish = dishes.find(d => d.id === dishSel.dishId);
             return {
               /* istanbul ignore next -- dish always found from DB query */
@@ -309,22 +310,17 @@ class ReservationMenuService {
       pricePerToddler: parseFloat(menuPackage.pricePerToddler.toString()),
       adults, children, toddlers,
       dishSelections: enrichedDishSelections.filter(Boolean) as any,
-      selectedOptions: selectedOptions.map(selOpt => {
-        const option = options.find(o => o.id === selOpt.optionId);
-        return {
-          /* istanbul ignore next -- option always found from prior query */
-          optionId: selOpt.optionId, optionName: option?.name || MENU_SELECTION.UNKNOWN_OPTION,
-          /* istanbul ignore next */
-          category: option?.category || '', quantity: selOpt.quantity,
-          /* istanbul ignore next */
-          priceAmount: parseFloat(option?.priceAmount.toString() || '0'),
-          /* istanbul ignore next */
-          priceUnit: option?.priceType || 'FLAT'
-        };
-      }),
+      selectedOptions: selectedOptions.map((selOpt: any) => ({
+        optionId: selOpt.optionId,
+        optionName: selOpt.name || selOpt.optionName || MENU_SELECTION.UNKNOWN_OPTION,
+        category: selOpt.category || '',
+        quantity: selOpt.quantity,
+        priceAmount: selOpt.priceAmount || 0,
+        priceUnit: selOpt.priceType || selOpt.priceUnit || 'FLAT'
+      })),
       prices: {
         packageTotal: this.calculatePackagePrice(menuPackage, adults, children, toddlers),
-        optionsTotal: this.calculateOptionsPrice(options, selectedOptions, adults + children + toddlers),
+        optionsTotal: this.calculateOptionsPrice(selectedOptions, adults + children + toddlers),
         total: 0
       },
       createdAt: new Date().toISOString()
@@ -337,13 +333,12 @@ class ReservationMenuService {
       toddlers * parseFloat(menuPackage.pricePerToddler.toString());
   }
 
-  private calculateOptionsPrice(options: any[], selectedOptions: any[], totalGuests: number): number {
-    return selectedOptions.reduce((total, selOpt) => {
-      const option = options.find(o => o.id === selOpt.optionId);
-      if (!option) return total;
-      const price = parseFloat(option.priceAmount.toString());
-      if (option.priceType === 'PER_PERSON') return total + price * totalGuests * selOpt.quantity;
-      if (option.priceType === 'FLAT') return total + price * selOpt.quantity;
+  private calculateOptionsPrice(selectedOptions: any[], totalGuests: number): number {
+    return selectedOptions.reduce((total: number, selOpt: any) => {
+      const price = selOpt.priceAmount || 0;
+      const priceType = selOpt.priceType || selOpt.priceUnit || 'FLAT';
+      if (priceType === 'PER_PERSON') return total + price * totalGuests * selOpt.quantity;
+      if (priceType === 'FLAT') return total + price * selOpt.quantity;
       return total;
     }, 0);
   }
@@ -372,7 +367,7 @@ class ReservationMenuService {
           subtotal: parseFloat(snapshot.packagePrice.toString())
         },
         /* istanbul ignore next -- selectedOptions always present in snapshot menuData */
-        optionsCost: menuData.selectedOptions?.map(opt => ({
+        optionsCost: menuData.selectedOptions?.map((opt: any) => ({
           option: opt.optionName, priceType: opt.priceUnit, priceEach: opt.priceAmount,
           quantity: opt.quantity, total: opt.priceAmount * opt.quantity
         })) || [],

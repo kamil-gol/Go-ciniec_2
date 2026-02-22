@@ -4,11 +4,14 @@
  * FIX: dishSelections enriched with dish/category names from DB
  * FIX: menuTemplateId/packageId saved in DB columns (not just JSONB)
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
+ *
+ * NOTE: MenuOption model removed from Prisma.
+ * selectedOptions are now stored purely from input data (no DB lookup).
  */
 
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { 
+import {
   MenuSnapshotData,
   CreateMenuSnapshotInput,
   MenuPriceBreakdown
@@ -24,19 +27,12 @@ export class MenuSnapshotService {
     });
     if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
 
-    const optionIds = input.selectedOptions.map(opt => opt.optionId);
-    const options = optionIds.length > 0 
-      ? await prisma.menuOption.findMany({ where: { id: { in: optionIds } } })
-      : [];
-    if (options.length !== optionIds.length) throw new Error('Nie znaleziono niektórych opcji menu');
-
     // ── Enrich dishSelections with names from DB ──
     let enrichedDishSelections: any[] = [];
     if (input.dishSelections && input.dishSelections.length > 0) {
-      // Collect all dishIds and categoryIds
       const allDishIds: string[] = [];
       const allCategoryIds: string[] = [];
-      
+
       for (const catSel of input.dishSelections) {
         allCategoryIds.push(catSel.categoryId);
         for (const dish of catSel.dishes) {
@@ -44,10 +40,9 @@ export class MenuSnapshotService {
         }
       }
 
-      // Fetch dishes and categories in bulk
       const [dishes, categories] = await Promise.all([
-        /* istanbul ignore next */ allDishIds.length > 0 
-          ? prisma.dish.findMany({ 
+        /* istanbul ignore next */ allDishIds.length > 0
+          ? prisma.dish.findMany({
               where: { id: { in: allDishIds } },
               select: { id: true, name: true, description: true, allergens: true }
             })
@@ -88,6 +83,18 @@ export class MenuSnapshotService {
       });
     }
 
+    // Build selectedOptions from input (no DB lookup — MenuOption model removed)
+    const selectedOptionsData = (input.selectedOptions || []).map(selectedOpt => ({
+      optionId: selectedOpt.optionId,
+      name: selectedOpt.name || 'Opcja',
+      description: selectedOpt.description || null,
+      category: selectedOpt.category || 'OTHER',
+      priceType: (selectedOpt.priceType || 'FLAT') as 'PER_PERSON' | 'FLAT' | 'FREE',
+      priceAmount: selectedOpt.priceAmount || 0,
+      quantity: selectedOpt.quantity,
+      icon: selectedOpt.icon || null,
+    }));
+
     const snapshotData: MenuSnapshotData = {
       templateId: pkg.menuTemplateId,
       templateName: pkg.menuTemplate.name,
@@ -102,16 +109,7 @@ export class MenuSnapshotService {
       includedItems: pkg.includedItems,
       packageColor: pkg.color,
       packageIcon: pkg.icon,
-      selectedOptions: input.selectedOptions.map(selectedOpt => {
-        const option = options.find(o => o.id === selectedOpt.optionId)!;
-        return {
-          optionId: option.id, name: option.name, description: option.description,
-          category: option.category, priceType: option.priceType as "PER_PERSON" | "FLAT" | "FREE",
-          priceAmount: option.priceAmount.toNumber(), quantity: selectedOpt.quantity,
-          icon: option.icon
-        };
-      }),
-      // Store enriched dish selections with names
+      selectedOptions: selectedOptionsData,
       dishSelections: enrichedDishSelections
     };
 
