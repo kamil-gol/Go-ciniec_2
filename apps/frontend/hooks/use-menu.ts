@@ -251,7 +251,7 @@ export function useEventTypes() {
     queryFn: async () => {
       const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const response = await fetch(`${baseURL}/event-types`);
-      if (!response.ok) throw new Error('Nie uda\u0142o si\u0119 pobra\u0107 typ\u00f3w wydarze\u0144');
+      if (!response.ok) throw new Error('Nie udało się pobrać typów wydarzeń');
       return response.json();
     },
     select: (response) => response.data || response,
@@ -263,8 +263,8 @@ export function useEventTypes() {
 // ══════════════════════════════════════════════════════════════════
 
 /**
- * Pobierz menu rezerwacji z podzia\u0142em cenowym.
- * Zwraca null gdy menu nie jest wybrane (nie jest to b\u0142\u0105d).
+ * Pobierz menu rezerwacji z podziałem cenowym.
+ * Zwraca null gdy menu nie jest wybrane (nie jest to błąd).
  */
 export function useReservationMenu(reservationId: string | undefined) {
   return useQuery({
@@ -274,7 +274,7 @@ export function useReservationMenu(reservationId: string | undefined) {
         const response = await menuApi.getReservationMenu(reservationId!);
         return response;
       } catch (error: any) {
-        // 404 = brak menu — to normalny stan, nie b\u0142\u0105d
+        // 404 = brak menu — to normalny stan, nie błąd
         if (
           error.response?.status === 404 ||
           error.response?.data?.error?.includes('Menu not selected') ||
@@ -345,7 +345,7 @@ export function useUpdateReservationMenu() {
 }
 
 /**
- * Usu\u0144 menu rezerwacji
+ * Usuń menu rezerwacji
  */
 export function useDeleteReservationMenu() {
   const queryClient = useQueryClient();
@@ -365,8 +365,8 @@ export function useDeleteReservationMenu() {
 }
 
 /**
- * Zaktualizuj liczb\u0119 go\u015bci dla menu rezerwacji
- * Faza C: Invaliduje r\u00f3wnie\u017c query rezerwacji aby od\u015bwie\u017cy\u0107 totalPrice
+ * Zaktualizuj liczbę gości dla menu rezerwacji
+ * Faza C: Invaliduje również query rezerwacji aby odświeżyć totalPrice
  */
 export function useUpdateGuestCounts() {
   const queryClient = useQueryClient();
@@ -400,8 +400,8 @@ export function useUpdateGuestCounts() {
 }
 
 /**
- * Usu\u0144 wyb\u00f3r menu z rezerwacji
- * Faza C: Invaliduje r\u00f3wnie\u017c query rezerwacji dla synchronizacji cen
+ * Usuń wybór menu z rezerwacji
+ * Faza C: Invaliduje również query rezerwacji dla synchronizacji cen
  */
 export function useRemoveMenu() {
   const queryClient = useQueryClient();

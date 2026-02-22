@@ -25,7 +25,7 @@ class ApiClient {
         } else {
           // Show toast only for non-login requests
           if (!config.url?.includes('/auth/')) {
-            toast.error('Sesja wygas\u0142a. Zaloguj si\u0119 ponownie.', {
+            toast.error('Sesja wygasła. Zaloguj się ponownie.', {
               duration: 5000,
               action: {
                 label: 'Zaloguj',
@@ -53,14 +53,14 @@ class ApiClient {
         const isSilent = (error.config as any)?._silent === true
         
         if (error.response) {
-          const message = (error.response.data as any)?.error || (error.response.data as any)?.message || 'Wyst\u0105pi\u0142 b\u0142\u0105d'
+          const message = (error.response.data as any)?.error || (error.response.data as any)?.message || 'Wystąpił błąd'
           
           if (error.response.status === 401) {
             // Unauthorized - clear tokens and redirect to login
             localStorage.removeItem('token')
             localStorage.removeItem('auth_token')
             
-            toast.error('Sesja wygas\u0142a. Zaloguj si\u0119 ponownie.', {
+            toast.error('Sesja wygasła. Zaloguj się ponownie.', {
               duration: 5000,
               action: {
                 label: 'Zaloguj',
@@ -73,7 +73,7 @@ class ApiClient {
               window.location.href = '/login'
             }, 1500)
           } else if (error.response.status === 403 && !isSilent) {
-            toast.error('Brak uprawnie\u0144 do wykonania tej operacji', {
+            toast.error('Brak uprawnień do wykonania tej operacji', {
               duration: 4000
             })
           } else if (error.response.status === 404 && !isSilent) {
@@ -81,7 +81,7 @@ class ApiClient {
               duration: 4000
             })
           } else if (error.response.status >= 500 && !isSilent) {
-            toast.error('B\u0142\u0105d serwera. Spr\u00f3buj ponownie p\u00f3\u017aniej.', {
+            toast.error('Błąd serwera. Spróbuj ponownie później.', {
               duration: 5000,
               description: message
             })
@@ -91,9 +91,9 @@ class ApiClient {
             })
           }
         } else if (error.request && !isSilent) {
-          toast.error('Brak po\u0142\u0105czenia z serwerem', {
+          toast.error('Brak połączenia z serwerem', {
             duration: 5000,
-            description: 'Sprawd\u017a po\u0142\u0105czenie internetowe lub skontaktuj si\u0119 z administratorem'
+            description: 'Sprawdź połączenie internetowe lub skontaktuj się z administratorem'
           })
         }
         
