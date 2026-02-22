@@ -124,7 +124,7 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: newId,
       details: {
-        description: `Utworzono zaliczkę: ${amount} PLN (termin: ${dueDateStr})`,
+        description: `Utworzono zaliczk\u0119: ${amount} PLN (termin: ${dueDateStr})`,
         data: { amount, dueDate: dueDateStr, reservationId }
       }
     });
@@ -295,8 +295,8 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: id,
       details: {
-        description: `Zaktualizowano zaliczkę`,
-        changes: input
+        description: `Zaktualizowano zaliczk\u0119`,
+        changes: input as any
       }
     });
 
@@ -320,7 +320,7 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: id,
       details: {
-        description: `Usunięto zaliczkę: ${Number(deposit.amount)} PLN`,
+        description: `Usuni\u0119to zaliczk\u0119: ${Number(deposit.amount)} PLN`,
         deletedData: { amount: Number(deposit.amount), dueDate: deposit.dueDate }
       }
     });
@@ -357,7 +357,7 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: id,
       details: {
-        description: `Oznaczono zaliczkę jako opłaconą: ${amountPaid} PLN (${input.paymentMethod})`,
+        description: `Oznaczono zaliczk\u0119 jako op\u0142acon\u0105: ${amountPaid} PLN (${input.paymentMethod})`,
         data: { amountPaid, paymentMethod: input.paymentMethod, status: newStatus }
       }
     });
@@ -409,7 +409,7 @@ const depositService = {
             fieldName: 'status',
             oldValue: 'PENDING',
             newValue: 'CONFIRMED',
-            reason: 'Automatyczne potwierdzenie — wszystkie zaliczki opłacone',
+            reason: 'Automatyczne potwierdzenie \u2014 wszystkie zaliczki op\u0142acone',
           },
         });
 
@@ -424,13 +424,13 @@ const depositService = {
           entityType: 'RESERVATION',
           entityId: reservationId,
           details: {
-            description: `Rezerwacja automatycznie potwierdzona po opłaceniu wszystkich zaliczek (${clientName})`,
+            description: `Rezerwacja automatycznie potwierdzona po op\u0142aceniu wszystkich zaliczek (${clientName})`,
             depositsCount: activeDeposits.length,
             totalPaid: activeDeposits.reduce((s: number, d: any) => s + Number(d.amount), 0),
           },
         });
 
-        logger.info(`[Deposit] Auto-confirmed reservation ${reservationId} — all ${activeDeposits.length} deposits paid`);
+        logger.info(`[Deposit] Auto-confirmed reservation ${reservationId} \u2014 all ${activeDeposits.length} deposits paid`);
       }
     } catch (error) {
       // Don't fail the payment operation if auto-confirm fails
@@ -508,7 +508,7 @@ const depositService = {
 
     logger.info(`[Deposit] Email confirmation sent to ${client.email} for deposit ${id}`);
 
-    return { success: true, message: `Email wysłany do ${client.email}` };
+    return { success: true, message: `Email wys\u0142any do ${client.email}` };
   },
 
   async markAsUnpaid(id: string, userId: string) {
@@ -538,7 +538,7 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: id,
       details: {
-        description: `Cofnięto oznaczenie płatności dla zaliczki`,
+        description: `Cofni\u0119to oznaczenie p\u0142atno\u015bci dla zaliczki`,
         oldStatus: deposit.status,
         newStatus: 'PENDING'
       }
@@ -572,7 +572,7 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: id,
       details: {
-        description: `Anulowano zaliczkę: ${Number(deposit.amount)} PLN`
+        description: `Anulowano zaliczk\u0119: ${Number(deposit.amount)} PLN`
       }
     });
 
