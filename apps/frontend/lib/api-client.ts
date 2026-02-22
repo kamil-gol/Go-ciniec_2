@@ -25,7 +25,7 @@ class ApiClient {
         } else {
           // Show toast only for non-login requests
           if (!config.url?.includes('/auth/')) {
-            toast.error('Sesja wygasła. Zaloguj się ponownie.', {
+            toast.error('Sesja wygas\u0142a. Zaloguj si\u0119 ponownie.', {
               duration: 5000,
               action: {
                 label: 'Zaloguj',
@@ -40,22 +40,27 @@ class ApiClient {
     )
 
     // Response interceptor for error handling
+    // Supports _silent config flag to suppress toast for expected errors
+    // Usage: apiClient.get('/url', { _silent: true } as any)
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
         if (isDev) {
           console.error('[API Error]', error.config?.url, error.response?.status)
         }
+
+        // Check if the caller wants to suppress error toasts
+        const isSilent = (error.config as any)?._silent === true
         
         if (error.response) {
-          const message = (error.response.data as any)?.error || (error.response.data as any)?.message || 'Wystąpił błąd'
+          const message = (error.response.data as any)?.error || (error.response.data as any)?.message || 'Wyst\u0105pi\u0142 b\u0142\u0105d'
           
           if (error.response.status === 401) {
             // Unauthorized - clear tokens and redirect to login
             localStorage.removeItem('token')
             localStorage.removeItem('auth_token')
             
-            toast.error('Sesja wygasła. Zaloguj się ponownie.', {
+            toast.error('Sesja wygas\u0142a. Zaloguj si\u0119 ponownie.', {
               duration: 5000,
               action: {
                 label: 'Zaloguj',
@@ -67,32 +72,28 @@ class ApiClient {
             setTimeout(() => {
               window.location.href = '/login'
             }, 1500)
-          } else if (error.response.status === 403) {
-            toast.error('Brak uprawnień do wykonania tej operacji', {
+          } else if (error.response.status === 403 && !isSilent) {
+            toast.error('Brak uprawnie\u0144 do wykonania tej operacji', {
               duration: 4000
             })
-          } else if (error.response.status === 404) {
+          } else if (error.response.status === 404 && !isSilent) {
             toast.error(`Nie znaleziono: ${message}`, {
               duration: 4000
             })
-          } else if (error.response.status >= 500) {
-            toast.error('Błąd serwera. Spróbuj ponownie później.', {
+          } else if (error.response.status >= 500 && !isSilent) {
+            toast.error('B\u0142\u0105d serwera. Spr\u00f3buj ponownie p\u00f3\u017aniej.', {
               duration: 5000,
               description: message
             })
-          } else if (error.response.status === 400) {
-            toast.error(message, {
-              duration: 4000
-            })
-          } else {
+          } else if (!isSilent && error.response.status !== 404 && error.response.status !== 403 && error.response.status < 500) {
             toast.error(message, {
               duration: 4000
             })
           }
-        } else if (error.request) {
-          toast.error('Brak połączenia z serwerem', {
+        } else if (error.request && !isSilent) {
+          toast.error('Brak po\u0142\u0105czenia z serwerem', {
             duration: 5000,
-            description: 'Sprawdź połączenie internetowe lub skontaktuj się z administratorem'
+            description: 'Sprawd\u017a po\u0142\u0105czenie internetowe lub skontaktuj si\u0119 z administratorem'
           })
         }
         
