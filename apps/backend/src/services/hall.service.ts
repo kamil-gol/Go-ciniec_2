@@ -2,11 +2,13 @@
  * Hall Service
  * Business logic for hall management
  * UPDATED: isWholeVenue protection — cannot delete/deactivate "Cały Obiekt"
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { CreateHallDTO, UpdateHallDTO, HallResponse } from '../types/hall.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { HALL } from '../i18n/pl';
 
 export class HallService {
   /**
@@ -39,7 +41,7 @@ export class HallService {
    */
   async getHallById(id: string): Promise<HallResponse> {
     const hall = await prisma.hall.findUnique({ where: { id } });
-    if (!hall) throw new Error('Hall not found');
+    if (!hall) throw new Error(HALL.NOT_FOUND);
     return hall as any;
   }
 
@@ -101,7 +103,7 @@ export class HallService {
    */
   async updateHall(id: string, data: UpdateHallDTO, userId: string): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
-    if (!existingHall) throw new Error('Hall not found');
+    if (!existingHall) throw new Error(HALL.NOT_FOUND);
 
     // Protection for "Cały Obiekt"
     if (existingHall.isWholeVenue) {
@@ -149,7 +151,7 @@ export class HallService {
    */
   async toggleActive(id: string, userId: string): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
-    if (!existingHall) throw new Error('Hall not found');
+    if (!existingHall) throw new Error(HALL.NOT_FOUND);
 
     if (existingHall.isWholeVenue) {
       throw new Error('Nie można dezaktywować sali "Cały Obiekt".');
@@ -182,7 +184,7 @@ export class HallService {
    */
   async deleteHall(id: string, userId: string): Promise<void> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
-    if (!existingHall) throw new Error('Hall not found');
+    if (!existingHall) throw new Error(HALL.NOT_FOUND);
 
     if (existingHall.isWholeVenue) {
       throw new Error('Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.');

@@ -4,6 +4,7 @@
  * Phase 4.2: Auto-confirm reservation when all deposits are paid
  * Phase 4.3: Block cancellation of reservations with paid deposits
  * Updated: Deposit limits include extrasTotalPrice (#6)
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts + poprawione diakrytyki
  */
 
 import { prisma } from '../lib/prisma';
@@ -13,6 +14,7 @@ import { pdfService } from './pdf.service';
 import emailService from './email.service';
 import logger from '../utils/logger';
 import { logChange } from '../utils/audit-logger';
+import { DEPOSIT } from '../i18n/pl';
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
@@ -79,7 +81,7 @@ const depositService = {
       include: { deposits: true, client: true },
     });
 
-    if (!reservation) throw AppError.notFound('Reservation');
+    if (!reservation) throw AppError.notFound('Rezerwacja');
 
     const existingDepositsSum = reservation.deposits
       .filter((d: any) => d.status !== 'CANCELLED')
@@ -89,12 +91,11 @@ const depositService = {
 
     if (existingDepositsSum + amount > fullPrice) {
       throw AppError.badRequest(
-        'Suma zaliczek (' + (existingDepositsSum + amount) + ' PLN) przekracza cenę rezerwacji (' + fullPrice + ' PLN, w tym usługi dodatkowe). ' +
-        'Dostępne do zaliczki: ' + (fullPrice - existingDepositsSum).toFixed(2) + ' PLN'
+        DEPOSIT.EXCEEDS_PRICE(existingDepositsSum + amount, fullPrice, fullPrice - existingDepositsSum)
       );
     }
 
-    if (amount <= 0) throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
+    if (amount <= 0) throw AppError.badRequest(DEPOSIT.AMOUNT_POSITIVE);
 
     const dueDateStr = dueDate.substring(0, 10);
 
@@ -136,13 +137,13 @@ const depositService = {
       where: { id },
       include: DEPOSIT_INCLUDE,
     });
-    if (!deposit) throw AppError.notFound('Deposit');
+    if (!deposit) throw AppError.notFound('Zaliczka');
     return deposit;
   },
 
   async getByReservation(reservationId: string) {
     const reservation = await prisma.reservation.findUnique({ where: { id: reservationId } });
-    if (!reservation) throw AppError.notFound('Reservation');
+    if (!reservation) throw AppError.notFound('Rezerwacja');
 
     const deposits = await prisma.deposit.findMany({
       where: { reservationId },
@@ -234,14 +235,14 @@ const depositService = {
 
   async update(id: string, input: UpdateDepositInput, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-    if (!deposit) throw AppError.notFound('Deposit');
+    if (!deposit) throw AppError.notFound('Zaliczka');
 
     if (deposit.paid) {
-      throw AppError.badRequest('Nie mozna edytowac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.');
+      throw AppError.badRequest(DEPOSIT.CANNOT_EDIT_PAID);
     }
 
     if (input.amount !== undefined) {
-      if (input.amount <= 0) throw AppError.badRequest('Kwota zaliczki musi byc wieksza od 0');
+      if (input.amount <= 0) throw AppError.badRequest(DEPOSIT.AMOUNT_POSITIVE);
 
       const reservation = await prisma.reservation.findUnique({
         where: { id: deposit.reservationId },
@@ -257,7 +258,7 @@ const depositService = {
 
         if (otherDepositsSum + input.amount > fullPrice) {
           throw AppError.badRequest(
-            'Suma zaliczek (' + (otherDepositsSum + input.amount) + ' PLN) przekracza cenę rezerwacji (' + fullPrice + ' PLN, w tym usługi dodatkowe).'
+            DEPOSIT.EXCEEDS_PRICE(otherDepositsSum + input.amount, fullPrice, fullPrice - otherDepositsSum)
           );
         }
       }
@@ -304,10 +305,10 @@ const depositService = {
 
   async delete(id: string, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-    if (!deposit) throw AppError.notFound('Deposit');
+    if (!deposit) throw AppError.notFound('Zaliczka');
 
     if (deposit.paid) {
-      throw AppError.badRequest('Nie mozna usunac oplaconej zaliczki. Najpierw cofnij oznaczenie platnosci.');
+      throw AppError.badRequest(DEPOSIT.CANNOT_DELETE_PAID);
     }
 
     await prisma.$queryRawUnsafe(`DELETE FROM "Deposit" WHERE id = $1::uuid`, id);
@@ -324,14 +325,14 @@ const depositService = {
       }
     });
 
-    return { success: true, message: 'Zaliczka zostala usunieta' };
+    return { success: true, message: DEPOSIT.DELETED };
   },
 
   async markAsPaid(id: string, input: MarkPaidInput, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-    if (!deposit) throw AppError.notFound('Deposit');
+    if (!deposit) throw AppError.notFound('Zaliczka');
 
-    if (deposit.paid) throw AppError.badRequest('Ta zaliczka jest juz oznaczona jako oplacona');
+    if (deposit.paid) throw AppError.badRequest(DEPOSIT.ALREADY_PAID);
 
     const amountPaid = input.amountPaid || Number(deposit.amount);
     const remaining = Number(deposit.amount) - amountPaid;
@@ -458,13 +459,13 @@ const depositService = {
       include: DEPOSIT_INCLUDE,
     });
 
-    if (!deposit) throw AppError.notFound('Deposit');
-    if (!deposit.paid) throw AppError.badRequest('Email potwierdzenia mozna wyslac tylko dla oplaconej zaliczki');
+    if (!deposit) throw AppError.notFound('Zaliczka');
+    if (!deposit.paid) throw AppError.badRequest(DEPOSIT.EMAIL_ONLY_PAID);
 
     const reservation = deposit.reservation as any;
     const client = reservation?.client;
 
-    if (!client?.email) throw AppError.badRequest('Klient nie ma przypisanego adresu email');
+    if (!client?.email) throw AppError.badRequest(DEPOSIT.CLIENT_NO_EMAIL);
 
     const pdfBuffer = await pdfService.generatePaymentConfirmationPDF({
       depositId: deposit.id,
@@ -507,15 +508,15 @@ const depositService = {
 
     logger.info(`[Deposit] Email confirmation sent to ${client.email} for deposit ${id}`);
 
-    return { success: true, message: `Email wyslany do ${client.email}` };
+    return { success: true, message: `Email wysłany do ${client.email}` };
   },
 
   async markAsUnpaid(id: string, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-    if (!deposit) throw AppError.notFound('Deposit');
+    if (!deposit) throw AppError.notFound('Zaliczka');
 
     if (!deposit.paid && deposit.status === 'PENDING') {
-      throw AppError.badRequest('Ta zaliczka nie jest oznaczona jako oplacona');
+      throw AppError.badRequest(DEPOSIT.NOT_PAID);
     }
 
     const depositAmount = Number(deposit.amount);
@@ -548,10 +549,10 @@ const depositService = {
 
   async cancel(id: string, userId: string) {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
-    if (!deposit) throw AppError.notFound('Deposit');
+    if (!deposit) throw AppError.notFound('Zaliczka');
 
     if (deposit.paid) {
-      throw AppError.badRequest('Nie mozna anulowac oplaconej zaliczki. Najpierw cofnij platnosc.');
+      throw AppError.badRequest(DEPOSIT.CANNOT_CANCEL_PAID);
     }
 
     await prisma.$queryRawUnsafe(

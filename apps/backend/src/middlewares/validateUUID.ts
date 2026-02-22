@@ -3,11 +3,14 @@
  * Validates that route params matching common ID patterns are valid UUIDs.
  * Returns 400 instead of letting invalid IDs reach Prisma (which would 500).
  *
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
+ *
  * Usage:
  *   router.get('/:id', validateUUID('id'), handler);
  *   router.get('/:id/items/:itemId', validateUUID('id', 'itemId'), handler);
  */
 import { Request, Response, NextFunction } from 'express';
+import { VALIDATION } from '../i18n/pl';
 
 // Accepts any UUID-shaped string (v1-v8, nil UUID, etc.)
 // Goal: block garbage like "not-a-uuid" before it hits Prisma
@@ -20,7 +23,7 @@ export function validateUUID(...paramNames: string[]) {
       if (value && !UUID_REGEX.test(value)) {
         res.status(400).json({
           success: false,
-          error: `Invalid ID format for parameter '${param}'`,
+          error: VALIDATION.INVALID_UUID(param),
         });
         return;
       }

@@ -1,7 +1,11 @@
 /**
  * Custom Application Error class
  * Replaces fragile string-matching on error.message for HTTP status codes
+ *
+ * 🇵🇱 Polskie defaulty — importowane z i18n/pl.ts
  */
+import { ERRORS, AUTH } from '../i18n/pl';
+
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
@@ -37,23 +41,23 @@ export class AppError extends Error {
     return new AppError(message, 400);
   }
 
-  static unauthorized(message = 'User not authenticated'): AppError {
+  static unauthorized(message = AUTH.AUTH_REQUIRED): AppError {
     return new AppError(message, 401);
   }
 
-  static forbidden(message = 'Access denied'): AppError {
+  static forbidden(message = ERRORS.ACCESS_DENIED): AppError {
     return new AppError(message, 403);
   }
 
-  static notFound(resource = 'Resource'): AppError {
-    return new AppError(`${resource} not found`, 404);
+  static notFound(resource = 'Zasób'): AppError {
+    return new AppError(ERRORS.NOT_FOUND(resource), 404);
   }
 
   static conflict(message: string): AppError {
     return new AppError(message, 409);
   }
 
-  static internal(message = 'Internal server error'): AppError {
+  static internal(message = ERRORS.INTERNAL_ERROR): AppError {
     return new AppError(message, 500, false);
   }
 }

@@ -1,54 +1,41 @@
-import { PasswordValidationResult } from '@types/index';
-
 /**
- * Validates password against Gościniec Rodzinny security requirements:
- * - Minimum 12 characters
- * - At least 1 uppercase letter
- * - At least 1 lowercase letter
- * - At least 1 digit
- * - At least 1 special character (!@#$%^&*)
- *
- * @param password - Password to validate
- * @returns Validation result with errors if any
+ * Password validation utilities
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
+import { PASSWORD } from '../i18n/pl';
+
+export interface PasswordValidationResult {
+  valid: boolean;
+  errors: string[];
+  requirements: string[];
+}
+
 export function validatePassword(password: string): PasswordValidationResult {
   const errors: string[] = [];
 
   if (!password || password.length < 12) {
-    errors.push('Password must be at least 12 characters long');
+    errors.push(PASSWORD.TOO_SHORT);
   }
 
   if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
+    errors.push(PASSWORD.NEEDS_UPPERCASE);
   }
 
   if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
+    errors.push(PASSWORD.NEEDS_LOWERCASE);
   }
 
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one digit');
+  if (!/[0-9]/.test(password)) {
+    errors.push(PASSWORD.NEEDS_DIGIT);
   }
 
-  if (!/[!@#$%^&*]/.test(password)) {
-    errors.push('Password must contain at least one special character (!@#$%^&*)');
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push(PASSWORD.NEEDS_SPECIAL);
   }
 
   return {
-    isValid: errors.length === 0,
+    valid: errors.length === 0,
     errors,
+    requirements: [...PASSWORD.REQUIREMENTS],
   };
-}
-
-/**
- * Gets human-readable password requirements for API responses
- */
-export function getPasswordRequirements(): string[] {
-  return [
-    'Minimum 12 characters',
-    'At least 1 uppercase letter (A-Z)',
-    'At least 1 lowercase letter (a-z)',
-    'At least 1 digit (0-9)',
-    'At least 1 special character (!@#$%^&*)',
-  ];
 }

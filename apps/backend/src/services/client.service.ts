@@ -1,25 +1,27 @@
 /**
  * Client Service
  * Business logic for client management
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { CreateClientDTO, UpdateClientDTO, ClientFilters, ClientResponse } from '../types/client.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { CLIENT } from '../i18n/pl';
 
 export class ClientService {
   async createClient(data: CreateClientDTO, userId: string): Promise<ClientResponse> {
     if (data.email && !this.isValidEmail(data.email)) {
-      throw new Error('Invalid email format');
+      throw new Error(CLIENT.INVALID_EMAIL);
     }
 
     if (!data.phone) {
-      throw new Error('Phone number is required');
+      throw new Error(CLIENT.PHONE_REQUIRED);
     }
 
     const phoneDigits = data.phone.replace(/\D/g, '');
     if (phoneDigits.length < 9) {
-      throw new Error('Phone number must contain at least 9 digits');
+      throw new Error(CLIENT.PHONE_MIN_DIGITS);
     }
 
     const existingClient = await prisma.client.findFirst({
@@ -109,7 +111,7 @@ export class ClientService {
     });
 
     if (!client) {
-      throw new Error('Client not found');
+      throw new Error(CLIENT.NOT_FOUND);
     }
 
     return client as any;
@@ -119,17 +121,17 @@ export class ClientService {
     const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
-      throw new Error('Client not found');
+      throw new Error(CLIENT.NOT_FOUND);
     }
 
     if (data.email && !this.isValidEmail(data.email)) {
-      throw new Error('Invalid email format');
+      throw new Error(CLIENT.INVALID_EMAIL);
     }
 
     if (data.phone) {
       const phoneDigits = data.phone.replace(/\D/g, '');
       if (phoneDigits.length < 9) {
-        throw new Error('Phone number must contain at least 9 digits');
+        throw new Error(CLIENT.PHONE_MIN_DIGITS);
       }
 
       const firstName = data.firstName || existingClient.firstName;
@@ -183,7 +185,7 @@ export class ClientService {
     const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
-      throw new Error('Client not found');
+      throw new Error(CLIENT.NOT_FOUND);
     }
 
     const reservationCount = await prisma.reservation.count({
@@ -191,7 +193,7 @@ export class ClientService {
     });
 
     if (reservationCount > 0) {
-      throw new Error('Cannot delete client with existing reservations');
+      throw new Error(CLIENT.CANNOT_DELETE_WITH_RESERVATIONS);
     }
 
     await prisma.client.delete({ where: { id } });

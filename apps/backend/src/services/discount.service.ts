@@ -3,11 +3,13 @@
  * Business logic for reservation discount management
  * Sprint 7: System Rabatów
  * Updated: Phase 1 Audit — logChange() for ActivityLog
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
+import { RESERVATION, AUTH } from '../i18n/pl';
 
 const RESERVATION_INCLUDE = {
   hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true } },
@@ -26,14 +28,14 @@ export class DiscountService {
     userId: string
   ) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje');
+    if (!user) throw new AppError(401, AUTH.SESSION_EXPIRED);
 
     const reservation = await prisma.reservation.findUnique({
       where: { id },
       include: RESERVATION_INCLUDE,
     });
 
-    if (!reservation) throw new AppError(404, 'Reservation not found');
+    if (!reservation) throw new AppError(404, RESERVATION.NOT_FOUND);
     if (reservation.status === 'CANCELLED') {
       throw new AppError(400, 'Nie można dodać rabatu do anulowanej rezerwacji');
     }
@@ -129,14 +131,14 @@ export class DiscountService {
    */
   async removeDiscount(id: string, userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje');
+    if (!user) throw new AppError(401, AUTH.SESSION_EXPIRED);
 
     const reservation = await prisma.reservation.findUnique({
       where: { id },
       include: RESERVATION_INCLUDE,
     });
 
-    if (!reservation) throw new AppError(404, 'Reservation not found');
+    if (!reservation) throw new AppError(404, RESERVATION.NOT_FOUND);
     if (!reservation.discountType) {
       throw new AppError(400, 'Ta rezerwacja nie ma rabatu');
     }
