@@ -16,16 +16,16 @@ router.post(
   '/',
   authMiddleware,
   requireAdmin,
-  asyncHandler(async (req, res) => {
-    await hallController.createHall(req, res);
+  asyncHandler(async (req, res, next) => {
+    await hallController.createHall(req, res, next);
   })
 );
 
 router.get(
   '/',
   authMiddleware,
-  asyncHandler(async (req, res) => {
-    await hallController.getHalls(req, res);
+  asyncHandler(async (req, res, next) => {
+    await hallController.getHalls(req, res, next);
   })
 );
 
@@ -33,8 +33,8 @@ router.get(
   '/:id',
   authMiddleware,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await hallController.getHallById(req, res);
+  asyncHandler(async (req, res, next) => {
+    await hallController.getHallById(req, res, next);
   })
 );
 
@@ -43,8 +43,8 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await hallController.updateHall(req, res);
+  asyncHandler(async (req, res, next) => {
+    await hallController.updateHall(req, res, next);
   })
 );
 
@@ -53,8 +53,8 @@ router.delete(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await hallController.deleteHall(req, res);
+  asyncHandler(async (req, res, next) => {
+    await hallController.deleteHall(req, res, next);
   })
 );
 
