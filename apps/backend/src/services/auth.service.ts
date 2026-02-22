@@ -51,7 +51,7 @@ class AuthService {
       throw new Error(AUTH.INVALID_CREDENTIALS);
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       throw new Error(AUTH.INVALID_CREDENTIALS);
     }
