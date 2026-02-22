@@ -41,15 +41,15 @@ export class AppError extends Error {
     return new AppError(message, 400);
   }
 
-  static unauthorized(message = AUTH.AUTH_REQUIRED): AppError {
+  static unauthorized(message: string = AUTH.AUTH_REQUIRED): AppError {
     return new AppError(message, 401);
   }
 
-  static forbidden(message = ERRORS.ACCESS_DENIED): AppError {
+  static forbidden(message: string = ERRORS.ACCESS_DENIED): AppError {
     return new AppError(message, 403);
   }
 
-  static notFound(resource = 'Zasób'): AppError {
+  static notFound(resource: string = 'Zasób'): AppError {
     return new AppError(ERRORS.NOT_FOUND(resource), 404);
   }
 
@@ -57,7 +57,7 @@ export class AppError extends Error {
     return new AppError(message, 409);
   }
 
-  static internal(message = ERRORS.INTERNAL_ERROR): AppError {
+  static internal(message: string = ERRORS.INTERNAL_ERROR): AppError {
     return new AppError(message, 500, false);
   }
 }

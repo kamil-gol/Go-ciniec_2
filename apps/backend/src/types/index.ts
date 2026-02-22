@@ -22,7 +22,7 @@ export type UserRole = 'ADMIN' | 'EMPLOYEE' | 'CLIENT';
 export interface JwtPayload {
   id: string;
   email: string;
-  role: UserRole;
+  role: string; // Accepts any role slug from DB (was UserRole)
   // New RBAC fields (added after migration)
   roleId?: string;
   roleSlug?: string;
