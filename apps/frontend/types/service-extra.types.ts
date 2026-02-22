@@ -4,8 +4,8 @@ export type ServicePriceType = 'FLAT' | 'PER_PERSON' | 'FREE';
 export type ExtraStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
 export const PRICE_TYPE_LABELS: Record<ServicePriceType, string> = {
-  FLAT: 'Kwota sta\u0142a',
-  PER_PERSON: 'Za osob\u0119',
+  FLAT: 'Kwota stała',
+  PER_PERSON: 'Za osobę',
   FREE: 'Gratis',
 };
 

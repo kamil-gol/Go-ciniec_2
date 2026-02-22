@@ -181,7 +181,7 @@ export function CreateReservationExtrasSection({
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200">
-              Us\u0142ugi dodatkowe ({selectedExtras.length})
+              Usługi dodatkowe ({selectedExtras.length})
             </span>
           </div>
           <span className="font-bold text-rose-600 dark:text-rose-400">
@@ -220,10 +220,10 @@ export function CreateReservationExtrasSection({
             <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
           </div>
           <div className="text-left">
-            <span className="font-medium text-neutral-800 dark:text-neutral-200">Us\u0142ugi dodatkowe</span>
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</span>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {selectedExtras.length > 0
-                ? `Wybrano ${selectedExtras.length} \u2014 \u0142\u0105cznie ${formatCurrency(extrasTotal)}`
+                ? `Wybrano ${selectedExtras.length} \u2014 łącznie ${formatCurrency(extrasTotal)}`
                 : 'Opcjonalnie: DJ, fotograf, torty, dekoracje...'}
             </p>
           </div>
@@ -255,13 +255,13 @@ export function CreateReservationExtrasSection({
             {isLoading ? (
               <div className="flex items-center justify-center py-8 gap-2">
                 <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-neutral-500">\u0141adowanie katalogu us\u0142ug...</span>
+                <span className="text-sm text-neutral-500">Ładowanie katalogu usług...</span>
               </div>
             ) : categoriesArray.length === 0 ? (
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Brak dost\u0119pnych us\u0142ug dodatkowych. Skonfiguruj katalog w Ustawienia \u2192 Us\u0142ugi dodatkowe.
+                  Brak dostępnych usług dodatkowych. Skonfiguruj katalog w Ustawienia \u2192 Usługi dodatkowe.
                 </p>
               </div>
             ) : (
@@ -301,7 +301,7 @@ export function CreateReservationExtrasSection({
                           {isCategoryExclusive && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                               <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                              Wy\u0142\u0105czna
+                              Wyłączna
                             </Badge>
                           )}
                           {selectedInCategory.length > 0 && (
@@ -392,7 +392,7 @@ export function CreateReservationExtrasSection({
                                     >
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                          <span className="text-xs text-neutral-500">Ilo\u015b\u0107:</span>
+                                          <span className="text-xs text-neutral-500">Ilość:</span>
                                           <div className="flex items-center gap-1">
                                             <button
                                               type="button"
@@ -428,7 +428,7 @@ export function CreateReservationExtrasSection({
                                             value={selected.note}
                                             onChange={(e) => updateNote(item.id, e.target.value)}
                                             onClick={(e) => e.stopPropagation()}
-                                            placeholder={item.noteLabel || 'Dodaj notatk\u0119...'}
+                                            placeholder={item.noteLabel || 'Dodaj notatkę...'}
                                             className="flex-1 text-xs px-2 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
                                           />
                                         </div>
@@ -441,7 +441,7 @@ export function CreateReservationExtrasSection({
                                           className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-1"
                                         >
                                           <MessageSquare className="w-3 h-3" />
-                                          Dodaj notatk\u0119
+                                          Dodaj notatkę
                                         </button>
                                       )}
                                     </motion.div>
@@ -466,7 +466,7 @@ export function CreateReservationExtrasSection({
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                       <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                        {selectedExtras.length} {selectedExtras.length === 1 ? 'us\u0142uga' : selectedExtras.length < 5 ? 'us\u0142ugi' : 'us\u0142ug'}
+                        {selectedExtras.length} {selectedExtras.length === 1 ? 'usługa' : selectedExtras.length < 5 ? 'usługi' : 'usług'}
                       </span>
                     </div>
                     <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
