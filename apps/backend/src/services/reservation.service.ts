@@ -167,12 +167,12 @@ export class ReservationService {
       priceBeforeDiscountVal = totalPrice;
 
       if (data.discountType === 'PERCENTAGE') {
-        if (data.discountValue > 100) throw new Error('Rabat procentowy nie może przekroczyć 100%');
+        if (data.discountValue > 100) throw new Error('Rabat procentowy nie mo\u017ce przekroczy\u0107 100%');
         discountAmountVal = Math.round(totalPrice * data.discountValue / 100 * 100) / 100;
       } else {
         discountAmountVal = data.discountValue;
         if (discountAmountVal > totalPrice) {
-          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie może przekroczyć ceny (${totalPrice} PLN)`);
+          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie mo\u017ce przekroczy\u0107 ceny (${totalPrice} PLN)`);
         }
       }
 
@@ -194,7 +194,7 @@ export class ReservationService {
 
       /* istanbul ignore next */
       if (startDT.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
+        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
       }
     }
 
@@ -215,7 +215,7 @@ export class ReservationService {
 
       /* istanbul ignore next */
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
+        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
       }
     }
 
@@ -306,8 +306,8 @@ export class ReservationService {
     await this.createHistoryEntry(
       reservation.id, userId, 'CREATED', null, null, null,
       menuPackage
-        ? `Utworzono rezerwację z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
-        : `Utworzono rezerwację${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
+        ? `Utworzono rezerwacj\u0119 z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
+        : `Utworzono rezerwacj\u0119${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}`
     );
 
     // Audit log
@@ -317,7 +317,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: reservation.id,
       details: {
-        description: `Utworzono rezerwację: ${client.firstName} ${client.lastName} | ${hall.name} | ${eventType.name}`,
+        description: `Utworzono rezerwacj\u0119: ${client.firstName} ${client.lastName} | ${hall.name} | ${eventType.name}`,
         data: {
           hallId: data.hallId,
           clientId: data.clientId,
@@ -374,7 +374,7 @@ export class ReservationService {
       if (reservation.menuSnapshot) {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
       }
-      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usunięte z rezerwacji');
+      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usuni\u0119te z rezerwacji');
 
       // Audit log — MENU_REMOVED
       await logChange({
@@ -383,7 +383,7 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: reservationId,
         details: {
-          description: `Menu usunięte z rezerwacji: ${oldPackageName} (-${oldTotalPrice} PLN) | ${clientName}`,
+          description: `Menu usuni\u0119te z rezerwacji: ${oldPackageName} (-${oldTotalPrice} PLN) | ${clientName}`,
           removedPackage: oldPackageName,
           removedPrice: oldTotalPrice,
         },
@@ -767,7 +767,7 @@ export class ReservationService {
 
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
-      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
+      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'r\u00f3\u017cne', 'r\u00f3\u017cne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
     }
 
     // Audit log
@@ -779,7 +779,7 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Zaktualizowano rezerwację: ${existingReservation.client.firstName} ${existingReservation.client.lastName}`,
+          description: `Zaktualizowano rezerwacj\u0119: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''}`,
           changes,
           reason: data.reason
         }
@@ -842,7 +842,7 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Anulowano rezerwację: ${existingReservation.client.firstName} ${existingReservation.client.lastName} | ${existingReservation.hall.name}`,
+          description: `Anulowano rezerwacj\u0119: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
           oldStatus: existingReservation.status,
           newStatus: data.status,
           reason: data.reason
@@ -867,7 +867,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
+        description: `Zmiana statusu rezerwacji: ${existingReservation.status} \u2192 ${data.status}`,
         oldStatus: existingReservation.status,
         newStatus: data.status,
         reason: data.reason
@@ -915,7 +915,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Anulowano rezerwację: ${existingReservation.client.firstName} ${existingReservation.client.lastName} | ${existingReservation.hall.name}`,
+        description: `Anulowano rezerwacj\u0119: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
@@ -954,7 +954,7 @@ export class ReservationService {
       entityId: id,
       details: {
         /* istanbul ignore next -- hall always included */
-        description: `Zarchiwizowano rezerwację: ${reservation.client.firstName} ${reservation.client.lastName} | ${reservation.hall?.name || 'Brak sali'}`,
+        description: `Zarchiwizowano rezerwacj\u0119: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
@@ -982,7 +982,7 @@ export class ReservationService {
     await this.createHistoryEntry(
       id, userId, 'UNARCHIVED', 'archivedAt',
       reservation.archivedAt.toISOString(), 'null',
-      reason || 'Rezerwacja przywrócona z archiwum'
+      reason || 'Rezerwacja przywr\u00f3cona z archiwum'
     );
 
     // Audit log
@@ -993,7 +993,7 @@ export class ReservationService {
       entityId: id,
       details: {
         /* istanbul ignore next -- hall always included */
-        description: `Przywrócono rezerwację z archiwum: ${reservation.client.firstName} ${reservation.client.lastName} | ${reservation.hall?.name || 'Brak sali'}`,
+        description: `Przywr\u00f3cono rezerwacj\u0119 z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
@@ -1038,7 +1038,7 @@ export class ReservationService {
           fieldName: 'deposit',
           oldValue: deposit.status,
           newValue: 'CANCELLED',
-          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
+          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} z\u0142 auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
         }
       });
     }
@@ -1112,7 +1112,7 @@ export class ReservationService {
         /* istanbul ignore next -- hall always included */
         const hallName = (conflict as any).hall?.name || 'inna sala';
         throw new Error(
-          `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
+          `Nie mo\u017cna zarezerwowa\u0107 ca\u0142ego obiektu \u2014 sala "${hallName}" ma ju\u017c rezerwacj\u0119 w tym terminie (${clientName}).`
         );
       }
     } else {
@@ -1135,7 +1135,7 @@ export class ReservationService {
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
         throw new Error(
-          `Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
+          `Nie mo\u017cna zarezerwowa\u0107 tej sali \u2014 ca\u0142y obiekt jest ju\u017c zarezerwowany w tym terminie (${clientName}).`
         );
       }
     }
@@ -1144,7 +1144,7 @@ export class ReservationService {
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
+      throw new AppError(401, 'Sesja wygas\u0142a lub u\u017cytkownik nie istnieje \u2014 wyloguj si\u0119 i zaloguj ponownie');
     }
   }
 
