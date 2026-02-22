@@ -205,8 +205,8 @@ router.get(
   authMiddleware,
   requireStaff,
   validateUUID('packageId'),
-  asyncHandler(async (req, res, next) => {
-    await packageCategoryController.getByPackage.call(packageCategoryController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.getByPackage.call(packageCategoryController, req, res);
   })
 );
 
@@ -215,8 +215,8 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('packageId'),
-  asyncHandler(async (req, res, next) => {
-    await packageCategoryController.bulkUpdate.call(packageCategoryController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.bulkUpdate.call(packageCategoryController, req, res);
   })
 );
 
@@ -225,8 +225,8 @@ router.get(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await packageCategoryController.getById.call(packageCategoryController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.getById.call(packageCategoryController, req, res);
   })
 );
 
@@ -234,8 +234,8 @@ router.post(
   '/package-category-settings',
   authMiddleware,
   requireAdmin,
-  asyncHandler(async (req, res, next) => {
-    await packageCategoryController.create.call(packageCategoryController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.create.call(packageCategoryController, req, res);
   })
 );
 
@@ -244,8 +244,8 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await packageCategoryController.update.call(packageCategoryController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.update.call(packageCategoryController, req, res);
   })
 );
 
@@ -254,8 +254,8 @@ router.delete(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await packageCategoryController.delete.call(packageCategoryController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await packageCategoryController.delete.call(packageCategoryController, req, res);
   })
 );
 
@@ -463,8 +463,8 @@ router.post(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await reservationMenuController.selectMenu.call(reservationMenuController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.selectMenu.call(reservationMenuController, req, res);
   })
 );
 
@@ -473,8 +473,8 @@ router.get(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await reservationMenuController.getMenu.call(reservationMenuController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.getMenu.call(reservationMenuController, req, res);
   })
 );
 
@@ -483,8 +483,8 @@ router.put(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await reservationMenuController.updateMenu.call(reservationMenuController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.updateMenu.call(reservationMenuController, req, res);
   })
 );
 
@@ -493,8 +493,8 @@ router.delete(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
-  asyncHandler(async (req, res, next) => {
-    await reservationMenuController.deleteMenu.call(reservationMenuController, req, res, next);
+  asyncHandler(async (req, res) => {
+    await reservationMenuController.deleteMenu.call(reservationMenuController, req, res);
   })
 );
 
