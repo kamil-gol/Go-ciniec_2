@@ -71,21 +71,21 @@ export function PackageCard({
           </div>
 
           {/* Prices Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200/50 dark:border-neutral-700/30">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center p-2 min-w-0 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200/50 dark:border-neutral-700/30">
               <Users className="h-4 w-4 mx-auto mb-1.5 text-neutral-600 dark:text-neutral-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Dorośli</p>
-              <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{pkg.pricePerAdult} zł</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">Dorośli</p>
+              <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate">{pkg.pricePerAdult} zł</p>
             </div>
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+            <div className="text-center p-2 min-w-0 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
               <Smile className="h-4 w-4 mx-auto mb-1.5 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Dzieci</p>
-              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild} zł</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">Dzieci</p>
+              <p className="text-base font-bold text-blue-600 dark:text-blue-400 truncate">{pkg.pricePerChild} zł</p>
             </div>
-            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200/50 dark:border-green-800/50">
+            <div className="text-center p-2 min-w-0 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200/50 dark:border-green-800/50">
               <Baby className="h-4 w-4 mx-auto mb-1.5 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Maluchy</p>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler} zł</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">Maluchy</p>
+              <p className="text-base font-bold text-green-600 dark:text-green-400 truncate">{pkg.pricePerToddler} zł</p>
             </div>
           </div>
 
@@ -138,7 +138,7 @@ export function PackageCardSkeleton() {
           <div className="w-14 h-14 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
           <div className="w-3/4 h-7 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <div className="w-full h-20 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
           <div className="w-full h-20 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
           <div className="w-full h-20 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
