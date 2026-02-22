@@ -1,7 +1,10 @@
 /**
  * Menu Calculator Controller (Express)
- * 
- * Handles menu price calculation requests
+ *
+ * Handles menu price calculation requests.
+ * NOTE: MenuOption model removed from Prisma. Options functionality
+ * is now handled via ServiceExtras. The option-related endpoints
+ * are kept as stubs returning 410 Gone.
  */
 
 import { Request, Response } from 'express';
@@ -9,18 +12,11 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-interface SelectedOption {
-  optionId: string;
-  quantity: number;
-  customPrice?: number;
-}
-
 interface CalculatePriceRequest {
   packageId: string;
   adults: number;
   children: number;
   toddlers: number;
-  selectedOptions?: SelectedOption[];
 }
 
 // === Utilities ===
@@ -34,7 +30,7 @@ function roundToTwo(num: number): number {
 
 /**
  * POST /api/menu-calculator/calculate
- * Calculate menu price
+ * Calculate menu price (package only — options removed)
  */
 export async function calculatePrice(req: Request, res: Response) {
   try {
@@ -105,83 +101,17 @@ export async function calculatePrice(req: Request, res: Response) {
       packageTotal: roundToTwo(packageTotal),
     };
 
-    // Calculate options prices
-    let optionsTotal = 0;
-    const optionsDetails: any[] = [];
-
-    if (dto.selectedOptions && dto.selectedOptions.length > 0) {
-      const optionIds = dto.selectedOptions.map((opt) => opt.optionId);
-
-      const options = await prisma.menuOption.findMany({
-        where: {
-          id: { in: optionIds },
-          isActive: true,
-        },
-      });
-
-      for (const selectedOption of dto.selectedOptions) {
-        const option = options.find((opt) => opt.id === selectedOption.optionId);
-
-        if (!option) {
-          warnings.push(`Option ${selectedOption.optionId} not found or inactive`);
-          continue;
-        }
-
-        const basePrice = selectedOption.customPrice ?? toNumber(option.priceAmount);
-        let calculatedPrice = 0;
-
-        switch (option.priceType) {
-          case 'PER_PERSON':
-            calculatedPrice = basePrice * totalGuests * selectedOption.quantity;
-            break;
-
-          case 'PER_ADULT':
-            calculatedPrice = basePrice * adults * selectedOption.quantity;
-            break;
-
-          case 'PER_CHILD':
-            calculatedPrice = basePrice * children * selectedOption.quantity;
-            break;
-
-          case 'PER_GUEST_TYPE':
-            const adultPrice = basePrice * adults;
-            const childPrice = basePrice * 0.5 * children;
-            calculatedPrice = (adultPrice + childPrice) * selectedOption.quantity;
-            break;
-
-          case 'FLAT_FEE':
-          default:
-            calculatedPrice = basePrice * selectedOption.quantity;
-            break;
-        }
-
-        optionsDetails.push({
-          optionId: option.id,
-          name: option.name,
-          category: option.category,
-          priceType: option.priceType,
-          priceAmount: basePrice,
-          quantity: selectedOption.quantity,
-          calculatedPrice: roundToTwo(calculatedPrice),
-        });
-
-        optionsTotal += calculatedPrice;
-      }
-    }
-
-    // Grand total
-    const grandTotal = packageTotal + optionsTotal;
     /* istanbul ignore next -- totalGuests always > 0 here (guarded above) */
-    const averagePerGuest = totalGuests > 0 ? grandTotal / totalGuests : 0;
+    const averagePerGuest = totalGuests > 0 ? packageTotal / totalGuests : 0;
 
     const response = {
       packageId: menuPackage.id,
       packageName: menuPackage.name,
       priceBreakdown,
-      optionsDetails,
-      optionsTotal: roundToTwo(optionsTotal),
+      optionsDetails: [],
+      optionsTotal: 0,
       totalGuests,
-      grandTotal: roundToTwo(grandTotal),
+      grandTotal: roundToTwo(packageTotal),
       averagePerGuest: roundToTwo(averagePerGuest),
       warnings: warnings.length > 0 ? warnings : undefined,
     };
@@ -232,11 +162,6 @@ export async function getAvailablePackages(req: Request, res: Response) {
             eventType: true,
           },
         },
-        _count: {
-          select: {
-            packageOptions: true,
-          },
-        },
       },
       orderBy: [
         { isPopular: 'desc' },
@@ -260,75 +185,10 @@ export async function getAvailablePackages(req: Request, res: Response) {
 
 /**
  * GET /api/menu-calculator/option/:optionId/calculate
- * Calculate price for a single option
+ * DEPRECATED: MenuOption model removed. Returns 410 Gone.
  */
 export async function calculateOptionPrice(req: Request, res: Response) {
-  try {
-    const { optionId } = req.params;
-    const { adults, children = '0', toddlers = '0', quantity = '1' } = req.query;
-
-    if (!adults || typeof adults !== 'string') {
-      return res.status(400).json({ error: 'adults query parameter is required' });
-    }
-
-    const guests = {
-      adults: parseInt(adults, 10),
-      children: parseInt(children as string, 10),
-      toddlers: parseInt(toddlers as string, 10),
-    };
-
-    const qty = parseInt(quantity as string, 10);
-    const totalGuests = guests.adults + guests.children + guests.toddlers;
-
-    // Fetch option
-    const option = await prisma.menuOption.findUnique({
-      where: { id: optionId },
-    });
-
-    if (!option || !option.isActive) {
-      return res.status(404).json({ error: 'Menu option not found or inactive' });
-    }
-
-    const basePrice = toNumber(option.priceAmount);
-    let calculatedPrice = 0;
-
-    switch (option.priceType) {
-      case 'PER_PERSON':
-        calculatedPrice = basePrice * totalGuests * qty;
-        break;
-
-      case 'PER_ADULT':
-        calculatedPrice = basePrice * guests.adults * qty;
-        break;
-
-      case 'PER_CHILD':
-        calculatedPrice = basePrice * guests.children * qty;
-        break;
-
-      case 'PER_GUEST_TYPE':
-        const adultPrice = basePrice * guests.adults;
-        const childPrice = basePrice * 0.5 * guests.children;
-        calculatedPrice = (adultPrice + childPrice) * qty;
-        break;
-
-      case 'FLAT_FEE':
-      default:
-        calculatedPrice = basePrice * qty;
-        break;
-    }
-
-    res.json({
-      optionId,
-      optionName: option.name,
-      priceType: option.priceType,
-      basePrice,
-      guests,
-      quantity: qty,
-      calculatedPrice: roundToTwo(calculatedPrice),
-    });
-  } catch (error: any) {
-    console.error('Error calculating option price:', error);
-    /* istanbul ignore next -- error.message fallback */
-    res.status(500).json({ error: error.message || 'Internal server error' });
-  }
+  return res.status(410).json({
+    error: 'MenuOption model has been removed. Use ServiceExtras system instead.',
+  });
 }
