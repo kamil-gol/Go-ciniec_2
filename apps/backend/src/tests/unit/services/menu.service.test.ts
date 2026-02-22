@@ -31,6 +31,7 @@ const mockPrisma = {
   menuPackageOption: {
     deleteMany: jest.fn(),
     createMany: jest.fn(),
+    create: jest.fn(),
   },
   menuPriceHistory: {
     create: jest.fn(),
@@ -71,7 +72,7 @@ const mockPackage = {
 
 const mockOption = {
   id: 'opt-1', name: 'Bar otwarty', description: 'Open bar', shortDescription: 'Bar',
-  category: 'DRINKS', priceType: 'PER_PERSON',
+  category: 'DRINKS', priceType: 'PER_PERSON' as const,
   priceAmount: { toNumber: () => 50 }, allowMultiple: false, maxQuantity: 1,
   icon: 'wine', imageUrl: null, displayOrder: 0, isActive: true,
 };
@@ -190,7 +191,7 @@ describe('MenuService', () => {
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(originalWithPkgs);
       mockPrisma.menuTemplate.create.mockResolvedValue({ ...mockTemplate, id: 'tmpl-2', name: 'Kopia' });
       mockPrisma.menuPackage.create.mockResolvedValue({ ...mockPackage, id: 'pkg-2' });
-      mockPrisma.menuPackageOption.create = jest.fn().mockResolvedValue({});
+      mockPrisma.menuPackageOption.create.mockResolvedValue({});
       // getMenuTemplateById after duplication
       mockPrisma.menuTemplate.findUnique
         .mockResolvedValueOnce(originalWithPkgs)
