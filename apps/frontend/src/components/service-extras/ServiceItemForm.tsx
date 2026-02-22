@@ -52,7 +52,6 @@ export function ServiceItemForm({
     item ? String(item.basePrice) : '0'
   );
   const [icon, setIcon] = useState(item?.icon || '');
-  const [isExclusive, setIsExclusive] = useState(item?.isExclusive ?? false);
   const [requiresNote, setRequiresNote] = useState(item?.requiresNote ?? false);
   const [noteLabel, setNoteLabel] = useState(item?.noteLabel || '');
   const [isActive, setIsActive] = useState(item?.isActive ?? true);
@@ -86,7 +85,6 @@ export function ServiceItemForm({
             priceType,
             basePrice: priceType === 'FREE' ? 0 : parseFloat(basePrice) || 0,
             icon: icon.trim() || null,
-            isExclusive,
             requiresNote,
             noteLabel: requiresNote ? noteLabel.trim() || null : null,
             isActive,
@@ -101,7 +99,6 @@ export function ServiceItemForm({
           priceType,
           basePrice: priceType === 'FREE' ? 0 : parseFloat(basePrice) || 0,
           icon: icon.trim() || undefined,
-          isExclusive,
           requiresNote,
           noteLabel: requiresNote ? noteLabel.trim() || undefined : undefined,
           isActive,
@@ -214,17 +211,6 @@ export function ServiceItemForm({
 
       {/* Toggles */}
       <div className="space-y-3">
-        {/* Exclusive */}
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <Label>Pozycja wyłączna</Label>
-            <p className="text-xs text-muted-foreground">
-              Tylko jedna pozycja z kategorii może być wybrana
-            </p>
-          </div>
-          <Switch checked={isExclusive} onCheckedChange={setIsExclusive} />
-        </div>
-
         {/* Requires Note */}
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>
