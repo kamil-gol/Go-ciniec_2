@@ -17,6 +17,13 @@ interface LoginInput {
   password: string;
 }
 
+interface RegisterInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 interface LoginResult {
   token: string;
   user: {
@@ -31,6 +38,65 @@ interface LoginResult {
 }
 
 class AuthService {
+  private generateToken(payload: { userId: string; email: string; role: string }): string {
+    const signOptions: SignOptions = {
+      expiresIn: JWT_EXPIRES_IN as any,
+    };
+    return jwt.sign(payload, JWT_SECRET, signOptions);
+  }
+
+  async register(input: RegisterInput): Promise<LoginResult> {
+    const { email, password, firstName, lastName } = input;
+
+    const existing = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existing) {
+      throw new Error('Użytkownik z tym adresem email już istnieje');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        firstName,
+        lastName,
+      },
+    });
+
+    const token = this.generateToken({
+      userId: user.id,
+      email: user.email,
+      role: 'user',
+    });
+
+    await logChange({
+      userId: user.id,
+      action: 'REGISTER',
+      entityType: 'USER',
+      entityId: user.id,
+      details: { description: `Nowy użytkownik zarejestrowany: ${user.email}` },
+    });
+
+    logger.info(`User registered: ${user.email}`);
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        legacyRole: 'user',
+        role: null,
+        permissions: [],
+      },
+    };
+  }
+
   async login(input: LoginInput): Promise<LoginResult> {
     const { email, password } = input;
 
@@ -66,19 +132,11 @@ class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const signOptions: SignOptions = {
-      expiresIn: JWT_EXPIRES_IN as any,
-    };
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.assignedRole?.slug || user.legacyRole || 'user',
-      },
-      JWT_SECRET,
-      signOptions,
-    );
+    const token = this.generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.assignedRole?.slug || user.legacyRole || 'user',
+    });
 
     const permissions = user.assignedRole
       ? user.assignedRole.permissions.map((rp) => rp.permission.slug)
@@ -113,6 +171,46 @@ class AuthService {
           : null,
         permissions,
       },
+    };
+  }
+
+  async getMe(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        assignedRole: {
+          include: {
+            permissions: {
+              include: { permission: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new Error('Użytkownik nie znaleziony');
+    }
+
+    const permissions = user.assignedRole
+      ? user.assignedRole.permissions.map((rp) => rp.permission.slug)
+      : [];
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      legacyRole: user.legacyRole || 'user',
+      role: user.assignedRole
+        ? {
+            id: user.assignedRole.id,
+            name: user.assignedRole.name,
+            slug: user.assignedRole.slug,
+            color: user.assignedRole.color,
+          }
+        : null,
+      permissions,
     };
   }
 }

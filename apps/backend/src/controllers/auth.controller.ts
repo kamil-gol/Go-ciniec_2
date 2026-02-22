@@ -4,11 +4,11 @@
  * FIX: token/user also at root level for backward compatibility with tests
  */
 import { Response } from 'express';
-import { AuthenticatedRequest } from '@types/index';
-import { authService } from '@services/auth.service';
-import { AppError } from '@utils/AppError';
-import { asyncHandler } from '@middlewares/asyncHandler';
-import { getPasswordRequirements } from '@utils/password';
+import { AuthenticatedRequest } from '../types/index';
+import authService from '../services/auth.service';
+import { AppError } from '../utils/AppError';
+import { asyncHandler } from '../middlewares/asyncHandler';
+import { validatePassword } from '../utils/password';
 
 export const authController = {
   register: asyncHandler(async (req, res) => {
@@ -51,7 +51,7 @@ export const authController = {
       throw AppError.badRequest('Email and password are required');
     }
 
-    const result = await authService.login(email, password);
+    const result = await authService.login({ email, password });
 
     // FIX: token/user at root level for test compatibility
     res.json({
@@ -77,7 +77,7 @@ export const authController = {
   }),
 
   getPasswordRequirements: (_req: any, res: Response) => {
-    const requirements = getPasswordRequirements();
+    const { requirements } = validatePassword('');
 
     res.json({
       success: true,
