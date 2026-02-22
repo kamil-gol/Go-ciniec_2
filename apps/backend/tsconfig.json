@@ -23,7 +23,11 @@
       "@models/*": ["src/models/*"],
       "@middlewares/*": ["src/middlewares/*"],
       "@utils/*": ["src/utils/*"],
-      "@types/*": ["src/types/*"]
+      "@types/*": ["src/types/*"],
+      "@lib/*": ["src/lib/*"],
+      "@config/*": ["src/config/*"],
+      "@constants/*": ["src/constants/*"],
+      "@routes/*": ["src/routes/*"]
     }
   },
   "include": ["src/**/*"],
