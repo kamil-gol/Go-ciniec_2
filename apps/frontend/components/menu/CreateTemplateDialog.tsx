@@ -47,10 +47,11 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
     try {
       await createMutation.mutateAsync({
         name: formData.name,
-        variant: formData.variant || undefined,
+        description: null,
+        variant: formData.variant?.trim() || null,
         eventTypeId: formData.eventTypeId,
-        validFrom: formData.validFrom,
-        validTo: formData.validTo,
+        validFrom: formData.validFrom || null,
+        validTo: formData.validTo || null,
         isActive: formData.isActive,
       })
       

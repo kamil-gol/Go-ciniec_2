@@ -64,11 +64,11 @@ export default function PackageForm({
     if (initialData?.categorySettings) {
       const settings = initialData.categorySettings.map((cs) => ({
         categoryId: cs.categoryId,
-        minSelect: cs.minSelect,
-        maxSelect: cs.maxSelect,
+        minSelect: Number(cs.minSelect) || 0,
+        maxSelect: Number(cs.maxSelect) || 0,
         isRequired: cs.isRequired,
         isEnabled: cs.isEnabled,
-        displayOrder: cs.displayOrder,
+        displayOrder: Number(cs.displayOrder) || 0,
         customLabel: cs.customLabel || undefined,
       }));
       setCategorySettings(settings);
@@ -96,7 +96,7 @@ export default function PackageForm({
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? parseInt(value) || 0 : value,
+      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value,
     }));
   }
 
@@ -160,8 +160,19 @@ export default function PackageForm({
     
     if (enabledSettings.length === 0) return;
 
+    // Ensure all numeric fields are proper numbers (Prisma Decimal comes as strings)
+    const normalizedSettings = enabledSettings.map((cs) => ({
+      categoryId: cs.categoryId,
+      minSelect: Number(cs.minSelect) || 0,
+      maxSelect: Number(cs.maxSelect) || 0,
+      isRequired: cs.isRequired,
+      isEnabled: cs.isEnabled,
+      displayOrder: Number(cs.displayOrder) || 0,
+      customLabel: cs.customLabel || null,
+    }));
+
     try {
-      await updatePackageCategories(packageId, enabledSettings);
+      await updatePackageCategories(packageId, normalizedSettings);
       console.log('Category settings saved successfully');
     } catch (error) {
       console.error('Error saving category settings:', error);
@@ -199,7 +210,7 @@ export default function PackageForm({
         pricePerAdult,
         pricePerChild,
         pricePerToddler,
-        displayOrder: formData.displayOrder,
+        displayOrder: Number(formData.displayOrder) || 0,
         isPopular: formData.isPopular,
         isRecommended: formData.isRecommended,
         color: colorWithHash,
