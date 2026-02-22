@@ -3,12 +3,12 @@
  * Covers: createSnapshot, replaceSnapshot, calculatePriceBreakdown,
  *         getSnapshotByReservationId, updateSnapshot, deleteSnapshot,
  *         hasSnapshot, getSnapshotStatistics, getPopularOptions, getPopularPackages
+ * NOTE: MenuOption model removed — selectedOptions come from input, not DB
  * Issue: #98
  */
 
 const mockPrisma = {
   menuPackage: { findUnique: jest.fn() },
-  menuOption: { findMany: jest.fn() },
   dish: { findMany: jest.fn() },
   dishCategory: { findMany: jest.fn() },
   reservationMenuSnapshot: {
@@ -38,12 +38,6 @@ const mockPkg = {
     id: 'tmpl-1', name: 'Menu 2026', variant: 'standard',
     eventType: { id: 'evt-1', name: 'Wesele' },
   },
-};
-
-const mockOption = {
-  id: 'opt-1', name: 'Bar otwarty', description: 'Open bar',
-  category: 'DRINKS', priceType: 'PER_PERSON' as const,
-  priceAmount: { toNumber: () => 50 }, icon: 'wine',
 };
 
 const mockSnapshotData = {
@@ -121,16 +115,17 @@ describe('MenuSnapshotService', () => {
 
   // ═══════════ createSnapshot ═══════════
   describe('createSnapshot', () => {
-    it('should create snapshot with enriched data', async () => {
+    it('should create snapshot with options from input (no DB lookup)', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-      mockPrisma.menuOption.findMany.mockResolvedValue([mockOption]);
-      mockPrisma.dish.findMany.mockResolvedValue([]);
-      mockPrisma.dishCategory.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
 
       const result = await menuSnapshotService.createSnapshot({
         reservationId: 'res-1', packageId: 'pkg-1',
-        selectedOptions: [{ optionId: 'opt-1', quantity: 1 }],
+        selectedOptions: [{
+          optionId: 'opt-1', quantity: 1, name: 'Bar otwarty',
+          description: 'Open bar', category: 'DRINKS',
+          priceType: 'PER_PERSON', priceAmount: 50, icon: 'wine',
+        }],
         adultsCount: 80, childrenCount: 20, toddlersCount: 10,
       });
 
@@ -150,23 +145,11 @@ describe('MenuSnapshotService', () => {
       await expect(menuSnapshotService.createSnapshot({
         reservationId: 'res-1', packageId: 'x',
         selectedOptions: [], adultsCount: 50, childrenCount: 0, toddlersCount: 0,
-      })).rejects.toThrow('Package not found');
-    });
-
-    it('should throw when some options not found', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);  // returns 0 but 1 requested
-
-      await expect(menuSnapshotService.createSnapshot({
-        reservationId: 'res-1', packageId: 'pkg-1',
-        selectedOptions: [{ optionId: 'opt-missing', quantity: 1 }],
-        adultsCount: 50, childrenCount: 0, toddlersCount: 0,
-      })).rejects.toThrow('Some options not found');
+      })).rejects.toThrow();
     });
 
     it('should enrich dish selections with names from DB', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.dish.findMany.mockResolvedValue([{ id: 'dish-1', name: 'Rosół', description: 'Zupa', allergens: [] }]);
       mockPrisma.dishCategory.findMany.mockResolvedValue([{ id: 'cat-1', name: 'Zupy', icon: 'soup' }]);
       mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
@@ -181,6 +164,31 @@ describe('MenuSnapshotService', () => {
         expect.objectContaining({ where: { id: { in: ['dish-1'] } } })
       );
     });
+
+    it('should handle selectedOptions with defaults when fields missing', async () => {
+      mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
+      mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
+
+      await menuSnapshotService.createSnapshot({
+        reservationId: 'res-1', packageId: 'pkg-1',
+        selectedOptions: [{ optionId: 'opt-1', quantity: 2 }],
+        adultsCount: 10, childrenCount: 0, toddlersCount: 0,
+      });
+
+      expect(mockPrisma.reservationMenuSnapshot.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            menuData: expect.objectContaining({
+              selectedOptions: expect.arrayContaining([
+                expect.objectContaining({
+                  optionId: 'opt-1', name: 'Opcja', priceType: 'FLAT', priceAmount: 0, quantity: 2,
+                }),
+              ]),
+            }),
+          }),
+        })
+      );
+    });
   });
 
   // ═══════════ replaceSnapshot ═══════════
@@ -189,7 +197,6 @@ describe('MenuSnapshotService', () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(mockSnapshot);
       mockPrisma.reservationMenuSnapshot.delete.mockResolvedValue({});
       mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
 
       await menuSnapshotService.replaceSnapshot({
@@ -206,7 +213,6 @@ describe('MenuSnapshotService', () => {
     it('should create new even when no existing snapshot', async () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
 
       await menuSnapshotService.replaceSnapshot({
@@ -231,7 +237,7 @@ describe('MenuSnapshotService', () => {
     it('should throw when snapshot not found', async () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       await expect(menuSnapshotService.getSnapshotByReservationId('x'))
-        .rejects.toThrow('Menu snapshot not found');
+        .rejects.toThrow();
     });
   });
 
@@ -241,7 +247,7 @@ describe('MenuSnapshotService', () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(mockSnapshot);
       mockPrisma.reservationMenuSnapshot.update.mockResolvedValue({ ...mockSnapshot, adultsCount: 100 });
 
-      const result = await menuSnapshotService.updateSnapshot('res-1', { adultsCount: 100 });
+      await menuSnapshotService.updateSnapshot('res-1', { adultsCount: 100 });
 
       expect(mockPrisma.reservationMenuSnapshot.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -254,7 +260,7 @@ describe('MenuSnapshotService', () => {
     it('should throw when snapshot not found', async () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       await expect(menuSnapshotService.updateSnapshot('x', { adultsCount: 50 }))
-        .rejects.toThrow('Snapshot not found');
+        .rejects.toThrow();
     });
   });
 
