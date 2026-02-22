@@ -5,7 +5,7 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient, Decimal } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -24,7 +24,7 @@ interface CalculatePriceRequest {
 }
 
 // === Utilities ===
-function toNumber(decimal: Decimal): number {
+function toNumber(decimal: { toString(): string }): number {
   return parseFloat(decimal.toString());
 }
 
