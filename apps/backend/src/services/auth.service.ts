@@ -3,7 +3,7 @@
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { logChange } from '@utils/audit-logger';
 import { AUTH } from '../i18n/pl';
@@ -66,6 +66,10 @@ class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
+    const signOptions: SignOptions = {
+      expiresIn: JWT_EXPIRES_IN as string & {},
+    };
+
     const token = jwt.sign(
       {
         userId: user.id,
@@ -73,7 +77,7 @@ class AuthService {
         role: user.assignedRole?.slug || user.legacyRole || 'user',
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      signOptions,
     );
 
     const permissions = user.assignedRole
@@ -86,7 +90,7 @@ class AuthService {
       action: 'LOGIN',
       entityType: 'USER',
       entityId: user.id,
-      details: { description: `Użytkownik zalogował się: ${user.email}` },
+      details: { description: `U\u017cytkownik zalogowa\u0142 si\u0119: ${user.email}` },
     });
 
     logger.info(`User logged in: ${user.email}`);
