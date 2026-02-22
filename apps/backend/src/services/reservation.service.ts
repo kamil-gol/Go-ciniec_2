@@ -4,6 +4,9 @@
  * Updated: Phase 1 Audit — logChange() for menu updates + cascade cancel
  * Updated: Sprint 8 — service extras creation during reservation
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
+ *
+ * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
+ * Options/extras are now handled via the ServiceExtras system.
  */
 
 import { prisma } from '@/lib/prisma';
@@ -17,7 +20,6 @@ import {
   ReservationResponse,
   ReservationStatus,
   UpdateReservationMenuDTO,
-  MenuOptionSelection
 } from '../types/reservation.types';
 import {
   calculateTotalGuests,
@@ -44,7 +46,7 @@ const RESERVATION_INCLUDE = {
 
 /**
  * Calculate extrasTotalPrice from reservation extras array.
- * Supports FLAT (basePrice × quantity), PER_PERSON (basePrice × quantity × guests), FREE (0).
+ * Supports FLAT (basePrice \u00d7 quantity), PER_PERSON (basePrice \u00d7 quantity \u00d7 guests), FREE (0).
  */
 function calculateExtrasTotalPrice(
   extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string } }>,
@@ -57,7 +59,7 @@ function calculateExtrasTotalPrice(
     if (extra.serviceItem.priceType === 'PER_PERSON') {
       total += price * qty * guests;
     } else if (extra.serviceItem.priceType === 'FREE') {
-      // free — no cost
+      // free \u2014 no cost
     } else {
       // FLAT
       total += price * qty;
@@ -112,15 +114,14 @@ export class ReservationService {
     let pricePerChild: number;
     let pricePerToddler: number;
     let menuPackage = null;
-    let selectedOptions: any[] = [];
-    let optionsPrice = 0;
+    const selectedOptions: any[] = [];
+    const optionsPrice = 0;
 
     if (data.menuPackageId) {
       menuPackage = await prisma.menuPackage.findUnique({
         where: { id: data.menuPackageId },
         include: {
           menuTemplate: true,
-          packageOptions: { include: { option: true } }
         }
       });
 
@@ -135,11 +136,6 @@ export class ReservationService {
       pricePerAdult = Number(menuPackage.pricePerAdult);
       pricePerChild = Number(menuPackage.pricePerChild);
       pricePerToddler = Number(menuPackage.pricePerToddler);
-
-      if (data.selectedOptions && data.selectedOptions.length > 0) {
-        selectedOptions = await this.processSelectedOptions(data.selectedOptions, guests);
-        optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
-      }
     } else {
       if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
         throw new Error(RESERVATION.PRICE_REQUIRED);
@@ -159,7 +155,7 @@ export class ReservationService {
     }
     const totalWithExtras = totalPrice + extrasTotal;
 
-    // ═══ Discount handling (Sprint 7 — applied atomically during creation) ═══
+    // \u2550\u2550\u2550 Discount handling (Sprint 7 \u2014 applied atomically during creation) \u2550\u2550\u2550
     let discountTypeVal: string | null = null;
     let discountValueNum: number | null = null;
     let discountAmountVal: number | null = null;
@@ -418,7 +414,7 @@ export class ReservationService {
       }
       await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usuni\u0119te z rezerwacji');
 
-      // Audit log — MENU_REMOVED
+      // Audit log \u2014 MENU_REMOVED
       await logChange({
         userId,
         action: 'MENU_REMOVED',
@@ -437,7 +433,7 @@ export class ReservationService {
     if (data.menuPackageId) {
       const menuPackage = await prisma.menuPackage.findUnique({
         where: { id: data.menuPackageId },
-        include: { menuTemplate: true, packageOptions: { include: { option: true } } }
+        include: { menuTemplate: true }
       });
 
       if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
@@ -448,12 +444,8 @@ export class ReservationService {
         throw new Error(MENU.MAX_GUESTS(menuPackage.maxGuests));
       }
 
-      let selectedOptions: any[] = [];
-      let optionsPrice = 0;
-      if (data.selectedOptions && data.selectedOptions.length > 0) {
-        selectedOptions = await this.processSelectedOptions(data.selectedOptions, guests);
-        optionsPrice = this.calculateOptionsPrice(selectedOptions, guests);
-      }
+      const selectedOptions: any[] = [];
+      const optionsPrice = 0;
 
       const pricePerAdult = Number(menuPackage.pricePerAdult);
       const pricePerChild = Number(menuPackage.pricePerChild);
@@ -503,7 +495,7 @@ export class ReservationService {
         menuPackage.name, `Menu zaktualizowane na: ${menuPackage.name}`
       );
 
-      // Audit log — MENU_UPDATED
+      // Audit log \u2014 MENU_UPDATED
       await logChange({
         userId,
         action: 'MENU_UPDATED',
@@ -526,61 +518,6 @@ export class ReservationService {
     }
 
     throw new Error(MENU.INVALID_MENU_DATA);
-  }
-
-  private async processSelectedOptions(
-    selections: MenuOptionSelection[],
-    totalGuests: number
-  ): Promise<any[]> {
-    const optionIds = selections.map(s => s.optionId);
-
-    const options = await prisma.menuOption.findMany({
-      where: { id: { in: optionIds } }
-    });
-
-    const optionMap = new Map(options.map(o => [o.id, o]));
-    const processed = [];
-
-    for (const selection of selections) {
-      const option = optionMap.get(selection.optionId);
-
-      if (!option) throw new Error(MENU.OPTION_NOT_FOUND(selection.optionId));
-      if (!option.isActive) throw new Error(MENU.OPTION_INACTIVE(option.name));
-
-      const quantity = selection.quantity ?? 1;
-      if (option.allowMultiple) {
-        if (option.maxQuantity && quantity > option.maxQuantity) {
-          throw new Error(MENU.OPTION_MAX_QTY(option.maxQuantity, option.name));
-        }
-      } else if (quantity > 1) {
-        throw new Error(MENU.OPTION_NO_MULTIPLE(option.name));
-      }
-
-      processed.push({
-        optionId: option.id,
-        name: option.name,
-        description: option.description,
-        category: option.category,
-        priceType: option.priceType,
-        priceAmount: Number(option.priceAmount),
-        quantity
-      });
-    }
-
-    return processed;
-  }
-
-  private calculateOptionsPrice(options: any[], totalGuests: number): number {
-    let total = 0;
-    for (const option of options) {
-      const quantity = option.quantity ?? 1;
-      if (option.priceType === 'PER_PERSON') {
-        total += option.priceAmount * totalGuests * quantity;
-      } else {
-        total += option.priceAmount * quantity;
-      }
-    }
-    return total;
   }
 
   async getReservations(filters?: ReservationFilters): Promise<ReservationResponse[]> {
@@ -1085,7 +1022,7 @@ export class ReservationService {
       });
     }
 
-    // Audit log — DEPOSIT_CANCELLED (outside transaction, fire-and-forget)
+    // Audit log \u2014 DEPOSIT_CANCELLED (outside transaction, fire-and-forget)
     /* istanbul ignore next */
     setTimeout(async () => {
       try {
