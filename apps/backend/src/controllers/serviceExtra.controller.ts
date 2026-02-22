@@ -48,13 +48,13 @@ export class ServiceExtraController {
     const userId = (req as any).user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
-    const { name, slug, description, icon, color, displayOrder, isActive } = req.body;
+    const { name, slug, description, icon, color, displayOrder, isActive, isExclusive } = req.body;
 
     if (!name) throw AppError.badRequest('Category name is required');
     if (!slug) throw AppError.badRequest('Category slug is required');
 
     const data: CreateServiceCategoryDTO = {
-      name, slug, description, icon, color, displayOrder, isActive,
+      name, slug, description, icon, color, displayOrder, isActive, isExclusive,
     };
 
     const category = await serviceExtraService.createCategory(data, userId);
@@ -62,7 +62,7 @@ export class ServiceExtraController {
     res.status(201).json({
       success: true,
       data: category,
-      message: 'Kategoria usług utworzona pomyślnie',
+      message: 'Kategoria us\u0142ug utworzona pomy\u015blnie',
     });
   }
 
@@ -71,7 +71,7 @@ export class ServiceExtraController {
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { id } = req.params;
-    const { name, slug, description, icon, color, displayOrder, isActive } = req.body;
+    const { name, slug, description, icon, color, displayOrder, isActive, isExclusive } = req.body;
 
     const data: UpdateServiceCategoryDTO = {};
     if (name !== undefined) data.name = name;
@@ -81,13 +81,14 @@ export class ServiceExtraController {
     if (color !== undefined) data.color = color;
     if (displayOrder !== undefined) data.displayOrder = displayOrder;
     if (isActive !== undefined) data.isActive = isActive;
+    if (isExclusive !== undefined) data.isExclusive = isExclusive;
 
     const category = await serviceExtraService.updateCategory(id, data, userId);
 
     res.status(200).json({
       success: true,
       data: category,
-      message: 'Kategoria usług zaktualizowana',
+      message: 'Kategoria us\u0142ug zaktualizowana',
     });
   }
 
@@ -100,7 +101,7 @@ export class ServiceExtraController {
 
     res.status(200).json({
       success: true,
-      message: 'Kategoria usług usunięta',
+      message: 'Kategoria us\u0142ug usuni\u0119ta',
     });
   }
 
@@ -119,7 +120,7 @@ export class ServiceExtraController {
     res.status(200).json({
       success: true,
       data: categories,
-      message: 'Kolejność kategorii zaktualizowana',
+      message: 'Kolejno\u015b\u0107 kategorii zaktualizowana',
     });
   }
 
@@ -161,7 +162,7 @@ export class ServiceExtraController {
 
     const {
       categoryId, name, description, priceType, basePrice,
-      icon, displayOrder, isExclusive, requiresNote, noteLabel, isActive,
+      icon, displayOrder, requiresNote, noteLabel, isActive,
     } = req.body;
 
     if (!categoryId) throw AppError.badRequest('Category ID is required');
@@ -170,7 +171,7 @@ export class ServiceExtraController {
 
     const data: CreateServiceItemDTO = {
       categoryId, name, description, priceType, basePrice,
-      icon, displayOrder, isExclusive, requiresNote, noteLabel, isActive,
+      icon, displayOrder, requiresNote, noteLabel, isActive,
     };
 
     const item = await serviceExtraService.createItem(data, userId);
@@ -178,7 +179,7 @@ export class ServiceExtraController {
     res.status(201).json({
       success: true,
       data: item,
-      message: 'Pozycja usługi utworzona pomyślnie',
+      message: 'Pozycja us\u0142ugi utworzona pomy\u015blnie',
     });
   }
 
@@ -189,7 +190,7 @@ export class ServiceExtraController {
     const { id } = req.params;
     const {
       name, description, priceType, basePrice,
-      icon, displayOrder, isExclusive, requiresNote, noteLabel, isActive,
+      icon, displayOrder, requiresNote, noteLabel, isActive,
     } = req.body;
 
     const data: UpdateServiceItemDTO = {};
@@ -199,7 +200,6 @@ export class ServiceExtraController {
     if (basePrice !== undefined) data.basePrice = basePrice;
     if (icon !== undefined) data.icon = icon;
     if (displayOrder !== undefined) data.displayOrder = displayOrder;
-    if (isExclusive !== undefined) data.isExclusive = isExclusive;
     if (requiresNote !== undefined) data.requiresNote = requiresNote;
     if (noteLabel !== undefined) data.noteLabel = noteLabel;
     if (isActive !== undefined) data.isActive = isActive;
@@ -209,7 +209,7 @@ export class ServiceExtraController {
     res.status(200).json({
       success: true,
       data: item,
-      message: 'Pozycja usługi zaktualizowana',
+      message: 'Pozycja us\u0142ugi zaktualizowana',
     });
   }
 
@@ -222,7 +222,7 @@ export class ServiceExtraController {
 
     res.status(200).json({
       success: true,
-      message: 'Pozycja usługi usunięta',
+      message: 'Pozycja us\u0142ugi usuni\u0119ta',
     });
   }
 
@@ -257,7 +257,7 @@ export class ServiceExtraController {
     res.status(201).json({
       success: true,
       data: extra,
-      message: 'Usługa dodatkowa dodana do rezerwacji',
+      message: 'Us\u0142uga dodatkowa dodana do rezerwacji',
     });
   }
 
@@ -280,7 +280,7 @@ export class ServiceExtraController {
       data: result.extras,
       totalExtrasPrice: result.totalExtrasPrice,
       count: result.count,
-      message: 'Usługi dodatkowe zaktualizowane',
+      message: 'Us\u0142ugi dodatkowe zaktualizowane',
     });
   }
 
@@ -304,7 +304,7 @@ export class ServiceExtraController {
     res.status(200).json({
       success: true,
       data: extra,
-      message: 'Usługa dodatkowa zaktualizowana',
+      message: 'Us\u0142uga dodatkowa zaktualizowana',
     });
   }
 
@@ -317,7 +317,7 @@ export class ServiceExtraController {
 
     res.status(200).json({
       success: true,
-      message: 'Usługa dodatkowa usunięta z rezerwacji',
+      message: 'Us\u0142uga dodatkowa usuni\u0119ta z rezerwacji',
     });
   }
 }
