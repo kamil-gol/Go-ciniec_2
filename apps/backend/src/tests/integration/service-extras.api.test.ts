@@ -96,7 +96,7 @@ async function createReservation(overrides: Record<string, any> = {}) {
       hallId: hall.id,
       eventTypeId: eventType.id,
       clientId: client.id,
-      date: new Date('2026-06-15'),
+      date: '2026-06-15',
       timeFrom: '16:00',
       timeTo: '23:00',
       guestCount: 100,
@@ -1289,8 +1289,8 @@ describe('Cross-reservation isolation', () => {
   });
 
   it('should isolate extras between different reservations', async () => {
-    const res1 = await createReservation({ date: new Date('2026-07-01') });
-    const res2 = await createReservation({ date: new Date('2026-07-02') });
+    const res1 = await createReservation({ date: '2026-07-01' });
+    const res2 = await createReservation({ date: '2026-07-02' });
 
     // Assign to reservation 1
     await api
@@ -1319,8 +1319,8 @@ describe('Cross-reservation isolation', () => {
   });
 
   it('should not affect other reservations when deleting extra', async () => {
-    const res1 = await createReservation({ date: new Date('2026-08-01') });
-    const res2 = await createReservation({ date: new Date('2026-08-02') });
+    const res1 = await createReservation({ date: '2026-08-01' });
+    const res2 = await createReservation({ date: '2026-08-02' });
 
     const assign1 = await api
       .post(`${BASE}/reservations/${res1.id}/extras`)
