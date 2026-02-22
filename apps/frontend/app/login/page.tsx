@@ -39,7 +39,7 @@ export default function LoginPage() {
     }
     
     if (!formData.password) {
-      newFieldErrors.password = 'Hasło jest wymagane'
+      newFieldErrors.password = 'Has\u0142o jest wymagane'
       hasErrors = true
     }
     
@@ -54,12 +54,12 @@ export default function LoginPage() {
       
       if (response.data.success) {
         localStorage.setItem('auth_token', response.data.data.token)
-        toast.success('Zalogowano pomyślnie!')
+        toast.success('Zalogowano pomy\u015blnie!')
         router.push('/dashboard')
       }
     } catch (error: any) {
       console.error('Login error:', error)
-      const errorMessage = error.response?.data?.error || 'Niepoprawny email lub hasło'
+      const errorMessage = error.response?.data?.error || 'Niepoprawny email lub has\u0142o'
       setError(errorMessage)
       toast.error(errorMessage)
       
@@ -100,7 +100,7 @@ export default function LoginPage() {
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2"
           >
-            Gościniec Rodzinny
+            Go\u015bciniec Rodzinny
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -108,7 +108,7 @@ export default function LoginPage() {
             transition={{ delay: 0.4 }}
             className="text-neutral-600 dark:text-neutral-400"
           >
-            System zarządzania rezerwacjami
+            System zarz\u0105dzania rezerwacjami
           </motion.p>
         </div>
 
@@ -122,10 +122,10 @@ export default function LoginPage() {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <LogIn className="h-6 w-6 text-violet-600" />
-              Zaloguj się
+              Zaloguj si\u0119
             </h2>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-              Wprowadź swoje dane logowania
+              Wprowad\u017a swoje dane logowania
             </p>
           </div>
           
@@ -142,7 +142,7 @@ export default function LoginPage() {
                   <AlertCircle className="h-5 w-5 text-error-600 dark:text-error-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-error-900 dark:text-error-100">
-                      Błąd logowania
+                      B\u0142\u0105d logowania
                     </p>
                     <p className="text-sm text-error-700 dark:text-error-300 mt-1">
                       {error}
@@ -204,7 +204,7 @@ export default function LoginPage() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                Hasło
+                Has\u0142o
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -224,7 +224,7 @@ export default function LoginPage() {
                       ? 'border-error-500 focus:border-error-600 focus:ring-error-500/20'
                       : 'border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20'
                   } rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200`}
-                  placeholder="••••••••"
+                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                   value={formData.password}
                   onChange={(e) => {
                     setFormData({ ...formData, password: e.target.value })
@@ -248,16 +248,6 @@ export default function LoginPage() {
               </AnimatePresence>
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="flex justify-end">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium transition-colors"
-              >
-                Nie pamiętam hasła
-              </Link>
-            </div>
-
             {/* Submit Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -278,12 +268,22 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <LogIn className="h-5 w-5" />
-                    Zaloguj się
+                    Zaloguj si\u0119
                   </>
                 )}
               </span>
             </motion.button>
           </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
+            >
+              Nie pami\u0119tam has\u0142a
+            </Link>
+          </div>
         </motion.div>
 
         {/* Footer */}
@@ -293,7 +293,7 @@ export default function LoginPage() {
           transition={{ delay: 0.7 }}
           className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
         >
-          <p>© 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
+          <p>\u00a9 2026 Go\u015bciniec Rodzinny. Wszystkie prawa zastrze\u017cone.</p>
         </motion.div>
       </motion.div>
     </div>

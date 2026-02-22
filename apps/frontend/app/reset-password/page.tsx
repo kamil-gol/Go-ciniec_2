@@ -1,287 +1,95 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lock, ArrowLeft, AlertCircle, CheckCircle2, Building2, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Lock, ArrowLeft, AlertCircle, Building2, KeyRound, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react'
 
-function ResetPasswordForm() {
+const PASSWORD_REQUIREMENTS = [
+  { label: 'Minimum 12 znak\u00f3w', test: (p: string) => p.length >= 12 },
+  { label: 'Co najmniej 1 wielka litera (A-Z)', test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'Co najmniej 1 ma\u0142a litera (a-z)', test: (p: string) => /[a-z]/.test(p) },
+  { label: 'Co najmniej 1 cyfra (0-9)', test: (p: string) => /[0-9]/.test(p) },
+  { label: 'Co najmniej 1 znak specjalny (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p) },
+]
+
+function ResetPasswordContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const [requirements, setRequirements] = useState<string[]>([])
   const [formData, setFormData] = useState({
-    password: '',
+    newPassword: '',
     confirmPassword: '',
   })
 
-  // Fetch password requirements
+  // Real-time password validation
+  const passwordChecks = useMemo(() => {
+    return PASSWORD_REQUIREMENTS.map(req => ({
+      label: req.label,
+      passed: req.test(formData.newPassword),
+    }))
+  }, [formData.newPassword])
+
+  const allPassed = passwordChecks.every(c => c.passed)
+  const passwordsMatch = formData.newPassword === formData.confirmPassword && formData.confirmPassword.length > 0
+
+  // Redirect if no token
   useEffect(() => {
-    const fetchRequirements = async () => {
-      try {
-        const response = await apiClient.get('/auth/password-requirements')
-        if (response.data.success) {
-          setRequirements(response.data.data.requirements)
-        }
-      } catch {
-        setRequirements([
-          'Minimum 12 znaków',
-          'Co najmniej 1 wielka litera (A-Z)',
-          'Co najmniej 1 mała litera (a-z)',
-          'Co najmniej 1 cyfra (0-9)',
-          'Co najmniej 1 znak specjalny (!@#$%^&*)',
-        ])
-      }
+    if (!token) {
+      toast.error('Brak tokena resetowania has\u0142a')
+      router.replace('/forgot-password')
     }
-    fetchRequirements()
-  }, [])
+  }, [token, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    if (!formData.password || !formData.confirmPassword) {
-      setError('Oba pola hasła są wymagane')
+    if (!allPassed) {
+      setError('Has\u0142o nie spe\u0142nia wszystkich wymaga\u0144')
       setLoading(false)
       return
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Hasła nie są identyczne')
+    if (!passwordsMatch) {
+      setError('Has\u0142a nie s\u0105 identyczne')
       setLoading(false)
       return
     }
 
     try {
-      const response = await apiClient.post('/auth/reset-password', {
+      await apiClient.post('/auth/reset-password', {
         token,
-        password: formData.password,
+        newPassword: formData.newPassword,
       })
+      setSuccess(true)
+      toast.success('Has\u0142o zosta\u0142o zmienione!')
 
-      if (response.data.success) {
-        setSuccess(true)
-        toast.success('Hasło zostało zmienione!')
-      }
+      // Auto-redirect to login after 3 seconds
+      setTimeout(() => {
+        router.push('/login')
+      }, 3000)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Wystąpił błąd. Spróbuj ponownie.'
+      console.error('Reset password error:', error)
+      const errorMessage = error.response?.data?.error || 'Wyst\u0105pi\u0142 b\u0142\u0105d. Spr\u00f3buj ponownie.'
       setError(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
-  // No token in URL
-  if (!token) {
-    return (
-      <div className="text-center py-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-red-100 dark:bg-red-900/30">
-          <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
-          Brak tokena
-        </h2>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-          Link jest nieprawidłowy lub niekompletny. Użyj linku z otrzymanego emaila.
-        </p>
-        <Link
-          href="/forgot-password"
-          className="inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Wygeneruj nowy link
-        </Link>
-      </div>
-    )
-  }
+  if (!token) return null
 
-  // Success state
-  if (success) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-4"
-      >
-        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-green-100 dark:bg-green-900/30">
-          <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
-          Hasło zmienione!
-        </h2>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-          Twoje hasło zostało pomyślnie zmienione. Możesz się teraz zalogować nowym hasłem.
-        </p>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-        >
-          Przejdź do logowania
-        </Link>
-      </motion.div>
-    )
-  }
-
-  // Form state
-  return (
-    <>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-violet-600" />
-          Nowe hasło
-        </h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-          Ustaw nowe hasło dla swojego konta
-        </p>
-      </div>
-
-      {/* Error Alert */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6 overflow-hidden"
-          >
-            <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Password Requirements */}
-      {requirements.length > 0 && (
-        <div className="mb-6 p-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl">
-          <p className="text-sm font-semibold text-violet-800 dark:text-violet-300 mb-2">
-            Wymagania hasła:
-          </p>
-          <ul className="space-y-1">
-            {requirements.map((req, i) => (
-              <li key={i} className="text-xs text-violet-700 dark:text-violet-400 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 dark:bg-violet-500 flex-shrink-0" />
-                {req}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* New Password Field */}
-        <div>
-          <label htmlFor="password" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-            Nowe hasło
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
-            </div>
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              className="w-full pl-12 pr-12 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200"
-              placeholder="Nowe hasło"
-              value={formData.password}
-              onChange={(e) => {
-                setFormData({ ...formData, password: e.target.value })
-                setError('')
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Confirm Password Field */}
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-            Potwierdź hasło
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
-            </div>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirm ? 'text' : 'password'}
-              autoComplete="new-password"
-              className="w-full pl-12 pr-12 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200"
-              placeholder="Powtórz nowe hasło"
-              value={formData.confirmPassword}
-              onChange={(e) => {
-                setFormData({ ...formData, confirmPassword: e.target.value })
-                setError('')
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-            >
-              {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          type="submit"
-          disabled={loading}
-          className="relative w-full py-3.5 px-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 overflow-hidden group"
-        >
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-          <span className="relative flex items-center justify-center gap-2">
-            {loading ? (
-              <>
-                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Zapisywanie...
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="h-5 w-5" />
-                Ustaw nowe hasło
-              </>
-            )}
-          </span>
-        </motion.button>
-      </form>
-
-      {/* Back to login */}
-      <div className="mt-6 text-center">
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 text-sm text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Wróć do logowania
-        </Link>
-      </div>
-    </>
-  )
-}
-
-export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-neutral-900 dark:to-neutral-800 p-4">
       {/* Background decorative elements */}
@@ -312,7 +120,7 @@ export default function ResetPasswordPage() {
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2"
           >
-            Gościniec Rodzinny
+            Go\u015bciniec Rodzinny
           </motion.h1>
         </div>
 
@@ -323,13 +131,227 @@ export default function ResetPasswordPage() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-8"
         >
-          <Suspense fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          }>
-            <ResetPasswordForm />
-          </Suspense>
+          <AnimatePresence mode="wait">
+            {success ? (
+              /* ===== SUCCESS STATE ===== */
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-4"
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
+                  Has\u0142o zmienione!
+                </h2>
+                <p className="text-neutral-600 dark:text-neutral-400 mb-2">
+                  Twoje has\u0142o zosta\u0142o pomy\u015blnie zaktualizowane.
+                </p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-500 mb-6">
+                  Za chwil\u0119 zostaniesz przekierowany do logowania...
+                </p>
+
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Zaloguj si\u0119
+                </Link>
+              </motion.div>
+            ) : (
+              /* ===== FORM STATE ===== */
+              <motion.div
+                key="form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                    <KeyRound className="h-6 w-6 text-violet-600" />
+                    Nowe has\u0142o
+                  </h2>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                    Ustaw nowe has\u0142o do swojego konta
+                  </p>
+                </div>
+
+                {/* Error Alert */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-6 overflow-hidden"
+                    >
+                      <div className="flex items-start gap-3 p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl">
+                        <AlertCircle className="h-5 w-5 text-error-600 dark:text-error-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-error-700 dark:text-error-300">{error}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* New Password Field */}
+                  <div>
+                    <label htmlFor="newPassword" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                      Nowe has\u0142o
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+                      </div>
+                      <input
+                        id="newPassword"
+                        name="newPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        autoFocus
+                        className="w-full pl-12 pr-12 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200"
+                        placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                        value={formData.newPassword}
+                        onChange={(e) => {
+                          setFormData({ ...formData, newPassword: e.target.value })
+                          setError('')
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Password Requirements Checklist */}
+                  {formData.newPassword.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-1.5 px-1"
+                    >
+                      {passwordChecks.map((check, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          {check.passed ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-neutral-300 dark:text-neutral-600 flex-shrink-0" />
+                          )}
+                          <span className={`text-xs ${
+                            check.passed
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-neutral-500 dark:text-neutral-400'
+                          }`}>
+                            {check.label}
+                          </span>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+
+                  {/* Confirm Password Field */}
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                      Powt\u00f3rz has\u0142o
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className={`h-5 w-5 ${
+                          formData.confirmPassword.length > 0
+                            ? passwordsMatch
+                              ? 'text-emerald-500'
+                              : 'text-error-500'
+                            : 'text-neutral-400 dark:text-neutral-500'
+                        }`} />
+                      </div>
+                      <input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showConfirm ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        className={`w-full pl-12 pr-12 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 ${
+                          formData.confirmPassword.length > 0
+                            ? passwordsMatch
+                              ? 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/20'
+                              : 'border-error-400 focus:border-error-500 focus:ring-error-500/20'
+                            : 'border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20'
+                        } rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200`}
+                        placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                        value={formData.confirmPassword}
+                        onChange={(e) => {
+                          setFormData({ ...formData, confirmPassword: e.target.value })
+                          setError('')
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm(!showConfirm)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                      >
+                        {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    <AnimatePresence>
+                      {formData.confirmPassword.length > 0 && !passwordsMatch && (
+                        <motion.p
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-2 text-sm text-error-600 dark:text-error-400 flex items-center gap-1"
+                        >
+                          <AlertCircle className="h-4 w-4" />
+                          Has\u0142a nie s\u0105 identyczne
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Submit Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading || !allPassed || !passwordsMatch}
+                    className="relative w-full py-3.5 px-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 overflow-hidden group"
+                  >
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                    <span className="relative flex items-center justify-center gap-2">
+                      {loading ? (
+                        <>
+                          <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Zapisywanie...
+                        </>
+                      ) : (
+                        <>
+                          <KeyRound className="h-5 w-5" />
+                          Ustaw nowe has\u0142o
+                        </>
+                      )}
+                    </span>
+                  </motion.button>
+                </form>
+
+                {/* Back to login */}
+                <div className="mt-6 text-center">
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Wr\u00f3\u0107 do logowania
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Footer */}
@@ -339,9 +361,21 @@ export default function ResetPasswordPage() {
           transition={{ delay: 0.7 }}
           className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
         >
-          <p>© 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
+          <p>\u00a9 2026 Go\u015bciniec Rodzinny. Wszystkie prawa zastrze\u017cone.</p>
         </motion.div>
       </motion.div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-neutral-900 dark:to-neutral-800">
+        <div className="h-8 w-8 border-3 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
