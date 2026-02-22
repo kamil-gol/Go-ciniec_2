@@ -5,7 +5,7 @@
  * Issue: #98
  */
 
-const mockPrisma = {
+const mockPrisma: any = {
   menuCourse: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
