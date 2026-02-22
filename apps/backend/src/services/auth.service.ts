@@ -13,7 +13,7 @@ import { AppError } from '../utils/AppError';
 import emailService from './email.service';
 import logger from '@utils/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 interface LoginInput {
@@ -42,7 +42,7 @@ interface LoginResult {
 }
 
 class AuthService {
-  private generateToken(payload: { userId: string; email: string; role: string }): string {
+  private generateToken(payload: { id: string; email: string; role: string }): string {
     const signOptions: SignOptions = {
       expiresIn: JWT_EXPIRES_IN as any,
     };
@@ -72,7 +72,7 @@ class AuthService {
     });
 
     const token = this.generateToken({
-      userId: user.id,
+      id: user.id,
       email: user.email,
       role: 'user',
     });
@@ -137,7 +137,7 @@ class AuthService {
     });
 
     const token = this.generateToken({
-      userId: user.id,
+      id: user.id,
       email: user.email,
       role: user.assignedRole?.slug || user.legacyRole || 'user',
     });
