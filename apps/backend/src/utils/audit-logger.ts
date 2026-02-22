@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma';
  * Parametry logowania zmian w systemie
  */
 export interface LogChangeParams {
-  userId: string;
+  userId: string | null;
   action: string; // CREATE, UPDATE, DELETE, TOGGLE, ARCHIVE, UNARCHIVE, PAYMENT, etc.
   entityType: string; // CLIENT, HALL, EVENT_TYPE, DISH, MENU_TEMPLATE, RESERVATION, etc.
   entityId: string;
@@ -13,7 +13,7 @@ export interface LogChangeParams {
     oldValue?: any;
     newValue?: any;
     description?: string;
-    changes?: Record<string, { old: any; new: any }>; // Dla wielu pól jednocześnie
+    changes?: any; // Flexible: Record<string, { old, new }>, plain object, or string
     [key: string]: any; // Dodatkowe dane kontekstowe
   };
   ipAddress?: string;
@@ -52,6 +52,12 @@ export async function logChange(params: LogChangeParams): Promise<void> {
     console.error('[Audit Logger] Failed to log change:', error);
   }
 }
+
+/**
+ * Backward-compatible alias for logChange.
+ * @deprecated Use logChange instead.
+ */
+export const logActivity = logChange;
 
 /**
  * Porównuje dwa obiekty i zwraca różnice
@@ -154,7 +160,7 @@ export function formatChanges(changes: Record<string, { old: any; new: any }>): 
     .map(([field, { old, new: newVal }]) => {
       const oldStr = formatValue(old);
       const newStr = formatValue(newVal);
-      return `${field}: ${oldStr} → ${newStr}`;
+      return `${field}: ${oldStr} \u2192 ${newStr}`;
     })
     .join(', ');
 }
