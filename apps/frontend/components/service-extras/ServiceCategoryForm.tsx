@@ -38,6 +38,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
   const [icon, setIcon] = useState(category?.icon || '');
   const [color, setColor] = useState(category?.color || '#3B82F6');
   const [isActive, setIsActive] = useState(category?.isActive ?? true);
+  const [isExclusive, setIsExclusive] = useState(category?.isExclusive ?? false);
   const [autoSlug, setAutoSlug] = useState(!isEditing);
 
   const createCategory = useCreateCategory();
@@ -77,6 +78,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
             icon: icon.trim() || null,
             color: color || null,
             isActive,
+            isExclusive,
           },
         });
         toast({ title: 'Kategoria zaktualizowana', description: name });
@@ -88,6 +90,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
           icon: icon.trim() || undefined,
           color: color || undefined,
           isActive,
+          isExclusive,
         };
         await createCategory.mutateAsync(data);
         toast({ title: 'Kategoria utworzona', description: name });
@@ -163,7 +166,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
             id="cat-icon"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            placeholder="🎂"
+            placeholder="\uD83C\uDF82"
             maxLength={4}
           />
         </div>
@@ -187,15 +190,29 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
         </div>
       </div>
 
-      {/* Active toggle */}
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div>
-          <Label>Aktywna</Label>
-          <p className="text-xs text-muted-foreground">
-            Nieaktywne kategorie nie są widoczne przy rezerwacji
-          </p>
+      {/* Toggles */}
+      <div className="space-y-3">
+        {/* Exclusive */}
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <Label>Kategoria wyłączna</Label>
+            <p className="text-xs text-muted-foreground">
+              Tylko jedna pozycja z tej kategorii może być wybrana na rezerwację
+            </p>
+          </div>
+          <Switch checked={isExclusive} onCheckedChange={setIsExclusive} />
         </div>
-        <Switch checked={isActive} onCheckedChange={setIsActive} />
+
+        {/* Active toggle */}
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <Label>Aktywna</Label>
+            <p className="text-xs text-muted-foreground">
+              Nieaktywne kategorie nie są widoczne przy rezerwacji
+            </p>
+          </div>
+          <Switch checked={isActive} onCheckedChange={setIsActive} />
+        </div>
       </div>
 
       {/* Actions */}

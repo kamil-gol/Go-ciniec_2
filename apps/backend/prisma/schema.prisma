@@ -671,6 +671,7 @@ model ServiceCategory {
 
   displayOrder  Int      @default(0) @db.SmallInt
   isActive      Boolean  @default(true)
+  isExclusive   Boolean  @default(false)   // max 1 item from this category per reservation
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -695,7 +696,6 @@ model ServiceItem {
   icon          String?  @db.VarChar(50)
   displayOrder  Int      @default(0) @db.SmallInt
 
-  isExclusive   Boolean  @default(false)   // only one item from category
   requiresNote  Boolean  @default(false)   // e.g. "describe your own cake"
   noteLabel     String?  @db.VarChar(255)  // custom label for note field
 

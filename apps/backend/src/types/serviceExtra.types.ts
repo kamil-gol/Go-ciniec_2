@@ -24,6 +24,7 @@ export interface CreateServiceCategoryDTO {
   color?: string;
   displayOrder?: number;
   isActive?: boolean;
+  isExclusive?: boolean;
 }
 
 export interface UpdateServiceCategoryDTO {
@@ -34,6 +35,7 @@ export interface UpdateServiceCategoryDTO {
   color?: string | null;
   displayOrder?: number;
   isActive?: boolean;
+  isExclusive?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -48,7 +50,6 @@ export interface CreateServiceItemDTO {
   basePrice?: number;
   icon?: string;
   displayOrder?: number;
-  isExclusive?: boolean;
   requiresNote?: boolean;
   noteLabel?: string;
   isActive?: boolean;
@@ -61,7 +62,6 @@ export interface UpdateServiceItemDTO {
   basePrice?: number;
   icon?: string | null;
   displayOrder?: number;
-  isExclusive?: boolean;
   requiresNote?: boolean;
   noteLabel?: string | null;
   isActive?: boolean;
@@ -102,6 +102,7 @@ export interface ServiceCategoryResponse {
   color: string | null;
   displayOrder: number;
   isActive: boolean;
+  isExclusive: boolean;
   createdAt: Date;
   updatedAt: Date;
   items?: ServiceItemResponse[];
@@ -117,7 +118,6 @@ export interface ServiceItemResponse {
   basePrice: any; // Decimal
   icon: string | null;
   displayOrder: number;
-  isExclusive: boolean;
   requiresNote: boolean;
   noteLabel: string | null;
   isActive: boolean;
