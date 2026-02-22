@@ -5,13 +5,12 @@
  * 
  * Extras are independent from the Menu system — they can be added
  * to a reservation at any stage, without selecting a menu first.
- * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
+ * 🇵🇱 Spolonizowany — komunikaty po polsku
  */
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { logChange, diffObjects } from '../utils/audit-logger';
-import { SERVICE_EXTRA, RESERVATION } from '../i18n/pl';
 import {
   CreateServiceCategoryDTO,
   UpdateServiceCategoryDTO,
@@ -64,24 +63,24 @@ export class ServiceExtraService {
       },
     });
 
-    if (!category) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
+    if (!category) throw new Error('Nie znaleziono kategorii us\u0142ug');
     return category as any;
   }
 
   async createCategory(data: CreateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
     if (!data.name || data.name.trim().length === 0) {
-      throw new Error(SERVICE_EXTRA.CATEGORY_NAME_REQUIRED);
+      throw new Error('Nazwa kategorii jest wymagana');
     }
 
     if (!data.slug || !SLUG_REGEX.test(data.slug)) {
-      throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_FORMAT);
+      throw new Error('Nieprawid\u0142owy format slug. U\u017cyj ma\u0142ych liter, cyfr i my\u015blnik\u00f3w (np. "tort-weselny")');
     }
 
     const existing = await prisma.serviceCategory.findUnique({
       where: { slug: data.slug },
     });
     if (existing) {
-      throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_EXISTS);
+      throw new Error('Kategoria z tym slugiem ju\u017c istnieje');
     }
 
     // Auto display order
@@ -114,7 +113,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_CATEGORY',
       entityId: category.id,
       details: {
-        description: `Utworzono kategorię usług: ${category.name}`,
+        description: `Utworzono kategori\u0119 us\u0142ug: ${category.name}`,
         data: { name: category.name, slug: category.slug },
       },
     });
@@ -124,20 +123,20 @@ export class ServiceExtraService {
 
   async updateCategory(id: string, data: UpdateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
     const existing = await prisma.serviceCategory.findUnique({ where: { id } });
-    if (!existing) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
+    if (!existing) throw new Error('Nie znaleziono kategorii us\u0142ug');
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error(SERVICE_EXTRA.CATEGORY_NAME_REQUIRED);
+      throw new Error('Nazwa kategorii nie mo\u017ce by\u0107 pusta');
     }
 
     if (data.slug !== undefined) {
       if (!SLUG_REGEX.test(data.slug)) {
-        throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_FORMAT);
+        throw new Error('Nieprawid\u0142owy format slug');
       }
       const slugTaken = await prisma.serviceCategory.findFirst({
         where: { slug: data.slug, id: { not: id } },
       });
-      if (slugTaken) throw new Error(SERVICE_EXTRA.CATEGORY_SLUG_EXISTS);
+      if (slugTaken) throw new Error('Kategoria z tym slugiem ju\u017c istnieje');
     }
 
     const updateData: Record<string, any> = {};
@@ -166,7 +165,7 @@ export class ServiceExtraService {
         entityType: 'SERVICE_CATEGORY',
         entityId: category.id,
         details: {
-          description: `Zaktualizowano kategorię usług: ${category.name}`,
+          description: `Zaktualizowano kategori\u0119 us\u0142ug: ${category.name}`,
           changes,
         },
       });
@@ -180,7 +179,7 @@ export class ServiceExtraService {
       where: { id },
       include: { _count: { select: { items: true } } },
     });
-    if (!existing) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
+    if (!existing) throw new Error('Nie znaleziono kategorii us\u0142ug');
 
     // Check if any items in this category are used in reservations
     const usedInReservations = await prisma.reservationExtra.count({
@@ -189,7 +188,7 @@ export class ServiceExtraService {
 
     if (usedInReservations > 0) {
       throw new Error(
-        `Nie można usunąć kategorii — ${usedInReservations} rezerwacji używa pozycji z tej kategorii. Dezaktywuj zamiast usuwać.`
+        `Nie mo\u017cna usun\u0105\u0107 kategorii \u2014 ${usedInReservations} rezerwacji u\u017cywa pozycji z tej kategorii. Dezaktywuj zamiast usuwa\u0107.`
       );
     }
 
@@ -202,7 +201,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_CATEGORY',
       entityId: id,
       details: {
-        description: `Usunięto kategorię usług: ${existing.name}`,
+        description: `Usuni\u0119to kategori\u0119 us\u0142ug: ${existing.name}`,
         deletedData: { name: existing.name, slug: existing.slug },
       },
     });
@@ -224,7 +223,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_CATEGORY',
       entityId: 'batch',
       details: {
-        description: `Zmieniono kolejność kategorii usług`,
+        description: `Zmieniono kolejno\u015b\u0107 kategorii us\u0142ug`,
         orderedIds: data.orderedIds,
       },
     });
@@ -254,7 +253,7 @@ export class ServiceExtraService {
       include: { category: true },
     });
 
-    if (!item) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
+    if (!item) throw new Error('Nie znaleziono pozycji us\u0142ugi');
     return item as any;
   }
 
@@ -273,18 +272,18 @@ export class ServiceExtraService {
 
   async createItem(data: CreateServiceItemDTO, userId: string): Promise<ServiceItemResponse> {
     if (!data.name || data.name.trim().length === 0) {
-      throw new Error(SERVICE_EXTRA.ITEM_NAME_REQUIRED);
+      throw new Error('Nazwa pozycji jest wymagana');
     }
 
     if (!VALID_PRICE_TYPES.includes(data.priceType)) {
-      throw new Error(SERVICE_EXTRA.ITEM_INVALID_PRICE_TYPE);
+      throw new Error(`Nieprawid\u0142owy typ ceny. U\u017cyj: ${VALID_PRICE_TYPES.join(', ')}`);
     }
 
     // Verify category exists
     const category = await prisma.serviceCategory.findUnique({
       where: { id: data.categoryId },
     });
-    if (!category) throw new Error(SERVICE_EXTRA.CATEGORY_NOT_FOUND);
+    if (!category) throw new Error('Nie znaleziono kategorii us\u0142ug');
 
     // Auto display order
     let displayOrder = data.displayOrder;
@@ -319,7 +318,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_ITEM',
       entityId: item.id,
       details: {
-        description: `Utworzono pozycję usługi: ${item.name} (${category.name})`,
+        description: `Utworzono pozycj\u0119 us\u0142ugi: ${item.name} (${category.name})`,
         data: { name: item.name, priceType: item.priceType, basePrice: item.basePrice.toString() },
       },
     });
@@ -332,14 +331,14 @@ export class ServiceExtraService {
       where: { id },
       include: { category: true },
     });
-    if (!existing) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
+    if (!existing) throw new Error('Nie znaleziono pozycji us\u0142ugi');
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error(SERVICE_EXTRA.ITEM_NAME_REQUIRED);
+      throw new Error('Nazwa pozycji nie mo\u017ce by\u0107 pusta');
     }
 
     if (data.priceType !== undefined && !VALID_PRICE_TYPES.includes(data.priceType)) {
-      throw new Error(SERVICE_EXTRA.ITEM_INVALID_PRICE_TYPE);
+      throw new Error(`Nieprawid\u0142owy typ ceny. U\u017cyj: ${VALID_PRICE_TYPES.join(', ')}`);
     }
 
     const updateData: Record<string, any> = {};
@@ -373,7 +372,7 @@ export class ServiceExtraService {
         entityType: 'SERVICE_ITEM',
         entityId: item.id,
         details: {
-          description: `Zaktualizowano pozycję usługi: ${item.name}`,
+          description: `Zaktualizowano pozycj\u0119 us\u0142ugi: ${item.name}`,
           changes,
         },
       });
@@ -387,7 +386,7 @@ export class ServiceExtraService {
       where: { id },
       include: { category: true },
     });
-    if (!existing) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
+    if (!existing) throw new Error('Nie znaleziono pozycji us\u0142ugi');
 
     const usedInReservations = await prisma.reservationExtra.count({
       where: { serviceItemId: id },
@@ -395,7 +394,7 @@ export class ServiceExtraService {
 
     if (usedInReservations > 0) {
       throw new Error(
-        `Nie można usunąć — ${usedInReservations} rezerwacji używa tej pozycji. Dezaktywuj zamiast usuwać.`
+        `Nie mo\u017cna usun\u0105\u0107 \u2014 ${usedInReservations} rezerwacji u\u017cywa tej pozycji. Dezaktywuj zamiast usuwa\u0107.`
       );
     }
 
@@ -407,7 +406,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_ITEM',
       entityId: id,
       details: {
-        description: `Usunięto pozycję usługi: ${existing.name} (${existing.category?.name})`,
+        description: `Usuni\u0119to pozycj\u0119 us\u0142ugi: ${existing.name} (${existing.category?.name})`,
         deletedData: { name: existing.name, priceType: existing.priceType },
       },
     });
@@ -421,7 +420,7 @@ export class ServiceExtraService {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
-    if (!reservation) throw new Error(SERVICE_EXTRA.RESERVATION_NOT_FOUND);
+    if (!reservation) throw new Error('Nie znaleziono rezerwacji');
 
     const extras = await prisma.reservationExtra.findMany({
       where: { reservationId },
@@ -456,18 +455,18 @@ export class ServiceExtraService {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
-    if (!reservation) throw new Error(SERVICE_EXTRA.RESERVATION_NOT_FOUND);
+    if (!reservation) throw new Error('Nie znaleziono rezerwacji');
 
     const item = await prisma.serviceItem.findUnique({
       where: { id: data.serviceItemId },
       include: { category: true },
     });
-    if (!item) throw new Error(SERVICE_EXTRA.ITEM_NOT_FOUND);
-    if (!item.isActive) throw new Error(SERVICE_EXTRA.ITEM_INVALID_STATUS);
+    if (!item) throw new Error('Nie znaleziono pozycji us\u0142ugi');
+    if (!item.isActive) throw new Error('Pozycja us\u0142ugi jest nieaktywna');
 
     // Check if item requires a note
     if (item.requiresNote && (!data.note || data.note.trim().length === 0)) {
-      throw new Error(SERVICE_EXTRA.EXTRA_REQUIRES_NOTE(item.noteLabel || 'Uwagi'));
+      throw new Error(`Pole "${item.noteLabel || 'Uwagi'}" jest wymagane dla tej pozycji`);
     }
 
     // Handle exclusive items — remove other items from same category
@@ -499,7 +498,9 @@ export class ServiceExtraService {
       });
 
       if (exclusiveExists) {
-        throw new Error(SERVICE_EXTRA.EXTRA_EXCLUSIVE(item.category?.name || item.name));
+        throw new Error(
+          `W tej kategorii jest ju\u017c wybrana wy\u0142\u0105czna opcja. Usu\u0144 j\u0105 przed dodaniem innej.`
+        );
       }
     }
 
@@ -509,7 +510,7 @@ export class ServiceExtraService {
     });
 
     if (existingExtra) {
-      throw new Error(SERVICE_EXTRA.EXTRA_ALREADY_ADDED);
+      throw new Error('Ta pozycja jest ju\u017c dodana do rezerwacji');
     }
 
     // Calculate price
@@ -549,7 +550,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION_EXTRA',
       entityId: extra.id,
       details: {
-        description: `Dodano usługę dodatkową: ${item.name} do rezerwacji`,
+        description: `Dodano us\u0142ug\u0119 dodatkow\u0105: ${item.name} do rezerwacji`,
         data: {
           reservationId,
           itemName: item.name,
@@ -566,7 +567,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Dodano usługę dodatkową: ${item.name} (${totalPrice} zł)`,
+        description: `Dodano us\u0142ug\u0119 dodatkow\u0105: ${item.name} (${totalPrice} z\u0142)`,
         field: 'extras',
         data: {
           itemName: item.name,
@@ -602,7 +603,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION_EXTRA',
       entityId: reservationId,
       details: {
-        description: `Zaktualizowano usługi dodatkowe rezerwacji (${data.extras.length} pozycji)`,
+        description: `Zaktualizowano us\u0142ugi dodatkowe rezerwacji (${data.extras.length} pozycji)`,
         count: data.extras.length,
       },
     });
@@ -614,7 +615,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Zaktualizowano zbiorczo usługi dodatkowe (${data.extras.length} pozycji)`,
+        description: `Zaktualizowano zbiorczo us\u0142ugi dodatkowe (${data.extras.length} pozycji)`,
         field: 'extras',
         data: { count: data.extras.length },
       },
@@ -633,15 +634,15 @@ export class ServiceExtraService {
       where: { id: extraId, reservationId },
       include: { serviceItem: true },
     });
-    if (!existing) throw new Error(SERVICE_EXTRA.EXTRA_NOT_FOUND);
+    if (!existing) throw new Error('Nie znaleziono dodatku rezerwacji');
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
-    if (!reservation) throw new Error(SERVICE_EXTRA.RESERVATION_NOT_FOUND);
+    if (!reservation) throw new Error('Nie znaleziono rezerwacji');
 
     if (data.status !== undefined && !VALID_STATUSES.includes(data.status)) {
-      throw new Error(SERVICE_EXTRA.ITEM_INVALID_STATUS);
+      throw new Error(`Nieprawid\u0142owy status. U\u017cyj: ${VALID_STATUSES.join(', ')}`);
     }
 
     const updateData: Record<string, any> = {};
@@ -685,7 +686,7 @@ export class ServiceExtraService {
         entityType: 'RESERVATION_EXTRA',
         entityId: extra.id,
         details: {
-          description: `Zaktualizowano usługę dodatkową: ${existing.serviceItem.name}`,
+          description: `Zaktualizowano us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name}`,
           changes,
         },
       });
@@ -697,7 +698,7 @@ export class ServiceExtraService {
         entityType: 'RESERVATION',
         entityId: reservationId,
         details: {
-          description: `Zmieniono usługę dodatkową: ${existing.serviceItem.name}`,
+          description: `Zmieniono us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name}`,
           field: 'extras',
           changes,
         },
@@ -716,7 +717,7 @@ export class ServiceExtraService {
       where: { id: extraId, reservationId },
       include: { serviceItem: true },
     });
-    if (!existing) throw new Error(SERVICE_EXTRA.EXTRA_NOT_FOUND);
+    if (!existing) throw new Error('Nie znaleziono dodatku rezerwacji');
 
     await prisma.reservationExtra.delete({ where: { id: extraId } });
 
@@ -729,7 +730,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION_EXTRA',
       entityId: extraId,
       details: {
-        description: `Usunięto usługę dodatkową: ${existing.serviceItem.name}`,
+        description: `Usuni\u0119to us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name}`,
         deletedData: {
           itemName: existing.serviceItem.name,
           totalPrice: existing.totalPrice.toString(),
@@ -744,7 +745,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Usunięto usługę dodatkową: ${existing.serviceItem.name} (${existing.totalPrice} zł)`,
+        description: `Usuni\u0119to us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name} (${existing.totalPrice} z\u0142)`,
         field: 'extras',
         data: {
           removedItem: existing.serviceItem.name,
