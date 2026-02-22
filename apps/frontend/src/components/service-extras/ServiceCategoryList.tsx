@@ -11,6 +11,7 @@ import {
   GripVertical,
   Package,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -115,11 +116,6 @@ export function ServiceCategoryList({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{item.name}</span>
-                    {item.isExclusive && (
-                      <Badge variant="outline" className="text-xs">
-                        Wyłączna
-                      </Badge>
-                    )}
                     {!item.isActive && (
                       <Badge variant="secondary" className="text-xs">
                         Nieaktywna
@@ -132,6 +128,12 @@ export function ServiceCategoryList({
                       style={{ backgroundColor: item.category?.color || '#94a3b8' }}
                     />
                     {item.category?.name}
+                    {item.category?.isExclusive && (
+                      <span className="inline-flex items-center gap-0.5 text-amber-600">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Wyłączna
+                      </span>
+                    )}
                     <span>·</span>
                     <span>{PRICE_LABELS[item.priceType]}</span>
                     {item.priceType !== 'FREE' && (
@@ -202,12 +204,20 @@ export function ServiceCategoryList({
                 />
                 <span className="text-lg">{category.icon || '📁'}</span>
                 <div>
-                  <span className="font-semibold">{category.name}</span>
-                  {!category.isActive && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      Nieaktywna
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{category.name}</span>
+                    {category.isExclusive && (
+                      <Badge variant="outline" className="text-xs gap-0.5 text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-300">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Wyłączna
+                      </Badge>
+                    )}
+                    {!category.isActive && (
+                      <Badge variant="secondary" className="text-xs">
+                        Nieaktywna
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <Badge variant="outline" className="ml-2">
                   {itemCount} {itemCount === 1 ? 'pozycja' : 'pozycji'}
@@ -264,11 +274,6 @@ export function ServiceCategoryList({
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm font-medium">{item.name}</span>
-                              {item.isExclusive && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                  Wyłączna
-                                </Badge>
-                              )}
                               {item.requiresNote && (
                                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                   Notatka
