@@ -10,9 +10,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 🔐 RBAC SYSTEM — Roles & Granular Permissions
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model Role {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -81,9 +81,9 @@ model CompanySettings {
   updatedAt       DateTime @updatedAt
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 👤 USER
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -115,9 +115,9 @@ model User {
   @@index([roleId])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 🔑 PASSWORD RESET TOKENS
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model PasswordResetToken {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -292,9 +292,9 @@ model ReservationHistory {
   @@index([createdAt])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 💰 DEPOSIT SYSTEM
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model Deposit {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -347,7 +347,7 @@ model DepositPayment {
   @@index([depositId])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model ActivityLog {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -370,9 +370,9 @@ model ActivityLog {
   @@index([action])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 🍽️ MENU SYSTEM
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model MenuTemplate {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -431,7 +431,6 @@ model MenuPackage {
   updatedAt       DateTime @updatedAt
   
   menuTemplate    MenuTemplate @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
-  packageOptions  MenuPackageOption[]
   categorySettings PackageCategorySettings[]
   courses         MenuCourse[]
   priceHistory    MenuPriceHistory[]
@@ -441,65 +440,12 @@ model MenuPackage {
   @@index([isPopular])
 }
 
-model MenuOption {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  
-  name          String   @db.VarChar(255)
-  description   String?  @db.Text
-  shortDescription String? @db.VarChar(500)
-  category      String   @db.VarChar(100)
-  
-  priceType     String   @db.VarChar(20)
-  priceAmount   Decimal  @default(0) @db.Decimal(10, 2)
-  
-  allowMultiple Boolean  @default(false)
-  maxQuantity   Int      @default(1) @db.SmallInt
-  
-  icon          String?  @db.VarChar(50)
-  imageUrl      String?  @db.Text
-  thumbnailUrl  String?  @db.Text
-  
-  isActive      Boolean  @default(true)
-  displayOrder  Int      @default(0) @db.SmallInt
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  packageOptions MenuPackageOption[]
-  priceHistory   MenuPriceHistory[]
-  
-  @@index([category])
-  @@index([isActive])
-  @@index([priceType])
-}
+// NOTE: MenuOption, MenuPackageOption, AddonGroup, AddonGroupDish models REMOVED
+// Functionality fully replaced by ServiceExtras system (ServiceCategory, ServiceItem, ReservationExtra)
 
-model MenuPackageOption {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  packageId     String   @db.Uuid
-  optionId      String   @db.Uuid
-  
-  customPrice   Decimal? @db.Decimal(10, 2)
-  
-  isRequired    Boolean  @default(false)
-  isDefault     Boolean  @default(false)
-  isExclusive   Boolean  @default(false)
-  
-  displayOrder  Int      @default(0) @db.SmallInt
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  package       MenuPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  option        MenuOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-  
-  @@unique([packageId, optionId])
-  @@index([packageId])
-  @@index([optionId])
-}
-
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 🍽️ MENU COURSES — Per-package course structure
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model MenuCourse {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -545,9 +491,9 @@ model MenuCourseOption {
   @@index([dishId])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 🍽️ DISH LIBRARY & DYNAMIC CATEGORY SYSTEM
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model DishCategory {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -587,7 +533,6 @@ model Dish {
   updatedAt     DateTime      @updatedAt
   
   category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  addonGroups   AddonGroupDish[]
   courseOptions  MenuCourseOption[]
   
   @@index([categoryId])
@@ -618,51 +563,6 @@ model PackageCategorySettings {
   @@unique([packageId, categoryId])
   @@index([packageId])
   @@index([categoryId])
-}
-
-model AddonGroup {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  
-  name          String   @db.VarChar(255)
-  description   String?  @db.Text
-  
-  minSelect     Int      @default(0) @db.SmallInt
-  maxSelect     Int      @default(1) @db.SmallInt
-  
-  priceType     String   @db.VarChar(20)
-  basePrice     Decimal  @default(0) @db.Decimal(10, 2)
-  
-  icon          String?  @db.VarChar(50)
-  displayOrder  Int      @default(0) @db.SmallInt
-  
-  isActive      Boolean  @default(true)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  addons        AddonGroupDish[]
-  
-  @@index([isActive])
-  @@index([displayOrder])
-}
-
-model AddonGroupDish {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  groupId       String   @db.Uuid
-  dishId        String   @db.Uuid
-  
-  customPrice   Decimal? @db.Decimal(10, 2)
-  displayOrder  Int      @default(0) @db.SmallInt
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  group         AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  dish          Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
-  
-  @@unique([groupId, dishId])
-  @@index([groupId])
-  @@index([dishId])
 }
 
 model ReservationMenuSnapshot {
@@ -701,7 +601,6 @@ model MenuPriceHistory {
   
   menuTemplateId  String?  @db.Uuid
   packageId       String?  @db.Uuid
-  optionId        String?  @db.Uuid
   
   fieldName       String   @db.VarChar(50)
   oldValue        Decimal  @db.Decimal(10, 2)
@@ -714,18 +613,16 @@ model MenuPriceHistory {
   
   menuTemplate    MenuTemplate? @relation(fields: [menuTemplateId], references: [id], onDelete: Cascade)
   package         MenuPackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  option          MenuOption? @relation(fields: [optionId], references: [id], onDelete: Cascade)
   
   @@index([entityType, entityId])
   @@index([menuTemplateId])
   @@index([packageId])
-  @@index([optionId])
   @@index([effectiveFrom])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 📎 ATTACHMENT SYSTEM
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model Attachment {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -758,10 +655,10 @@ model Attachment {
   @@index([createdAt])
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 🎁 SERVICE EXTRAS — venue decoration, music, cake, etc.
 // Independent from Menu system — can be assigned without menu
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
 model ServiceCategory {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
