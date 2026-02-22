@@ -3,7 +3,7 @@
  * Target: 64% → ~90%+ branches
  * Covers: list with/without menuTemplateId, create/update ZodError + AppError,
  *         delete "Cannot delete" + "Package not found", reorder ZodError,
- *         assignOptions ZodError + not found, next() fallbacks
+ *         next() fallbacks
  */
 
 jest.mock('../../../services/menu.service', () => ({
@@ -16,7 +16,6 @@ jest.mock('../../../services/menu.service', () => ({
     updatePackage: jest.fn(),
     deletePackage: jest.fn(),
     reorderPackages: jest.fn(),
-    assignOptionsToPackage: jest.fn(),
   },
 }));
 
@@ -24,7 +23,6 @@ jest.mock('../../../validation/menu.validation', () => ({
   createMenuPackageSchema: { parse: jest.fn((d: any) => d) },
   updateMenuPackageSchema: { parse: jest.fn((d: any) => d) },
   reorderPackagesSchema: { parse: jest.fn((d: any) => d) },
-  assignOptionsToPackageSchema: { parse: jest.fn((d: any) => d) },
 }));
 
 import { menuPackageController } from '../../../controllers/menuPackage.controller';
@@ -33,7 +31,6 @@ import {
   createMenuPackageSchema,
   updateMenuPackageSchema,
   reorderPackagesSchema,
-  assignOptionsToPackageSchema
 } from '../../../validation/menu.validation';
 import { z } from 'zod';
 
@@ -42,7 +39,6 @@ const schemas = {
   create: createMenuPackageSchema as any,
   update: updateMenuPackageSchema as any,
   reorder: reorderPackagesSchema as any,
-  assign: assignOptionsToPackageSchema as any,
 };
 
 const req = (overrides: any = {}): any => ({
@@ -63,7 +59,6 @@ beforeEach(() => {
   schemas.create.parse.mockImplementation((d: any) => d);
   schemas.update.parse.mockImplementation((d: any) => d);
   schemas.reorder.parse.mockImplementation((d: any) => d);
-  schemas.assign.parse.mockImplementation((d: any) => d);
 });
 
 function makeZodError(): z.ZodError {
@@ -281,36 +276,6 @@ describe('MenuPackageController — branches', () => {
     it('should call next on unknown error', async () => {
       svc.reorderPackages.mockRejectedValue(new Error('DB'));
       await menuPackageController.reorder(req({ body: { packageOrders: [] } }), res(), next);
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  // ═══ assignOptions ═══
-  describe('assignOptions()', () => {
-    it('should return 200 on success', async () => {
-      svc.assignOptionsToPackage.mockResolvedValue({ id: 'p1', options: [] });
-      const r = res();
-      await menuPackageController.assignOptions(req({ params: { id: 'p1' }, body: { optionIds: ['o1'] } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should return 400 on ZodError', async () => {
-      schemas.assign.parse.mockImplementation(() => { throw makeZodError(); });
-      const r = res();
-      await menuPackageController.assignOptions(req({ params: { id: 'p1' }, body: {} }), r, next);
-      expect(r.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should return 404 when Package not found', async () => {
-      svc.assignOptionsToPackage.mockRejectedValue(new Error('Package not found'));
-      const r = res();
-      await menuPackageController.assignOptions(req({ params: { id: 'bad' }, body: {} }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should call next on unknown error', async () => {
-      svc.assignOptionsToPackage.mockRejectedValue(new Error('DB'));
-      await menuPackageController.assignOptions(req({ params: { id: 'p1' }, body: {} }), res(), next);
       expect(next).toHaveBeenCalled();
     });
   });
