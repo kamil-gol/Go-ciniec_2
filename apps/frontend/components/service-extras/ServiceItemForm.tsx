@@ -51,7 +51,6 @@ export function ServiceItemForm({
     item ? String(item.basePrice) : '0'
   );
   const [icon, setIcon] = useState(item?.icon || '');
-  const [isExclusive, setIsExclusive] = useState(item?.isExclusive ?? false);
   const [requiresNote, setRequiresNote] = useState(item?.requiresNote ?? false);
   const [noteLabel, setNoteLabel] = useState(item?.noteLabel || '');
   const [isActive, setIsActive] = useState(item?.isActive ?? true);
@@ -67,7 +66,7 @@ export function ServiceItemForm({
     e.preventDefault();
 
     if (!categoryId) {
-      toast({ title: 'Wybierz kategorię', variant: 'destructive' });
+      toast({ title: 'Wybierz kategori\u0119', variant: 'destructive' });
       return;
     }
     if (!name.trim()) {
@@ -85,7 +84,6 @@ export function ServiceItemForm({
             priceType,
             basePrice: priceType === 'FREE' ? 0 : parseFloat(basePrice) || 0,
             icon: icon.trim() || null,
-            isExclusive,
             requiresNote,
             noteLabel: requiresNote ? noteLabel.trim() || null : null,
             isActive,
@@ -100,7 +98,6 @@ export function ServiceItemForm({
           priceType,
           basePrice: priceType === 'FREE' ? 0 : parseFloat(basePrice) || 0,
           icon: icon.trim() || undefined,
-          isExclusive,
           requiresNote,
           noteLabel: requiresNote ? noteLabel.trim() || undefined : undefined,
           isActive,
@@ -111,8 +108,8 @@ export function ServiceItemForm({
       onClose();
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zapisać',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zapisa\u0107',
         variant: 'destructive',
       });
     }
@@ -126,7 +123,7 @@ export function ServiceItemForm({
           <Label>Kategoria *</Label>
           <Select value={categoryId} onValueChange={setCategoryId}>
             <SelectTrigger>
-              <SelectValue placeholder="Wybierz kategorię" />
+              <SelectValue placeholder="Wybierz kategori\u0119" />
             </SelectTrigger>
             <SelectContent>
               {categories?.map((cat) => (
@@ -146,7 +143,7 @@ export function ServiceItemForm({
           id="item-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="np. DJ, Tort klasyczny 3-piętrowy"
+          placeholder="np. DJ, Tort klasyczny 3-pi\u0119trowy"
           autoFocus
         />
       </div>
@@ -158,7 +155,7 @@ export function ServiceItemForm({
           id="item-desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Opis usługi"
+          placeholder="Opis us\u0142ugi"
           rows={2}
         />
       </div>
@@ -175,8 +172,8 @@ export function ServiceItemForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="FLAT">Kwota stała</SelectItem>
-              <SelectItem value="PER_PERSON">Za osobę</SelectItem>
+              <SelectItem value="FLAT">Kwota sta\u0142a</SelectItem>
+              <SelectItem value="PER_PERSON">Za osob\u0119</SelectItem>
               <SelectItem value="FREE">Gratis</SelectItem>
             </SelectContent>
           </Select>
@@ -184,7 +181,7 @@ export function ServiceItemForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="item-price">
-            {priceType === 'PER_PERSON' ? 'Cena za osobę (zł)' : 'Cena (zł)'}
+            {priceType === 'PER_PERSON' ? 'Cena za osob\u0119 (z\u0142)' : 'Cena (z\u0142)'}
           </Label>
           <Input
             id="item-price"
@@ -205,7 +202,7 @@ export function ServiceItemForm({
           id="item-icon"
           value={icon}
           onChange={(e) => setIcon(e.target.value)}
-          placeholder="🎵"
+          placeholder="\uD83C\uDFB5"
           maxLength={4}
           className="w-24"
         />
@@ -213,23 +210,12 @@ export function ServiceItemForm({
 
       {/* Toggles */}
       <div className="space-y-3">
-        {/* Exclusive */}
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <Label>Pozycja wyłączna</Label>
-            <p className="text-xs text-muted-foreground">
-              Tylko jedna pozycja z kategorii może być wybrana
-            </p>
-          </div>
-          <Switch checked={isExclusive} onCheckedChange={setIsExclusive} />
-        </div>
-
         {/* Requires Note */}
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>
             <Label>Wymaga notatki</Label>
             <p className="text-xs text-muted-foreground">
-              Klient musi podać dodatkowe informacje
+              Klient musi poda\u0107 dodatkowe informacje
             </p>
           </div>
           <Switch checked={requiresNote} onCheckedChange={setRequiresNote} />
@@ -253,7 +239,7 @@ export function ServiceItemForm({
           <div>
             <Label>Aktywna</Label>
             <p className="text-xs text-muted-foreground">
-              Nieaktywne pozycje nie są widoczne przy rezerwacji
+              Nieaktywne pozycje nie s\u0105 widoczne przy rezerwacji
             </p>
           </div>
           <Switch checked={isActive} onCheckedChange={setIsActive} />
@@ -267,7 +253,7 @@ export function ServiceItemForm({
         </Button>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditing ? 'Zapisz zmiany' : 'Utwórz pozycję'}
+          {isEditing ? 'Zapisz zmiany' : 'Utw\u00f3rz pozycj\u0119'}
         </Button>
       </div>
     </form>

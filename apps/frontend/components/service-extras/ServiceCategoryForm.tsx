@@ -24,7 +24,7 @@ function slugify(text: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/ł/g, 'l')
+    .replace(/\u0142/g, 'l')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
@@ -38,6 +38,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
   const [icon, setIcon] = useState(category?.icon || '');
   const [color, setColor] = useState(category?.color || '#3B82F6');
   const [isActive, setIsActive] = useState(category?.isActive ?? true);
+  const [isExclusive, setIsExclusive] = useState(category?.isExclusive ?? false);
   const [autoSlug, setAutoSlug] = useState(!isEditing);
 
   const createCategory = useCreateCategory();
@@ -77,6 +78,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
             icon: icon.trim() || null,
             color: color || null,
             isActive,
+            isExclusive,
           },
         });
         toast({ title: 'Kategoria zaktualizowana', description: name });
@@ -88,6 +90,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
           icon: icon.trim() || undefined,
           color: color || undefined,
           isActive,
+          isExclusive,
         };
         await createCategory.mutateAsync(data);
         toast({ title: 'Kategoria utworzona', description: name });
@@ -95,8 +98,8 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
       onClose();
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zapisać',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zapisa\u0107',
         variant: 'destructive',
       });
     }
@@ -111,7 +114,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
           id="cat-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="np. Tort, Muzyka, Wystrój sali"
+          placeholder="np. Tort, Muzyka, Wystr\u00f3j sali"
           autoFocus
         />
       </div>
@@ -150,7 +153,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
           id="cat-desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Krótki opis kategorii"
+          placeholder="Kr\u00f3tki opis kategorii"
           rows={2}
         />
       </div>
@@ -163,7 +166,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
             id="cat-icon"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            placeholder="🎂"
+            placeholder="\uD83C\uDF82"
             maxLength={4}
           />
         </div>
@@ -187,15 +190,29 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
         </div>
       </div>
 
-      {/* Active toggle */}
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div>
-          <Label>Aktywna</Label>
-          <p className="text-xs text-muted-foreground">
-            Nieaktywne kategorie nie są widoczne przy rezerwacji
-          </p>
+      {/* Toggles */}
+      <div className="space-y-3">
+        {/* Exclusive */}
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <Label>Kategoria wy\u0142\u0105czna</Label>
+            <p className="text-xs text-muted-foreground">
+              Tylko jedna pozycja z tej kategorii mo\u017ce by\u0107 wybrana na rezerwacj\u0119
+            </p>
+          </div>
+          <Switch checked={isExclusive} onCheckedChange={setIsExclusive} />
         </div>
-        <Switch checked={isActive} onCheckedChange={setIsActive} />
+
+        {/* Active toggle */}
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <Label>Aktywna</Label>
+            <p className="text-xs text-muted-foreground">
+              Nieaktywne kategorie nie s\u0105 widoczne przy rezerwacji
+            </p>
+          </div>
+          <Switch checked={isActive} onCheckedChange={setIsActive} />
+        </div>
       </div>
 
       {/* Actions */}
@@ -205,7 +222,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
         </Button>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditing ? 'Zapisz zmiany' : 'Utwórz kategorię'}
+          {isEditing ? 'Zapisz zmiany' : 'Utw\u00f3rz kategori\u0119'}
         </Button>
       </div>
     </form>
