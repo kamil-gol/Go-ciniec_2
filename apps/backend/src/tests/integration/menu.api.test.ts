@@ -7,15 +7,17 @@
  *
  * Endpoints covered:
  *   /api/menu-templates      — CRUD + duplicate + getActive
- *   /api/menu-packages       — CRUD + listByTemplate + reorder + assignOptions
- *   /api/menu-options        — CRUD + filters
+ *   /api/menu-packages       — CRUD + listByTemplate + reorder
  *   /api/menu-courses        — CRUD + assignDishes + removeDish
  *   /api/dish-categories     — CRUD + reorder (public GET)
  *   /api/dishes              — CRUD + filters
  *   /api/addon-groups        — CRUD + assignDishes + removeDish
  *   /api/package-category-settings — CRUD + bulkUpdate
- *   /api/menu-calculator     — calculate + availablePackages + optionPrice
+ *   /api/menu-calculator     — calculate + availablePackages
  *   /api/reservations/:id/menu — select + get + update + delete
+ *
+ * NOTE: MenuOption and MenuPackageOption models removed from schema.
+ *       Options are now passed via input data (SelectedOptionDTO), not from DB.
  */
 import { api, authHeader, authHeaderForUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
@@ -32,7 +34,6 @@ interface MenuSeedData extends TestSeedData {
   dish2: any;
   menuTemplate: any;
   menuPackage: any;
-  menuOption: any;
   reservation: any;
 }
 
@@ -97,19 +98,6 @@ async function seedMenuData(): Promise<MenuSeedData> {
     },
   });
 
-  // Menu Option
-  const menuOption = await prismaTest.menuOption.create({
-    data: {
-      name: 'Tort weselny',
-      description: '5-piętrowy tort',
-      category: 'DESSERT',
-      priceType: 'PER_ITEM',
-      priceAmount: 800,
-      icon: '🎂',
-      isActive: true,
-    },
-  });
-
   // Reservation (for menu selection tests)
   // Schema fields: date (String), startTime, endTime, adults, children, toddlers, guests, totalPrice, status
   const reservation = await prismaTest.reservation.create({
@@ -137,7 +125,6 @@ async function seedMenuData(): Promise<MenuSeedData> {
     dish2,
     menuTemplate,
     menuPackage,
-    menuOption,
     reservation,
   };
 }
@@ -438,17 +425,6 @@ describe('Menu API — Integration Tests', () => {
       });
     });
 
-    describe('POST /api/menu-packages/:id/options', () => {
-      it('should assign options to package', async () => {
-        const seed = await seedMenuData();
-        const res = await api
-          .post(`/api/menu-packages/${seed.menuPackage.id}/options`)
-          .set(authHeader('ADMIN'))
-          .send({ options: [{ optionId: seed.menuOption.id }] });
-        expect([200, 201]).toContain(res.status);
-      });
-    });
-
     describe('PUT /api/menu-packages/reorder', () => {
       it('should reorder packages as ADMIN', async () => {
         const seed = await seedMenuData();
@@ -458,84 +434,6 @@ describe('Menu API — Integration Tests', () => {
           .send({
             packageOrders: [{ packageId: seed.menuPackage.id, displayOrder: 5 }],
           });
-        expect([200, 204]).toContain(res.status);
-      });
-    });
-  });
-
-  // ════════════════════════════════════════════════════
-  // MENU OPTIONS
-  // ════════════════════════════════════════════════════
-  describe('Menu Options — /api/menu-options', () => {
-    describe('GET /api/menu-options', () => {
-      it('should return all options for staff', async () => {
-        await seedMenuData();
-        const res = await api.get('/api/menu-options').set(authHeader('ADMIN'));
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-      });
-
-      it('should filter by category', async () => {
-        await seedMenuData();
-        const res = await api
-          .get('/api/menu-options?category=dessert')
-          .set(authHeader('ADMIN'));
-        expect(res.status).toBe(200);
-      });
-    });
-
-    describe('POST /api/menu-options', () => {
-      it('should create option as ADMIN', async () => {
-        await seedTestData();
-        const res = await api
-          .post('/api/menu-options')
-          .set(authHeader('ADMIN'))
-          .send({
-            name: 'Fontanna czekoladowa',
-            category: 'DESSERT',
-            priceType: 'PER_ITEM',
-            priceAmount: 500,
-            isActive: true,
-          });
-        expect([200, 201]).toContain(res.status);
-      });
-    });
-
-    describe('GET /api/menu-options/:id', () => {
-      it('should return single option', async () => {
-        const seed = await seedMenuData();
-        const res = await api
-          .get(`/api/menu-options/${seed.menuOption.id}`)
-          .set(authHeader('ADMIN'));
-        expect(res.status).toBe(200);
-      });
-    });
-
-    describe('PUT /api/menu-options/:id', () => {
-      it('should update option as ADMIN', async () => {
-        const seed = await seedMenuData();
-        const res = await api
-          .put(`/api/menu-options/${seed.menuOption.id}`)
-          .set(authHeader('ADMIN'))
-          .send({ name: 'Tort weselny — 6 pięter', priceAmount: 1000 });
-        expect(res.status).toBe(200);
-      });
-    });
-
-    describe('DELETE /api/menu-options/:id', () => {
-      it('should delete option as ADMIN', async () => {
-        const seed = await seedMenuData();
-        const opt = await prismaTest.menuOption.create({
-          data: {
-            name: 'Opcja do usunięcia',
-            category: 'other',
-            priceType: 'FREE',
-            priceAmount: 0,
-          },
-        });
-        const res = await api
-          .delete(`/api/menu-options/${opt.id}`)
-          .set(authHeader('ADMIN'));
         expect([200, 204]).toContain(res.status);
       });
     });
@@ -1003,16 +901,6 @@ describe('Menu API — Integration Tests', () => {
         expect([200, 400]).toContain(res.status);
       });
     });
-
-    describe('GET /api/menu-calculator/option/:optionId/calculate', () => {
-      it('should calculate single option price', async () => {
-        const seed = await seedMenuData();
-        const res = await api
-          .get(`/api/menu-calculator/option/${seed.menuOption.id}/calculate?adults=80&children=20&toddlers=10&quantity=1`)
-          .set(authHeader('ADMIN'));
-        expect([200, 400]).toContain(res.status);
-      });
-    });
   });
 
   // ════════════════════════════════════════════════════
@@ -1022,13 +910,6 @@ describe('Menu API — Integration Tests', () => {
     describe('POST /api/reservations/:id/select-menu', () => {
       it('should select menu for reservation', async () => {
         const seed = await seedMenuData();
-        // Assign option to package first
-        await prismaTest.menuPackageOption.create({
-          data: {
-            packageId: seed.menuPackage.id,
-            optionId: seed.menuOption.id,
-          },
-        }).catch(() => { /* may already exist or model differs */ });
 
         const res = await api
           .post(`/api/reservations/${seed.reservation.id}/select-menu`)
@@ -1088,7 +969,7 @@ describe('Menu API — Integration Tests', () => {
       it('should select, get, update guest counts, and delete menu', async () => {
         const seed = await seedMenuData();
 
-        // 1. Select menu
+        // 1. Select menu (options passed via input, not from DB)
         const selectRes = await api
           .post(`/api/reservations/${seed.reservation.id}/select-menu`)
           .set(authHeader('ADMIN'))
@@ -1102,7 +983,7 @@ describe('Menu API — Integration Tests', () => {
           });
 
         if (![200, 201].includes(selectRes.status)) {
-          // If select fails (e.g. missing MenuPackageOption), skip rest
+          // If select fails, skip rest
           return;
         }
 
@@ -1135,7 +1016,6 @@ describe('Menu API — Integration Tests', () => {
     const staffGetEndpoints = [
       '/api/menu-templates',
       '/api/menu-packages',
-      '/api/menu-options',
       '/api/addon-groups',
     ];
 
@@ -1165,7 +1045,6 @@ describe('Menu API — Integration Tests', () => {
       const adminPostEndpoints = [
         '/api/menu-templates',
         '/api/menu-packages',
-        '/api/menu-options',
         '/api/menu-courses',
         '/api/addon-groups',
         '/api/package-category-settings',
