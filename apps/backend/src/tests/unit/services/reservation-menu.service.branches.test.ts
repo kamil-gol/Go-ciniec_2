@@ -5,15 +5,15 @@
  * removeMenu (snapshot exists/null, packageName fallback),
  * validateDishSelections (isRequired min, maxSelect),
  * buildMenuSnapshot (!categorySetting, dish?.name fallback),
- * calculateOptionsPrice (!option, PER_PERSON, FLAT, default),
+ * calculateOptionsPrice (PER_PERSON, FLAT, default),
  * formatMenuResponse (selectedOptions null/present),
  * getReservationMenu (no snapshot)
+ * NOTE: menuOption mock removed — MenuOption model no longer in Prisma
  */
 
 const mockPrisma = {
   reservation: { findUnique: jest.fn() },
   menuPackage: { findUnique: jest.fn() },
-  menuOption: { findMany: jest.fn() },
   reservationMenuSnapshot: {
     findUnique: jest.fn(),
     upsert: jest.fn(),
@@ -94,9 +94,6 @@ describe('ReservationMenuService branches', () => {
     it('should select as new (no existing snapshot) with dishes and PER_PERSON option', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue(basePackage);
-      mockPrisma.menuOption.findMany.mockResolvedValue([
-        { id: 'opt1', name: 'Woda', priceAmount: 10, priceType: 'PER_PERSON', isActive: true, category: 'DRINK' },
-      ]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.dish.findMany.mockResolvedValue([
         { id: 'd1', name: 'Pomidorowa', description: 'Klasyczna', allergens: ['gluten'], isActive: true },
@@ -111,7 +108,7 @@ describe('ReservationMenuService branches', () => {
       const result = await service.selectMenu('r1', {
         packageId: 'mp1',
         dishSelections: [{ categoryId: 'cat1', dishes: [{ dishId: 'd1', quantity: 2 }] }],
-        selectedOptions: [{ optionId: 'opt1', quantity: 2 }],
+        selectedOptions: [{ optionId: 'opt1', quantity: 2, name: 'Woda', priceAmount: 10, priceType: 'PER_PERSON', category: 'DRINK' }],
       }, 'u1');
 
       expect(result).toBeDefined();
@@ -124,7 +121,6 @@ describe('ReservationMenuService branches', () => {
     it('should select as update (existing snapshot) without dishes/options + null client', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue({ ...baseReservation, client: null });
       mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...basePackage, categorySettings: [] });
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({ id: 'existing' });
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 
@@ -139,7 +135,6 @@ describe('ReservationMenuService branches', () => {
     it('should select without userId (userId || null branch)', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...basePackage, categorySettings: [] });
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 
@@ -150,7 +145,6 @@ describe('ReservationMenuService branches', () => {
     it('should use input adults/children/toddlers when provided', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...basePackage, categorySettings: [] });
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 
@@ -163,24 +157,20 @@ describe('ReservationMenuService branches', () => {
     it('should handle FLAT option in calculateOptionsPrice', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...basePackage, categorySettings: [] });
-      mockPrisma.menuOption.findMany.mockResolvedValue([
-        { id: 'opt2', name: 'DJ', priceAmount: 500, priceType: 'FLAT', isActive: true, category: 'ENTERTAINMENT' },
-      ]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 
       await service.selectMenu('r1', {
         packageId: 'mp1',
-        selectedOptions: [{ optionId: 'opt2', quantity: 1 }],
+        selectedOptions: [{ optionId: 'opt2', quantity: 1, name: 'DJ', priceAmount: 500, priceType: 'FLAT', category: 'ENTERTAINMENT' }],
       });
 
       expect(mockPrisma.reservationMenuSnapshot.upsert).toHaveBeenCalled();
     });
 
-    it('should handle option not found in calculateOptionsPrice (!option branch)', async () => {
+    it('should handle option with missing price fields (defaults to 0/FLAT)', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...basePackage, categorySettings: [] });
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 
@@ -195,7 +185,6 @@ describe('ReservationMenuService branches', () => {
     it('should handle dishSelection with unknown categoryId (!categorySetting in buildMenuSnapshot)', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue(basePackage);
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.dish.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
@@ -214,7 +203,6 @@ describe('ReservationMenuService branches', () => {
     it('should use Unknown dish when dish not found in buildMenuSnapshot', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue(basePackage);
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.dish.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
@@ -279,7 +267,6 @@ describe('ReservationMenuService branches', () => {
           category: { name: 'Zupy', dishes: [] },
         }],
       });
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 
@@ -297,7 +284,6 @@ describe('ReservationMenuService branches', () => {
     it('should delegate to selectMenu', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...basePackage, categorySettings: [] });
-      mockPrisma.menuOption.findMany.mockResolvedValue([]);
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
       mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
 

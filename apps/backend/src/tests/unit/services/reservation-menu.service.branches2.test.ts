@@ -2,12 +2,12 @@
  * ReservationMenuService — Branch Coverage (line 334)
  * Tests for recalculateForGuestChange: PER_PERSON vs FLAT options, no options, no snapshot
  * Also tests: removeMenu with/without existing snapshot, calculateOptionsPrice unknown priceType
+ * NOTE: menuOption mock removed — MenuOption model no longer in Prisma
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     reservation: { findUnique: jest.fn(), update: jest.fn() },
     menuPackage: { findUnique: jest.fn() },
-    menuOption: { findMany: jest.fn() },
     dish: { findMany: jest.fn() },
     reservationMenuSnapshot: {
       findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn(),
