@@ -4,12 +4,14 @@
  * Updated: Phase 2 Audit — logChange() for all queue operations
  * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM (19.02.2026)
  * FIX: BUG8 — position > max and swap-self now throw AppError.badRequest (20.02.2026)
+ * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { ReservationStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
+import { QUEUE, CLIENT } from '../i18n/pl';
 import {
   CreateReservedDTO,
   PromoteReservationDTO,
@@ -46,20 +48,20 @@ const withRetry = async <T>(
 export class QueueService {
   async addToQueue(data: CreateReservedDTO, createdById: string): Promise<QueueItemResponse> {
     if (!data.clientId || !data.reservationQueueDate || !data.guests) {
-      throw new Error('Client, queue date, and guests are required');
+      throw new Error(QUEUE.CLIENT_DATE_GUESTS_REQUIRED);
     }
-    if (data.guests < 1) throw new Error('Number of guests must be at least 1');
+    if (data.guests < 1) throw new Error(QUEUE.GUESTS_MIN_ONE);
 
     const queueDate = new Date(data.reservationQueueDate);
-    if (isNaN(queueDate.getTime())) throw new Error('Invalid queue date format');
+    if (isNaN(queueDate.getTime())) throw new Error(QUEUE.INVALID_DATE_FORMAT);
     queueDate.setHours(0, 0, 0, 0);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (queueDate < today) throw new Error('Queue date cannot be in the past');
+    if (queueDate < today) throw new Error(QUEUE.DATE_NOT_IN_PAST);
 
     const client = await prisma.client.findUnique({ where: { id: data.clientId } });
-    if (!client) throw new Error('Client not found');
+    if (!client) throw new Error(CLIENT.NOT_FOUND);
 
     const startOfDay = new Date(queueDate); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(queueDate); endOfDay.setHours(23, 59, 59, 999);
@@ -109,7 +111,7 @@ export class QueueService {
       return this.formatQueueItem(reservation);
     } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new Error(`Position ${nextPosition} is already taken for this date. Please try again.`);
+        throw new Error(QUEUE.POSITION_TAKEN(nextPosition));
       }
       throw error;
     }
@@ -120,8 +122,8 @@ export class QueueService {
       where: { id: reservationId },
       include: { client: true },
     });
-    if (!existing) throw new Error('Reservation not found');
-    if (existing.status !== ReservationStatus.RESERVED) throw new Error('Can only update RESERVED reservations');
+    if (!existing) throw new Error(QUEUE.NOT_FOUND);
+    if (existing.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.ONLY_RESERVED);
 
     const oldDate = existing.reservationQueueDate;
     const oldPosition = existing.reservationQueuePosition;
@@ -131,7 +133,7 @@ export class QueueService {
 
     if (data.clientId) {
       const client = await prisma.client.findUnique({ where: { id: data.clientId } });
-      if (!client) throw new Error('Client not found');
+      if (!client) throw new Error(CLIENT.NOT_FOUND);
       if (data.clientId !== existing.clientId) {
         changes.clientId = { old: existing.clientId, new: data.clientId };
       }
@@ -140,10 +142,10 @@ export class QueueService {
 
     if (data.reservationQueueDate) {
       const queueDate = new Date(data.reservationQueueDate);
-      if (isNaN(queueDate.getTime())) throw new Error('Invalid queue date format');
+      if (isNaN(queueDate.getTime())) throw new Error(QUEUE.INVALID_DATE_FORMAT);
       queueDate.setHours(0, 0, 0, 0);
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      if (queueDate < today) throw new Error('Queue date cannot be in the past');
+      if (queueDate < today) throw new Error(QUEUE.DATE_NOT_IN_PAST);
 
       const oldDateNormalized = oldDate ? new Date(oldDate.getFullYear(), oldDate.getMonth(), oldDate.getDate()) : null;
       const newDateNormalized = new Date(queueDate.getFullYear(), queueDate.getMonth(), queueDate.getDate());
@@ -167,7 +169,7 @@ export class QueueService {
     }
 
     if (data.guests !== undefined) {
-      if (data.guests < 1) throw new Error('Number of guests must be at least 1');
+      if (data.guests < 1) throw new Error(QUEUE.GUESTS_MIN_ONE);
       if (data.guests !== existing.guests) {
         changes.guests = { old: existing.guests, new: data.guests };
       }
@@ -222,7 +224,7 @@ export class QueueService {
 
   async getQueueForDate(date: Date | string): Promise<QueueItemResponse[]> {
     const queueDate = new Date(date);
-    if (isNaN(queueDate.getTime())) throw new Error('Invalid date format');
+    if (isNaN(queueDate.getTime())) throw new Error(QUEUE.INVALID_DATE_FORMAT);
     const startOfDay = new Date(queueDate); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(queueDate); endOfDay.setHours(23, 59, 59, 999);
 
@@ -247,19 +249,19 @@ export class QueueService {
   }
 
   async swapPositions(id1: string, id2: string, userId: string): Promise<void> {
-    if (!id1 || !id2) throw AppError.badRequest('Both reservation IDs are required');
-    if (id1 === id2) throw AppError.badRequest('Cannot swap reservation with itself');
+    if (!id1 || !id2) throw AppError.badRequest(QUEUE.BOTH_IDS_REQUIRED);
+    if (id1 === id2) throw AppError.badRequest(QUEUE.CANNOT_SWAP_SELF);
 
     const [res1, res2] = await Promise.all([
       prisma.reservation.findUnique({ where: { id: id1 }, include: { client: true } }),
       prisma.reservation.findUnique({ where: { id: id2 }, include: { client: true } })
     ]);
-    if (!res1 || !res2) throw new Error('One or both reservations not found');
+    if (!res1 || !res2) throw new Error(QUEUE.ONE_OR_BOTH_NOT_FOUND);
     if (res1.status !== ReservationStatus.RESERVED || res2.status !== ReservationStatus.RESERVED) {
-      throw new Error('Can only swap RESERVED reservations');
+      throw new Error(QUEUE.ONLY_RESERVED_SWAP);
     }
     if (res1.reservationQueueDate?.toDateString() !== res2.reservationQueueDate?.toDateString()) {
-      throw new Error('Can only swap reservations on the same date');
+      throw new Error(QUEUE.SAME_DATE_REQUIRED);
     }
 
     const pos1 = res1.reservationQueuePosition;
@@ -271,9 +273,9 @@ export class QueueService {
       });
     } catch (error: any) {
       if (error.message?.includes('lock') || error.code === 'P2034') {
-        throw new Error('Another user is modifying the queue. Please refresh and try again.');
+        throw new Error(QUEUE.CONCURRENT_MODIFICATION);
       }
-      if (error.code === 'P2002') throw new Error('Position conflict detected. Please refresh and try again.');
+      if (error.code === 'P2002') throw new Error(QUEUE.POSITION_CONFLICT);
       throw error;
     }
 
@@ -300,18 +302,18 @@ export class QueueService {
   }
 
   async moveToPosition(reservationId: string, newPosition: number, userId: string): Promise<void> {
-    if (!reservationId) throw new Error('Reservation ID is required');
+    if (!reservationId) throw new Error(QUEUE.RESERVATION_ID_REQUIRED);
     if (!newPosition || !Number.isInteger(newPosition) || newPosition < 1) {
-      throw new Error('Position must be a positive integer (>= 1)');
+      throw new Error(QUEUE.POSITION_POSITIVE_INT);
     }
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       select: { id: true, status: true, reservationQueueDate: true, reservationQueuePosition: true, clientId: true }
     });
-    if (!reservation) throw new Error('Reservation not found');
-    if (reservation.status !== ReservationStatus.RESERVED) throw new Error('Can only move RESERVED reservations');
-    if (!reservation.reservationQueueDate) throw new Error('Reservation has no queue date');
+    if (!reservation) throw new Error(QUEUE.NOT_FOUND);
+    if (reservation.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.ONLY_RESERVED_MOVE);
+    if (!reservation.reservationQueueDate) throw new Error(QUEUE.NO_QUEUE_DATE);
 
     const oldPosition = reservation.reservationQueuePosition;
 
@@ -321,7 +323,7 @@ export class QueueService {
       where: { status: ReservationStatus.RESERVED, reservationQueueDate: { gte: startOfDay, lte: endOfDay } }
     });
     if (newPosition > totalCount) {
-      throw AppError.badRequest(`Position ${newPosition} is invalid. There are only ${totalCount} reservation(s) in the queue for this date.`);
+      throw AppError.badRequest(QUEUE.POSITION_INVALID(newPosition, totalCount));
     }
     if (reservation.reservationQueuePosition === newPosition) return;
 
@@ -331,10 +333,10 @@ export class QueueService {
       });
     } catch (error: any) {
       if (error.message?.includes('lock') || error.code === 'P2034') {
-        throw new Error('Another user is modifying the queue. Please refresh and try again.');
+        throw new Error(QUEUE.CONCURRENT_MODIFICATION);
       }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new Error(`Position ${newPosition} is already occupied. Please refresh and try again.`);
+        throw new Error(QUEUE.POSITION_TAKEN(newPosition));
       }
       throw error;
     }
@@ -359,11 +361,11 @@ export class QueueService {
   }
 
   async batchUpdatePositions(updates: Array<{ id: string; position: number }>, userId: string): Promise<{ updatedCount: number }> {
-    if (!updates || updates.length === 0) throw new Error('At least one update is required');
+    if (!updates || updates.length === 0) throw new Error(QUEUE.AT_LEAST_ONE_UPDATE);
     for (const update of updates) {
-      if (!update.id) throw new Error('Each update must have a reservation ID');
+      if (!update.id) throw new Error(QUEUE.EACH_NEEDS_ID);
       if (!Number.isInteger(update.position) || update.position < 1) {
-        throw new Error(`Invalid position ${update.position} for reservation ${update.id}`);
+        throw new Error(QUEUE.INVALID_POSITION(update.position, update.id));
       }
     }
 
@@ -373,20 +375,20 @@ export class QueueService {
         where: { id: { in: reservationIds } },
         select: { id: true, status: true, reservationQueueDate: true, reservationQueuePosition: true }
       });
-      if (reservations.length !== updates.length) throw new Error('One or more reservations not found');
+      if (reservations.length !== updates.length) throw new Error(QUEUE.SOME_NOT_FOUND);
 
       for (const res of reservations) {
-        if (res.status !== ReservationStatus.RESERVED) throw new Error(`Reservation ${res.id} is not RESERVED`);
-        if (!res.reservationQueueDate) throw new Error(`Reservation ${res.id} has no queue date`);
+        if (res.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.NOT_RESERVED_STATUS(res.id));
+        if (!res.reservationQueueDate) throw new Error(QUEUE.NO_QUEUE_DATE_FOR(res.id));
       }
 
       const firstDate = reservations[0].reservationQueueDate?.toDateString();
       for (const res of reservations) {
-        if (res.reservationQueueDate?.toDateString() !== firstDate) throw new Error('All reservations must be on the same date');
+        if (res.reservationQueueDate?.toDateString() !== firstDate) throw new Error(QUEUE.ALL_SAME_DATE);
       }
 
       const positions = updates.map(u => u.position);
-      if (positions.length !== new Set(positions).size) throw new Error('Duplicate positions detected in updates');
+      if (positions.length !== new Set(positions).size) throw new Error(QUEUE.DUPLICATE_POSITIONS);
 
       // Save old positions for audit
       const oldPositions = new Map(reservations.map(r => [r.id, r.reservationQueuePosition]));
@@ -477,20 +479,20 @@ export class QueueService {
       where: { id: reservationId },
       include: { client: true },
     });
-    if (!reservation) throw new Error('Reservation not found');
-    if (reservation.status !== ReservationStatus.RESERVED) throw new Error('Can only promote RESERVED reservations');
+    if (!reservation) throw new Error(QUEUE.NOT_FOUND);
+    if (reservation.status !== ReservationStatus.RESERVED) throw new Error(QUEUE.ONLY_RESERVED_PROMOTE);
 
     const oldQueueDate = reservation.reservationQueueDate;
     const oldPosition = reservation.reservationQueuePosition;
 
     if (!data.hallId || !data.eventTypeId || !data.startDateTime || !data.endDateTime) {
-      throw new Error('Hall, event type, start time, and end time are required');
+      throw new Error(QUEUE.HALL_EVENT_DATES_REQUIRED);
     }
 
     const startDateTime = new Date(data.startDateTime);
     const endDateTime = new Date(data.endDateTime);
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) throw new Error('Invalid date/time format');
-    if (endDateTime <= startDateTime) throw new Error('End time must be after start time');
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) throw new Error(QUEUE.INVALID_DATETIME);
+    if (endDateTime <= startDateTime) throw new Error(QUEUE.END_AFTER_START);
 
     const conflictingReservation = await prisma.reservation.findFirst({
       where: {
@@ -503,7 +505,7 @@ export class QueueService {
         ]
       }
     });
-    if (conflictingReservation) throw new Error('Hall is already booked for this time slot');
+    if (conflictingReservation) throw new Error(QUEUE.HALL_ALREADY_BOOKED);
 
     const hall = await prisma.hall.findUnique({ where: { id: data.hallId }, select: { name: true } });
     const eventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId }, select: { name: true } });
