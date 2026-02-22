@@ -165,7 +165,7 @@ export default function MenuDemoPage() {
               toddlers={5}
               onComplete={(selection) => {
                 console.log('Selection completed:', selection);
-                toast.success('\u2705 Wyb\u00f3r menu zako\u0144czony!', {
+                toast.success('\u2705 Wybór menu zakończony!', {
                   description: `Template: ${selection.templateId}, Package: ${selection.packageId}`,
                 });
               }}
