@@ -15,7 +15,7 @@ export interface CreateMenuTemplateInput {
   name: string;
   description?: string;
   variant?: string;
-  validFrom: Date;
+  validFrom?: Date;
   validTo?: Date | null;
   isActive?: boolean;
   displayOrder?: number;
@@ -40,7 +40,7 @@ export interface UpdateMenuTemplateInput {
 export interface CreateMenuPackageInput {
   menuTemplateId: string;
   name: string;
-  description?: string;
+  description?: string | null;
   shortDescription?: string;
   pricePerAdult: number;
   pricePerChild: number;

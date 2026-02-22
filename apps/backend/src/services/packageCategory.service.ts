@@ -58,7 +58,7 @@ class PackageCategoryService {
 
     return prisma.packageCategorySettings.create({
       data: {
-        packageId: data.packageId, category: { connect: { id: data.category.id } }, minSelect: data.minSelect ?? 1,
+        packageId: data.packageId, categoryId: data.category.id, minSelect: data.minSelect ?? 1,
         maxSelect: data.maxSelect ?? 1, isRequired: data.isRequired ?? true,
         isEnabled: data.isEnabled ?? true, displayOrder: data.displayOrder ?? 0,
         customLabel: data.customLabel ?? null

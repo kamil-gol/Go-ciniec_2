@@ -14,7 +14,7 @@ export interface CreateMenuCourseInput {
   maxSelect?: number;
   isRequired?: boolean;
   displayOrder?: number;
-  icon?: string;
+  icon?: string | null;
 }
 
 export interface UpdateMenuCourseInput {
@@ -24,7 +24,7 @@ export interface UpdateMenuCourseInput {
   maxSelect?: number;
   isRequired?: boolean;
   displayOrder?: number;
-  icon?: string;
+  icon?: string | null;
 }
 
 export interface AssignDishInput {
@@ -128,7 +128,7 @@ export class MenuCourseService {
             dish: {
               select: {
                 id: true, name: true, description: true, category: true,
-                allergens: true, imageUrl: true, thumbnailUrl: true
+                allergens: true
               }
             }
           },
