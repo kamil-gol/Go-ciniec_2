@@ -95,6 +95,9 @@ export const RESERVATION = {
     `Nie można zmienić statusu z ${from} na ${to}`,
   PRICE_REQUIRED: 'Cena za dorosłego i za dziecko jest wymagana gdy nie wybrano pakietu menu',
   CANNOT_COMPLETE_BEFORE_EVENT: 'Nie można zakończyć rezerwacji przed datą wydarzenia',
+  DISCOUNT_PERCENTAGE_MAX: 'Rabat procentowy nie może przekroczyć 100%',
+  DISCOUNT_AMOUNT_EXCEEDS: (discount: number, price: number) =>
+    `Rabat kwotowy (${discount} PLN) nie może przekroczyć ceny (${price} PLN)`,
 } as const;
 
 // ═══════════════════════════════════════
@@ -120,6 +123,11 @@ export const MENU = {
 export const HALL = {
   NOT_FOUND: 'Nie znaleziono sali',
   NOT_ACTIVE: 'Sala jest nieaktywna',
+  NAME_REQUIRED: 'Nazwa sali jest wymagana',
+  CAPACITY_REQUIRED: 'Pojemność sali jest wymagana',
+  CAPACITY_POSITIVE: 'Pojemność sali musi być większa od 0',
+  CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć sali posiadającej rezerwacje',
+  DELETED: 'Sala została usunięta',
 } as const;
 
 // ═══════════════════════════════════════
@@ -131,6 +139,8 @@ export const CLIENT = {
   PHONE_REQUIRED: 'Numer telefonu jest wymagany',
   PHONE_MIN_DIGITS: 'Numer telefonu musi zawierać co najmniej 9 cyfr',
   CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć klienta posiadającego rezerwacje',
+  NAME_REQUIRED: 'Imię i nazwisko klienta są wymagane',
+  DELETED: 'Klient został usunięty',
 } as const;
 
 // ═══════════════════════════════════════
@@ -149,6 +159,8 @@ export const DEPOSIT = {
   DELETED: 'Zaliczka została usunięta',
   EXCEEDS_PRICE: (sum: number, price: number, available: number) =>
     `Suma zaliczek (${sum} PLN) przekracza cenę rezerwacji (${price} PLN, w tym usługi dodatkowe). Dostępne do zaliczki: ${available.toFixed(2)} PLN`,
+  RESERVATION_NOT_FOUND: 'Nie znaleziono rezerwacji powiązanej z zaliczką',
+  PAYMENT_METHOD_REQUIRED: 'Metoda płatności jest wymagana',
 } as const;
 
 // ═══════════════════════════════════════
@@ -156,6 +168,306 @@ export const DEPOSIT = {
 // ═══════════════════════════════════════
 export const EVENT_TYPE = {
   NOT_FOUND: 'Nie znaleziono typu wydarzenia',
+  NAME_REQUIRED: 'Nazwa typu wydarzenia jest wymagana',
+  NAME_EXISTS: 'Typ wydarzenia o tej nazwie już istnieje',
+  CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć typu wydarzenia posiadającego rezerwacje',
+  DELETED: 'Typ wydarzenia został usunięty',
+} as const;
+
+// ═══════════════════════════════════════
+// QUEUE (kolejka rezerwacji)
+// ═══════════════════════════════════════
+export const QUEUE = {
+  // Walidacja danych wejściowych
+  CLIENT_DATE_GUESTS_REQUIRED: 'Klient, data kolejki i liczba gości są wymagane',
+  GUESTS_MIN_ONE: 'Liczba gości musi wynosić co najmniej 1',
+  INVALID_DATE_FORMAT: 'Nieprawidłowy format daty',
+  DATE_NOT_IN_PAST: 'Data kolejki nie może być w przeszłości',
+
+  // Operacje na pozycjach
+  NOT_FOUND: 'Nie znaleziono rezerwacji',
+  ONLY_RESERVED: 'Można modyfikować tylko rezerwacje ze statusem RESERVED',
+  ONLY_RESERVED_SWAP: 'Można zamieniać tylko rezerwacje ze statusem RESERVED',
+  ONLY_RESERVED_MOVE: 'Można przenosić tylko rezerwacje ze statusem RESERVED',
+  BOTH_IDS_REQUIRED: 'Wymagane są identyfikatory obu rezerwacji',
+  CANNOT_SWAP_SELF: 'Nie można zamienić rezerwacji z samą sobą',
+  ONE_OR_BOTH_NOT_FOUND: 'Nie znaleziono jednej lub obu rezerwacji',
+  SAME_DATE_REQUIRED: 'Można zamieniać tylko rezerwacje z tego samego dnia',
+  RESERVATION_ID_REQUIRED: 'Identyfikator rezerwacji jest wymagany',
+  POSITION_POSITIVE_INT: 'Pozycja musi być liczbą całkowitą większą lub równą 1',
+  NO_QUEUE_DATE: 'Rezerwacja nie ma przypisanej daty kolejki',
+  POSITION_INVALID: (pos: number, total: number) =>
+    `Pozycja ${pos} jest nieprawidłowa. W kolejce na ten dzień jest ${total} rezerwacji.`,
+  POSITION_TAKEN: (pos: number) =>
+    `Pozycja ${pos} jest już zajęta. Odśwież stronę i spróbuj ponownie.`,
+
+  // Batch update
+  AT_LEAST_ONE_UPDATE: 'Wymagana jest co najmniej jedna aktualizacja',
+  EACH_NEEDS_ID: 'Każda aktualizacja musi zawierać identyfikator rezerwacji',
+  INVALID_POSITION: (pos: number, id: string) =>
+    `Nieprawidłowa pozycja ${pos} dla rezerwacji ${id}`,
+  SOME_NOT_FOUND: 'Nie znaleziono jednej lub więcej rezerwacji',
+  NOT_RESERVED_STATUS: (id: string) => `Rezerwacja ${id} nie ma statusu RESERVED`,
+  NO_QUEUE_DATE_FOR: (id: string) => `Rezerwacja ${id} nie ma przypisanej daty kolejki`,
+  ALL_SAME_DATE: 'Wszystkie rezerwacje muszą być z tego samego dnia',
+  DUPLICATE_POSITIONS: 'Wykryto zduplikowane pozycje w aktualizacji',
+
+  // Promocja z kolejki
+  ONLY_RESERVED_PROMOTE: 'Można awansować tylko rezerwacje ze statusem RESERVED',
+  HALL_EVENT_DATES_REQUIRED: 'Sala, typ wydarzenia, godzina rozpoczęcia i zakończenia są wymagane',
+  INVALID_DATETIME: 'Nieprawidłowy format daty/godziny',
+  END_AFTER_START: 'Godzina zakończenia musi być po godzinie rozpoczęcia',
+  HALL_ALREADY_BOOKED: 'Sala jest już zarezerwowana w tym terminie',
+
+  // Konflikty równoległe
+  CONCURRENT_MODIFICATION: 'Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.',
+  POSITION_CONFLICT: 'Wykryto konflikt pozycji. Odśwież stronę i spróbuj ponownie.',
+} as const;
+
+// ═══════════════════════════════════════
+// SERVICE EXTRA (usługi dodatkowe)
+// ═══════════════════════════════════════
+export const SERVICE_EXTRA = {
+  CATEGORY_NOT_FOUND: 'Nie znaleziono kategorii usług',
+  CATEGORY_NAME_REQUIRED: 'Nazwa kategorii jest wymagana',
+  CATEGORY_SLUG_REQUIRED: 'Slug kategorii jest wymagany',
+  CATEGORY_SLUG_FORMAT: 'Slug może zawierać tylko małe litery, cyfry i myślniki',
+  CATEGORY_SLUG_EXISTS: 'Kategoria o tym slugu już istnieje',
+  CATEGORY_DELETED: 'Kategoria została usunięta',
+  CATEGORY_HAS_ITEMS: 'Nie można usunąć kategorii zawierającej usługi',
+
+  ITEM_NOT_FOUND: 'Nie znaleziono usługi',
+  ITEM_NAME_REQUIRED: 'Nazwa usługi jest wymagana',
+  ITEM_SLUG_REQUIRED: 'Slug usługi jest wymagany',
+  ITEM_SLUG_FORMAT: 'Slug może zawierać tylko małe litery, cyfry i myślniki',
+  ITEM_SLUG_EXISTS: 'Usługa o tym slugu już istnieje',
+  ITEM_INVALID_PRICE_TYPE: 'Nieprawidłowy typ ceny. Dozwolone: FLAT, PER_PERSON, FREE',
+  ITEM_INVALID_STATUS: 'Nieprawidłowy status. Dozwolone: ACTIVE, INACTIVE, SEASONAL',
+  ITEM_DELETED: 'Usługa została usunięta',
+
+  EXTRA_NOT_FOUND: 'Nie znaleziono usługi dodatkowej w rezerwacji',
+  EXTRA_ALREADY_ADDED: 'Ta usługa jest już dodana do rezerwacji',
+  EXTRA_EXCLUSIVE: (name: string) =>
+    `Usługa "${name}" jest ekskluzywna i nie może być łączona z innymi usługami w tej kategorii`,
+  EXTRA_REQUIRES_NOTE: (name: string) =>
+    `Usługa "${name}" wymaga dodania notatki`,
+  QUANTITY_MIN_ONE: 'Ilość musi wynosić co najmniej 1',
+  RESERVATION_NOT_FOUND: 'Nie znaleziono rezerwacji',
+} as const;
+
+// ═══════════════════════════════════════
+// USERS (zarządzanie użytkownikami)
+// ═══════════════════════════════════════
+export const USERS = {
+  NOT_FOUND: 'Nie znaleziono użytkownika',
+  EMAIL_EXISTS: 'Użytkownik z tym adresem email już istnieje',
+  EMAIL_REQUIRED: 'Adres email jest wymagany',
+  NAME_REQUIRED: 'Imię i nazwisko są wymagane',
+  CANNOT_DELETE_SELF: 'Nie można usunąć własnego konta',
+  CANNOT_DEACTIVATE_SELF: 'Nie można dezaktywować własnego konta',
+  DELETED: 'Użytkownik został usunięty',
+  ACTIVATED: 'Użytkownik został aktywowany',
+  DEACTIVATED: 'Użytkownik został dezaktywowany',
+  ROLE_UPDATED: 'Rola użytkownika została zaktualizowana',
+  PASSWORD_RESET_BY_ADMIN: 'Hasło użytkownika zostało zresetowane przez administratora',
+} as const;
+
+// ═══════════════════════════════════════
+// ROLES (role i uprawnienia)
+// ═══════════════════════════════════════
+export const ROLES = {
+  NOT_FOUND: 'Nie znaleziono roli',
+  NAME_REQUIRED: 'Nazwa roli jest wymagana',
+  SLUG_REQUIRED: 'Slug roli jest wymagany',
+  SLUG_EXISTS: 'Rola o tym slugu już istnieje',
+  CANNOT_DELETE_ASSIGNED: 'Nie można usunąć roli przypisanej do użytkowników',
+  CANNOT_DELETE_SYSTEM: 'Nie można usunąć roli systemowej',
+  DELETED: 'Rola została usunięta',
+  PERMISSION_NOT_FOUND: 'Nie znaleziono uprawnienia',
+} as const;
+
+// ═══════════════════════════════════════
+// DISCOUNT (rabaty)
+// ═══════════════════════════════════════
+export const DISCOUNT = {
+  NOT_FOUND: 'Nie znaleziono rabatu',
+  NAME_REQUIRED: 'Nazwa rabatu jest wymagana',
+  VALUE_POSITIVE: 'Wartość rabatu musi być większa od 0',
+  PERCENTAGE_MAX: 'Rabat procentowy nie może przekroczyć 100%',
+  INVALID_TYPE: 'Nieprawidłowy typ rabatu. Dozwolone: PERCENTAGE, AMOUNT',
+  REASON_TOO_SHORT: 'Powód rabatu musi mieć co najmniej 3 znaki',
+  DELETED: 'Rabat został usunięty',
+} as const;
+
+// ═══════════════════════════════════════
+// ATTACHMENT (załączniki)
+// ═══════════════════════════════════════
+export const ATTACHMENT = {
+  NOT_FOUND: 'Nie znaleziono załącznika',
+  UPLOAD_FAILED: 'Nie udało się przesłać pliku',
+  FILE_TOO_LARGE: 'Plik jest za duży. Maksymalny rozmiar to 10 MB.',
+  INVALID_TYPE: 'Niedozwolony typ pliku',
+  DELETED: 'Załącznik został usunięty',
+  DOWNLOAD_FAILED: 'Nie udało się pobrać pliku',
+  RESERVATION_NOT_FOUND: 'Nie znaleziono rezerwacji powiązanej z załącznikiem',
+} as const;
+
+// ═══════════════════════════════════════
+// PDF (etykiety w generowanym PDF)
+// ═══════════════════════════════════════
+export const PDF_LABELS = {
+  // Nagłówek
+  TITLE: 'Potwierdzenie rezerwacji',
+  RESERVATION_NUMBER: 'Numer rezerwacji',
+  CREATED_AT: 'Data utworzenia',
+  STATUS: 'Status',
+
+  // Dane klienta
+  CLIENT_DATA: 'Dane klienta',
+  FIRST_NAME: 'Imię',
+  LAST_NAME: 'Nazwisko',
+  EMAIL: 'Email',
+  PHONE: 'Telefon',
+  COMPANY: 'Firma',
+  NIP: 'NIP',
+
+  // Szczegóły rezerwacji
+  RESERVATION_DETAILS: 'Szczegóły rezerwacji',
+  HALL: 'Sala',
+  EVENT_TYPE: 'Typ wydarzenia',
+  DATE: 'Data',
+  TIME: 'Godziny',
+  ADULTS: 'Dorośli',
+  CHILDREN: 'Dzieci',
+  TODDLERS: 'Maluchy',
+  TOTAL_GUESTS: 'Łącznie gości',
+
+  // Cennik
+  PRICING: 'Cennik',
+  PRICE_PER_ADULT: 'Cena za dorosłego',
+  PRICE_PER_CHILD: 'Cena za dziecko',
+  PRICE_PER_TODDLER: 'Cena za malucha',
+  TOTAL_PRICE: 'Cena łącznie',
+  CURRENCY: 'PLN',
+
+  // Rabat
+  DISCOUNT_SECTION: 'Rabat',
+  DISCOUNT_TYPE: 'Typ rabatu',
+  DISCOUNT_PERCENTAGE: 'Procentowy',
+  DISCOUNT_AMOUNT: 'Kwotowy',
+  DISCOUNT_VALUE: 'Wartość rabatu',
+  DISCOUNT_REASON: 'Powód rabatu',
+  PRICE_BEFORE_DISCOUNT: 'Cena przed rabatem',
+  PRICE_AFTER_DISCOUNT: 'Cena po rabacie',
+
+  // Menu
+  MENU_SECTION: 'Menu',
+  MENU_PACKAGE: 'Pakiet menu',
+  MENU_TEMPLATE: 'Szablon menu',
+  MENU_OPTIONS: 'Opcje dodatkowe',
+  PACKAGE_PRICE: 'Cena pakietu',
+  OPTIONS_PRICE: 'Cena opcji',
+  TOTAL_MENU_PRICE: 'Łączna cena menu',
+
+  // Usługi dodatkowe
+  EXTRAS_SECTION: 'Usługi dodatkowe',
+  EXTRAS_NAME: 'Usługa',
+  EXTRAS_CATEGORY: 'Kategoria',
+  EXTRAS_QUANTITY: 'Ilość',
+  EXTRAS_UNIT_PRICE: 'Cena jednostkowa',
+  EXTRAS_SUBTOTAL: 'Wartość',
+  EXTRAS_TOTAL: 'Łącznie usługi dodatkowe',
+
+  // Zaliczki
+  DEPOSITS_SECTION: 'Zaliczki',
+  DEPOSIT_AMOUNT: 'Kwota zaliczki',
+  DEPOSIT_DUE_DATE: 'Termin płatności',
+  DEPOSIT_STATUS: 'Status',
+  DEPOSIT_PAID: 'Opłacona',
+  DEPOSIT_PENDING: 'Oczekująca',
+  DEPOSIT_OVERDUE: 'Przeterminowana',
+  DEPOSIT_CANCELLED: 'Anulowana',
+  DEPOSIT_PAYMENT_METHOD: 'Metoda płatności',
+
+  // Metody płatności
+  PAYMENT_CASH: 'Gotówka',
+  PAYMENT_TRANSFER: 'Przelew',
+  PAYMENT_CARD: 'Karta',
+  PAYMENT_BLIK: 'BLIK',
+  PAYMENT_OTHER: 'Inna',
+
+  // Uwagi
+  NOTES_SECTION: 'Uwagi',
+  CONFIRMATION_DEADLINE: 'Termin potwierdzenia',
+
+  // Stopka
+  FOOTER_GENERATED: 'Dokument wygenerowany automatycznie',
+  FOOTER_PAGE: 'Strona',
+  FOOTER_OF: 'z',
+} as const;
+
+// ═══════════════════════════════════════
+// REPORTS (raporty i statystyki)
+// ═══════════════════════════════════════
+export const REPORTS = {
+  DATE_RANGE_REQUIRED: 'Zakres dat jest wymagany',
+  INVALID_DATE_FORMAT: 'Nieprawidłowy format daty',
+  START_BEFORE_END: 'Data początkowa musi być przed datą końcową',
+  NO_DATA: 'Brak danych do wygenerowania raportu',
+  EXPORT_FAILED: 'Nie udało się wyeksportować raportu',
+  GENERATED: 'Raport został wygenerowany',
+
+  // Nagłówki kolumn eksportu
+  COL_RESERVATION_ID: 'ID rezerwacji',
+  COL_CLIENT_NAME: 'Klient',
+  COL_HALL: 'Sala',
+  COL_EVENT_TYPE: 'Typ wydarzenia',
+  COL_DATE: 'Data',
+  COL_TIME: 'Godziny',
+  COL_GUESTS: 'Gości',
+  COL_ADULTS: 'Dorośli',
+  COL_CHILDREN: 'Dzieci',
+  COL_TODDLERS: 'Maluchy',
+  COL_TOTAL_PRICE: 'Cena łącznie',
+  COL_EXTRAS_PRICE: 'Usługi dodatkowe',
+  COL_DEPOSIT_SUM: 'Suma zaliczek',
+  COL_STATUS: 'Status',
+  COL_CREATED_AT: 'Utworzono',
+  COL_NOTES: 'Uwagi',
+  COL_DISCOUNT: 'Rabat',
+
+  // Nazwy arkuszy
+  SHEET_RESERVATIONS: 'Rezerwacje',
+  SHEET_SUMMARY: 'Podsumowanie',
+} as const;
+
+// ═══════════════════════════════════════
+// MENU COURSE (kursy/dania w menu)
+// ═══════════════════════════════════════
+export const MENU_COURSE = {
+  NOT_FOUND: 'Nie znaleziono kursu menu',
+  NAME_REQUIRED: 'Nazwa kursu jest wymagana',
+  DELETED: 'Kurs menu został usunięty',
+} as const;
+
+// ═══════════════════════════════════════
+// DISH (dania)
+// ═══════════════════════════════════════
+export const DISH = {
+  NOT_FOUND: 'Nie znaleziono dania',
+  NAME_REQUIRED: 'Nazwa dania jest wymagana',
+  PRICE_POSITIVE: 'Cena dania musi być większa lub równa 0',
+  DELETED: 'Danie zostało usunięte',
+  CANNOT_DELETE_IN_USE: 'Nie można usunąć dania używanego w pakietach menu',
+} as const;
+
+// ═══════════════════════════════════════
+// MIDDLEWARE (komunikaty middleware)
+// ═══════════════════════════════════════
+export const MIDDLEWARE = {
+  RATE_LIMIT_EXCEEDED: 'Zbyt wiele żądań. Spróbuj ponownie za kilka minut.',
+  INVALID_JSON: 'Nieprawidłowy format JSON w treści żądania',
+  FILE_UPLOAD_ERROR: 'Błąd podczas przesyłania pliku',
 } as const;
 
 // ═══════════════════════════════════════
@@ -163,4 +475,20 @@ export const EVENT_TYPE = {
 // ═══════════════════════════════════════
 export const VALIDATION = {
   INVALID_UUID: (param: string) => `Nieprawidłowy format identyfikatora: ${param}`,
+} as const;
+
+// ═══════════════════════════════════════
+// STATUS LABELS (do wyświetlania w UI/PDF)
+// ═══════════════════════════════════════
+export const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Oczekująca',
+  CONFIRMED: 'Potwierdzona',
+  COMPLETED: 'Zakończona',
+  CANCELLED: 'Anulowana',
+  RESERVED: 'W kolejce',
+  PAID: 'Opłacona',
+  OVERDUE: 'Przeterminowana',
+  ACTIVE: 'Aktywna',
+  INACTIVE: 'Nieaktywna',
+  SEASONAL: 'Sezonowa',
 } as const;
