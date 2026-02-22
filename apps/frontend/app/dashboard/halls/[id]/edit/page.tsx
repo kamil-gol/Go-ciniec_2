@@ -132,7 +132,7 @@ export default function EditHallPage() {
             <Link href="/dashboard/halls">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr&#243;t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -141,7 +141,7 @@ export default function EditHallPage() {
                 <Building2 className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold">Edytuj Sal&#281;</h1>
+                <h1 className="text-4xl font-bold">Edytuj Salę</h1>
                 <p className="text-white/90 text-lg mt-1">Aktualizuj informacje o sali weselnej</p>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function EditHallPage() {
               <div>
                 <p className="font-semibold text-amber-800 dark:text-amber-300">Sala systemowa</p>
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  Nazwa i status aktywno&#347;ci tej sali s&#261; zablokowane, poniewa&#380; jest u&#380;ywana do logiki rezerwacji ca&#322;ego obiektu.
+                  Nazwa i status aktywności tej sali są zablokowane, ponieważ jest używana do logiki rezerwacji całego obiektu.
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function EditHallPage() {
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="np. Sala Kryszta&#322;owa"
+                    placeholder="np. Sala Kryształowa"
                     className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 disabled:opacity-70 disabled:cursor-not-allowed"
                     required
                     disabled={isWholeVenue}
@@ -200,7 +200,7 @@ export default function EditHallPage() {
                 <div className="space-y-2">
                   <Label className="text-base font-semibold flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    Pojemno&#347;&#263; *
+                    Pojemność *
                   </Label>
                   <Input
                     type="number"
@@ -220,7 +220,7 @@ export default function EditHallPage() {
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Opisz sal&#281;..."
+                  placeholder="Opisz salę..."
                   rows={4}
                   className="text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
                 />
@@ -235,8 +235,8 @@ export default function EditHallPage() {
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     {isWholeVenue
-                      ? 'Status tej sali nie mo&#380;e by&#263; zmieniony'
-                      : 'Czy sala jest dost&#281;pna do rezerwacji?'
+                      ? 'Status tej sali nie może być zmieniony'
+                      : 'Czy sala jest dostępna do rezerwacji?'
                     }
                   </p>
                 </div>
@@ -277,7 +277,7 @@ export default function EditHallPage() {
                         onClick={() => removeAmenity(idx)}
                         className="text-red-600 hover:text-red-800 font-bold"
                       >
-                        &#215;
+                        ×
                       </button>
                     </div>
                   ))}
