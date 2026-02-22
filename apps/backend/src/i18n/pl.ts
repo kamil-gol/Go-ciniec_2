@@ -101,7 +101,7 @@ export const RESERVATION = {
 } as const;
 
 // ═══════════════════════════════════════
-// MENU
+// MENU (wybór menu w rezerwacji)
 // ═══════════════════════════════════════
 export const MENU = {
   PACKAGE_NOT_FOUND: 'Nie znaleziono wybranego pakietu menu',
@@ -115,6 +115,23 @@ export const MENU = {
   INVALID_MENU_DATA: 'Nieprawidłowe dane aktualizacji menu',
   MENU_REMOVED: 'Menu zostało usunięte z rezerwacji',
   MENU_UPDATED: 'Menu zostało zaktualizowane',
+} as const;
+
+// ═══════════════════════════════════════
+// MENU CRUD (zarządzanie szablonami/pakietami/opcjami)
+// ═══════════════════════════════════════
+export const MENU_CRUD = {
+  TEMPLATE_NOT_FOUND: 'Nie znaleziono szablonu menu',
+  NO_ACTIVE_MENU: (eventTypeId: string) =>
+    `Nie znaleziono aktywnego menu dla tego typu wydarzenia (${eventTypeId})`,
+  CANNOT_DELETE_TEMPLATE: (count: number) =>
+    `Nie można usunąć szablonu menu. Jest używany w ${count} rezerwacji(ach).`,
+  PACKAGE_NOT_FOUND: 'Nie znaleziono pakietu menu',
+  CANNOT_DELETE_PACKAGE: (count: number) =>
+    `Nie można usunąć pakietu. Jest używany w ${count} rezerwacji(ach).`,
+  OPTION_NOT_FOUND: 'Nie znaleziono opcji menu',
+  CANNOT_DELETE_OPTION: (count: number) =>
+    `Nie można usunąć opcji. Jest używana w ${count} rezerwacji(ach).`,
 } as const;
 
 // ═══════════════════════════════════════
