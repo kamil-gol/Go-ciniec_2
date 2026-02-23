@@ -380,6 +380,7 @@ export default function ReservationDetailsPage() {
                 children={reservation.children || 0}
                 toddlers={reservation.toddlers || 0}
                 hallCapacity={reservation.hall?.capacity || 0}
+                isWholeVenue={reservation.hall?.isWholeVenue || false}
                 onUpdated={handleRefetch}
               />
 
