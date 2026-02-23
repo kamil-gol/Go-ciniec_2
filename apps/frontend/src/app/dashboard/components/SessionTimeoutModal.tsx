@@ -4,18 +4,16 @@
  * ⏰ SessionTimeoutModal — Ostrzeżenie o wygaśnięciu sesji (#145)
  *
  * Wyświetla modal z odliczaniem gdy użytkownik jest bezczynny.
- * - "Przedłuż sesję" → wywołuje refresh tokena
+ * - "Przedłuż sesję" → wywołuje refresh tokena (via shared api-client)
  * - "Wyloguj" → natychmiastowe wylogowanie
  * - Po upływie czasu → automatyczne wylogowanie + redirect
  */
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Clock, LogOut, RefreshCw } from 'lucide-react';
 import { useIdleTimer } from '@/hooks/use-idle-timer';
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import apiClient, { refreshAccessToken } from '@/lib/api-client';
 
 // ═════════════════════════════════════════════
 // LOCAL STORAGE KEYS
@@ -26,12 +24,13 @@ const LS_REFRESH_TOKEN = 'refreshToken';
 export default function SessionTimeoutModal() {
   const router = useRouter();
 
-  // ═══ Logout logic ═══
+  // ═══ Logout — revoke refresh token + clear storage + redirect ═══
   const handleLogout = useCallback(async () => {
     try {
       const refreshToken = localStorage.getItem(LS_REFRESH_TOKEN);
       if (refreshToken) {
-        await axios.post(`${API_URL}/auth/logout`, { refreshToken }).catch(() => {});
+        // Best-effort: notify backend to revoke token
+        await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
       }
     } finally {
       localStorage.removeItem(LS_ACCESS_TOKEN);
@@ -40,24 +39,14 @@ export default function SessionTimeoutModal() {
     }
   }, [router]);
 
-  // ═══ Refresh logic ═══
+  // ═══ Refresh — delegate to shared api-client refreshAccessToken() ═══
   const handleRefresh = useCallback(async () => {
-    try {
-      const refreshToken = localStorage.getItem(LS_REFRESH_TOKEN);
-      if (!refreshToken) {
-        handleLogout();
-        return;
-      }
+    const newToken = await refreshAccessToken();
 
-      const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-      const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-      localStorage.setItem(LS_ACCESS_TOKEN, accessToken);
-      localStorage.setItem(LS_REFRESH_TOKEN, newRefreshToken);
-
-      // Reset idle timer (handled by return value)
+    if (newToken) {
+      // Success — reset idle timer
       idleTimer.reset();
-    } catch {
+    } else {
       // Refresh failed — force logout
       handleLogout();
     }
@@ -90,7 +79,7 @@ export default function SessionTimeoutModal() {
                      dark:border-orange-800 dark:bg-gray-900"
         >
           {/* Timer ring */}
-          <div className="mx-auto mb-6 flex h-28 w-28 items-center justify-center">
+          <div className="mx-auto mb-6 flex h-28 w-28 items-center justify-center relative">
             <svg className="-rotate-90" width="112" height="112" viewBox="0 0 100 100">
               {/* Background circle */}
               <circle
