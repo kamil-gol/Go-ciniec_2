@@ -3,6 +3,7 @@
  * Business logic for reservation management with advanced features
  * Updated: Phase 1 Audit — logChange() for menu updates + cascade cancel
  * Updated: Sprint 8 — service extras creation during reservation
+ * Updated: #137 — Venue surcharge for "Cały Obiekt" bookings
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -29,6 +30,7 @@ import {
   detectReservationChanges,
   formatChangesSummary
 } from '../utils/reservation.utils';
+import { calculateVenueSurcharge } from '../utils/venue-surcharge';
 import reservationMenuService from './reservation-menu.service';
 import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE } from '../i18n/pl';
 
@@ -46,7 +48,7 @@ const RESERVATION_INCLUDE = {
 
 /**
  * Calculate extrasTotalPrice from reservation extras array.
- * Supports FLAT (basePrice \u00d7 quantity), PER_PERSON (basePrice \u00d7 quantity \u00d7 guests), FREE (0).
+ * Supports FLAT (basePrice × quantity), PER_PERSON (basePrice × quantity × guests), FREE (0).
  */
 function calculateExtrasTotalPrice(
   extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string } }>,
@@ -59,7 +61,7 @@ function calculateExtrasTotalPrice(
     if (extra.serviceItem.priceType === 'PER_PERSON') {
       total += price * qty * guests;
     } else if (extra.serviceItem.priceType === 'FREE') {
-      // free \u2014 no cost
+      // free — no cost
     } else {
       // FLAT
       total += price * qty;
@@ -155,32 +157,37 @@ export class ReservationService {
     }
     const totalWithExtras = totalPrice + extrasTotal;
 
-    // \u2550\u2550\u2550 Discount handling (Sprint 7 \u2014 applied atomically during creation) \u2550\u2550\u2550
+    // ══ #137: Venue surcharge for "Cały Obiekt" ══
+    const surcharge = calculateVenueSurcharge(hall.isWholeVenue, guests);
+    const surchargeAmount = surcharge.amount || 0;
+    const totalWithSurcharge = totalWithExtras + surchargeAmount;
+
+    // ══ Discount handling (Sprint 7 — applied atomically during creation) ══
     let discountTypeVal: string | null = null;
     let discountValueNum: number | null = null;
     let discountAmountVal: number | null = null;
     let discountReasonVal: string | null = null;
     let priceBeforeDiscountVal: number | null = null;
-    let finalTotalPrice = totalWithExtras;
+    let finalTotalPrice = totalWithSurcharge;
 
     if (data.discountType && data.discountValue && data.discountValue > 0
         && data.discountReason && data.discountReason.trim().length >= 3) {
       discountTypeVal = data.discountType;
       discountValueNum = data.discountValue;
       discountReasonVal = data.discountReason.trim();
-      priceBeforeDiscountVal = totalWithExtras;
+      priceBeforeDiscountVal = totalWithSurcharge;
 
       if (data.discountType === 'PERCENTAGE') {
-        if (data.discountValue > 100) throw new Error('Rabat procentowy nie mo\u017ce przekroczy\u0107 100%');
-        discountAmountVal = Math.round(totalWithExtras * data.discountValue / 100 * 100) / 100;
+        if (data.discountValue > 100) throw new Error('Rabat procentowy nie może przekroczyć 100%');
+        discountAmountVal = Math.round(totalWithSurcharge * data.discountValue / 100 * 100) / 100;
       } else {
         discountAmountVal = data.discountValue;
-        if (discountAmountVal > totalWithExtras) {
-          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie mo\u017ce przekroczy\u0107 ceny (${totalWithExtras} PLN)`);
+        if (discountAmountVal > totalWithSurcharge) {
+          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie może przekroczyć ceny (${totalWithSurcharge} PLN)`);
         }
       }
 
-      finalTotalPrice = Math.round((totalWithExtras - discountAmountVal) * 100) / 100;
+      finalTotalPrice = Math.round((totalWithSurcharge - discountAmountVal) * 100) / 100;
     }
 
     let notes = data.notes || '';
@@ -198,7 +205,7 @@ export class ReservationService {
 
       /* istanbul ignore next */
       if (startDT.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -219,7 +226,7 @@ export class ReservationService {
 
       /* istanbul ignore next */
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok \u2014 ceny mog\u0105 ulec zmianie (inflacja).';
+        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -255,6 +262,8 @@ export class ReservationService {
         discountAmount: discountAmountVal,
         discountReason: discountReasonVal,
         priceBeforeDiscount: priceBeforeDiscountVal,
+        venueSurcharge: surcharge.amount,
+        venueSurchargeLabel: surcharge.label,
         status: ReservationStatus.PENDING,
         notes: sanitizeString(notes),
         attachments: []
@@ -342,8 +351,8 @@ export class ReservationService {
     await this.createHistoryEntry(
       reservation.id, userId, 'CREATED', null, null, null,
       menuPackage
-        ? `Utworzono rezerwacj\u0119 z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}`
-        : `Utworzono rezerwacj\u0119${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}`
+        ? `Utworzono rezerwację z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
+        : `Utworzono rezerwację${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
     );
 
     // Audit log
@@ -353,7 +362,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: reservation.id,
       details: {
-        description: `Utworzono rezerwacj\u0119: ${client.firstName} ${client.lastName} | ${hall.name} | ${eventType.name}`,
+        description: `Utworzono rezerwację: ${client.firstName} ${client.lastName} | ${hall.name} | ${eventType.name}`,
         data: {
           hallId: data.hallId,
           clientId: data.clientId,
@@ -362,6 +371,7 @@ export class ReservationService {
           totalPrice: finalTotalPrice,
           extrasTotal: extrasTotal > 0 ? extrasTotal : undefined,
           extrasCount: data.serviceExtras?.length || 0,
+          venueSurcharge: surchargeAmount > 0 ? surchargeAmount : undefined,
           startDateTime: data.startDateTime,
           endDateTime: data.endDateTime
         }
@@ -412,16 +422,16 @@ export class ReservationService {
       if (reservation.menuSnapshot) {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
       }
-      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usuni\u0119te z rezerwacji');
+      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usunięte z rezerwacji');
 
-      // Audit log \u2014 MENU_REMOVED
+      // Audit log — MENU_REMOVED
       await logChange({
         userId,
         action: 'MENU_REMOVED',
         entityType: 'RESERVATION',
         entityId: reservationId,
         details: {
-          description: `Menu usuni\u0119te z rezerwacji: ${oldPackageName} (-${oldTotalPrice} PLN) | ${clientName}`,
+          description: `Menu usunięte z rezerwacji: ${oldPackageName} (-${oldTotalPrice} PLN) | ${clientName}`,
           removedPackage: oldPackageName,
           removedPrice: oldTotalPrice,
         },
@@ -484,9 +494,13 @@ export class ReservationService {
         await prisma.reservationMenuSnapshot.create({ data: snapshotData });
       }
 
+      // #137: Include venue surcharge in totalPrice when updating menu
+      const existingSurcharge = Number((reservation as any).venueSurcharge) || 0;
+      const totalPriceWithSurcharge = totalMenuPrice + existingSurcharge;
+
       await prisma.reservation.update({
         where: { id: reservationId },
-        data: { pricePerAdult, pricePerChild, pricePerToddler, totalPrice: totalMenuPrice, adults, children, toddlers, guests }
+        data: { pricePerAdult, pricePerChild, pricePerToddler, totalPrice: totalPriceWithSurcharge, adults, children, toddlers, guests }
       });
 
       await this.createHistoryEntry(
@@ -495,7 +509,7 @@ export class ReservationService {
         menuPackage.name, `Menu zaktualizowane na: ${menuPackage.name}`
       );
 
-      // Audit log \u2014 MENU_UPDATED
+      // Audit log — MENU_UPDATED
       await logChange({
         userId,
         action: 'MENU_UPDATED',
@@ -514,7 +528,7 @@ export class ReservationService {
         },
       });
 
-      return { message: MENU.MENU_UPDATED, totalPrice: totalMenuPrice };
+      return { message: MENU.MENU_UPDATED, totalPrice: totalPriceWithSurcharge };
     }
 
     throw new Error(MENU.INVALID_MENU_DATA);
@@ -720,6 +734,25 @@ export class ReservationService {
       if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
     }
 
+    // ══ #137: Recalculate venue surcharge when guests change ══
+    if (existingReservation.hall && (existingReservation.hall as any).isWholeVenue) {
+      const finalGuests = updateData.guests ?? existingReservation.guests;
+      const surcharge = calculateVenueSurcharge(true, finalGuests);
+      const oldSurcharge = Number((existingReservation as any).venueSurcharge) || 0;
+      const newSurcharge = surcharge.amount || 0;
+
+      updateData.venueSurcharge = surcharge.amount;
+      updateData.venueSurchargeLabel = surcharge.label;
+
+      // Adjust totalPrice to reflect surcharge change
+      if (oldSurcharge !== newSurcharge) {
+        const baseTotal = updateData.totalPrice ?? Number(existingReservation.totalPrice);
+        updateData.totalPrice = Math.round((baseTotal - oldSurcharge + newSurcharge) * 100) / 100;
+
+        console.log(`[Reservation] Venue surcharge recalculated for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
+      }
+    }
+
     if (data.confirmationDeadline) {
       const deadline = new Date(data.confirmationDeadline);
       const eventStart = finalStart || (data.startDateTime ? new Date(data.startDateTime) : null);
@@ -746,7 +779,7 @@ export class ReservationService {
 
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
-      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'r\u00f3\u017cne', 'r\u00f3\u017cne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
+      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
     }
 
     // Audit log
@@ -758,7 +791,7 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Zaktualizowano rezerwacj\u0119: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''}`,
+          description: `Zaktualizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''}`,
           changes,
           reason: data.reason
         }
@@ -821,7 +854,7 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Anulowano rezerwacj\u0119: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+          description: `Anulowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
           oldStatus: existingReservation.status,
           newStatus: data.status,
           reason: data.reason
@@ -846,7 +879,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Zmiana statusu rezerwacji: ${existingReservation.status} \u2192 ${data.status}`,
+        description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
         oldStatus: existingReservation.status,
         newStatus: data.status,
         reason: data.reason
@@ -894,7 +927,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Anulowano rezerwacj\u0119: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+        description: `Anulowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
@@ -933,7 +966,7 @@ export class ReservationService {
       entityId: id,
       details: {
         /* istanbul ignore next -- hall always included */
-        description: `Zarchiwizowano rezerwacj\u0119: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
+        description: `Zarchiwizowano rezerwację: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
@@ -961,7 +994,7 @@ export class ReservationService {
     await this.createHistoryEntry(
       id, userId, 'UNARCHIVED', 'archivedAt',
       reservation.archivedAt.toISOString(), 'null',
-      reason || 'Rezerwacja przywr\u00f3cona z archiwum'
+      reason || 'Rezerwacja przywrócona z archiwum'
     );
 
     // Audit log
@@ -972,7 +1005,7 @@ export class ReservationService {
       entityId: id,
       details: {
         /* istanbul ignore next -- hall always included */
-        description: `Przywr\u00f3cono rezerwacj\u0119 z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
+        description: `Przywrócono rezerwację z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
@@ -1017,12 +1050,12 @@ export class ReservationService {
           fieldName: 'deposit',
           oldValue: deposit.status,
           newValue: 'CANCELLED',
-          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} z\u0142 auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
+          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
         }
       });
     }
 
-    // Audit log \u2014 DEPOSIT_CANCELLED (outside transaction, fire-and-forget)
+    // Audit log — DEPOSIT_CANCELLED (outside transaction, fire-and-forget)
     /* istanbul ignore next */
     setTimeout(async () => {
       try {
@@ -1091,7 +1124,7 @@ export class ReservationService {
         /* istanbul ignore next -- hall always included */
         const hallName = (conflict as any).hall?.name || 'inna sala';
         throw new Error(
-          `Nie mo\u017cna zarezerwowa\u0107 ca\u0142ego obiektu \u2014 sala "${hallName}" ma ju\u017c rezerwacj\u0119 w tym terminie (${clientName}).`
+          `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
         );
       }
     } else {
@@ -1114,7 +1147,7 @@ export class ReservationService {
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
         throw new Error(
-          `Nie mo\u017cna zarezerwowa\u0107 tej sali \u2014 ca\u0142y obiekt jest ju\u017c zarezerwowany w tym terminie (${clientName}).`
+          `Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
         );
       }
     }
@@ -1123,7 +1156,7 @@ export class ReservationService {
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new AppError(401, 'Sesja wygas\u0142a lub u\u017cytkownik nie istnieje \u2014 wyloguj si\u0119 i zaloguj ponownie');
+      throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
     }
   }
 
