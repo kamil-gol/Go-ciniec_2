@@ -8,21 +8,20 @@
  */
 import axios, {
   AxiosError,
-  AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-// ═════════════════════════════════════════════
-// LOCAL STORAGE KEYS
-// ═════════════════════════════════════════════
-const LS_ACCESS_TOKEN = 'token';
-const LS_REFRESH_TOKEN = 'refreshToken';
+// ═══════════════════════════════════════════════
+// LOCAL STORAGE KEYS — must match existing login flow!
+// ═══════════════════════════════════════════════
+const LS_ACCESS_TOKEN = 'auth_token';      // existing login saves JWT here
+const LS_REFRESH_TOKEN = 'refreshToken';   // new — saved by updated login
 
-// ═════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // AXIOS INSTANCE
-// ═════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -31,9 +30,9 @@ export const apiClient = axios.create({
   timeout: 30000, // 30s
 });
 
-// ═════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // REQUEST INTERCEPTOR — attach Bearer token
-// ═════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Skip token attachment for auth endpoints (login, register, refresh, logout)
@@ -51,9 +50,9 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ═════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // RESPONSE INTERCEPTOR — 401 auto-refresh with queue
-// ═════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 
 let isRefreshing = false;
 let failedQueue: Array<{

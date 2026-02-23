@@ -15,11 +15,11 @@ import { Clock, LogOut, RefreshCw } from 'lucide-react';
 import { useIdleTimer } from '@/hooks/use-idle-timer';
 import apiClient, { refreshAccessToken } from '@/lib/api-client';
 
-// ═════════════════════════════════════════════
-// LOCAL STORAGE KEYS
-// ═════════════════════════════════════════════
-const LS_ACCESS_TOKEN = 'token';
-const LS_REFRESH_TOKEN = 'refreshToken';
+// ═══════════════════════════════════════════════
+// LOCAL STORAGE KEYS — must match existing login flow!
+// ═══════════════════════════════════════════════
+const LS_ACCESS_TOKEN = 'auth_token';      // existing login saves JWT here
+const LS_REFRESH_TOKEN = 'refreshToken';   // new — saved by updated login
 
 export default function SessionTimeoutModal() {
   const router = useRouter();
@@ -53,9 +53,10 @@ export default function SessionTimeoutModal() {
   }, [handleLogout]);
 
   // ═══ Idle timer ═══
+  // TODO: przed merge zmienić z powrotem na 14 * 60 * 1000
   const idleTimer = useIdleTimer({
-    idleTimeout: 14 * 60 * 1000,  // 14 min (access token = 15min)
-    warningBefore: 60 * 1000,      // 60s warning
+    idleTimeout: 30 * 1000,           // 30s (TESTING) — prod: 14 * 60 * 1000
+    warningBefore: 60 * 1000,          // 60s warning
     onIdle: handleLogout,
     enabled: typeof window !== 'undefined' && !!localStorage.getItem(LS_ACCESS_TOKEN),
   });
