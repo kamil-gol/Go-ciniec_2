@@ -8,7 +8,7 @@
 // Price Types
 // ═══════════════════════════════════════════════════════════════
 
-export type ServicePriceType = 'FLAT' | 'PER_PERSON' | 'FREE';
+export type ServicePriceType = 'FLAT' | 'PER_PERSON' | 'PER_UNIT' | 'FREE';
 
 export type ExtraStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 

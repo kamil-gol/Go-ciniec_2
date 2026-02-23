@@ -115,6 +115,14 @@ export function ServiceItemForm({
     }
   };
 
+  const getPriceLabel = () => {
+    switch (priceType) {
+      case 'PER_PERSON': return 'Cena za osobę (zł)';
+      case 'PER_UNIT': return 'Cena za sztukę (zł)';
+      default: return 'Cena (zł)';
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Category */}
@@ -174,15 +182,14 @@ export function ServiceItemForm({
             <SelectContent>
               <SelectItem value="FLAT">Kwota stała</SelectItem>
               <SelectItem value="PER_PERSON">Za osobę</SelectItem>
+              <SelectItem value="PER_UNIT">Za sztukę</SelectItem>
               <SelectItem value="FREE">Gratis</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="item-price">
-            {priceType === 'PER_PERSON' ? 'Cena za osobę (zł)' : 'Cena (zł)'}
-          </Label>
+          <Label htmlFor="item-price">{getPriceLabel()}</Label>
           <Input
             id="item-price"
             type="number"

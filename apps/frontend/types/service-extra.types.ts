@@ -1,11 +1,12 @@
 // Price & Status enums
 
-export type ServicePriceType = 'FLAT' | 'PER_PERSON' | 'FREE';
+export type ServicePriceType = 'FLAT' | 'PER_PERSON' | 'PER_UNIT' | 'FREE';
 export type ExtraStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
 export const PRICE_TYPE_LABELS: Record<ServicePriceType, string> = {
   FLAT: 'Kwota stała',
   PER_PERSON: 'Za osobę',
+  PER_UNIT: 'Za sztukę',
   FREE: 'Gratis',
 };
 
