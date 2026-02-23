@@ -1,105 +1,164 @@
-import { calculateVenueSurcharge, VenueSurchargeResult } from '../../../utils/venue-surcharge';
-import { VENUE_SURCHARGE } from '../../../i18n/pl';
+/**
+ * Unit tests for venue surcharge calculator — #137
+ *
+ * Business rules:
+ *   isWholeVenue === false → null (no surcharge)
+ *   isWholeVenue && guests < 30  → 3 000 PLN
+ *   isWholeVenue && guests >= 30 → 2 000 PLN
+ */
+
+import { calculateVenueSurcharge, VenueSurchargeResult } from '@utils/venue-surcharge';
+import { VENUE_SURCHARGE } from '@/i18n/pl';
+
+// ═══════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════
+
+const expectNull = (result: VenueSurchargeResult) => {
+  expect(result.amount).toBeNull();
+  expect(result.label).toBeNull();
+};
+
+const expectSurcharge = (result: VenueSurchargeResult, amount: number, label: string) => {
+  expect(result.amount).toBe(amount);
+  expect(result.label).toBe(label);
+};
+
+// ═══════════════════════════════════════
+// Tests
+// ═══════════════════════════════════════
 
 describe('calculateVenueSurcharge', () => {
-  // ─── Non-whole-venue (isWholeVenue = false) ───
-  describe('when hall is NOT whole venue', () => {
-    it('should return null amount and null label', () => {
-      const result = calculateVenueSurcharge(false, 25);
-      expect(result.amount).toBeNull();
-      expect(result.label).toBeNull();
+
+  // ─────────────────────────────────────
+  // Sala NIE jest "Cały Obiekt" → brak dopłaty
+  // ─────────────────────────────────────
+  describe('when hall is NOT whole venue (isWholeVenue = false)', () => {
+    it('returns null for any guest count', () => {
+      expectNull(calculateVenueSurcharge(false, 1));
+      expectNull(calculateVenueSurcharge(false, 25));
+      expectNull(calculateVenueSurcharge(false, 30));
+      expectNull(calculateVenueSurcharge(false, 100));
     });
 
-    it('should return nulls even with 0 guests', () => {
-      const result = calculateVenueSurcharge(false, 0);
-      expect(result.amount).toBeNull();
-      expect(result.label).toBeNull();
-    });
-
-    it('should return nulls even with large guest count', () => {
-      const result = calculateVenueSurcharge(false, 500);
-      expect(result.amount).toBeNull();
-      expect(result.label).toBeNull();
+    it('returns null for zero guests', () => {
+      expectNull(calculateVenueSurcharge(false, 0));
     });
   });
 
-  // ─── Whole venue, under 30 guests ───
-  describe('when whole venue with < 30 guests', () => {
-    it('should return 3000 PLN for 1 guest', () => {
-      const result = calculateVenueSurcharge(true, 1);
-      expect(result.amount).toBe(3000);
+  // ─────────────────────────────────────
+  // Whole venue, goście < 30 → 3000 PLN
+  // ─────────────────────────────────────
+  describe('when whole venue AND guests < 30', () => {
+    it('returns 3000 PLN for 1 guest', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 1),
+        3000,
+        VENUE_SURCHARGE.LABEL_UNDER_30,
+      );
     });
 
-    it('should return 3000 PLN for 25 guests', () => {
-      const result = calculateVenueSurcharge(true, 25);
-      expect(result.amount).toBe(3000);
+    it('returns 3000 PLN for 25 guests', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 25),
+        3000,
+        VENUE_SURCHARGE.LABEL_UNDER_30,
+      );
     });
 
-    it('should return 3000 PLN for 29 guests (boundary)', () => {
-      const result = calculateVenueSurcharge(true, 29);
-      expect(result.amount).toBe(3000);
+    it('returns 3000 PLN for 29 guests (boundary - 1)', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 29),
+        3000,
+        VENUE_SURCHARGE.LABEL_UNDER_30,
+      );
     });
 
-    it('should use LABEL_UNDER_30 from i18n', () => {
-      const result = calculateVenueSurcharge(true, 20);
-      expect(result.label).toBe(VENUE_SURCHARGE.LABEL_UNDER_30);
-      expect(result.label).toContain('poniżej 30');
-    });
-  });
-
-  // ─── Whole venue, 30+ guests ───
-  describe('when whole venue with >= 30 guests', () => {
-    it('should return 2000 PLN for exactly 30 guests (boundary)', () => {
-      const result = calculateVenueSurcharge(true, 30);
-      expect(result.amount).toBe(2000);
-    });
-
-    it('should return 2000 PLN for 31 guests', () => {
-      const result = calculateVenueSurcharge(true, 31);
-      expect(result.amount).toBe(2000);
-    });
-
-    it('should return 2000 PLN for 100 guests', () => {
-      const result = calculateVenueSurcharge(true, 100);
-      expect(result.amount).toBe(2000);
-    });
-
-    it('should use LABEL_30_PLUS from i18n', () => {
-      const result = calculateVenueSurcharge(true, 50);
-      expect(result.label).toBe(VENUE_SURCHARGE.LABEL_30_PLUS);
-      expect(result.label).toContain('30+');
+    it('returns 3000 PLN for 0 guests (edge case)', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 0),
+        3000,
+        VENUE_SURCHARGE.LABEL_UNDER_30,
+      );
     });
   });
 
-  // ─── Return type structure ───
-  describe('return type', () => {
-    it('should always return an object with amount and label keys', () => {
-      const resultA: VenueSurchargeResult = calculateVenueSurcharge(false, 10);
-      expect(resultA).toHaveProperty('amount');
-      expect(resultA).toHaveProperty('label');
+  // ─────────────────────────────────────
+  // Whole venue, goście >= 30 → 2000 PLN
+  // ─────────────────────────────────────
+  describe('when whole venue AND guests >= 30', () => {
+    it('returns 2000 PLN for 30 guests (boundary)', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 30),
+        2000,
+        VENUE_SURCHARGE.LABEL_30_PLUS,
+      );
+    });
 
-      const resultB: VenueSurchargeResult = calculateVenueSurcharge(true, 10);
-      expect(resultB).toHaveProperty('amount');
-      expect(resultB).toHaveProperty('label');
+    it('returns 2000 PLN for 31 guests', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 31),
+        2000,
+        VENUE_SURCHARGE.LABEL_30_PLUS,
+      );
+    });
+
+    it('returns 2000 PLN for 100 guests', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 100),
+        2000,
+        VENUE_SURCHARGE.LABEL_30_PLUS,
+      );
+    });
+
+    it('returns 2000 PLN for very large guest count (500)', () => {
+      expectSurcharge(
+        calculateVenueSurcharge(true, 500),
+        2000,
+        VENUE_SURCHARGE.LABEL_30_PLUS,
+      );
     });
   });
 
-  // ─── i18n constants consistency ───
-  describe('i18n constants', () => {
-    it('should use threshold from VENUE_SURCHARGE.THRESHOLD_GUESTS', () => {
+  // ─────────────────────────────────────
+  // Stałe i18n — spójność
+  // ─────────────────────────────────────
+  describe('i18n constants consistency', () => {
+    it('threshold is 30', () => {
       expect(VENUE_SURCHARGE.THRESHOLD_GUESTS).toBe(30);
-
-      // Just below threshold → higher surcharge
-      const below = calculateVenueSurcharge(true, VENUE_SURCHARGE.THRESHOLD_GUESTS - 1);
-      expect(below.amount).toBe(VENUE_SURCHARGE.AMOUNT_UNDER_30);
-
-      // At threshold → lower surcharge
-      const atThreshold = calculateVenueSurcharge(true, VENUE_SURCHARGE.THRESHOLD_GUESTS);
-      expect(atThreshold.amount).toBe(VENUE_SURCHARGE.AMOUNT_30_PLUS);
     });
 
-    it('AMOUNT_UNDER_30 should be greater than AMOUNT_30_PLUS (incentive for more guests)', () => {
-      expect(VENUE_SURCHARGE.AMOUNT_UNDER_30).toBeGreaterThan(VENUE_SURCHARGE.AMOUNT_30_PLUS);
+    it('amounts match business rules', () => {
+      expect(VENUE_SURCHARGE.AMOUNT_UNDER_30).toBe(3000);
+      expect(VENUE_SURCHARGE.AMOUNT_30_PLUS).toBe(2000);
+    });
+
+    it('labels are non-empty Polish strings', () => {
+      expect(VENUE_SURCHARGE.LABEL_UNDER_30).toBeTruthy();
+      expect(VENUE_SURCHARGE.LABEL_30_PLUS).toBeTruthy();
+      expect(VENUE_SURCHARGE.LABEL_UNDER_30).toContain('obiekt');
+      expect(VENUE_SURCHARGE.LABEL_30_PLUS).toContain('obiekt');
+    });
+  });
+
+  // ─────────────────────────────────────
+  // Return type contract
+  // ─────────────────────────────────────
+  describe('return type contract', () => {
+    it('always returns an object with amount and label keys', () => {
+      const result = calculateVenueSurcharge(true, 10);
+      expect(result).toHaveProperty('amount');
+      expect(result).toHaveProperty('label');
+    });
+
+    it('amount is number when surcharge applies', () => {
+      const result = calculateVenueSurcharge(true, 10);
+      expect(typeof result.amount).toBe('number');
+    });
+
+    it('amount is null when surcharge does not apply', () => {
+      const result = calculateVenueSurcharge(false, 10);
+      expect(result.amount).toBeNull();
     });
   });
 });
