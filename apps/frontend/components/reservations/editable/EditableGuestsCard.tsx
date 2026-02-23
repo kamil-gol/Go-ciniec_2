@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Input } from '@/components/ui/input'
-import { Users, Smile, Baby, AlertCircle } from 'lucide-react'
+import { Users, Smile, Baby, AlertCircle, Building2 } from 'lucide-react'
 import { EditableCard } from './EditableCard'
 import { useUpdateReservation } from '@/lib/api/reservations'
 import { toast } from 'sonner'
+import { calculateVenueSurchargePreview, formatSurchargePLN } from '@/lib/venue-surcharge'
 
 interface EditableGuestsCardProps {
   reservationId: string
@@ -14,6 +15,7 @@ interface EditableGuestsCardProps {
   children: number
   toddlers: number
   hallCapacity: number
+  isWholeVenue?: boolean
   onUpdated?: () => void
 }
 
@@ -23,6 +25,7 @@ export function EditableGuestsCard({
   children: initialChildren,
   toddlers: initialToddlers,
   hallCapacity,
+  isWholeVenue = false,
   onUpdated,
 }: EditableGuestsCardProps) {
   const [adults, setAdults] = useState(initialAdults)
@@ -40,6 +43,11 @@ export function EditableGuestsCard({
   const totalGuests = adults + children + toddlers
   const exceedsCapacity = hallCapacity > 0 && totalGuests > hallCapacity
   const isChildrenDisabled = adults === 0
+
+  const initialTotal = initialAdults + initialChildren + initialToddlers
+  const initialSurcharge = calculateVenueSurchargePreview(isWholeVenue, initialTotal)
+  const editSurcharge = calculateVenueSurchargePreview(isWholeVenue, totalGuests)
+  const surchargeChanged = initialSurcharge?.amount !== editSurcharge?.amount
 
   const handleSave = async (reason: string) => {
     if (adults + children + toddlers < 1) {
@@ -181,6 +189,44 @@ export function EditableGuestsCard({
                 <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {totalGuests}
                 </span>
+              </motion.div>
+            )}
+
+            {/* Venue surcharge live preview */}
+            {editSurcharge && totalGuests > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-3 rounded-lg border flex items-start gap-2 ${
+                  surchargeChanged
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700'
+                    : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
+                }`}
+              >
+                <Building2 className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                  surchargeChanged
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-blue-600 dark:text-blue-400'
+                }`} />
+                <div className="text-sm">
+                  <p className={`font-medium ${
+                    surchargeChanged
+                      ? 'text-amber-800 dark:text-amber-200'
+                      : 'text-blue-800 dark:text-blue-200'
+                  }`}>
+                    {editSurcharge.label}: {formatSurchargePLN(editSurcharge.amount)}
+                  </p>
+                  {surchargeChanged && initialSurcharge && (
+                    <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                      Zmiana z {formatSurchargePLN(initialSurcharge.amount)} → {formatSurchargePLN(editSurcharge.amount)}
+                    </p>
+                  )}
+                  {surchargeChanged && !initialSurcharge && (
+                    <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                      Nowa dopłata zostanie naliczona po zapisie
+                    </p>
+                  )}
+                </div>
               </motion.div>
             )}
 

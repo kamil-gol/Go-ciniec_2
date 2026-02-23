@@ -318,9 +318,11 @@ export default function ReservationDetailsPage() {
                 hallId={reservation.hall?.id || ''}
                 hallName={reservation.hall?.name || 'Brak'}
                 hallCapacity={reservation.hall?.capacity || null}
+                hallIsWholeVenue={reservation.hall?.isWholeVenue || false}
                 startDateTime={reservation.startDateTime}
                 endDateTime={reservation.endDateTime}
                 totalGuests={totalGuests}
+                currentVenueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
                 onUpdated={handleRefetch}
               />
 
@@ -380,6 +382,7 @@ export default function ReservationDetailsPage() {
                 children={reservation.children || 0}
                 toddlers={reservation.toddlers || 0}
                 hallCapacity={reservation.hall?.capacity || 0}
+                isWholeVenue={reservation.hall?.isWholeVenue || false}
                 onUpdated={handleRefetch}
               />
 
