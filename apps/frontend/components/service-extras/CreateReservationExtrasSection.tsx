@@ -30,13 +30,13 @@ interface CreateReservationExtrasSectionProps {
 // ═══ CATEGORY ICON MAP ═══
 
 const CATEGORY_ICONS: { [key: string]: string } = {
-  'muzyka': '\uD83C\uDFB5',
-  'torty-slodkosci': '\uD83C\uDF82',
-  'dekoracje': '\uD83D\uDC90',
-  'foto-video': '\uD83D\uDCF7',
-  'animacje-efekty': '\uD83C\uDF89',
-  'transport': '\uD83D\uDE97',
-  'inne': '\uD83D\uDCE6',
+  'muzyka': '🎵',
+  'torty-slodkosci': '🎂',
+  'dekoracje': '💐',
+  'foto-video': '📷',
+  'animacje-efekty': '🎉',
+  'transport': '🚗',
+  'inne': '📦',
 }
 
 // ═══ COMPONENT ═══
@@ -172,16 +172,16 @@ export function CreateReservationExtrasSection({
   const getItemPrice = useCallback((item: ServiceItem, qty: number = 1): string => {
     if (item.priceType === 'FREE') return 'Gratis'
     if (item.priceType === 'PER_PERSON') {
-      return `${formatCurrency(item.basePrice)}/os \u00d7 ${totalGuests} = ${formatCurrency(item.basePrice * totalGuests * qty)}`
+      return `${formatCurrency(item.basePrice)}/os × ${totalGuests} = ${formatCurrency(item.basePrice * totalGuests * qty)}`
     }
     if (item.priceType === 'PER_UNIT') {
       return qty > 1
-        ? `${formatCurrency(item.basePrice)}/szt. \u00d7 ${qty} szt. = ${formatCurrency(item.basePrice * qty)}`
+        ? `${formatCurrency(item.basePrice)}/szt. × ${qty} szt. = ${formatCurrency(item.basePrice * qty)}`
         : `${formatCurrency(item.basePrice)}/szt.`
     }
     // FLAT
     return qty > 1
-      ? `${formatCurrency(item.basePrice)} \u00d7 ${qty} = ${formatCurrency(item.basePrice * qty)}`
+      ? `${formatCurrency(item.basePrice)} × ${qty} = ${formatCurrency(item.basePrice * qty)}`
       : formatCurrency(item.basePrice)
   }, [totalGuests])
 
@@ -195,7 +195,7 @@ export function CreateReservationExtrasSection({
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200">
-              Us\u0142ugi dodatkowe ({selectedExtras.length})
+              Usługi dodatkowe ({selectedExtras.length})
             </span>
           </div>
           <span className="font-bold text-rose-600 dark:text-rose-400">
@@ -206,10 +206,10 @@ export function CreateReservationExtrasSection({
           {selectedExtras.map(extra => (
             <div key={extra.serviceItemId} className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
               <span>
-                {CATEGORY_ICONS[extra.serviceItem.category?.slug || ''] || '\uD83D\uDCE6'}{' '}
+                {CATEGORY_ICONS[extra.serviceItem.category?.slug || ''] || '📦'}{' '}
                 {extra.serviceItem.name}
-                {extra.quantity > 1 && ` \u00d7${extra.quantity}${extra.serviceItem.priceType === 'PER_UNIT' ? ' szt.' : ''}`}
-                {extra.note && <span className="text-neutral-400 dark:text-neutral-500 ml-1">\u2014 {extra.note}</span>}
+                {extra.quantity > 1 && ` ×${extra.quantity}${extra.serviceItem.priceType === 'PER_UNIT' ? ' szt.' : ''}`}
+                {extra.note && <span className="text-neutral-400 dark:text-neutral-500 ml-1">— {extra.note}</span>}
               </span>
               <span className="font-medium">{getItemPrice(extra.serviceItem, extra.quantity)}</span>
             </div>
@@ -234,10 +234,10 @@ export function CreateReservationExtrasSection({
             <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
           </div>
           <div className="text-left">
-            <span className="font-medium text-neutral-800 dark:text-neutral-200">Us\u0142ugi dodatkowe</span>
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</span>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {selectedExtras.length > 0
-                ? `Wybrano ${selectedExtras.length} \u2014 \u0142\u0105cznie ${formatCurrency(extrasTotal)}`
+                ? `Wybrano ${selectedExtras.length} — łącznie ${formatCurrency(extrasTotal)}`
                 : 'Opcjonalnie: DJ, fotograf, torty, dekoracje...'}
             </p>
           </div>
@@ -269,13 +269,13 @@ export function CreateReservationExtrasSection({
             {isLoading ? (
               <div className="flex items-center justify-center py-8 gap-2">
                 <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-neutral-500">\u0141adowanie katalogu us\u0142ug...</span>
+                <span className="text-sm text-neutral-500">Ładowanie katalogu usług...</span>
               </div>
             ) : categoriesArray.length === 0 ? (
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Brak dost\u0119pnych us\u0142ug dodatkowych. Skonfiguruj katalog w Ustawienia \u2192 Us\u0142ugi dodatkowe.
+                  Brak dostępnych usług dodatkowych. Skonfiguruj katalog w Ustawienia → Usługi dodatkowe.
                 </p>
               </div>
             ) : (
@@ -286,7 +286,7 @@ export function CreateReservationExtrasSection({
 
                   const isOpen = expandedCategories.has(category.id)
                   const selectedInCategory = categoryItems.filter(item => selectedMap.has(item.id))
-                  const icon = CATEGORY_ICONS[category.slug] || '\uD83D\uDCE6'
+                  const icon = CATEGORY_ICONS[category.slug] || '📦'
                   const isCategoryExclusive = category.isExclusive
 
                   return (
@@ -315,7 +315,7 @@ export function CreateReservationExtrasSection({
                           {isCategoryExclusive && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                               <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                              Wy\u0142\u0105czna
+                              Wyłączna
                             </Badge>
                           )}
                           {selectedInCategory.length > 0 && (
@@ -410,7 +410,7 @@ export function CreateReservationExtrasSection({
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                           <span className="text-xs text-neutral-500">
-                                            {item.priceType === 'PER_UNIT' ? 'Ilo\u015b\u0107 (szt.):' : 'Ilo\u015b\u0107:'}
+                                            {item.priceType === 'PER_UNIT' ? 'Ilość (szt.):' : 'Ilość:'}
                                           </span>
                                           <div className="flex items-center gap-1">
                                             <button
@@ -447,7 +447,7 @@ export function CreateReservationExtrasSection({
                                             value={selected.note}
                                             onChange={(e) => updateNote(item.id, e.target.value)}
                                             onClick={(e) => e.stopPropagation()}
-                                            placeholder={item.noteLabel || 'Dodaj notatk\u0119...'}
+                                            placeholder={item.noteLabel || 'Dodaj notatkę...'}
                                             className="flex-1 text-xs px-2 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
                                           />
                                         </div>
@@ -460,7 +460,7 @@ export function CreateReservationExtrasSection({
                                           className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-1"
                                         >
                                           <MessageSquare className="w-3 h-3" />
-                                          Dodaj notatk\u0119
+                                          Dodaj notatkę
                                         </button>
                                       )}
                                     </motion.div>
@@ -485,7 +485,7 @@ export function CreateReservationExtrasSection({
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                       <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                        {selectedExtras.length} {selectedExtras.length === 1 ? 'us\u0142uga' : selectedExtras.length < 5 ? 'us\u0142ugi' : 'us\u0142ug'}
+                        {selectedExtras.length} {selectedExtras.length === 1 ? 'usługa' : selectedExtras.length < 5 ? 'usługi' : 'usług'}
                       </span>
                     </div>
                     <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
