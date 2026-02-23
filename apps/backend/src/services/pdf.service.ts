@@ -533,9 +533,10 @@ export class PDFService {
       );
     }
 
-    // FIX: Calculate extras total using quantity * unitPrice for accuracy
+    // #139: Use totalPrice from DB (correctly calculated by calculateTotalPrice)
+    // instead of quantity × unitPrice (which was wrong for PER_PERSON — missed adults+children multiplier)
     const extrasTotalCalc = (reservation.reservationExtras || [])
-      .reduce((sum, e) => sum + (Number(e.quantity) * Number(e.unitPrice)), 0);
+      .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     if (extrasTotalCalc > 0) {
       doc.text(`Usługi dodatkowe: ${this.formatCurrency(extrasTotalCalc)}`);
     }
@@ -961,6 +962,16 @@ export class PDFService {
     doc.text(`Razem menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`);
   }
 
+  /**
+   * #139: Per-type formatting for extras in PDF
+   * - PER_UNIT:   "Krzesło chiavari — 80 szt. × 15,00 zł = 1 200,00 zł"
+   * - PER_PERSON: "Obsługa kelnerska — 30,00 zł/os. = 1 500,00 zł"
+   * - FLAT:       "DJ — 2 000,00 zł"  (or "2× DJ — 1 000,00 zł = 2 000,00 zł")
+   * - FREE:       "Parking — Gratis"
+   *
+   * Uses item.totalPrice from DB (correctly calculated by calculateTotalPrice)
+   * instead of quantity × unitPrice (which was wrong for PER_PERSON).
+   */
   private addExtrasSection(
     doc: PDFKit.PDFDocument,
     extras: ReservationExtraForPDF[],
@@ -994,17 +1005,35 @@ export class PDFService {
       for (const item of items) {
         doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
 
-        const priceLabel = item.priceType === 'PER_PERSON' ? '/os.' : '/szt.';
         const statusLabel = item.status !== 'CONFIRMED' && item.status !== 'ACTIVE'
           ? ` [${item.status}]`
           : '';
 
-        // FIX: Calculate item total from quantity * unitPrice for accuracy
-        const itemTotal = Number(item.quantity) * Number(item.unitPrice);
-        doc.text(
-          `  ${item.quantity}× ${item.serviceItem.name} @ ${this.formatCurrency(item.unitPrice)}${priceLabel} = ${this.formatCurrency(itemTotal)}${statusLabel}`,
-          { indent: 15 }
-        );
+        // #139: Use totalPrice from DB — correctly handles all price types
+        const itemTotal = Number(item.totalPrice);
+        let lineText: string;
+
+        switch (item.priceType) {
+          case 'FREE':
+            lineText = `  ${item.serviceItem.name} — Gratis${statusLabel}`;
+            break;
+          case 'PER_PERSON':
+            lineText = `  ${item.serviceItem.name} — ${this.formatCurrency(item.unitPrice)}/os. = ${this.formatCurrency(itemTotal)}${statusLabel}`;
+            break;
+          case 'PER_UNIT':
+            lineText = `  ${item.serviceItem.name} — ${item.quantity} szt. × ${this.formatCurrency(item.unitPrice)} = ${this.formatCurrency(itemTotal)}${statusLabel}`;
+            break;
+          case 'FLAT':
+          default:
+            if (item.quantity > 1) {
+              lineText = `  ${item.quantity}× ${item.serviceItem.name} — ${this.formatCurrency(item.unitPrice)} = ${this.formatCurrency(itemTotal)}${statusLabel}`;
+            } else {
+              lineText = `  ${item.serviceItem.name} — ${this.formatCurrency(itemTotal)}${statusLabel}`;
+            }
+            break;
+        }
+
+        doc.text(lineText, { indent: 15 });
 
         if (item.note) {
           doc.fontSize(8).fillColor('#777777');

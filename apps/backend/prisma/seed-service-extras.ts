@@ -1,9 +1,11 @@
 /**
  * Seed: Service Extras — example categories & items
- * Run: npx ts-node apps/backend/prisma/seed-service-extras.ts
+ * Run: npx tsx prisma/seed-service-extras.ts
  *
  * Creates demo catalog for development/testing.
  * Safe to re-run — uses upsert by slug.
+ *
+ * Updated: #139 — added PER_UNIT examples (Wyposażenie category)
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -23,7 +25,6 @@ interface SeedCategory {
     description?: string;
     requiresNote?: boolean;
     noteLabel?: string;
-    isExclusive?: boolean;
   }>;
 }
 
@@ -35,7 +36,7 @@ const CATEGORIES: SeedCategory[] = [
     color: '#8B5CF6',
     items: [
       { name: 'DJ', priceType: 'FLAT', basePrice: 2500, icon: '🎧', description: 'Profesjonalny DJ z nagłośnieniem i oświetleniem' },
-      { name: 'Zespół muzyczny', priceType: 'FLAT', basePrice: 5000, icon: '🎸', description: 'Zespół na żywo (4-5 osób)', isExclusive: false },
+      { name: 'Zespół muzyczny', priceType: 'FLAT', basePrice: 5000, icon: '🎸', description: 'Zespół na żywo (4-5 osób)' },
       { name: 'Oprawa muzyczna ceremonii', priceType: 'FLAT', basePrice: 1200, icon: '🎻', description: 'Skrzypce / kwartet smyczkowy na ceremonię' },
       { name: 'Karaoke', priceType: 'FLAT', basePrice: 800, icon: '🎤' },
     ],
@@ -59,11 +60,11 @@ const CATEGORIES: SeedCategory[] = [
     icon: '💐',
     color: '#10B981',
     items: [
-      { name: 'Dekoracja sali — standard', priceType: 'FLAT', basePrice: 1500, icon: '🌸', isExclusive: true },
-      { name: 'Dekoracja sali — premium', priceType: 'FLAT', basePrice: 3500, icon: '🌺', isExclusive: true },
+      { name: 'Dekoracja sali — standard', priceType: 'FLAT', basePrice: 1500, icon: '🌸' },
+      { name: 'Dekoracja sali — premium', priceType: 'FLAT', basePrice: 3500, icon: '🌺' },
       { name: 'Dekoracja stołów (kwiaty)', priceType: 'FLAT', basePrice: 800, icon: '🌷' },
       { name: 'Ścianka do zdjęć', priceType: 'FLAT', basePrice: 600, icon: '📸' },
-      { name: 'Balony helowe', priceType: 'FLAT', basePrice: 350, icon: '🎈', requiresNote: true, noteLabel: 'Kolor / ilość' },
+      { name: 'Balony helowe', priceType: 'PER_UNIT', basePrice: 5, icon: '🎈', description: 'Balon helowy z wstążką' },
       { name: 'Napis LED', priceType: 'FLAT', basePrice: 400, icon: '✨', requiresNote: true, noteLabel: 'Treść napisu' },
     ],
   },
@@ -103,6 +104,20 @@ const CATEGORIES: SeedCategory[] = [
       { name: 'Bryczka / dorożka', priceType: 'FLAT', basePrice: 600, icon: '🐴' },
     ],
   },
+  // #139: New category with PER_UNIT items for testing quantity-based pricing
+  {
+    slug: 'wyposazenie',
+    name: 'Wyposażenie dodatkowe',
+    icon: '🪑',
+    color: '#0EA5E9',
+    items: [
+      { name: 'Krzesło chiavari', priceType: 'PER_UNIT', basePrice: 15, icon: '🪑', description: 'Eleganckie krzesło na ceremonię / bankiet' },
+      { name: 'Stolik koktajlowy', priceType: 'PER_UNIT', basePrice: 50, icon: '🍸', description: 'Wysoki stolik na drink bar / recepcję' },
+      { name: 'Hussen na krzesła', priceType: 'PER_UNIT', basePrice: 8, icon: '🎀', description: 'Białe pokrowce na krzesła z kokardą' },
+      { name: 'Lampion LED', priceType: 'PER_UNIT', basePrice: 12, icon: '🏮', description: 'Lampion dekoracyjny LED (ciepłe światło)' },
+      { name: 'Namiot / parasol ogrodowy', priceType: 'PER_UNIT', basePrice: 80, icon: '⛱️', description: 'Parasol ogrodowy na ceremonię plenerową' },
+    ],
+  },
   {
     slug: 'inne',
     name: 'Inne usługi',
@@ -113,6 +128,7 @@ const CATEGORIES: SeedCategory[] = [
       { name: 'Barista / kawa specialty', priceType: 'PER_PERSON', basePrice: 15, icon: '☕' },
       { name: 'Ochrona', priceType: 'FLAT', basePrice: 500, icon: '🛡️', description: 'Ochroniarz na wydarzenie' },
       { name: 'Szatnia', priceType: 'FREE', basePrice: 0, icon: '🧥' },
+      { name: 'Parking', priceType: 'FREE', basePrice: 0, icon: '🅿️', description: 'Parking dla gości (bezpłatny)' },
       { name: 'Usługa niestandardowa', priceType: 'FLAT', basePrice: 0, icon: '📝', requiresNote: true, noteLabel: 'Opis usługi i ustalona cena' },
     ],
   },
@@ -162,7 +178,6 @@ async function seedServiceExtras() {
             description: item.description || null,
             requiresNote: item.requiresNote || false,
             noteLabel: item.noteLabel || null,
-            isExclusive: item.isExclusive || false,
             displayOrder: itemIdx,
           },
         });
@@ -177,7 +192,6 @@ async function seedServiceExtras() {
             description: item.description || null,
             requiresNote: item.requiresNote || false,
             noteLabel: item.noteLabel || null,
-            isExclusive: item.isExclusive || false,
             displayOrder: itemIdx,
             isActive: true,
           },
