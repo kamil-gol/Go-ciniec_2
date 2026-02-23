@@ -196,6 +196,12 @@ export interface ReservationResponse {
   pricePerToddler: string; // 0-3 years
   totalPrice: string;
   
+  // ═══════════════════════════════════════════════════════════════
+  // VENUE SURCHARGE (whole venue booking)
+  // ═══════════════════════════════════════════════════════════════
+  venueSurcharge: string | null;
+  venueSurchargeLabel: string | null;
+  
   // Status
   status: string;
   confirmationDeadline: Date | null;
@@ -221,6 +227,7 @@ export interface ReservationResponse {
     capacity: number;
     pricePerPerson: string;
     pricePerChild: string | null;
+    isWholeVenue: boolean;
   };
   client?: {
     id: string;
