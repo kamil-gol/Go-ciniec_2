@@ -104,7 +104,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
 
   const handleAddExtra = async () => {
     if (!selectedItemId) {
-      toast({ title: 'Wybierz pozycj\u0119', variant: 'destructive' });
+      toast({ title: 'Wybierz pozycję', variant: 'destructive' });
       return;
     }
 
@@ -122,12 +122,12 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         note: note.trim() || undefined,
         customPrice: customPrice ? parseFloat(customPrice) : undefined,
       });
-      toast({ title: 'Us\u0142uga dodana', description: selectedItem?.name });
+      toast({ title: 'Usługa dodana', description: selectedItem?.name });
       resetAddForm();
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 doda\u0107',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się dodać',
         variant: 'destructive',
       });
     }
@@ -136,11 +136,11 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   const handleRemoveExtra = async (extraId: string, name: string) => {
     try {
       await removeExtra.mutateAsync(extraId);
-      toast({ title: 'Us\u0142uga usuni\u0119ta', description: name });
+      toast({ title: 'Usługa usunięta', description: name });
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się usunąć',
         variant: 'destructive',
       });
     }
@@ -151,8 +151,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
       await updateExtra.mutateAsync({ extraId, data: { status } });
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się zaktualizować',
         variant: 'destructive',
       });
     }
@@ -176,13 +176,13 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     if (pt === 'FREE') return 'Gratis';
 
     if (pt === 'PER_UNIT' && qty > 1) {
-      return `${unit} z\u0142/szt. \u00d7 ${qty} szt. = ${total} z\u0142`;
+      return `${unit} zł/szt. × ${qty} szt. = ${total} zł`;
     }
     if (pt === 'PER_PERSON' && qty > 1) {
-      return `${unit} z\u0142/os. \u00d7 ${qty} = ${total} z\u0142`;
+      return `${unit} zł/os. × ${qty} = ${total} zł`;
     }
 
-    return `${total} z\u0142`;
+    return `${total} zł`;
   };
 
   return (
@@ -197,13 +197,13 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   <Gift className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">Us\u0142ugi dodatkowe</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold">Usługi dodatkowe</h2>
                   {extras.length > 0 && (
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
                       {totalPrice > 0 && (
                         <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          \u2014 {totalPrice.toLocaleString('pl-PL')} z\u0142
+                          — {totalPrice.toLocaleString('pl-PL')} zł
                         </span>
                       )}
                     </p>
@@ -230,8 +230,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             ) : extras.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
-                <p>Brak us\u0142ug dodatkowych</p>
-                <p className="text-xs mt-1">Kliknij \u201eDodaj\u201d aby przypisa\u0107 tort, muzyk\u0119, dekoracje...</p>
+                <p>Brak usług dodatkowych</p>
+                <p className="text-xs mt-1">Kliknij „Dodaj” aby przypisać tort, muzykę, dekoracje...</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -250,7 +250,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-lg flex-shrink-0">
-                          {extra.serviceItem?.icon || '\uD83D\uDCE6'}
+                          {extra.serviceItem?.icon || '📦'}
                         </span>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
@@ -265,7 +265,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                           <div className="text-xs text-muted-foreground mt-0.5">
                             <span className="font-semibold">{formatExtraPriceDetails(extra)}</span>
                             {extra.note && (
-                              <span className="ml-2 italic">\u2014 {extra.note}</span>
+                              <span className="ml-2 italic">— {extra.note}</span>
                             )}
                           </div>
                         </div>
@@ -309,9 +309,9 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
 
                 {/* Total */}
                 <div className="flex items-center justify-between p-3 mt-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl text-white shadow-lg">
-                  <span className="text-sm font-bold">Razem us\u0142ugi dodatkowe</span>
+                  <span className="text-sm font-bold">Razem usługi dodatkowe</span>
                   <span className="text-lg font-bold">
-                    {totalPrice.toLocaleString('pl-PL')} z\u0142
+                    {totalPrice.toLocaleString('pl-PL')} zł
                   </span>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
               <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                 <Gift className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
-              Dodaj us\u0142ug\u0119 dodatkow\u0105
+              Dodaj usługę dodatkową
             </DialogTitle>
           </DialogHeader>
 
@@ -344,7 +344,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Wybierz kategori\u0119" />
+                  <SelectValue placeholder="Wybierz kategorię" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories?.map((cat) => (
@@ -362,21 +362,21 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 <Label className="text-sm font-semibold">Pozycja</Label>
                 <Select value={selectedItemId} onValueChange={setSelectedItemId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Wybierz pozycj\u0119" />
+                    <SelectValue placeholder="Wybierz pozycję" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableItems.map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         <div className="flex items-center gap-2">
-                          <span>{item.icon || '\uD83D\uDCE6'}</span>
+                          <span>{item.icon || '📦'}</span>
                           <span>{item.name}</span>
                           {item.priceType !== 'FREE' && (
                             <span className="text-muted-foreground">
-                              \u2014 {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142{priceSuffix(item.priceType)}
+                              — {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
                             </span>
                           )}
                           {item.priceType === 'FREE' && (
-                            <span className="text-green-600">\u2014 Gratis</span>
+                            <span className="text-green-600">— Gratis</span>
                           )}
                         </div>
                       </SelectItem>
@@ -399,7 +399,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   onChange={(e) => setNote(e.target.value)}
                   placeholder={
                     selectedItem.requiresNote
-                      ? 'Podaj szczeg\u00f3\u0142y (wymagane)'
+                      ? 'Podaj szczegóły (wymagane)'
                       : 'Opcjonalne uwagi'
                   }
                   rows={2}
@@ -411,7 +411,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             {selectedItem && selectedItem.priceType !== 'FREE' && (
               <div className="space-y-1.5">
                 <Label htmlFor="extra-price" className="text-sm font-semibold">
-                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztuk\u0119' : ''} (opcjonalnie)
+                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztukę' : ''} (opcjonalnie)
                 </Label>
                 <Input
                   id="extra-price"
@@ -420,10 +420,10 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   step="0.01"
                   value={customPrice}
                   onChange={(e) => setCustomPrice(e.target.value)}
-                  placeholder={`Domy\u015blna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} z\u0142${priceSuffix(selectedItem.priceType)}`}
+                  placeholder={`Domyślna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} zł${priceSuffix(selectedItem.priceType)}`}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Pozostaw puste, aby u\u017cy\u0107 ceny domy\u015blnej
+                  Pozostaw puste, aby użyć ceny domyślnej
                 </p>
               </div>
             )}
@@ -441,7 +441,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 {assignExtra.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Dodaj us\u0142ug\u0119
+                Dodaj usługę
               </Button>
             </div>
           </div>
