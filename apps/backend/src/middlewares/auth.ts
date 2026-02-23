@@ -1,6 +1,7 @@
 /**
  * Auth Middleware — JWT verification, token generation & validation
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
+ * 🔄 #145: Unified JWT_EXPIRES_IN env var (was JWT_EXPIRY), default 15m
  *
  * Exports:
  *  - generateToken(payload)  — create JWT
@@ -19,7 +20,7 @@ import { AUTH } from '../i18n/pl';
 
 // Fail-fast: crash on startup if JWT_SECRET is missing in production
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 
 /* istanbul ignore next */
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -32,7 +33,7 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
 /* istanbul ignore next */
 if (!JWT_SECRET) {
   logger.warn(
-    'JWT_SECRET is not set \u2014 using insecure dev fallback. ' +
+    'JWT_SECRET is not set — using insecure dev fallback. ' +
     'DO NOT deploy to production without setting JWT_SECRET.'
   );
 }
@@ -45,7 +46,7 @@ const secret = JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
  */
 export function generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
   return jwt.sign(payload, secret, {
-    expiresIn: JWT_EXPIRY as any,
+    expiresIn: JWT_EXPIRES_IN as any,
   });
 }
 

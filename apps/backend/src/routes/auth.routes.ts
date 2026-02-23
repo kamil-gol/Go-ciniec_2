@@ -15,8 +15,26 @@ router.post('/register', authController.register);
  * POST /api/auth/login
  * Login user
  * Body: { email, password }
+ * Returns: { token, accessToken, refreshToken, user }
  */
 router.post('/login', authController.login);
+
+/**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token (rotation)
+ * Body: { refreshToken }
+ * Returns: { accessToken, refreshToken }
+ * Public — no auth required (access token may be expired)
+ */
+router.post('/refresh', authController.refresh);
+
+/**
+ * POST /api/auth/logout
+ * Revoke refresh token
+ * Body: { refreshToken }
+ * Public — no auth required
+ */
+router.post('/logout', authController.logout);
 
 /**
  * GET /api/auth/me
