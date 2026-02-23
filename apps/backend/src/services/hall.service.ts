@@ -2,6 +2,7 @@
  * Hall Service
  * Business logic for hall management
  * UPDATED: isWholeVenue protection — cannot delete/deactivate "Cały Obiekt"
+ * UPDATED: allowWithWholeVenue — halls that can coexist with whole venue bookings
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
@@ -74,6 +75,7 @@ export class HallService {
         images: data.images || [],
         isActive: data.isActive !== undefined ? data.isActive : true,
         isWholeVenue: data.isWholeVenue || false,
+        allowWithWholeVenue: data.allowWithWholeVenue || false,
       },
     });
 
@@ -89,6 +91,7 @@ export class HallService {
           name: hall.name,
           capacity: hall.capacity,
           isWholeVenue: hall.isWholeVenue,
+          allowWithWholeVenue: hall.allowWithWholeVenue,
           isActive: hall.isActive
         }
       }
@@ -122,6 +125,7 @@ export class HallService {
     if (data.amenities !== undefined) updateData.amenities = data.amenities;
     if (data.images !== undefined) updateData.images = data.images;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.allowWithWholeVenue !== undefined) updateData.allowWithWholeVenue = data.allowWithWholeVenue;
 
     const hall = await prisma.hall.update({
       where: { id },

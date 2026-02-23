@@ -4,6 +4,7 @@
  * Updated: Phase 1 Audit — logChange() for menu updates + cascade cancel
  * Updated: Sprint 8 — service extras creation during reservation
  * Updated: #137 — Venue surcharge for "Cały Obiekt" bookings
+ * Updated: allowWithWholeVenue — Strzecha Tył/Przód/Góra coexist with whole venue
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -1125,6 +1126,14 @@ export class ReservationService {
     return pendingDeposits.length;
   }
 
+  /**
+   * Check whole-venue conflict with allowWithWholeVenue support.
+   *
+   * Logic:
+   * - Booking "Cały Obiekt" → blocks only halls WITHOUT allowWithWholeVenue
+   * - Booking a regular hall WITH allowWithWholeVenue → no conflict with whole venue
+   * - Booking a regular hall WITHOUT allowWithWholeVenue → blocked by whole venue reservation
+   */
   private async checkWholeVenueConflict(
     hallId: string,
     startDateTime: Date,
@@ -1150,10 +1159,12 @@ export class ReservationService {
     }
 
     if (hall.isWholeVenue) {
+      // Booking "Cały Obiekt" → block only halls WITHOUT allowWithWholeVenue
       const conflict = await prisma.reservation.findFirst({
         where: {
           ...baseWhere,
           hallId: { not: hallId },
+          hall: { allowWithWholeVenue: false },
         },
         include: {
           hall: { select: { name: true } },
@@ -1173,6 +1184,10 @@ export class ReservationService {
         );
       }
     } else {
+      // Booking a regular hall → check if "Cały Obiekt" is reserved
+      // Halls with allowWithWholeVenue can coexist — skip conflict check
+      if (hall.allowWithWholeVenue) return;
+
       const wholeVenueHall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
       if (!wholeVenueHall) return;
 

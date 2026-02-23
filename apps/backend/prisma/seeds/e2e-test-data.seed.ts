@@ -40,12 +40,13 @@ export async function seedE2ETestData() {
   // 1. HALLS
   console.log('\n\ud83c\udfdb\ufe0f  Seeding Halls...');
   const halls = [
-    { name: 'Sala Kryszta\u0142owa', capacity: 200, description: 'Elegancka sala z kryszta\u0142owymi \u017cyrandolami', isActive: true },
-    { name: 'Sala Taneczna', capacity: 150, description: 'Sala z du\u017cym parkietem tanecznym', isActive: true },
-    { name: 'Sala Z\u0142ota', capacity: 100, description: 'Kameralna sala w z\u0142otych tonach', isActive: true },
-    { name: 'Ca\u0142y obiekt', capacity: 500, description: 'Wynajem ca\u0142ego obiektu', isActive: true },
-    { name: 'Strzecha 1', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
-    { name: 'Strzecha 2', capacity: 80, description: 'Sala w stylu ludowym', isActive: true },
+    { name: 'Sala Kryształowa', capacity: 200, description: 'Elegancka sala z kryształowymi żyrandolami', isActive: true },
+    { name: 'Sala Taneczna', capacity: 150, description: 'Sala z dużym parkietem tanecznym', isActive: true },
+    { name: 'Sala Złota', capacity: 100, description: 'Kameralna sala w złotych tonach', isActive: true },
+    { name: 'Cały obiekt', capacity: 500, description: 'Wynajem całego obiektu', isActive: true, isWholeVenue: true },
+    { name: 'Strzecha Tył', capacity: 80, description: 'Sala w stylu ludowym — tył', isActive: true, allowWithWholeVenue: true },
+    { name: 'Strzecha Przód', capacity: 80, description: 'Sala w stylu ludowym — przód', isActive: true, allowWithWholeVenue: true },
+    { name: 'Góra', capacity: 60, description: 'Sala na górze obiektu', isActive: true, allowWithWholeVenue: true },
   ];
 
   const createdHalls = await Promise.all(
@@ -69,7 +70,7 @@ export async function seedE2ETestData() {
       email: 'admin@gosciniecrodzinny.pl',
       password: await bcrypt.hash(adminPassword, 12),
       firstName: 'Admin',
-      lastName: 'G\u0142\u00f3wny',
+      lastName: 'Główny',
       legacyRole: 'ADMIN',
       roleId: adminRole?.id ?? null,
       isActive: true,
@@ -114,7 +115,7 @@ export async function seedE2ETestData() {
       lastName: 'Kowalski',
       email: 'marek.kowalski@example.com',
       phone: '+48501234567',
-      notes: 'Sta\u0142y klient, preferencje: menu wegetaria\u0144skie',
+      notes: 'Stały klient, preferencje: menu wegetariańskie',
     },
     {
       firstName: 'Anna',
@@ -125,20 +126,20 @@ export async function seedE2ETestData() {
     },
     {
       firstName: 'Piotr',
-      lastName: 'Wi\u015bniewski',
+      lastName: 'Wiśniewski',
       email: 'piotr.wisniewski@example.com',
       phone: '+48503456789',
       notes: null,
     },
     {
       firstName: 'Katarzyna',
-      lastName: 'D\u0105browska',
+      lastName: 'Dąbrowska',
       email: 'katarzyna.dabrowska@example.com',
       phone: '+48504567890',
       notes: 'Komunia syna w maju',
     },
     {
-      firstName: 'Micha\u0142',
+      firstName: 'Michał',
       lastName: 'Lewandowski',
       email: 'michal.lewandowski@example.com',
       phone: '+48505678901',
@@ -180,7 +181,7 @@ export async function seedE2ETestData() {
       status: 'RESERVED',
       reservationQueueDate: new Date('2026-06-20'),
       reservationQueuePosition: 1,
-      notes: 'Wesele Marek i Agnieszka - preferencje: muzyka na \u017cywo',
+      notes: 'Wesele Marek i Agnieszka - preferencje: muzyka na żywo',
     },
     {
       clientId: createdClients[1].id,
@@ -220,7 +221,7 @@ export async function seedE2ETestData() {
       status: 'RESERVED',
       reservationQueueDate: new Date('2026-05-10'),
       reservationQueuePosition: 1,
-      notes: 'Komunia \u015awi\u0119ta Kacpra',
+      notes: 'Komunia Święta Kacpra',
     },
     {
       clientId: createdClients[3].id,
@@ -279,7 +280,7 @@ export async function seedE2ETestData() {
       pricePerToddler: 50,
       totalPrice: 14750,
       status: 'COMPLETED',
-      notes: 'Wesele Magda i \u0141ukasz - zako\u0144czone',
+      notes: 'Wesele Magda i Łukasz - zakończone',
     },
   ];
 
