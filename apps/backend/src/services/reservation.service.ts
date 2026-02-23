@@ -32,7 +32,7 @@ import {
 } from '../utils/reservation.utils';
 import { calculateVenueSurcharge } from '../utils/venue-surcharge';
 import reservationMenuService from './reservation-menu.service';
-import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE } from '../i18n/pl';
+import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE, VENUE_SURCHARGE } from '../i18n/pl';
 
 function sanitizeString(value: any): string | null {
   if (value === null || value === undefined || value === '') return null;
@@ -673,6 +673,19 @@ export class ReservationService {
 
     const updateData: any = {};
 
+    // ══ #137: Hall change — validate new hall + recalculate surcharge ══
+    let effectiveHall = existingReservation.hall;
+    const hallChanged = data.hallId !== undefined && data.hallId !== existingReservation.hallId;
+
+    if (hallChanged) {
+      const newHall = await prisma.hall.findUnique({ where: { id: data.hallId! } });
+      if (!newHall) throw new Error(HALL.NOT_FOUND);
+      if (!newHall.isActive) throw new Error(HALL.NOT_ACTIVE);
+
+      effectiveHall = newHall as any;
+      updateData.hallId = data.hallId;
+    }
+
     if (data.startDateTime) {
       const newStart = new Date(data.startDateTime);
       if (newStart < new Date()) throw new Error(RESERVATION.DATE_IN_FUTURE);
@@ -680,15 +693,17 @@ export class ReservationService {
     }
     if (data.endDateTime) updateData.endDateTime = new Date(data.endDateTime);
 
+    const effectiveHallId = (data.hallId ?? existingReservation.hallId)!;
     const finalStart = data.startDateTime ? new Date(data.startDateTime) : existingReservation.startDateTime;
     const finalEnd = data.endDateTime ? new Date(data.endDateTime) : existingReservation.endDateTime;
     
     if (finalStart && finalEnd && finalStart >= finalEnd) throw new Error(RESERVATION.END_AFTER_START);
 
-    if ((data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
-      const hasOverlap = await this.checkDateTimeOverlap(existingReservation.hallId!, finalStart, finalEnd, id);
+    // Re-check overlap if hall or time changed
+    if ((hallChanged || data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
+      const hasOverlap = await this.checkDateTimeOverlap(effectiveHallId, finalStart, finalEnd, id);
       if (hasOverlap) throw new Error(RESERVATION.TIME_SLOT_BOOKED);
-      await this.checkWholeVenueConflict(existingReservation.hallId!, finalStart, finalEnd, id);
+      await this.checkWholeVenueConflict(effectiveHallId, finalStart, finalEnd, id);
     }
 
     if (data.adults !== undefined) updateData.adults = data.adults;
@@ -702,9 +717,12 @@ export class ReservationService {
 
     if (guestsChanged) {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
-      if (existingReservation.hall && updateData.guests > existingReservation.hall.capacity) {
-        throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(updateData.guests, existingReservation.hall.capacity));
-      }
+    }
+
+    // Validate capacity against effective hall (new or existing)
+    const finalGuests = updateData.guests ?? existingReservation.guests;
+    if (effectiveHall && finalGuests > effectiveHall.capacity) {
+      throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, effectiveHall.capacity));
     }
 
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
@@ -734,11 +752,13 @@ export class ReservationService {
       if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
     }
 
-    // ══ #137: Recalculate venue surcharge when guests change ══
-    if (existingReservation.hall && (existingReservation.hall as any).isWholeVenue) {
-      const finalGuests = updateData.guests ?? existingReservation.guests;
-      const surcharge = calculateVenueSurcharge(true, finalGuests);
-      const oldSurcharge = Number((existingReservation as any).venueSurcharge) || 0;
+    // ══ #137: Recalculate venue surcharge — handles hall change + guest change ══
+    const oldIsWholeVenue = existingReservation.hall ? (existingReservation.hall as any).isWholeVenue : false;
+    const newIsWholeVenue = effectiveHall ? (effectiveHall as any).isWholeVenue : false;
+    const oldSurcharge = Number((existingReservation as any).venueSurcharge) || 0;
+
+    if (hallChanged || guestsChanged || oldIsWholeVenue || newIsWholeVenue) {
+      const surcharge = calculateVenueSurcharge(newIsWholeVenue, finalGuests);
       const newSurcharge = surcharge.amount || 0;
 
       updateData.venueSurcharge = surcharge.amount;
@@ -749,7 +769,32 @@ export class ReservationService {
         const baseTotal = updateData.totalPrice ?? Number(existingReservation.totalPrice);
         updateData.totalPrice = Math.round((baseTotal - oldSurcharge + newSurcharge) * 100) / 100;
 
-        console.log(`[Reservation] Venue surcharge recalculated for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
+        // Audit-friendly log message for different scenarios
+        if (!oldIsWholeVenue && newIsWholeVenue) {
+          // Scenario A: Normal hall → Whole venue (surcharge applied)
+          console.log(`[Reservation] Venue surcharge APPLIED for ${id}: +${newSurcharge} PLN (hall changed to whole venue)`);
+          await this.createHistoryEntry(
+            id, userId, 'SURCHARGE_APPLIED', 'venueSurcharge',
+            '0', String(newSurcharge),
+            VENUE_SURCHARGE.AUDIT_APPLIED(newSurcharge, finalGuests)
+          );
+        } else if (oldIsWholeVenue && !newIsWholeVenue) {
+          // Scenario B: Whole venue → Normal hall (surcharge removed)
+          console.log(`[Reservation] Venue surcharge REMOVED for ${id}: -${oldSurcharge} PLN (hall changed to normal)`);
+          await this.createHistoryEntry(
+            id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge',
+            String(oldSurcharge), '0',
+            VENUE_SURCHARGE.AUDIT_REMOVED
+          );
+        } else {
+          // Scenario C: Still whole venue, but surcharge amount changed (guests threshold crossed)
+          console.log(`[Reservation] Venue surcharge RECALCULATED for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
+          await this.createHistoryEntry(
+            id, userId, 'SURCHARGE_RECALCULATED', 'venueSurcharge',
+            String(oldSurcharge), String(newSurcharge),
+            VENUE_SURCHARGE.AUDIT_RECALCULATED(oldSurcharge, newSurcharge, finalGuests)
+          );
+        }
       }
     }
 
