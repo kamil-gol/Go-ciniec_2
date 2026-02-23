@@ -401,6 +401,8 @@ export default function ReservationDetailsPage() {
                 discountAmount={reservation.discountAmount}
                 discountReason={reservation.discountReason}
                 priceBeforeDiscount={reservation.priceBeforeDiscount}
+                venueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
+                venueSurchargeLabel={reservation.venueSurchargeLabel}
               />
 
               {/* Quick Actions */}

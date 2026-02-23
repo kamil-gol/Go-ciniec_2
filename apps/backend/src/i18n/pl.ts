@@ -101,6 +101,22 @@ export const RESERVATION = {
 } as const;
 
 // ═══════════════════════════════════════
+// VENUE SURCHARGE (dopłata za cały obiekt)
+// ═══════════════════════════════════════
+export const VENUE_SURCHARGE = {
+  LABEL_UNDER_30: 'Dopłata za cały obiekt (poniżej 30 gości)',
+  LABEL_30_PLUS: 'Dopłata za cały obiekt (30+ gości)',
+  AMOUNT_UNDER_30: 3000,
+  AMOUNT_30_PLUS: 2000,
+  THRESHOLD_GUESTS: 30,
+  AUDIT_APPLIED: (amount: number, guests: number) =>
+    `Naliczono dopłatę za cały obiekt: ${amount} PLN (${guests} gości)`,
+  AUDIT_REMOVED: 'Usunięto dopłatę za cały obiekt (zmiana sali)',
+  AUDIT_RECALCULATED: (oldAmount: number, newAmount: number, guests: number) =>
+    `Przeliczono dopłatę za cały obiekt: ${oldAmount} → ${newAmount} PLN (${guests} gości)`,
+} as const;
+
+// ═══════════════════════════════════════
 // MENU (wybór menu w rezerwacji)
 // ═══════════════════════════════════════
 export const MENU = {
@@ -375,6 +391,9 @@ export const PDF_LABELS = {
   DISCOUNT_REASON: 'Powód rabatu',
   PRICE_BEFORE_DISCOUNT: 'Cena przed rabatem',
   PRICE_AFTER_DISCOUNT: 'Cena po rabacie',
+  VENUE_SURCHARGE_SECTION: 'Dopłata za cały obiekt',
+  VENUE_SURCHARGE_AMOUNT: 'Kwota dopłaty',
+  VENUE_SURCHARGE_LABEL: 'Opis dopłaty',
   MENU_SECTION: 'Menu',
   MENU_PACKAGE: 'Pakiet menu',
   MENU_TEMPLATE: 'Szablon menu',
@@ -432,6 +451,7 @@ export const REPORTS = {
   COL_TODDLERS: 'Maluchy',
   COL_TOTAL_PRICE: 'Cena łącznie',
   COL_EXTRAS_PRICE: 'Usługi dodatkowe',
+  COL_VENUE_SURCHARGE: 'Dopłata za obiekt',
   COL_DEPOSIT_SUM: 'Suma zaliczek',
   COL_STATUS: 'Status',
   COL_CREATED_AT: 'Utworzono',

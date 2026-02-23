@@ -300,7 +300,19 @@ export function CreateReservationForm({
     return total
   }, [selectedExtras, totalGuests])
 
-  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal
+  // #137: Venue surcharge for "Cały Obiekt"
+  const venueSurcharge = useMemo(() => {
+    if (!selectedHall || !(selectedHall as any).isWholeVenue) {
+      return { amount: 0, label: null as string | null }
+    }
+    if (totalGuests < 30) {
+      return { amount: 3000, label: 'Dopłata za cały obiekt (poniżej 30 gości)' }
+    }
+    return { amount: 2000, label: 'Dopłata za cały obiekt (30+ gości)' }
+  }, [selectedHall, totalGuests])
+  const venueSurchargeAmount = venueSurcharge.amount
+
+  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal + venueSurchargeAmount
 
   const discountAmount = useMemo(() => {
     if (!discountEnabled || discountValue <= 0 || totalWithExtras <= 0) return 0
@@ -603,6 +615,15 @@ export function CreateReservationForm({
               <span className="font-medium">+{formatCurrency(extrasTotal)}</span>
             </div>
           )}
+          {venueSurchargeAmount > 0 && (
+            <div className="flex justify-between text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 -mx-4 px-4 py-2">
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5" />
+                {venueSurcharge.label}
+              </span>
+              <span className="font-medium">+{formatCurrency(venueSurchargeAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between pt-2 border-t border-primary-300 dark:border-primary-700">
             <span className="font-semibold text-neutral-900 dark:text-neutral-100">Cena całkowita:</span>
             <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formatCurrency(totalWithExtras)}</span>
@@ -618,7 +639,7 @@ export function CreateReservationForm({
         </div>
       </motion.div>
     )
-  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage, venueSurchargeAmount, venueSurcharge])
 
   // ═════════════════════════════════════════════════════════
   // STEP RENDERERS
@@ -711,6 +732,16 @@ export function CreateReservationForm({
 
       {selectedHallCapacity > 0 && (
         <p className="-mt-4 text-sm text-neutral-600 dark:text-neutral-400">Maksymalna pojemność: {selectedHallCapacity} osób</p>
+      )}
+
+      {selectedHall && (selectedHall as any).isWholeVenue && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="-mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-2">
+          <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Cały obiekt</p>
+            <p className="text-xs text-blue-700 dark:text-blue-300">Do tej rezerwacji zostanie doliczona dopłata za wynajem całego obiektu (2 000 – 3 000 PLN w zależności od liczby gości).</p>
+          </div>
+        </motion.div>
       )}
 
       {defaultHallId && watchAll.hallId === defaultHallId && (
@@ -1152,6 +1183,12 @@ export function CreateReservationForm({
           {durationHours > 0 && (
             <p className={`text-xs ${durationHours > STANDARD_HOURS ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-neutral-500 dark:text-neutral-400'}`}>
               {durationHours}h{durationHours > STANDARD_HOURS && ` (w tym ${extraHours}h dodatkowych)`}
+            </p>
+          )}
+          {venueSurchargeAmount > 0 && (
+            <p className="text-xs text-blue-700 dark:text-blue-300 font-medium flex items-center gap-1 mt-1">
+              <Building2 className="w-3 h-3" />
+              {venueSurcharge.label}: +{formatCurrency(venueSurchargeAmount)}
             </p>
           )}
         </div>

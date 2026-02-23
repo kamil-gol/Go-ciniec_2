@@ -13,6 +13,8 @@
  *   SMTP_USER=noreply@gosciniec.pl
  *   SMTP_PASS=your-app-password
  *   SMTP_FROM="Gościniec <noreply@gosciniec.pl>"
+ *
+ * Updated: #137 — Venue surcharge in reservation confirmation email
  */
 
 import nodemailer from 'nodemailer';
@@ -78,6 +80,9 @@ export interface ReservationConfirmationData {
     note?: string;
   }>;
   extrasTotalPrice?: string;
+  // #137: Venue surcharge for "Cały Obiekt" bookings
+  venueSurcharge?: string;
+  venueSurchargeLabel?: string;
   depositAmount?: string;
   depositDueDate?: string;
   notes?: string;
@@ -201,6 +206,7 @@ const emailService = {
 
   /**
    * Send reservation confirmation with extras list
+   * Updated: #137 — includes venue surcharge row
    */
   async sendReservationConfirmation(to: string, data: ReservationConfirmationData, pdfBuffer?: Buffer): Promise<boolean> {
     const company = await getCompanyInfo();
@@ -290,9 +296,15 @@ const emailService = {
             <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.menuPackageName}</td>
           </tr>
           ` : ''}
+          ${data.venueSurcharge ? `
+          <tr>
+            <td style="padding:10px 16px;background:#fff7ed;border:1px solid #fed7aa;font-weight:600;color:#ea580c;">Dopłata za obiekt</td>
+            <td style="padding:10px 16px;border:1px solid #fed7aa;"><strong style="color:#ea580c;">${data.venueSurcharge} zł</strong> <span style="font-size:13px;color:#6b7280;">(${data.venueSurchargeLabel || 'Dopłata za cały obiekt'})</span></td>
+          </tr>
+          ` : ''}
           <tr>
             <td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Kwota</td>
-            <td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.totalPrice} zł</strong>${data.extrasTotalPrice ? ` <span style="color:#7c3aed;font-size:13px;">(w tym extras: ${data.extrasTotalPrice} zł)</span>` : ''}</td>
+            <td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.totalPrice} zł</strong>${data.extrasTotalPrice ? ` <span style="color:#7c3aed;font-size:13px;">(w tym extras: ${data.extrasTotalPrice} zł)</span>` : ''}${data.venueSurcharge ? ` <span style="color:#ea580c;font-size:13px;">(w tym dopłata: ${data.venueSurcharge} zł)</span>` : ''}</td>
           </tr>
           ${depositHtml}
         </table>

@@ -229,6 +229,12 @@ model Reservation {
   discountAmount      Decimal?  @db.Decimal(10, 2)
   discountReason      String?   @db.Text
   priceBeforeDiscount Decimal?  @db.Decimal(10, 2)
+
+  // ═══ Whole Venue Surcharge ═══
+  // Automatic surcharge when booking the whole venue (hall.isWholeVenue = true)
+  // < 30 guests → 3000 PLN, >= 30 guests → 2000 PLN
+  venueSurcharge      Decimal?  @db.Decimal(10, 2)
+  venueSurchargeLabel String?   @db.VarChar(255)
   
   status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime?
