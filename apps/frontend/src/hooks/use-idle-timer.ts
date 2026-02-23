@@ -7,6 +7,10 @@
  *
  * Nasłuchuje: mousemove, keydown, scroll, touchstart, click
  * Throttle: 1s (nie bombarduje state'a przy każdym pikselu myszy)
+ *
+ * UWAGA: Podczas fazy warning (modal widoczny) eventy aktywności
+ * są IGNOROWANE. Tylko jawne wywołanie reset() (przycisk "Przedłuż sesję")
+ * zamyka modal i restartuje timer.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -57,6 +61,7 @@ export function useIdleTimer({
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const pausedRef = useRef(false);
+  const isWarningRef = useRef(false); // ref mirror for event handler
   const onWarningRef = useRef(onWarning);
   const onIdleRef = useRef(onIdle);
 
@@ -90,6 +95,7 @@ export function useIdleTimer({
 
     setIsIdle(false);
     setIsWarning(false);
+    isWarningRef.current = false;
     setRemainingSeconds(null);
 
     const warningDelay = idleTimeout - warningBefore;
@@ -99,6 +105,7 @@ export function useIdleTimer({
       if (pausedRef.current) return;
 
       setIsWarning(true);
+      isWarningRef.current = true;
       onWarningRef.current?.();
 
       // Start countdown
@@ -122,6 +129,7 @@ export function useIdleTimer({
 
       setIsIdle(true);
       setIsWarning(false);
+      isWarningRef.current = false;
       setRemainingSeconds(0);
       onIdleRef.current?.();
     }, idleTimeout);
@@ -149,10 +157,12 @@ export function useIdleTimer({
       return;
     }
 
-    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
-
     const handleActivity = () => {
       if (pausedRef.current) return;
+
+      // 🔒 CRITICAL: Do NOT reset during warning phase!
+      // User must click "Przedłuż sesję" (which calls reset())
+      if (isWarningRef.current) return;
 
       // Throttle: ignore events within THROTTLE_MS of last reset
       const now = Date.now();
@@ -177,7 +187,6 @@ export function useIdleTimer({
         document.removeEventListener(event, handleActivity);
       });
       clearAllTimers();
-      if (throttleTimer) clearTimeout(throttleTimer);
     };
   }, [enabled, isIdle, startTimers, clearAllTimers]);
 
