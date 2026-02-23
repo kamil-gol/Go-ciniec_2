@@ -25,6 +25,15 @@ export const AUTH = {
 } as const;
 
 // ═══════════════════════════════════════
+// REFRESH TOKEN (#145 — session management)
+// ═══════════════════════════════════════
+export const REFRESH_TOKEN = {
+  INVALID: 'Token odświeżania jest nieprawidłowy',
+  EXPIRED: 'Token odświeżania wygasł — zaloguj się ponownie',
+  REVOKED: 'Token odświeżania został unieważniony — zaloguj się ponownie',
+} as const;
+
+// ═══════════════════════════════════════
 // PASSWORD RESET
 // ═══════════════════════════════════════
 export const PASSWORD_RESET = {
