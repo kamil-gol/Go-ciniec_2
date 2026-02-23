@@ -267,7 +267,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
               <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
                 <p>Brak usług dodatkowych</p>
-                <p className="text-xs mt-1">Kliknij „Dodaj" aby przypisać tort, muzykę, dekoracje...</p>
+                <p className="text-xs mt-1">Kliknij „Dodaj” aby przypisać tort, muzykę, dekoracje...</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -311,28 +311,24 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                         {/* Inline quantity controls */}
                         {canEditQuantity && (
-                          <div className="flex items-center gap-1 mr-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-6 w-6"
+                          <div className="inline-flex items-center rounded-md border border-neutral-200 dark:border-neutral-700 mr-1">
+                            <button
+                              className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-l-md disabled:opacity-40"
                               onClick={() => handleQuantityChange(extra.id, extra.quantity - 1)}
                               disabled={extra.quantity <= 1 || updateExtra.isPending}
                             >
                               <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center text-xs font-semibold tabular-nums">
+                            </button>
+                            <span className="w-7 text-center text-xs font-semibold tabular-nums border-x border-neutral-200 dark:border-neutral-700 leading-7">
                               {extra.quantity}
                             </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-6 w-6"
+                            <button
+                              className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-r-md disabled:opacity-40"
                               onClick={() => handleQuantityChange(extra.id, extra.quantity + 1)}
                               disabled={updateExtra.isPending}
                             >
                               <Plus className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </div>
                         )}
 
@@ -457,43 +453,45 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
               </div>
             )}
 
-            {/* Quantity input - show for non-FREE items */}
+            {/* Quantity stepper - show for non-FREE items */}
             {selectedItem && selectedItem.priceType !== 'FREE' && (
               <div className="space-y-1.5">
-                <Label htmlFor="extra-quantity" className="text-sm font-semibold">
+                <Label className="text-sm font-semibold">
                   {quantityLabel(selectedItem.priceType)}
                 </Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    id="extra-quantity"
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 text-center font-semibold"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex items-center rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                    <button
+                      type="button"
+                      className="h-10 w-10 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val) && val >= 1) setQuantity(val);
+                        else if (e.target.value === '') setQuantity(1);
+                      }}
+                      className="h-10 w-14 text-center font-semibold text-sm border-x border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:bg-violet-50 dark:focus:bg-violet-900/20 tabular-nums"
+                    />
+                    <button
+                      type="button"
+                      className="h-10 w-10 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
                   {quantity > 1 && (
-                    <span className="text-sm text-muted-foreground ml-2">
-                      = <span className="font-semibold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
+                    <span className="text-sm text-muted-foreground">
+                      = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
                     </span>
                   )}
                 </div>
