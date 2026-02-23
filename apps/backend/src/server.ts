@@ -34,22 +34,28 @@ validateEnv();
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
+const isProduction = process.env.NODE_ENV === 'production';
 
 /**
  * CORS Allowed Origins
+ *
+ * Production: only CORS_ORIGIN from env
+ * Development: CORS_ORIGIN + localhost defaults for convenience
  */
-const defaultDevOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-];
+const devOrigins = isProduction
+  ? []
+  : [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+    ];
 
 const envOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
   : [];
 
-const allowedOrigins = [...new Set([...defaultDevOrigins, ...envOrigins])].filter(Boolean);
+const allowedOrigins = [...new Set([...devOrigins, ...envOrigins])].filter(Boolean);
 
 /**
  * Security Middleware
