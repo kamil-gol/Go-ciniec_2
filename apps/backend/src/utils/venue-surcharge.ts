@@ -1,24 +1,40 @@
 /**
- * Venue Surcharge Calculator — "Cały Obiekt" pricing logic
+ * 🏠 Venue Surcharge Calculator — #137
+ *
+ * Pure function that determines the surcharge amount when booking
+ * the whole venue ("Cały Obiekt").
  *
  * Business rules:
- * - Hall with isWholeVenue = true gets automatic surcharge
- * - guests < 30 → 3000 PLN surcharge
- * - guests >= 30 → 2000 PLN surcharge
- * - Regular halls → no surcharge
+ * - hall.isWholeVenue === false → no surcharge (null)
+ * - guests < 30  → 3 000 PLN surcharge
+ * - guests >= 30 → 2 000 PLN surcharge
  *
- * Surcharge is included in totalPrice BEFORE discount calculation.
- * priceBeforeDiscount = menuPrice + extras + surcharge
- * totalPrice = priceBeforeDiscount - discountAmount
+ * The surcharge is added ON TOP of menu + extras, BEFORE discount.
+ * Final price formula:
+ *   totalPrice = (menuPrice + extrasTotal + venueSurcharge) - discountAmount
  */
 
+import { VENUE_SURCHARGE } from '../i18n/pl';
+
 export interface VenueSurchargeResult {
+  /** Surcharge amount in PLN, or null if not applicable */
   amount: number | null;
+  /** Human-readable label for display/PDF, or null */
   label: string | null;
 }
 
 /**
- * Calculate venue surcharge for "Cały Obiekt" (whole venue) bookings.
+ * Calculate venue surcharge based on hall type and guest count.
+ *
+ * @param isWholeVenue - Whether the hall represents the entire venue
+ * @param guests - Total number of guests (adults + children + toddlers)
+ * @returns Surcharge amount and label, or nulls if not applicable
+ *
+ * @example
+ * calculateVenueSurcharge(true, 25)  // { amount: 3000, label: "Dopłata za cały obiekt (poniżej 30 gości)" }
+ * calculateVenueSurcharge(true, 30)  // { amount: 2000, label: "Dopłata za cały obiekt (30+ gości)" }
+ * calculateVenueSurcharge(true, 50)  // { amount: 2000, label: "Dopłata za cały obiekt (30+ gości)" }
+ * calculateVenueSurcharge(false, 25) // { amount: null, label: null }
  */
 export function calculateVenueSurcharge(
   isWholeVenue: boolean,
@@ -28,24 +44,15 @@ export function calculateVenueSurcharge(
     return { amount: null, label: null };
   }
 
-  if (guests < 30) {
+  if (guests < VENUE_SURCHARGE.THRESHOLD_GUESTS) {
     return {
-      amount: 3000,
-      label: 'Dopłata za cały obiekt (poniżej 30 gości)',
+      amount: VENUE_SURCHARGE.AMOUNT_UNDER_30,
+      label: VENUE_SURCHARGE.LABEL_UNDER_30,
     };
   }
 
   return {
-    amount: 2000,
-    label: 'Dopłata za cały obiekt (30+ gości)',
+    amount: VENUE_SURCHARGE.AMOUNT_30_PLUS,
+    label: VENUE_SURCHARGE.LABEL_30_PLUS,
   };
-}
-
-/**
- * Get surcharge amount as number (0 if no surcharge).
- * Convenience wrapper for price calculations.
- */
-export function getSurchargeAmount(isWholeVenue: boolean, guests: number): number {
-  const result = calculateVenueSurcharge(isWholeVenue, guests);
-  return result.amount || 0;
 }
