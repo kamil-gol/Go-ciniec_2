@@ -15,6 +15,7 @@
  *   SMTP_FROM="Gościniec <noreply@gosciniec.pl>"
  *
  * Updated: #137 — Venue surcharge in reservation confirmation email
+ * Updated: #139 — PER_UNIT label + per-type formatting in extras table
  */
 
 import nodemailer from 'nodemailer';
@@ -76,6 +77,7 @@ export interface ReservationConfirmationData {
     categoryName: string;
     quantity: number;
     price: string;
+    totalPrice: string;
     priceType: string;
     note?: string;
   }>;
@@ -158,6 +160,34 @@ const getTransporter = () => {
 };
 
 // ═══════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════
+
+/**
+ * #139: Format extras price cell per price type
+ * - PER_UNIT:   "80 szt. × 15 zł = 1 200 zł"
+ * - PER_PERSON: "30 zł/os."
+ * - FLAT:       "2 000 zł" or "2 × 1 000 zł = 2 000 zł"
+ * - FREE:       "Gratis"
+ */
+function formatExtraPriceCell(e: { quantity: number; price: string; totalPrice: string; priceType: string }): string {
+  switch (e.priceType) {
+    case 'FREE':
+      return 'Gratis';
+    case 'PER_UNIT':
+      return `${e.quantity} szt. × ${e.price} zł = <strong>${e.totalPrice} zł</strong>`;
+    case 'PER_PERSON':
+      return `${e.price} zł/os. = <strong>${e.totalPrice} zł</strong>`;
+    case 'FLAT':
+    default:
+      if (e.quantity > 1) {
+        return `${e.quantity} × ${e.price} zł = <strong>${e.totalPrice} zł</strong>`;
+      }
+      return `<strong>${e.totalPrice} zł</strong>`;
+  }
+}
+
+// ═══════════════════════════════════════════
 // Email Service
 // ═══════════════════════════════════════════
 
@@ -207,6 +237,7 @@ const emailService = {
   /**
    * Send reservation confirmation with extras list
    * Updated: #137 — includes venue surcharge row
+   * Updated: #139 — PER_UNIT label + per-type price formatting
    */
   async sendReservationConfirmation(to: string, data: ReservationConfirmationData, pdfBuffer?: Buffer): Promise<boolean> {
     const company = await getCompanyInfo();
@@ -215,9 +246,11 @@ const emailService = {
     // Build extras section HTML
     let extrasHtml = '';
     if (data.extras && data.extras.length > 0) {
+      // #139: Added PER_UNIT label
       const priceTypeLabels: Record<string, string> = {
         FLAT: 'ryczałt',
         PER_PERSON: 'za osobę',
+        PER_UNIT: 'za sztukę',
         FREE: 'gratis',
       };
 
@@ -225,8 +258,7 @@ const emailService = {
         <tr>
           <td style="padding:8px 12px;border:1px solid #e9ecef;">${e.name}</td>
           <td style="padding:8px 12px;border:1px solid #e9ecef;color:#6b7280;font-size:13px;">${e.categoryName}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;text-align:center;">${e.quantity}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;">${e.priceType === 'FREE' ? 'Gratis' : `${e.price} zł`}</td>
+          <td style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;">${formatExtraPriceCell(e)}</td>
           <td style="padding:8px 12px;border:1px solid #e9ecef;font-size:13px;color:#6b7280;">${priceTypeLabels[e.priceType] || e.priceType}${e.note ? ` · ${e.note}` : ''}</td>
         </tr>
       `).join('');
@@ -238,7 +270,6 @@ const emailService = {
             <tr style="background:#f5f3ff;">
               <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Usługa</th>
               <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Kategoria</th>
-              <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:center;font-weight:600;color:#7c3aed;">Ilość</th>
               <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;font-weight:600;color:#7c3aed;">Cena</th>
               <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Info</th>
             </tr>
