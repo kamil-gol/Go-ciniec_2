@@ -80,6 +80,9 @@ interface ReservationPDFData {
   pricePerToddler: number;
   totalPrice: number;
   extrasTotalPrice?: number;
+  // #137: Venue surcharge fields
+  venueSurcharge?: number | null;
+  venueSurchargeLabel?: string | null;
   status: string;
   notes?: string;
   birthdayAge?: number;
@@ -537,9 +540,16 @@ export class PDFService {
       doc.text(`Usługi dodatkowe: ${this.formatCurrency(extrasTotalCalc)}`);
     }
 
+    // ══ #137: Venue surcharge line ══
+    const venueSurchargeAmount = Number(reservation.venueSurcharge) || 0;
+    if (venueSurchargeAmount > 0) {
+      const surchargeLabel = reservation.venueSurchargeLabel || 'Dopłata za cały obiekt';
+      doc.text(`${surchargeLabel}: ${this.formatCurrency(venueSurchargeAmount)}`);
+    }
+
     doc.moveDown(0.5);
     doc.fontSize(13).font(this.getBoldFont());
-    // FIX: Include extras in displayed RAZEM total
+    // FIX: Include extras + venue surcharge in displayed RAZEM total
     const displayTotal = Number(reservation.totalPrice) + extrasTotalCalc;
     doc.text(`RAZEM: ${this.formatCurrency(displayTotal)}`);
 

@@ -24,6 +24,7 @@ export interface Hall {
   pricePerChild?: number // New field - optional price per child
   description?: string
   isActive: boolean
+  isWholeVenue: boolean // Whether this hall represents the entire venue
   createdAt: string
   updatedAt: string
 }
@@ -178,6 +179,10 @@ export interface Reservation {
   pricePerChild: number // Price per child (4-12)
   pricePerToddler: number // 🆕 NEW! Price per toddler (0-3)
   totalPrice: number
+  
+  // Venue Surcharge (whole venue booking)
+  venueSurcharge?: number | null      // Surcharge amount for whole venue
+  venueSurchargeLabel?: string | null  // Label explaining the surcharge (e.g. "Dopłata za cały obiekt (< 30 os.)")
   
   // Discount fields (Sprint 7) 🆕 NEW!
   discountType?: string | null       // 'PERCENTAGE' | 'FIXED' | null
