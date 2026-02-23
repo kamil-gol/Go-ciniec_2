@@ -21,7 +21,7 @@ services:
       POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env file}
       POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
     ports:
-      - '${DB_PORT:-5432}:5432'
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -36,7 +36,7 @@ services:
     image: redis:7-alpine
     container_name: rezerwacje-cache
     ports:
-      - '${REDIS_PORT:-6379}:6379'
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
     volumes:
       - redis_data:/data
     networks:
