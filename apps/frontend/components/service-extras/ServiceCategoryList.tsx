@@ -64,16 +64,27 @@ import type {
 // Constants
 
 const PRICE_LABELS: Record<string, string> = {
-  FLAT: 'Kwota stała',
-  PER_PERSON: 'Za osobę',
+  FLAT: 'Kwota sta\u0142a',
+  PER_PERSON: 'Za osob\u0119',
+  PER_UNIT: 'Za sztuk\u0119',
   FREE: 'Gratis',
 };
 
 const PRICE_TYPE_STYLES: Record<string, string> = {
   FLAT: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   PER_PERSON: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
+  PER_UNIT: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
   FREE: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
 };
+
+/** Helper: price suffix based on priceType */
+function priceSuffix(priceType: string): string {
+  switch (priceType) {
+    case 'PER_PERSON': return '/os.';
+    case 'PER_UNIT': return '/szt.';
+    default: return '';
+  }
+}
 
 // Props
 
@@ -131,7 +142,7 @@ export function ServiceCategoryList({
     try {
       await reorderCategories.mutateAsync(newOrder);
     } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić kolejności', variant: 'destructive' });
+      toast({ title: 'B\u0142\u0105d', description: 'Nie uda\u0142o si\u0119 zmieni\u0107 kolejno\u015bci', variant: 'destructive' });
     }
   };
 
@@ -140,15 +151,15 @@ export function ServiceCategoryList({
     try {
       if (deleteTarget.type === 'category') {
         await deleteCategory.mutateAsync(deleteTarget.id);
-        toast({ title: 'Kategoria usunięta', description: deleteTarget.name });
+        toast({ title: 'Kategoria usuni\u0119ta', description: deleteTarget.name });
       } else {
         await deleteItem.mutateAsync(deleteTarget.id);
-        toast({ title: 'Pozycja usunięta', description: deleteTarget.name });
+        toast({ title: 'Pozycja usuni\u0119ta', description: deleteTarget.name });
       }
     } catch (error: any) {
       toast({
-        title: 'Błąd usuwania',
-        description: error?.response?.data?.message || 'Nie można usunąć',
+        title: 'B\u0142\u0105d usuwania',
+        description: error?.response?.data?.message || 'Nie mo\u017cna usun\u0105\u0107',
         variant: 'destructive',
       });
     }
@@ -184,7 +195,7 @@ export function ServiceCategoryList({
                 <div className="text-right flex-shrink-0">
                   {item.priceType !== 'FREE' ? (
                     <p className="font-bold text-sm tabular-nums">
-                      {Number(item.basePrice).toLocaleString('pl-PL')} zł
+                      {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142{priceSuffix(item.priceType)}
                     </p>
                   ) : (
                     <p className="text-sm text-emerald-600 font-medium">Gratis</p>
@@ -193,7 +204,7 @@ export function ServiceCategoryList({
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${PRICE_TYPE_STYLES[item.priceType]}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${PRICE_TYPE_STYLES[item.priceType] || ''}`}>
                     {PRICE_LABELS[item.priceType]}
                   </span>
                   {!item.isActive && <Badge variant="secondary" className="text-[10px]">Nieaktywna</Badge>}
@@ -248,15 +259,15 @@ export function ServiceCategoryList({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${PRICE_TYPE_STYLES[item.priceType]}`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${PRICE_TYPE_STYLES[item.priceType] || ''}`}>
                       {PRICE_LABELS[item.priceType]}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
                     {item.priceType !== 'FREE' ? (
                       <span className="font-semibold tabular-nums text-sm">
-                        {Number(item.basePrice).toLocaleString('pl-PL')} zł
-                        {item.priceType === 'PER_PERSON' && <span className="text-xs text-neutral-400 ml-0.5">/os.</span>}
+                        {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142
+                        {priceSuffix(item.priceType) && <span className="text-xs text-neutral-400 ml-0.5">{priceSuffix(item.priceType)}</span>}
                       </span>
                     ) : (
                       <span className="text-sm text-neutral-300 dark:text-neutral-600">\u2014</span>
@@ -449,7 +460,7 @@ function SortableCategoryRows({
                 {category.isExclusive && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
                     <Sparkles className="h-2.5 w-2.5" />
-                    Wyłączna
+                    Wy\u0142\u0105czna
                   </span>
                 )}
               </div>
@@ -518,13 +529,12 @@ function SortableCategoryRows({
                   )}
                 </div>
                 <p className="text-xs text-neutral-500">
-                  <span className={`inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium border mr-1 ${PRICE_TYPE_STYLES[item.priceType]}`}>
+                  <span className={`inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium border mr-1 ${PRICE_TYPE_STYLES[item.priceType] || ''}`}>
                     {PRICE_LABELS[item.priceType]}
                   </span>
                   {item.priceType !== 'FREE' && (
                     <span className="font-medium tabular-nums">
-                      {Number(item.basePrice).toLocaleString('pl-PL')} zł
-                      {item.priceType === 'PER_PERSON' && '/os.'}
+                      {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142{priceSuffix(item.priceType)}
                     </span>
                   )}
                 </p>
@@ -563,7 +573,7 @@ function SortableCategoryRows({
               <Package className="h-4 w-4" />
               Brak pozycji
               <Button variant="link" size="sm" className="h-auto p-0 text-purple-600" onClick={() => onCreateItem(category.id)}>
-                \u2014 dodaj pierwszą
+                \u2014 dodaj pierwsz\u0105
               </Button>
             </div>
           </TableCell>
@@ -604,7 +614,7 @@ function MobileCategoryCard({
               {category.isExclusive && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300">
                   <Sparkles className="h-2.5 w-2.5" />
-                  Wył.
+                  Wy\u0142.
                 </span>
               )}
             </div>
@@ -633,7 +643,7 @@ function MobileCategoryCard({
               <p className="text-sm font-medium truncate">{item.name}</p>
               <p className="text-xs text-neutral-500">
                 {PRICE_LABELS[item.priceType]}
-                {item.priceType !== 'FREE' && ` \u00b7 ${Number(item.basePrice).toLocaleString('pl-PL')} zł`}
+                {item.priceType !== 'FREE' && ` \u00b7 ${Number(item.basePrice).toLocaleString('pl-PL')} z\u0142${priceSuffix(item.priceType)}`}
               </p>
             </div>
           </div>
@@ -670,13 +680,13 @@ function DeleteConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            Potwierdź usunięcie
+            Potwierd\u017a usuni\u0119cie
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Czy na pewno chcesz usunąć <strong>{target?.name}</strong>?
+            Czy na pewno chcesz usun\u0105\u0107 <strong>{target?.name}</strong>?
             {target?.type === 'category' && (
               <span className="block mt-1 text-destructive">
-                Uwaga: usunięcie kategorii usunie również wszystkie pozycje w niej.
+                Uwaga: usuni\u0119cie kategorii usunie r\u00f3wnie\u017c wszystkie pozycje w niej.
               </span>
             )}
           </AlertDialogDescription>
@@ -688,7 +698,7 @@ function DeleteConfirmDialog({
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isLoading ? 'Usuwanie...' : 'Usuń'}
+            {isLoading ? 'Usuwanie...' : 'Usu\u0144'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
