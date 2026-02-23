@@ -27,7 +27,7 @@ import {
 } from '../types/serviceExtra.types';
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const VALID_PRICE_TYPES = ['FLAT', 'PER_PERSON', 'FREE'];
+const VALID_PRICE_TYPES = ['FLAT', 'PER_PERSON', 'PER_UNIT', 'FREE'];
 const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED'];
 
 export class ServiceExtraService {
@@ -63,7 +63,7 @@ export class ServiceExtraService {
       },
     });
 
-    if (!category) throw new Error('Nie znaleziono kategorii us\u0142ug');
+    if (!category) throw new Error('Nie znaleziono kategorii usług');
     return category as any;
   }
 
@@ -73,14 +73,14 @@ export class ServiceExtraService {
     }
 
     if (!data.slug || !SLUG_REGEX.test(data.slug)) {
-      throw new Error('Nieprawid\u0142owy format slug. U\u017cyj ma\u0142ych liter, cyfr i my\u015blnik\u00f3w (np. "tort-weselny")');
+      throw new Error('Nieprawidłowy format slug. Użyj małych liter, cyfr i myślników (np. "tort-weselny")');
     }
 
     const existing = await prisma.serviceCategory.findUnique({
       where: { slug: data.slug },
     });
     if (existing) {
-      throw new Error('Kategoria z tym slugiem ju\u017c istnieje');
+      throw new Error('Kategoria z tym slugiem już istnieje');
     }
 
     // Auto display order
@@ -114,7 +114,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_CATEGORY',
       entityId: category.id,
       details: {
-        description: `Utworzono kategori\u0119 us\u0142ug: ${category.name}`,
+        description: `Utworzono kategorię usług: ${category.name}`,
         data: { name: category.name, slug: category.slug, isExclusive: category.isExclusive },
       },
     });
@@ -124,20 +124,20 @@ export class ServiceExtraService {
 
   async updateCategory(id: string, data: UpdateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
     const existing = await prisma.serviceCategory.findUnique({ where: { id } });
-    if (!existing) throw new Error('Nie znaleziono kategorii us\u0142ug');
+    if (!existing) throw new Error('Nie znaleziono kategorii usług');
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error('Nazwa kategorii nie mo\u017ce by\u0107 pusta');
+      throw new Error('Nazwa kategorii nie może być pusta');
     }
 
     if (data.slug !== undefined) {
       if (!SLUG_REGEX.test(data.slug)) {
-        throw new Error('Nieprawid\u0142owy format slug');
+        throw new Error('Nieprawidłowy format slug');
       }
       const slugTaken = await prisma.serviceCategory.findFirst({
         where: { slug: data.slug, id: { not: id } },
       });
-      if (slugTaken) throw new Error('Kategoria z tym slugiem ju\u017c istnieje');
+      if (slugTaken) throw new Error('Kategoria z tym slugiem już istnieje');
     }
 
     const updateData: Record<string, any> = {};
@@ -167,7 +167,7 @@ export class ServiceExtraService {
         entityType: 'SERVICE_CATEGORY',
         entityId: category.id,
         details: {
-          description: `Zaktualizowano kategori\u0119 us\u0142ug: ${category.name}`,
+          description: `Zaktualizowano kategorię usług: ${category.name}`,
           changes,
         },
       });
@@ -181,7 +181,7 @@ export class ServiceExtraService {
       where: { id },
       include: { _count: { select: { items: true } } },
     });
-    if (!existing) throw new Error('Nie znaleziono kategorii us\u0142ug');
+    if (!existing) throw new Error('Nie znaleziono kategorii usług');
 
     // Check if any items in this category are used in reservations
     const usedInReservations = await prisma.reservationExtra.count({
@@ -190,7 +190,7 @@ export class ServiceExtraService {
 
     if (usedInReservations > 0) {
       throw new Error(
-        `Nie mo\u017cna usun\u0105\u0107 kategorii \u2014 ${usedInReservations} rezerwacji u\u017cywa pozycji z tej kategorii. Dezaktywuj zamiast usuwa\u0107.`
+        `Nie można usunąć kategorii — ${usedInReservations} rezerwacji używa pozycji z tej kategorii. Dezaktywuj zamiast usuwać.`
       );
     }
 
@@ -203,7 +203,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_CATEGORY',
       entityId: id,
       details: {
-        description: `Usuni\u0119to kategori\u0119 us\u0142ug: ${existing.name}`,
+        description: `Usunięto kategorię usług: ${existing.name}`,
         deletedData: { name: existing.name, slug: existing.slug },
       },
     });
@@ -225,7 +225,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_CATEGORY',
       entityId: 'batch',
       details: {
-        description: `Zmieniono kolejno\u015b\u0107 kategorii us\u0142ug`,
+        description: `Zmieniono kolejność kategorii usług`,
         orderedIds: data.orderedIds,
       },
     });
@@ -255,7 +255,7 @@ export class ServiceExtraService {
       include: { category: true },
     });
 
-    if (!item) throw new Error('Nie znaleziono pozycji us\u0142ugi');
+    if (!item) throw new Error('Nie znaleziono pozycji usługi');
     return item as any;
   }
 
@@ -278,14 +278,14 @@ export class ServiceExtraService {
     }
 
     if (!VALID_PRICE_TYPES.includes(data.priceType)) {
-      throw new Error(`Nieprawid\u0142owy typ ceny. U\u017cyj: ${VALID_PRICE_TYPES.join(', ')}`);
+      throw new Error(`Nieprawidłowy typ ceny. Użyj: ${VALID_PRICE_TYPES.join(', ')}`);
     }
 
     // Verify category exists
     const category = await prisma.serviceCategory.findUnique({
       where: { id: data.categoryId },
     });
-    if (!category) throw new Error('Nie znaleziono kategorii us\u0142ug');
+    if (!category) throw new Error('Nie znaleziono kategorii usług');
 
     // Auto display order
     let displayOrder = data.displayOrder;
@@ -319,7 +319,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_ITEM',
       entityId: item.id,
       details: {
-        description: `Utworzono pozycj\u0119 us\u0142ugi: ${item.name} (${category.name})`,
+        description: `Utworzono pozycję usługi: ${item.name} (${category.name})`,
         data: { name: item.name, priceType: item.priceType, basePrice: item.basePrice.toString() },
       },
     });
@@ -332,14 +332,14 @@ export class ServiceExtraService {
       where: { id },
       include: { category: true },
     });
-    if (!existing) throw new Error('Nie znaleziono pozycji us\u0142ugi');
+    if (!existing) throw new Error('Nie znaleziono pozycji usługi');
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error('Nazwa pozycji nie mo\u017ce by\u0107 pusta');
+      throw new Error('Nazwa pozycji nie może być pusta');
     }
 
     if (data.priceType !== undefined && !VALID_PRICE_TYPES.includes(data.priceType)) {
-      throw new Error(`Nieprawid\u0142owy typ ceny. U\u017cyj: ${VALID_PRICE_TYPES.join(', ')}`);
+      throw new Error(`Nieprawidłowy typ ceny. Użyj: ${VALID_PRICE_TYPES.join(', ')}`);
     }
 
     const updateData: Record<string, any> = {};
@@ -372,7 +372,7 @@ export class ServiceExtraService {
         entityType: 'SERVICE_ITEM',
         entityId: item.id,
         details: {
-          description: `Zaktualizowano pozycj\u0119 us\u0142ugi: ${item.name}`,
+          description: `Zaktualizowano pozycję usługi: ${item.name}`,
           changes,
         },
       });
@@ -386,7 +386,7 @@ export class ServiceExtraService {
       where: { id },
       include: { category: true },
     });
-    if (!existing) throw new Error('Nie znaleziono pozycji us\u0142ugi');
+    if (!existing) throw new Error('Nie znaleziono pozycji usługi');
 
     const usedInReservations = await prisma.reservationExtra.count({
       where: { serviceItemId: id },
@@ -394,7 +394,7 @@ export class ServiceExtraService {
 
     if (usedInReservations > 0) {
       throw new Error(
-        `Nie mo\u017cna usun\u0105\u0107 \u2014 ${usedInReservations} rezerwacji u\u017cywa tej pozycji. Dezaktywuj zamiast usuwa\u0107.`
+        `Nie można usunąć — ${usedInReservations} rezerwacji używa tej pozycji. Dezaktywuj zamiast usuwać.`
       );
     }
 
@@ -406,7 +406,7 @@ export class ServiceExtraService {
       entityType: 'SERVICE_ITEM',
       entityId: id,
       details: {
-        description: `Usuni\u0119to pozycj\u0119 us\u0142ugi: ${existing.name} (${existing.category?.name})`,
+        description: `Usunięto pozycję usługi: ${existing.name} (${existing.category?.name})`,
         deletedData: { name: existing.name, priceType: existing.priceType },
       },
     });
@@ -461,12 +461,19 @@ export class ServiceExtraService {
       where: { id: data.serviceItemId },
       include: { category: true },
     });
-    if (!item) throw new Error('Nie znaleziono pozycji us\u0142ugi');
-    if (!item.isActive) throw new Error('Pozycja us\u0142ugi jest nieaktywna');
+    if (!item) throw new Error('Nie znaleziono pozycji usługi');
+    if (!item.isActive) throw new Error('Pozycja usługi jest nieaktywna');
 
     // Check if item requires a note
     if (item.requiresNote && (!data.note || data.note.trim().length === 0)) {
       throw new Error(`Pole "${item.noteLabel || 'Uwagi'}" jest wymagane dla tej pozycji`);
+    }
+
+    // PER_UNIT requires explicit quantity >= 1
+    if (item.priceType === 'PER_UNIT') {
+      if (!data.quantity || data.quantity < 1) {
+        throw new Error('Dla pozycji "Za sztukę" wymagane jest podanie ilości (min. 1)');
+      }
     }
 
     // Handle exclusive categories — only 1 item from this category per reservation
@@ -496,7 +503,7 @@ export class ServiceExtraService {
           entityType: 'RESERVATION',
           entityId: reservationId,
           details: {
-            description: `Automatycznie zast\u0105piono w kategorii wy\u0142\u0105cznej "${item.category.name}": ${replacedNames} \u2192 ${item.name}`,
+            description: `Automatycznie zastąpiono w kategorii wyłącznej "${item.category.name}": ${replacedNames} → ${item.name}`,
             field: 'extras',
             data: {
               categoryName: item.category.name,
@@ -514,7 +521,7 @@ export class ServiceExtraService {
     });
 
     if (existingExtra) {
-      throw new Error('Ta pozycja jest ju\u017c dodana do rezerwacji');
+      throw new Error('Ta pozycja jest już dodana do rezerwacji');
     }
 
     // Calculate price
@@ -554,11 +561,12 @@ export class ServiceExtraService {
       entityType: 'RESERVATION_EXTRA',
       entityId: extra.id,
       details: {
-        description: `Dodano us\u0142ug\u0119 dodatkow\u0105: ${item.name} do rezerwacji`,
+        description: `Dodano usługę dodatkową: ${item.name} do rezerwacji`,
         data: {
           reservationId,
           itemName: item.name,
           priceType: item.priceType,
+          quantity,
           totalPrice: totalPrice.toString(),
         },
       },
@@ -571,11 +579,15 @@ export class ServiceExtraService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Dodano us\u0142ug\u0119 dodatkow\u0105: ${item.name} (${totalPrice} z\u0142)`,
+        description: item.priceType === 'PER_UNIT'
+          ? `Dodano usługę dodatkową: ${item.name} (${quantity} szt. × ${unitPrice} zł = ${totalPrice} zł)`
+          : `Dodano usługę dodatkową: ${item.name} (${totalPrice} zł)`,
         field: 'extras',
         data: {
           itemName: item.name,
           category: item.category?.name,
+          priceType: item.priceType,
+          quantity,
           totalPrice: totalPrice.toString(),
         },
       },
@@ -607,7 +619,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION_EXTRA',
       entityId: reservationId,
       details: {
-        description: `Zaktualizowano us\u0142ugi dodatkowe rezerwacji (${data.extras.length} pozycji)`,
+        description: `Zaktualizowano usługi dodatkowe rezerwacji (${data.extras.length} pozycji)`,
         count: data.extras.length,
       },
     });
@@ -619,7 +631,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Zaktualizowano zbiorczo us\u0142ugi dodatkowe (${data.extras.length} pozycji)`,
+        description: `Zaktualizowano zbiorczo usługi dodatkowe (${data.extras.length} pozycji)`,
         field: 'extras',
         data: { count: data.extras.length },
       },
@@ -646,7 +658,12 @@ export class ServiceExtraService {
     if (!reservation) throw new Error('Nie znaleziono rezerwacji');
 
     if (data.status !== undefined && !VALID_STATUSES.includes(data.status)) {
-      throw new Error(`Nieprawid\u0142owy status. U\u017cyj: ${VALID_STATUSES.join(', ')}`);
+      throw new Error(`Nieprawidłowy status. Użyj: ${VALID_STATUSES.join(', ')}`);
+    }
+
+    // PER_UNIT requires quantity >= 1
+    if (data.quantity !== undefined && existing.priceType === 'PER_UNIT' && data.quantity < 1) {
+      throw new Error('Dla pozycji "Za sztukę" ilość musi wynosić min. 1');
     }
 
     const updateData: Record<string, any> = {};
@@ -690,7 +707,7 @@ export class ServiceExtraService {
         entityType: 'RESERVATION_EXTRA',
         entityId: extra.id,
         details: {
-          description: `Zaktualizowano us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name}`,
+          description: `Zaktualizowano usługę dodatkową: ${existing.serviceItem.name}`,
           changes,
         },
       });
@@ -702,7 +719,7 @@ export class ServiceExtraService {
         entityType: 'RESERVATION',
         entityId: reservationId,
         details: {
-          description: `Zmieniono us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name}`,
+          description: `Zmieniono usługę dodatkową: ${existing.serviceItem.name}`,
           field: 'extras',
           changes,
         },
@@ -734,7 +751,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION_EXTRA',
       entityId: extraId,
       details: {
-        description: `Usuni\u0119to us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name}`,
+        description: `Usunięto usługę dodatkową: ${existing.serviceItem.name}`,
         deletedData: {
           itemName: existing.serviceItem.name,
           totalPrice: existing.totalPrice.toString(),
@@ -749,7 +766,7 @@ export class ServiceExtraService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Usuni\u0119to us\u0142ug\u0119 dodatkow\u0105: ${existing.serviceItem.name} (${existing.totalPrice} z\u0142)`,
+        description: `Usunięto usługę dodatkową: ${existing.serviceItem.name} (${existing.totalPrice} zł)`,
         field: 'extras',
         data: {
           removedItem: existing.serviceItem.name,
@@ -775,6 +792,8 @@ export class ServiceExtraService {
         return 0;
       case 'PER_PERSON':
         return unitPrice * (adults + children) * quantity;
+      case 'PER_UNIT':
+        return unitPrice * quantity;
       case 'FLAT':
       default:
         return unitPrice * quantity;
