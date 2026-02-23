@@ -102,6 +102,9 @@ export interface CreateReservationDTO {
 }
 
 export interface UpdateReservationDTO {
+  // Hall change (needed for venue surcharge recalculation)
+  hallId?: string;
+
   // DateTime fields
   startDateTime?: string;
   endDateTime?: string;
