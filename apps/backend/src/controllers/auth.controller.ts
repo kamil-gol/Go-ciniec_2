@@ -2,6 +2,7 @@
  * Auth Controller
  * Updated for RBAC — returns role + permissions on login and /me
  * Password reset & change handlers added for #124
+ * 🔄 #145: Refresh token rotation + logout endpoint
  * FIX: token/user also at root level for backward compatibility with tests
  */
 import { Response } from 'express';
@@ -10,7 +11,7 @@ import authService from '../services/auth.service';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validatePassword } from '../utils/password';
-import { PASSWORD_RESET } from '../i18n/pl';
+import { PASSWORD_RESET, REFRESH_TOKEN } from '../i18n/pl';
 
 export const authController = {
   register: asyncHandler(async (req, res) => {
@@ -41,6 +42,8 @@ export const authController = {
       success: true,
       data: result,
       token: result.token,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
       message: 'User registered successfully',
     });
@@ -60,8 +63,50 @@ export const authController = {
       success: true,
       data: result,
       token: result.token,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
       message: 'Logged in successfully',
+    });
+  }),
+
+  /**
+   * POST /api/auth/refresh
+   * Body: { refreshToken }
+   * Public — no auth required (access token may be expired)
+   */
+  refresh: asyncHandler(async (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw AppError.badRequest(REFRESH_TOKEN.MISSING);
+    }
+
+    const result = await authService.refresh(refreshToken);
+
+    res.json({
+      success: true,
+      data: result,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+  }),
+
+  /**
+   * POST /api/auth/logout
+   * Body: { refreshToken }
+   * Public — no auth required
+   */
+  logout: asyncHandler(async (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (refreshToken) {
+      await authService.logout(refreshToken);
+    }
+
+    res.json({
+      success: true,
+      message: 'Wylogowano pomyślnie',
     });
   }),
 
