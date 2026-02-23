@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { motion } from 'framer-motion'
+import SessionTimeoutModal from '@/app/dashboard/components/SessionTimeoutModal'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -35,6 +36,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token')
+    localStorage.removeItem('refreshToken')
     toast.success('Wylogowano pomyślnie')
     router.push('/login')
   }
@@ -80,6 +82,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </motion.div>
         </main>
       </div>
+
+      {/* Session timeout modal — global for all dashboard pages */}
+      <SessionTimeoutModal />
     </div>
   )
 }

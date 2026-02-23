@@ -110,6 +110,7 @@ model User {
   activityLogs         ActivityLog[]
   uploadedAttachments  Attachment[]           @relation("UploadedBy")
   passwordResetTokens  PasswordResetToken[]
+  refreshTokens        RefreshToken[]
 
   @@index([email])
   @@index([roleId])
@@ -125,6 +126,25 @@ model PasswordResetToken {
   userId    String    @db.Uuid
   expiresAt DateTime
   usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 🔄 REFRESH TOKENS (#145 — session management)
+// ═════════════════════════════════════════════════════════════════
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String    @unique @db.VarChar(255)
+  userId    String    @db.Uuid
+  expiresAt DateTime
+  revokedAt DateTime?
   createdAt DateTime  @default(now())
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
