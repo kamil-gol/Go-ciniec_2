@@ -6,7 +6,7 @@ import {
   XCircle, ArrowDownUp, Banknote, Smartphone, CreditCard, Loader2,
   ExternalLink, CalendarDays, Undo2, Mail, TrendingUp, Receipt,
   Package, ShoppingCart, Users, Sparkles, ChevronDown, ChevronUp,
-  Timer, Gift,
+  Timer, Gift, Building2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -53,6 +53,10 @@ interface ReservationFinancialSummaryProps {
   discountAmount?: number | string | null
   discountReason?: string | null
   priceBeforeDiscount?: number | string | null
+  /** Venue surcharge amount (for whole venue bookings with fewer guests) */
+  venueSurcharge?: number | null
+  /** Label explaining the surcharge (e.g. "Dopłata za cały obiekt (< 30 os.)") */
+  venueSurchargeLabel?: string | null
 }
 
 // Config
@@ -159,6 +163,8 @@ export function ReservationFinancialSummary({
   discountAmount,
   discountReason,
   priceBeforeDiscount,
+  venueSurcharge,
+  venueSurchargeLabel,
 }: ReservationFinancialSummaryProps) {
   // Menu data
   const { data: menuData } = useReservationMenu(reservationId)
@@ -170,6 +176,10 @@ export function ReservationFinancialSummary({
   const extras = extrasData?.data || []
   const activeExtras = extras.filter((e: any) => e.status !== 'CANCELLED')
   const extrasTotalPrice = extrasData?.totalExtrasPrice || 0
+
+  // Venue surcharge
+  const effectiveVenueSurcharge = Number(venueSurcharge) || 0
+  const hasVenueSurcharge = effectiveVenueSurcharge > 0
 
   // Resolve prices: use menu snapshot prices when available, fallback to reservation props
   const effectivePricePerAdult = hasMenu && priceBreakdown?.packageCost?.adults?.priceEach != null
@@ -199,7 +209,7 @@ export function ReservationFinancialSummary({
   const activeDiscountAmount = Number(discountAmount) || 0
   const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
 
-  // ── EFFECTIVE TOTAL: base + extra hours + service extras ──
+  // ── EFFECTIVE TOTAL: base + extra hours + service extras + venue surcharge ──
   // IMPORTANT: Backend's totalPrice already includes discount when one is
   // active (e.g. 5025 - 100 = 4925). If we used that as the base and then
   // subtracted the discount again we'd get 4825 (double discount).
@@ -210,7 +220,7 @@ export function ReservationFinancialSummary({
       ? Number(priceBeforeDiscount)
       : totalPrice
   const extraHoursCost = extraHoursInfo?.extraCost || 0
-  const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice
+  const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice + effectiveVenueSurcharge
 
   // Final price after discount (single subtraction, never double)
   const finalTotalPrice = hasActiveDiscount
@@ -257,7 +267,7 @@ export function ReservationFinancialSummary({
     loadDeposits()
   }, [loadDeposits])
 
-  // Calculations \u2014 use finalTotalPrice (after discount) for balance
+  // Calculations — use finalTotalPrice (after discount) for balance
   const financials = useMemo(() => {
     const activeDeposits = deposits.filter(d => d.status !== 'CANCELLED')
     const totalPaid = activeDeposits.reduce((sum, d) => sum + Number(d.paidAmount || 0), 0)
@@ -392,19 +402,19 @@ export function ReservationFinancialSummary({
                   <div className="space-y-2">
                     {adults > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dorośli ({adults} \u00d7 {formatPLN(effectivePricePerAdult)} zł)</span>
+                        <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
                         <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
                     {children > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dzieci ({children} \u00d7 {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
                         <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Maluchy ({toddlers} \u00d7 {formatPLN(effectivePricePerToddler)} zł)</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
                         <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
                       </div>
                     )}
@@ -433,7 +443,7 @@ export function ReservationFinancialSummary({
                       {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} \u00d7 ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
+                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
                           </span>
                           <span className="font-semibold">{formatPLN(opt.total)} zł</span>
                         </div>
@@ -458,9 +468,9 @@ export function ReservationFinancialSummary({
                       {activeExtras.map((extra: any) => (
                         <div key={extra.id} className="flex justify-between text-sm">
                           <span className="text-muted-foreground flex items-center gap-1.5">
-                            <span>{extra.serviceItem?.icon || '\ud83d\udce6'}</span>
+                            <span>{extra.serviceItem?.icon || '📦'}</span>
                             {extra.serviceItem?.name || 'Pozycja'}
-                            {extra.quantity > 1 && ` (\u00d7${extra.quantity})`}
+                            {extra.quantity > 1 && ` (×${extra.quantity})`}
                           </span>
                           <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
                         </div>
@@ -469,6 +479,24 @@ export function ReservationFinancialSummary({
                       <div className="flex justify-between text-sm font-semibold">
                         <span>Suma usług dodatkowych</span>
                         <span>{formatPLN(extrasTotalPrice)} zł</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Venue Surcharge (whole venue booking) */}
+                {hasVenueSurcharge && (
+                  <div className="bg-white dark:bg-black/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Building2 className="h-4 w-4 text-orange-600" />
+                      <p className="text-sm font-semibold text-muted-foreground">Dopłata za cały obiekt</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {venueSurchargeLabel || 'Dopłata za wynajem całego obiektu'}
+                        </span>
+                        <span className="font-semibold text-orange-700 dark:text-orange-400">{formatPLN(effectiveVenueSurcharge)} zł</span>
                       </div>
                     </div>
                   </div>
@@ -497,7 +525,7 @@ export function ReservationFinancialSummary({
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Dodatkowe godziny ({extraHoursInfo.extraHours} \u00d7 {formatPLN(extraHourRate)} zł/h)
+                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
                         </span>
                         <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
                       </div>
@@ -507,7 +535,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* DISCOUNT SECTION (Sprint 7) \u2014 uses effectiveTotalPrice as base */}
+            {/* DISCOUNT SECTION (Sprint 7) — uses effectiveTotalPrice as base */}
             {status && (
               <div className="mb-3">
                 <DiscountSection
@@ -525,7 +553,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* TOTAL \u2014 uses finalTotalPrice (after discount) */}
+            {/* TOTAL — uses finalTotalPrice (after discount) */}
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -538,6 +566,12 @@ export function ReservationFinancialSummary({
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
                   <span>w tym rabat</span>
                   <span>-{formatPLN(activeDiscountAmount)} zł</span>
+                </div>
+              )}
+              {hasVenueSurcharge && (
+                <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+                  <span>w tym dopłata za cały obiekt</span>
+                  <span>+{formatPLN(effectiveVenueSurcharge)} zł</span>
                 </div>
               )}
               {extrasTotalPrice > 0 && (
@@ -555,7 +589,7 @@ export function ReservationFinancialSummary({
             </div>
           </div>
 
-          {/* DEPOSITS + BALANCE \u2014 uses finalTotalPrice */}
+          {/* DEPOSITS + BALANCE — uses finalTotalPrice */}
           <div className="px-6 pb-6">
             {/* Balance bar */}
             <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
@@ -674,7 +708,7 @@ export function ReservationFinancialSummary({
                               </span>
                               {deposit.title && (
                                 <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                  \u2014 {deposit.title}
+                                  — {deposit.title}
                                 </span>
                               )}
                             </div>
