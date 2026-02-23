@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   Gift,
   Plus,
+  Minus,
   Trash2,
   Loader2,
   CheckCircle2,
@@ -73,6 +74,15 @@ function priceSuffix(priceType: string): string {
   }
 }
 
+/** Quantity label based on price type */
+function quantityLabel(priceType: string): string {
+  switch (priceType) {
+    case 'PER_UNIT': return 'Ilość (szt.)';
+    case 'PER_PERSON': return 'Ilość (os.)';
+    default: return 'Ilość';
+  }
+}
+
 interface ReservationExtrasPanelProps {
   reservationId: string;
 }
@@ -81,6 +91,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [quantity, setQuantity] = useState<number>(1);
   const [note, setNote] = useState('');
   const [customPrice, setCustomPrice] = useState<string>('');
 
@@ -102,6 +113,13 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   const availableItems = selectedCategory?.items?.filter((i) => i.isActive) || [];
   const selectedItem = availableItems.find((i) => i.id === selectedItemId);
 
+  // Calculate preview price for dialog
+  const previewPrice = selectedItem
+    ? selectedItem.priceType === 'FREE'
+      ? 0
+      : (customPrice ? parseFloat(customPrice) : selectedItem.basePrice) * quantity
+    : 0;
+
   const handleAddExtra = async () => {
     if (!selectedItemId) {
       toast({ title: 'Wybierz pozycję', variant: 'destructive' });
@@ -119,6 +137,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     try {
       await assignExtra.mutateAsync({
         serviceItemId: selectedItemId,
+        quantity: quantity,
         note: note.trim() || undefined,
         customPrice: customPrice ? parseFloat(customPrice) : undefined,
       });
@@ -158,10 +177,24 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     }
   };
 
+  const handleQuantityChange = async (extraId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    try {
+      await updateExtra.mutateAsync({ extraId, data: { quantity: newQuantity } });
+    } catch (error: any) {
+      toast({
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się zaktualizować ilości',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const resetAddForm = () => {
     setAddDialogOpen(false);
     setSelectedCategoryId('');
     setSelectedItemId('');
+    setQuantity(1);
     setNote('');
     setCustomPrice('');
   };
@@ -180,6 +213,9 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     }
     if (pt === 'PER_PERSON' && qty > 1) {
       return `${unit} zł/os. × ${qty} = ${total} zł`;
+    }
+    if (pt === 'FLAT' && qty > 1) {
+      return `${unit} zł × ${qty} = ${total} zł`;
     }
 
     return `${total} zł`;
@@ -231,13 +267,14 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
               <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
                 <p>Brak usług dodatkowych</p>
-                <p className="text-xs mt-1">Kliknij „Dodaj” aby przypisać tort, muzykę, dekoracje...</p>
+                <p className="text-xs mt-1">Kliknij „Dodaj" aby przypisać tort, muzykę, dekoracje...</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {extras.map((extra) => {
                   const statusCfg = STATUS_CONFIG[extra.status as ExtraStatus] || STATUS_CONFIG.PENDING;
                   const StatusIcon = statusCfg.icon;
+                  const canEditQuantity = extra.priceType !== 'FREE' && extra.status !== 'CANCELLED';
 
                   return (
                     <div
@@ -271,7 +308,34 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        {/* Inline quantity controls */}
+                        {canEditQuantity && (
+                          <div className="flex items-center gap-1 mr-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleQuantityChange(extra.id, extra.quantity - 1)}
+                              disabled={extra.quantity <= 1 || updateExtra.isPending}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-6 text-center text-xs font-semibold tabular-nums">
+                              {extra.quantity}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleQuantityChange(extra.id, extra.quantity + 1)}
+                              disabled={updateExtra.isPending}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+
                         <Select
                           value={extra.status}
                           onValueChange={(v) =>
@@ -341,6 +405,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 onValueChange={(v) => {
                   setSelectedCategoryId(v);
                   setSelectedItemId('');
+                  setQuantity(1);
                 }}
               >
                 <SelectTrigger>
@@ -360,7 +425,13 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             {selectedCategoryId && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-semibold">Pozycja</Label>
-                <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                <Select
+                  value={selectedItemId}
+                  onValueChange={(v) => {
+                    setSelectedItemId(v);
+                    setQuantity(1);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Wybierz pozycję" />
                   </SelectTrigger>
@@ -383,6 +454,49 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* Quantity input - show for non-FREE items */}
+            {selectedItem && selectedItem.priceType !== 'FREE' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="extra-quantity" className="text-sm font-semibold">
+                  {quantityLabel(selectedItem.priceType)}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <Input
+                    id="extra-quantity"
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 text-center font-semibold"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  {quantity > 1 && (
+                    <span className="text-sm text-muted-foreground ml-2">
+                      = <span className="font-semibold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -411,7 +525,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             {selectedItem && selectedItem.priceType !== 'FREE' && (
               <div className="space-y-1.5">
                 <Label htmlFor="extra-price" className="text-sm font-semibold">
-                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztukę' : ''} (opcjonalnie)
+                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztukę' : selectedItem.priceType === 'PER_PERSON' ? ' za osobę' : ''} (opcjonalnie)
                 </Label>
                 <Input
                   id="extra-price"
