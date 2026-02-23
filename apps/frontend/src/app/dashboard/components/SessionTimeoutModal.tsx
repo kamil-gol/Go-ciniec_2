@@ -53,10 +53,9 @@ export default function SessionTimeoutModal() {
   }, [handleLogout]);
 
   // ═══ Idle timer ═══
-  // TODO: przed merge zmienić z powrotem na 14 * 60 * 1000
   const idleTimer = useIdleTimer({
-    idleTimeout: 30 * 1000,           // 30s (TESTING) — prod: 14 * 60 * 1000
-    warningBefore: 60 * 1000,          // 60s warning
+    idleTimeout: 14 * 60 * 1000,       // 14 min bezczynności
+    warningBefore: 60 * 1000,           // 60s warning (modal z countdown)
     onIdle: handleLogout,
     enabled: typeof window !== 'undefined' && !!localStorage.getItem(LS_ACCESS_TOKEN),
   });
