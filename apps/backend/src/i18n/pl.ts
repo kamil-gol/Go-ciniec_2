@@ -28,6 +28,7 @@ export const AUTH = {
 // REFRESH TOKEN (#145 — session management)
 // ═══════════════════════════════════════
 export const REFRESH_TOKEN = {
+  MISSING: 'Token odświeżania jest wymagany',
   INVALID: 'Token odświeżania jest nieprawidłowy',
   EXPIRED: 'Token odświeżania wygasł — zaloguj się ponownie',
   REVOKED: 'Token odświeżania został unieważniony — zaloguj się ponownie',
