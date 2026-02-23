@@ -1,12 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Input } from '@/components/ui/input'
-import { Users, Smile, Baby, AlertCircle } from 'lucide-react'
+import { Users, Smile, Baby, AlertCircle, Building2 } from 'lucide-react'
 import { EditableCard } from './EditableCard'
 import { useUpdateReservation } from '@/lib/api/reservations'
 import { toast } from 'sonner'
+
+/**
+ * Calculate venue surcharge preview (mirrors backend logic).
+ * Whole-venue halls: <30 guests → 3000 PLN, ≥30 → 2000 PLN
+ */
+function calculateVenueSurchargePreview(isWholeVenue: boolean, totalGuests: number): number {
+  if (!isWholeVenue) return 0
+  return totalGuests < 30 ? 3000 : 2000
+}
 
 interface EditableGuestsCardProps {
   reservationId: string
@@ -14,6 +23,8 @@ interface EditableGuestsCardProps {
   children: number
   toddlers: number
   hallCapacity: number
+  hallIsWholeVenue?: boolean
+  currentVenueSurcharge?: number | null
   onUpdated?: () => void
 }
 
@@ -23,6 +34,8 @@ export function EditableGuestsCard({
   children: initialChildren,
   toddlers: initialToddlers,
   hallCapacity,
+  hallIsWholeVenue = false,
+  currentVenueSurcharge = null,
   onUpdated,
 }: EditableGuestsCardProps) {
   const [adults, setAdults] = useState(initialAdults)
@@ -40,6 +53,14 @@ export function EditableGuestsCard({
   const totalGuests = adults + children + toddlers
   const exceedsCapacity = hallCapacity > 0 && totalGuests > hallCapacity
   const isChildrenDisabled = adults === 0
+
+  // Venue surcharge preview
+  const surchargePreview = useMemo(
+    () => calculateVenueSurchargePreview(hallIsWholeVenue, totalGuests),
+    [hallIsWholeVenue, totalGuests]
+  )
+  const currentSurcharge = currentVenueSurcharge ? Number(currentVenueSurcharge) : 0
+  const surchargeChanged = hallIsWholeVenue && surchargePreview !== currentSurcharge
 
   const handleSave = async (reason: string) => {
     if (adults + children + toddlers < 1) {
@@ -194,6 +215,37 @@ export function EditableGuestsCard({
                 <span className="text-sm text-red-800 dark:text-red-200">
                   Liczba gości ({totalGuests}) przekracza pojemność sali ({hallCapacity})!
                 </span>
+              </motion.div>
+            )}
+
+            {/* Venue surcharge live preview */}
+            {hallIsWholeVenue && totalGuests > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className={`p-3 rounded-lg border flex items-start gap-2 ${
+                  surchargeChanged
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+                    : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
+                }`}
+              >
+                <Building2 className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                  surchargeChanged ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'
+                }`} />
+                <div className="text-sm">
+                  <span className={surchargeChanged ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}>
+                    Dopłata za cały obiekt:{' '}
+                    <strong>{surchargePreview.toLocaleString('pl-PL')} zł</strong>
+                    {totalGuests < 30
+                      ? ' (poniżej 30 gości)'
+                      : ' (30+ gości)'}
+                  </span>
+                  {surchargeChanged && currentSurcharge > 0 && (
+                    <span className="block text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Zmiana z {currentSurcharge.toLocaleString('pl-PL')} zł → {surchargePreview.toLocaleString('pl-PL')} zł po zapisaniu
+                    </span>
+                  )}
+                </div>
               </motion.div>
             )}
 

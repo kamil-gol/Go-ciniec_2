@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, Users, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Building2, Users, CheckCircle, AlertTriangle, Landmark } from 'lucide-react'
 import { EditableCard } from './EditableCard'
 import { useHalls } from '@/hooks/use-halls'
 import { useCheckAvailability } from '@/hooks/use-check-availability'
@@ -25,14 +25,25 @@ function utcTime(iso: string): string {
   }
 }
 
+/**
+ * Calculate venue surcharge preview (mirrors backend logic).
+ * Whole-venue halls: <30 guests → 3000 PLN, ≥30 → 2000 PLN
+ */
+function calculateVenueSurchargePreview(isWholeVenue: boolean, totalGuests: number): number {
+  if (!isWholeVenue) return 0
+  return totalGuests < 30 ? 3000 : 2000
+}
+
 interface EditableHallCardProps {
   reservationId: string
   hallId: string
   hallName: string
   hallCapacity: number | null
+  hallIsWholeVenue?: boolean
   startDateTime: string | null
   endDateTime: string | null
   totalGuests: number
+  currentVenueSurcharge?: number | null
   onUpdated?: () => void
 }
 
@@ -41,9 +52,11 @@ export function EditableHallCard({
   hallId: initialHallId,
   hallName: initialHallName,
   hallCapacity: initialCapacity,
+  hallIsWholeVenue: initialIsWholeVenue = false,
   startDateTime,
   endDateTime,
   totalGuests,
+  currentVenueSurcharge = null,
   onUpdated,
 }: EditableHallCardProps) {
   const [selectedHallId, setSelectedHallId] = useState(initialHallId)
@@ -62,7 +75,16 @@ export function EditableHallCard({
   )
 
   const selectedCapacity = selectedHall?.capacity || 0
+  const selectedIsWholeVenue = selectedHall?.isWholeVenue || false
   const hallChanged = selectedHallId !== initialHallId
+
+  // Venue surcharge preview for selected hall
+  const surchargePreview = useMemo(
+    () => calculateVenueSurchargePreview(selectedIsWholeVenue, totalGuests),
+    [selectedIsWholeVenue, totalGuests]
+  )
+  const currentSurcharge = currentVenueSurcharge ? Number(currentVenueSurcharge) : 0
+  const surchargeWillChange = hallChanged && surchargePreview !== currentSurcharge
 
   const { data: availability, isLoading: availabilityLoading } = useCheckAvailability(
     hallChanged ? selectedHallId : undefined,
@@ -120,6 +142,12 @@ export function EditableHallCard({
                   <span>Pojemność: {initialCapacity} osób</span>
                 </div>
               )}
+              {initialIsWholeVenue && (
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                  <Landmark className="h-4 w-4" />
+                  <span className="text-sm font-medium">Cały obiekt</span>
+                </div>
+              )}
             </div>
           )
         }
@@ -136,6 +164,7 @@ export function EditableHallCard({
                   {hallsArray.map((hall) => (
                     <SelectItem key={hall.id} value={hall.id}>
                       {hall.name} (max {hall.capacity} osób)
+                      {hall.isWholeVenue ? ' \uD83C\uDFDB' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -151,6 +180,53 @@ export function EditableHallCard({
                   </span>
                 )}
               </p>
+            )}
+
+            {/* Venue surcharge preview — whole venue selected */}
+            {selectedIsWholeVenue && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className={`p-3 rounded-lg border flex items-start gap-2 ${
+                  surchargeWillChange
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+                    : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
+                }`}
+              >
+                <Landmark className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                  surchargeWillChange ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'
+                }`} />
+                <div className="text-sm">
+                  <span className={surchargeWillChange ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}>
+                    Cały obiekt — dopłata:{' '}
+                    <strong>{surchargePreview.toLocaleString('pl-PL')} zł</strong>
+                    {totalGuests < 30
+                      ? ' (poniżej 30 gości)'
+                      : ' (30+ gości)'}
+                  </span>
+                  {surchargeWillChange && (
+                    <span className="block text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      {currentSurcharge > 0
+                        ? `Zmiana z ${currentSurcharge.toLocaleString('pl-PL')} zł \u2192 ${surchargePreview.toLocaleString('pl-PL')} zł po zapisaniu`
+                        : `Nowa dopłata ${surchargePreview.toLocaleString('pl-PL')} zł zostanie naliczona po zapisaniu`}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Hall no longer whole venue — surcharge will be removed */}
+            {!selectedIsWholeVenue && hallChanged && currentSurcharge > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-3 rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 flex items-start gap-2"
+              >
+                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-green-800 dark:text-green-200">
+                  Dopłata za cały obiekt ({currentSurcharge.toLocaleString('pl-PL')} zł) zostanie usunięta po zmianie sali
+                </span>
+              </motion.div>
             )}
 
             {hallChanged && startDateTime && endDateTime && (
