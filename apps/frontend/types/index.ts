@@ -209,6 +209,7 @@ export interface Reservation {
   reservationQueueDate?: string // For RESERVED status - date user wants to book
   
   notes?: string
+  internalNotes?: string | null  // Etap 5: Notatka wewnętrzna — nie pojawia się w PDF
   createdBy: string
   createdByUser?: User
   archivedAt?: string
@@ -434,6 +435,7 @@ export interface CreateReservationInput {
 
 export interface UpdateReservationInput extends Partial<CreateReservationInput> {
   reason: string // Required, min 10 characters
+  internalNotes?: string // Etap 5: Notatka wewnętrzna
 }
 
 export interface CancelReservationInput {
