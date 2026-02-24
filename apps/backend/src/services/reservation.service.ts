@@ -675,9 +675,9 @@ export class ReservationService {
         data: { internalNotes: newValue },
       });
 
-      // History entry
+      // History entry — changeType max 20 chars (VarChar(20))
       await this.createHistoryEntry(
-        id, userId, 'INTERNAL_NOTE_UPDATED', 'internalNotes',
+        id, userId, 'NOTE_UPDATED', 'internalNotes',
         oldValue || '(brak)', newValue || '(brak)',
         'Zaktualizowano notatkę wewnętrzną'
       );
@@ -847,7 +847,7 @@ export class ReservationService {
           // Scenario C: Still whole venue, but surcharge amount changed (guests threshold crossed)
           console.log(`[Reservation] Venue surcharge RECALCULATED for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
           await this.createHistoryEntry(
-            id, userId, 'SURCHARGE_RECALCULATED', 'venueSurcharge',
+            id, userId, 'SURCHARGE_RECALC', 'venueSurcharge',
             String(oldSurcharge), String(newSurcharge),
             VENUE_SURCHARGE.AUDIT_RECALCULATED(oldSurcharge, newSurcharge, finalGuests)
           );
@@ -1153,7 +1153,7 @@ export class ReservationService {
         data: {
           reservationId,
           changedByUserId: userId,
-          changeType: 'DEPOSIT_CANCELLED',
+          changeType: 'DEPOSIT_CANCEL',
           fieldName: 'deposit',
           oldValue: deposit.status,
           newValue: 'CANCELLED',
