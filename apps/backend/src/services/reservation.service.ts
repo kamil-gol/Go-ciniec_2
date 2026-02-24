@@ -653,6 +653,51 @@ export class ReservationService {
     });
 
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
+
+    // ══ Etap 5: Notatka wewnętrzna — edytowalna niezależnie od statusu rezerwacji ══
+    // Nie wymaga reason, nie przechodzi przez detectReservationChanges.
+    // Early return: jeśli request zawiera TYLKO internalNotes, omijamy wszystkie guardy.
+    const isOnlyInternalNotes =
+      data.internalNotes !== undefined &&
+      Object.keys(data).every(k => k === 'internalNotes');
+
+    if (isOnlyInternalNotes) {
+      const newValue = sanitizeString(data.internalNotes);
+      const oldValue = (existingReservation as any).internalNotes ?? null;
+
+      // Skip update if nothing changed
+      if (oldValue === newValue) {
+        return await this.getReservationById(id);
+      }
+
+      await prisma.reservation.update({
+        where: { id },
+        data: { internalNotes: newValue },
+      });
+
+      // History entry
+      await this.createHistoryEntry(
+        id, userId, 'INTERNAL_NOTE_UPDATED', 'internalNotes',
+        oldValue || '(brak)', newValue || '(brak)',
+        'Zaktualizowano notatkę wewnętrzną'
+      );
+
+      // Audit log
+      await logChange({
+        userId,
+        action: 'UPDATE',
+        entityType: 'RESERVATION',
+        entityId: id,
+        details: {
+          description: `Zaktualizowano notatkę wewnętrzną`,
+          changes: { internalNotes: { old: oldValue, new: newValue } },
+        },
+      });
+
+      return await this.getReservationById(id);
+    }
+    // ══ Koniec: Etap 5 early return ══
+
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_UPDATE_COMPLETED);
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.CANNOT_UPDATE_CANCELLED);
     // #144: Block editing of archived reservations
