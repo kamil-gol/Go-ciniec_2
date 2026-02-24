@@ -63,7 +63,7 @@ describe('HallService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(null);
-      await expect(service.getHallById('x')).rejects.toThrow('Hall not found');
+      await expect(service.getHallById('x')).rejects.toThrow('Nie znaleziono sali');
     });
   });
 
@@ -97,7 +97,7 @@ describe('HallService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(null);
-      await expect(service.updateHall('x', {} as any, USER)).rejects.toThrow('Hall not found');
+      await expect(service.updateHall('x', {} as any, USER)).rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should protect wholeVenue from deactivation', async () => {
@@ -127,7 +127,7 @@ describe('HallService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(null);
-      await expect(service.toggleActive('x', USER)).rejects.toThrow('Hall not found');
+      await expect(service.toggleActive('x', USER)).rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should protect wholeVenue', async () => {
@@ -145,7 +145,7 @@ describe('HallService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(null);
-      await expect(service.deleteHall('x', USER)).rejects.toThrow('Hall not found');
+      await expect(service.deleteHall('x', USER)).rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should protect wholeVenue from deletion', async () => {
