@@ -30,6 +30,6 @@ describe('Auth middleware — non-AppError catch branch', () => {
 
     expect(mockNext).toHaveBeenCalledTimes(1);
     const error = mockNext.mock.calls[0][0];
-    expect(error.message).toBe('Authentication failed');
+    expect(error.message).toBe('Uwierzytelnienie nie powiodło się');
   });
 });

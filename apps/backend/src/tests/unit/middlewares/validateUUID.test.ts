@@ -78,7 +78,7 @@ describe('validateUUID', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      error: "Invalid ID format for parameter 'id'",
+      error: 'Nieprawidłowy format identyfikatora: id',
     });
     expect(next).not.toHaveBeenCalled();
   });
@@ -119,7 +119,7 @@ describe('validateUUID', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      error: "Invalid ID format for parameter 'id'",
+      error: 'Nieprawidłowy format identyfikatora: id',
     });
     expect(next).not.toHaveBeenCalled();
   });
@@ -133,7 +133,7 @@ describe('validateUUID', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      error: "Invalid ID format for parameter 'itemId'",
+      error: 'Nieprawidłowy format identyfikatora: itemId',
     });
   });
 

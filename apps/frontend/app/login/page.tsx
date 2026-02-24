@@ -54,6 +54,7 @@ export default function LoginPage() {
       
       if (response.data.success) {
         localStorage.setItem('auth_token', response.data.data.token)
+        localStorage.setItem('refreshToken', response.data.data.refreshToken || response.data.refreshToken)
         toast.success('Zalogowano pomyślnie!')
         router.push('/dashboard')
       }

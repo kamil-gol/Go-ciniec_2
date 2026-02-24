@@ -19,7 +19,7 @@ export default function SettingsPage() {
       <PageHero
         accent={accent}
         title="Ustawienia"
-        subtitle="Zarz\u0105dzanie u\u017cytkownikami, rolami, uprawnieniami i danymi firmy"
+        subtitle="Zarządzanie użytkownikami, rolami, uprawnieniami i danymi firmy"
         icon={Settings}
       />
 
@@ -27,7 +27,7 @@ export default function SettingsPage() {
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="users" className="gap-2">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">U\u017cytkownicy</span>
+            <span className="hidden sm:inline">Użytkownicy</span>
           </TabsTrigger>
           <TabsTrigger value="roles" className="gap-2">
             <Shield className="h-4 w-4" />

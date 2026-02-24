@@ -76,16 +76,16 @@ export function ArchiveTab() {
       <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-destructive" />
-          <p className="font-medium text-destructive">B\u0142\u0105d \u0142adowania ustawie\u0144 archiwizacji</p>
+          <p className="font-medium text-destructive">Błąd ładowania ustawień archiwizacji</p>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          {(error as Error).message || 'Nieznany b\u0142\u0105d'}
+          {(error as Error).message || 'Nieznany błąd'}
         </p>
         <button
           onClick={() => refetch()}
           className="mt-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          Spr\u00f3buj ponownie
+          Spróbuj ponownie
         </button>
       </div>
     );
@@ -139,14 +139,14 @@ export function ArchiveTab() {
 
               {!isDaysValid && daysInput !== '' && (
                 <p className="mt-1 text-xs text-destructive">
-                  Warto\u015b\u0107 musi by\u0107 liczb\u0105 od 1 do 365
+                  Wartość musi być liczbą od 1 do 365
                 </p>
               )}
 
               {saveSuccess && (
                 <p className="mt-2 flex items-center gap-1 text-sm text-green-600">
                   <CheckCircle2 className="h-4 w-4" />
-                  Zapisano pomy\u015blnie
+                  Zapisano pomyślnie
                 </p>
               )}
 
@@ -154,7 +154,7 @@ export function ArchiveTab() {
                 <p className="mt-2 flex items-center gap-1 text-sm text-destructive">
                   <AlertTriangle className="h-4 w-4" />
                   {(updateMutation.error as any)?.response?.data?.error ||
-                    'B\u0142\u0105d zapisu'}
+                    'Błąd zapisu'}
                 </p>
               )}
             </div>
@@ -164,12 +164,12 @@ export function ArchiveTab() {
                 <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div className="text-xs text-muted-foreground">
                   <p>
-                    Rezerwacje ze statusem <strong>CANCELLED</strong> zostan\u0105
-                    automatycznie zarchiwizowane po up\u0142ywie podanej liczby dni od
+                    Rezerwacje ze statusem <strong>CANCELLED</strong> zostaną
+                    automatycznie zarchiwizowane po upływie podanej liczby dni od
                     anulowania.
                   </p>
                   <p className="mt-1">
-                    CRON uruchamia si\u0119 codziennie o <strong>02:00</strong>.
+                    CRON uruchamia się codziennie o <strong>02:00</strong>.
                     Data graniczna:{' '}
                     <strong>
                       {settings
@@ -190,16 +190,16 @@ export function ArchiveTab() {
           </div>
         </div>
 
-        {/* Card: R\u0119czne uruchomienie */}
+        {/* Card: Ręczne uruchomienie */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Play className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">R\u0119czna archiwizacja</h2>
+            <h2 className="text-lg font-semibold">Ręczna archiwizacja</h2>
           </div>
 
           <p className="text-sm text-muted-foreground mb-4">
             Uruchom proces archiwizacji natychmiast \u2014 ta sama logika co CRON,
-            ale wykonana na \u017c\u0105danie.
+            ale wykonana na żądanie.
           </p>
 
           {settings && settings.pendingCandidatesCount > 0 ? (
@@ -211,7 +211,7 @@ export function ArchiveTab() {
                   {settings.pendingCandidatesCount === 1
                     ? 'rezerwacja czeka'
                     : 'rezerwacji czeka'}{' '}
-                  na archiwizacj\u0119
+                  na archiwizację
                 </p>
               </div>
             </div>
@@ -219,7 +219,7 @@ export function ArchiveTab() {
             <div className="rounded-md bg-muted/50 p-3 mb-4">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                Brak rezerwacji oczekuj\u0105cych na archiwizacj\u0119
+                Brak rezerwacji oczekujących na archiwizację
               </p>
             </div>
           )}
@@ -241,11 +241,11 @@ export function ArchiveTab() {
             <div className="mt-4 rounded-md border p-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                Archiwizacja zako\u0144czona
+                Archiwizacja zakończona
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Zarchiwizowano: <strong>{lastResult.archivedCount}</strong>{' '}
-                rezerwacji (pr\u00f3g: {lastResult.archiveAfterDays} dni)
+                rezerwacji (próg: {lastResult.archiveAfterDays} dni)
               </p>
             </div>
           )}
@@ -254,11 +254,11 @@ export function ArchiveTab() {
             <div className="mt-4 rounded-md border border-destructive/50 bg-destructive/10 p-3">
               <p className="text-sm font-medium text-destructive flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                B\u0142\u0105d archiwizacji
+                Błąd archiwizacji
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {(archiveMutation.error as any)?.response?.data?.error ||
-                  'Nieznany b\u0142\u0105d'}
+                  'Nieznany błąd'}
               </p>
             </div>
           )}
@@ -274,7 +274,7 @@ export function ArchiveTab() {
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Od\u015bwie\u017c
+            Odśwież
           </button>
         </div>
 
@@ -282,7 +282,7 @@ export function ArchiveTab() {
           <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">
-                Oczekuj\u0105ce na archiwizacj\u0119
+                Oczekujące na archiwizację
               </p>
               <Clock className="h-4 w-4 text-amber-500" />
             </div>
@@ -312,7 +312,7 @@ export function ArchiveTab() {
           <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">
-                Zarchiwizowane \u0142\u0105cznie
+                Zarchiwizowane łącznie
               </p>
               <Archive className="h-4 w-4 text-blue-500" />
             </div>
@@ -336,17 +336,17 @@ export function ArchiveTab() {
           <div className="relative z-50 w-full max-w-md rounded-lg border bg-background p-6 shadow-lg">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Potwierd\u017a archiwizacj\u0119
+              Potwierdź archiwizację
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Czy na pewno chcesz uruchomi\u0107 r\u0119czn\u0105 archiwizacj\u0119?
+              Czy na pewno chcesz uruchomić ręczną archiwizację?
             </p>
             <p className="mt-1 text-sm">
               <strong>{settings?.pendingCandidatesCount}</strong>{' '}
               {settings?.pendingCandidatesCount === 1
                 ? 'rezerwacja zostanie zarchiwizowana'
                 : 'rezerwacji zostanie zarchiwizowanych'}
-              . Tej operacji nie mo\u017cna cofn\u0105\u0107.
+              . Tej operacji nie można cofnąć.
             </p>
             <div className="mt-6 flex justify-end gap-2">
               <button

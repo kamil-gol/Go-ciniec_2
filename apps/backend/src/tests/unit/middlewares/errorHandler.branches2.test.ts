@@ -37,7 +37,7 @@ describe('errorHandler — PrismaClientValidationError (line 67)', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       success: false,
-      error: 'Invalid data provided',
+      error: 'Podano nieprawidłowe dane',
     }));
   });
 });
@@ -91,7 +91,7 @@ describe('errorHandler — 500 with NODE_ENV production', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      error: 'Internal server error',
+      error: 'Wewnętrzny błąd serwera',
     }));
     process.env.NODE_ENV = origEnv;
   });

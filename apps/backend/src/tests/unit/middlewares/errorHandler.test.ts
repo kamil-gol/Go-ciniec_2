@@ -86,7 +86,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Validation error',
+        error: 'Błąd walidacji',
         details: expect.any(Array),
       });
     });
@@ -107,7 +107,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(409);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Duplicate value for: email',
+        error: 'Zduplikowana wartość dla: email',
       });
     });
 
@@ -122,7 +122,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(409);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Duplicate value for: field',
+        error: 'Zduplikowana wartość dla: pole',
       });
     });
 
@@ -137,7 +137,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Record not found',
+        error: 'Nie znaleziono rekordu',
       });
     });
 
@@ -152,7 +152,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Referenced record does not exist',
+        error: 'Powiązany rekord nie istnieje',
       });
     });
 
@@ -164,7 +164,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid data provided',
+        error: 'Podano nieprawidłowe dane',
       });
     });
   });
@@ -238,7 +238,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Internal server error',
+        error: 'Wewnętrzny błąd serwera',
       });
     });
 
@@ -260,7 +260,7 @@ describe('errorHandler', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Internal server error',
+        error: 'Wewnętrzny błąd serwera',
       });
     });
   });

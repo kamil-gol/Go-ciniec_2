@@ -78,7 +78,7 @@ export function DishSelector({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Ten pakiet nie wymaga wyboru da\u0144 z kategorii.
+          Ten pakiet nie wymaga wyboru dań z kategorii.
         </AlertDescription>
       </Alert>
     )
@@ -121,8 +121,8 @@ export function DishSelector({
       
       if (remaining <= 0) {
         toast({
-          title: 'Limit osi\u0105gni\u0119ty',
-          description: `Mo\u017cesz wybra\u0107 maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inn\u0105 pozycj\u0119 aby doda\u0107 now\u0105.`,
+          title: 'Limit osiągnięty',
+          description: `Możesz wybrać maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inną pozycję aby dodać nową.`,
           variant: 'destructive',
         })
         return
@@ -204,7 +204,7 @@ export function DishSelector({
     if (!isValid) {
       const errorMessages = Object.values(errorMap)
       toast({
-        title: 'Nie mo\u017cna zatwierdzi\u0107 wyboru',
+        title: 'Nie można zatwierdzić wyboru',
         description: errorMessages.join('. ') + '.',
         variant: 'destructive',
         duration: 6000,
@@ -227,9 +227,9 @@ export function DishSelector({
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Wyb\u00f3r Da\u0144</h2>
+        <h2 className="text-2xl font-bold mb-2">Wybór Dań</h2>
         <p className="text-muted-foreground">
-          Wybierz dania z ka\u017cdej kategorii zgodnie z limitami
+          Wybierz dania z każdej kategorii zgodnie z limitami
         </p>
       </div>
 
@@ -263,7 +263,7 @@ export function DishSelector({
                       {/* FIX 4a: Show remaining count */}
                       {!isAtMaxLimit && total > 0 && (
                         <span className="text-sm text-muted-foreground">
-                          Pozosta\u0142o: {remaining}
+                          Pozostało: {remaining}
                         </span>
                       )}
                       <Badge 
@@ -300,7 +300,7 @@ export function DishSelector({
                     <Alert className="mt-3 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                       <Info className="h-4 w-4 text-blue-600" />
                       <AlertDescription className="text-blue-900 dark:text-blue-100">
-                        Osi\u0105gni\u0119to maksymaln\u0105 liczb\u0119 pozycji. Odznacz danie aby wybra\u0107 inne.
+                        Osiągnięto maksymalną liczbę pozycji. Odznacz danie aby wybrać inne.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -398,7 +398,7 @@ export function DishSelector({
                             {isSelected && (
                               <div className="mt-4 p-3 bg-white dark:bg-neutral-800 rounded-lg border-2 border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
                                 <label className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 block">
-                                  Ilo\u015b\u0107 porcji:
+                                  Ilość porcji:
                                 </label>
                                 <select
                                   value={quantity}
@@ -445,7 +445,7 @@ export function DishSelector({
           size="lg"
           className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8 shadow-lg text-lg font-bold"
         >
-          Zatwierd\u017a wyb\u00f3r
+          Zatwierdź wybór
           <ChevronRight className="ml-2 h-5 w-5" />
         </Button>
       </div>
