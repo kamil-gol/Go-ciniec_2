@@ -20,8 +20,8 @@ import {
   useArchiveSettings,
   useUpdateArchiveDays,
   useRunArchiveNow,
-} from '@/hooks/use-archive-settings';
-import type { ArchiveRunResult } from '@/hooks/use-archive-settings';
+} from '../../../../hooks/use-archive-settings';
+import type { ArchiveRunResult } from '../../../../hooks/use-archive-settings';
 
 // ═══════════════════════════════════════════════════════
 // 🗄️ Archive Settings Page — /dashboard/settings/archive
