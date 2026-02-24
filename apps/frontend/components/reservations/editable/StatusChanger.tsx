@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   CheckCircle2, XCircle, Clock, Edit, Loader2, AlertCircle,
-  ArrowRight, ShieldAlert,
+  ArrowRight, ShieldAlert, Archive,
 } from 'lucide-react'
 import { useUpdateReservationStatus } from '@/lib/api/reservations'
 import { ReservationStatus } from '@/types'
@@ -62,6 +62,14 @@ const STATUS_CONFIG = {
     borderColor: 'border-blue-200 dark:border-blue-800',
     icon: CheckCircle2,
   },
+  ARCHIVED: {
+    label: 'Zarchiwizowana',
+    color: 'bg-neutral-500',
+    textColor: 'text-neutral-500',
+    bgColor: 'bg-neutral-50 dark:bg-neutral-900/30',
+    borderColor: 'border-neutral-300 dark:border-neutral-700',
+    icon: Archive,
+  },
 } as const
 
 type StatusKey = keyof typeof STATUS_CONFIG
@@ -71,6 +79,7 @@ const STATUS_TRANSITIONS: Record<StatusKey, StatusKey[]> = {
   CONFIRMED: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
+  ARCHIVED: [],
 }
 
 const DANGEROUS_TRANSITIONS: Array<`${StatusKey}->${StatusKey}`> = [
