@@ -26,6 +26,7 @@ import serviceExtraRoutes from '@/routes/serviceExtra.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
+import authService from '@/services/auth.service';
 import emailService from '@/services/email.service';
 
 // Validate environment variables early
@@ -193,6 +194,7 @@ if (process.env.NODE_ENV !== 'test') {
     setupAutoCancelCron();
     setupDepositOverdueCron();
     setupDepositReminderCron();
+    setupRefreshTokenCleanupCron();
 
     // Verify email on startup
     emailService.verify();
@@ -270,4 +272,25 @@ function setupDepositReminderCron() {
     }
   });
   logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
+}
+
+/**
+ * Setup Refresh Token Cleanup Cron Job (#145)
+ * Deletes expired and revoked refresh tokens from DB daily at 03:00 AM.
+ */
+function setupRefreshTokenCleanupCron() {
+  cron.schedule('0 3 * * *', async () => {
+    logger.info('[CRON] Running refresh token cleanup...');
+    try {
+      const count = await authService.cleanupExpiredTokens();
+      if (count > 0) {
+        logger.info(`[CRON] Refresh token cleanup completed: ${count} tokens removed`);
+      } else {
+        logger.info('[CRON] Refresh token cleanup completed: No expired tokens found');
+      }
+    } catch (error: any) {
+      logger.error('[CRON] Refresh token cleanup failed:', error.message);
+    }
+  });
+  logger.info('Refresh token cleanup cron job scheduled for 03:00 AM daily');
 }
