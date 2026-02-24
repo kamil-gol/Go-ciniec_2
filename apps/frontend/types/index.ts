@@ -146,6 +146,7 @@ export enum ReservationStatus {
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
   RESERVED = 'RESERVED', // New status for queue
+  ARCHIVED = 'ARCHIVED', // Terminal state for archived reservations
 }
 
 export interface Reservation {
