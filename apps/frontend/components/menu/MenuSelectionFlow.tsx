@@ -103,15 +103,18 @@ export function MenuSelectionFlow({
   useEffect(() => {
     if (!initialSelection || isInitialized) return;
     if (!templates || templates.length === 0) return;
+
+    // FIX: Always wait for package to load when editing (packageId is set)
+    // Previously this only waited when resolvedTemplateId was missing,
+    // causing the flow to skip to 'package' step on first open.
+    if (initialSelection.packageId && !initialPackage && initialPackageLoading) {
+      return;
+    }
     
     let resolvedTemplateId = initialSelection.templateId;
     
     if (!resolvedTemplateId && initialPackage) {
       resolvedTemplateId = (initialPackage as any).menuTemplateId;
-    }
-    
-    if (!resolvedTemplateId && initialSelection.packageId && !initialPackage && initialPackageLoading) {
-      return;
     }
     
     if (!resolvedTemplateId) {
@@ -127,7 +130,7 @@ export function MenuSelectionFlow({
       return;
     }
     
-    console.log('[MenuSelectionFlow] Init success. Template:', template.name, 'Package:', initialPackage?.name || 'loading...');
+    console.log('[MenuSelectionFlow] Init success. Template:', template.name, 'Package:', initialPackage?.name || 'n/a');
     
     setSelectedTemplate(template);
     
