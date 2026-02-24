@@ -3,6 +3,7 @@
  * Handle HTTP requests for reservation management
  * MIGRATED: Uses AppError (no try/catch — errors forwarded by asyncHandler)
  * Phase 4.3: Block cancellation of reservations with paid deposits
+ * Etap 5: internalNotes excluded from PDF
  */
 
 import { Request, Response } from 'express';
@@ -195,6 +196,7 @@ export class ReservationController {
    * GET /api/reservations/:id/pdf
    *
    * Maps Prisma `extras` relation → `reservationExtras` expected by pdf.service.ts
+   * Etap 5: internalNotes is stripped before PDF generation
    */
   async downloadPDF(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
@@ -242,6 +244,9 @@ export class ReservationController {
       ...reservation,
       reservationExtras,
     };
+
+    // Etap 5: Notatka wewnętrzna NIGDY nie trafia do PDF
+    delete pdfData.internalNotes;
 
     const pdfBuffer = await pdfService.generateReservationPDF(pdfData);
 

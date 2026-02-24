@@ -6,6 +6,7 @@
  * Updated: #137 — Venue surcharge for "Cały Obiekt" bookings
  * Updated: allowWithWholeVenue — Strzecha Tył/Przód/Góra coexist with whole venue
  * Updated: #144 — ARCHIVED status support + auto-archive CRON preparation
+ * Updated: Etap 5 — internalNotes field (excluded from PDF)
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -826,6 +827,8 @@ export class ReservationService {
     if (data.startTime !== undefined) updateData.startTime = data.startTime || null;
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
     if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
+    // Etap 5: Notatka wewnętrzna — aktualizacja niezależna od notes
+    if (data.internalNotes !== undefined) updateData.internalNotes = sanitizeString(data.internalNotes);
 
     const reservation = await prisma.reservation.update({
       where: { id },
