@@ -24,6 +24,7 @@ import {
   EditableEventCard,
   EditableGuestsCard,
   EditableNotesCard,
+  EditableInternalNotesCard,
 } from '@/components/reservations/editable'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
@@ -361,6 +362,13 @@ export default function ReservationDetailsPage() {
                 notes={reservation.notes ?? null}
                 confirmationDeadline={reservation.confirmationDeadline ?? null}
                 startDateTime={reservation.startDateTime ?? null}
+                onUpdated={handleRefetch}
+              />
+
+              {/* Notatka wewnętrzna (Etap 5) — nie trafia do PDF */}
+              <EditableInternalNotesCard
+                reservationId={reservation.id}
+                internalNotes={reservation.internalNotes ?? null}
                 onUpdated={handleRefetch}
               />
 
