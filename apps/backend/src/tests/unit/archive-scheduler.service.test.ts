@@ -62,6 +62,16 @@ function setupTransaction() {
   });
 }
 
+/**
+ * Flush microtask queue to allow fire-and-forget promises
+ * (logChange().catch()) to settle.
+ */
+async function flushPromises() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 // ─── Tests ───────────────────────────────────────────────
 
 describe('ArchiveSchedulerService', () => {
@@ -150,9 +160,8 @@ describe('ArchiveSchedulerService', () => {
 
       await service.archiveCancelled();
 
-      // Wait for fire-and-forget audit logs
-      await new Promise(resolve => setTimeout(resolve, 0));
-      jest.runAllTimers();
+      // Flush microtask queue for fire-and-forget logChange() promises
+      await flushPromises();
 
       expect(mockLogChange).toHaveBeenCalledTimes(2);
       expect(mockLogChange).toHaveBeenCalledWith(
@@ -307,12 +316,10 @@ describe('ArchiveSchedulerService', () => {
       setupTransaction();
 
       const result = await service.archiveCancelled();
-
       expect(result.archivedCount).toBe(1);
 
-      // Wait for audit logs
-      await new Promise(resolve => setTimeout(resolve, 0));
-      jest.runAllTimers();
+      // Flush microtask queue for fire-and-forget logChange() promises
+      await flushPromises();
 
       expect(mockLogChange).toHaveBeenCalledWith(
         expect.objectContaining({
