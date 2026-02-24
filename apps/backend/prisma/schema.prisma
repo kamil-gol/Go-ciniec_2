@@ -263,6 +263,7 @@ model Reservation {
   confirmationDeadline DateTime?
   
   notes           String?  @db.Text
+  internalNotes   String?  @db.Text    // Etap 5: Notatka wewnętrzna — NIE pojawia się w PDF
 
   customEventType String?  @db.VarChar(100)
   birthdayAge     Int?     @db.SmallInt
