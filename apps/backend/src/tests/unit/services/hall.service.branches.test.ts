@@ -79,7 +79,7 @@ describe('HallService — branches', () => {
     it('should throw when isWholeVenue already exists', async () => {
       db.hall.findFirst.mockResolvedValue({ id: 'existing' });
       await expect(hallService.createHall({ name: 'X', capacity: 10, isWholeVenue: true }, 'u-1'))
-        .rejects.toThrow('Ca\u0142y Obiekt');
+        .rejects.toThrow('Cały Obiekt');
     });
 
     it('should allow isWholeVenue when none exists', async () => {
@@ -161,26 +161,26 @@ describe('HallService — branches', () => {
   describe('updateHall()', () => {
     it('should throw when not found', async () => {
       db.hall.findUnique.mockResolvedValue(null);
-      await expect(hallService.updateHall('bad', { name: 'X' }, 'u-1')).rejects.toThrow('not found');
+      await expect(hallService.updateHall('bad', { name: 'X' }, 'u-1')).rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should throw when deactivating isWholeVenue', async () => {
       db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true }));
       await expect(hallService.updateHall('h-1', { isActive: false }, 'u-1'))
-        .rejects.toThrow('dezaktywowa\u0107');
+        .rejects.toThrow('dezaktywować');
     });
 
     it('should throw when renaming isWholeVenue', async () => {
-      db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true, name: 'Ca\u0142y Obiekt' }));
+      db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true, name: 'Cały Obiekt' }));
       await expect(hallService.updateHall('h-1', { name: 'New Name' }, 'u-1'))
-        .rejects.toThrow('zmieni\u0107 nazwy');
+        .rejects.toThrow('zmienić nazwy');
     });
 
     it('should allow same name for isWholeVenue', async () => {
-      db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true, name: 'Ca\u0142y Obiekt' }));
+      db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true, name: 'Cały Obiekt' }));
       db.hall.update.mockResolvedValue(makeHall({ isWholeVenue: true }));
       mockDiff.mockReturnValue({});
-      await hallService.updateHall('h-1', { name: 'Ca\u0142y Obiekt' }, 'u-1');
+      await hallService.updateHall('h-1', { name: 'Cały Obiekt' }, 'u-1');
     });
 
     it('should allow isActive=true for isWholeVenue', async () => {
@@ -264,12 +264,12 @@ describe('HallService — branches', () => {
   describe('toggleActive()', () => {
     it('should throw when not found', async () => {
       db.hall.findUnique.mockResolvedValue(null);
-      await expect(hallService.toggleActive('bad', 'u-1')).rejects.toThrow('not found');
+      await expect(hallService.toggleActive('bad', 'u-1')).rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should throw when isWholeVenue', async () => {
       db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true }));
-      await expect(hallService.toggleActive('h-1', 'u-1')).rejects.toThrow('dezaktywowa\u0107');
+      await expect(hallService.toggleActive('h-1', 'u-1')).rejects.toThrow('dezaktywować');
     });
 
     it('should deactivate (Dezaktywowano)', async () => {
@@ -301,12 +301,12 @@ describe('HallService — branches', () => {
   describe('deleteHall()', () => {
     it('should throw when not found', async () => {
       db.hall.findUnique.mockResolvedValue(null);
-      await expect(hallService.deleteHall('bad', 'u-1')).rejects.toThrow('not found');
+      await expect(hallService.deleteHall('bad', 'u-1')).rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should throw when isWholeVenue', async () => {
       db.hall.findUnique.mockResolvedValue(makeHall({ isWholeVenue: true }));
-      await expect(hallService.deleteHall('h-1', 'u-1')).rejects.toThrow('usun\u0105\u0107');
+      await expect(hallService.deleteHall('h-1', 'u-1')).rejects.toThrow('usunąć');
     });
 
     it('should soft-delete normally', async () => {
@@ -323,7 +323,7 @@ describe('HallService — branches', () => {
   describe('getHallById()', () => {
     it('should throw when not found', async () => {
       db.hall.findUnique.mockResolvedValue(null);
-      await expect(hallService.getHallById('bad')).rejects.toThrow('not found');
+      await expect(hallService.getHallById('bad')).rejects.toThrow('Nie znaleziono sali');
     });
   });
 

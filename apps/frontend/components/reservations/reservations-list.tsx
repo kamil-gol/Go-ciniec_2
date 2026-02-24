@@ -236,6 +236,7 @@ export function ReservationsList() {
     { value: 'CONFIRMED', label: 'Potwierdzone' },
     { value: 'COMPLETED', label: 'Zakończone' },
     { value: 'CANCELLED', label: 'Anulowane' },
+    ...(showArchived ? [{ value: 'ARCHIVED', label: 'Zarchiwizowane' }] : []),
   ]
 
   const handleGeneratePDF = async (reservationId: string) => {
@@ -597,7 +598,7 @@ export function ReservationsList() {
                                   variant="ghost"
                                   onClick={() => handleArchive(reservation.id)}
                                   title="Zarchiwizuj"
-                                  disabled={reservation.status === 'CANCELLED'}
+                                  disabled={!['CANCELLED', 'COMPLETED'].includes(reservation.status)}
                                   className="rounded-lg"
                                 >
                                   <Archive className="w-4 h-4" />

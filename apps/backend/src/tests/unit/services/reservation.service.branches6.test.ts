@@ -194,7 +194,7 @@ describe('updateReservation — detectedChanges triggers history + audit', () =>
         adults: 60,
         reason: 'short',
       } as any, UID)
-    ).rejects.toThrow('Reason is required for changes (minimum 10 characters)');
+    ).rejects.toThrow('Powód zmian jest wymagany (minimum 10 znaków)');
   });
 
   it('should throw when changes detected but no reason provided', async () => {
@@ -206,6 +206,6 @@ describe('updateReservation — detectedChanges triggers history + audit', () =>
 
     await expect(
       service.updateReservation('res-1', { adults: 60 } as any, UID)
-    ).rejects.toThrow('Reason is required for changes (minimum 10 characters)');
+    ).rejects.toThrow('Powód zmian jest wymagany (minimum 10 znaków)');
   });
 });

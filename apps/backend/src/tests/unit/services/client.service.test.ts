@@ -35,19 +35,19 @@ describe('ClientService', () => {
     it('should throw on invalid email', async () => {
       await expect(svc.createClient(
         { firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'invalid' } as any, 'u1'
-      )).rejects.toThrow('Invalid email format');
+      )).rejects.toThrow('Nieprawidłowy format adresu email');
     });
 
     it('should throw when phone is missing', async () => {
       await expect(svc.createClient(
         { firstName: 'Jan', lastName: 'K', phone: '' } as any, 'u1'
-      )).rejects.toThrow('Phone number is required');
+      )).rejects.toThrow('Numer telefonu jest wymagany');
     });
 
     it('should throw when phone has less than 9 digits', async () => {
       await expect(svc.createClient(
         { firstName: 'Jan', lastName: 'K', phone: '12345' } as any, 'u1'
-      )).rejects.toThrow('at least 9 digits');
+      )).rejects.toThrow('co najmniej 9 cyfr');
     });
 
     it('should throw on duplicate client', async () => {
@@ -115,7 +115,7 @@ describe('ClientService', () => {
   describe('getClientById()', () => {
     it('should throw when not found', async () => {
       db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.getClientById('x')).rejects.toThrow('Client not found');
+      await expect(svc.getClientById('x')).rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should return client with reservations', async () => {
@@ -131,17 +131,17 @@ describe('ClientService', () => {
 
     it('should throw when not found', async () => {
       db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.updateClient('x', {}, 'u1')).rejects.toThrow('Client not found');
+      await expect(svc.updateClient('x', {}, 'u1')).rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should throw on invalid email', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
-      await expect(svc.updateClient('c1', { email: 'bad' }, 'u1')).rejects.toThrow('Invalid email format');
+      await expect(svc.updateClient('c1', { email: 'bad' }, 'u1')).rejects.toThrow('Nieprawidłowy format adresu email');
     });
 
     it('should throw on short phone', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
-      await expect(svc.updateClient('c1', { phone: '123' }, 'u1')).rejects.toThrow('at least 9 digits');
+      await expect(svc.updateClient('c1', { phone: '123' }, 'u1')).rejects.toThrow('co najmniej 9 cyfr');
     });
 
     it('should throw on duplicate phone+name', async () => {
@@ -212,13 +212,13 @@ describe('ClientService', () => {
   describe('deleteClient()', () => {
     it('should throw when not found', async () => {
       db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.deleteClient('x', 'u1')).rejects.toThrow('Client not found');
+      await expect(svc.deleteClient('x', 'u1')).rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should throw when client has reservations', async () => {
       db.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'J', lastName: 'K' });
       db.reservation.count.mockResolvedValue(3);
-      await expect(svc.deleteClient('c1', 'u1')).rejects.toThrow('existing reservations');
+      await expect(svc.deleteClient('c1', 'u1')).rejects.toThrow('posiadającego rezerwacje');
     });
 
     it('should delete client with no reservations', async () => {

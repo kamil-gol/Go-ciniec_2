@@ -138,7 +138,7 @@ describe('DepositService', () => {
       await expect(depositService.markAsPaid('dep-uuid-002', {
         paymentMethod: 'CASH',
         paidAt: '2026-05-15',
-      }, TEST_USER_ID)).rejects.toThrow(/juz oznaczona/);
+      }, TEST_USER_ID)).rejects.toThrow(/już oznaczona/);
     });
 
     it('should throw when deposit not found', async () => {
@@ -299,7 +299,7 @@ describe('DepositService', () => {
     it('should throw when deposit is paid', async () => {
       mockPrisma.deposit.findUnique.mockResolvedValue(PAID_DEPOSIT);
       await expect(depositService.cancel('dep-uuid-002', TEST_USER_ID))
-        .rejects.toThrow(/oplaconej|platnosc/);
+        .rejects.toThrow(/opłaconej|płatno/);
     });
   });
 
