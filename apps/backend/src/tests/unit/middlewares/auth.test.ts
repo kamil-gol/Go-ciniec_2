@@ -61,7 +61,7 @@ describe('auth middleware', () => {
         verifyToken('invalid.token.here');
       } catch (e: any) {
         expect(e.statusCode).toBe(401);
-        expect(e.message).toBe('Invalid or expired token');
+        expect(e.message).toBe('Nieprawidłowy lub wygasły token');
       }
     });
 
@@ -138,7 +138,7 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledWith(expect.any(AppError));
       const error = next.mock.calls[0][0];
       expect(error.statusCode).toBe(401);
-      expect(error.message).toBe('No token provided');
+      expect(error.message).toBe('Brak tokena uwierzytelniającego');
     });
 
     it('should call next with AppError 401 for invalid token', () => {
@@ -159,7 +159,7 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledWith(expect.any(AppError));
       const error = next.mock.calls[0][0];
       expect(error.statusCode).toBe(401);
-      expect(error.message).toBe('No token provided');
+      expect(error.message).toBe('Brak tokena uwierzytelniającego');
     });
   });
 

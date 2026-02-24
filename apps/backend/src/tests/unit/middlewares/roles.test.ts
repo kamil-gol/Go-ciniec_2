@@ -44,7 +44,7 @@ describe('roles middleware', () => {
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Insufficient permissions',
+        error: 'Niewystarczające uprawnienia',
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -58,7 +58,7 @@ describe('roles middleware', () => {
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Authentication required',
+        error: 'Wymagane uwierzytelnienie',
       });
       expect(next).not.toHaveBeenCalled();
     });

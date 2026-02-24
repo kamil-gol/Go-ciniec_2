@@ -86,7 +86,7 @@ describe('Auth Middleware', () => {
       } catch (e: any) {
         expect(e).toBeInstanceOf(AppError);
         expect(e.statusCode).toBe(401);
-        expect(e.message).toBe('Invalid or expired token');
+        expect(e.message).toBe('Nieprawidłowy lub wygasły token');
       }
     });
 
@@ -139,7 +139,7 @@ describe('Auth Middleware', () => {
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          message: 'No token provided',
+          message: 'Brak tokena uwierzytelniającego',
         })
       );
     });

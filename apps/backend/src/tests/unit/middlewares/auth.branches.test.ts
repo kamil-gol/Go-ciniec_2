@@ -47,12 +47,12 @@ describe('Auth Middleware branches', () => {
     });
 
     it('should throw on invalid token', () => {
-      expect(() => verifyToken('invalid.token.here')).toThrow('Invalid or expired token');
+      expect(() => verifyToken('invalid.token.here')).toThrow('Nieprawidłowy lub wygasły token');
     });
 
     it('should throw on expired token', () => {
       const expiredToken = jwt.sign(VALID_PAYLOAD, TEST_SECRET, { expiresIn: '-1s' });
-      expect(() => verifyToken(expiredToken)).toThrow('Invalid or expired token');
+      expect(() => verifyToken(expiredToken)).toThrow('Nieprawidłowy lub wygasły token');
     });
   });
 
@@ -98,7 +98,7 @@ describe('Auth Middleware branches', () => {
       authMiddleware(req, res, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringContaining('No token') })
+        expect.objectContaining({ message: expect.stringContaining('Brak tokena') })
       );
     });
 
@@ -112,7 +112,7 @@ describe('Auth Middleware branches', () => {
       authMiddleware(req, res, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringContaining('No token') })
+        expect.objectContaining({ message: expect.stringContaining('Brak tokena') })
       );
     });
   });
