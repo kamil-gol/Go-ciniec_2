@@ -109,7 +109,7 @@ describe('DiscountService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(discountService.applyDiscount('x', { type: 'PERCENTAGE', value: 10, reason: 'Test' }, userId))
-        .rejects.toThrow(/not found/);
+        .rejects.toThrow(/Nie znaleziono rezerwacji/);
     });
 
     it('should throw for cancelled reservation', async () => {
@@ -191,7 +191,7 @@ describe('DiscountService', () => {
     it('should throw when reservation not found', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
-      await expect(discountService.removeDiscount('x', userId)).rejects.toThrow(/not found/);
+      await expect(discountService.removeDiscount('x', userId)).rejects.toThrow(/Nie znaleziono rezerwacji/);
     });
   });
 });

@@ -56,16 +56,16 @@ describe('EventTypeService', () => {
     });
 
     it('should throw when name is empty', async () => {
-      await expect(service.createEventType({ name: '  ' } as any, USER)).rejects.toThrow('Event type name is required');
+      await expect(service.createEventType({ name: '  ' } as any, USER)).rejects.toThrow('Nazwa typu wydarzenia jest wymagana');
     });
 
     it('should throw on invalid color', async () => {
-      await expect(service.createEventType({ name: 'Test', color: 'red' } as any, USER)).rejects.toThrow('Invalid color format');
+      await expect(service.createEventType({ name: 'Test', color: 'red' } as any, USER)).rejects.toThrow('Nieprawid\u0142owy format koloru');
     });
 
     it('should throw on duplicate name', async () => {
       mockPrisma.eventType.findFirst.mockResolvedValue(ET);
-      await expect(service.createEventType({ name: 'Wesele' } as any, USER)).rejects.toThrow('already exists');
+      await expect(service.createEventType({ name: 'Wesele' } as any, USER)).rejects.toThrow('ju\u017c istnieje');
     });
   });
 
@@ -87,7 +87,7 @@ describe('EventTypeService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.eventType.findUnique.mockResolvedValue(null);
-      await expect(service.getEventTypeById('x')).rejects.toThrow('Event type not found');
+      await expect(service.getEventTypeById('x')).rejects.toThrow('Nie znaleziono typu wydarzenia');
     });
   });
 
@@ -99,20 +99,20 @@ describe('EventTypeService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.eventType.findUnique.mockResolvedValue(null);
-      await expect(service.updateEventType('x', {} as any, USER)).rejects.toThrow('Event type not found');
+      await expect(service.updateEventType('x', {} as any, USER)).rejects.toThrow('Nie znaleziono typu wydarzenia');
     });
 
     it('should throw on empty name', async () => {
-      await expect(service.updateEventType('et-001', { name: '' } as any, USER)).rejects.toThrow('name cannot be empty');
+      await expect(service.updateEventType('et-001', { name: '' } as any, USER)).rejects.toThrow('nie mo\u017ce by\u0107 pusta');
     });
 
     it('should throw on invalid color', async () => {
-      await expect(service.updateEventType('et-001', { color: 'xyz' } as any, USER)).rejects.toThrow('Invalid color format');
+      await expect(service.updateEventType('et-001', { color: 'xyz' } as any, USER)).rejects.toThrow('Nieprawid\u0142owy format koloru');
     });
 
     it('should throw on duplicate name', async () => {
       mockPrisma.eventType.findFirst.mockResolvedValue({ id: 'et-other', name: 'Chrzciny' });
-      await expect(service.updateEventType('et-001', { name: 'Chrzciny' } as any, USER)).rejects.toThrow('already exists');
+      await expect(service.updateEventType('et-001', { name: 'Chrzciny' } as any, USER)).rejects.toThrow('ju\u017c istnieje');
     });
 
     it('should not audit when no changes', async () => {
@@ -130,7 +130,7 @@ describe('EventTypeService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.eventType.findUnique.mockResolvedValue(null);
-      await expect(service.toggleActive('x', USER)).rejects.toThrow('Event type not found');
+      await expect(service.toggleActive('x', USER)).rejects.toThrow('Nie znaleziono typu wydarzenia');
     });
   });
 
@@ -143,17 +143,17 @@ describe('EventTypeService', () => {
 
     it('should throw when has reservations', async () => {
       mockPrisma.reservation.count.mockResolvedValue(5);
-      await expect(service.deleteEventType('et-001', USER)).rejects.toThrow(/5 reservation/);
+      await expect(service.deleteEventType('et-001', USER)).rejects.toThrow(/5 rezerwacji/);
     });
 
     it('should throw when has menu templates', async () => {
       mockPrisma.menuTemplate.count.mockResolvedValue(2);
-      await expect(service.deleteEventType('et-001', USER)).rejects.toThrow(/2 menu template/);
+      await expect(service.deleteEventType('et-001', USER)).rejects.toThrow(/2 szablon/);
     });
 
     it('should throw when not found', async () => {
       mockPrisma.eventType.findUnique.mockResolvedValue(null);
-      await expect(service.deleteEventType('x', USER)).rejects.toThrow('Event type not found');
+      await expect(service.deleteEventType('x', USER)).rejects.toThrow('Nie znaleziono typu wydarzenia');
     });
   });
 

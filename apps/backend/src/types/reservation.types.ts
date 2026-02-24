@@ -2,6 +2,7 @@
  * Reservation Types
  * Types and interfaces for reservation management
  * UPDATED: Menu integration support
+ * UPDATED: #144 — ARCHIVED status for auto-archiving cancelled reservations
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -158,7 +159,8 @@ export enum ReservationStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export interface ReservationFilters {

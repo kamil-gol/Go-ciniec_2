@@ -5,6 +5,7 @@
  * Updated: Sprint 8 — service extras creation during reservation
  * Updated: #137 — Venue surcharge for "Cały Obiekt" bookings
  * Updated: allowWithWholeVenue — Strzecha Tył/Przód/Góra coexist with whole venue
+ * Updated: #144 — ARCHIVED status support + auto-archive CRON preparation
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -395,7 +396,8 @@ export class ReservationService {
     });
 
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
-    if (reservation.status === ReservationStatus.COMPLETED || reservation.status === ReservationStatus.CANCELLED) {
+    // #144: Also block menu updates for ARCHIVED reservations
+    if (reservation.status === ReservationStatus.COMPLETED || reservation.status === ReservationStatus.CANCELLED || reservation.status === ReservationStatus.ARCHIVED) {
       throw new Error(MENU.CANNOT_UPDATE_MENU);
     }
 
@@ -566,6 +568,12 @@ export class ReservationService {
       where.archivedAt = null;
     }
 
+    // #144: When no explicit status filter, also exclude ARCHIVED by status
+    // (belt-and-suspenders with archivedAt filter above)
+    if (!filters?.status && !filters?.archived) {
+      where.status = { not: ReservationStatus.ARCHIVED };
+    }
+
     const page = (filters as any)?.page ?? 1;
     const pageSize = (filters as any)?.pageSize ?? 100;
 
@@ -646,6 +654,8 @@ export class ReservationService {
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_UPDATE_COMPLETED);
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.CANNOT_UPDATE_CANCELLED);
+    // #144: Block editing of archived reservations
+    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.CANNOT_UPDATE_ARCHIVED);
 
     if (data.menuPackageId !== undefined) {
       if (data.menuPackageId === null) {
@@ -944,9 +954,10 @@ export class ReservationService {
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_CANCEL_COMPLETED);
 
     await prisma.$transaction(async (tx) => {
+      // #144: Don't set archivedAt immediately — CRON will archive after ARCHIVE_AFTER_DAYS
       await tx.reservation.update({
         where: { id },
-        data: { status: ReservationStatus.CANCELLED, archivedAt: new Date() }
+        data: { status: ReservationStatus.CANCELLED }
       });
 
       const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
@@ -980,7 +991,7 @@ export class ReservationService {
   }
 
   /**
-   * Archive reservation - set archivedAt timestamp
+   * Archive reservation - set archivedAt timestamp + ARCHIVED status (#144)
    */
   async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
@@ -993,9 +1004,10 @@ export class ReservationService {
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
     if (reservation.archivedAt) throw new Error(RESERVATION.ALREADY_ARCHIVED);
 
+    // #144: Set both status and archivedAt for consistent state
     await prisma.reservation.update({
       where: { id },
-      data: { archivedAt: new Date() }
+      data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() }
     });
 
     await this.createHistoryEntry(
@@ -1019,7 +1031,7 @@ export class ReservationService {
   }
 
   /**
-   * Unarchive reservation - remove archivedAt timestamp
+   * Unarchive reservation - remove archivedAt timestamp + restore CANCELLED status (#144)
    */
   async unarchiveReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
@@ -1032,9 +1044,10 @@ export class ReservationService {
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
     if (!reservation.archivedAt) throw new Error(RESERVATION.NOT_ARCHIVED);
 
+    // #144: Restore to CANCELLED status when unarchiving
     await prisma.reservation.update({
       where: { id },
-      data: { archivedAt: null }
+      data: { status: ReservationStatus.CANCELLED, archivedAt: null }
     });
 
     await this.createHistoryEntry(
@@ -1258,12 +1271,14 @@ export class ReservationService {
     return !!overlapping;
   }
 
+  // #144: Added ARCHIVED as terminal state (no transitions out)
   private validateStatusTransition(currentStatus: string, newStatus: ReservationStatus): void {
     const validTransitions: Record<string, ReservationStatus[]> = {
       [ReservationStatus.PENDING]: [ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED],
       [ReservationStatus.CONFIRMED]: [ReservationStatus.COMPLETED, ReservationStatus.CANCELLED],
       [ReservationStatus.COMPLETED]: [],
-      [ReservationStatus.CANCELLED]: []
+      [ReservationStatus.CANCELLED]: [],
+      [ReservationStatus.ARCHIVED]: [],
     };
     if (!validTransitions[currentStatus]?.includes(newStatus)) {
       throw new Error(RESERVATION.STATUS_TRANSITION_INVALID(currentStatus, newStatus));

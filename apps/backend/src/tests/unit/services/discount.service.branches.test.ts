@@ -56,7 +56,7 @@ describe('DiscountService — branches', () => {
       db.user.findUnique.mockResolvedValue({ id: 'u-1' });
       db.reservation.findUnique.mockResolvedValue(null);
       await expect(discountService.applyDiscount('bad', { type: 'FIXED', value: 100, reason: 'Test rabat' }, 'u-1'))
-        .rejects.toThrow('not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when reservation is cancelled', async () => {
@@ -186,7 +186,7 @@ describe('DiscountService — branches', () => {
       db.user.findUnique.mockResolvedValue({ id: 'u-1' });
       db.reservation.findUnique.mockResolvedValue(null);
       await expect(discountService.removeDiscount('bad', 'u-1'))
-        .rejects.toThrow('not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when no discount exists', async () => {

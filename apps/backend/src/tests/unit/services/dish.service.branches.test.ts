@@ -102,14 +102,14 @@ describe('DishService — branches', () => {
     it('should throw when name already exists', async () => {
       db.dish.findFirst.mockResolvedValue({ id: 'existing' });
       await expect(dishService.create({ name: 'Rosół', categoryId: 'cat-1' }, 'u-1'))
-        .rejects.toThrow('already exists');
+        .rejects.toThrow('już istnieje');
     });
 
     it('should throw when category not found', async () => {
       db.dish.findFirst.mockResolvedValue(null);
       db.dishCategory.findUnique.mockResolvedValue(null);
       await expect(dishService.create({ name: 'New', categoryId: 'bad' }, 'u-1'))
-        .rejects.toThrow('not found');
+        .rejects.toThrow('Nie znaleziono kategorii');
     });
 
     it('should default allergens to [] when not provided', async () => {
@@ -162,14 +162,14 @@ describe('DishService — branches', () => {
     it('should throw when dish not found', async () => {
       db.dish.findUnique.mockResolvedValue(null);
       await expect(dishService.update('bad', { name: 'X' }, 'u-1'))
-        .rejects.toThrow('not found');
+        .rejects.toThrow('Nie znaleziono dania');
     });
 
     it('should check name uniqueness when name changes', async () => {
       db.dish.findUnique.mockResolvedValue(makeDish());
       db.dish.findFirst.mockResolvedValue({ id: 'other' }); // conflict
       await expect(dishService.update('d-1', { name: 'Taken' }, 'u-1'))
-        .rejects.toThrow('already exists');
+        .rejects.toThrow('już istnieje');
     });
 
     it('should skip name check when name not provided', async () => {
@@ -186,7 +186,7 @@ describe('DishService — branches', () => {
       db.dishCategory.findUnique.mockResolvedValue(null); // not found
 
       await expect(dishService.update('d-1', { categoryId: 'bad' }, 'u-1'))
-        .rejects.toThrow('not found');
+        .rejects.toThrow('Nie znaleziono kategorii');
     });
 
     it('should skip categoryId validation when not provided', async () => {
@@ -233,7 +233,7 @@ describe('DishService — branches', () => {
   describe('toggleActive()', () => {
     it('should throw when not found', async () => {
       db.dish.findUnique.mockResolvedValue(null);
-      await expect(dishService.toggleActive('bad', 'u-1')).rejects.toThrow('not found');
+      await expect(dishService.toggleActive('bad', 'u-1')).rejects.toThrow('Nie znaleziono dania');
     });
 
     it('should deactivate active dish', async () => {
@@ -291,7 +291,7 @@ describe('DishService — branches', () => {
   describe('remove()', () => {
     it('should throw when not found', async () => {
       db.dish.findUnique.mockResolvedValue(null);
-      await expect(dishService.remove('bad', 'u-1')).rejects.toThrow('not found');
+      await expect(dishService.remove('bad', 'u-1')).rejects.toThrow('Nie znaleziono dania');
     });
 
     it('should delete and audit', async () => {

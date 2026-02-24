@@ -104,14 +104,14 @@ describe('DishService', () => {
     it('should throw when dish name already exists', async () => {
       mockPrisma.dish.findFirst.mockResolvedValue(mockDish);
       await expect(dishService.create({ name: 'Rosół', categoryId: 'cat-1' }, userId))
-        .rejects.toThrow(/already exists/);
+        .rejects.toThrow(/już istnieje/);
     });
 
     it('should throw when category not found', async () => {
       mockPrisma.dish.findFirst.mockResolvedValue(null);
       mockPrisma.dishCategory.findUnique.mockResolvedValue(null);
       await expect(dishService.create({ name: 'Nowe', categoryId: 'x' }, userId))
-        .rejects.toThrow(/Category.*not found/);
+        .rejects.toThrow(/Nie znaleziono kategorii/);
     });
   });
 
@@ -130,21 +130,21 @@ describe('DishService', () => {
 
     it('should throw when dish not found', async () => {
       mockPrisma.dish.findUnique.mockResolvedValue(null);
-      await expect(dishService.update('x', { name: 'Y' }, userId)).rejects.toThrow(/not found/);
+      await expect(dishService.update('x', { name: 'Y' }, userId)).rejects.toThrow(/Nie znaleziono dania/);
     });
 
     it('should throw on name conflict with another dish', async () => {
       mockPrisma.dish.findUnique.mockResolvedValue(mockDish);
       mockPrisma.dish.findFirst.mockResolvedValue({ id: 'dish-2', name: 'Żurek' });
       await expect(dishService.update('dish-1', { name: 'Żurek' }, userId))
-        .rejects.toThrow(/already exists/);
+        .rejects.toThrow(/już istnieje/);
     });
 
     it('should throw when new category not found', async () => {
       mockPrisma.dish.findUnique.mockResolvedValue(mockDish);
       mockPrisma.dishCategory.findUnique.mockResolvedValue(null);
       await expect(dishService.update('dish-1', { categoryId: 'x' }, userId))
-        .rejects.toThrow(/Category.*not found/);
+        .rejects.toThrow(/Nie znaleziono kategorii/);
     });
   });
 
@@ -162,7 +162,7 @@ describe('DishService', () => {
 
     it('should throw when dish not found', async () => {
       mockPrisma.dish.findUnique.mockResolvedValue(null);
-      await expect(dishService.toggleActive('x', userId)).rejects.toThrow(/not found/);
+      await expect(dishService.toggleActive('x', userId)).rejects.toThrow(/Nie znaleziono dania/);
     });
   });
 
@@ -180,7 +180,7 @@ describe('DishService', () => {
 
     it('should throw when dish not found', async () => {
       mockPrisma.dish.findUnique.mockResolvedValue(null);
-      await expect(dishService.remove('x', userId)).rejects.toThrow(/not found/);
+      await expect(dishService.remove('x', userId)).rejects.toThrow(/Nie znaleziono dania/);
     });
   });
 });

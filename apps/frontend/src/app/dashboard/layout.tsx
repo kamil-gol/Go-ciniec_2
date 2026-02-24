@@ -1,11 +1,12 @@
 import SessionTimeoutModal from './components/SessionTimeoutModal';
+import DashboardNav from './components/DashboardNav';
 
 /**
- * 🏠 Dashboard Layout (#145)
+ * 🏠 Dashboard Layout (#145 + #144)
  *
  * Wrapper dla wszystkich stron w /dashboard/*.
- * Renderuje SessionTimeoutModal globalnie — idle detection
- * działa na każdej podstronie po zalogowaniu.
+ * - DashboardNav: sidebar navigation z linkami do sekcji
+ * - SessionTimeoutModal: idle detection po zalogowaniu
  */
 export default function DashboardLayout({
   children,
@@ -13,9 +14,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      {children}
+    <div className="flex min-h-screen">
+      <DashboardNav />
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
       <SessionTimeoutModal />
-    </>
+    </div>
   );
 }

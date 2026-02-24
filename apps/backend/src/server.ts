@@ -27,6 +27,7 @@ import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
 import authService from '@/services/auth.service';
+import archiveSchedulerService from '@/services/archive-scheduler.service';
 import emailService from '@/services/email.service';
 
 // Validate environment variables early
@@ -194,6 +195,7 @@ if (process.env.NODE_ENV !== 'test') {
     setupAutoCancelCron();
     setupDepositOverdueCron();
     setupDepositReminderCron();
+    setupArchiveCron();
     setupRefreshTokenCleanupCron();
 
     // Verify email on startup
@@ -272,6 +274,31 @@ function setupDepositReminderCron() {
     }
   });
   logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
+}
+
+/**
+ * Setup Auto-Archive Cron Job (#144)
+ * Archives CANCELLED reservations older than ARCHIVE_AFTER_DAYS (default: 30).
+ * Runs daily at 02:00 AM.
+ */
+function setupArchiveCron() {
+  cron.schedule('0 2 * * *', async () => {
+    logger.info('[CRON] Running auto-archive for old CANCELLED reservations...');
+    try {
+      const result = await archiveSchedulerService.archiveCancelled();
+      if (result.archivedCount > 0) {
+        logger.info(
+          `[CRON] Auto-archive completed: ${result.archivedCount} reservations archived`,
+          { archivedIds: result.archivedIds }
+        );
+      } else {
+        logger.info('[CRON] Auto-archive completed: No reservations to archive');
+      }
+    } catch (error: any) {
+      logger.error('[CRON] Auto-archive failed:', error.message);
+    }
+  });
+  logger.info(`Auto-archive cron job scheduled for 02:00 AM daily (ARCHIVE_AFTER_DAYS=${process.env.ARCHIVE_AFTER_DAYS || 30})`);
 }
 
 /**
