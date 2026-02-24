@@ -1,16 +1,18 @@
 /**
- * Archive Scheduler Service — #144
+ * Archive Scheduler Service — #144 (Phase 4)
  *
- * Automatically archives CANCELLED reservations after ARCHIVE_AFTER_DAYS.
- * Designed to be called by a daily CRON job (02:00 AM).
+ * Automatically archives CANCELLED reservations after archiveAfterDays.
+ * Designed to be called by a daily CRON job (02:00 AM) or manually from admin panel.
+ *
+ * Config priority:
+ *   1. DB: CompanySettings.archiveAfterDays
+ *   2. ENV: ARCHIVE_AFTER_DAYS
+ *   3. Default: 30
  *
  * Logic:
- * 1. Find CANCELLED reservations where updatedAt < NOW() - ARCHIVE_AFTER_DAYS
- * 2. Batch update (max 100 per run): status → ARCHIVED, archivedAt → now()
- * 3. Create audit log entries for each archived reservation
- *
- * Environment:
- *   ARCHIVE_AFTER_DAYS — number of days after cancellation before auto-archive (default: 30)
+ *   1. Find CANCELLED reservations where updatedAt < NOW() - archiveAfterDays
+ *   2. Batch update (max 100 per run): status → ARCHIVED, archivedAt → now()
+ *   3. Create audit log entries for each archived reservation
  */
 
 import { prisma } from '@/lib/prisma';
@@ -20,23 +22,45 @@ import logger from '@utils/logger';
 const BATCH_SIZE = 100;
 const DEFAULT_ARCHIVE_AFTER_DAYS = 30;
 
-function getArchiveAfterDays(): number {
+/**
+ * Resolve archiveAfterDays from DB → env → default.
+ */
+async function resolveArchiveAfterDays(): Promise<number> {
+  // 1. Try DB settings
+  try {
+    const settings = await prisma.companySettings.findFirst({
+      select: { archiveAfterDays: true },
+    });
+    if (settings && settings.archiveAfterDays > 0) {
+      return settings.archiveAfterDays;
+    }
+  } catch (err) {
+    logger.warn('[Archive] Failed to read archiveAfterDays from DB, falling back to env/default');
+  }
+
+  // 2. Fallback to env var
   const envVal = process.env.ARCHIVE_AFTER_DAYS;
   if (envVal) {
     const parsed = parseInt(envVal, 10);
     if (!isNaN(parsed) && parsed > 0) return parsed;
     logger.warn(`[Archive] Invalid ARCHIVE_AFTER_DAYS value: "${envVal}", using default ${DEFAULT_ARCHIVE_AFTER_DAYS}`);
   }
+
+  // 3. Default
   return DEFAULT_ARCHIVE_AFTER_DAYS;
 }
 
 export class ArchiveSchedulerService {
   /**
-   * Archive cancelled reservations older than ARCHIVE_AFTER_DAYS.
-   * Returns count of archived reservations and their IDs.
+   * Archive cancelled reservations older than archiveAfterDays.
+   * Returns count of archived reservations, their IDs, and the config used.
    */
-  async archiveCancelled(): Promise<{ archivedCount: number; archivedIds: string[] }> {
-    const archiveAfterDays = getArchiveAfterDays();
+  async archiveCancelled(): Promise<{
+    archivedCount: number;
+    archivedIds: string[];
+    archiveAfterDays: number;
+  }> {
+    const archiveAfterDays = await resolveArchiveAfterDays();
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - archiveAfterDays);
 
@@ -61,7 +85,7 @@ export class ArchiveSchedulerService {
     });
 
     if (candidates.length === 0) {
-      return { archivedCount: 0, archivedIds: [] };
+      return { archivedCount: 0, archivedIds: [], archiveAfterDays };
     }
 
     const candidateIds = candidates.map(c => c.id);
@@ -118,6 +142,7 @@ export class ArchiveSchedulerService {
     return {
       archivedCount: candidates.length,
       archivedIds: candidateIds,
+      archiveAfterDays,
     };
   }
 }

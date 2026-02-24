@@ -6,6 +6,7 @@
  *   /api/settings/roles          — Role management
  *   /api/settings/permissions    — Permission listing
  *   /api/settings/company        — Company settings
+ *   /api/settings/archive        — Archive configuration & manual trigger (#144)
  */
 import { Router } from 'express';
 import { authMiddleware } from '@middlewares/auth';
@@ -15,6 +16,7 @@ import usersController from '@controllers/users.controller';
 import rolesController from '@controllers/roles.controller';
 import permissionsController from '@controllers/permissions.controller';
 import companySettingsController from '@controllers/company-settings.controller';
+import archiveAdminController from '@controllers/archive-admin.controller';
 
 const router = Router();
 
@@ -133,6 +135,27 @@ router.put(
   '/company',
   requirePermission('settings:manage_company'),
   asyncHandler(companySettingsController.updateSettings.bind(companySettingsController))
+);
+
+// ═══════════════════════════════════════════════════════
+// 🗄️ ARCHIVE SETTINGS — /api/settings/archive (#144)
+// ═══════════════════════════════════════════════════════
+router.get(
+  '/archive',
+  requirePermission('settings:read'),
+  asyncHandler(archiveAdminController.getArchiveSettings.bind(archiveAdminController))
+);
+
+router.put(
+  '/archive',
+  requirePermission('settings:manage_company'),
+  asyncHandler(archiveAdminController.updateArchiveSettings.bind(archiveAdminController))
+);
+
+router.post(
+  '/archive/run-now',
+  requirePermission('settings:manage_company'),
+  asyncHandler(archiveAdminController.runArchiveNow.bind(archiveAdminController))
 );
 
 export default router;
