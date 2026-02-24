@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { 
   ChevronLeft, ChevronRight, AlertCircle, Check, 
@@ -51,7 +50,6 @@ export function DishSelector({
         initialSelectionsData[cat.categoryId] = {}
       })
 
-      // If we have initialSelections, populate them
       if (initialSelections) {
         initialSelections.forEach(catSelection => {
           const dishes: Record<string, number> = {}
@@ -80,7 +78,7 @@ export function DishSelector({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Ten pakiet nie wymaga wyboru dań z kategorii.
+          Ten pakiet nie wymaga wyboru da\u0144 z kategorii.
         </AlertDescription>
       </Alert>
     )
@@ -88,52 +86,70 @@ export function DishSelector({
 
   const categories = categoryData.categories
 
-  // Calculate total quantity for category
+  // \u2500\u2500 Helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
   const getCategoryTotal = (categoryId: string): number => {
     const categorySelections = selections[categoryId] || {}
     return Object.values(categorySelections).reduce((sum, qty) => sum + qty, 0)
   }
 
-  // Get category settings
   const getCategorySettings = (categoryId: string) => {
     return categories.find((cat: any) => cat.categoryId === categoryId)
   }
 
-  // Toggle dish selection
+  const getCategoryRemaining = (categoryId: string): number => {
+    const settings = getCategorySettings(categoryId)
+    if (!settings) return 0
+    return settings.maxSelect - getCategoryTotal(categoryId)
+  }
+
+  // FIX 4a: Get available quantity options filtered by remaining capacity
+  const getAvailableQuantityOptions = (categoryId: string, dishId: string): number[] => {
+    const allOptions = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+    const currentDishQty = selections[categoryId]?.[dishId] || 0
+    const maxForDish = getCategoryRemaining(categoryId) + currentDishQty
+    return allOptions.filter(opt => opt <= maxForDish)
+  }
+
+  // FIX 4a: Smart toggle with adaptive default quantity
   const toggleDish = (categoryId: string, dishId: string) => {
     const isCurrentlySelected = !!selections[categoryId]?.[dishId]
     
-    // If trying to select a new dish, check if we would exceed maxSelect
     if (!isCurrentlySelected) {
       const categorySettings = getCategorySettings(categoryId)
-      const currentTotal = getCategoryTotal(categoryId)
-      const newTotal = currentTotal + 1 // Minimum quantity is 1
+      const remaining = getCategoryRemaining(categoryId)
       
-      if (newTotal > categorySettings.maxSelect) {
+      if (remaining <= 0) {
         toast({
-          title: 'Limit osiągnięty',
-          description: `Możesz wybrać maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}".`,
+          title: 'Limit osi\u0105gni\u0119ty',
+          description: `Mo\u017cesz wybra\u0107 maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inn\u0105 pozycj\u0119 aby doda\u0107 now\u0105.`,
           variant: 'destructive',
         })
         return
       }
-    }
 
-    setSelections(prev => {
-      const newSelections = { ...prev }
-      const categorySelections = { ...newSelections[categoryId] }
-      
-      if (categorySelections[dishId]) {
-        // Remove dish
+      // Smart default: if remaining < 1, use remaining rounded to nearest 0.5
+      const defaultQuantity = remaining < 1 
+        ? Math.round(remaining * 2) / 2 
+        : 1
+
+      setSelections(prev => ({
+        ...prev,
+        [categoryId]: {
+          ...prev[categoryId],
+          [dishId]: defaultQuantity
+        }
+      }))
+    } else {
+      // Remove dish
+      setSelections(prev => {
+        const newSelections = { ...prev }
+        const categorySelections = { ...newSelections[categoryId] }
         delete categorySelections[dishId]
-      } else {
-        // Add dish with quantity 1
-        categorySelections[dishId] = 1
-      }
-      
-      newSelections[categoryId] = categorySelections
-      return newSelections
-    })
+        newSelections[categoryId] = categorySelections
+        return newSelections
+      })
+    }
     
     // Clear error for this category
     if (errors[categoryId]) {
@@ -145,26 +161,8 @@ export function DishSelector({
     }
   }
 
-  // Update dish quantity
+  // Update dish quantity (dropdown already filtered, no need for max check)
   const updateQuantity = (categoryId: string, dishId: string, quantity: number) => {
-    const categorySettings = getCategorySettings(categoryId)
-    const categorySelections = selections[categoryId] || {}
-    const currentQuantityForDish = categorySelections[dishId] || 0
-    
-    // Calculate what the new total would be
-    const currentTotal = getCategoryTotal(categoryId)
-    const newTotal = currentTotal - currentQuantityForDish + quantity
-    
-    // Check if new total would exceed maxSelect
-    if (newTotal > categorySettings.maxSelect) {
-      toast({
-        title: 'Limit osiągnięty',
-        description: `Suma porcji nie może przekroczyć ${categorySettings.maxSelect} w kategorii "${categorySettings.customLabel || categorySettings.categoryName}".`,
-        variant: 'destructive',
-      })
-      return
-    }
-
     setSelections(prev => ({
       ...prev,
       [categoryId]: {
@@ -174,36 +172,46 @@ export function DishSelector({
     }))
   }
 
-  // Validate selections
-  const validateSelections = (): boolean => {
+  // FIX 4b + 4d: Validate with structured error messages
+  const validateSelections = (): { isValid: boolean; errorMap: Record<string, string> } => {
     const newErrors: Record<string, string> = {}
     let isValid = true
 
     categories.forEach((category: any) => {
       const total = getCategoryTotal(category.categoryId)
+      const label = category.customLabel || category.categoryName
       
-      if (category.isRequired) {
-        if (total < category.minSelect) {
-          newErrors[category.categoryId] = `Wybierz minimum ${category.minSelect} pozycji`
-          isValid = false
-        } else if (total > category.maxSelect) {
-          newErrors[category.categoryId] = `Wybierz maksymalnie ${category.maxSelect} pozycji`
-          isValid = false
-        }
+      // FIX 4d: Skip min validation when minSelect is 0 (optional category)
+      if (category.minSelect > 0 && total < category.minSelect) {
+        newErrors[category.categoryId] = `\u201e${label}\u201d: wybierz minimum ${category.minSelect} pozycji (masz ${total})`
+        isValid = false
+      }
+      
+      if (total > category.maxSelect) {
+        newErrors[category.categoryId] = `\u201e${label}\u201d: maksymalnie ${category.maxSelect} pozycji (masz ${total})`
+        isValid = false
       }
     })
 
     setErrors(newErrors)
-    return isValid
+    return { isValid, errorMap: newErrors }
   }
 
-  // Handle completion
+  // FIX 4b: Show toast summary on validation failure
   const handleComplete = () => {
-    if (!validateSelections()) {
+    const { isValid, errorMap } = validateSelections()
+    
+    if (!isValid) {
+      const errorMessages = Object.values(errorMap)
+      toast({
+        title: 'Nie mo\u017cna zatwierdzi\u0107 wyboru',
+        description: errorMessages.join('. ') + '.',
+        variant: 'destructive',
+        duration: 6000,
+      })
       return
     }
 
-    // Transform selections to output format
     const result: CategorySelection[] = categories.map((category: any) => ({
       categoryId: category.categoryId,
       dishes: Object.entries(selections[category.categoryId] || {}).map(([dishId, quantity]) => ({
@@ -215,16 +223,13 @@ export function DishSelector({
     onComplete(result)
   }
 
-  // Generate quantity options (0.5 increments)
-  const quantityOptions = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Wybór Dań</h2>
+        <h2 className="text-2xl font-bold mb-2">Wyb\u00f3r Da\u0144</h2>
         <p className="text-muted-foreground">
-          Wybierz dania z każdej kategorii zgodnie z limitami
+          Wybierz dania z ka\u017cdej kategorii zgodnie z limitami
         </p>
       </div>
 
@@ -232,6 +237,8 @@ export function DishSelector({
       <div className="space-y-6">
         {categories.map((category: any) => {
           const total = getCategoryTotal(category.categoryId)
+          const remaining = getCategoryRemaining(category.categoryId)
+          const isOptional = category.minSelect === 0
           const isValid = total >= category.minSelect && total <= category.maxSelect
           const hasError = errors[category.categoryId]
           const isAtMaxLimit = total >= category.maxSelect
@@ -244,26 +251,43 @@ export function DishSelector({
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">{category.categoryIcon}</span>
-                      <h3 className="text-2xl font-bold">{category.customLabel || category.categoryName}</h3>
+                      <div>
+                        <h3 className="text-2xl font-bold">{category.customLabel || category.categoryName}</h3>
+                        {/* FIX 4d: Show optional label */}
+                        {isOptional && (
+                          <span className="text-xs font-medium text-muted-foreground">Opcjonalna kategoria</span>
+                        )}
+                      </div>
                     </div>
-                    <Badge 
-                      variant={isValid ? "default" : "secondary"}
-                      className={`text-lg px-4 py-2 ${
-                        isValid 
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                      }`}
-                    >
-                      {total} / {category.minSelect}-{category.maxSelect}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {/* FIX 4a: Show remaining count */}
+                      {!isAtMaxLimit && total > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          Pozosta\u0142o: {remaining}
+                        </span>
+                      )}
+                      <Badge 
+                        variant={isValid ? "default" : "secondary"}
+                        className={`text-lg px-4 py-2 ${
+                          isValid 
+                            ? isOptional && total === 0
+                              ? 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
+                              : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                        }`}
+                      >
+                        {total} / {isOptional ? `0-${category.maxSelect}` : `${category.minSelect}-${category.maxSelect}`}
+                      </Badge>
+                    </div>
                   </div>
                   
                   {/* Progress Bar */}
                   <div className="relative h-3 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden shadow-inner">
                     <div 
                       className={`h-full transition-all duration-300 ${
-                        total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                        !isOptional && total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
                         total > category.maxSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                        total === 0 ? '' :
                         'bg-gradient-to-r from-green-500 to-emerald-500'
                       }`}
                       style={{ 
@@ -276,7 +300,7 @@ export function DishSelector({
                     <Alert className="mt-3 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                       <Info className="h-4 w-4 text-blue-600" />
                       <AlertDescription className="text-blue-900 dark:text-blue-100">
-                        Osiągnięto maksymalną liczbę pozycji. Odznacz danie aby wybrać inne.
+                        Osi\u0105gni\u0119to maksymaln\u0105 liczb\u0119 pozycji. Odznacz danie aby wybra\u0107 inne.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -295,6 +319,7 @@ export function DishSelector({
                     const isSelected = !!selections[category.categoryId]?.[dish.id]
                     const quantity = selections[category.categoryId]?.[dish.id] || 1
                     const isDisabled = !isSelected && isAtMaxLimit
+                    const availableOptions = getAvailableQuantityOptions(category.categoryId, dish.id)
 
                     return (
                       <div
@@ -369,11 +394,11 @@ export function DishSelector({
                               </div>
                             )}
 
-                            {/* Quantity Selector */}
+                            {/* Quantity Selector - FIX 4a: filtered options */}
                             {isSelected && (
                               <div className="mt-4 p-3 bg-white dark:bg-neutral-800 rounded-lg border-2 border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
                                 <label className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 block">
-                                  Ilość porcji:
+                                  Ilo\u015b\u0107 porcji:
                                 </label>
                                 <select
                                   value={quantity}
@@ -384,9 +409,9 @@ export function DishSelector({
                                   )}
                                   className="w-full px-4 py-2.5 border-2 border-blue-300 dark:border-blue-700 rounded-lg text-base font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
                                 >
-                                  {quantityOptions.map(opt => (
+                                  {availableOptions.map(opt => (
                                     <option key={opt} value={opt}>
-                                      {opt === Math.floor(opt) ? opt : opt.toFixed(1)} {opt === 1 ? 'porcja' : 'porcji'}
+                                      {opt === Math.floor(opt) ? opt : opt.toFixed(1)} {opt === 1 ? 'porcja' : opt > 1 && opt < 5 ? 'porcje' : 'porcji'}
                                     </option>
                                   ))}
                                 </select>
@@ -420,7 +445,7 @@ export function DishSelector({
           size="lg"
           className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8 shadow-lg text-lg font-bold"
         >
-          Zatwierdź wybór
+          Zatwierd\u017a wyb\u00f3r
           <ChevronRight className="ml-2 h-5 w-5" />
         </Button>
       </div>
