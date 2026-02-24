@@ -41,8 +41,10 @@ export function ReservationMenuSection({
   const deleteMenuMutation = useDeleteReservationMenu()
 
   const hasMenu = !!menuData?.snapshot
+  const isSaving = selectMenuMutation.isPending || updateMenuMutation.isPending
 
   const handleMenuSelected = async (selection: any) => {
+    if (isSaving) return // Prevent double-fire
     try {
       if (hasMenu) {
         await updateMenuMutation.mutateAsync({ reservationId, selection })
@@ -172,7 +174,13 @@ export function ReservationMenuSection({
                   <Edit className="mr-2 h-4 w-4" />
                   Zmień
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleDeleteMenu} className="text-red-600 hover:text-red-700">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDeleteMenu} 
+                  className="text-red-600 hover:text-red-700"
+                  disabled={deleteMenuMutation.isPending}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
