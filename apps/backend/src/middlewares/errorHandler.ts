@@ -25,6 +25,7 @@ export function errorHandler(
   // FIX: Also check for statusCode property as fallback when instanceof fails
   // (can happen with path aliases / different module instances)
   if (err instanceof AppError) {
+    console.warn(`[APP_ERROR ${err.statusCode}] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(err.statusCode).json({
       success: false,
       error: err.message,
@@ -34,6 +35,7 @@ export function errorHandler(
 
   if ('statusCode' in err && typeof (err as any).statusCode === 'number') {
     const statusCode = (err as any).statusCode;
+    console.warn(`[APP_ERROR ${statusCode}] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(statusCode).json({
       success: false,
       error: err.message,
@@ -43,6 +45,7 @@ export function errorHandler(
 
   // ——— Zod validation errors ———
   if (err instanceof z.ZodError) {
+    console.warn(`[VALIDATION 400] ${_req.method} ${_req.path}:`, JSON.stringify(err.errors));
     res.status(400).json({
       success: false,
       error: ERRORS.VALIDATION_ERROR,
@@ -56,6 +59,7 @@ export function errorHandler(
     switch (err.code) {
       case 'P2002': {
         const target = (err.meta?.target as string[])?.join(', ') || 'pole';
+        console.warn(`[PRISMA P2002 409] ${_req.method} ${_req.path}: duplicate ${target}`);
         res.status(409).json({
           success: false,
           error: ERRORS.DUPLICATE_VALUE(target),
@@ -63,6 +67,7 @@ export function errorHandler(
         return;
       }
       case 'P2025': {
+        console.warn(`[PRISMA P2025 404] ${_req.method} ${_req.path}: record not found`);
         res.status(404).json({
           success: false,
           error: ERRORS.RECORD_NOT_FOUND,
@@ -70,6 +75,7 @@ export function errorHandler(
         return;
       }
       case 'P2003': {
+        console.warn(`[PRISMA P2003 400] ${_req.method} ${_req.path}: referenced record not found`);
         res.status(400).json({
           success: false,
           error: ERRORS.REFERENCED_NOT_EXIST,
@@ -82,6 +88,7 @@ export function errorHandler(
   }
 
   if (err instanceof Prisma.PrismaClientValidationError) {
+    console.warn(`[PRISMA_VALIDATION 400] ${_req.method} ${_req.path}: ${err.message.slice(0, 200)}`);
     res.status(400).json({
       success: false,
       error: ERRORS.INVALID_DATA,
@@ -96,6 +103,7 @@ export function errorHandler(
     err.message.toLowerCase().includes('nieprawidłowe dane logowania') ||
     err.message.toLowerCase().includes('nieprawidłowy lub wygasły token')
   )) {
+    console.warn(`[AUTH 401] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(401).json({
       success: false,
       error: err.message,
@@ -110,6 +118,7 @@ export function errorHandler(
     err.message.toLowerCase().includes('blocked') ||
     err.message.toLowerCase().includes('disabled')
   )) {
+    console.warn(`[FORBIDDEN 403] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(403).json({
       success: false,
       error: err.message,
@@ -127,6 +136,7 @@ export function errorHandler(
     )) ||
     err.message.toLowerCase().includes('hasło musi')
   )) {
+    console.warn(`[VALIDATION 422] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(422).json({
       success: false,
       error: err.message,
@@ -139,6 +149,7 @@ export function errorHandler(
     err.message.toLowerCase().includes('not found') ||
     err.message.toLowerCase().includes('nie znaleziono')
   )) {
+    console.warn(`[NOT_FOUND 404] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(404).json({
       success: false,
       error: err.message,
@@ -154,6 +165,7 @@ export function errorHandler(
     err.message.toLowerCase().includes('już zajęty') ||
     err.message.toLowerCase().includes('conflict')
   )) {
+    console.warn(`[CONFLICT 409] ${_req.method} ${_req.path}: ${err.message}`);
     res.status(409).json({
       success: false,
       error: err.message,
@@ -162,7 +174,7 @@ export function errorHandler(
   }
 
   // ——— Unknown errors (500) ———
-  console.error('[ERROR]', err);
+  console.error(`[ERROR 500] ${_req.method} ${_req.path}:`, err);
 
   res.status(500).json({
     success: false,
