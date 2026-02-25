@@ -97,7 +97,7 @@ export class DocumentTemplateService {
         content: existing.content,
         version: existing.version,
         changedById: userId,
-        changeNote: `Wersja ${existing.version}`,
+        changeReason: `Wersja ${existing.version}`,
       },
     });
 
@@ -196,7 +196,7 @@ export class DocumentTemplateService {
     const [items, total] = await Promise.all([
       prisma.documentTemplateHistory.findMany({
         where: { templateId: template.id },
-        orderBy: { changedAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
         include: {
