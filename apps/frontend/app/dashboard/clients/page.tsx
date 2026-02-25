@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Users, UserPlus, TrendingUp, Mail, Phone, Sparkles, Search } from 'lucide-react'
+import { Plus, Users, UserPlus, TrendingUp, Mail, Phone, Sparkles, Search, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -19,23 +19,25 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showDeleted, setShowDeleted] = useState(false)
   const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
   const accent = moduleAccents.clients
 
   useEffect(() => {
     loadClients()
-  }, [])
+  }, [showDeleted])
 
   const loadClients = async () => {
     try {
       setLoading(true)
-      const data = await getClients()
+      const data = await getClients({ includeDeleted: showDeleted || undefined })
       setClients(data)
 
-      // Batch check RODO status for all clients
-      if (data.length > 0) {
+      // Batch check RODO status for active clients only
+      const activeClients = data.filter((c: any) => !c.isDeleted)
+      if (activeClients.length > 0) {
         try {
-          const clientIds = data.map((c: any) => c.id)
+          const clientIds = activeClients.map((c: any) => c.id)
           const rodoResult = await batchCheckRodo(clientIds)
           setRodoMap(rodoResult)
         } catch (e) {
@@ -54,11 +56,14 @@ export default function ClientsPage() {
     }
   }
 
+  const activeClients = clients.filter(c => !c.isDeleted)
+  const deletedCount = clients.filter(c => c.isDeleted).length
+
   const stats = {
-    total: clients.length,
-    withEmail: clients.filter(c => c.email).length,
-    withPhone: clients.filter(c => c.phone).length,
-    thisMonth: clients.filter(c => {
+    total: activeClients.length,
+    withEmail: activeClients.filter(c => c.email).length,
+    withPhone: activeClients.filter(c => c.phone).length,
+    thisMonth: activeClients.filter(c => {
       const created = new Date(c.createdAt)
       const now = new Date()
       return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
@@ -134,14 +139,29 @@ export default function ClientsPage() {
               </div>
               <CardTitle>Lista Klientów</CardTitle>
             </div>
-            <div className="relative w-full sm:w-80 lg:w-96">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
-              <Input
-                placeholder="Szukaj klientów..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-12 pl-12 text-base"
-              />
+            <div className="flex items-center gap-3">
+              <Button
+                variant={showDeleted ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowDeleted(!showDeleted)}
+                className={showDeleted ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+              >
+                {showDeleted ? (
+                  <EyeOff className="mr-2 h-4 w-4" />
+                ) : (
+                  <Eye className="mr-2 h-4 w-4" />
+                )}
+                {showDeleted ? `Ukryj usuniętych (${deletedCount})` : 'Pokaż usuniętych'}
+              </Button>
+              <div className="relative w-full sm:w-80 lg:w-96">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <Input
+                  placeholder="Szukaj klientów..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-12 pl-12 text-base"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
