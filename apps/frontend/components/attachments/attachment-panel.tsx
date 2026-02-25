@@ -15,6 +15,7 @@ interface AttachmentPanelProps {
   entityId: string
   title?: string
   className?: string
+  readOnly?: boolean
 }
 
 export default function AttachmentPanel({
@@ -22,6 +23,7 @@ export default function AttachmentPanel({
   entityId,
   title = 'Załączniki',
   className,
+  readOnly = false,
 }: AttachmentPanelProps) {
   const { data: attachments = [], isLoading, refetch } = useAttachments(entityType, entityId)
   const [showUpload, setShowUpload] = useState(false)
@@ -68,13 +70,15 @@ export default function AttachmentPanel({
           )}
         </div>
 
-        <button
-          onClick={() => setShowUpload(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Dodaj
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setShowUpload(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Dodaj
+          </button>
+        )}
       </div>
 
       {/* Filters — dynamic per entity type */}
@@ -123,12 +127,14 @@ export default function AttachmentPanel({
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
               {filter !== 'ALL' ? 'Brak załączników w tej kategorii' : 'Brak załączników'}
             </p>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="mt-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline"
-            >
-              Wgraj pierwszy plik
-            </button>
+            {!readOnly && (
+              <button
+                onClick={() => setShowUpload(true)}
+                className="mt-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                Wgraj pierwszy plik
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -164,13 +170,15 @@ export default function AttachmentPanel({
       </div>
 
       {/* Upload Dialog */}
-      <AttachmentUploadDialog
-        open={showUpload}
-        onClose={() => setShowUpload(false)}
-        entityType={entityType}
-        entityId={entityId}
-        onUploaded={handleRefresh}
-      />
+      {!readOnly && (
+        <AttachmentUploadDialog
+          open={showUpload}
+          onClose={() => setShowUpload(false)}
+          entityType={entityType}
+          entityId={entityId}
+          onUploaded={handleRefresh}
+        />
+      )}
 
       {/* Preview Modal */}
       <AttachmentPreview

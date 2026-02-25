@@ -484,6 +484,7 @@ export default function ClientDetailsPage() {
                 entityId={client.id}
                 title="Załączniki klienta"
                 className="shadow-xl"
+                readOnly={isDeleted}
               />
             </div>
           </div>
