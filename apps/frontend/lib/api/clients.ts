@@ -1,15 +1,16 @@
 import { apiClient } from '../api-client'
-import { Client, CreateClientInput, PaginatedResponse, Reservation } from '@/types'
+import { Client, ClientContact, ClientType, CreateClientInput, CreateClientContactInput, PaginatedResponse, Reservation } from '@/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 // Re-export types for convenience
-export type { Client, CreateClientInput, Reservation }
+export type { Client, ClientContact, CreateClientInput, CreateClientContactInput, Reservation }
 
 export interface ClientsFilters {
   page?: number
   pageSize?: number
   search?: string
+  clientType?: ClientType
   includeDeleted?: boolean
 }
 
@@ -81,6 +82,36 @@ export const clientsApi = {
 }
 
 // ========================================
+// CONTACTS API FUNCTIONS
+// ========================================
+
+export const contactsApi = {
+  // Get all contacts for a client
+  getAll: async (clientId: string): Promise<ClientContact[]> => {
+    const { data } = await apiClient.get(`/clients/${clientId}/contacts`)
+    if (data.success && data.data) return data.data
+    return Array.isArray(data) ? data : []
+  },
+
+  // Add a contact to a client
+  add: async (clientId: string, input: CreateClientContactInput): Promise<ClientContact> => {
+    const { data } = await apiClient.post(`/clients/${clientId}/contacts`, input)
+    return data.data || data
+  },
+
+  // Update a contact
+  update: async (clientId: string, contactId: string, input: Partial<CreateClientContactInput>): Promise<ClientContact> => {
+    const { data } = await apiClient.put(`/clients/${clientId}/contacts/${contactId}`, input)
+    return data.data || data
+  },
+
+  // Remove a contact
+  remove: async (clientId: string, contactId: string): Promise<void> => {
+    await apiClient.delete(`/clients/${clientId}/contacts/${contactId}`)
+  },
+}
+
+// ========================================
 // DIRECT API EXPORTS (for non-hook usage)
 // ========================================
 
@@ -90,6 +121,11 @@ export const getClientReservationSummary = (id: string) => clientsApi.getReserva
 export const createClient = (input: CreateClientInput) => clientsApi.create(input)
 export const updateClient = (id: string, input: Partial<CreateClientInput>) => clientsApi.update(id, input)
 export const deleteClient = (id: string) => clientsApi.delete(id)
+
+export const getClientContacts = (clientId: string) => contactsApi.getAll(clientId)
+export const addClientContact = (clientId: string, input: CreateClientContactInput) => contactsApi.add(clientId, input)
+export const updateClientContact = (clientId: string, contactId: string, input: Partial<CreateClientContactInput>) => contactsApi.update(clientId, contactId, input)
+export const removeClientContact = (clientId: string, contactId: string) => contactsApi.remove(clientId, contactId)
 
 // ========================================
 // REACT QUERY HOOKS
@@ -102,13 +138,14 @@ export const clientsKeys = {
   list: (filters: ClientsFilters) => [...clientsKeys.lists(), filters] as const,
   details: () => [...clientsKeys.all, 'detail'] as const,
   detail: (id: string) => [...clientsKeys.details(), id] as const,
+  contacts: (clientId: string) => [...clientsKeys.detail(clientId), 'contacts'] as const,
 }
 
 // GET ALL CLIENTS
-export const useClients = (search?: string) => {
+export const useClients = (search?: string, clientType?: ClientType) => {
   return useQuery({
-    queryKey: clientsKeys.list({ search }),
-    queryFn: () => clientsApi.getAll({ search }),
+    queryKey: clientsKeys.list({ search, clientType }),
+    queryFn: () => clientsApi.getAll({ search, clientType }),
     staleTime: 30_000, // 30 seconds
     refetchOnWindowFocus: true,
   })
@@ -121,6 +158,16 @@ export const useClient = (id: string) => {
     queryFn: () => clientsApi.getById(id),
     enabled: !!id,
     staleTime: 60_000, // 1 minute
+  })
+}
+
+// GET CLIENT CONTACTS
+export const useClientContacts = (clientId: string) => {
+  return useQuery({
+    queryKey: clientsKeys.contacts(clientId),
+    queryFn: () => contactsApi.getAll(clientId),
+    enabled: !!clientId,
+    staleTime: 60_000,
   })
 }
 
@@ -192,6 +239,69 @@ export const useDeleteClient = () => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas usuwania klienta'
+      toast.error(errorMessage)
+    },
+  })
+}
+
+// ADD CONTACT
+export const useAddContact = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, data }: { clientId: string; data: CreateClientContactInput }) =>
+      contactsApi.add(clientId, data),
+    onSuccess: (_, { clientId }) => {
+      queryClient.invalidateQueries({ queryKey: clientsKeys.detail(clientId) })
+      queryClient.invalidateQueries({ queryKey: clientsKeys.contacts(clientId) })
+      toast.success('Kontakt dodany pomyślnie!')
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Błąd podczas dodawania kontaktu'
+      toast.error(errorMessage)
+    },
+  })
+}
+
+// UPDATE CONTACT
+export const useUpdateContact = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, contactId, data }: { clientId: string; contactId: string; data: Partial<CreateClientContactInput> }) =>
+      contactsApi.update(clientId, contactId, data),
+    onSuccess: (_, { clientId }) => {
+      queryClient.invalidateQueries({ queryKey: clientsKeys.detail(clientId) })
+      queryClient.invalidateQueries({ queryKey: clientsKeys.contacts(clientId) })
+      toast.success('Kontakt zaktualizowany!')
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Błąd podczas aktualizacji kontaktu'
+      toast.error(errorMessage)
+    },
+  })
+}
+
+// REMOVE CONTACT
+export const useRemoveContact = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, contactId }: { clientId: string; contactId: string }) =>
+      contactsApi.remove(clientId, contactId),
+    onSuccess: (_, { clientId }) => {
+      queryClient.invalidateQueries({ queryKey: clientsKeys.detail(clientId) })
+      queryClient.invalidateQueries({ queryKey: clientsKeys.contacts(clientId) })
+      toast.success('Kontakt usunięty!')
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Błąd podczas usuwania kontaktu'
       toast.error(errorMessage)
     },
   })

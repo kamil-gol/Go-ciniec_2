@@ -109,14 +109,14 @@ type FilterValue = 'all' | TemplateCategory;
 function toSlug(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[\u0105\u0104]/g, 'a')
-    .replace(/[\u0107\u0106]/g, 'c')
-    .replace(/[\u0119\u0118]/g, 'e')
-    .replace(/[\u0142\u0141]/g, 'l')
-    .replace(/[\u0144\u0143]/g, 'n')
-    .replace(/[\u00f3\u00d3]/g, 'o')
-    .replace(/[\u015b\u015a]/g, 's')
-    .replace(/[\u017a\u0179\u017c\u017b]/g, 'z')
+    .replace(/[ąĄ]/g, 'a')
+    .replace(/[ćĆ]/g, 'c')
+    .replace(/[ęĘ]/g, 'e')
+    .replace(/[łŁ]/g, 'l')
+    .replace(/[ńŃ]/g, 'n')
+    .replace(/[óÓ]/g, 'o')
+    .replace(/[śŚ]/g, 's')
+    .replace(/[źŹżŻ]/g, 'z')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');

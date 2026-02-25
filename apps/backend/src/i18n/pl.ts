@@ -189,7 +189,7 @@ export const HALL = {
 } as const;
 
 // ═══════════════════════════════════════
-// CLIENT
+// CLIENT (extended #150 Klienci 2.0)
 // ═══════════════════════════════════════
 export const CLIENT = {
   NOT_FOUND: 'Nie znaleziono klienta',
@@ -203,6 +203,18 @@ export const CLIENT = {
   NAME_REQUIRED: 'Imię i nazwisko klienta są wymagane',
   DELETED: 'Klient został usunięty',
   SOFT_DELETED: 'Dane klienta zostały zanonimizowane',
+
+  // Company fields (#150)
+  COMPANY_NAME_REQUIRED: 'Nazwa firmy jest wymagana dla klienta firmowego',
+  NIP_REQUIRED: 'NIP jest wymagany dla klienta firmowego',
+  NIP_INVALID: 'Nieprawidłowy format NIP (wymagane 10 cyfr z poprawną cyfrą kontrolną)',
+  NIP_DUPLICATE: (nip: string) => `Firma z NIP ${nip} już istnieje w bazie`,
+  REGON_INVALID: 'Nieprawidłowy format REGON',
+
+  // Contact management (#150)
+  CONTACT_NOT_FOUND: 'Nie znaleziono osoby kontaktowej',
+  CONTACT_NAME_REQUIRED: 'Imię i nazwisko osoby kontaktowej są wymagane',
+  CONTACT_ONLY_FOR_COMPANY: 'Osoby kontaktowe można dodawać tylko do klientów firmowych',
 } as const;
 
 // ═══════════════════════════════════════
