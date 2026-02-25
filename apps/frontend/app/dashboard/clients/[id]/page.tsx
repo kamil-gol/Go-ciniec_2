@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin,
   Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
-  Building2, Sparkles, FileText, TrendingUp, DollarSign, History
+  Building2, Sparkles, FileText, TrendingUp, DollarSign, History,
+  Globe, Hash, Briefcase, Star, Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,10 +21,10 @@ import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTim
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Oczekująca',
+  PENDING: 'Oczekuj\u0105ca',
   CONFIRMED: 'Potwierdzona',
   CANCELLED: 'Anulowana',
-  COMPLETED: 'Zakończona',
+  COMPLETED: 'Zako\u0144czona',
 }
 
 const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
@@ -57,8 +58,8 @@ export default function ClientDetailsPage() {
     } catch (error: any) {
       console.error('Error loading client:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować klienta',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 klienta',
         variant: 'destructive',
       })
       router.push('/dashboard/clients')
@@ -75,13 +76,13 @@ export default function ClientDetailsPage() {
       await deleteClient(client.id)
       toast({
         title: 'Sukces',
-        description: 'Dane klienta zostały zanonimizowane',
+        description: 'Dane klienta zosta\u0142y zanonimizowane',
       })
       router.push('/dashboard/clients')
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się usunąć klienta',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 klienta',
         variant: 'destructive',
       })
     } finally {
@@ -106,6 +107,8 @@ export default function ClientDetailsPage() {
   }
 
   const isDeleted = client.isDeleted === true
+  const isCompany = client.clientType === 'COMPANY'
+  const contacts = client.contacts || []
 
   // Calculate stats
   const reservations = client.reservations || []
@@ -126,21 +129,25 @@ export default function ClientDetailsPage() {
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
             <Trash2 className="h-5 w-5 shrink-0" />
             <div>
-              <p className="font-semibold">Klient usunięty</p>
-              <p className="text-sm">Dane osobowe tego klienta zostały zanonimizowane. Rezerwacje pozostały w systemie.</p>
+              <p className="font-semibold">Klient usuni\u0119ty</p>
+              <p className="text-sm">Dane osobowe tego klienta zosta\u0142y zanonimizowane. Rezerwacje pozosta\u0142y w systemie.</p>
             </div>
           </div>
         )}
 
         {/* Premium Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-2xl">
+        <div className={`relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl bg-gradient-to-r ${
+          isCompany
+            ? 'from-purple-600 via-indigo-600 to-blue-600'
+            : 'from-indigo-600 via-purple-600 to-pink-600'
+        }`}>
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
           <div className="relative z-10 space-y-6">
             <Link href="/dashboard/clients">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
@@ -148,16 +155,29 @@ export default function ClientDetailsPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <User className="h-8 w-8" />
+                    {isCompany ? <Building2 className="h-8 w-8" /> : <User className="h-8 w-8" />}
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold">
-                      {client.firstName} {client.lastName}
+                      {isCompany && client.companyName ? client.companyName : `${client.firstName} ${client.lastName}`}
                     </h1>
-                    <p className="text-white/90 text-lg mt-1">Profil klienta</p>
+                    {isCompany && (
+                      <p className="text-white/80 text-base mt-0.5">
+                        {client.firstName} {client.lastName}
+                      </p>
+                    )}
+                    <p className="text-white/90 text-lg mt-1">
+                      {isCompany ? 'Profil firmy' : 'Profil klienta'}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {isCompany && (
+                    <Badge className="bg-purple-500/80 backdrop-blur-sm border-purple-300/30 text-white">
+                      <Building2 className="h-3 w-3 mr-1" />
+                      Firma
+                    </Badge>
+                  )}
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <Calendar className="h-3 w-3 mr-1" />
                     Dodano {format(new Date(client.createdAt), 'dd MMMM yyyy', { locale: pl })}
@@ -171,7 +191,7 @@ export default function ClientDetailsPage() {
                   {isDeleted && (
                     <Badge className="bg-red-500 text-white border-0">
                       <Trash2 className="h-3 w-3 mr-1" />
-                      Usunięty
+                      Usuni\u0119ty
                     </Badge>
                   )}
                 </div>
@@ -233,7 +253,7 @@ export default function ClientDetailsPage() {
             <CardContent className="relative p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Zakończone</p>
+                  <p className="text-sm font-medium text-muted-foreground">Zako\u0144czone</p>
                   <p className="text-3xl font-bold">{stats.completed}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
@@ -249,7 +269,7 @@ export default function ClientDetailsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
+                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} z\u0142</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
                   <DollarSign className="h-6 w-6 text-white" />
@@ -259,7 +279,7 @@ export default function ClientDetailsPage() {
           </Card>
         </div>
 
-        {/* US-9.8: Tab bar */}
+        {/* Tab bar */}
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab('details')}
@@ -269,8 +289,8 @@ export default function ClientDetailsPage() {
                 : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
-            <User className="h-4 w-4" />
-            Dane klienta
+            {isCompany ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
+            {isCompany ? 'Dane firmy' : 'Dane klienta'}
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -285,24 +305,107 @@ export default function ClientDetailsPage() {
           </button>
         </div>
 
-        {/* Tab: Dane klienta */}
+        {/* Tab: Dane klienta / firmy */}
         {activeTab === 'details' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Contact Info */}
+            {/* Left Column - Contact Info + Company Info */}
             <div className="lg:col-span-1 space-y-6">
+              {/* Company Info Card */}
+              {isCompany && (
+                <Card className="border-0 shadow-xl overflow-hidden">
+                  <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-blue-950/30 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg shadow-lg">
+                        <Building2 className="h-5 w-5 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold">Dane firmy</h2>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
+                        <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Nazwa firmy</p>
+                          <p className="text-base font-semibold">{client.companyName}</p>
+                        </div>
+                      </div>
+
+                      {client.nip && (
+                        <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
+                          <Hash className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">NIP</p>
+                            <p className="text-base font-semibold font-mono">{client.nip}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {client.regon && (
+                        <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
+                          <Hash className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">REGON</p>
+                            <p className="text-base font-semibold font-mono">{client.regon}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {client.industry && (
+                        <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
+                          <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Bran\u017ca</p>
+                            <p className="text-base font-semibold">{client.industry}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {client.website && (
+                        <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
+                          <Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Strona www</p>
+                            <a
+                              href={client.website.startsWith('http') ? client.website : `https://${client.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-base font-semibold text-indigo-600 dark:text-indigo-400 hover:underline break-all"
+                            >
+                              {client.website}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {client.companyAddress && (
+                        <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
+                          <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Adres firmy</p>
+                            <p className="text-base font-semibold">{client.companyAddress}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Contact Info Card */}
               <Card className="border-0 shadow-xl overflow-hidden">
                 <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/30 dark:via-purple-950/30 dark:to-pink-950/30 p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg shadow-lg">
                       <User className="h-5 w-5 text-white" />
                     </div>
-                    <h2 className="text-xl font-bold">Dane kontaktowe</h2>
+                    <h2 className="text-xl font-bold">
+                      {isCompany ? 'Osoba reprezentuj\u0105ca' : 'Dane kontaktowe'}
+                    </h2>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                       <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Imię i nazwisko</p>
+                        <p className="text-xs text-muted-foreground">Imi\u0119 i nazwisko</p>
                         <p className="text-base font-semibold">
                           {client.firstName} {client.lastName}
                         </p>
@@ -341,6 +444,61 @@ export default function ClientDetailsPage() {
                   </div>
                 </div>
               </Card>
+
+              {/* Contacts List - for COMPANY clients */}
+              {isCompany && contacts.length > 0 && (
+                <Card className="border-0 shadow-xl overflow-hidden">
+                  <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg">
+                        <Users className="h-5 w-5 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold">Osoby kontaktowe</h2>
+                      <span className="text-sm text-muted-foreground">({contacts.length})</span>
+                    </div>
+                    <div className="space-y-3">
+                      {contacts.map((contact: any) => (
+                        <div
+                          key={contact.id}
+                          className="p-3 bg-white dark:bg-black/20 rounded-lg space-y-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-semibold">
+                              {contact.firstName} {contact.lastName}
+                            </span>
+                            {contact.isPrimary && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                <Star className="h-3 w-3" />
+                                G\u0142\u00f3wny
+                              </span>
+                            )}
+                            {contact.position && (
+                              <span className="text-xs text-muted-foreground">
+                                \u00b7 {contact.position}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                            {contact.email && (
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                <span>{contact.email}</span>
+                              </div>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                <span>{contact.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {client.notes && (
                 <Card className="border-0 shadow-xl">
@@ -391,7 +549,7 @@ export default function ClientDetailsPage() {
                       onClick={() => setShowDeleteModal(true)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Usuń klienta
+                      Usu\u0144 klienta
                     </Button>
                   )}
                 </CardContent>
@@ -414,12 +572,12 @@ export default function ClientDetailsPage() {
                     <div className="text-center py-12">
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
-                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
+                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze \u017cadnych rezerwacji</p>
                       {!isDeleted && (
                         <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
                           <Button className="mt-4" size="lg">
                             <Calendar className="mr-2 h-4 w-4" />
-                            Utwórz pierwszą rezerwację
+                            Utw\u00f3rz pierwsz\u0105 rezerwacj\u0119
                           </Button>
                         </Link>
                       )}
@@ -460,12 +618,12 @@ export default function ClientDetailsPage() {
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                       <span>{reservation.eventType?.name}</span>
-                                      <span>•</span>
-                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} osób</span>
+                                      <span>\u2022</span>
+                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} os\u00f3b</span>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
+                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} z\u0142</p>
                                   </div>
                                 </div>
                               </CardContent>
@@ -482,7 +640,7 @@ export default function ClientDetailsPage() {
               <AttachmentPanel
                 entityType="CLIENT"
                 entityId={client.id}
-                title="Załączniki klienta"
+                title="Za\u0142\u0105czniki klienta"
                 className="shadow-xl"
                 readOnly={isDeleted}
               />
@@ -490,7 +648,7 @@ export default function ClientDetailsPage() {
           </div>
         )}
 
-        {/* Tab: Historia zmian (US-9.8) */}
+        {/* Tab: Historia zmian */}
         {activeTab === 'history' && (
           <div className="max-w-4xl">
             <EntityActivityTimeline
@@ -506,7 +664,7 @@ export default function ClientDetailsPage() {
         <DeleteClientModal
           open={showDeleteModal}
           onOpenChange={setShowDeleteModal}
-          clientName={`${client.firstName} ${client.lastName}`}
+          clientName={isCompany && client.companyName ? client.companyName : `${client.firstName} ${client.lastName}`}
           clientId={client.id}
           onConfirm={handleDelete}
           isDeleting={deleting}
