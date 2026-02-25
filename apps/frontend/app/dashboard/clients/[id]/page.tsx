@@ -19,12 +19,13 @@ import { pl } from 'date-fns/locale'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
+import { ContactsManager } from '@/components/clients/contacts-manager'
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Oczekująca',
+  PENDING: 'Oczekuj\u0105ca',
   CONFIRMED: 'Potwierdzona',
   CANCELLED: 'Anulowana',
-  COMPLETED: 'Zakończona',
+  COMPLETED: 'Zako\u0144czona',
 }
 
 const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
@@ -58,8 +59,8 @@ export default function ClientDetailsPage() {
     } catch (error: any) {
       console.error('Error loading client:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować klienta',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 klienta',
         variant: 'destructive',
       })
       router.push('/dashboard/clients')
@@ -76,13 +77,13 @@ export default function ClientDetailsPage() {
       await deleteClient(client.id)
       toast({
         title: 'Sukces',
-        description: 'Dane klienta zostały zanonimizowane',
+        description: 'Dane klienta zosta\u0142y zanonimizowane',
       })
       router.push('/dashboard/clients')
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się usunąć klienta',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.error || error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 klienta',
         variant: 'destructive',
       })
     } finally {
@@ -129,8 +130,8 @@ export default function ClientDetailsPage() {
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
             <Trash2 className="h-5 w-5 shrink-0" />
             <div>
-              <p className="font-semibold">Klient usunięty</p>
-              <p className="text-sm">Dane osobowe tego klienta zostały zanonimizowane. Rezerwacje pozostały w systemie.</p>
+              <p className="font-semibold">Klient usuni\u0119ty</p>
+              <p className="text-sm">Dane osobowe tego klienta zosta\u0142y zanonimizowane. Rezerwacje pozosta\u0142y w systemie.</p>
             </div>
           </div>
         )}
@@ -147,7 +148,7 @@ export default function ClientDetailsPage() {
             <Link href="/dashboard/clients">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
@@ -191,7 +192,7 @@ export default function ClientDetailsPage() {
                   {isDeleted && (
                     <Badge className="bg-red-500 text-white border-0">
                       <Trash2 className="h-3 w-3 mr-1" />
-                      Usunięty
+                      Usuni\u0119ty
                     </Badge>
                   )}
                 </div>
@@ -253,7 +254,7 @@ export default function ClientDetailsPage() {
             <CardContent className="relative p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Zakończone</p>
+                  <p className="text-sm font-medium text-muted-foreground">Zako\u0144czone</p>
                   <p className="text-3xl font-bold">{stats.completed}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
@@ -269,7 +270,7 @@ export default function ClientDetailsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
+                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} z\u0142</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
                   <DollarSign className="h-6 w-6 text-white" />
@@ -353,7 +354,7 @@ export default function ClientDetailsPage() {
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                           <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5" />
                           <div>
-                            <p className="text-xs text-muted-foreground">Branża</p>
+                            <p className="text-xs text-muted-foreground">Bran\u017ca</p>
                             <p className="text-base font-semibold">{client.industry}</p>
                           </div>
                         </div>
@@ -398,14 +399,14 @@ export default function ClientDetailsPage() {
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <h2 className="text-xl font-bold">
-                      {isCompany ? 'Osoba reprezentująca' : 'Dane kontaktowe'}
+                      {isCompany ? 'Osoba reprezentuj\u0105ca' : 'Dane kontaktowe'}
                     </h2>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                       <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Imię i nazwisko</p>
+                        <p className="text-xs text-muted-foreground">Imi\u0119 i nazwisko</p>
                         <p className="text-base font-semibold">
                           {client.firstName} {client.lastName}
                         </p>
@@ -445,59 +446,14 @@ export default function ClientDetailsPage() {
                 </div>
               </Card>
 
-              {/* Contacts List - for COMPANY clients */}
-              {isCompany && contacts.length > 0 && (
-                <Card className="border-0 shadow-xl overflow-hidden">
-                  <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg">
-                        <Users className="h-5 w-5 text-white" />
-                      </div>
-                      <h2 className="text-xl font-bold">Osoby kontaktowe</h2>
-                      <span className="text-sm text-muted-foreground">({contacts.length})</span>
-                    </div>
-                    <div className="space-y-3">
-                      {contacts.map((contact: any) => (
-                        <div
-                          key={contact.id}
-                          className="p-3 bg-white dark:bg-black/20 rounded-lg space-y-2"
-                        >
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-semibold">
-                              {contact.firstName} {contact.lastName}
-                            </span>
-                            {contact.isPrimary && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                <Star className="h-3 w-3" />
-                                Główny
-                              </span>
-                            )}
-                            {contact.position && (
-                              <span className="text-xs text-muted-foreground">
-                                \u00b7 {contact.position}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                            {contact.email && (
-                              <div className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                <span>{contact.email}</span>
-                              </div>
-                            )}
-                            {contact.phone && (
-                              <div className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                <span>{contact.phone}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
+              {/* Contacts Manager - for COMPANY clients */}
+              {isCompany && (
+                <ContactsManager
+                  clientId={client.id}
+                  contacts={contacts}
+                  readOnly={isDeleted}
+                  onUpdate={loadClient}
+                />
               )}
 
               {client.notes && (
@@ -549,7 +505,7 @@ export default function ClientDetailsPage() {
                       onClick={() => setShowDeleteModal(true)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Usuń klienta
+                      Usu\u0144 klienta
                     </Button>
                   )}
                 </CardContent>
@@ -572,12 +528,12 @@ export default function ClientDetailsPage() {
                     <div className="text-center py-12">
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
-                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
+                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze \u017cadnych rezerwacji</p>
                       {!isDeleted && (
                         <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
                           <Button className="mt-4" size="lg">
                             <Calendar className="mr-2 h-4 w-4" />
-                            Utwórz pierwszą rezerwację
+                            Utw\u00f3rz pierwsz\u0105 rezerwacj\u0119
                           </Button>
                         </Link>
                       )}
@@ -619,11 +575,11 @@ export default function ClientDetailsPage() {
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                       <span>{reservation.eventType?.name}</span>
                                       <span>\u2022</span>
-                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} osób</span>
+                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} os\u00f3b</span>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
+                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} z\u0142</p>
                                   </div>
                                 </div>
                               </CardContent>
@@ -640,7 +596,7 @@ export default function ClientDetailsPage() {
               <AttachmentPanel
                 entityType="CLIENT"
                 entityId={client.id}
-                title="Załączniki klienta"
+                title="Za\u0142\u0105czniki klienta"
                 className="shadow-xl"
                 readOnly={isDeleted}
               />
