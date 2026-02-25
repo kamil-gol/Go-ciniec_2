@@ -1,196 +1,229 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Users, UserPlus, TrendingUp, Mail, Phone, Sparkles, Search, Eye, EyeOff } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Users, Plus, Search, UserPlus, Building2, User, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { moduleAccents } from '@/lib/design-tokens'
 import { ClientsList } from '@/components/clients/clients-list'
 import { CreateClientForm } from '@/components/clients/create-client-form'
-import { getClients } from '@/lib/api/clients'
-import { batchCheckRodo } from '@/lib/api/attachments'
-import { useToast } from '@/hooks/use-toast'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { useClients } from '@/lib/api/clients'
+import type { ClientType } from '@/types'
+
+const accent = moduleAccents.clients
+
+type FilterTab = 'ALL' | 'INDIVIDUAL' | 'COMPANY'
+
+const FILTER_TABS: { value: FilterTab; label: string; icon: any }[] = [
+  { value: 'ALL', label: 'Wszyscy', icon: Users },
+  { value: 'INDIVIDUAL', label: 'Osoby prywatne', icon: User },
+  { value: 'COMPANY', label: 'Firmy', icon: Building2 },
+]
 
 export default function ClientsPage() {
-  const { toast } = useToast()
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [clients, setClients] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showDeleted, setShowDeleted] = useState(false)
-  const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
-  const accent = moduleAccents.clients
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [activeTab, setActiveTab] = useState<FilterTab>('ALL')
 
-  useEffect(() => {
-    loadClients()
-  }, [showDeleted])
+  const { data: clients = [], isLoading, refetch } = useClients(searchQuery)
 
-  const loadClients = async () => {
-    try {
-      setLoading(true)
-      const data = await getClients({ includeDeleted: showDeleted || undefined })
-      setClients(data)
+  // Filter clients by tab
+  const filteredClients = useMemo(() => {
+    if (activeTab === 'ALL') return clients
+    return clients.filter(c => (c.clientType || 'INDIVIDUAL') === activeTab)
+  }, [clients, activeTab])
 
-      // Batch check RODO status for active clients only
-      const activeClients = data.filter((c: any) => !c.isDeleted)
-      if (activeClients.length > 0) {
-        try {
-          const clientIds = activeClients.map((c: any) => c.id)
-          const rodoResult = await batchCheckRodo(clientIds)
-          setRodoMap(rodoResult)
-        } catch (e) {
-          console.error('Failed to check RODO status:', e)
-        }
-      }
-    } catch (error: any) {
-      console.error('Error loading clients:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować klientów',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
+  // Stats
+  const stats = useMemo(() => {
+    const all = clients.length
+    const companies = clients.filter(c => c.clientType === 'COMPANY').length
+    const individuals = all - companies
+    const totalReservations = clients.reduce((sum, c) => sum + ((c as any)._count?.reservations || 0), 0)
+    return { all, companies, individuals, totalReservations }
+  }, [clients])
+
+  const handleClientCreated = () => {
+    setShowCreateForm(false)
+    refetch()
   }
-
-  const activeClients = clients.filter(c => !c.isDeleted)
-  const deletedCount = clients.filter(c => c.isDeleted).length
-
-  const stats = {
-    total: activeClients.length,
-    withEmail: activeClients.filter(c => c.email).length,
-    withPhone: activeClients.filter(c => c.phone).length,
-    thisMonth: activeClients.filter(c => {
-      const created = new Date(c.createdAt)
-      const now = new Date()
-      return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
-    }).length,
-  }
-
-  const filteredClients = clients.filter(client => {
-    const query = searchQuery.toLowerCase()
-    return (
-      client.firstName?.toLowerCase().includes(query) ||
-      client.lastName?.toLowerCase().includes(query) ||
-      client.email?.toLowerCase().includes(query) ||
-      client.phone?.toLowerCase().includes(query)
-    )
-  })
 
   return (
-    <PageLayout>
-      {/* Hero */}
-      <PageHero
-        accent={accent}
-        title="Klienci"
-        subtitle="Zarządzaj bazą klientów"
-        icon={Users}
-        action={
-          <Button
-            size="lg"
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-white text-violet-600 hover:bg-white/90 shadow-xl"
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            Dodaj Klienta
-          </Button>
-        }
-      />
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszyscy" value={stats.total} subtitle="Łącznie klientów" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.1} />
-        <StatCard label="Z emailem" value={stats.withEmail} subtitle="Dane kontaktowe" icon={Mail} iconGradient="from-blue-500 to-cyan-500" delay={0.2} />
-        <StatCard label="Z telefonem" value={stats.withPhone} subtitle="Numer telefonu" icon={Phone} iconGradient="from-emerald-500 to-teal-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Nowych klientów" icon={TrendingUp} iconGradient="from-rose-500 to-pink-500" delay={0.4} />
-      </div>
-
-      {/* Create Form */}
-      {showCreateForm && (
-        <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
-          <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
-                <UserPlus className="h-5 w-5 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto py-8 px-4 space-y-8">
+        {/* Hero Header */}
+        <div className={cn(
+          'relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl bg-gradient-to-r',
+          accent.hero
+        )}>
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <Users className="h-8 w-8" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold">Klienci</h1>
+                  <p className="text-white/80 text-lg">Zarz\u0105dzaj baz\u0105 klient\u00f3w</p>
+                </div>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj Nowego Klienta</h2>
             </div>
-            <CreateClientForm
-              onSuccess={() => {
-                setShowCreateForm(false)
-                loadClients()
-              }}
-              onCancel={() => setShowCreateForm(false)}
-            />
+            <Button
+              size="lg"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 h-14 text-lg px-8"
+            >
+              {showCreateForm ? (
+                <><Search className="mr-2 h-5 w-5" /> Poka\u017c list\u0119</>
+              ) : (
+                <><UserPlus className="mr-2 h-5 w-5" /> Dodaj klienta</>
+              )}
+            </Button>
           </div>
-        </Card>
-      )}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+        </div>
 
-      {/* Clients List */}
-      <Card>
-        <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
-                <Sparkles className="h-5 w-5 text-white" />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="relative overflow-hidden border-0 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/10" />
+            <CardContent className="relative p-5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Wszyscy</p>
+                  <p className="text-3xl font-bold">{stats.all}</p>
+                </div>
+                <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
               </div>
-              <CardTitle>Lista Klientów</CardTitle>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10" />
+            <CardContent className="relative p-5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Osoby</p>
+                  <p className="text-3xl font-bold">{stats.individuals}</p>
+                </div>
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
+            <CardContent className="relative p-5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Firmy</p>
+                  <p className="text-3xl font-bold">{stats.companies}</p>
+                </div>
+                <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                  <Building2 className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10" />
+            <CardContent className="relative p-5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rezerwacje</p>
+                  <p className="text-3xl font-bold">{stats.totalReservations}</p>
+                </div>
+                <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {showCreateForm ? (
+          <Card className="border-0 shadow-xl">
+            <div className="p-6 md:p-8">
+              <CreateClientForm
+                onSuccess={handleClientCreated}
+                onCancel={() => setShowCreateForm(false)}
+              />
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant={showDeleted ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowDeleted(!showDeleted)}
-                className={showDeleted ? "bg-red-500 hover:bg-red-600 text-white" : ""}
-              >
-                {showDeleted ? (
-                  <EyeOff className="mr-2 h-4 w-4" />
-                ) : (
-                  <Eye className="mr-2 h-4 w-4" />
-                )}
-                {showDeleted ? `Ukryj usuniętych (${deletedCount})` : 'Pokaż usuniętych'}
-              </Button>
-              <div className="relative w-full sm:w-80 lg:w-96">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+          </Card>
+        ) : (
+          <>
+            {/* Search + Filter Tabs */}
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Szukaj klientów..."
+                  placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-12 pl-12 text-base"
+                  className="pl-12 h-14 text-lg rounded-2xl border-2 focus-visible:ring-2 focus-visible:ring-violet-500"
                 />
               </div>
+
+              {/* Filter Tabs */}
+              <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+                {FILTER_TABS.map(tab => {
+                  const Icon = tab.icon
+                  const count = tab.value === 'ALL' 
+                    ? stats.all 
+                    : tab.value === 'COMPANY' 
+                      ? stats.companies 
+                      : stats.individuals
+                  return (
+                    <button
+                      key={tab.value}
+                      onClick={() => setActiveTab(tab.value)}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        activeTab === tab.value
+                          ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                        activeTab === tab.value
+                          ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                          : 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400'
+                      }`}>
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          {loading ? (
-            <LoadingState variant="skeleton" rows={4} message="Ładowanie klientów..." />
-          ) : filteredClients.length === 0 && searchQuery ? (
-            <EmptyState
-              icon={Users}
-              title="Nie znaleziono klientów"
-              description="Spróbuj innych kryteriów wyszukiwania"
-            />
-          ) : filteredClients.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="Brak klientów"
-              description="Dodaj pierwszego klienta aby zacząć"
-              actionLabel="Dodaj Klienta"
-              onAction={() => setShowCreateForm(true)}
-            />
-          ) : (
-            <ClientsList
-              clients={filteredClients}
-              rodoMap={rodoMap}
-              onUpdate={loadClients}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </PageLayout>
+
+            {/* Client List */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-muted-foreground">Wczytywanie klient\u00f3w...</p>
+                </div>
+              </div>
+            ) : (
+              <ClientsList
+                clients={filteredClients}
+                searchQuery={searchQuery}
+                onUpdate={() => refetch()}
+              />
+            )}
+          </>
+        )}
+      </div>
+    </div>
   )
 }
