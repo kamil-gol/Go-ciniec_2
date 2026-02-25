@@ -153,7 +153,7 @@ export const categorySettingSchema = z.object({
 }).refine(
   (data) => data.minSelect <= data.maxSelect,
   {
-    message: 'Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna',
+    message: 'Minimalna wartość nie może być większa niż maksymalna',
     path: ['minSelect']
   }
 );
@@ -228,10 +228,14 @@ export const assignOptionsToPackageSchema = z.object({
 
 /**
  * Dish selection within a category
+ * FIX: Supports half portions (0.5 increments) as used in DishSelector frontend
  */
 const dishSelectionSchema = z.object({
   dishId: z.string().uuid('Invalid dish ID'),
-  quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1)
+  quantity: z.number()
+    .min(0.5, 'Quantity must be at least 0.5')
+    .refine(val => val % 0.5 === 0, { message: 'Quantity must be in increments of 0.5' })
+    .default(1)
 });
 
 const categoryDishSelectionSchema = z.object({
