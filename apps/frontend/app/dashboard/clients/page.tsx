@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Users, Plus, Search, UserPlus, Building2, User, TrendingUp } from 'lucide-react'
+import { Users, Plus, Search, UserPlus, Building2, User, TrendingUp, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
 import { ClientsList } from '@/components/clients/clients-list'
 import { CreateClientForm } from '@/components/clients/create-client-form'
-import { useClients } from '@/lib/api/clients'
+import { clientsApi, clientsKeys } from '@/lib/api/clients'
+import { useQuery } from '@tanstack/react-query'
 import type { ClientType } from '@/types'
 
 const accent = moduleAccents.clients
@@ -26,8 +27,15 @@ export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL')
+  const [showDeleted, setShowDeleted] = useState(false)
 
-  const { data: clients = [], isLoading, refetch } = useClients(searchQuery)
+  // Use direct query to support includeDeleted param
+  const { data: clients = [], isLoading, refetch } = useQuery({
+    queryKey: clientsKeys.list({ search: searchQuery, includeDeleted: showDeleted }),
+    queryFn: () => clientsApi.getAll({ search: searchQuery, includeDeleted: showDeleted }),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  })
 
   // Filter clients by tab
   const filteredClients = useMemo(() => {
@@ -66,7 +74,7 @@ export default function ClientsPage() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold">Klienci</h1>
-                  <p className="text-white/80 text-lg">Zarządzaj bazą klientów</p>
+                  <p className="text-white/80 text-lg">Zarz\u0105dzaj baz\u0105 klient\u00f3w</p>
                 </div>
               </div>
             </div>
@@ -76,7 +84,7 @@ export default function ClientsPage() {
               className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 h-14 text-lg px-8"
             >
               {showCreateForm ? (
-                <><Search className="mr-2 h-5 w-5" /> Pokaż listę</>
+                <><Search className="mr-2 h-5 w-5" /> Poka\u017c list\u0119</>
               ) : (
                 <><UserPlus className="mr-2 h-5 w-5" /> Dodaj klienta</>
               )}
@@ -162,14 +170,33 @@ export default function ClientsPage() {
           <>
             {/* Search + Filter Tabs */}
             <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-14 text-lg rounded-2xl border-2 focus-visible:ring-2 focus-visible:ring-violet-500"
-                />
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-12 h-14 text-lg rounded-2xl border-2 focus-visible:ring-2 focus-visible:ring-violet-500"
+                  />
+                </div>
+                {/* Show Deleted Toggle */}
+                <Button
+                  variant={showDeleted ? 'default' : 'outline'}
+                  onClick={() => setShowDeleted(!showDeleted)}
+                  className={cn(
+                    'h-14 px-5 rounded-2xl border-2 font-semibold transition-all shrink-0',
+                    showDeleted
+                      ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50'
+                      : 'border-neutral-200 text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-400'
+                  )}
+                >
+                  {showDeleted ? (
+                    <><EyeOff className="mr-2 h-4 w-4" /> Ukryj usuni\u0119tych</>
+                  ) : (
+                    <><Eye className="mr-2 h-4 w-4" /> Poka\u017c usuni\u0119tych</>
+                  )}
+                </Button>
               </div>
 
               {/* Filter Tabs */}
@@ -211,7 +238,7 @@ export default function ClientsPage() {
               <div className="flex items-center justify-center py-16">
                 <div className="text-center space-y-4">
                   <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-muted-foreground">Wczytywanie klientów...</p>
+                  <p className="text-muted-foreground">Wczytywanie klient\u00f3w...</p>
                 </div>
               </div>
             ) : (
