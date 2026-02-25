@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { User, Mail, Phone, Calendar, ChevronRight, ShieldCheck, ShieldAlert, Trash2 } from 'lucide-react'
+import { User, Building2, Mail, Phone, Calendar, ChevronRight, ShieldCheck, ShieldAlert, Trash2, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import type { ClientType, ClientContact } from '@/types'
 
 const accent = moduleAccents.clients
 
@@ -15,6 +16,10 @@ interface Client {
   phone: string
   createdAt: string
   isDeleted?: boolean
+  clientType?: ClientType
+  companyName?: string
+  nip?: string
+  contacts?: ClientContact[]
   _count?: {
     reservations: number
   }
@@ -34,8 +39,10 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
     const fullName = `${client.firstName} ${client.lastName}`.toLowerCase()
     const email = client.email?.toLowerCase() || ''
     const phone = client.phone.toLowerCase()
+    const companyName = client.companyName?.toLowerCase() || ''
+    const nip = client.nip?.toLowerCase() || ''
 
-    return fullName.includes(query) || email.includes(query) || phone.includes(query)
+    return fullName.includes(query) || email.includes(query) || phone.includes(query) || companyName.includes(query) || nip.includes(query)
   })
 
   if (filteredClients.length === 0) {
@@ -65,6 +72,8 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
         const hasRodo = rodoMap[client.id]
         const rodoChecked = client.id in rodoMap
         const isDeleted = client.isDeleted === true
+        const isCompany = client.clientType === 'COMPANY'
+        const primaryContact = client.contacts?.find(c => c.isPrimary)
 
         return (
           <Link key={client.id} href={`/dashboard/clients/${client.id}`}>
@@ -78,10 +87,16 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
                   <div className="relative">
                     <div className={cn(
                       'w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold text-lg shadow-md',
-                      isDeleted ? 'from-gray-400 to-gray-500' : accent.iconBg
+                      isDeleted
+                        ? 'from-gray-400 to-gray-500'
+                        : isCompany
+                          ? 'from-purple-500 to-indigo-600'
+                          : accent.iconBg
                     )}>
                       {isDeleted ? (
                         <Trash2 className="h-5 w-5" />
+                      ) : isCompany ? (
+                        <Building2 className="h-5 w-5" />
                       ) : (
                         <>{client.firstName.charAt(0)}{client.lastName.charAt(0)}</>
                       )}
@@ -95,13 +110,20 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
 
                   {/* Info */}
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className={cn(
                         'text-lg font-bold text-neutral-900 dark:text-neutral-100 transition-colors',
                         isDeleted ? 'text-neutral-500 dark:text-neutral-500' : `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
                       )}>
-                        {client.firstName} {client.lastName}
+                        {isCompany && client.companyName ? client.companyName : `${client.firstName} ${client.lastName}`}
                       </h3>
+                      {/* Client Type Badge */}
+                      {!isDeleted && isCompany && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                          <Building2 className="h-3 w-3" />
+                          Firma
+                        </span>
+                      )}
                       {/* Deleted Badge */}
                       {isDeleted && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
@@ -124,6 +146,23 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
                         )
                       )}
                     </div>
+
+                    {/* Company: show contact person name */}
+                    {!isDeleted && isCompany && (
+                      <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400">
+                        <User className="h-3 w-3" />
+                        <span>{client.firstName} {client.lastName}</span>
+                        {primaryContact && (
+                          <>
+                            <span className="mx-1">·</span>
+                            <Star className="h-3 w-3 text-amber-500" />
+                            <span>{primaryContact.firstName} {primaryContact.lastName}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Contact details */}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
                       {client.email && !isDeleted && (
                         <div className="flex items-center gap-1">
@@ -135,6 +174,12 @@ export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: Cl
                         <div className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           <span>{client.phone}</span>
+                        </div>
+                      )}
+                      {!isDeleted && isCompany && client.nip && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium text-neutral-400">NIP:</span>
+                          <span>{client.nip}</span>
                         </div>
                       )}
                     </div>

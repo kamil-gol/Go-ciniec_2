@@ -192,27 +192,79 @@ model EventType {
   @@index([isActive])
 }
 
+// ═════════════════════════════════════════════════════════════════
+// 👥 CLIENT SYSTEM — Individual & Company clients (#150 Klienci 2.0)
+// ═════════════════════════════════════════════════════════════════
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+}
+
 model Client {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // ── Client type ─────────────────────────────────────
+  clientType  ClientType @default(INDIVIDUAL)
+
+  // ── Personal fields (INDIVIDUAL) ────────────────────
   firstName String   @db.VarChar(100)
   lastName  String   @db.VarChar(100)
   email     String?  @db.VarChar(255)
   phone     String   @db.VarChar(20)
   notes     String?  @db.Text
 
-  // Soft-delete + anonymization (#147)
+  // ── Company fields (COMPANY) ────────────────────────
+  companyName       String?  @db.VarChar(255)
+  nip               String?  @db.VarChar(20)
+  regon             String?  @db.VarChar(20)
+  companyEmail      String?  @db.VarChar(255)
+  companyPhone      String?  @db.VarChar(20)
+  companyAddress    String?  @db.Text
+  companyCity       String?  @db.VarChar(100)
+  companyPostalCode String?  @db.VarChar(10)
+  industry          String?  @db.VarChar(100)
+  website           String?  @db.VarChar(255)
+
+  // ── Soft-delete + anonymization (#147) ──────────────
   isDeleted Boolean  @default(false)
   deletedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // ── Relations ──────────────────────────────────────
   reservations Reservation[]
+  contacts     ClientContact[]
 
   @@index([email])
   @@index([phone])
   @@index([firstName, lastName])
   @@index([isDeleted])
+  @@index([clientType])
+  @@index([nip])
+  @@index([companyName])
+}
+
+// ── Contact persons for COMPANY clients ──────────────
+model ClientContact {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId  String   @db.Uuid
+
+  firstName String   @db.VarChar(100)
+  lastName  String   @db.VarChar(100)
+  email     String?  @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  role      String?  @db.VarChar(100)   // e.g. "HR Manager", "Asystent", "Właściciel"
+  isPrimary Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([isPrimary])
 }
 
 enum ReservationStatus {

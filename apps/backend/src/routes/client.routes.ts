@@ -1,5 +1,6 @@
 /**
  * Client Routes
+ * Extended with contact management (#150 Klienci 2.0)
  * MIGRATED: asyncHandler + validateUUID
  */
 
@@ -11,6 +12,8 @@ import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
+
+// ── Client CRUD ─────────────────────────────────────────
 
 router.post(
   '/',
@@ -68,6 +71,40 @@ router.delete(
   validateUUID('id'),
   asyncHandler(async (req, res) => {
     await clientController.deleteClient(req, res);
+  })
+);
+
+// ── Client Contacts (#150 Klienci 2.0) ──────────────────
+
+router.post(
+  '/:id/contacts',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await clientController.addContact(req, res);
+  })
+);
+
+router.put(
+  '/:id/contacts/:contactId',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  validateUUID('contactId'),
+  asyncHandler(async (req, res) => {
+    await clientController.updateContact(req, res);
+  })
+);
+
+router.delete(
+  '/:id/contacts/:contactId',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  validateUUID('contactId'),
+  asyncHandler(async (req, res) => {
+    await clientController.removeContact(req, res);
   })
 );
 
