@@ -63,8 +63,8 @@ export default function EditClientPage() {
 
     if (!formData.firstName || !formData.lastName || !formData.phone) {
       toast({
-        title: 'B\u0142\u0105d walidacji',
-        description: 'Wype\u0142nij wszystkie wymagane pola',
+        title: 'Błąd walidacji',
+        description: 'Wypełnij wszystkie wymagane pola',
         variant: 'destructive',
       })
       return
@@ -72,8 +72,8 @@ export default function EditClientPage() {
 
     if (isCompany && !formData.companyName) {
       toast({
-        title: 'B\u0142\u0105d walidacji',
-        description: 'Podaj nazw\u0119 firmy',
+        title: 'Błąd walidacji',
+        description: 'Podaj nazwę firmy',
         variant: 'destructive',
       })
       return
@@ -112,14 +112,14 @@ export default function EditClientPage() {
       })
       toast({
         title: 'Sukces',
-        description: isCompany ? 'Dane firmy zosta\u0142y zaktualizowane' : 'Dane klienta zosta\u0142y zaktualizowane',
+        description: isCompany ? 'Dane firmy zostały zaktualizowane' : 'Dane klienta zostały zaktualizowane',
       })
       router.push(`/dashboard/clients/${clientId}`)
     } catch (error: any) {
       console.error('Error updating client:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: error.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 danych klienta',
+        title: 'Błąd',
+        description: error.message || 'Nie udało się zaktualizować danych klienta',
         variant: 'destructive',
       })
     }
@@ -149,12 +149,12 @@ export default function EditClientPage() {
             <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
-            <h3 className="text-xl font-bold mb-2">B\u0142\u0105d \u0142adowania</h3>
+            <h3 className="text-xl font-bold mb-2">Błąd ładowania</h3>
             <p className="text-muted-foreground mb-6">
-              {error instanceof Error ? error.message : 'Klient nie zosta\u0142 znaleziony'}
+              {error instanceof Error ? error.message : 'Klient nie został znaleziony'}
             </p>
             <Link href="/dashboard/clients">
-              <Button variant="outline" size="lg">Powr\u00f3t do listy klient\u00f3w</Button>
+              <Button variant="outline" size="lg">Powrót do listy klientów</Button>
             </Link>
           </CardContent>
         </Card>
@@ -177,7 +177,7 @@ export default function EditClientPage() {
             <Link href={`/dashboard/clients/${clientId}`}>
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do szczeg\u00f3\u0142\u00f3w
+                Powrót do szczegółów
               </Button>
             </Link>
 
@@ -187,7 +187,7 @@ export default function EditClientPage() {
               </div>
               <div>
                 <h1 className="text-4xl font-bold">
-                  {isCompany ? 'Edytuj firm\u0119' : 'Edytuj klienta'}
+                  {isCompany ? 'Edytuj firmę' : 'Edytuj klienta'}
                 </h1>
                 <p className="text-white/90 text-lg mt-1">
                   {isCompany && client.companyName ? client.companyName : `${client.firstName} ${client.lastName}`}
@@ -291,7 +291,7 @@ export default function EditClientPage() {
                   <div className="space-y-2">
                     <Label className="text-base font-semibold flex items-center gap-2">
                       <Briefcase className="h-4 w-4" />
-                      Bran\u017ca
+                      Branża
                     </Label>
                     <Input
                       name="industry"
@@ -325,7 +325,7 @@ export default function EditClientPage() {
                       name="companyAddress"
                       value={formData.companyAddress}
                       onChange={handleChange}
-                      placeholder="ul. Przyk\u0142adowa 1, 00-001 Warszawa"
+                      placeholder="ul. Przykładowa 1, 00-001 Warszawa"
                       className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
                     />
                   </div>
@@ -342,14 +342,14 @@ export default function EditClientPage() {
                   <User className="h-5 w-5 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold">
-                  {isCompany ? 'Osoba reprezentuj\u0105ca' : 'Dane osobowe'}
+                  {isCompany ? 'Osoba reprezentująca' : 'Dane osobowe'}
                 </h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-base font-semibold">
-                    Imi\u0119 <span className="text-red-500">*</span>
+                    Imię <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     name="firstName"

@@ -21,10 +21,10 @@ import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTim
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Oczekuj\u0105ca',
+  PENDING: 'Oczekująca',
   CONFIRMED: 'Potwierdzona',
   CANCELLED: 'Anulowana',
-  COMPLETED: 'Zako\u0144czona',
+  COMPLETED: 'Zakończona',
 }
 
 const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
@@ -58,8 +58,8 @@ export default function ClientDetailsPage() {
     } catch (error: any) {
       console.error('Error loading client:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 klienta',
+        title: 'Błąd',
+        description: 'Nie udało się załadować klienta',
         variant: 'destructive',
       })
       router.push('/dashboard/clients')
@@ -76,13 +76,13 @@ export default function ClientDetailsPage() {
       await deleteClient(client.id)
       toast({
         title: 'Sukces',
-        description: 'Dane klienta zosta\u0142y zanonimizowane',
+        description: 'Dane klienta zostały zanonimizowane',
       })
       router.push('/dashboard/clients')
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 klienta',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się usunąć klienta',
         variant: 'destructive',
       })
     } finally {
@@ -129,8 +129,8 @@ export default function ClientDetailsPage() {
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
             <Trash2 className="h-5 w-5 shrink-0" />
             <div>
-              <p className="font-semibold">Klient usuni\u0119ty</p>
-              <p className="text-sm">Dane osobowe tego klienta zosta\u0142y zanonimizowane. Rezerwacje pozosta\u0142y w systemie.</p>
+              <p className="font-semibold">Klient usunięty</p>
+              <p className="text-sm">Dane osobowe tego klienta zostały zanonimizowane. Rezerwacje pozostały w systemie.</p>
             </div>
           </div>
         )}
@@ -147,7 +147,7 @@ export default function ClientDetailsPage() {
             <Link href="/dashboard/clients">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -191,7 +191,7 @@ export default function ClientDetailsPage() {
                   {isDeleted && (
                     <Badge className="bg-red-500 text-white border-0">
                       <Trash2 className="h-3 w-3 mr-1" />
-                      Usuni\u0119ty
+                      Usunięty
                     </Badge>
                   )}
                 </div>
@@ -253,7 +253,7 @@ export default function ClientDetailsPage() {
             <CardContent className="relative p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Zako\u0144czone</p>
+                  <p className="text-sm font-medium text-muted-foreground">Zakończone</p>
                   <p className="text-3xl font-bold">{stats.completed}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
@@ -269,7 +269,7 @@ export default function ClientDetailsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} z\u0142</p>
+                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
                   <DollarSign className="h-6 w-6 text-white" />
@@ -353,7 +353,7 @@ export default function ClientDetailsPage() {
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                           <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5" />
                           <div>
-                            <p className="text-xs text-muted-foreground">Bran\u017ca</p>
+                            <p className="text-xs text-muted-foreground">Branża</p>
                             <p className="text-base font-semibold">{client.industry}</p>
                           </div>
                         </div>
@@ -398,14 +398,14 @@ export default function ClientDetailsPage() {
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <h2 className="text-xl font-bold">
-                      {isCompany ? 'Osoba reprezentuj\u0105ca' : 'Dane kontaktowe'}
+                      {isCompany ? 'Osoba reprezentująca' : 'Dane kontaktowe'}
                     </h2>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                       <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Imi\u0119 i nazwisko</p>
+                        <p className="text-xs text-muted-foreground">Imię i nazwisko</p>
                         <p className="text-base font-semibold">
                           {client.firstName} {client.lastName}
                         </p>
@@ -470,7 +470,7 @@ export default function ClientDetailsPage() {
                             {contact.isPrimary && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                 <Star className="h-3 w-3" />
-                                G\u0142\u00f3wny
+                                Główny
                               </span>
                             )}
                             {contact.position && (
@@ -549,7 +549,7 @@ export default function ClientDetailsPage() {
                       onClick={() => setShowDeleteModal(true)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Usu\u0144 klienta
+                      Usuń klienta
                     </Button>
                   )}
                 </CardContent>
@@ -572,12 +572,12 @@ export default function ClientDetailsPage() {
                     <div className="text-center py-12">
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
-                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze \u017cadnych rezerwacji</p>
+                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
                       {!isDeleted && (
                         <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
                           <Button className="mt-4" size="lg">
                             <Calendar className="mr-2 h-4 w-4" />
-                            Utw\u00f3rz pierwsz\u0105 rezerwacj\u0119
+                            Utwórz pierwszą rezerwację
                           </Button>
                         </Link>
                       )}
@@ -619,11 +619,11 @@ export default function ClientDetailsPage() {
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                       <span>{reservation.eventType?.name}</span>
                                       <span>\u2022</span>
-                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} os\u00f3b</span>
+                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} osób</span>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} z\u0142</p>
+                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
                                   </div>
                                 </div>
                               </CardContent>
@@ -640,7 +640,7 @@ export default function ClientDetailsPage() {
               <AttachmentPanel
                 entityType="CLIENT"
                 entityId={client.id}
-                title="Za\u0142\u0105czniki klienta"
+                title="Załączniki klienta"
                 className="shadow-xl"
                 readOnly={isDeleted}
               />

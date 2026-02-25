@@ -66,7 +66,7 @@ export default function ClientsPage() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold">Klienci</h1>
-                  <p className="text-white/80 text-lg">Zarz\u0105dzaj baz\u0105 klient\u00f3w</p>
+                  <p className="text-white/80 text-lg">Zarządzaj bazą klientów</p>
                 </div>
               </div>
             </div>
@@ -76,7 +76,7 @@ export default function ClientsPage() {
               className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 h-14 text-lg px-8"
             >
               {showCreateForm ? (
-                <><Search className="mr-2 h-5 w-5" /> Poka\u017c list\u0119</>
+                <><Search className="mr-2 h-5 w-5" /> Pokaż listę</>
               ) : (
                 <><UserPlus className="mr-2 h-5 w-5" /> Dodaj klienta</>
               )}
@@ -211,7 +211,7 @@ export default function ClientsPage() {
               <div className="flex items-center justify-center py-16">
                 <div className="text-center space-y-4">
                   <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-muted-foreground">Wczytywanie klient\u00f3w...</p>
+                  <p className="text-muted-foreground">Wczytywanie klientów...</p>
                 </div>
               </div>
             ) : (
