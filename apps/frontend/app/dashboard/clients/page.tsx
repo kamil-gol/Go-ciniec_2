@@ -55,7 +55,7 @@ export default function ClientsPage() {
         {/* Hero Header */}
         <div className={cn(
           'relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl bg-gradient-to-r',
-          accent.hero
+          accent.gradient
         )}>
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
