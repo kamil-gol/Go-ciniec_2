@@ -51,7 +51,7 @@ export interface ClientContact {
   lastName: string
   email?: string
   phone?: string
-  position?: string
+  role?: string
   isPrimary: boolean
   createdAt: string
   updatedAt: string
@@ -490,7 +490,7 @@ export interface CreateClientContactInput {
   lastName: string
   email?: string
   phone?: string
-  position?: string
+  role?: string
   isPrimary?: boolean
 }
 
