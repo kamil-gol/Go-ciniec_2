@@ -85,3 +85,4 @@ dist/
 apps/frontend/playwright-report/
 apps/frontend/test-results/
 *.webm
+*.dump
