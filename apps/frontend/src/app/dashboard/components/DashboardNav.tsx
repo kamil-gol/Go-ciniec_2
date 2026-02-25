@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Gift,
   ScrollText,
+  FileText,
   Settings,
   Archive,
   ChevronDown,
@@ -42,6 +43,11 @@ const NAV_ITEMS: NavItem[] = [
     icon: <ScrollText className="h-4 w-4" />,
   },
   {
+    label: 'Szablony dokumentów',
+    href: '/dashboard/document-templates',
+    icon: <FileText className="h-4 w-4" />,
+  },
+  {
     label: 'Ustawienia',
     href: '/dashboard/settings',
     icon: <Settings className="h-4 w-4" />,
@@ -60,7 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-// ── Component ──────────────────────────────────────────
+// ── Component ───────────────────────────────────────────
 
 export default function DashboardNav() {
   const pathname = usePathname();
