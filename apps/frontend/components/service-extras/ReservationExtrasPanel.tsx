@@ -10,6 +10,9 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -77,9 +80,9 @@ function priceSuffix(priceType: string): string {
 /** Quantity label based on price type */
 function quantityLabel(priceType: string): string {
   switch (priceType) {
-    case 'PER_UNIT': return 'Ilość (szt.)';
-    case 'PER_PERSON': return 'Ilość (os.)';
-    default: return 'Ilość';
+    case 'PER_UNIT': return 'Ilo\u015b\u0107 (szt.)';
+    case 'PER_PERSON': return 'Ilo\u015b\u0107 (os.)';
+    default: return 'Ilo\u015b\u0107';
   }
 }
 
@@ -94,6 +97,11 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   const [quantity, setQuantity] = useState<number>(1);
   const [note, setNote] = useState('');
   const [customPrice, setCustomPrice] = useState<string>('');
+
+  // Inline note editing state
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteValue, setEditingNoteValue] = useState('');
+  const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
 
   const {
     data: extrasData,
@@ -122,7 +130,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
 
   const handleAddExtra = async () => {
     if (!selectedItemId) {
-      toast({ title: 'Wybierz pozycję', variant: 'destructive' });
+      toast({ title: 'Wybierz pozycj\u0119', variant: 'destructive' });
       return;
     }
 
@@ -141,12 +149,12 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         note: note.trim() || undefined,
         customPrice: customPrice ? parseFloat(customPrice) : undefined,
       });
-      toast({ title: 'Usługa dodana', description: selectedItem?.name });
+      toast({ title: 'Us\u0142uga dodana', description: selectedItem?.name });
       resetAddForm();
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się dodać',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 doda\u0107',
         variant: 'destructive',
       });
     }
@@ -155,11 +163,11 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   const handleRemoveExtra = async (extraId: string, name: string) => {
     try {
       await removeExtra.mutateAsync(extraId);
-      toast({ title: 'Usługa usunięta', description: name });
+      toast({ title: 'Us\u0142uga usuni\u0119ta', description: name });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się usunąć',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107',
         variant: 'destructive',
       });
     }
@@ -170,8 +178,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
       await updateExtra.mutateAsync({ extraId, data: { status } });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zaktualizować',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107',
         variant: 'destructive',
       });
     }
@@ -183,12 +191,58 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
       await updateExtra.mutateAsync({ extraId, data: { quantity: newQuantity } });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zaktualizować ilości',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 ilo\u015bci',
         variant: 'destructive',
       });
     }
   };
+
+  // ── Inline note editing ──────────────────────────────────────────
+
+  const startEditingNote = (extraId: string, currentNote: string | null | undefined) => {
+    setEditingNoteId(extraId);
+    setEditingNoteValue(currentNote || '');
+  };
+
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteValue('');
+  };
+
+  const saveNote = async (extraId: string) => {
+    const trimmed = editingNoteValue.trim();
+    setSavingNoteId(extraId);
+    try {
+      await updateExtra.mutateAsync({
+        extraId,
+        data: { note: trimmed || null },
+      });
+      toast({ title: trimmed ? 'Notatka zapisana' : 'Notatka usuni\u0119ta' });
+    } catch (error: any) {
+      toast({
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 notatki',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingNoteId(null);
+      setEditingNoteId(null);
+      setEditingNoteValue('');
+    }
+  };
+
+  const handleNoteKeyDown = (e: React.KeyboardEvent, extraId: string) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveNote(extraId);
+    }
+    if (e.key === 'Escape') {
+      cancelEditingNote();
+    }
+  };
+
+  // ── Reset add form ───────────────────────────────────────────────
 
   const resetAddForm = () => {
     setAddDialogOpen(false);
@@ -209,16 +263,16 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     if (pt === 'FREE') return 'Gratis';
 
     if (pt === 'PER_UNIT' && qty > 1) {
-      return `${unit} zł/szt. × ${qty} szt. = ${total} zł`;
+      return `${unit} z\u0142/szt. \u00d7 ${qty} szt. = ${total} z\u0142`;
     }
     if (pt === 'PER_PERSON' && qty > 1) {
-      return `${unit} zł/os. × ${qty} = ${total} zł`;
+      return `${unit} z\u0142/os. \u00d7 ${qty} = ${total} z\u0142`;
     }
     if (pt === 'FLAT' && qty > 1) {
-      return `${unit} zł × ${qty} = ${total} zł`;
+      return `${unit} z\u0142 \u00d7 ${qty} = ${total} z\u0142`;
     }
 
-    return `${total} zł`;
+    return `${total} z\u0142`;
   };
 
   return (
@@ -233,13 +287,13 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   <Gift className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">Usługi dodatkowe</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold">Us\u0142ugi dodatkowe</h2>
                   {extras.length > 0 && (
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
                       {totalPrice > 0 && (
                         <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          — {totalPrice.toLocaleString('pl-PL')} zł
+                          \u2014 {totalPrice.toLocaleString('pl-PL')} z\u0142
                         </span>
                       )}
                     </p>
@@ -266,8 +320,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             ) : extras.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
-                <p>Brak usług dodatkowych</p>
-                <p className="text-xs mt-1">Kliknij „Dodaj” aby przypisać tort, muzykę, dekoracje...</p>
+                <p>Brak us\u0142ug dodatkowych</p>
+                <p className="text-xs mt-1">Kliknij \u201eDodaj\u201d aby przypisa\u0107 tort, muzyk\u0119, dekoracje...</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -275,103 +329,163 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   const statusCfg = STATUS_CONFIG[extra.status as ExtraStatus] || STATUS_CONFIG.PENDING;
                   const StatusIcon = statusCfg.icon;
                   const canEditQuantity = extra.priceType !== 'FREE' && extra.status !== 'CANCELLED';
+                  const isEditingThisNote = editingNoteId === extra.id;
+                  const isSavingThisNote = savingNoteId === extra.id;
 
                   return (
                     <div
                       key={extra.id}
-                      className={`flex items-center justify-between rounded-xl border p-3 transition-all ${
+                      className={`rounded-xl border p-3 transition-all ${
                         extra.status === 'CANCELLED'
                           ? 'bg-neutral-50/60 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700 opacity-60'
                           : 'bg-white dark:bg-black/20 border-neutral-200 dark:border-neutral-700 hover:shadow-md'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-lg flex-shrink-0">
-                          {extra.serviceItem?.icon || '📦'}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold truncate">
-                              {extra.serviceItem?.name || 'Nieznana pozycja'}
-                            </span>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusCfg.className}`}>
-                              <StatusIcon className="h-2.5 w-2.5" />
-                              {statusCfg.label}
-                            </span>
+                      {/* Main row: info + controls */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-lg flex-shrink-0">
+                            {extra.serviceItem?.icon || '\ud83d\udce6'}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold truncate">
+                                {extra.serviceItem?.name || 'Nieznana pozycja'}
+                              </span>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusCfg.className}`}>
+                                <StatusIcon className="h-2.5 w-2.5" />
+                                {statusCfg.label}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              <span className="font-semibold">{formatExtraPriceDetails(extra)}</span>
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            <span className="font-semibold">{formatExtraPriceDetails(extra)}</span>
-                            {extra.note && (
-                              <span className="ml-2 italic">— {extra.note}</span>
-                            )}
-                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          {/* Inline quantity controls */}
+                          {canEditQuantity && (
+                            <div className="inline-flex items-center rounded-md border border-neutral-200 dark:border-neutral-700 mr-1">
+                              <button
+                                className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-l-md disabled:opacity-40"
+                                onClick={() => handleQuantityChange(extra.id, extra.quantity - 1)}
+                                disabled={extra.quantity <= 1 || updateExtra.isPending}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="w-7 text-center text-xs font-semibold tabular-nums border-x border-neutral-200 dark:border-neutral-700 leading-7">
+                                {extra.quantity}
+                              </span>
+                              <button
+                                className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-r-md disabled:opacity-40"
+                                onClick={() => handleQuantityChange(extra.id, extra.quantity + 1)}
+                                disabled={updateExtra.isPending}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+
+                          <Select
+                            value={extra.status}
+                            onValueChange={(v) =>
+                              handleStatusChange(extra.id, v as ExtraStatus)
+                            }
+                          >
+                            <SelectTrigger className="h-7 w-[110px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PENDING">Oczekuje</SelectItem>
+                              <SelectItem value="CONFIRMED">Potwierdzone</SelectItem>
+                              <SelectItem value="CANCELLED">Anulowane</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={() =>
+                              handleRemoveExtra(
+                                extra.id,
+                                extra.serviceItem?.name || ''
+                              )
+                            }
+                            disabled={removeExtra.isPending}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        {/* Inline quantity controls */}
-                        {canEditQuantity && (
-                          <div className="inline-flex items-center rounded-md border border-neutral-200 dark:border-neutral-700 mr-1">
+                      {/* Editable note row */}
+                      {extra.status !== 'CANCELLED' && (
+                        <div className="mt-2 ml-9">
+                          {isEditingThisNote ? (
+                            <div className="space-y-1.5">
+                              <textarea
+                                autoFocus
+                                value={editingNoteValue}
+                                onChange={(e) => setEditingNoteValue(e.target.value)}
+                                onKeyDown={(e) => handleNoteKeyDown(e, extra.id)}
+                                placeholder="Wpisz notatk\u0119..."
+                                rows={2}
+                                className="w-full text-xs px-2.5 py-1.5 rounded-md border border-violet-300 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent resize-none placeholder:text-violet-400 dark:placeholder:text-violet-600"
+                              />
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => saveNote(extra.id)}
+                                  disabled={isSavingThisNote}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded bg-violet-600 hover:bg-violet-700 text-white transition-colors disabled:opacity-50"
+                                >
+                                  {isSavingThisNote ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Check className="h-3 w-3" />
+                                  )}
+                                  Zapisz
+                                </button>
+                                <button
+                                  onClick={cancelEditingNote}
+                                  disabled={isSavingThisNote}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                                >
+                                  <X className="h-3 w-3" />
+                                  Anuluj
+                                </button>
+                                <span className="text-[10px] text-muted-foreground ml-1">
+                                  Enter = zapisz, Esc = anuluj
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
                             <button
-                              className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-l-md disabled:opacity-40"
-                              onClick={() => handleQuantityChange(extra.id, extra.quantity - 1)}
-                              disabled={extra.quantity <= 1 || updateExtra.isPending}
+                              onClick={() => startEditingNote(extra.id, extra.note)}
+                              className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                             >
-                              <Minus className="h-3 w-3" />
+                              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              {extra.note ? (
+                                <span className="italic">{extra.note}</span>
+                              ) : (
+                                <span className="text-violet-400 dark:text-violet-600 opacity-60 group-hover:opacity-100">
+                                  Dodaj notatk\u0119...
+                                </span>
+                              )}
                             </button>
-                            <span className="w-7 text-center text-xs font-semibold tabular-nums border-x border-neutral-200 dark:border-neutral-700 leading-7">
-                              {extra.quantity}
-                            </span>
-                            <button
-                              className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-r-md disabled:opacity-40"
-                              onClick={() => handleQuantityChange(extra.id, extra.quantity + 1)}
-                              disabled={updateExtra.isPending}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
-
-                        <Select
-                          value={extra.status}
-                          onValueChange={(v) =>
-                            handleStatusChange(extra.id, v as ExtraStatus)
-                          }
-                        >
-                          <SelectTrigger className="h-7 w-[110px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="PENDING">Oczekuje</SelectItem>
-                            <SelectItem value="CONFIRMED">Potwierdzone</SelectItem>
-                            <SelectItem value="CANCELLED">Anulowane</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          onClick={() =>
-                            handleRemoveExtra(
-                              extra.id,
-                              extra.serviceItem?.name || ''
-                            )
-                          }
-                          disabled={removeExtra.isPending}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
 
                 {/* Total */}
                 <div className="flex items-center justify-between p-3 mt-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl text-white shadow-lg">
-                  <span className="text-sm font-bold">Razem usługi dodatkowe</span>
+                  <span className="text-sm font-bold">Razem us\u0142ugi dodatkowe</span>
                   <span className="text-lg font-bold">
-                    {totalPrice.toLocaleString('pl-PL')} zł
+                    {totalPrice.toLocaleString('pl-PL')} z\u0142
                   </span>
                 </div>
               </div>
@@ -388,7 +502,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
               <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                 <Gift className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
-              Dodaj usługę dodatkową
+              Dodaj us\u0142ug\u0119 dodatkow\u0105
             </DialogTitle>
           </DialogHeader>
 
@@ -405,7 +519,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Wybierz kategorię" />
+                  <SelectValue placeholder="Wybierz kategori\u0119" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories?.map((cat) => (
@@ -429,21 +543,21 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Wybierz pozycję" />
+                    <SelectValue placeholder="Wybierz pozycj\u0119" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableItems.map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         <div className="flex items-center gap-2">
-                          <span>{item.icon || '📦'}</span>
+                          <span>{item.icon || '\ud83d\udce6'}</span>
                           <span>{item.name}</span>
                           {item.priceType !== 'FREE' && (
                             <span className="text-muted-foreground">
-                              — {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
+                              \u2014 {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142{priceSuffix(item.priceType)}
                             </span>
                           )}
                           {item.priceType === 'FREE' && (
-                            <span className="text-green-600">— Gratis</span>
+                            <span className="text-green-600">\u2014 Gratis</span>
                           )}
                         </div>
                       </SelectItem>
@@ -491,7 +605,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   </div>
                   {quantity > 1 && (
                     <span className="text-sm text-muted-foreground">
-                      = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
+                      = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} z\u0142</span>
                     </span>
                   )}
                 </div>
@@ -511,7 +625,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   onChange={(e) => setNote(e.target.value)}
                   placeholder={
                     selectedItem.requiresNote
-                      ? 'Podaj szczegóły (wymagane)'
+                      ? 'Podaj szczeg\u00f3\u0142y (wymagane)'
                       : 'Opcjonalne uwagi'
                   }
                   rows={2}
@@ -523,7 +637,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             {selectedItem && selectedItem.priceType !== 'FREE' && (
               <div className="space-y-1.5">
                 <Label htmlFor="extra-price" className="text-sm font-semibold">
-                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztukę' : selectedItem.priceType === 'PER_PERSON' ? ' za osobę' : ''} (opcjonalnie)
+                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztuk\u0119' : selectedItem.priceType === 'PER_PERSON' ? ' za osob\u0119' : ''} (opcjonalnie)
                 </Label>
                 <Input
                   id="extra-price"
@@ -532,10 +646,10 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   step="0.01"
                   value={customPrice}
                   onChange={(e) => setCustomPrice(e.target.value)}
-                  placeholder={`Domyślna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} zł${priceSuffix(selectedItem.priceType)}`}
+                  placeholder={`Domy\u015blna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} z\u0142${priceSuffix(selectedItem.priceType)}`}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Pozostaw puste, aby użyć ceny domyślnej
+                  Pozostaw puste, aby u\u017cy\u0107 ceny domy\u015blnej
                 </p>
               </div>
             )}
@@ -553,7 +667,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 {assignExtra.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Dodaj usługę
+                Dodaj us\u0142ug\u0119
               </Button>
             </div>
           </div>
