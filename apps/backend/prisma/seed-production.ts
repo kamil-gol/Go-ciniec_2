@@ -8,6 +8,7 @@
  *   3. Dish categories
  *   4. Menu data (dishes, templates, packages)
  *   5. ONE admin user (password from SEED_ADMIN_PASSWORD env variable)
+ *   6. Document templates (10 default templates)
  *
  * Does NOT create:
  *   ❌ Test users with known passwords
@@ -27,6 +28,7 @@ import { seedRBAC } from './seeds/rbac.seed';
 import { seedDishCategories } from './seeds/dish-categories.seed';
 import { seedComprehensiveDishes } from './seeds/menu-comprehensive.seed';
 import { seedMenuTemplatesAndPackages } from './seeds/menu-templates.seed';
+import { seedDocumentTemplates } from './seeds/document-templates.seed';
 
 const prisma = new PrismaClient();
 
@@ -122,6 +124,11 @@ async function main() {
       console.log(`\u2705 Admin user created: ${adminEmail}`);
     }
 
+    // ─── Step 6: Document templates ───────────────────────────
+    console.log('\n\ud83d\udcdd STEP 6: Seeding document templates...');
+    const templateCount = await seedDocumentTemplates();
+    console.log(`\u2705 Seeded ${templateCount} document templates`);
+
     // ─── Summary ──────────────────────────────────────────────
     console.log('\n' + '='.repeat(60));
     console.log('\ud83c\udf89 Production seed completed successfully!');
@@ -132,6 +139,7 @@ async function main() {
       roles: await prisma.role.count(),
       dishes: await prisma.dish.count(),
       users: await prisma.user.count(),
+      documentTemplates: await prisma.documentTemplate.count(),
     };
 
     console.log(`\n\ud83d\udcca Production Stats:`);
@@ -139,6 +147,7 @@ async function main() {
     console.log(`   \ud83d\udee1\ufe0f  Roles: ${stats.roles}`);
     console.log(`   \ud83c\udf7d\ufe0f Dishes: ${stats.dishes}`);
     console.log(`   \ud83d\udc64 Users: ${stats.users}`);
+    console.log(`   \ud83d\udcdd Templates: ${stats.documentTemplates}`);
     console.log('');
     console.log('\ud83d\udd12 No test data was created. System is production-ready.');
 

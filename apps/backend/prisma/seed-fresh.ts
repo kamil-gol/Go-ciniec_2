@@ -1,5 +1,6 @@
 import { PrismaClient, ReservationStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { seedDocumentTemplates } from './seeds/document-templates.seed'
 
 const prisma = new PrismaClient()
 
@@ -117,6 +118,8 @@ async function main() {
   
   // Usuń wszystkie dane (w odpowiedniej kolejności - foreign keys)
   await prisma.activityLog.deleteMany()
+  await prisma.documentTemplateHistory.deleteMany()
+  await prisma.documentTemplate.deleteMany()
   await prisma.reservationHistory.deleteMany()
   await prisma.deposit.deleteMany()
   await prisma.reservation.deleteMany()
@@ -374,6 +377,13 @@ async function main() {
   console.log(`✅ Utworzono ${queueCount} wpisów w kolejce\n`)
 
   // ============================================
+  // 6. SZABLONY DOKUMENTÓW
+  // ============================================
+  console.log('📝 Tworzenie szablonów dokumentów...')
+  const templateCount = await seedDocumentTemplates()
+  console.log(`✅ Utworzono ${templateCount} szablonów dokumentów\n`)
+
+  // ============================================
   // PODSUMOWANIE
   // ============================================
   console.log('═══════════════════════════════════════')
@@ -385,6 +395,7 @@ async function main() {
   console.log(`👥 Klienci:           ${clients.length}`)
   console.log(`📅 Rezerwacje:        ${reservations.length}`)
   console.log(`⏳ Kolejka:           ${queueCount}`)
+  console.log(`📝 Szablony:          ${templateCount}`)
   console.log('═══════════════════════════════════════')
   console.log('✅ Seed zakończony pomyślnie!')
   // 🔒 SECURITY: Credentials are NOT logged to console
