@@ -13,11 +13,12 @@ import type {
   DocumentTemplate,
   DocumentTemplateHistory,
   PreviewResult,
+  CreateTemplateInput,
   UpdateTemplateInput,
   TemplateCategory,
 } from '@/types/document-template.types';
 
-// ── Query Keys ─────────────────────────────────────────
+// ── Query Keys ───────────────────────────────────────
 
 const QUERY_KEYS = {
   all: ['document-templates'] as const,
@@ -29,13 +30,10 @@ const QUERY_KEYS = {
     [...QUERY_KEYS.all, 'history', slug, { page }] as const,
 };
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // 📋 QUERIES
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 
-/**
- * List all templates, optionally filtered by category.
- */
 export function useDocumentTemplates(
   category?: TemplateCategory
 ): UseQueryResult<DocumentTemplate[]> {
@@ -50,9 +48,6 @@ export function useDocumentTemplates(
   });
 }
 
-/**
- * Get a single template by slug.
- */
 export function useDocumentTemplate(
   slug: string
 ): UseQueryResult<DocumentTemplate> {
@@ -67,9 +62,6 @@ export function useDocumentTemplate(
   });
 }
 
-/**
- * Get paginated change history for a template.
- */
 export function useTemplateHistory(
   slug: string,
   page: number = 1,
@@ -94,9 +86,42 @@ export function useTemplateHistory(
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
 // ✏️ MUTATIONS
-// ═══════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════
+
+/**
+ * Create a new template.
+ */
+export function useCreateTemplate(): UseMutationResult<
+  DocumentTemplate,
+  Error,
+  CreateTemplateInput
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data) => {
+      const response = await api.post('/document-templates', data);
+      return response.data.data;
+    },
+    onSuccess: async (created) => {
+      toast.success(
+        'Szablon utworzony',
+        `${created.name} (${created.slug})`
+      );
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.all,
+        refetchType: 'all',
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.error || 'Nie udało się utworzyć szablonu';
+      toast.error('Błąd tworzenia', message);
+    },
+  });
+}
 
 /**
  * Update template content (triggers auto-versioning on backend).
@@ -113,13 +138,11 @@ export function useUpdateTemplate(): UseMutationResult<
       const response = await api.put(`/document-templates/${slug}`, data);
       return response.data.data;
     },
-    onSuccess: async (updated, { slug }) => {
+    onSuccess: async (updated) => {
       toast.success(
         'Szablon zapisany',
         `${updated.name} — wersja ${updated.version}`
       );
-
-      // Invalidate all template queries
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.all,
         refetchType: 'all',
@@ -134,8 +157,73 @@ export function useUpdateTemplate(): UseMutationResult<
 }
 
 /**
+ * Delete a template (blocked for isRequired templates).
+ */
+export function useDeleteTemplate(): UseMutationResult<
+  { deleted: boolean; slug: string; name: string },
+  Error,
+  string
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (slug) => {
+      const response = await api.delete(`/document-templates/${slug}`);
+      return response.data.data;
+    },
+    onSuccess: async (result) => {
+      toast.success(
+        'Szablon usunięty',
+        result.name
+      );
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.all,
+        refetchType: 'all',
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.error || 'Nie udało się usunąć szablonu';
+      toast.error('Błąd usuwania', message);
+    },
+  });
+}
+
+/**
+ * Restore a historical version of a template.
+ */
+export function useRestoreTemplate(): UseMutationResult<
+  DocumentTemplate,
+  Error,
+  { slug: string; version: number }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ slug, version }) => {
+      const response = await api.post(`/document-templates/${slug}/restore/${version}`);
+      return response.data.data;
+    },
+    onSuccess: async (restored) => {
+      toast.success(
+        'Wersja przywrócona',
+        `${restored.name} — teraz v${restored.version}`
+      );
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.all,
+        refetchType: 'all',
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.error || 'Nie udało się przywrócić wersji';
+      toast.error('Błąd', message);
+    },
+  });
+}
+
+/**
  * Preview template with variable substitution.
- * Uses mutation (POST) since it sends data but doesn't persist.
  */
 export function usePreviewTemplate(): UseMutationResult<
   PreviewResult,
