@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  FileText,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
@@ -22,7 +21,6 @@ import {
 } from '@/hooks/use-document-templates';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -66,15 +64,24 @@ export function TemplateHistory({ slug, open, onClose }: TemplateHistoryProps) {
               </div>
               Historia zmian
             </DialogTitle>
-            {template && (
-              <DialogDescription className="flex items-center gap-2 mt-1">
-                <ScrollText className="h-3.5 w-3.5" />
-                {template.name}
-                <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300 text-[10px] border-0">
-                  Aktualna: v{template.version}
-                </Badge>
-              </DialogDescription>
-            )}
+            <DialogDescription
+              className={cn(
+                'flex items-center gap-2 mt-1',
+                !template && 'sr-only'
+              )}
+            >
+              {template ? (
+                <>
+                  <ScrollText className="h-3.5 w-3.5" />
+                  {template.name}
+                  <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300 text-[10px] border-0">
+                    Aktualna: v{template.version}
+                  </Badge>
+                </>
+              ) : (
+                'Historia zmian szablonu dokumentu'
+              )}
+            </DialogDescription>
           </DialogHeader>
         </div>
 
