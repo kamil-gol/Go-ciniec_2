@@ -376,14 +376,16 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                 <div
                   className={cn(
                     'h-full',
-                    editorMode === 'split' ? 'grid grid-cols-1 md:grid-cols-2' : 'flex'
+                    editorMode === 'split'
+                      ? 'grid grid-cols-1 md:grid-cols-2'
+                      : 'flex flex-col'
                   )}
                 >
                   {/* Editor panel */}
                   {(editorMode === 'edit' || editorMode === 'split') && (
                     <div
                       className={cn(
-                        'flex flex-col overflow-hidden',
+                        'flex flex-col overflow-hidden flex-1 min-h-0',
                         editorMode === 'split' && 'border-r'
                       )}
                     >
@@ -395,12 +397,12 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                           </p>
                         </div>
                       )}
-                      <div className="flex-1 overflow-hidden">
+                      <div className="flex-1 overflow-hidden min-h-0">
                         <textarea
                           ref={textareaRef}
                           value={content}
                           onChange={(e) => handleContentChange(e.target.value)}
-                          className="w-full h-full resize-none border-0 bg-background px-4 py-3 text-sm font-mono leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none"
+                          className="w-full h-full resize-none border-0 bg-background px-6 py-4 text-sm font-mono leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none"
                           placeholder="Treść szablonu..."
                           spellCheck={false}
                         />
@@ -410,14 +412,14 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
 
                   {/* Preview panel */}
                   {(editorMode === 'preview' || editorMode === 'split') && (
-                    <div className="flex flex-col overflow-hidden">
+                    <div className="flex flex-col overflow-hidden flex-1 min-h-0">
                       <div className="flex-shrink-0 px-4 py-2 border-b bg-muted/20">
                         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                           <Eye className="h-3 w-3" />
                           Podgląd z przykładowymi danymi
                         </p>
                       </div>
-                      <div className="flex-1 overflow-y-auto">
+                      <div className="flex-1 overflow-y-auto min-h-0">
                         <div className="p-4 sm:p-6">
                           <div className="rounded-xl border bg-white dark:bg-neutral-950 p-6 shadow-sm">
                             <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed text-foreground">
