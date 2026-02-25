@@ -86,7 +86,7 @@ export function DishSelector({
 
   const categories = categoryData.categories
 
-  // \u2500\u2500 Helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // ── Helpers ────────────────────────────────────────────
 
   const getCategoryTotal = (categoryId: string): number => {
     const categorySelections = selections[categoryId] || {}
@@ -207,7 +207,6 @@ export function DishSelector({
         title: 'Nie można zatwierdzić wyboru',
         description: errorMessages.join('. ') + '.',
         variant: 'destructive',
-        duration: 6000,
       })
       return
     }
