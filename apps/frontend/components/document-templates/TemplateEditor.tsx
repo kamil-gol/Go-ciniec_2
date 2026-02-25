@@ -1,7 +1,7 @@
 // apps/frontend/components/document-templates/TemplateEditor.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Save,
   Eye,
@@ -9,8 +9,11 @@ import {
   Loader2,
   Tag,
   AlertTriangle,
-  Copy,
   Check,
+  X,
+  ScrollText,
+  Sparkles,
+  SplitSquareVertical,
 } from 'lucide-react';
 import {
   useDocumentTemplate,
@@ -19,7 +22,6 @@ import {
 } from '@/hooks/use-document-templates';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
@@ -28,7 +30,18 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
 
 // ── Props ───────────────────────────────────────────────
 
@@ -38,39 +51,81 @@ interface TemplateEditorProps {
   onClose: () => void;
 }
 
-// ── Sample variable values for preview ───────────────────
+// ── Human-readable variable labels ─────────────────────
+
+const VAR_LABELS: Record<string, string> = {
+  hallName: 'Nazwa sali',
+  eventDate: 'Data wydarzenia',
+  guestCount: 'Liczba gości',
+  depositAmount: 'Kwota zaliczki',
+  depositDueDate: 'Termin zaliczki',
+  companyName: 'Nazwa firmy',
+  generatedDate: 'Data wygenerowania',
+  clientName: 'Imię i nazwisko klienta',
+  clientEmail: 'E-mail klienta',
+  clientPhone: 'Telefon klienta',
+  eventType: 'Typ wydarzenia',
+  totalPrice: 'Cena całkowita',
+  menuName: 'Nazwa menu',
+  cateringDate: 'Data cateringu',
+  servingCount: 'Liczba porcji',
+  cancellationDays: 'Dni na anulowanie',
+  cancellationFee: 'Opłata za anulowanie',
+  companyAddress: 'Adres firmy',
+  companyNIP: 'NIP firmy',
+  companyPhone: 'Telefon firmy',
+  companyEmail: 'E-mail firmy',
+  companyBankName: 'Nazwa banku',
+  companyBankAccount: 'Numer konta',
+  remainingAmount: 'Pozostała kwota',
+  effectiveDate: 'Data obowiązywania',
+};
+
+// ── Sample variable values for preview ─────────────────
 
 const SAMPLE_VARS: Record<string, string> = {
   hallName: 'Sala Złota',
-  eventDate: '2026-06-15',
+  eventDate: '15 czerwca 2026',
   guestCount: '120',
-  depositAmount: '5 000',
-  depositDueDate: '2026-03-15',
+  depositAmount: '5 000 zł',
+  depositDueDate: '15 marca 2026',
   companyName: 'Gościniec Rodzinny',
-  generatedDate: '2026-02-25',
+  generatedDate: '25 lutego 2026',
   clientName: 'Jan Kowalski',
   clientEmail: 'jan@example.com',
   clientPhone: '+48 600 123 456',
   eventType: 'Wesele',
-  totalPrice: '25 000',
+  totalPrice: '25 000 zł',
   menuName: 'Pakiet Premium',
-  cateringDate: '2026-06-15',
+  cateringDate: '15 czerwca 2026',
   servingCount: '120',
   cancellationDays: '30',
   cancellationFee: '50%',
+  companyAddress: 'ul. Weselna 12, 00-001 Warszawa',
+  companyNIP: '123-456-78-90',
+  companyPhone: '+48 22 123 45 67',
+  companyEmail: 'kontakt@gosciniec.pl',
+  companyBankName: 'Bank PKO BP',
+  companyBankAccount: '12 3456 7890 1234 5678 9012 3456',
+  remainingAmount: '20 000 zł',
+  effectiveDate: '1 marca 2026',
 };
 
-// ── Component ───────────────────────────────────────────
+type EditorMode = 'edit' | 'split' | 'preview';
+
+// ── Component ─────────────────────────────────────────
 
 export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
   const { data: template, isLoading } = useDocumentTemplate(slug);
   const updateMutation = useUpdateTemplate();
   const previewMutation = usePreviewTemplate();
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
-  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [editorMode, setEditorMode] = useState<EditorMode>('split');
   const [hasChanges, setHasChanges] = useState(false);
-  const [copiedVar, setCopiedVar] = useState<string | null>(null);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [insertedVar, setInsertedVar] = useState<string | null>(null);
 
   // Load template content
   useEffect(() => {
@@ -79,6 +134,19 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
       setHasChanges(false);
     }
   }, [template]);
+
+  // Auto-preview when content changes (debounced)
+  useEffect(() => {
+    if (!template || editorMode === 'edit') return;
+    const timer = setTimeout(() => {
+      previewMutation.mutate({
+        slug: template.slug,
+        variables: SAMPLE_VARS,
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, editorMode, template?.slug]);
 
   // Track changes
   const handleContentChange = useCallback(
@@ -99,225 +167,349 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
     setHasChanges(false);
   };
 
-  // Preview
-  const handlePreview = async () => {
-    if (!template) return;
-    setActiveTab('preview');
-    await previewMutation.mutateAsync({
-      slug: template.slug,
-      variables: SAMPLE_VARS,
-    });
-  };
+  // Insert variable at cursor position
+  const insertVariable = useCallback(
+    (varName: string) => {
+      const textarea = textareaRef.current;
+      const tag = `{{${varName}}}`;
 
-  // Insert variable at cursor
-  const insertVariable = (varName: string) => {
-    const tag = `{{${varName}}}`;
-    setContent((prev) => prev + tag);
-    setHasChanges(true);
-    setCopiedVar(varName);
-    setTimeout(() => setCopiedVar(null), 1500);
-  };
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = content.substring(0, start);
+        const after = content.substring(end);
+        const newContent = before + tag + after;
+
+        setContent(newContent);
+        setHasChanges(newContent !== template?.content);
+
+        // Restore cursor after tag
+        requestAnimationFrame(() => {
+          textarea.focus();
+          const newPos = start + tag.length;
+          textarea.setSelectionRange(newPos, newPos);
+        });
+      } else {
+        setContent((prev) => prev + tag);
+        setHasChanges(true);
+      }
+
+      setInsertedVar(varName);
+      setTimeout(() => setInsertedVar(null), 1200);
+    },
+    [content, template?.content]
+  );
 
   // Close with unsaved warning
   const handleClose = () => {
     if (hasChanges) {
-      const confirmed = window.confirm(
-        'Masz niezapisane zmiany. Czy na pewno chcesz zamknąć?'
-      );
-      if (!confirmed) return;
+      setShowCloseDialog(true);
+    } else {
+      onClose();
     }
-    onClose();
   };
 
+  // Local preview (client-side variable substitution for instant feedback)
+  const localPreview = useMemo(() => {
+    let result = content;
+    for (const [key, value] of Object.entries(SAMPLE_VARS)) {
+      result = result.replaceAll(`{{${key}}}`, value);
+    }
+    return result;
+  }, [content]);
+
+  // ── Render ───────────────────────────────────────
+
   return (
-    <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : template ? (
-          <>
-            {/* Header */}
-            <SheetHeader className="pb-4">
-              <SheetTitle className="flex items-center gap-2">
-                {template.name}
-                <Badge variant="secondary">v{template.version}</Badge>
-                {hasChanges && (
-                  <Badge variant="destructive" className="gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Niezapisane
-                  </Badge>
-                )}
-              </SheetTitle>
-              {template.description && (
-                <SheetDescription>{template.description}</SheetDescription>
-              )}
-            </SheetHeader>
-
-            {/* Action bar */}
-            <div className="flex items-center gap-2 mb-4">
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || updateMutation.isPending}
-                size="sm"
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Zapisz
-              </Button>
-              <Button
-                onClick={handlePreview}
-                variant="outline"
-                size="sm"
-                disabled={previewMutation.isPending}
-              >
-                {previewMutation.isPending ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Eye className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Podgląd
-              </Button>
+    <>
+      <Sheet open={open} onOpenChange={handleClose}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-5xl p-0 flex flex-col overflow-hidden"
+        >
+          {isLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-
-            <Separator className="mb-4" />
-
-            {/* Available variables */}
-            {template.availableVars && template.availableVars.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-sm font-medium flex items-center gap-1.5">
-                  <Tag className="h-3.5 w-3.5" />
-                  Dostępne zmienne
-                  <span className="text-muted-foreground">
-                    (kliknij aby wstawić)
-                  </span>
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {template.availableVars.map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => insertVariable(v)}
-                      className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-mono hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-                      title={`Wstaw {{${v}}}`}
-                    >
-                      {copiedVar === v ? (
-                        <Check className="h-3 w-3 text-green-600" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                      {`{{${v}}}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Editor / Preview tabs */}
-            <Tabs
-              value={activeTab}
-              onValueChange={(v) => setActiveTab(v as 'edit' | 'preview')}
-            >
-              <TabsList className="mb-3">
-                <TabsTrigger value="edit" className="gap-1.5">
-                  <Code className="h-3.5 w-3.5" />
-                  Edycja
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="gap-1.5">
-                  <Eye className="h-3.5 w-3.5" />
-                  Podgląd
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Edit tab */}
-              <TabsContent value="edit">
-                <textarea
-                  value={content}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  className="w-full min-h-[400px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
-                  placeholder="Treść szablonu..."
-                  spellCheck={false}
-                />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Używaj {'{{nazwaZmiennej}}'} do wstawiania dynamicznych wartości.
-                  Formatowanie Markdown jest obsługiwane.
-                </p>
-              </TabsContent>
-
-              {/* Preview tab */}
-              <TabsContent value="preview">
-                {previewMutation.isPending ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : previewMutation.data ? (
-                  <div className="space-y-4">
-                    {/* Unfilled vars warning */}
-                    {previewMutation.data.unfilledVars.length > 0 && (
-                      <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                            Niewypełnione zmienne
-                          </p>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {previewMutation.data.unfilledVars.map((v) => (
-                              <code
-                                key={v}
-                                className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-mono text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                              >
-                                {`{{${v}}}`}
-                              </code>
-                            ))}
-                          </div>
+          ) : template ? (
+            <>
+              {/* ── Header ── */}
+              <div className="flex-shrink-0 border-b bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-cyan-500/5">
+                <div className="px-6 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <SheetTitle className="flex items-center gap-2 text-lg">
+                        <div className="p-1.5 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg">
+                          <ScrollText className="h-4 w-4 text-white" />
                         </div>
-                      </div>
-                    )}
-
-                    {/* Rendered content */}
-                    <div className="rounded-md border bg-white p-4 dark:bg-zinc-950">
-                      <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed">
-                        {previewMutation.data.content}
-                      </pre>
+                        {template.name}
+                        <Badge variant="secondary" className="text-xs">
+                          v{template.version}
+                        </Badge>
+                        {hasChanges && (
+                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-xs gap-1 border-0">
+                            <AlertTriangle className="h-3 w-3" />
+                            Niezapisane
+                          </Badge>
+                        )}
+                      </SheetTitle>
+                      {template.description && (
+                        <SheetDescription className="text-sm">
+                          {template.description}
+                        </SheetDescription>
+                      )}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <Eye className="h-8 w-8 mb-2" />
-                    <p className="text-sm">Kliknij "Podgląd" aby wyrenderować szablon</p>
-                    <p className="text-xs mt-1">
-                      Zmienne zostaną podstawione przykładowymi danymi
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
 
-            {/* Footer info */}
-            <div className="mt-6 flex items-center gap-3 text-xs text-muted-foreground">
-              <span>Slug: <code className="font-mono">{template.slug}</code></span>
-              <Separator orientation="vertical" className="h-3" />
-              <span>
-                Ostatnia zmiana:{' '}
-                {new Date(template.updatedAt).toLocaleDateString('pl-PL', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
+                  {/* Toolbar */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <Button
+                      onClick={handleSave}
+                      disabled={!hasChanges || updateMutation.isPending}
+                      size="sm"
+                      className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-sm"
+                    >
+                      {updateMutation.isPending ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Save className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Zapisz
+                    </Button>
+
+                    <Separator orientation="vertical" className="h-6" />
+
+                    {/* View mode toggle */}
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                      <button
+                        onClick={() => setEditorMode('edit')}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5',
+                          editorMode === 'edit'
+                            ? 'bg-white dark:bg-neutral-800 shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <Code className="h-3.5 w-3.5" />
+                        Edycja
+                      </button>
+                      <button
+                        onClick={() => setEditorMode('split')}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5',
+                          editorMode === 'split'
+                            ? 'bg-white dark:bg-neutral-800 shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <SplitSquareVertical className="h-3.5 w-3.5" />
+                        Podzielony
+                      </button>
+                      <button
+                        onClick={() => setEditorMode('preview')}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5',
+                          editorMode === 'preview'
+                            ? 'bg-white dark:bg-neutral-800 shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Podgląd
+                      </button>
+                    </div>
+
+                    <div className="flex-1" />
+
+                    {/* Slug + last update */}
+                    <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
+                      {template.slug}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Variables bar ── */}
+              {template.availableVars && template.availableVars.length > 0 && (
+                <div className="flex-shrink-0 border-b bg-muted/30 px-6 py-3">
+                  <p className="mb-2 text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Dostępne zmienne
+                    <span className="text-muted-foreground/60">
+                      — kliknij aby wstawić w pozycji kursora
+                    </span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {template.availableVars.map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => insertVariable(v)}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5',
+                          'text-xs transition-all duration-200 cursor-pointer',
+                          'border border-neutral-200 dark:border-neutral-700',
+                          'hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700',
+                          'dark:hover:border-cyan-700 dark:hover:bg-cyan-950 dark:hover:text-cyan-300',
+                          insertedVar === v
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950 dark:border-emerald-700 dark:text-emerald-300'
+                            : 'bg-white dark:bg-neutral-800 text-foreground'
+                        )}
+                        title={VAR_LABELS[v] || v}
+                      >
+                        {insertedVar === v ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Tag className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className="font-medium">{VAR_LABELS[v] || v}</span>
+                        <code className="text-[10px] text-muted-foreground/60 font-mono">
+                          {`{{${v}}}`}
+                        </code>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Editor / Preview area ── */}
+              <div className="flex-1 overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full',
+                    editorMode === 'split' ? 'grid grid-cols-1 md:grid-cols-2' : 'flex'
+                  )}
+                >
+                  {/* Editor panel */}
+                  {(editorMode === 'edit' || editorMode === 'split') && (
+                    <div
+                      className={cn(
+                        'flex flex-col overflow-hidden',
+                        editorMode === 'split' && 'border-r'
+                      )}
+                    >
+                      {editorMode === 'split' && (
+                        <div className="flex-shrink-0 px-4 py-2 border-b bg-muted/20">
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Code className="h-3 w-3" />
+                            Edycja treści
+                          </p>
+                        </div>
+                      )}
+                      <div className="flex-1 overflow-hidden">
+                        <textarea
+                          ref={textareaRef}
+                          value={content}
+                          onChange={(e) => handleContentChange(e.target.value)}
+                          className="w-full h-full resize-none border-0 bg-background px-4 py-3 text-sm font-mono leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none"
+                          placeholder="Treść szablonu..."
+                          spellCheck={false}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview panel */}
+                  {(editorMode === 'preview' || editorMode === 'split') && (
+                    <div className="flex flex-col overflow-hidden">
+                      <div className="flex-shrink-0 px-4 py-2 border-b bg-muted/20">
+                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Eye className="h-3 w-3" />
+                          Podgląd z przykładowymi danymi
+                        </p>
+                      </div>
+                      <div className="flex-1 overflow-y-auto">
+                        <div className="p-4 sm:p-6">
+                          <div className="rounded-xl border bg-white dark:bg-neutral-950 p-6 shadow-sm">
+                            <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed text-foreground">
+                              {localPreview}
+                            </pre>
+                          </div>
+                          {/* Unfilled variables warning */}
+                          {content.match(/\{\{\w+\}\}/g)?.some(
+                            (match) => {
+                              const varName = match.slice(2, -2);
+                              return !SAMPLE_VARS[varName];
+                            }
+                          ) && (
+                            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">
+                              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                                  Niektóre zmienne nie mają przykładowych danych
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {content.match(/\{\{\w+\}\}/g)
+                                    ?.filter((match) => !SAMPLE_VARS[match.slice(2, -2)])
+                                    .filter((v, i, a) => a.indexOf(v) === i)
+                                    .map((match) => (
+                                      <code
+                                        key={match}
+                                        className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-mono text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                                      >
+                                        {match}
+                                      </code>
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Footer ── */}
+              <div className="flex-shrink-0 border-t bg-muted/20 px-6 py-3 flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">
+                  Ostatnia zmiana:{' '}
+                  {new Date(template.updatedAt).toLocaleDateString('pl-PL', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Używaj <code className="font-mono bg-muted px-1 py-0.5 rounded">{`{{zmienna}}`}</code> do wstawiania dynamicznych wartości
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              Nie znaleziono szablonu
             </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center py-20 text-muted-foreground">
-            Nie znaleziono szablonu
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Unsaved changes dialog ── */}
+      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Niezapisane zmiany</AlertDialogTitle>
+            <AlertDialogDescription>
+              Masz niezapisane zmiany w szablonie. Czy na pewno chcesz zamknąć
+              edytor? Zmiany zostaną utracone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Wróć do edycji</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowCloseDialog(false);
+                setHasChanges(false);
+                onClose();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Zamknij bez zapisu
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
