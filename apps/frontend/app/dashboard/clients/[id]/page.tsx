@@ -22,10 +22,10 @@ import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Oczekuj\u0105ca',
+  PENDING: 'Oczekująca',
   CONFIRMED: 'Potwierdzona',
   CANCELLED: 'Anulowana',
-  COMPLETED: 'Zako\u0144czona',
+  COMPLETED: 'Zakończona',
 }
 
 const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
@@ -59,8 +59,8 @@ export default function ClientDetailsPage() {
     } catch (error: any) {
       console.error('Error loading client:', error)
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 klienta',
+        title: 'Błąd',
+        description: 'Nie udało się załadować klienta',
         variant: 'destructive',
       })
       router.push('/dashboard/clients')
@@ -77,13 +77,13 @@ export default function ClientDetailsPage() {
       await deleteClient(client.id)
       toast({
         title: 'Sukces',
-        description: 'Dane klienta zosta\u0142y zanonimizowane',
+        description: 'Dane klienta zostały zanonimizowane',
       })
       router.push('/dashboard/clients')
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.error || error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107 klienta',
+        title: 'Błąd',
+        description: error?.response?.data?.error || error?.response?.data?.message || 'Nie udało się usunąć klienta',
         variant: 'destructive',
       })
     } finally {
@@ -130,8 +130,8 @@ export default function ClientDetailsPage() {
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
             <Trash2 className="h-5 w-5 shrink-0" />
             <div>
-              <p className="font-semibold">Klient usuni\u0119ty</p>
-              <p className="text-sm">Dane osobowe tego klienta zosta\u0142y zanonimizowane. Rezerwacje pozosta\u0142y w systemie.</p>
+              <p className="font-semibold">Klient usunięty</p>
+              <p className="text-sm">Dane osobowe tego klienta zostały zanonimizowane. Rezerwacje pozostały w systemie.</p>
             </div>
           </div>
         )}
@@ -148,7 +148,7 @@ export default function ClientDetailsPage() {
             <Link href="/dashboard/clients">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -192,7 +192,7 @@ export default function ClientDetailsPage() {
                   {isDeleted && (
                     <Badge className="bg-red-500 text-white border-0">
                       <Trash2 className="h-3 w-3 mr-1" />
-                      Usuni\u0119ty
+                      Usunięty
                     </Badge>
                   )}
                 </div>
@@ -254,7 +254,7 @@ export default function ClientDetailsPage() {
             <CardContent className="relative p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Zako\u0144czone</p>
+                  <p className="text-sm font-medium text-muted-foreground">Zakończone</p>
                   <p className="text-3xl font-bold">{stats.completed}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
@@ -270,7 +270,7 @@ export default function ClientDetailsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} z\u0142</p>
+                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
                   <DollarSign className="h-6 w-6 text-white" />
@@ -310,7 +310,7 @@ export default function ClientDetailsPage() {
         {activeTab === 'details' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Contact Info + Company Info */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="lg:col-span-1 space-y-6 min-w-0">
               {/* Company Info Card */}
               {isCompany && (
                 <Card className="border-0 shadow-xl overflow-hidden">
@@ -323,17 +323,17 @@ export default function ClientDetailsPage() {
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                        <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
+                        <Building2 className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Nazwa firmy</p>
-                          <p className="text-base font-semibold">{client.companyName}</p>
+                          <p className="text-base font-semibold truncate">{client.companyName}</p>
                         </div>
                       </div>
 
                       {client.nip && (
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                          <Hash className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
+                          <Hash className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground">NIP</p>
                             <p className="text-base font-semibold font-mono">{client.nip}</p>
                           </div>
@@ -342,8 +342,8 @@ export default function ClientDetailsPage() {
 
                       {client.regon && (
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                          <Hash className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
+                          <Hash className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground">REGON</p>
                             <p className="text-base font-semibold font-mono">{client.regon}</p>
                           </div>
@@ -352,9 +352,9 @@ export default function ClientDetailsPage() {
 
                       {client.industry && (
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                          <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Bran\u017ca</p>
+                          <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Branża</p>
                             <p className="text-base font-semibold">{client.industry}</p>
                           </div>
                         </div>
@@ -362,8 +362,8 @@ export default function ClientDetailsPage() {
 
                       {client.website && (
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                          <Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
+                          <Globe className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground">Strona www</p>
                             <a
                               href={client.website.startsWith('http') ? client.website : `https://${client.website}`}
@@ -379,8 +379,8 @@ export default function ClientDetailsPage() {
 
                       {client.companyAddress && (
                         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                          <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
+                          <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground">Adres firmy</p>
                             <p className="text-base font-semibold">{client.companyAddress}</p>
                           </div>
@@ -399,14 +399,14 @@ export default function ClientDetailsPage() {
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <h2 className="text-xl font-bold">
-                      {isCompany ? 'Osoba reprezentuj\u0105ca' : 'Dane kontaktowe'}
+                      {isCompany ? 'Osoba reprezentująca' : 'Dane kontaktowe'}
                     </h2>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                      <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Imi\u0119 i nazwisko</p>
+                      <User className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Imię i nazwisko</p>
                         <p className="text-base font-semibold">
                           {client.firstName} {client.lastName}
                         </p>
@@ -415,8 +415,8 @@ export default function ClientDetailsPage() {
 
                     {client.email && (
                       <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                        <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
+                        <Mail className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Email</p>
                           <p className="text-base font-semibold break-all">{client.email}</p>
                         </div>
@@ -425,8 +425,8 @@ export default function ClientDetailsPage() {
 
                     {client.phone && (
                       <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                        <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
+                        <Phone className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Telefon</p>
                           <p className="text-base font-semibold">{client.phone}</p>
                         </div>
@@ -435,8 +435,8 @@ export default function ClientDetailsPage() {
 
                     {client.address && (
                       <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
-                        <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
+                        <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Adres</p>
                           <p className="text-base font-semibold">{client.address}</p>
                         </div>
@@ -505,7 +505,7 @@ export default function ClientDetailsPage() {
                       onClick={() => setShowDeleteModal(true)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Usu\u0144 klienta
+                      Usuń klienta
                     </Button>
                   )}
                 </CardContent>
@@ -513,7 +513,7 @@ export default function ClientDetailsPage() {
             </div>
 
             {/* Right Column - Reservations History + Attachments */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6 min-w-0">
               <Card className="border-0 shadow-xl">
                 <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
                   <div className="flex items-center gap-3">
@@ -528,12 +528,12 @@ export default function ClientDetailsPage() {
                     <div className="text-center py-12">
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
-                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze \u017cadnych rezerwacji</p>
+                      <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
                       {!isDeleted && (
                         <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
                           <Button className="mt-4" size="lg">
                             <Calendar className="mr-2 h-4 w-4" />
-                            Utw\u00f3rz pierwsz\u0105 rezerwacj\u0119
+                            Utwórz pierwszą rezerwację
                           </Button>
                         </Link>
                       )}
@@ -556,7 +556,7 @@ export default function ClientDetailsPage() {
                             <Card className="border-2 hover:border-indigo-300 transition-all hover:shadow-lg cursor-pointer">
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
-                                  <div className="space-y-2 flex-1">
+                                  <div className="space-y-2 flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       <Badge className={`${statusCfg.color} text-white border-0`}>
                                         <StatusIcon className="h-3 w-3 mr-1" />
@@ -574,12 +574,12 @@ export default function ClientDetailsPage() {
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                       <span>{reservation.eventType?.name}</span>
-                                      <span>\u2022</span>
-                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} os\u00f3b</span>
+                                      <span>{"\u2022"}</span>
+                                      <span>{(reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)} osób</span>
                                     </div>
                                   </div>
-                                  <div className="text-right">
-                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} z\u0142</p>
+                                  <div className="text-right shrink-0 ml-4">
+                                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
                                   </div>
                                 </div>
                               </CardContent>
@@ -596,7 +596,7 @@ export default function ClientDetailsPage() {
               <AttachmentPanel
                 entityType="CLIENT"
                 entityId={client.id}
-                title="Za\u0142\u0105czniki klienta"
+                title="Załączniki klienta"
                 className="shadow-xl"
                 readOnly={isDeleted}
               />

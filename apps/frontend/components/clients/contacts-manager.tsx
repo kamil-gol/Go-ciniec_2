@@ -84,8 +84,8 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
 
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       toast({
-        title: 'B\u0142\u0105d walidacji',
-        description: 'Imi\u0119 i nazwisko s\u0105 wymagane',
+        title: 'Błąd walidacji',
+        description: 'Imię i nazwisko są wymagane',
         variant: 'destructive',
       })
       return
@@ -107,13 +107,13 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
         await updateClientContact(clientId, editingId, payload)
         toast({
           title: 'Sukces',
-          description: 'Osoba kontaktowa zosta\u0142a zaktualizowana',
+          description: 'Osoba kontaktowa została zaktualizowana',
         })
       } else {
         await addClientContact(clientId, payload)
         toast({
           title: 'Sukces',
-          description: 'Osoba kontaktowa zosta\u0142a dodana',
+          description: 'Osoba kontaktowa została dodana',
         })
       }
 
@@ -124,9 +124,9 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
-        'Wyst\u0105pi\u0142 b\u0142\u0105d'
+        'Wystąpił błąd'
       toast({
-        title: 'B\u0142\u0105d',
+        title: 'Błąd',
         description: errorMessage,
         variant: 'destructive',
       })
@@ -136,14 +136,14 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
   }
 
   const handleDelete = async (contactId: string, contactName: string) => {
-    if (!confirm(`Czy na pewno chcesz usun\u0105\u0107 osob\u0119 kontaktow\u0105 ${contactName}?`)) return
+    if (!confirm(`Czy na pewno chcesz usunąć osobę kontaktową ${contactName}?`)) return
 
     try {
       setDeletingId(contactId)
       await removeClientContact(clientId, contactId)
       toast({
         title: 'Sukces',
-        description: `Usuni\u0119to osob\u0119 kontaktow\u0105: ${contactName}`,
+        description: `Usunięto osobę kontaktową: ${contactName}`,
       })
       onUpdate()
     } catch (error: any) {
@@ -151,9 +151,9 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
-        'Nie uda\u0142o si\u0119 usun\u0105\u0107 kontaktu'
+        'Nie udało się usunąć kontaktu'
       toast({
-        title: 'B\u0142\u0105d',
+        title: 'Błąd',
         description: errorMessage,
         variant: 'destructive',
       })
@@ -170,14 +170,14 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
       toast({
         title: 'Sukces',
         description: contact.isPrimary
-          ? `${contact.firstName} ${contact.lastName} nie jest ju\u017c g\u0142\u00f3wn\u0105 osob\u0105 kontaktow\u0105`
-          : `${contact.firstName} ${contact.lastName} ustawiony jako g\u0142\u00f3wna osoba kontaktowa`,
+          ? `${contact.firstName} ${contact.lastName} nie jest już główną osobą kontaktową`
+          : `${contact.firstName} ${contact.lastName} ustawiony jako główna osoba kontaktowa`,
       })
       onUpdate()
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 zmieni\u0107 statusu kontaktu',
+        title: 'Błąd',
+        description: 'Nie udało się zmienić statusu kontaktu',
         variant: 'destructive',
       })
     }
@@ -212,7 +212,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
           <form onSubmit={handleSubmit} className="mb-6 p-4 bg-white dark:bg-black/20 rounded-xl border-2 border-amber-200 dark:border-amber-800/50 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-amber-700 dark:text-amber-400">
-                {editingId ? 'Edytuj osob\u0119 kontaktow\u0105' : 'Nowa osoba kontaktowa'}
+                {editingId ? 'Edytuj osobę kontaktową' : 'Nowa osoba kontaktowa'}
               </h3>
               <Button type="button" variant="ghost" size="sm" onClick={closeForm}>
                 <X className="h-4 w-4" />
@@ -222,7 +222,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="contact-firstName" className="text-sm font-medium">
-                  Imi\u0119 <span className="text-red-500">*</span>
+                  Imię <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="contact-firstName"
@@ -279,7 +279,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  placeholder="np. Dyrektor, Ksi\u0119gowa"
+                  placeholder="np. Dyrektor, Księgowa"
                   className="h-10 border-2"
                 />
               </div>
@@ -292,7 +292,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                     className="w-4 h-4 rounded border-2 border-amber-400 text-amber-500 focus:ring-amber-500"
                   />
                   <Star className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm font-medium">G\u0142\u00f3wna osoba kontaktowa</span>
+                  <span className="text-sm font-medium">Główna osoba kontaktowa</span>
                 </label>
               </div>
             </div>
@@ -318,11 +318,11 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
         {contacts.length === 0 && !showForm ? (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground font-medium">Brak os\u00f3b kontaktowych</p>
+            <p className="text-muted-foreground font-medium">Brak osób kontaktowych</p>
             {!readOnly && (
               <Button size="sm" variant="outline" onClick={openAddForm} className="mt-3">
                 <Plus className="mr-1 h-4 w-4" />
-                Dodaj pierwsz\u0105 osob\u0119
+                Dodaj pierwszą osobę
               </Button>
             )}
           </div>
@@ -334,21 +334,21 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                 className="group p-4 bg-white dark:bg-black/20 rounded-xl space-y-2 transition-all hover:shadow-md"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                       {contact.firstName?.charAt(0)}{contact.lastName?.charAt(0)}
                     </div>
-                    <span className="font-semibold text-base">
+                    <span className="font-semibold text-base truncate">
                       {contact.firstName} {contact.lastName}
                     </span>
                     {contact.isPrimary && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
                         <Star className="h-3 w-3" />
-                        G\u0142\u00f3wny
+                        Główny
                       </span>
                     )}
                     {(contact as any).role && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 shrink-0">
                         <Briefcase className="h-3 w-3" />
                         {(contact as any).role}
                       </span>
@@ -357,12 +357,12 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
 
                   {/* Action buttons */}
                   {!readOnly && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleTogglePrimary(contact)}
-                        title={contact.isPrimary ? 'Usu\u0144 jako g\u0142\u00f3wny' : 'Ustaw jako g\u0142\u00f3wny'}
+                        title={contact.isPrimary ? 'Usuń jako główny' : 'Ustaw jako główny'}
                         className="h-8 w-8 p-0"
                       >
                         {contact.isPrimary ? (
