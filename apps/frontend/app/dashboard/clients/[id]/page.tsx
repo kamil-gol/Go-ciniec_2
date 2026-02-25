@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
+import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Oczekująca',
@@ -41,6 +42,7 @@ export default function ClientDetailsPage() {
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
 
   useEffect(() => {
@@ -67,15 +69,13 @@ export default function ClientDetailsPage() {
 
   const handleDelete = async () => {
     if (!client) return
-    const confirmed = window.confirm(`Czy na pewno chcesz usunąć klienta ${client.firstName} ${client.lastName}?`)
-    if (!confirmed) return
 
     try {
       setDeleting(true)
       await deleteClient(client.id)
       toast({
         title: 'Sukces',
-        description: 'Klient został usunięty',
+        description: 'Dane klienta zostały zanonimizowane',
       })
       router.push('/dashboard/clients')
     } catch (error: any) {
@@ -86,6 +86,7 @@ export default function ClientDetailsPage() {
       })
     } finally {
       setDeleting(false)
+      setShowDeleteModal(false)
     }
   }
 
@@ -104,6 +105,8 @@ export default function ClientDetailsPage() {
     return null
   }
 
+  const isDeleted = client.isDeleted === true
+
   // Calculate stats
   const reservations = client.reservations || []
   const stats = {
@@ -118,6 +121,17 @@ export default function ClientDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
+        {/* Soft-deleted banner */}
+        {isDeleted && (
+          <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
+            <Trash2 className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Klient usunięty</p>
+              <p className="text-sm">Dane osobowe tego klienta zostały zanonimizowane. Rezerwacje pozostały w systemie.</p>
+            </div>
+          </div>
+        )}
+
         {/* Premium Hero Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
@@ -154,19 +168,27 @@ export default function ClientDetailsPage() {
                       {stats.total} {stats.total === 1 ? 'rezerwacja' : 'rezerwacji'}
                     </Badge>
                   )}
+                  {isDeleted && (
+                    <Badge className="bg-red-500 text-white border-0">
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Usunięty
+                    </Badge>
+                  )}
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <Button 
-                  size="lg" 
-                  onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
-                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-                >
-                  <Edit className="mr-2 h-5 w-5" />
-                  Edytuj
-                </Button>
-              </div>
+              {!isDeleted && (
+                <div className="flex gap-3">
+                  <Button 
+                    size="lg" 
+                    onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                    className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+                  >
+                    <Edit className="mr-2 h-5 w-5" />
+                    Edytuj
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -341,31 +363,37 @@ export default function ClientDetailsPage() {
                   <CardTitle className="text-lg">Szybkie akcje</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-2">
-                  <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
-                    <Button variant="outline" className="w-full justify-start" size="lg">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Nowa rezerwacja
+                  {!isDeleted && (
+                    <>
+                      <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
+                        <Button variant="outline" className="w-full justify-start" size="lg">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Nowa rezerwacja
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start" 
+                        size="lg"
+                        onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edytuj dane
+                      </Button>
+                    </>
+                  )}
+                  {!isDeleted && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-red-600 hover:text-red-700" 
+                      size="lg"
+                      disabled={deleting}
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Usuń klienta
                     </Button>
-                  </Link>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    size="lg"
-                    onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edytuj dane
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start text-red-600 hover:text-red-700" 
-                    size="lg"
-                    disabled={deleting}
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {deleting ? 'Usuwanie...' : 'Usuń klienta'}
-                  </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -387,12 +415,14 @@ export default function ClientDetailsPage() {
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
                       <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
-                      <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
-                        <Button className="mt-4" size="lg">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          Utwórz pierwszą rezerwację
-                        </Button>
-                      </Link>
+                      {!isDeleted && (
+                        <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
+                          <Button className="mt-4" size="lg">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Utwórz pierwszą rezerwację
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -454,6 +484,7 @@ export default function ClientDetailsPage() {
                 entityId={client.id}
                 title="Załączniki klienta"
                 className="shadow-xl"
+                readOnly={isDeleted}
               />
             </div>
           </div>
@@ -469,6 +500,18 @@ export default function ClientDetailsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {client && (
+        <DeleteClientModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          clientName={`${client.firstName} ${client.lastName}`}
+          clientId={client.id}
+          onConfirm={handleDelete}
+          isDeleting={deleting}
+        />
+      )}
     </div>
   )
 }

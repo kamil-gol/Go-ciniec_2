@@ -197,8 +197,12 @@ export const CLIENT = {
   PHONE_REQUIRED: 'Numer telefonu jest wymagany',
   PHONE_MIN_DIGITS: 'Numer telefonu musi zawierać co najmniej 9 cyfr',
   CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć klienta posiadającego rezerwacje',
+  CANNOT_DELETE_WITH_ACTIVE_RESERVATIONS: (count: number) =>
+    `Nie można usunąć klienta — posiada ${count} aktywną/ych rezerwację/i (w kolejce, oczekująca lub potwierdzona)`,
+  ALREADY_DELETED: 'Ten klient został już usunięty',
   NAME_REQUIRED: 'Imię i nazwisko klienta są wymagane',
   DELETED: 'Klient został usunięty',
+  SOFT_DELETED: 'Dane klienta zostały zanonimizowane',
 } as const;
 
 // ═══════════════════════════════════════
