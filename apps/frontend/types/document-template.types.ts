@@ -22,7 +22,7 @@ export const TEMPLATE_CATEGORY_ORDER: TemplateCategory[] = [
   'POLICY',
 ];
 
-// ── Main model ──────────────────────────────────────────
+// ── Main model ──────────────────────────────────────
 
 export interface DocumentTemplate {
   id: string;
@@ -33,13 +33,14 @@ export interface DocumentTemplate {
   category: TemplateCategory;
   availableVars: string[];
   isRequired: boolean;
+  isActive: boolean;
   version: number;
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
 }
 
-// ── History entry ───────────────────────────────────────
+// ── History entry ───────────────────────────────────
 
 export interface DocumentTemplateHistory {
   id: string;
@@ -56,7 +57,7 @@ export interface DocumentTemplateHistory {
   createdAt: string;
 }
 
-// ── Preview result ──────────────────────────────────────
+// ── Preview result ──────────────────────────────────
 
 export interface PreviewResult {
   content: string;
@@ -65,7 +66,7 @@ export interface PreviewResult {
   templateSlug: string;
 }
 
-// ── API response wrappers ───────────────────────────────
+// ── API response wrappers ───────────────────────────
 
 export interface TemplateListResponse {
   success: boolean;
@@ -94,11 +95,23 @@ export interface TemplateHistoryResponse {
   };
 }
 
-// ── Update DTO ──────────────────────────────────────────
+// ── Create DTO ──────────────────────────────────────
+
+export interface CreateTemplateInput {
+  slug: string;
+  name: string;
+  description?: string;
+  category: TemplateCategory;
+  content: string;
+  availableVars?: string[];
+}
+
+// ── Update DTO ──────────────────────────────────────
 
 export interface UpdateTemplateInput {
   content: string;
   name?: string;
   description?: string;
   availableVars?: string[];
+  changeReason?: string;
 }
