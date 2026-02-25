@@ -13,6 +13,15 @@ import {
   ScrollText,
   Sparkles,
   SplitSquareVertical,
+  Bold,
+  Italic,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Minus,
+  Quote,
+  MessageSquare,
 } from 'lucide-react';
 import {
   useDocumentTemplate,
@@ -22,6 +31,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Sheet,
   SheetContent,
@@ -38,6 +49,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 // ── Props ───────────────────────────────────────────────
@@ -110,6 +127,30 @@ const SAMPLE_VARS: Record<string, string> = {
 
 type EditorMode = 'edit' | 'split' | 'preview';
 
+// ── Markdown toolbar definitions ──────────────────────
+
+interface ToolbarAction {
+  icon: typeof Bold;
+  label: string;
+  shortcut?: string;
+  action: 'wrap' | 'prefix' | 'insert';
+  before?: string;
+  after?: string;
+  prefix?: string;
+  insert?: string;
+}
+
+const MD_TOOLBAR: ToolbarAction[] = [
+  { icon: Bold,        label: 'Pogrubienie',      shortcut: 'Ctrl+B', action: 'wrap',   before: '**', after: '**' },
+  { icon: Italic,      label: 'Kursywa',          shortcut: 'Ctrl+I', action: 'wrap',   before: '*',  after: '*' },
+  { icon: Heading2,    label: 'Nagłówek H2',                          action: 'prefix', prefix: '## ' },
+  { icon: Heading3,    label: 'Nagłówek H3',                          action: 'prefix', prefix: '### ' },
+  { icon: List,        label: 'Lista punktowa',                       action: 'prefix', prefix: '- ' },
+  { icon: ListOrdered, label: 'Lista numerowana',                     action: 'prefix', prefix: '1. ' },
+  { icon: Quote,       label: 'Cytat',                                action: 'prefix', prefix: '> ' },
+  { icon: Minus,       label: 'Separator',                            action: 'insert', insert: '\n---\n' },
+];
+
 // ── Component ─────────────────────────────────────────
 
 export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
@@ -122,6 +163,8 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
   const [editorMode, setEditorMode] = useState<EditorMode>('split');
   const [hasChanges, setHasChanges] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [changeReason, setChangeReason] = useState('');
   const [insertedVar, setInsertedVar] = useState<string | null>(null);
 
   // Load template content
@@ -154,15 +197,104 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
     [template?.content]
   );
 
-  // Save
-  const handleSave = async () => {
+  // Open save dialog (with change reason)
+  const handleSaveClick = () => {
+    setChangeReason('');
+    setShowSaveDialog(true);
+  };
+
+  // Confirm save with optional reason
+  const handleConfirmSave = async () => {
     if (!template) return;
     await updateMutation.mutateAsync({
       slug: template.slug,
-      data: { content },
+      data: {
+        content,
+        ...(changeReason.trim() ? { changeReason: changeReason.trim() } : {}),
+      },
     });
     setHasChanges(false);
+    setShowSaveDialog(false);
+    setChangeReason('');
   };
+
+  // ── Markdown toolbar action handler ─────────────────
+
+  const applyToolbarAction = useCallback(
+    (toolbarAction: ToolbarAction) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = content.substring(start, end);
+      let newContent = content;
+      let newCursorPos = start;
+
+      if (toolbarAction.action === 'wrap') {
+        const before = toolbarAction.before || '';
+        const after = toolbarAction.after || '';
+        if (selectedText) {
+          newContent = content.substring(0, start) + before + selectedText + after + content.substring(end);
+          newCursorPos = start + before.length + selectedText.length + after.length;
+        } else {
+          const placeholder = toolbarAction.label.toLowerCase();
+          newContent = content.substring(0, start) + before + placeholder + after + content.substring(end);
+          newCursorPos = start + before.length;
+          // Select the placeholder text after insert
+          requestAnimationFrame(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + before.length, start + before.length + placeholder.length);
+          });
+          setContent(newContent);
+          setHasChanges(newContent !== template?.content);
+          return;
+        }
+      } else if (toolbarAction.action === 'prefix') {
+        const prefix = toolbarAction.prefix || '';
+        // Find start of line
+        const lineStart = content.lastIndexOf('\n', start - 1) + 1;
+        newContent = content.substring(0, lineStart) + prefix + content.substring(lineStart);
+        newCursorPos = start + prefix.length;
+      } else if (toolbarAction.action === 'insert') {
+        const insert = toolbarAction.insert || '';
+        newContent = content.substring(0, start) + insert + content.substring(end);
+        newCursorPos = start + insert.length;
+      }
+
+      setContent(newContent);
+      setHasChanges(newContent !== template?.content);
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      });
+    },
+    [content, template?.content]
+  );
+
+  // ── Keyboard shortcuts ──────────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!open) return;
+      const isMod = e.ctrlKey || e.metaKey;
+
+      if (isMod && e.key === 'b') {
+        e.preventDefault();
+        applyToolbarAction(MD_TOOLBAR[0]); // Bold
+      } else if (isMod && e.key === 'i') {
+        e.preventDefault();
+        applyToolbarAction(MD_TOOLBAR[1]); // Italic
+      } else if (isMod && e.key === 's') {
+        e.preventDefault();
+        if (hasChanges) handleSaveClick();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, hasChanges, applyToolbarAction]);
 
   // Insert variable at cursor position
   const insertVariable = useCallback(
@@ -272,7 +404,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                   {/* Toolbar */}
                   <div className="flex items-center gap-2 mt-3">
                     <Button
-                      onClick={handleSave}
+                      onClick={handleSaveClick}
                       disabled={!hasChanges || updateMutation.isPending}
                       size="sm"
                       className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-sm"
@@ -397,14 +529,43 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                         editorMode === 'split' && 'border-r'
                       )}
                     >
-                      {editorMode === 'split' && (
-                        <div className="flex-shrink-0 px-4 py-2 border-b bg-muted/20">
-                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      {/* ── Markdown Toolbar ── */}
+                      <div className="flex-shrink-0 px-4 py-1.5 border-b bg-muted/20 flex items-center gap-0.5">
+                        {editorMode === 'split' && (
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mr-2">
                             <Code className="h-3 w-3" />
                             Edycja treści
                           </p>
-                        </div>
-                      )}
+                        )}
+                        <Separator orientation="vertical" className="h-4 mx-1" />
+                        <TooltipProvider delayDuration={300}>
+                          {MD_TOOLBAR.map((item, idx) => (
+                            <Tooltip key={idx}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => applyToolbarAction(item)}
+                                  className={cn(
+                                    'p-1.5 rounded-md text-muted-foreground transition-colors',
+                                    'hover:bg-neutral-200/60 hover:text-foreground',
+                                    'dark:hover:bg-neutral-700/60 dark:hover:text-foreground'
+                                  )}
+                                >
+                                  <item.icon className="h-3.5 w-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="text-xs">
+                                {item.label}
+                                {item.shortcut && (
+                                  <kbd className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-muted font-mono">
+                                    {item.shortcut}
+                                  </kbd>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </TooltipProvider>
+                      </div>
                       <div className="flex-1 overflow-hidden min-h-0">
                         <textarea
                           ref={textareaRef}
@@ -494,6 +655,55 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* ── Save with change reason dialog ── */}
+      <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-cyan-600" />
+              Zapisz zmiany
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Opcjonalnie opisz co zostało zmienione. Powód będzie widoczny w historii wersji.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Label htmlFor="change-reason" className="text-sm font-medium">
+              Powód zmiany <span className="text-muted-foreground font-normal">(opcjonalny)</span>
+            </Label>
+            <Input
+              id="change-reason"
+              value={changeReason}
+              onChange={(e) => setChangeReason(e.target.value)}
+              placeholder="np. Zaktualizowano warunki płatności..."
+              className="mt-1.5"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleConfirmSave();
+                }
+              }}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSave}
+              disabled={updateMutation.isPending}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+            >
+              {updateMutation.isPending ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Zapisz wersję
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Unsaved changes dialog ── */}
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
