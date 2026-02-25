@@ -40,8 +40,8 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
 
     if (!formData.firstName || !formData.lastName || !formData.phone) {
       toast({
-        title: 'Błąd walidacji',
-        description: 'Wypełnij wszystkie wymagane pola',
+        title: 'B\u0142\u0105d walidacji',
+        description: 'Wype\u0142nij wszystkie wymagane pola',
         variant: 'destructive',
       })
       return
@@ -49,8 +49,8 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
 
     if (isCompany && !formData.companyName) {
       toast({
-        title: 'Błąd walidacji',
-        description: 'Podaj nazwę firmy',
+        title: 'B\u0142\u0105d walidacji',
+        description: 'Podaj nazw\u0119 firmy',
         variant: 'destructive',
       })
       return
@@ -80,7 +80,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       await createClient(payload)
       toast({
         title: 'Sukces',
-        description: isCompany ? 'Firma została dodana' : 'Klient został dodany',
+        description: isCompany ? 'Firma zosta\u0142a dodana' : 'Klient zosta\u0142 dodany',
       })
       
       // Reset form
@@ -102,9 +102,17 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       onSuccess?.()
     } catch (error: any) {
       console.error('Error creating client:', error)
+      
+      // Extract actual error message from backend response
+      const errorMessage = 
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        'Nie uda\u0142o si\u0119 doda\u0107 klienta'
+      
       toast({
-        title: 'Błąd',
-        description: error.message || 'Nie udało się dodać klienta',
+        title: 'B\u0142\u0105d',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -206,7 +214,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             <div className="space-y-2">
               <Label htmlFor="industry" className="text-base font-semibold flex items-center gap-2">
                 <Briefcase className="h-4 w-4" />
-                Branża
+                Bran\u017ca
               </Label>
               <Input
                 id="industry"
@@ -243,7 +251,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 name="companyAddress"
                 value={formData.companyAddress}
                 onChange={handleChange}
-                placeholder="ul. Przykładowa 1, 00-001 Warszawa"
+                placeholder="ul. Przyk\u0142adowa 1, 00-001 Warszawa"
                 className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
               />
             </div>
@@ -255,13 +263,13 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <User className="h-5 w-5 text-orange-600" />
-          <span>{isCompany ? 'Osoba reprezentująca' : 'Dane osobowe'}</span>
+          <span>{isCompany ? 'Osoba reprezentuj\u0105ca' : 'Dane osobowe'}</span>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName" className="text-base font-semibold">
-              Imię <span className="text-red-500">*</span>
+              Imi\u0119 <span className="text-red-500">*</span>
             </Label>
             <Input
               id="firstName"
@@ -376,7 +384,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
           className="flex-1 h-12 text-base bg-gradient-to-r from-orange-600 via-pink-600 to-rose-600 hover:from-orange-700 hover:via-pink-700 hover:to-rose-700 shadow-lg"
         >
           <Save className="mr-2 h-4 w-4" />
-          {loading ? 'Dodawanie...' : isCompany ? 'Dodaj firmę' : 'Dodaj klienta'}
+          {loading ? 'Dodawanie...' : isCompany ? 'Dodaj firm\u0119' : 'Dodaj klienta'}
         </Button>
       </div>
     </form>
