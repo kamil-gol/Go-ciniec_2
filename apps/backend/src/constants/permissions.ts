@@ -24,6 +24,7 @@ export const MODULE_LABELS: Record<string, string> = {
   reports: 'Raporty',
   audit_log: 'Dziennik audytu',
   settings: 'Ustawienia',
+  templates: 'Szablony dokumentów',
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -45,6 +46,8 @@ export const ACTION_LABELS: Record<string, string> = {
   manage_users: 'Zarządzanie użytkownikami',
   manage_roles: 'Zarządzanie rolami',
   manage_company: 'Ustawienia firmy',
+  preview: 'Podgląd zmiennych',
+  history: 'Historia zmian',
 };
 
 // ================================================================
@@ -119,6 +122,12 @@ export const PERMISSION_DEFINITIONS: PermissionTuple[] = [
   ['settings:manage_users',    'settings', 'manage_users',    'Ustawienia — użytkownicy',      'Zarządzanie kontami użytkowników'],
   ['settings:manage_roles',    'settings', 'manage_roles',    'Ustawienia — role i uprawnienia', 'Zarządzanie rolami i uprawnieniami'],
   ['settings:manage_company',  'settings', 'manage_company',  'Ustawienia — dane firmy',       'Edycja danych firmy i konfiguracji'],
+
+  // ═══ Document Templates ═══
+  ['templates:read',    'templates', 'read',    'Szablony — przeglądanie',    'Podgląd szablonów dokumentów'],
+  ['templates:update',  'templates', 'update',  'Szablony — edycja',          'Edycja treści szablonów dokumentów'],
+  ['templates:preview', 'templates', 'preview', 'Szablony — podgląd',         'Podgląd szablonów z podstawionymi zmiennymi'],
+  ['templates:history', 'templates', 'history', 'Szablony — historia zmian',  'Przeglądanie historii zmian szablonów'],
 ];
 
 // ================================================================
@@ -177,6 +186,8 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'audit_log:read',
       // Settings — read only
       'settings:read',
+      // Document templates — full
+      'templates:read', 'templates:update', 'templates:preview', 'templates:history',
     ],
   },
 
@@ -205,6 +216,8 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'event_types:read',
       // Attachments — read + upload
       'attachments:read', 'attachments:upload',
+      // Document templates — read + preview
+      'templates:read', 'templates:preview',
     ],
   },
 
@@ -224,6 +237,8 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'deposits:read',
       'event_types:read',
       'attachments:read',
+      // Document templates — read only
+      'templates:read',
     ],
   },
 };
