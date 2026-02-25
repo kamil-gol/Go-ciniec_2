@@ -210,7 +210,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
   const localPreview = useMemo(() => {
     let result = content;
     for (const [key, value] of Object.entries(SAMPLE_VARS)) {
-      result = result.replaceAll(`{{${key}}}`, value);
+      result = result.split(`{{${key}}}`).join(value);
     }
     return result;
   }, [content]);
