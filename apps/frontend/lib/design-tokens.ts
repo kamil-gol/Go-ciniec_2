@@ -161,6 +161,17 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     badge: 'bg-purple-100 dark:bg-purple-900/30',
     badgeText: 'text-purple-700 dark:text-purple-300',
   },
+  documentTemplates: {
+    name: 'Szablony dokumentów',
+    gradient: 'from-cyan-600 via-cyan-500 to-blue-600',
+    gradientSubtle: 'from-cyan-500/5 via-blue-500/5 to-cyan-500/5',
+    iconBg: 'from-cyan-500 to-blue-500',
+    text: 'text-cyan-600',
+    textDark: 'dark:text-cyan-400',
+    ring: 'ring-cyan-500/20',
+    badge: 'bg-cyan-100 dark:bg-cyan-900/30',
+    badgeText: 'text-cyan-700 dark:text-cyan-300',
+  },
 } as const
 
 /**
