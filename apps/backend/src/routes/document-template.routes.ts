@@ -2,11 +2,14 @@
  * Document Template Routes
  *
  * Endpoints:
- *   GET    /                  → list (with optional ?category= filter)
- *   GET    /:slug             → get by slug
- *   PUT    /:slug             → update content (auto-versioning + history)
- *   POST   /:slug/preview     → preview with {{variable}} substitution
- *   GET    /:slug/history     → paginated change history
+ *   GET    /                          → list (with optional ?category= filter)
+ *   POST   /                          → create new template
+ *   GET    /:slug                     → get by slug
+ *   PUT    /:slug                     → update content (auto-versioning + history)
+ *   DELETE /:slug                     → delete (blocked for isRequired)
+ *   POST   /:slug/preview             → preview with {{variable}} substitution
+ *   GET    /:slug/history             → paginated change history
+ *   POST   /:slug/restore/:version    → restore historical version
  */
 
 import { Router } from 'express';
@@ -24,6 +27,16 @@ router.get(
   requirePermission('templates:read'),
   asyncHandler(async (req, res, next) => {
     await documentTemplateController.list(req, res, next);
+  })
+);
+
+// Create new template
+router.post(
+  '/',
+  authMiddleware,
+  requirePermission('templates:update'),
+  asyncHandler(async (req, res, next) => {
+    await documentTemplateController.create(req, res, next);
   })
 );
 
@@ -47,6 +60,16 @@ router.get(
   })
 );
 
+// Restore historical version
+router.post(
+  '/:slug/restore/:version',
+  authMiddleware,
+  requirePermission('templates:update'),
+  asyncHandler(async (req, res, next) => {
+    await documentTemplateController.restore(req, res, next);
+  })
+);
+
 // Get single template by slug
 router.get(
   '/:slug',
@@ -64,6 +87,16 @@ router.put(
   requirePermission('templates:update'),
   asyncHandler(async (req, res, next) => {
     await documentTemplateController.update(req, res, next);
+  })
+);
+
+// Delete template
+router.delete(
+  '/:slug',
+  authMiddleware,
+  requirePermission('templates:update'),
+  asyncHandler(async (req, res, next) => {
+    await documentTemplateController.delete(req, res, next);
   })
 );
 
