@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import {
   addClientContact,
@@ -186,23 +187,31 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
   return (
     <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30 rounded-2xl border-0 shadow-xl overflow-hidden">
       <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header - two rows for clarity */}
+        <div className="space-y-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg">
               <Users className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold">Osoby kontaktowe</h2>
-            <span className="text-sm text-muted-foreground">({contacts.length})</span>
+            <div>
+              <h2 className="text-xl font-bold leading-tight">Osoby kontaktowe</h2>
+              <p className="text-sm text-muted-foreground">
+                {contacts.length === 0
+                  ? 'Brak dodanych kontaktów'
+                  : contacts.length === 1
+                  ? '1 osoba'
+                  : `${contacts.length} osoby`}
+              </p>
+            </div>
           </div>
           {!readOnly && !showForm && (
             <Button
               size="sm"
               onClick={openAddForm}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md h-10"
             >
-              <Plus className="mr-1 h-4 w-4" />
-              Dodaj
+              <Plus className="mr-2 h-4 w-4" />
+              Dodaj osobę kontaktową
             </Button>
           )}
         </div>
@@ -219,7 +228,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="contact-firstName" className="text-sm font-medium">
                   Imię <span className="text-red-500">*</span>
@@ -283,7 +292,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                   className="h-10 border-2"
                 />
               </div>
-              <div className="flex items-end pb-1">
+              <div className="pt-1">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -299,7 +308,6 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
 
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" onClick={closeForm} className="flex-1" disabled={loading}>
-                <X className="mr-1 h-4 w-4" />
                 Anuluj
               </Button>
               <Button
@@ -307,7 +315,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                 disabled={loading}
                 className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
               >
-                <Save className="mr-1 h-4 w-4" />
+                <Save className="mr-2 h-4 w-4" />
                 {loading ? 'Zapisywanie...' : editingId ? 'Zapisz zmiany' : 'Dodaj kontakt'}
               </Button>
             </div>
@@ -331,33 +339,30 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
             {contacts.map((contact) => (
               <div
                 key={contact.id}
-                className="group p-4 bg-white dark:bg-black/20 rounded-xl space-y-2 transition-all hover:shadow-md"
+                className="group p-4 bg-white dark:bg-black/20 rounded-xl transition-all hover:shadow-md"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {/* Top row: avatar + name */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-md">
                       {contact.firstName?.charAt(0)}{contact.lastName?.charAt(0)}
                     </div>
-                    <span className="font-semibold text-base truncate">
-                      {contact.firstName} {contact.lastName}
-                    </span>
-                    {contact.isPrimary && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
-                        <Star className="h-3 w-3" />
-                        Główny
-                      </span>
-                    )}
-                    {(contact as any).role && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 shrink-0">
-                        <Briefcase className="h-3 w-3" />
-                        {(contact as any).role}
-                      </span>
-                    )}
+                    <div>
+                      <p className="font-semibold text-base leading-tight">
+                        {contact.firstName} {contact.lastName}
+                      </p>
+                      {(contact as any).role && (
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Briefcase className="h-3 w-3" />
+                          {(contact as any).role}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Action buttons */}
+                  {/* Action buttons - visible on hover */}
                   {!readOnly && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -392,21 +397,33 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                   )}
                 </div>
 
+                {/* Badges row */}
+                {contact.isPrimary && (
+                  <div className="mt-2 ml-[52px]">
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                      <Star className="h-3 w-3 mr-1 fill-amber-500 text-amber-500" />
+                      Główny kontakt
+                    </Badge>
+                  </div>
+                )}
+
                 {/* Contact details row */}
-                <div className="flex flex-wrap gap-3 text-sm text-muted-foreground pl-10">
-                  {contact.email && (
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      <span>{contact.email}</span>
-                    </div>
-                  )}
-                  {contact.phone && (
-                    <div className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      <span>{contact.phone}</span>
-                    </div>
-                  )}
-                </div>
+                {(contact.email || contact.phone) && (
+                  <div className="mt-2 ml-[52px] flex flex-col gap-1 text-sm text-muted-foreground">
+                    {contact.email && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="break-all">{contact.email}</span>
+                      </div>
+                    )}
+                    {contact.phone && (
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5 shrink-0" />
+                        <span>{contact.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
