@@ -10,6 +10,7 @@ export interface ClientsFilters {
   page?: number
   pageSize?: number
   search?: string
+  includeDeleted?: boolean
 }
 
 export interface ClientWithReservations extends Client {
@@ -17,6 +18,14 @@ export interface ClientWithReservations extends Client {
   _count?: {
     reservations: number
   }
+}
+
+export interface ClientReservationSummary {
+  active: number
+  completed: number
+  cancelled: number
+  archived: number
+  total: number
 }
 
 // ========================================
@@ -47,6 +56,12 @@ export const clientsApi = {
     return data.data || data // Handle both structures
   },
 
+  // Get reservation summary for a client (used before delete)
+  getReservationSummary: async (id: string): Promise<ClientReservationSummary> => {
+    const { data } = await apiClient.get(`/clients/${id}/reservation-summary`)
+    return data.data || data
+  },
+
   // Create new client
   create: async (input: CreateClientInput): Promise<Client> => {
     const { data } = await apiClient.post('/clients', input)
@@ -59,7 +74,7 @@ export const clientsApi = {
     return data.data || data // Handle both structures
   },
 
-  // Delete client
+  // Delete client (soft-delete with anonymization)
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/clients/${id}`)
   },
@@ -71,6 +86,7 @@ export const clientsApi = {
 
 export const getClients = (filters?: ClientsFilters) => clientsApi.getAll(filters)
 export const getClientById = (id: string) => clientsApi.getById(id)
+export const getClientReservationSummary = (id: string) => clientsApi.getReservationSummary(id)
 export const createClient = (input: CreateClientInput) => clientsApi.create(input)
 export const updateClient = (id: string, input: Partial<CreateClientInput>) => clientsApi.update(id, input)
 export const deleteClient = (id: string) => clientsApi.delete(id)
@@ -170,7 +186,7 @@ export const useDeleteClient = () => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: clientsKeys.detail(deletedId) })
       
-      toast.success('Klient usunięty pomyślnie!')
+      toast.success('Dane klienta zostały zanonimizowane')
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.error || 

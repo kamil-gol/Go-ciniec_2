@@ -198,6 +198,11 @@ model Client {
   email     String?  @db.VarChar(255)
   phone     String   @db.VarChar(20)
   notes     String?  @db.Text
+
+  // Soft-delete + anonymization (#147)
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -206,6 +211,7 @@ model Client {
   @@index([email])
   @@index([phone])
   @@index([firstName, lastName])
+  @@index([isDeleted])
 }
 
 enum ReservationStatus {

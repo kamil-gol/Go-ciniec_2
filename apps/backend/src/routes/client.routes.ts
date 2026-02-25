@@ -40,6 +40,17 @@ router.get(
   })
 );
 
+// Podsumowanie rezerwacji klienta — używane przed usunięciem (#147)
+router.get(
+  '/:id/reservation-summary',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await clientController.getClientReservationSummary(req, res);
+  })
+);
+
 router.put(
   '/:id',
   authMiddleware,

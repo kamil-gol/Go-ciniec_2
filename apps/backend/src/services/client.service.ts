@@ -9,6 +9,9 @@ import { CreateClientDTO, UpdateClientDTO, ClientFilters, ClientResponse } from 
 import { logChange, diffObjects } from '../utils/audit-logger';
 import { CLIENT } from '../i18n/pl';
 
+/** Statusy rezerwacji blokujące usunięcie klienta */
+const ACTIVE_RESERVATION_STATUSES = ['RESERVED', 'PENDING', 'CONFIRMED'] as const;
+
 export class ClientService {
   async createClient(data: CreateClientDTO, userId: string): Promise<ClientResponse> {
     if (data.email && !this.isValidEmail(data.email)) {
@@ -28,7 +31,8 @@ export class ClientService {
       where: { 
         phone: data.phone,
         firstName: data.firstName,
-        lastName: data.lastName
+        lastName: data.lastName,
+        isDeleted: false
       }
     });
 
@@ -67,7 +71,9 @@ export class ClientService {
   }
 
   async getClients(filters?: ClientFilters): Promise<ClientResponse[]> {
-    const where: any = {};
+    const where: any = {
+      isDeleted: false
+    };
 
     if (filters?.search) {
       where.OR = [
@@ -76,6 +82,11 @@ export class ClientService {
         { email: { contains: filters.search, mode: 'insensitive' } },
         { phone: { contains: filters.search, mode: 'insensitive' } }
       ];
+    }
+
+    // Opcja dla admina: pokaż też usunięte
+    if (filters?.includeDeleted) {
+      delete where.isDeleted;
     }
 
     const clients = await prisma.client.findMany({
@@ -124,6 +135,11 @@ export class ClientService {
       throw new Error(CLIENT.NOT_FOUND);
     }
 
+    // Nie pozwalaj edytować usuniętego klienta
+    if (existingClient.isDeleted) {
+      throw new Error(CLIENT.ALREADY_DELETED);
+    }
+
     if (data.email && !this.isValidEmail(data.email)) {
       throw new Error(CLIENT.INVALID_EMAIL);
     }
@@ -142,7 +158,8 @@ export class ClientService {
           phone: data.phone,
           firstName: firstName,
           lastName: lastName,
-          id: { not: id }
+          id: { not: id },
+          isDeleted: false
         }
       });
 
@@ -188,32 +205,93 @@ export class ClientService {
       throw new Error(CLIENT.NOT_FOUND);
     }
 
-    const reservationCount = await prisma.reservation.count({
-      where: { clientId: id }
-    });
-
-    if (reservationCount > 0) {
-      throw new Error(CLIENT.CANNOT_DELETE_WITH_RESERVATIONS);
+    if (existingClient.isDeleted) {
+      throw new Error(CLIENT.ALREADY_DELETED);
     }
 
-    await prisma.client.delete({ where: { id } });
+    // Sprawdź tylko AKTYWNE rezerwacje — zakończone/anulowane/archiwalne nie blokują
+    const activeReservationCount = await prisma.reservation.count({
+      where: {
+        clientId: id,
+        status: { in: [...ACTIVE_RESERVATION_STATUSES] }
+      }
+    });
 
-    // Audit log
+    if (activeReservationCount > 0) {
+      throw new Error(CLIENT.CANNOT_DELETE_WITH_ACTIVE_RESERVATIONS(activeReservationCount));
+    }
+
+    // Soft-delete + anonimizacja danych osobowych
+    await prisma.client.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        firstName: 'Usunięty',
+        lastName: 'Klient',
+        phone: '***',
+        email: null,
+        notes: null
+      }
+    });
+
+    // Audit log — zachowaj pełne dane sprzed anonimizacji
     await logChange({
       userId,
-      action: 'DELETE',
+      action: 'SOFT_DELETE',
       entityType: 'CLIENT',
       entityId: id,
       details: {
-        description: `Usunięto klienta: ${existingClient.firstName} ${existingClient.lastName}`,
+        description: `Usunięto (soft-delete) klienta: ${existingClient.firstName} ${existingClient.lastName}`,
         deletedData: {
           firstName: existingClient.firstName,
           lastName: existingClient.lastName,
           email: existingClient.email,
-          phone: existingClient.phone
+          phone: existingClient.phone,
+          notes: existingClient.notes
         }
       }
     });
+  }
+
+  /**
+   * Pobierz informacje o rezerwacjach klienta pogrupowane wg statusu
+   * Używane w modalu potwierdzenia usunięcia
+   */
+  async getClientReservationSummary(id: string): Promise<{
+    active: number;
+    completed: number;
+    cancelled: number;
+    archived: number;
+    total: number;
+  }> {
+    const client = await prisma.client.findUnique({ where: { id } });
+    if (!client) {
+      throw new Error(CLIENT.NOT_FOUND);
+    }
+
+    const [active, completed, cancelled, archived] = await Promise.all([
+      prisma.reservation.count({
+        where: { clientId: id, status: { in: [...ACTIVE_RESERVATION_STATUSES] } }
+      }),
+      prisma.reservation.count({
+        where: { clientId: id, status: 'COMPLETED' }
+      }),
+      prisma.reservation.count({
+        where: { clientId: id, status: 'CANCELLED' }
+      }),
+      prisma.reservation.count({
+        where: { clientId: id, status: 'ARCHIVED' }
+      }),
+    ]);
+
+    return {
+      active,
+      completed,
+      cancelled,
+      archived,
+      total: active + completed + cancelled + archived
+    };
   }
 
   private isValidEmail(email: string): boolean {
