@@ -80,9 +80,9 @@ function priceSuffix(priceType: string): string {
 /** Quantity label based on price type */
 function quantityLabel(priceType: string): string {
   switch (priceType) {
-    case 'PER_UNIT': return 'Ilo\u015b\u0107 (szt.)';
-    case 'PER_PERSON': return 'Ilo\u015b\u0107 (os.)';
-    default: return 'Ilo\u015b\u0107';
+    case 'PER_UNIT': return 'Ilość (szt.)';
+    case 'PER_PERSON': return 'Ilość (os.)';
+    default: return 'Ilość';
   }
 }
 
@@ -130,7 +130,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
 
   const handleAddExtra = async () => {
     if (!selectedItemId) {
-      toast({ title: 'Wybierz pozycj\u0119', variant: 'destructive' });
+      toast({ title: 'Wybierz pozycję', variant: 'destructive' });
       return;
     }
 
@@ -149,12 +149,12 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         note: note.trim() || undefined,
         customPrice: customPrice ? parseFloat(customPrice) : undefined,
       });
-      toast({ title: 'Us\u0142uga dodana', description: selectedItem?.name });
+      toast({ title: 'Usługa dodana', description: selectedItem?.name });
       resetAddForm();
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 doda\u0107',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się dodać',
         variant: 'destructive',
       });
     }
@@ -163,11 +163,11 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   const handleRemoveExtra = async (extraId: string, name: string) => {
     try {
       await removeExtra.mutateAsync(extraId);
-      toast({ title: 'Us\u0142uga usuni\u0119ta', description: name });
+      toast({ title: 'Usługa usunięta', description: name });
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się usunąć',
         variant: 'destructive',
       });
     }
@@ -178,8 +178,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
       await updateExtra.mutateAsync({ extraId, data: { status } });
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się zaktualizować',
         variant: 'destructive',
       });
     }
@@ -191,8 +191,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
       await updateExtra.mutateAsync({ extraId, data: { quantity: newQuantity } });
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 ilo\u015bci',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się zaktualizować ilości',
         variant: 'destructive',
       });
     }
@@ -218,11 +218,11 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         extraId,
         data: { note: trimmed || null },
       });
-      toast({ title: trimmed ? 'Notatka zapisana' : 'Notatka usuni\u0119ta' });
+      toast({ title: trimmed ? 'Notatka zapisana' : 'Notatka usunięta' });
     } catch (error: any) {
       toast({
-        title: 'B\u0142\u0105d',
-        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 notatki',
+        title: 'Błąd',
+        description: error?.response?.data?.message || 'Nie udało się zapisać notatki',
         variant: 'destructive',
       });
     } finally {
@@ -263,16 +263,16 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     if (pt === 'FREE') return 'Gratis';
 
     if (pt === 'PER_UNIT' && qty > 1) {
-      return `${unit} z\u0142/szt. \u00d7 ${qty} szt. = ${total} z\u0142`;
+      return `${unit} zł/szt. \u00d7 ${qty} szt. = ${total} zł`;
     }
     if (pt === 'PER_PERSON' && qty > 1) {
-      return `${unit} z\u0142/os. \u00d7 ${qty} = ${total} z\u0142`;
+      return `${unit} zł/os. \u00d7 ${qty} = ${total} zł`;
     }
     if (pt === 'FLAT' && qty > 1) {
-      return `${unit} z\u0142 \u00d7 ${qty} = ${total} z\u0142`;
+      return `${unit} zł \u00d7 ${qty} = ${total} zł`;
     }
 
-    return `${total} z\u0142`;
+    return `${total} zł`;
   };
 
   return (
@@ -287,13 +287,13 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   <Gift className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">Us\u0142ugi dodatkowe</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold">Usługi dodatkowe</h2>
                   {extras.length > 0 && (
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
                       {totalPrice > 0 && (
                         <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          \u2014 {totalPrice.toLocaleString('pl-PL')} z\u0142
+                          \u2014 {totalPrice.toLocaleString('pl-PL')} zł
                         </span>
                       )}
                     </p>
@@ -320,8 +320,8 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             ) : extras.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
-                <p>Brak us\u0142ug dodatkowych</p>
-                <p className="text-xs mt-1">Kliknij \u201eDodaj\u201d aby przypisa\u0107 tort, muzyk\u0119, dekoracje...</p>
+                <p>Brak usług dodatkowych</p>
+                <p className="text-xs mt-1">Kliknij \u201eDodaj\u201d aby przypisać tort, muzykę, dekoracje...</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -430,7 +430,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                                 value={editingNoteValue}
                                 onChange={(e) => setEditingNoteValue(e.target.value)}
                                 onKeyDown={(e) => handleNoteKeyDown(e, extra.id)}
-                                placeholder="Wpisz notatk\u0119..."
+                                placeholder="Wpisz notatkę..."
                                 rows={2}
                                 className="w-full text-xs px-2.5 py-1.5 rounded-md border border-violet-300 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent resize-none placeholder:text-violet-400 dark:placeholder:text-violet-600"
                               />
@@ -470,7 +470,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                                 <span className="italic">{extra.note}</span>
                               ) : (
                                 <span className="text-violet-400 dark:text-violet-600 opacity-60 group-hover:opacity-100">
-                                  Dodaj notatk\u0119...
+                                  Dodaj notatkę...
                                 </span>
                               )}
                             </button>
@@ -483,9 +483,9 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
 
                 {/* Total */}
                 <div className="flex items-center justify-between p-3 mt-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl text-white shadow-lg">
-                  <span className="text-sm font-bold">Razem us\u0142ugi dodatkowe</span>
+                  <span className="text-sm font-bold">Razem usługi dodatkowe</span>
                   <span className="text-lg font-bold">
-                    {totalPrice.toLocaleString('pl-PL')} z\u0142
+                    {totalPrice.toLocaleString('pl-PL')} zł
                   </span>
                 </div>
               </div>
@@ -502,7 +502,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
               <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                 <Gift className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
-              Dodaj us\u0142ug\u0119 dodatkow\u0105
+              Dodaj usługę dodatkową
             </DialogTitle>
           </DialogHeader>
 
@@ -519,7 +519,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Wybierz kategori\u0119" />
+                  <SelectValue placeholder="Wybierz kategorię" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories?.map((cat) => (
@@ -543,7 +543,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Wybierz pozycj\u0119" />
+                    <SelectValue placeholder="Wybierz pozycję" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableItems.map((item) => (
@@ -553,7 +553,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                           <span>{item.name}</span>
                           {item.priceType !== 'FREE' && (
                             <span className="text-muted-foreground">
-                              \u2014 {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142{priceSuffix(item.priceType)}
+                              \u2014 {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
                             </span>
                           )}
                           {item.priceType === 'FREE' && (
@@ -605,7 +605,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   </div>
                   {quantity > 1 && (
                     <span className="text-sm text-muted-foreground">
-                      = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} z\u0142</span>
+                      = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
                     </span>
                   )}
                 </div>
@@ -625,7 +625,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   onChange={(e) => setNote(e.target.value)}
                   placeholder={
                     selectedItem.requiresNote
-                      ? 'Podaj szczeg\u00f3\u0142y (wymagane)'
+                      ? 'Podaj szczegóły (wymagane)'
                       : 'Opcjonalne uwagi'
                   }
                   rows={2}
@@ -637,7 +637,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             {selectedItem && selectedItem.priceType !== 'FREE' && (
               <div className="space-y-1.5">
                 <Label htmlFor="extra-price" className="text-sm font-semibold">
-                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztuk\u0119' : selectedItem.priceType === 'PER_PERSON' ? ' za osob\u0119' : ''} (opcjonalnie)
+                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztukę' : selectedItem.priceType === 'PER_PERSON' ? ' za osobę' : ''} (opcjonalnie)
                 </Label>
                 <Input
                   id="extra-price"
@@ -646,10 +646,10 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   step="0.01"
                   value={customPrice}
                   onChange={(e) => setCustomPrice(e.target.value)}
-                  placeholder={`Domy\u015blna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} z\u0142${priceSuffix(selectedItem.priceType)}`}
+                  placeholder={`Domyślna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} zł${priceSuffix(selectedItem.priceType)}`}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Pozostaw puste, aby u\u017cy\u0107 ceny domy\u015blnej
+                  Pozostaw puste, aby użyć ceny domyślnej
                 </p>
               </div>
             )}
@@ -667,7 +667,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                 {assignExtra.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Dodaj us\u0142ug\u0119
+                Dodaj usługę
               </Button>
             </div>
           </div>
