@@ -10,7 +10,6 @@ import {
   Tag,
   AlertTriangle,
   Check,
-  X,
   ScrollText,
   Sparkles,
   SplitSquareVertical,
@@ -26,7 +25,6 @@ import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
@@ -40,7 +38,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 // ── Props ───────────────────────────────────────────────
@@ -226,7 +223,20 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
         <SheetContent
           side="right"
           className="w-full sm:max-w-5xl p-0 flex flex-col overflow-hidden"
+          aria-describedby={template?.description ? undefined : undefined}
         >
+          {/* ── A11y: always render title + description for Radix/screen readers ── */}
+          {!template && (
+            <>
+              <SheetTitle className="sr-only">
+                {isLoading ? 'Ładowanie szablonu...' : 'Edytor szablonu'}
+              </SheetTitle>
+              <SheetDescription className="sr-only">
+                {isLoading ? 'Trwa ładowanie danych szablonu' : 'Nie znaleziono szablonu'}
+              </SheetDescription>
+            </>
+          )}
+
           {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -253,11 +263,9 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                           </Badge>
                         )}
                       </SheetTitle>
-                      {template.description && (
-                        <SheetDescription className="text-sm">
-                          {template.description}
-                        </SheetDescription>
-                      )}
+                      <SheetDescription className={cn('text-sm', !template.description && 'sr-only')}>
+                        {template.description || 'Edycja szablonu dokumentu'}
+                      </SheetDescription>
                     </div>
                   </div>
 
@@ -321,7 +329,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
 
                     <div className="flex-1" />
 
-                    {/* Slug + last update */}
+                    {/* Slug */}
                     <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
                       {template.slug}
                     </span>
