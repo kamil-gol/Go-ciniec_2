@@ -21,6 +21,7 @@ export interface UpdateClientDTO {
 
 export interface ClientFilters {
   search?: string;
+  includeDeleted?: boolean;
 }
 
 export interface ClientResponse {
@@ -30,6 +31,16 @@ export interface ClientResponse {
   email: string | null;
   phone: string;
   notes: string | null;
+  isDeleted: boolean;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ClientReservationSummary {
+  active: number;
+  completed: number;
+  cancelled: number;
+  archived: number;
+  total: number;
 }

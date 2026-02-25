@@ -43,7 +43,8 @@ export class ClientController {
 
   async getClients(req: Request, res: Response): Promise<void> {
     const filters: ClientFilters = {
-      search: req.query.search as string
+      search: req.query.search as string,
+      includeDeleted: req.query.includeDeleted === 'true'
     };
 
     const clients = await clientService.getClients(filters);
@@ -102,7 +103,18 @@ export class ClientController {
 
     res.status(200).json({
       success: true,
-      message: 'Client deleted successfully'
+      message: 'Dane klienta zostały zanonimizowane'
+    });
+  }
+
+  async getClientReservationSummary(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+
+    const summary = await clientService.getClientReservationSummary(id);
+
+    res.status(200).json({
+      success: true,
+      data: summary
     });
   }
 }
