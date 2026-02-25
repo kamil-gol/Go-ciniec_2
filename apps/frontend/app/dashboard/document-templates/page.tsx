@@ -210,40 +210,16 @@ export default function DocumentTemplatesPage() {
       {/* Main Card */}
       <Card className="overflow-hidden">
         <CardHeader className={`border-b bg-gradient-to-r ${accent.gradientSubtle}`}>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
-                <ScrollText className="h-5 w-5 text-white" />
+          <div className="space-y-3">
+            {/* Row 1: Title + Search */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg`}>
+                  <ScrollText className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle>Katalog Szablonów</CardTitle>
               </div>
-              <CardTitle>Katalog Szablonów</CardTitle>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Filter tabs */}
-              <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm overflow-x-auto">
-                <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
-                {filterButtons.map((btn) => {
-                  const Icon = btn.icon;
-                  return (
-                    <button
-                      key={btn.value}
-                      onClick={() => setActiveFilter(btn.value)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                        activeFilter === btn.value
-                          ? 'bg-cyan-100 text-cyan-700 shadow-sm dark:bg-cyan-900/30 dark:text-cyan-300'
-                          : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {btn.label}
-                      {btn.count > 0 && (
-                        <span className="ml-0.5 text-[10px] opacity-70">({btn.count})</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Search */}
-              <div className="relative w-full sm:w-64 min-w-0">
+              <div className="relative w-full max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <Input
                   placeholder="Szukaj szablonów..."
@@ -252,6 +228,31 @@ export default function DocumentTemplatesPage() {
                   className="h-9 pl-9 text-sm w-full"
                 />
               </div>
+            </div>
+
+            {/* Row 2: Filter tabs — full width, always visible */}
+            <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm flex-wrap">
+              <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
+              {filterButtons.map((btn) => {
+                const Icon = btn.icon;
+                return (
+                  <button
+                    key={btn.value}
+                    onClick={() => setActiveFilter(btn.value)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                      activeFilter === btn.value
+                        ? 'bg-cyan-100 text-cyan-700 shadow-sm dark:bg-cyan-900/30 dark:text-cyan-300'
+                        : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {btn.label}
+                    {btn.count > 0 && (
+                      <span className="ml-0.5 text-[10px] opacity-70">({btn.count})</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </CardHeader>
