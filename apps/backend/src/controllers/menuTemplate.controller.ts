@@ -261,8 +261,6 @@ export class MenuTemplateController {
             pricePerAdult: Number(pkg.pricePerAdult),
             pricePerChild: Number(pkg.pricePerChild),
             pricePerToddler: Number(pkg.pricePerToddler),
-            isPopular: pkg.isPopular,
-            isRecommended: pkg.isRecommended,
             badgeText: pkg.badgeText,
             includedItems: Array.isArray(pkg.includedItems) ? pkg.includedItems as string[] : [],
             courses: categorySettings.map((cs: any) => ({
@@ -275,8 +273,6 @@ export class MenuTemplateController {
                 name: dish.name,
                 description: dish.description,
                 allergens: Array.isArray(dish.allergens) ? dish.allergens : [],
-                isDefault: false,
-                isRecommended: false,
               })),
             })),
             // MenuOption/packageOptions removed — options section empty
