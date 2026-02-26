@@ -4,10 +4,13 @@
  * Reports Export Service
  * Generate Excel (XLSX) and PDF files from report data
  * Updated: extras revenue columns in exports
+ *
+ * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
+ * Excel generation remains here (ExcelJS).
  */
 
 import ExcelJS from 'exceljs';
-import PDFDocument from 'pdfkit';
+import { pdfService } from './pdf.service';
 import type {
   RevenueReport,
   OccupancyReport,
@@ -291,174 +294,24 @@ class ReportsExportService {
   }
 
   // ============================================
-  // PDF EXPORTS
+  // PDF EXPORTS — delegated to pdf.service.ts
   // ============================================
 
   /**
-   * Export revenue report to PDF
-   * Now includes extras revenue section
+   * Export revenue report to PDF (premium design).
+   * Delegates to pdfService.generateRevenueReportPDF().
+   * Now includes extras revenue section.
    */
   async exportRevenueToPDF(report: RevenueReport): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ margin: 50 });
-        const chunks: Buffer[] = [];
-
-        doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
-
-        // Title
-        doc.fontSize(20).font('Helvetica-Bold').text('Raport Przychodów', { align: 'center' });
-        doc.moveDown();
-
-        // Filters
-        doc.fontSize(10).font('Helvetica');
-        doc.text(`Okres: ${report.filters.dateFrom} - ${report.filters.dateTo}`);
-        if (report.filters.groupBy) {
-          doc.text(`Grupowanie: ${report.filters.groupBy}`);
-        }
-        doc.moveDown();
-
-        // Summary
-        doc.fontSize(14).font('Helvetica-Bold').text('Podsumowanie');
-        doc.fontSize(10).font('Helvetica');
-        doc.text(`Całkowity przychód: ${this.formatCurrency(report.summary.totalRevenue)}`);
-        doc.text(`Średni przychód na rezerwację: ${this.formatCurrency(report.summary.avgRevenuePerReservation)}`);
-        doc.text(`Liczba rezerwacji: ${report.summary.totalReservations}`);
-        doc.text(`Ukończone rezerwacje: ${report.summary.completedReservations}`);
-        doc.text(`Oczekujący przychód: ${this.formatCurrency(report.summary.pendingRevenue)}`);
-        doc.text(`Wzrost: ${report.summary.growthPercent}%`);
-
-        // Extras revenue in summary
-        const extrasRevenue = (report.summary as any).extrasRevenue;
-        if (extrasRevenue !== undefined && extrasRevenue > 0) {
-          doc.font('Helvetica-Bold')
-            .fillColor('#7C3AED')
-            .text(`Przychody z usług dodatkowych: ${this.formatCurrency(extrasRevenue)}`);
-          doc.font('Helvetica').fillColor('#000000');
-        }
-        doc.moveDown();
-
-        // Breakdown by period
-        if (report.breakdown.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold').text('Rozkład wg okresu');
-          doc.fontSize(10).font('Helvetica');
-          report.breakdown.slice(0, 10).forEach(item => {
-            doc.text(`${item.period}: ${this.formatCurrency(item.revenue)} (${item.count} rez.)`);
-          });
-          doc.moveDown();
-        }
-
-        // By hall
-        if (report.byHall.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold').text('Przychody wg sal');
-          doc.fontSize(10).font('Helvetica');
-          report.byHall.slice(0, 10).forEach(item => {
-            doc.text(`${item.hallName}: ${this.formatCurrency(item.revenue)} (${item.count} rez.)`);
-          });
-          doc.moveDown();
-        }
-
-        // By event type
-        if (report.byEventType.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold').text('Przychody wg typu wydarzenia');
-          doc.fontSize(10).font('Helvetica');
-          report.byEventType.slice(0, 10).forEach(item => {
-            doc.text(`${item.eventTypeName}: ${this.formatCurrency(item.revenue)} (${item.count} rez.)`);
-          });
-          doc.moveDown();
-        }
-
-        // By service item (extras)
-        const byServiceItem = (report as any).byServiceItem;
-        if (byServiceItem && byServiceItem.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold')
-            .fillColor('#7C3AED')
-            .text('Usługi dodatkowe — przychody');
-          doc.fontSize(10).font('Helvetica').fillColor('#000000');
-          byServiceItem.slice(0, 15).forEach((item: any) => {
-            doc.text(`${item.name}: ${this.formatCurrency(item.revenue)} (${item.count}× użyte, śr. ${this.formatCurrency(item.avgRevenue)})`);
-          });
-          if (extrasRevenue > 0) {
-            doc.font('Helvetica-Bold')
-              .fillColor('#7C3AED')
-              .text(`Razem extras: ${this.formatCurrency(extrasRevenue)}`);
-            doc.font('Helvetica').fillColor('#000000');
-          }
-        }
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
+    return pdfService.generateRevenueReportPDF(report as any);
   }
 
   /**
-   * Export occupancy report to PDF
+   * Export occupancy report to PDF (premium design).
+   * Delegates to pdfService.generateOccupancyReportPDF().
    */
   async exportOccupancyToPDF(report: OccupancyReport): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ margin: 50 });
-        const chunks: Buffer[] = [];
-
-        doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
-
-        // Title
-        doc.fontSize(20).font('Helvetica-Bold').text('Raport Zajętości', { align: 'center' });
-        doc.moveDown();
-
-        // Filters
-        doc.fontSize(10).font('Helvetica');
-        doc.text(`Okres: ${report.filters.dateFrom} - ${report.filters.dateTo}`);
-        doc.moveDown();
-
-        // Summary
-        doc.fontSize(14).font('Helvetica-Bold').text('Podsumowanie');
-        doc.fontSize(10).font('Helvetica');
-        doc.text(`Średnia zajętość: ${report.summary.avgOccupancy}%`);
-        doc.text(`Najpopularniejszy dzień: ${this.translateDayOfWeek(report.summary.peakDay)}`);
-        doc.text(`Najpopularniejsza sala: ${report.summary.peakHall || 'Brak danych'}`);
-        doc.text(`Liczba rezerwacji: ${report.summary.totalReservations}`);
-        doc.text(`Dni w okresie: ${report.summary.totalDaysInPeriod}`);
-        doc.moveDown();
-
-        // Halls ranking
-        if (report.halls.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold').text('Zajętość sal');
-          doc.fontSize(10).font('Helvetica');
-          report.halls.slice(0, 10).forEach(hall => {
-            doc.text(`${hall.hallName}: ${hall.occupancy}% (${hall.reservations} rez., śr. ${hall.avgGuestsPerReservation} gości)`);
-          });
-          doc.moveDown();
-        }
-
-        // Peak hours
-        if (report.peakHours.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold').text('Najpopularniejsze godziny');
-          doc.fontSize(10).font('Helvetica');
-          report.peakHours.slice(0, 10).forEach(hour => {
-            doc.text(`${hour.hour}:00 - ${hour.count} rezerwacji`);
-          });
-          doc.moveDown();
-        }
-
-        // Peak days
-        if (report.peakDaysOfWeek.length > 0) {
-          doc.fontSize(14).font('Helvetica-Bold').text('Najpopularniejsze dni tygodnia');
-          doc.fontSize(10).font('Helvetica');
-          report.peakDaysOfWeek.forEach(day => {
-            doc.text(`${this.translateDayOfWeek(day.dayOfWeek)}: ${day.count} rezerwacji`);
-          });
-        }
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
+    return pdfService.generateOccupancyReportPDF(report as any);
   }
 
   // ============================================
