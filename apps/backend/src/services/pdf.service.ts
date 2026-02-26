@@ -824,11 +824,11 @@ export class PDFService {
 
     let y = boxY + 30;
     const labelX = left + 15;
-    // Layout: labels on left, amounts right-aligned, then badge after amounts
-    const badgeSpace = 50; // space reserved for the OK/OCZEK. badge on deposit row
     const rightEdge = left + pageWidth - 15;
-    const valueWidth = 100;
-    const valueX = rightEdge - badgeSpace - valueWidth;
+
+    // Amount column for regular rows — full width, no badge space needed
+    const valueWidth = 115;
+    const valueX = rightEdge - valueWidth;
 
     doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
 
@@ -877,8 +877,14 @@ export class PDFService {
     doc.text(this.formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
     y += 20;
 
-    // Deposit (Bug #2 fix — integrated into summary)
+    // Deposit row (Bug #2 fix — integrated into summary)
     if (deposit) {
+      // Deposit row layout: [label] [amount (narrower)] [gap] [badge]
+      const depositBadgeWidth = 40;
+      const depositBadgeGap = 6;
+      const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
+      const depositValueX = valueX;
+
       doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
       /* istanbul ignore next */
       const dueDate = deposit.dueDate instanceof Date
@@ -886,13 +892,12 @@ export class PDFService {
         : deposit.dueDate;
       const depositLabel = deposit.paid ? 'Zaliczka (oplacona)' : `Zaliczka (termin: ${dueDate})`;
       doc.text(depositLabel, labelX, y);
-      doc.text(`-${this.formatCurrency(deposit.amount)}`, valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(`-${this.formatCurrency(deposit.amount)}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
-      // Status indicator badge — positioned AFTER the amount column with gap
+      // Status badge — positioned after the narrower amount column with gap
       const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
       const statusText = deposit.paid ? 'OK' : 'OCZEK.';
-      const depositBadgeWidth = 40;
-      const depositBadgeX = valueX + valueWidth + 8; // 8px gap after amount
+      const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
       doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 13, 3).fill(statusColor);
       doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
       doc.text(statusText, depositBadgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
@@ -904,7 +909,7 @@ export class PDFService {
          .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
       y += 8;
 
-      // DO ZAPŁATY
+      // DO ZAPŁATY — uses full valueWidth like RAZEM
       const remaining = displayTotal - Number(deposit.amount);
       doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
       doc.text('DO ZAPLATY', labelX, y);
