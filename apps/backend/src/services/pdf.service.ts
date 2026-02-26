@@ -257,26 +257,26 @@ const COLORS = {
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   RESERVED: { label: 'REZERWACJA', color: COLORS.info },
-  PENDING: { label: 'OCZEKUJACA', color: COLORS.warning },
+  PENDING: { label: 'OCZEKUJĄCA', color: COLORS.warning },
   CONFIRMED: { label: 'POTWIERDZONA', color: COLORS.success },
-  COMPLETED: { label: 'ZAKONCZONA', color: COLORS.textMuted },
+  COMPLETED: { label: 'ZAKOŃCZONA', color: COLORS.textMuted },
   CANCELLED: { label: 'ANULOWANA', color: COLORS.danger },
 };
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   TRANSFER: 'Przelew bankowy',
-  CASH: 'Gotowka',
+  CASH: 'Gotówka',
   BLIK: 'BLIK',
-  CARD: 'Karta platnicza',
+  CARD: 'Karta płatnicza',
 };
 
 /** Polish day-of-week translations (shared helper) */
 const DAY_OF_WEEK_PL: Record<string, string> = {
-  'Monday': 'Poniedzialek',
+  'Monday': 'Poniedziałek',
   'Tuesday': 'Wtorek',
-  'Wednesday': 'Sroda',
+  'Wednesday': 'Środa',
   'Thursday': 'Czwartek',
-  'Friday': 'Piatek',
+  'Friday': 'Piątek',
   'Saturday': 'Sobota',
   'Sunday': 'Niedziela',
 };
@@ -304,7 +304,7 @@ export class PDFService {
 
   constructor() {
     this.restaurantData = {
-      name: process.env.RESTAURANT_NAME || 'Gosciniec Rodzinny',
+      name: process.env.RESTAURANT_NAME || 'Gościniec Rodzinny',
       address: process.env.RESTAURANT_ADDRESS || '',
       phone: process.env.RESTAURANT_PHONE || '',
       email: process.env.RESTAURANT_EMAIL || '',
@@ -500,13 +500,13 @@ export class PDFService {
     doc.fontSize(7).fillColor(COLORS.textMuted).font(this.getRegularFont());
 
     const footerParts: string[] = [
-      `Dziekujemy za wybor ${this.restaurantData.name}!`,
+      `Dziękujemy za wybór restauracji ${this.restaurantData.name}!`,
     ];
     const contactParts: string[] = [];
     if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
     if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
     if (contactParts.length > 0) {
-      footerParts.push(`W razie pytan: ${contactParts.join(' | ')}`);
+      footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
     }
     doc.text(footerParts.join('  |  '), left, doc.y, {
       align: 'center', width: pageWidth,
@@ -649,7 +649,7 @@ export class PDFService {
 
     doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textMuted);
     doc.text(
-      'Ponizej znajduje sie lista alergenow wystepujacych w daniach z karty menu.',
+      'Poniżej znajduje się lista alergenów występujących w daniach z karty menu.',
       left, doc.y, { width: pageWidth }
     );
     doc.moveDown(0.4);
@@ -666,7 +666,7 @@ export class PDFService {
       Math.round(pageWidth * 0.20),
       Math.round(pageWidth * 0.80),
     ];
-    this.drawCompactTable(doc, ['Alergen', 'Wystepuje w daniach'], rows, colWidths, left);
+    this.drawCompactTable(doc, ['Alergen', 'Występuje w daniach'], rows, colWidths, left);
   }
 
   // ═══════════════ PUBLIC API ═══════════════
@@ -707,9 +707,9 @@ export class PDFService {
         size: 'A4',
         margins: { top: 0, bottom: 30, left: 40, right: 40 },
         info: {
-          Title: `Potwierdzenie wplaty ${data.depositId}`,
+          Title: `Potwierdzenie wpłaty ${data.depositId}`,
           Author: this.restaurantData.name,
-          Subject: 'Potwierdzenie wplaty zaliczki',
+          Subject: 'Potwierdzenie wpłaty zaliczki',
         },
       });
       this.setupFonts(doc);
@@ -768,9 +768,9 @@ export class PDFService {
         size: 'A4',
         margins: { top: 0, bottom: 30, left: 40, right: 40 },
         info: {
-          Title: 'Raport Przychodow',
+          Title: 'Raport Przychodów',
           Author: this.restaurantData.name,
-          Subject: 'Raport przychodow',
+          Subject: 'Raport przychodów',
         },
       });
       this.setupFonts(doc);
@@ -800,9 +800,9 @@ export class PDFService {
         size: 'A4',
         margins: { top: 0, bottom: 30, left: 40, right: 40 },
         info: {
-          Title: 'Raport Zajetosci',
+          Title: 'Raport Zajętości',
           Author: this.restaurantData.name,
-          Subject: 'Raport zajetosci sal',
+          Subject: 'Raport zajętości sal',
         },
       });
       this.setupFonts(doc);
@@ -914,7 +914,7 @@ export class PDFService {
     ].filter(Boolean));
 
     /* istanbul ignore next */
-    const eventTypeName = r.customEventType || r.eventType?.name || 'Nie okreslono';
+    const eventTypeName = r.customEventType || r.eventType?.name || 'Nie określono';
     let dateStr = '';
     let timeStr = '';
     if (r.startDateTime && r.endDateTime) {
@@ -928,8 +928,8 @@ export class PDFService {
     const guestParts: string[] = [];
     if (r.adults > 0) guestParts.push(`${r.adults} dor.`);
     if (r.children > 0) guestParts.push(`${r.children} dz.`);
-    if (r.toddlers > 0) guestParts.push(`${r.toddlers} mal.`);
-    const guestLine = `${r.guests} osob (${guestParts.join(', ')})`;
+    if (r.toddlers > 0) guestParts.push(`${r.toddlers} mał.`);
+    const guestLine = `${r.guests} osób (${guestParts.join(', ')})`;
 
     const eventDetails: string[] = [
       eventTypeName,
@@ -973,7 +973,7 @@ export class PDFService {
     /* istanbul ignore next */
     const dishSelections: CategorySelection[] = menuSnapshot.menuData?.dishSelections || [];
     if (dishSelections.length === 0) {
-      doc.fontSize(9).fillColor(COLORS.textMuted).text('Brak wybranych dan', left);
+      doc.fontSize(9).fillColor(COLORS.textMuted).text('Brak wybranych dań', left);
       return;
     }
 
@@ -996,7 +996,7 @@ export class PDFService {
     });
 
     const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
-    this.drawCompactTable(doc, ['Kategoria', 'Ilosc', 'Wybrane dania'], tableRows, colWidths, left);
+    this.drawCompactTable(doc, ['Kategoria', 'Ilość', 'Wybrane dania'], tableRows, colWidths, left);
 
     if (allAllergens.size > 0) {
       doc.moveDown(0.2);
@@ -1021,7 +1021,7 @@ export class PDFService {
     doc.moveDown(0.3);
 
     if (!menuData.dishSelections || menuData.dishSelections.length === 0) {
-      doc.fontSize(9).fillColor(COLORS.textMuted).text('Brak wybranych dan', left);
+      doc.fontSize(9).fillColor(COLORS.textMuted).text('Brak wybranych dań', left);
       return;
     }
 
@@ -1040,7 +1040,7 @@ export class PDFService {
     });
 
     const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
-    this.drawCompactTable(doc, ['Kategoria', 'Ilosc', 'Wybrane dania'], tableRows, colWidths, left);
+    this.drawCompactTable(doc, ['Kategoria', 'Ilość', 'Wybrane dania'], tableRows, colWidths, left);
 
     if (allAllergens.size > 0) {
       doc.moveDown(0.2);
@@ -1058,7 +1058,7 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
-    this.drawSectionHeader(doc, 'USLUGI DODATKOWE', left, pageWidth);
+    this.drawSectionHeader(doc, 'USŁUGI DODATKOWE', left, pageWidth);
 
     const grouped = new Map<string, ReservationExtraForPDF[]>();
     for (const extra of extras) {
@@ -1069,33 +1069,39 @@ export class PDFService {
 
     for (const [categoryName, items] of grouped) {
       doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
-      doc.text(`${categoryName}:`, left, doc.y, { continued: true });
-      doc.font(this.getRegularFont()).fillColor(COLORS.textDark);
-
-      const chips = items.map((item) => {
-        const itemTotal = Number(item.totalPrice);
-        switch (item.priceType) {
-          case 'FREE':
-            return `${item.serviceItem.name} (Gratis)`;
-          case 'PER_PERSON':
-            return `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
-          case 'PER_UNIT':
-            return `${item.serviceItem.name} ${item.quantity}szt. (${this.formatCurrency(itemTotal)})`;
-          case 'FLAT':
-          default:
-            return `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
-        }
-      });
-
-      doc.text(`  ${chips.join('  |  ')}`, { width: pageWidth - 10 });
+      doc.text(`${categoryName}:`, left, doc.y);
+      doc.moveDown(0.1);
 
       for (const item of items) {
+        doc.font(this.getRegularFont()).fontSize(8).fillColor(COLORS.textDark);
+
+        const itemTotal = Number(item.totalPrice);
+        let chipText: string;
+        switch (item.priceType) {
+          case 'FREE':
+            chipText = `${item.serviceItem.name} (Gratis)`;
+            break;
+          case 'PER_PERSON':
+            chipText = `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
+            break;
+          case 'PER_UNIT':
+            chipText = `${item.serviceItem.name} ${item.quantity}szt. (${this.formatCurrency(itemTotal)})`;
+            break;
+          case 'FLAT':
+          default:
+            chipText = `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
+            break;
+        }
+
         if (item.note) {
-          doc.fontSize(7).fillColor(COLORS.textMuted);
-          doc.text(`  Uwaga: ${item.note}`, left + 10);
+          doc.font(this.getBoldFont()).text(`${chipText}`, left + 10, doc.y, { continued: true });
+          doc.font(this.getRegularFont()).fontSize(7).fillColor(COLORS.textMuted);
+          doc.text(`  — Uwaga: ${item.note}`, { width: pageWidth - 20 });
+        } else {
+          doc.text(`${chipText}`, left + 10, doc.y, { width: pageWidth - 20 });
         }
       }
-      doc.moveDown(0.1);
+      doc.moveDown(0.2);
     }
   }
 
@@ -1145,7 +1151,7 @@ export class PDFService {
 
     if (r.adults > 0 && r.pricePerAdult > 0) {
       const adultTotal = r.adults * Number(r.pricePerAdult);
-      doc.text(`Dorosli: ${r.adults} os. x ${this.formatCurrency(r.pricePerAdult)}`, labelX, y);
+      doc.text(`Dorośli: ${r.adults} os. x ${this.formatCurrency(r.pricePerAdult)}`, labelX, y);
       doc.text(this.formatCurrency(adultTotal), valueX, y, { width: valueWidth, align: 'right' });
       y += 16;
     }
@@ -1164,12 +1170,12 @@ export class PDFService {
       y += 16;
     }
     if (extrasTotalCalc > 0) {
-      doc.text('Uslugi dodatkowe', labelX, y);
+      doc.text('Usługi dodatkowe', labelX, y);
       doc.text(this.formatCurrency(extrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
       y += 16;
     }
     if (venueSurchargeAmount > 0) {
-      const surchargeLabel = r.venueSurchargeLabel || 'Doplata za caly obiekt';
+      const surchargeLabel = r.venueSurchargeLabel || 'Dopłata za cały obiekt';
       doc.text(surchargeLabel, labelX, y);
       doc.text(this.formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
       y += 16;
@@ -1196,7 +1202,7 @@ export class PDFService {
       const dueDate = deposit.dueDate instanceof Date
         ? this.formatDate(deposit.dueDate)
         : deposit.dueDate;
-      const depositLabel = deposit.paid ? 'Zaliczka (oplacona)' : `Zaliczka (termin: ${dueDate})`;
+      const depositLabel = deposit.paid ? 'Zaliczka (opłacona)' : `Zaliczka (termin: ${dueDate})`;
       doc.text(depositLabel, labelX, y);
       doc.text(`-${this.formatCurrency(deposit.amount)}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
@@ -1215,7 +1221,7 @@ export class PDFService {
 
       const remaining = displayTotal - Number(deposit.amount);
       doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
-      doc.text('DO ZAPLATY', labelX, y);
+      doc.text('DO ZAPŁATY', labelX, y);
       doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
     }
 
@@ -1233,13 +1239,13 @@ export class PDFService {
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
-    // ── 1. HEADER BANNER with "OPLACONA" badge ──
-    this.drawHeaderBanner(doc, 'OPLACONA', COLORS.success);
+    // ── 1. HEADER BANNER with „OPŁACONA" badge ──
+    this.drawHeaderBanner(doc, 'OPŁACONA', COLORS.success);
 
     // ── 2. TITLE + META ──
     doc.y = 80;
     doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
-    doc.text('POTWIERDZENIE WPLATY ZALICZKI', left, doc.y, { align: 'center', width: pageWidth });
+    doc.text('POTWIERDZENIE WPŁATY ZALICZKI', left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
     doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
@@ -1252,7 +1258,7 @@ export class PDFService {
     this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
-    // ── 3. TWO-COLUMN: KLIENT | WPLATA ──
+    // ── 3. TWO-COLUMN: KLIENT | WPŁATA ──
     const colGap = 20;
     const colWidth = (pageWidth - colGap) / 2;
     const startY = doc.y;
@@ -1275,7 +1281,7 @@ export class PDFService {
       paymentLines.push(`Ref: ${data.paymentReference}`);
     }
 
-    this.drawInfoBox(doc, 'SZCZEGOLY WPLATY', left + colWidth + colGap, startY, colWidth, paymentLines);
+    this.drawInfoBox(doc, 'SZCZEGÓŁY WPŁATY', left + colWidth + colGap, startY, colWidth, paymentLines);
 
     const leftLines = [data.client.firstName, data.client.email, data.client.phone, data.client.address].filter(Boolean).length;
     const boxHeight = this.calculateInfoBoxHeight(Math.max(leftLines, paymentLines.length));
@@ -1291,7 +1297,7 @@ export class PDFService {
     ];
     if (data.reservation.hall) resLines.push(`Sala: ${data.reservation.hall}`);
     if (data.reservation.eventType) resLines.push(`Typ: ${data.reservation.eventType}`);
-    resLines.push(`Gosci: ${data.reservation.guests}`);
+    resLines.push(`Gości: ${data.reservation.guests}`);
 
     const shortResId = data.reservation.id.length > 20
       ? data.reservation.id.substring(0, 8) + '...'
@@ -1329,7 +1335,7 @@ export class PDFService {
     const valueX = rightEdge - valueWidth;
 
     doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
-    doc.text('Calkowita cena rezerwacji', labelX, y);
+    doc.text('Całkowita cena rezerwacji', labelX, y);
     doc.text(this.formatCurrency(totalPrice), valueX, y, { width: valueWidth, align: 'right' });
     y += 16;
 
@@ -1338,7 +1344,7 @@ export class PDFService {
     const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
 
     doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
-    doc.text('Wplacona zaliczka', labelX, y);
+    doc.text('Wpłacona zaliczka', labelX, y);
     doc.text(`-${this.formatCurrency(paidAmount)}`, valueX, y, { width: depositValueWidth, align: 'right' });
 
     const badgeX = valueX + depositValueWidth + depositBadgeGap;
@@ -1353,7 +1359,7 @@ export class PDFService {
     y += 8;
 
     doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
-    doc.text('POZOSTALO DO ZAPLATY', labelX, y);
+    doc.text('POZOSTAŁO DO ZAPŁATY', labelX, y);
     doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
 
     doc.y = finBoxY + finBoxHeight + 5;
@@ -1371,7 +1377,7 @@ export class PDFService {
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
-    // ── 1. HEADER BANNER with "KARTA MENU" badge ──
+    // ── 1. HEADER BANNER with „KARTA MENU" badge ──
     this.drawHeaderBanner(doc, 'KARTA MENU', COLORS.accent);
 
     // ── 2. TITLE + META ──
@@ -1432,7 +1438,7 @@ export class PDFService {
 
       // Prices
       doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textLight);
-      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosla`];
+      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosła`];
       if (pkg.pricePerChild > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerChild)}/dziecko`);
       if (pkg.pricePerToddler > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerToddler)}/maluch`);
       doc.text(priceParts.join('  |  '), left + 15, pkgHeaderY + 32, { width: pageWidth - 40 });
@@ -1577,7 +1583,7 @@ export class PDFService {
     // ── 2. TITLE + META ──
     doc.y = 80;
     doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
-    doc.text('RAPORT PRZYCHODOW', left, doc.y, { align: 'center', width: pageWidth });
+    doc.text('RAPORT PRZYCHODÓW', left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
     doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
@@ -1592,15 +1598,15 @@ export class PDFService {
 
     // ── 3. SUMMARY INFO BOX ──
     const summaryLines: string[] = [
-      `Calkowity przychod: ${this.formatCurrency(data.summary.totalRevenue)}`,
-      `Sredni przychod na rezerwacje: ${this.formatCurrency(data.summary.avgRevenuePerReservation)}`,
+      `Całkowity przychód: ${this.formatCurrency(data.summary.totalRevenue)}`,
+      `Średni przychód na rezerwację: ${this.formatCurrency(data.summary.avgRevenuePerReservation)}`,
       `Liczba rezerwacji: ${data.summary.totalReservations}`,
-      `Ukonczone rezerwacje: ${data.summary.completedReservations}`,
-      `Oczekujacy przychod: ${this.formatCurrency(data.summary.pendingRevenue)}`,
+      `Ukończone rezerwacje: ${data.summary.completedReservations}`,
+      `Oczekujący przychód: ${this.formatCurrency(data.summary.pendingRevenue)}`,
       `Wzrost: ${data.summary.growthPercent}%`,
     ];
     if (data.summary.extrasRevenue !== undefined && data.summary.extrasRevenue > 0) {
-      summaryLines.push(`Przychody z uslug dodatkowych: ${this.formatCurrency(data.summary.extrasRevenue)}`);
+      summaryLines.push(`Przychody z usług dodatkowych: ${this.formatCurrency(data.summary.extrasRevenue)}`);
     }
 
     this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
@@ -1614,7 +1620,7 @@ export class PDFService {
     // ── 4. BREAKDOWN BY PERIOD ──
     if (data.breakdown.length > 0) {
       this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'ROZKLAD WG OKRESU', left, pageWidth);
+      this.drawSectionHeader(doc, 'ROZKŁAD WG OKRESU', left, pageWidth);
 
       const breakdownRows = data.breakdown.slice(0, 20).map(item => [
         item.period,
@@ -1628,7 +1634,7 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Okres', 'Przychod', 'Liczba', 'Srednia'], breakdownRows, breakdownCols, left);
+      this.drawCompactTable(doc, ['Okres', 'Przychód', 'Liczba', 'Średnia'], breakdownRows, breakdownCols, left);
 
       doc.moveDown(0.4);
       this.drawSeparator(doc, left, pageWidth);
@@ -1652,7 +1658,7 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Sala', 'Przychod', 'Liczba', 'Srednia'], hallRows, hallCols, left);
+      this.drawCompactTable(doc, ['Sala', 'Przychód', 'Liczba', 'Średnia'], hallRows, hallCols, left);
 
       doc.moveDown(0.4);
       this.drawSeparator(doc, left, pageWidth);
@@ -1676,7 +1682,7 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Typ wydarzenia', 'Przychod', 'Liczba', 'Srednia'], eventRows, eventCols, left);
+      this.drawCompactTable(doc, ['Typ wydarzenia', 'Przychód', 'Liczba', 'Średnia'], eventRows, eventCols, left);
 
       doc.moveDown(0.4);
       this.drawSeparator(doc, left, pageWidth);
@@ -1688,7 +1694,7 @@ export class PDFService {
       this.safePageBreak(doc, 100);
 
       doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.purple);
-      doc.text('USLUGI DODATKOWE — PRZYCHODY', left, doc.y);
+      doc.text('USŁUGI DODATKOWE — PRZYCHODY', left, doc.y);
       doc.moveDown(0.3);
 
       const extrasRows = data.byServiceItem.slice(0, 20).map(item => [
@@ -1703,7 +1709,7 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Usluga', 'Przychod', 'Uzyc', 'Sr. przychod'], extrasRows, extrasCols, left);
+      this.drawCompactTable(doc, ['Usługa', 'Przychód', 'Użyć', 'Śr. przychód'], extrasRows, extrasCols, left);
 
       // Total extras row
       if (data.summary.extrasRevenue && data.summary.extrasRevenue > 0) {
@@ -1737,7 +1743,7 @@ export class PDFService {
     // ── 2. TITLE + META ──
     doc.y = 80;
     doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
-    doc.text('RAPORT ZAJETOSCI', left, doc.y, { align: 'center', width: pageWidth });
+    doc.text('RAPORT ZAJĘTOŚCI', left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
     doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
@@ -1752,8 +1758,8 @@ export class PDFService {
 
     // ── 3. SUMMARY INFO BOX ──
     const summaryLines: string[] = [
-      `Srednia zajetosc: ${data.summary.avgOccupancy}%`,
-      `Najpopularniejszy dzien: ${this.translateDayOfWeek(data.summary.peakDay)}`,
+      `Średnia zajętość: ${data.summary.avgOccupancy}%`,
+      `Najpopularniejszy dzień: ${this.translateDayOfWeek(data.summary.peakDay)}`,
       `Najpopularniejsza sala: ${data.summary.peakHall || 'Brak danych'}`,
       `Liczba rezerwacji: ${data.summary.totalReservations}`,
       `Dni w okresie: ${data.summary.totalDaysInPeriod}`,
@@ -1770,7 +1776,7 @@ export class PDFService {
     // ── 4. HALLS RANKING ──
     if (data.halls.length > 0) {
       this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'ZAJETOSC SAL', left, pageWidth);
+      this.drawSectionHeader(doc, 'ZAJĘTOŚĆ SAL', left, pageWidth);
 
       const hallRows = data.halls.slice(0, 20).map(hall => [
         hall.hallName,
@@ -1784,7 +1790,7 @@ export class PDFService {
         Math.round(pageWidth * 0.25),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Sala', 'Zajetosc %', 'Rezerwacje', 'Sr. gosci'], hallRows, hallCols, left);
+      this.drawCompactTable(doc, ['Sala', 'Zajętość %', 'Rezerwacje', 'Śr. gości'], hallRows, hallCols, left);
 
       doc.moveDown(0.4);
       this.drawSeparator(doc, left, pageWidth);
@@ -1824,7 +1830,7 @@ export class PDFService {
         Math.round(pageWidth * 0.50),
         Math.round(pageWidth * 0.50),
       ];
-      this.drawCompactTable(doc, ['Dzien tygodnia', 'Liczba rezerwacji'], dayRows, dayCols, left);
+      this.drawCompactTable(doc, ['Dzień tygodnia', 'Liczba rezerwacji'], dayRows, dayCols, left);
 
       doc.moveDown(0.4);
     }
