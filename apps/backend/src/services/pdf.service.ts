@@ -3,6 +3,8 @@ import { Readable } from 'stream';
 import * as fs from 'fs';
 import companySettingsService from './company-settings.service';
 
+// ═══════════════ INTERFACES ═══════════════
+
 interface DishSelection {
   dishId: string;
   dishName: string;
@@ -192,6 +194,41 @@ export interface MenuCardPDFData {
   packages: MenuCardPackage[];
 }
 
+// ═══════════════ REPORT PDF TYPES — Zadanie 4 ═══════════════
+
+export interface RevenueReportPDFData {
+  filters: { dateFrom: string; dateTo: string; groupBy?: string };
+  summary: {
+    totalRevenue: number;
+    avgRevenuePerReservation: number;
+    totalReservations: number;
+    completedReservations: number;
+    pendingRevenue: number;
+    growthPercent: number;
+    extrasRevenue?: number;
+  };
+  breakdown: Array<{ period: string; revenue: number; count: number; avgRevenue: number }>;
+  byHall: Array<{ hallName: string; revenue: number; count: number; avgRevenue: number }>;
+  byEventType: Array<{ eventTypeName: string; revenue: number; count: number; avgRevenue: number }>;
+  byServiceItem?: Array<{ name: string; revenue: number; count: number; avgRevenue: number }>;
+}
+
+export interface OccupancyReportPDFData {
+  filters: { dateFrom: string; dateTo: string };
+  summary: {
+    avgOccupancy: number;
+    peakDay: string;
+    peakHall?: string;
+    totalReservations: number;
+    totalDaysInPeriod: number;
+  };
+  halls: Array<{ hallName: string; occupancy: number; reservations: number; avgGuestsPerReservation: number }>;
+  peakHours: Array<{ hour: number; count: number }>;
+  peakDaysOfWeek: Array<{ dayOfWeek: string; count: number }>;
+}
+
+// ═══════════════ CONSTANTS ═══════════════
+
 const ALLERGEN_LABELS: Record<string, string> = {
   gluten: 'Gluten',
   lactose: 'Laktoza',
@@ -202,6 +239,53 @@ const ALLERGEN_LABELS: Record<string, string> = {
   shellfish: 'Skorupiaki',
   peanuts: 'Orzeszki ziemne',
 };
+
+/** Premium color palette */
+const COLORS = {
+  primary: '#1a2332',       // Dark navy — headers, banners
+  primaryLight: '#2c3e50',  // Lighter navy — section headers
+  accent: '#c8a45a',        // Gold accent — premium feel
+  success: '#27ae60',       // Green — paid, confirmed
+  warning: '#f39c12',       // Orange — pending
+  danger: '#e74c3c',        // Red — cancelled
+  info: '#3498db',          // Blue — reserved
+  textDark: '#1a2332',      // Body text
+  textMuted: '#7f8c8d',     // Secondary text
+  textLight: '#bdc3c7',     // Disabled text
+  border: '#dce1e8',        // Table borders, separators
+  bgLight: '#f4f6f9',       // Alternating rows, boxes
+  bgWhite: '#ffffff',       // Main background
+  allergen: '#e67e22',      // Allergen labels
+  purple: '#8e44ad',        // Optional extras
+};
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  RESERVED: { label: 'REZERWACJA', color: COLORS.info },
+  PENDING: { label: 'OCZEKUJACA', color: COLORS.warning },
+  CONFIRMED: { label: 'POTWIERDZONA', color: COLORS.success },
+  COMPLETED: { label: 'ZAKONCZONA', color: COLORS.textMuted },
+  CANCELLED: { label: 'ANULOWANA', color: COLORS.danger },
+};
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  TRANSFER: 'Przelew bankowy',
+  CASH: 'Gotowka',
+  BLIK: 'BLIK',
+  CARD: 'Karta platnicza',
+};
+
+/** Polish day-of-week translations (shared helper) */
+const DAY_OF_WEEK_PL: Record<string, string> = {
+  'Monday': 'Poniedzialek',
+  'Tuesday': 'Wtorek',
+  'Wednesday': 'Sroda',
+  'Thursday': 'Czwartek',
+  'Friday': 'Piatek',
+  'Saturday': 'Sobota',
+  'Sunday': 'Niedziela',
+};
+
+// ═══════════════ PDF SERVICE ═══════════════
 
 export class PDFService {
   private readonly FONT_PATHS = {
@@ -223,9 +307,8 @@ export class PDFService {
   private restaurantData: RestaurantData;
 
   constructor() {
-    // Static fallbacks — used only if DB is unreachable
     this.restaurantData = {
-      name: process.env.RESTAURANT_NAME || 'Gościniec Rodzinny',
+      name: process.env.RESTAURANT_NAME || 'Gosciniec Rodzinny',
       address: process.env.RESTAURANT_ADDRESS || '',
       phone: process.env.RESTAURANT_PHONE || '',
       email: process.env.RESTAURANT_EMAIL || '',
@@ -235,11 +318,6 @@ export class PDFService {
     this.checkFontsAvailability();
   }
 
-  /**
-   * Refresh restaurant data from CompanySettings in DB.
-   * Called before every PDF generation to ensure fresh data.
-   * Falls back to env vars / constructor defaults if DB unavailable.
-   */
   private async refreshRestaurantData(): Promise<void> {
     try {
       const settings = await companySettingsService.getSettings();
@@ -266,7 +344,6 @@ export class PDFService {
         break;
       }
     }
-
     for (const path of this.FONT_PATHS.bold) {
       if (fs.existsSync(path)) {
         this.fontBold = path;
@@ -274,13 +351,11 @@ export class PDFService {
         break;
       }
     }
-
     if (this.fontRegular && this.fontBold) {
       this.useCustomFonts = true;
       console.log('[PDF Service] Using custom DejaVu fonts for Polish characters');
     } else {
       console.warn('[PDF Service] DejaVu fonts not found, using built-in fonts (limited Polish character support)');
-      console.warn('[PDF Service] To install fonts, run: sudo apt-get install fonts-dejavu-core');
     }
   }
 
@@ -294,24 +369,242 @@ export class PDFService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // ██  SHARED PREMIUM HELPERS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Premium header banner — navy background + gold accent + restaurant info.
+   * Optionally shows a status badge in the top-right corner.
+   * Used by: reservation, payment confirmation, menu card, reports.
+   */
+  private drawHeaderBanner(
+    doc: PDFKit.PDFDocument,
+    badgeLabel?: string,
+    badgeColor?: string
+  ): void {
+    const bannerHeight = 65;
+    const pageWidth = doc.page.width;
+
+    // Dark navy banner
+    doc.rect(0, 0, pageWidth, bannerHeight).fill(COLORS.primary);
+
+    // Gold accent line at bottom
+    doc.rect(0, bannerHeight - 3, pageWidth, 3).fill(COLORS.accent);
+
+    // Restaurant name
+    doc.fillColor('#ffffff').fontSize(18).font(this.getBoldFont());
+    doc.text(this.restaurantData.name, 40, 14, { width: pageWidth - 200 });
+
+    // Contact info
+    doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textLight);
+    const contactParts: string[] = [];
+    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
+    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
+    if (this.restaurantData.website) contactParts.push(this.restaurantData.website);
+    if (contactParts.length > 0) {
+      doc.text(contactParts.join('  |  '), 40, 38, { width: pageWidth - 200 });
+    }
+    if (this.restaurantData.nip) {
+      doc.text(`NIP: ${this.restaurantData.nip}`, 40, 50, { width: pageWidth - 200 });
+    }
+
+    // Status badge (top-right) — optional
+    if (badgeLabel) {
+      const color = badgeColor || COLORS.textMuted;
+      const badgeWidth = 120;
+      const badgeHeight = 22;
+      const badgeX = pageWidth - badgeWidth - 40;
+      const badgeY = 20;
+
+      doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(color);
+      doc.fillColor('#ffffff').fontSize(9).font(this.getBoldFont());
+      doc.text(badgeLabel, badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
+    }
+  }
+
+  /**
+   * Premium section header — bold title.
+   */
+  private drawSectionHeader(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    left: number,
+    pageWidth: number
+  ): void {
+    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(title, left, doc.y);
+    doc.moveDown(0.3);
+  }
+
+  /**
+   * Safe page break — adds a new page if remaining space is less than minSpace.
+   * Returns the current Y position after potential page break.
+   */
+  private safePageBreak(doc: PDFKit.PDFDocument, minSpace: number = 100): number {
+    if (doc.y > doc.page.height - minSpace) {
+      doc.addPage();
+      doc.y = 50;
+    }
+    return doc.y;
+  }
+
+  /**
+   * Info box with title, accent bar, and content lines.
+   */
+  private drawInfoBox(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    x: number,
+    y: number,
+    width: number,
+    lines: string[]
+  ): void {
+    const boxHeight = this.calculateInfoBoxHeight(lines.length);
+
+    doc.rect(x, y, width, boxHeight).fill(COLORS.bgLight);
+    doc.rect(x, y, 3, boxHeight).fill(COLORS.accent);
+
+    doc.fillColor(COLORS.textMuted).fontSize(7).font(this.getBoldFont());
+    doc.text(title, x + 12, y + 8, { width: width - 20 });
+
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
+    let lineY = y + 22;
+    lines.forEach((line, i) => {
+      if (i === 0) {
+        doc.font(this.getBoldFont()).fontSize(10);
+      } else {
+        doc.font(this.getRegularFont()).fontSize(8);
+      }
+      doc.text(line, x + 12, lineY, { width: width - 20 });
+      lineY += i === 0 ? 15 : 12;
+    });
+  }
+
+  private calculateInfoBoxHeight(lineCount: number): number {
+    return Math.max(60, 28 + lineCount * 13);
+  }
+
+  /**
+   * Thin horizontal separator line.
+   */
+  private drawSeparator(doc: PDFKit.PDFDocument, left: number, width: number): void {
+    const y = doc.y;
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(left, y).lineTo(left + width, y).stroke();
+  }
+
+  /**
+   * Inline footer — sits in the flow (no absolute positioning).
+   */
+  private drawInlineFooter(doc: PDFKit.PDFDocument, left: number, pageWidth: number): void {
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    doc.fontSize(7).fillColor(COLORS.textMuted).font(this.getRegularFont());
+
+    const footerParts: string[] = [
+      `Dziekujemy za wybor ${this.restaurantData.name}!`,
+    ];
+    const contactParts: string[] = [];
+    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
+    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
+    if (contactParts.length > 0) {
+      footerParts.push(`W razie pytan: ${contactParts.join(' | ')}`);
+    }
+    doc.text(footerParts.join('  |  '), left, doc.y, {
+      align: 'center', width: pageWidth,
+    });
+
+    doc.moveDown(0.2);
+    doc.fontSize(6).fillColor(COLORS.textLight);
+    doc.text(
+      `Dokument wygenerowany automatycznie przez system ${this.restaurantData.name}`,
+      left, doc.y,
+      { align: 'center', width: pageWidth },
+    );
+  }
+
+  /**
+   * Compact table with header row, alternating backgrounds, page-break support.
+   */
+  private drawCompactTable(
+    doc: PDFKit.PDFDocument,
+    headers: string[],
+    rows: string[][],
+    colWidths: number[],
+    startX: number
+  ): void {
+    const rowHeight = 16;
+    const headerHeight = 18;
+    const totalWidth = colWidths.reduce((a, b) => a + b, 0);
+    let y = doc.y;
+
+    // Header row
+    doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
+    let x = startX;
+    headers.forEach((header, i) => {
+      doc.fillColor('#ffffff').fontSize(7).font(this.getBoldFont());
+      doc.text(header, x + 5, y + 5, { width: colWidths[i] - 10 });
+      x += colWidths[i];
+    });
+    y += headerHeight;
+
+    // Data rows
+    rows.forEach((row, rowIndex) => {
+      /* istanbul ignore next */
+      if (y > doc.page.height - 80) {
+        doc.addPage();
+        y = 50;
+      }
+
+      if (rowIndex % 2 === 0) {
+        doc.rect(startX, y, totalWidth, rowHeight).fill(COLORS.bgLight);
+      }
+
+      x = startX;
+      row.forEach((cell, i) => {
+        const isFirstCol = i === 0;
+        doc.fillColor(COLORS.textDark)
+           .fontSize(7)
+           .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
+        doc.text(cell, x + 5, y + 4, { width: colWidths[i] - 10 });
+        x += colWidths[i];
+      });
+      y += rowHeight;
+    });
+
+    // Bottom border
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(startX, y).lineTo(startX + totalWidth, y).stroke();
+
+    doc.y = y + 3;
+  }
+
+  /**
+   * Translate English day-of-week name to Polish.
+   * Shared helper used by report builders.
+   */
+  private translateDayOfWeek(day: string): string {
+    return DAY_OF_WEEK_PL[day] || day;
+  }
+
+  // ═══════════════ PUBLIC API ═══════════════
+
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
     await this.refreshRestaurantData();
-
     return new Promise((resolve, reject) => {
       console.log(`[PDF Service] Generating PDF for reservation ${reservation.id}`);
-
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50,
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
         info: {
           Title: `Rezerwacja ${reservation.id}`,
           Author: this.restaurantData.name,
           Subject: 'Potwierdzenie rezerwacji sali',
         },
       });
-
       this.setupFonts(doc);
-
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
@@ -321,30 +614,25 @@ export class PDFService {
       });
       /* istanbul ignore next */
       doc.on('error', (error) => reject(error));
-
-      this.buildPDFContent(doc, reservation);
+      this.buildReservationPDF(doc, reservation);
       doc.end();
     });
   }
 
   async generatePaymentConfirmationPDF(data: PaymentConfirmationData): Promise<Buffer> {
     await this.refreshRestaurantData();
-
     return new Promise((resolve, reject) => {
       console.log(`[PDF Service] Generating payment confirmation PDF for deposit ${data.depositId}`);
-
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50,
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
         info: {
-          Title: `Potwierdzenie wpłaty ${data.depositId}`,
+          Title: `Potwierdzenie wplaty ${data.depositId}`,
           Author: this.restaurantData.name,
-          Subject: 'Potwierdzenie wpłaty zaliczki',
+          Subject: 'Potwierdzenie wplaty zaliczki',
         },
       });
-
       this.setupFonts(doc);
-
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
@@ -354,23 +642,18 @@ export class PDFService {
       });
       /* istanbul ignore next */
       doc.on('error', (error) => reject(error));
-
-      this.buildPaymentConfirmationContent(doc, data);
+      this.buildPaymentConfirmationPremium(doc, data);
       doc.end();
     });
   }
 
-  // ═══════════════ MENU CARD PDF ═══════════════
-
   async generateMenuCardPDF(data: MenuCardPDFData): Promise<Buffer> {
     await this.refreshRestaurantData();
-
     return new Promise((resolve, reject) => {
       console.log(`[PDF Service] Generating menu card PDF: ${data.templateName}`);
-
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50,
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
         bufferPages: true,
         info: {
           Title: `Karta Menu - ${data.templateName}`,
@@ -378,9 +661,7 @@ export class PDFService {
           Subject: 'Karta menu',
         },
       });
-
       this.setupFonts(doc);
-
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
@@ -390,601 +671,315 @@ export class PDFService {
       });
       /* istanbul ignore next */
       doc.on('error', (error) => reject(error));
-
-      this.buildMenuCardContent(doc, data);
+      this.buildMenuCardPremium(doc, data);
       doc.end();
     });
   }
 
-  // ═══════════════ EXISTING PDF BUILDERS ═══════════════
-
-  private buildPDFContent(doc: PDFKit.PDFDocument, reservation: ReservationPDFData): void {
-    const pageWidth = doc.page.width - 100;
-
-    this.addHeader(doc);
-
-    doc.moveDown(2);
-    doc.fontSize(20).font(this.getBoldFont()).text('POTWIERDZENIE REZERWACJI SALI', {
-      align: 'center',
-    });
-
-    doc.moveDown(0.5);
-    doc.fontSize(10).font(this.getRegularFont()).fillColor('#666666');
-    doc.text(`Numer rezerwacji: ${reservation.id}`, { align: 'center' });
-    doc.text(`Data wygenerowania: ${this.formatDate(new Date())}`, { align: 'center' });
-
-    doc.moveDown(1);
-    this.addSeparator(doc);
-
-    doc.moveDown(1);
-    doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Dane klienta');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Imię i nazwisko: ${reservation.client.firstName} ${reservation.client.lastName}`);
-    if (reservation.client.email) {
-      doc.text(`Email: ${reservation.client.email}`);
-    }
-    doc.text(`Telefon: ${reservation.client.phone}`);
-    if (reservation.client.address) {
-      doc.text(`Adres: ${reservation.client.address}`);
-    }
-
-    doc.moveDown(1);
-    this.addSeparator(doc);
-
-    doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Szczegóły rezerwacji');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-
-    this.addStatusBadge(doc, reservation.status);
-    doc.moveDown(0.5);
-
-    // US-6.2: Hall name removed from PDF
-    /* istanbul ignore next -- customEventType fallback */
-    const eventTypeName = reservation.customEventType || reservation.eventType?.name || 'Nie określono';
-    doc.text(`Typ wydarzenia: ${eventTypeName}`);
-
-    if (reservation.startDateTime && reservation.endDateTime) {
-      doc.text(`Data: ${this.formatDate(reservation.startDateTime)}`);
-      doc.text(`Godzina: ${this.formatTime(reservation.startDateTime)} - ${this.formatTime(reservation.endDateTime)}`);
-    /* istanbul ignore next -- fallback to string date format */
-    } else if (reservation.date && reservation.startTime && reservation.endTime) {
-      doc.text(`Data: ${reservation.date}`);
-      doc.text(`Godzina: ${reservation.startTime} - ${reservation.endTime}`);
-    }
-
-    doc.text(`Liczba gości: ${reservation.guests}`);
-    if (reservation.adults > 0) {
-      doc.text(`  - Dorośli: ${reservation.adults} os.`, { indent: 20 });
-    }
-    /* istanbul ignore next -- children display */
-    if (reservation.children > 0) {
-      doc.text(`  - Dzieci (4-12 lat): ${reservation.children} os.`, { indent: 20 });
-    }
-    /* istanbul ignore next -- toddlers display */
-    if (reservation.toddlers > 0) {
-      doc.text(`  - Maluchy (0-3 lata): ${reservation.toddlers} os.`, { indent: 20 });
-    }
-
-    /* istanbul ignore next -- birthdayAge rarely present */
-    if (reservation.birthdayAge) {
-      doc.text(`Wiek jubilata: ${reservation.birthdayAge} lat`);
-    }
-    /* istanbul ignore next -- anniversaryYear rarely present */
-    if (reservation.anniversaryYear) {
-      doc.text(`Rocznica: ${reservation.anniversaryYear} lat`);
-      if (reservation.anniversaryOccasion) {
-        doc.text(`Okazja: ${reservation.anniversaryOccasion}`);
-      }
-    }
-
-    if (reservation.notes) {
-      doc.moveDown(0.5);
-      doc.font(this.getBoldFont()).text('Uwagi:');
-      doc.font(this.getRegularFont()).text(reservation.notes, { width: pageWidth - 20 });
-    }
-
-    const menuSnapshot = reservation.menuSnapshot;
-    if (menuSnapshot && menuSnapshot.menuData) {
-      this.addMenuSelectionSection(doc, menuSnapshot, pageWidth);
-    /* istanbul ignore next -- legacy menu path */
-    } else if (reservation.menuData?.dishSelections && reservation.menuData.dishSelections.length > 0) {
-      this.addMenuSelectionSectionLegacy(doc, reservation.menuData, pageWidth);
-    }
-
-    // Extras section — service extras attached to reservation
-    if (reservation.reservationExtras && reservation.reservationExtras.length > 0) {
-      this.addExtrasSection(doc, reservation.reservationExtras, pageWidth);
-    }
-
-    doc.moveDown(1);
-    this.addSeparator(doc);
-
-    doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Kalkulacja kosztów');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-
-    /* istanbul ignore next -- packageName display */
-    if (reservation.menuData?.packageName) {
-      doc.font(this.getBoldFont()).text(`Pakiet: ${reservation.menuData.packageName}`);
-      doc.font(this.getRegularFont()).moveDown(0.3);
-    }
-
-    if (reservation.adults > 0 && reservation.pricePerAdult > 0) {
-      const adultTotal = reservation.adults * Number(reservation.pricePerAdult);
-      doc.text(
-        `Dorośli: ${reservation.adults} os. × ${this.formatCurrency(reservation.pricePerAdult)} = ${this.formatCurrency(adultTotal)}`
-      );
-    }
-    /* istanbul ignore next -- children pricing */
-    if (reservation.children > 0 && reservation.pricePerChild > 0) {
-      const childTotal = reservation.children * Number(reservation.pricePerChild);
-      doc.text(
-        `Dzieci (4-12 lat): ${reservation.children} os. × ${this.formatCurrency(reservation.pricePerChild)} = ${this.formatCurrency(childTotal)}`
-      );
-    }
-    /* istanbul ignore next -- toddler pricing */
-    if (reservation.toddlers > 0 && reservation.pricePerToddler > 0) {
-      const toddlerTotal = reservation.toddlers * Number(reservation.pricePerToddler);
-      doc.text(
-        `Maluchy (0-3 lata): ${reservation.toddlers} os. × ${this.formatCurrency(reservation.pricePerToddler)} = ${this.formatCurrency(toddlerTotal)}`
-      );
-    }
-
-    // #139: Use totalPrice from DB (correctly calculated by calculateTotalPrice)
-    // instead of quantity × unitPrice (which was wrong for PER_PERSON — missed adults+children multiplier)
-    const extrasTotalCalc = (reservation.reservationExtras || [])
-      .reduce((sum, e) => sum + Number(e.totalPrice), 0);
-    if (extrasTotalCalc > 0) {
-      doc.text(`Usługi dodatkowe: ${this.formatCurrency(extrasTotalCalc)}`);
-    }
-
-    // ══ #137: Venue surcharge line ══
-    const venueSurchargeAmount = Number(reservation.venueSurcharge) || 0;
-    if (venueSurchargeAmount > 0) {
-      const surchargeLabel = reservation.venueSurchargeLabel || 'Dopłata za cały obiekt';
-      doc.text(`${surchargeLabel}: ${this.formatCurrency(venueSurchargeAmount)}`);
-    }
-
-    doc.moveDown(0.5);
-    doc.fontSize(13).font(this.getBoldFont());
-    // FIX: Include extras + venue surcharge in displayed RAZEM total
-    const displayTotal = Number(reservation.totalPrice) + extrasTotalCalc;
-    doc.text(`RAZEM: ${this.formatCurrency(displayTotal)}`);
-
-    /* istanbul ignore next -- deposit fallback */
-    const deposit = reservation.deposits && reservation.deposits.length > 0
-      ? reservation.deposits[0]
-      : reservation.deposit;
-
-    if (deposit) {
-      doc.moveDown(1);
-      this.addSeparator(doc);
-      doc.moveDown(1);
-      doc.fontSize(14).font(this.getBoldFont()).text('Zaliczka');
-      doc.moveDown(0.5);
-      doc.fontSize(11).font(this.getRegularFont());
-      doc.text(`Kwota zaliczki: ${this.formatCurrency(deposit.amount)}`);
-
-      /* istanbul ignore next -- dueDate type check */
-      const dueDate = deposit.dueDate instanceof Date
-        ? this.formatDate(deposit.dueDate)
-        : deposit.dueDate;
-      doc.text(`Termin wpłaty: ${dueDate}`);
-
-      const depositStatus = deposit.paid ? 'Opłacona' : 'Nieopłacona';
-      doc.font(this.getBoldFont()).text(`Status: ${depositStatus}`);
-    }
-
-    this.addFooter(doc);
-  }
-
-  private buildPaymentConfirmationContent(
-    doc: PDFKit.PDFDocument,
-    data: PaymentConfirmationData
-  ): void {
-    this.addHeader(doc);
-
-    doc.moveDown(2);
-    doc.fontSize(20).font(this.getBoldFont()).fillColor('#16a34a').text('POTWIERDZENIE WPŁATY ZALICZKI', {
-      align: 'center',
-    });
-
-    doc.moveDown(0.5);
-    doc.fontSize(10).font(this.getRegularFont()).fillColor('#666666');
-    doc.text(`Numer depozytu: ${data.depositId}`, { align: 'center' });
-    doc.text(`Data wygenerowania: ${this.formatDate(new Date())}`, { align: 'center' });
-
-    doc.moveDown(1);
-    this.addSeparator(doc);
-
-    doc.moveDown(1);
-    doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Szczegóły wpłaty');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-
-    const methodLabels: Record<string, string> = {
-      TRANSFER: 'Przelew bankowy',
-      CASH: 'Gotówka',
-      BLIK: 'BLIK',
-      CARD: 'Karta płatnicza',
-    };
-
-    doc.font(this.getBoldFont()).text(`Kwota: ${this.formatCurrency(data.amount)}`);
-    doc.font(this.getRegularFont());
-    doc.text(`Data wpłaty: ${this.formatDate(data.paidAt)}`);
-    /* istanbul ignore next -- payment method fallback */
-    doc.text(`Metoda płatności: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
-    if (data.paymentReference) {
-      doc.text(`Numer referencyjny: ${data.paymentReference}`);
-    }
-
-    doc.moveDown(1);
-    this.addSeparator(doc);
-
-    doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Dane klienta');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Imię i nazwisko: ${data.client.firstName} ${data.client.lastName}`);
-    if (data.client.email) {
-      doc.text(`Email: ${data.client.email}`);
-    }
-    doc.text(`Telefon: ${data.client.phone}`);
-    if (data.client.address) {
-      doc.text(`Adres: ${data.client.address}`);
-    }
-
-    doc.moveDown(1);
-    this.addSeparator(doc);
-
-    doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Szczegóły rezerwacji');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Numer rezerwacji: ${data.reservation.id}`);
-    doc.text(`Data: ${data.reservation.date}`);
-    doc.text(`Godzina: ${data.reservation.startTime} - ${data.reservation.endTime}`);
-    // US-6.2: Hall name removed from payment confirmation PDF
-    if (data.reservation.eventType) {
-      doc.text(`Typ wydarzenia: ${data.reservation.eventType}`);
-    }
-    doc.text(`Liczba gości: ${data.reservation.guests}`);
-    doc.text(`Całkowita cena rezerwacji: ${this.formatCurrency(data.reservation.totalPrice)}`);
-
-    doc.moveDown(1.5);
-    doc.fontSize(11).fillColor('#16a34a');
-    doc.font(this.getBoldFont()).text('Wpłata zaksięgowana pomyślnie', { align: 'center' });
-    doc.fillColor('#000000');
-
-    this.addFooter(doc);
-  }
-
-  // ═══════════════ MENU CARD BUILDER ═══════════════
-
-  private buildMenuCardContent(doc: PDFKit.PDFDocument, data: MenuCardPDFData): void {
-    const pageWidth = doc.page.width - 100;
-
-    this.addHeader(doc);
-
-    doc.moveDown(2);
-    doc.fontSize(22).font(this.getBoldFont()).fillColor('#2c3e50').text('KARTA MENU', {
-      align: 'center',
-    });
-
-    doc.moveDown(0.5);
-    doc.fontSize(16).font(this.getBoldFont()).fillColor('#34495e').text(data.templateName, {
-      align: 'center',
-    });
-
-    const subtitleParts: string[] = [data.eventTypeName];
-    if (data.variant) subtitleParts.push(data.variant);
-    doc.moveDown(0.3);
-    doc.fontSize(11).font(this.getRegularFont()).fillColor('#7f8c8d').text(subtitleParts.join(' | '), {
-      align: 'center',
-    });
-
-    if (data.templateDescription) {
-      doc.moveDown(0.5);
-      doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555').text(data.templateDescription, {
-        align: 'center',
-        width: pageWidth,
+  /**
+   * Generate premium revenue report PDF.
+   * Migrated from reports-export.service.ts (Zadanie 4).
+   */
+  async generateRevenueReportPDF(data: RevenueReportPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      console.log('[PDF Service] Generating revenue report PDF');
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: {
+          Title: 'Raport Przychodow',
+          Author: this.restaurantData.name,
+          Subject: 'Raport przychodow',
+        },
       });
-    }
-
-    doc.moveDown(0.5);
-    doc.fontSize(8).fillColor('#999999').text(
-      `Wygenerowano: ${this.formatDate(new Date())}`,
-      { align: 'center' }
-    );
-
-    data.packages.forEach((pkg) => {
-      /* istanbul ignore next -- page break */
-      if (doc.y > doc.page.height - 250) doc.addPage();
-
-      doc.moveDown(1.5);
-      this.addSeparator(doc);
-      doc.moveDown(1);
-
-      // Package header
-      const pkgHeaderY = doc.y;
-      const headerHeight = 60;
-      doc.rect(50, pkgHeaderY, pageWidth, headerHeight)
-        .fillAndStroke('#2c3e50', '#2c3e50');
-
-      /* istanbul ignore next -- badge text */
-      const badgeText = pkg.badgeText || (pkg.isPopular ? 'POPULARNY' : pkg.isRecommended ? 'POLECANY' : null);
-      if (badgeText) {
-        doc.rect(50 + pageWidth - 100, pkgHeaderY + 5, 90, 18)
-          .fillAndStroke('#e67e22', '#e67e22');
-        doc.fillColor('#ffffff').fontSize(8).font(this.getBoldFont());
-        doc.text(badgeText, 50 + pageWidth - 100, pkgHeaderY + 9, { width: 90, align: 'center' });
-      }
-
-      doc.fillColor('#ffffff').fontSize(16).font(this.getBoldFont());
-      doc.text(pkg.name, 65, pkgHeaderY + 12, { width: pageWidth - 30 });
-
-      doc.fontSize(9).font(this.getRegularFont()).fillColor('#ecf0f1');
-      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosła`];
-      if (pkg.pricePerChild > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerChild)}/dziecko`);
-      if (pkg.pricePerToddler > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerToddler)}/maluch`);
-      doc.text(priceParts.join('  |  '), 65, pkgHeaderY + 38, { width: pageWidth - 30 });
-
-      doc.y = pkgHeaderY + headerHeight + 10;
-      doc.fillColor('#000000');
-
-      if (pkg.description) {
-        doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555');
-        doc.text(pkg.description, { width: pageWidth });
-        doc.moveDown(0.5);
-      }
-
-      if (pkg.includedItems && pkg.includedItems.length > 0) {
-        doc.fontSize(9).font(this.getBoldFont()).fillColor('#27ae60');
-        doc.text('W cenie: ', { continued: true });
-        doc.font(this.getRegularFont()).fillColor('#555555');
-        doc.text(pkg.includedItems.join(', '));
-        doc.moveDown(0.5);
-      }
-
-      // Courses
-      if (pkg.courses.length > 0) {
-        pkg.courses.forEach((course) => {
-          /* istanbul ignore next -- page break */
-          if (doc.y > doc.page.height - 150) doc.addPage();
-
-          doc.moveDown(0.7);
-
-          const selectText = course.minSelect === course.maxSelect
-            ? `wybierz ${course.minSelect}`
-            : `wybierz ${course.minSelect}-${course.maxSelect}`;
-
-          doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
-          doc.text(course.name, { continued: true });
-          doc.fontSize(9).font(this.getRegularFont()).fillColor('#7f8c8d');
-          doc.text(`  (${selectText} z ${course.dishes.length})`);
-
-          /* istanbul ignore next -- course description optional */
-          if (course.description) {
-            doc.fontSize(9).font(this.getRegularFont()).fillColor('#888888');
-            doc.text(course.description);
-          }
-
-          doc.moveDown(0.3);
-
-          course.dishes.forEach((dish) => {
-            /* istanbul ignore next -- page break */
-            if (doc.y > doc.page.height - 100) doc.addPage();
-
-            let marker = '  ';
-            /* istanbul ignore next -- dish markers */
-            if (dish.isRecommended) marker = '★ ';
-            else if (dish.isDefault) marker = '▸ ';
-
-            doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
-            doc.text(`  ${marker}${dish.name}`, { indent: 15 });
-
-            /* istanbul ignore next -- dish description optional */
-            if (dish.description) {
-              doc.fontSize(8).fillColor('#777777');
-              doc.text(`     ${dish.description}`, { indent: 25 });
-            }
-
-            /* istanbul ignore next -- allergens optional */
-            if (dish.allergens && dish.allergens.length > 0) {
-              const labels = dish.allergens
-                .map((a) => ALLERGEN_LABELS[a] || a)
-                .join(', ');
-              doc.fontSize(7).fillColor('#e67e22');
-              doc.text(`     Alergeny: ${labels}`, { indent: 25 });
-            }
-
-            doc.moveDown(0.15);
-            doc.fillColor('#000000');
-          });
-        });
-      }
-
-      // Options
-      const requiredOptions = pkg.options.filter(o => o.isRequired);
-      const activeOptions = pkg.options.filter(o => !o.isRequired);
-
-      if (requiredOptions.length > 0) {
-        /* istanbul ignore next -- page break */
-        if (doc.y > doc.page.height - 120) doc.addPage();
-
-        doc.moveDown(0.7);
-        doc.fontSize(11).font(this.getBoldFont()).fillColor('#27ae60');
-        doc.text('W pakiecie:');
-        doc.moveDown(0.2);
-
-        requiredOptions.forEach((opt) => {
-          doc.fontSize(9).font(this.getRegularFont()).fillColor('#333333');
-          doc.text(`  + ${opt.name}`, { indent: 15 });
-          /* istanbul ignore next -- option description */
-          if (opt.description) {
-            doc.fontSize(8).fillColor('#777777');
-            doc.text(`     ${opt.description}`, { indent: 25 });
-          }
-        });
-      }
-
-      if (activeOptions.length > 0) {
-        /* istanbul ignore next -- page break */
-        if (doc.y > doc.page.height - 120) doc.addPage();
-
-        doc.moveDown(0.7);
-        doc.fontSize(11).font(this.getBoldFont()).fillColor('#8e44ad');
-        doc.text('Opcje dodatkowe:');
-        doc.moveDown(0.2);
-
-        activeOptions.forEach((opt) => {
-          const priceLabel = opt.priceType === 'PER_PERSON'
-            ? `+${this.formatCurrency(opt.priceAmount)}/os.`
-            : `+${this.formatCurrency(opt.priceAmount)}`;
-
-          doc.fontSize(9).font(this.getRegularFont()).fillColor('#333333');
-          doc.text(`  - ${opt.name}`, { continued: true, indent: 15 });
-          doc.fillColor('#8e44ad').font(this.getBoldFont());
-          doc.text(`  ${priceLabel}`);
-
-          /* istanbul ignore next -- option description */
-          if (opt.description) {
-            doc.fontSize(8).font(this.getRegularFont()).fillColor('#777777');
-            doc.text(`     ${opt.description}`, { indent: 25 });
-          }
-        });
-      }
-    });
-
-    // Legend
-    doc.moveDown(1.5);
-    this.addSeparator(doc);
-    doc.moveDown(0.5);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor('#999999');
-    doc.text('★ = polecane przez szefa kuchni  |  ▸ = domyślny wybór  |  - = dostępne', {
-      align: 'center',
-    });
-
-    this.addFooter(doc);
-  }
-
-  // ═══════════════ SHARED HELPERS ═══════════════
-
-  private addMenuSelectionSection(
-    doc: PDFKit.PDFDocument,
-    menuSnapshot: MenuSnapshot,
-    pageWidth: number
-  ): void {
-    doc.moveDown(1);
-    this.addSeparator(doc);
-    doc.moveDown(1);
-
-    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Wybrane Menu');
-    doc.moveDown(0.5);
-
-    /* istanbul ignore next -- packageName from snapshot */
-    const packageName = menuSnapshot.menuData?.packageName || menuSnapshot.menuData?.package?.name;
-    if (packageName) {
-      doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
-      doc.text(`Pakiet: ${packageName}`);
-      doc.moveDown(0.3);
-    }
-
-    doc.fontSize(10).font(this.getRegularFont()).fillColor('#555555');
-    const guestParts = [];
-    if (menuSnapshot.adultsCount > 0) {
-      guestParts.push(`${menuSnapshot.adultsCount} dorosłych`);
-    }
-    if (menuSnapshot.childrenCount > 0) {
-      guestParts.push(`${menuSnapshot.childrenCount} dzieci`);
-    }
-    if (menuSnapshot.toddlersCount > 0) {
-      guestParts.push(`${menuSnapshot.toddlersCount} maluchów`);
-    }
-    if (guestParts.length > 0) {
-      doc.text(`Liczba osób dla menu: ${guestParts.join(', ')}`);
-      doc.moveDown(0.5);
-    }
-
-    /* istanbul ignore next -- dishSelections fallback */
-    const dishSelections = menuSnapshot.menuData?.dishSelections || [];
-    if (dishSelections.length === 0) {
-      doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
-      doc.text('Brak wybranych dań');
-    } else {
-      dishSelections.forEach((category: CategorySelection, categoryIndex: number) => {
-        doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
-        doc.text(`${category.categoryName} (${category.dishes.length})`);
-        doc.moveDown(0.3);
-
-        category.dishes.forEach((dish) => {
-          doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
-
-          const quantityText = dish.quantity === Math.floor(dish.quantity)
-            ? dish.quantity.toString()
-            : dish.quantity.toFixed(1);
-
-          doc.text(`  ${quantityText}× ${dish.dishName}`, { indent: 15 });
-
-          if (dish.allergens && dish.allergens.length > 0) {
-            const allergenLabels = dish.allergens
-              .map((a) => ALLERGEN_LABELS[a] || a)
-              .join(', ');
-            doc.fontSize(8).fillColor('#e67e22');
-            doc.text(`     Alergeny: ${allergenLabels}`, { indent: 25 });
-            doc.fillColor('#000000');
-          }
-
-          doc.moveDown(0.2);
-        });
-
-        if (categoryIndex < dishSelections.length - 1) {
-          doc.moveDown(0.5);
-        }
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] Revenue report PDF generated, size: ${buffer.length} bytes`);
+        resolve(buffer);
       });
-    }
-
-    doc.moveDown(0.7);
-    doc.fontSize(11).font(this.getRegularFont()).fillColor('#000000');
-
-    if (menuSnapshot.packagePrice > 0) {
-      doc.text(`Cena pakietu: ${this.formatCurrency(menuSnapshot.packagePrice)}`);
-    }
-
-    if (menuSnapshot.optionsPrice > 0) {
-      doc.text(`Dodatki: ${this.formatCurrency(menuSnapshot.optionsPrice)}`);
-    }
-
-    doc.fontSize(12).font(this.getBoldFont());
-    doc.text(`Razem menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`);
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
+      this.buildRevenueReportPDF(doc, data);
+      doc.end();
+    });
   }
 
   /**
-   * #139: Per-type formatting for extras in PDF
-   * - PER_UNIT:   "Krzesło chiavari — 80 szt. × 15,00 zł = 1 200,00 zł"
-   * - PER_PERSON: "Obsługa kelnerska — 30,00 zł/os. = 1 500,00 zł"
-   * - FLAT:       "DJ — 2 000,00 zł"  (or "2× DJ — 1 000,00 zł = 2 000,00 zł")
-   * - FREE:       "Parking — Gratis"
-   *
-   * Uses item.totalPrice from DB (correctly calculated by calculateTotalPrice)
-   * instead of quantity × unitPrice (which was wrong for PER_PERSON).
+   * Generate premium occupancy report PDF.
+   * Migrated from reports-export.service.ts (Zadanie 4).
    */
-  private addExtrasSection(
-    doc: PDFKit.PDFDocument,
-    extras: ReservationExtraForPDF[],
-    pageWidth: number
-  ): void {
-    doc.moveDown(1);
-    this.addSeparator(doc);
-    doc.moveDown(1);
+  async generateOccupancyReportPDF(data: OccupancyReportPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      console.log('[PDF Service] Generating occupancy report PDF');
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: {
+          Title: 'Raport Zajetosci',
+          Author: this.restaurantData.name,
+          Subject: 'Raport zajetosci sal',
+        },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] Occupancy report PDF generated, size: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
+      this.buildOccupancyReportPDF(doc, data);
+      doc.end();
+    });
+  }
 
-    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Usługi dodatkowe');
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM RESERVATION PDF — #157 Redesign
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildReservationPDF(doc: PDFKit.PDFDocument, r: ReservationPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. PREMIUM HEADER BANNER ──
+    /* istanbul ignore next */
+    const statusInfo = STATUS_MAP[r.status] || { label: r.status, color: COLORS.textMuted };
+    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('POTWIERDZENIE REZERWACJI', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    const shortId = r.id.length > 20 ? r.id.substring(0, 8) + '...' : r.id;
+    doc.text(`Nr: ${shortId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+      align: 'center', width: pageWidth,
+    });
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
-    // Group extras by category
+    // ── 3. TWO-COLUMN: CLIENT | EVENT ──
+    this.drawClientAndEventColumns(doc, r, left, pageWidth);
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. MENU TABLE ──
+    const menuSnapshot = r.menuSnapshot;
+    if (menuSnapshot && menuSnapshot.menuData) {
+      this.drawMenuTable(doc, menuSnapshot, left, pageWidth);
+      doc.moveDown(0.3);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    } else if (r.menuData?.dishSelections && r.menuData.dishSelections.length > 0) {
+      this.drawMenuTableLegacy(doc, r.menuData, left, pageWidth);
+      doc.moveDown(0.3);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 5. EXTRAS (inline chips) ──
+    if (r.reservationExtras && r.reservationExtras.length > 0) {
+      this.drawExtrasInline(doc, r.reservationExtras, left, pageWidth);
+      doc.moveDown(0.3);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 6. FINANCIAL SUMMARY BOX ──
+    this.drawFinancialSummary(doc, r, left, pageWidth);
+
+    // ── 7. NOTES ──
+    if (r.notes) {
+      doc.moveDown(0.4);
+      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+      doc.text('Uwagi: ', left, doc.y, { continued: true });
+      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(r.notes, { width: pageWidth - 40 });
+    }
+
+    // ── 8. FOOTER ──
+    doc.moveDown(1);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  // ── TWO-COLUMN: CLIENT | EVENT ──
+  private drawClientAndEventColumns(
+    doc: PDFKit.PDFDocument,
+    r: ReservationPDFData,
+    left: number,
+    pageWidth: number
+  ): void {
+    const colGap = 20;
+    const colWidth = (pageWidth - colGap) / 2;
+    const startY = doc.y;
+
+    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, [
+      `${r.client.firstName} ${r.client.lastName}`,
+      r.client.email || '',
+      r.client.phone,
+      r.client.address || '',
+    ].filter(Boolean));
+
+    /* istanbul ignore next */
+    const eventTypeName = r.customEventType || r.eventType?.name || 'Nie okreslono';
+    let dateStr = '';
+    let timeStr = '';
+    if (r.startDateTime && r.endDateTime) {
+      dateStr = this.formatDate(r.startDateTime);
+      timeStr = `${this.formatTime(r.startDateTime)} - ${this.formatTime(r.endDateTime)}`;
+    } else if (r.date && r.startTime && r.endTime) {
+      dateStr = r.date;
+      timeStr = `${r.startTime} - ${r.endTime}`;
+    }
+
+    const guestParts: string[] = [];
+    if (r.adults > 0) guestParts.push(`${r.adults} dor.`);
+    if (r.children > 0) guestParts.push(`${r.children} dz.`);
+    if (r.toddlers > 0) guestParts.push(`${r.toddlers} mal.`);
+    const guestLine = `${r.guests} osob (${guestParts.join(', ')})`;
+
+    const eventDetails: string[] = [
+      eventTypeName,
+      dateStr && timeStr ? `${dateStr}  ${timeStr}` : dateStr || timeStr,
+      guestLine,
+    ];
+    /* istanbul ignore next */
+    if (r.birthdayAge) eventDetails.push(`Wiek jubilata: ${r.birthdayAge} lat`);
+    /* istanbul ignore next */
+    if (r.anniversaryYear) {
+      eventDetails.push(`Rocznica: ${r.anniversaryYear} lat${r.anniversaryOccasion ? ` (${r.anniversaryOccasion})` : ''}`);
+    }
+
+    this.drawInfoBox(doc, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth,
+      eventDetails.filter(Boolean)
+    );
+
+    const boxHeight = this.calculateInfoBoxHeight(Math.max(
+      [r.client.firstName, r.client.email, r.client.phone, r.client.address].filter(Boolean).length,
+      eventDetails.filter(Boolean).length
+    ));
+    doc.y = startY + boxHeight + 5;
+  }
+
+  // ── MENU TABLE (reservation) ──
+  private drawMenuTable(
+    doc: PDFKit.PDFDocument,
+    menuSnapshot: MenuSnapshot,
+    left: number,
+    pageWidth: number
+  ): void {
+    /* istanbul ignore next */
+    const packageName = menuSnapshot.menuData?.packageName || menuSnapshot.menuData?.package?.name || '';
+    this.drawSectionHeader(doc, 'WYBRANE MENU', left, pageWidth);
+    if (packageName) {
+      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(`Pakiet: ${packageName}  |  Cena menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`, left, doc.y);
+    }
+    doc.moveDown(0.3);
+
+    /* istanbul ignore next */
+    const dishSelections: CategorySelection[] = menuSnapshot.menuData?.dishSelections || [];
+    if (dishSelections.length === 0) {
+      doc.fontSize(9).fillColor(COLORS.textMuted).text('Brak wybranych dan', left);
+      return;
+    }
+
+    const allAllergens = new Set<string>();
+    const tableRows: string[][] = [];
+
+    dishSelections.forEach((category) => {
+      const dishNames = category.dishes.map((d) => {
+        if (d.allergens) d.allergens.forEach((a) => allAllergens.add(a));
+        const qty = d.quantity > 1 ? `${d.quantity}x ` : '';
+        return `${qty}${d.dishName}`;
+      });
+
+      let dishText = dishNames.join(', ');
+      if (dishText.length > 80) {
+        dishText = dishText.substring(0, 77) + '...';
+      }
+
+      tableRows.push([category.categoryName, `${category.dishes.length}`, dishText]);
+    });
+
+    const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
+    this.drawCompactTable(doc, ['Kategoria', 'Ilosc', 'Wybrane dania'], tableRows, colWidths, left);
+
+    if (allAllergens.size > 0) {
+      doc.moveDown(0.2);
+      const labels = Array.from(allAllergens).map((a) => ALLERGEN_LABELS[a] || a).join(', ');
+      doc.fontSize(7).fillColor(COLORS.allergen);
+      doc.text(`Alergeny: ${labels}`, left);
+      doc.fillColor(COLORS.textDark);
+    }
+  }
+
+  private drawMenuTableLegacy(
+    doc: PDFKit.PDFDocument,
+    menuData: MenuData,
+    left: number,
+    pageWidth: number
+  ): void {
+    this.drawSectionHeader(doc, 'WYBRANE DANIA', left, pageWidth);
+    if (menuData.packageName) {
+      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(`Pakiet: ${menuData.packageName}`, left, doc.y);
+    }
+    doc.moveDown(0.3);
+
+    if (!menuData.dishSelections || menuData.dishSelections.length === 0) {
+      doc.fontSize(9).fillColor(COLORS.textMuted).text('Brak wybranych dan', left);
+      return;
+    }
+
+    const allAllergens = new Set<string>();
+    const tableRows: string[][] = [];
+
+    menuData.dishSelections.forEach((category) => {
+      const dishNames = category.dishes.map((d) => {
+        if (d.allergens) d.allergens.forEach((a) => allAllergens.add(a));
+        const qty = d.quantity > 1 ? `${d.quantity}x ` : '';
+        return `${qty}${d.dishName}`;
+      });
+      let dishText = dishNames.join(', ');
+      if (dishText.length > 80) dishText = dishText.substring(0, 77) + '...';
+      tableRows.push([category.categoryName, `${category.dishes.length}`, dishText]);
+    });
+
+    const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
+    this.drawCompactTable(doc, ['Kategoria', 'Ilosc', 'Wybrane dania'], tableRows, colWidths, left);
+
+    if (allAllergens.size > 0) {
+      doc.moveDown(0.2);
+      const labels = Array.from(allAllergens).map((a) => ALLERGEN_LABELS[a] || a).join(', ');
+      doc.fontSize(7).fillColor(COLORS.allergen);
+      doc.text(`Alergeny: ${labels}`, left);
+      doc.fillColor(COLORS.textDark);
+    }
+  }
+
+  // ── EXTRAS INLINE ──
+  private drawExtrasInline(
+    doc: PDFKit.PDFDocument,
+    extras: ReservationExtraForPDF[],
+    left: number,
+    pageWidth: number
+  ): void {
+    this.drawSectionHeader(doc, 'USLUGI DODATKOWE', left, pageWidth);
+
     const grouped = new Map<string, ReservationExtraForPDF[]>();
     for (const extra of extras) {
       const catName = extra.serviceItem.category?.name || 'Inne';
@@ -992,201 +987,809 @@ export class PDFService {
       grouped.get(catName)!.push(extra);
     }
 
-    let extrasTotal = 0;
-
     for (const [categoryName, items] of grouped) {
-      /* istanbul ignore next -- page break for long extras list */
-      if (doc.y > doc.page.height - 150) doc.addPage();
+      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
+      doc.text(`${categoryName}:`, left, doc.y, { continued: true });
+      doc.font(this.getRegularFont()).fillColor(COLORS.textDark);
 
-      doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
-      doc.text(categoryName);
-      doc.moveDown(0.3);
-
-      for (const item of items) {
-        doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
-
-        const statusLabel = item.status !== 'CONFIRMED' && item.status !== 'ACTIVE'
-          ? ` [${item.status}]`
-          : '';
-
-        // #139: Use totalPrice from DB — correctly handles all price types
+      const chips = items.map((item) => {
         const itemTotal = Number(item.totalPrice);
-        let lineText: string;
-
         switch (item.priceType) {
           case 'FREE':
-            lineText = `  ${item.serviceItem.name} — Gratis${statusLabel}`;
-            break;
+            return `${item.serviceItem.name} (Gratis)`;
           case 'PER_PERSON':
-            lineText = `  ${item.serviceItem.name} — ${this.formatCurrency(item.unitPrice)}/os. = ${this.formatCurrency(itemTotal)}${statusLabel}`;
-            break;
+            return `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
           case 'PER_UNIT':
-            lineText = `  ${item.serviceItem.name} — ${item.quantity} szt. × ${this.formatCurrency(item.unitPrice)} = ${this.formatCurrency(itemTotal)}${statusLabel}`;
-            break;
+            return `${item.serviceItem.name} ${item.quantity}szt. (${this.formatCurrency(itemTotal)})`;
           case 'FLAT':
           default:
-            if (item.quantity > 1) {
-              lineText = `  ${item.quantity}× ${item.serviceItem.name} — ${this.formatCurrency(item.unitPrice)} = ${this.formatCurrency(itemTotal)}${statusLabel}`;
-            } else {
-              lineText = `  ${item.serviceItem.name} — ${this.formatCurrency(itemTotal)}${statusLabel}`;
-            }
-            break;
+            return `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
         }
-
-        doc.text(lineText, { indent: 15 });
-
-        if (item.note) {
-          doc.fontSize(8).fillColor('#777777');
-          doc.text(`     Uwaga: ${item.note}`, { indent: 25 });
-          doc.fillColor('#000000');
-        }
-
-        extrasTotal += itemTotal;
-        doc.moveDown(0.2);
-      }
-
-      doc.moveDown(0.3);
-    }
-
-    doc.moveDown(0.3);
-    doc.fontSize(12).font(this.getBoldFont()).fillColor('#000000');
-    doc.text(`Razem usługi dodatkowe: ${this.formatCurrency(extrasTotal)}`);
-  }
-
-  private addMenuSelectionSectionLegacy(
-    doc: PDFKit.PDFDocument,
-    menuData: MenuData,
-    pageWidth: number
-  ): void {
-    doc.moveDown(1);
-    this.addSeparator(doc);
-    doc.moveDown(1);
-
-    doc.fontSize(14).font(this.getBoldFont()).fillColor('#000000').text('Wybrane Dania');
-    doc.moveDown(0.5);
-
-    if (!menuData.dishSelections || menuData.dishSelections.length === 0) {
-      doc.fontSize(10).font(this.getRegularFont()).fillColor('#999999');
-      doc.text('Brak wybranych dań');
-      return;
-    }
-
-    menuData.dishSelections.forEach((category, categoryIndex) => {
-      doc.fontSize(12).font(this.getBoldFont()).fillColor('#2c3e50');
-      doc.text(`${category.categoryName} (${category.dishes.length})`);
-      doc.moveDown(0.3);
-
-      category.dishes.forEach((dish) => {
-        doc.fontSize(10).font(this.getRegularFont()).fillColor('#000000');
-
-        const quantityText = dish.quantity === Math.floor(dish.quantity)
-          ? dish.quantity.toString()
-          : dish.quantity.toFixed(1);
-
-        doc.text(`  ${quantityText}× ${dish.dishName}`, { indent: 15 });
-
-        if (dish.allergens && dish.allergens.length > 0) {
-          const allergenLabels = dish.allergens
-            .map((a) => ALLERGEN_LABELS[a] || a)
-            .join(', ');
-          doc.fontSize(8).fillColor('#e67e22');
-          doc.text(`     Alergeny: ${allergenLabels}`, { indent: 25 });
-          doc.fillColor('#000000');
-        }
-
-        doc.moveDown(0.2);
       });
 
-      if (categoryIndex < menuData.dishSelections!.length - 1) {
+      doc.text(`  ${chips.join('  |  ')}`, { width: pageWidth - 10 });
+
+      for (const item of items) {
+        if (item.note) {
+          doc.fontSize(7).fillColor(COLORS.textMuted);
+          doc.text(`  Uwaga: ${item.note}`, left + 10);
+        }
+      }
+      doc.moveDown(0.1);
+    }
+  }
+
+  // ── FINANCIAL SUMMARY BOX ──
+  private drawFinancialSummary(
+    doc: PDFKit.PDFDocument,
+    r: ReservationPDFData,
+    left: number,
+    pageWidth: number
+  ): void {
+    const extrasTotalCalc = (r.reservationExtras || [])
+      .reduce((sum, e) => sum + Number(e.totalPrice), 0);
+    const venueSurchargeAmount = Number(r.venueSurcharge) || 0;
+    const displayTotal = Number(r.totalPrice) + extrasTotalCalc;
+
+    /* istanbul ignore next */
+    const deposit = r.deposits && r.deposits.length > 0
+      ? r.deposits[0]
+      : r.deposit;
+
+    let rowCount = 0;
+    if (r.adults > 0 && r.pricePerAdult > 0) rowCount++;
+    if (r.children > 0 && r.pricePerChild > 0) rowCount++;
+    if (r.toddlers > 0 && r.pricePerToddler > 0) rowCount++;
+    if (extrasTotalCalc > 0) rowCount++;
+    if (venueSurchargeAmount > 0) rowCount++;
+    rowCount++;
+    if (deposit) rowCount += 2;
+    const boxHeight = 30 + rowCount * 18 + (deposit ? 20 : 0);
+
+    this.safePageBreak(doc, boxHeight + 20);
+    const boxY = doc.y;
+
+    doc.rect(left, boxY, pageWidth, boxHeight).fill(COLORS.bgLight);
+    doc.rect(left, boxY, 3, boxHeight).fill(COLORS.accent);
+
+    doc.fillColor(COLORS.textDark).fontSize(11).font(this.getBoldFont());
+    doc.text('PODSUMOWANIE', left + 15, boxY + 10);
+
+    let y = boxY + 30;
+    const labelX = left + 15;
+    const rightEdge = left + pageWidth - 15;
+    const valueWidth = 115;
+    const valueX = rightEdge - valueWidth;
+
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
+
+    if (r.adults > 0 && r.pricePerAdult > 0) {
+      const adultTotal = r.adults * Number(r.pricePerAdult);
+      doc.text(`Dorosli: ${r.adults} os. x ${this.formatCurrency(r.pricePerAdult)}`, labelX, y);
+      doc.text(this.formatCurrency(adultTotal), valueX, y, { width: valueWidth, align: 'right' });
+      y += 16;
+    }
+    /* istanbul ignore next */
+    if (r.children > 0 && r.pricePerChild > 0) {
+      const childTotal = r.children * Number(r.pricePerChild);
+      doc.text(`Dzieci (4-12 lat): ${r.children} os. x ${this.formatCurrency(r.pricePerChild)}`, labelX, y);
+      doc.text(this.formatCurrency(childTotal), valueX, y, { width: valueWidth, align: 'right' });
+      y += 16;
+    }
+    /* istanbul ignore next */
+    if (r.toddlers > 0 && r.pricePerToddler > 0) {
+      const toddlerTotal = r.toddlers * Number(r.pricePerToddler);
+      doc.text(`Maluchy (0-3 lata): ${r.toddlers} os. x ${this.formatCurrency(r.pricePerToddler)}`, labelX, y);
+      doc.text(this.formatCurrency(toddlerTotal), valueX, y, { width: valueWidth, align: 'right' });
+      y += 16;
+    }
+    if (extrasTotalCalc > 0) {
+      doc.text('Uslugi dodatkowe', labelX, y);
+      doc.text(this.formatCurrency(extrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
+      y += 16;
+    }
+    if (venueSurchargeAmount > 0) {
+      const surchargeLabel = r.venueSurchargeLabel || 'Doplata za caly obiekt';
+      doc.text(surchargeLabel, labelX, y);
+      doc.text(this.formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
+      y += 16;
+    }
+
+    y += 4;
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
+    y += 8;
+
+    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text('RAZEM', labelX, y);
+    doc.text(this.formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
+    y += 20;
+
+    if (deposit) {
+      const depositBadgeWidth = 40;
+      const depositBadgeGap = 6;
+      const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
+      const depositValueX = valueX;
+
+      doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
+      /* istanbul ignore next */
+      const dueDate = deposit.dueDate instanceof Date
+        ? this.formatDate(deposit.dueDate)
+        : deposit.dueDate;
+      const depositLabel = deposit.paid ? 'Zaliczka (oplacona)' : `Zaliczka (termin: ${dueDate})`;
+      doc.text(depositLabel, labelX, y);
+      doc.text(`-${this.formatCurrency(deposit.amount)}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
+
+      const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
+      const statusText = deposit.paid ? 'OK' : 'OCZEK.';
+      const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
+      doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 13, 3).fill(statusColor);
+      doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
+      doc.text(statusText, depositBadgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
+
+      y += 18;
+
+      doc.strokeColor(COLORS.accent).lineWidth(1)
+         .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
+      y += 8;
+
+      const remaining = displayTotal - Number(deposit.amount);
+      doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
+      doc.text('DO ZAPLATY', labelX, y);
+      doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
+    }
+
+    doc.y = boxY + boxHeight + 5;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM PAYMENT CONFIRMATION — Zadanie 2
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildPaymentConfirmationPremium(
+    doc: PDFKit.PDFDocument,
+    data: PaymentConfirmationData
+  ): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. HEADER BANNER with "OPLACONA" badge ──
+    this.drawHeaderBanner(doc, 'OPLACONA', COLORS.success);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('POTWIERDZENIE WPLATY ZALICZKI', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    const shortDepositId = data.depositId.length > 20 ? data.depositId.substring(0, 8) + '...' : data.depositId;
+    doc.text(`Nr: ${shortDepositId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+      align: 'center', width: pageWidth,
+    });
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // ── 3. TWO-COLUMN: KLIENT | WPLATA ──
+    const colGap = 20;
+    const colWidth = (pageWidth - colGap) / 2;
+    const startY = doc.y;
+
+    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, [
+      `${data.client.firstName} ${data.client.lastName}`,
+      data.client.email || '',
+      data.client.phone,
+      data.client.address || '',
+    ].filter(Boolean));
+
+    /* istanbul ignore next */
+    const methodLabel = PAYMENT_METHOD_LABELS[data.paymentMethod] || data.paymentMethod;
+    const paymentLines: string[] = [
+      this.formatCurrency(data.amount),
+      `Data: ${this.formatDate(data.paidAt)}`,
+      `Metoda: ${methodLabel}`,
+    ];
+    if (data.paymentReference) {
+      paymentLines.push(`Ref: ${data.paymentReference}`);
+    }
+
+    this.drawInfoBox(doc, 'SZCZEGOLY WPLATY', left + colWidth + colGap, startY, colWidth, paymentLines);
+
+    const leftLines = [data.client.firstName, data.client.email, data.client.phone, data.client.address].filter(Boolean).length;
+    const boxHeight = this.calculateInfoBoxHeight(Math.max(leftLines, paymentLines.length));
+    doc.y = startY + boxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. RESERVATION INFO BOX (full-width) ──
+    const resLines: string[] = [
+      `${data.reservation.date}  ${data.reservation.startTime} - ${data.reservation.endTime}`,
+    ];
+    if (data.reservation.hall) resLines.push(`Sala: ${data.reservation.hall}`);
+    if (data.reservation.eventType) resLines.push(`Typ: ${data.reservation.eventType}`);
+    resLines.push(`Gosci: ${data.reservation.guests}`);
+
+    const shortResId = data.reservation.id.length > 20
+      ? data.reservation.id.substring(0, 8) + '...'
+      : data.reservation.id;
+    resLines.push(`Nr rezerwacji: ${shortResId}`);
+
+    this.drawInfoBox(doc, 'REZERWACJA', left, doc.y, pageWidth, resLines);
+    const resBoxHeight = this.calculateInfoBoxHeight(resLines.length);
+    doc.y = doc.y + resBoxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 5. FINANCIAL SUMMARY BOX ──
+    const totalPrice = Number(data.reservation.totalPrice);
+    const paidAmount = Number(data.amount);
+    const remaining = totalPrice - paidAmount;
+
+    const finBoxHeight = 30 + 4 * 18 + 10;
+
+    this.safePageBreak(doc, finBoxHeight + 20);
+    const finBoxY = doc.y;
+
+    doc.rect(left, finBoxY, pageWidth, finBoxHeight).fill(COLORS.bgLight);
+    doc.rect(left, finBoxY, 3, finBoxHeight).fill(COLORS.accent);
+
+    doc.fillColor(COLORS.textDark).fontSize(11).font(this.getBoldFont());
+    doc.text('PODSUMOWANIE FINANSOWE', left + 15, finBoxY + 10);
+
+    let y = finBoxY + 30;
+    const labelX = left + 15;
+    const rightEdge = left + pageWidth - 15;
+    const valueWidth = 115;
+    const valueX = rightEdge - valueWidth;
+
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
+    doc.text('Calkowita cena rezerwacji', labelX, y);
+    doc.text(this.formatCurrency(totalPrice), valueX, y, { width: valueWidth, align: 'right' });
+    y += 16;
+
+    const depositBadgeWidth = 40;
+    const depositBadgeGap = 6;
+    const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
+
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
+    doc.text('Wplacona zaliczka', labelX, y);
+    doc.text(`-${this.formatCurrency(paidAmount)}`, valueX, y, { width: depositValueWidth, align: 'right' });
+
+    const badgeX = valueX + depositValueWidth + depositBadgeGap;
+    doc.roundedRect(badgeX, y - 1, depositBadgeWidth, 13, 3).fill(COLORS.success);
+    doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
+    doc.text('ZAKS.', badgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
+    y += 18;
+
+    y += 4;
+    doc.strokeColor(COLORS.accent).lineWidth(1)
+       .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
+    y += 8;
+
+    doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
+    doc.text('POZOSTALO DO ZAPLATY', labelX, y);
+    doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
+
+    doc.y = finBoxY + finBoxHeight + 5;
+
+    // ── 6. FOOTER ──
+    doc.moveDown(1);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM MENU CARD — Zadanie 3
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildMenuCardPremium(doc: PDFKit.PDFDocument, data: MenuCardPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. HEADER BANNER with "KARTA MENU" badge ──
+    this.drawHeaderBanner(doc, 'KARTA MENU', COLORS.accent);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text(data.templateName.toUpperCase(), left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    const subtitleParts: string[] = [data.eventTypeName];
+    if (data.variant) subtitleParts.push(data.variant);
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(subtitleParts.join('  |  '), left, doc.y, { align: 'center', width: pageWidth });
+
+    if (data.templateDescription) {
+      doc.moveDown(0.3);
+      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(data.templateDescription, left, doc.y, { align: 'center', width: pageWidth });
+    }
+
+    doc.moveDown(0.2);
+    doc.fontSize(7).fillColor(COLORS.textLight);
+    doc.text(`Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+      align: 'center', width: pageWidth,
+    });
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // ── 3. PACKAGES ──
+    data.packages.forEach((pkg, pkgIndex) => {
+      if (pkgIndex > 0) {
+        doc.moveDown(0.5);
+        this.drawSeparator(doc, left, pageWidth);
         doc.moveDown(0.5);
       }
+
+      this.safePageBreak(doc, 200);
+
+      // Package header box — navy background + gold accent
+      const pkgHeaderY = doc.y;
+      const headerHeight = 55;
+      doc.rect(left, pkgHeaderY, pageWidth, headerHeight).fill(COLORS.primary);
+      doc.rect(left, pkgHeaderY + headerHeight - 3, pageWidth, 3).fill(COLORS.accent);
+
+      // Badge (POPULARNY / POLECANY / custom) — roundedRect style
+      /* istanbul ignore next */
+      const badgeText = pkg.badgeText || (pkg.isPopular ? 'POPULARNY' : pkg.isRecommended ? 'POLECANY' : null);
+      if (badgeText) {
+        const pkgBadgeWidth = 90;
+        const pkgBadgeX = left + pageWidth - pkgBadgeWidth - 10;
+        doc.roundedRect(pkgBadgeX, pkgHeaderY + 8, pkgBadgeWidth, 18, 4).fill(COLORS.accent);
+        doc.fillColor(COLORS.primary).fontSize(7).font(this.getBoldFont());
+        doc.text(badgeText, pkgBadgeX, pkgHeaderY + 12, { width: pkgBadgeWidth, align: 'center' });
+      }
+
+      // Package name
+      doc.fillColor('#ffffff').fontSize(14).font(this.getBoldFont());
+      doc.text(pkg.name, left + 15, pkgHeaderY + 10, { width: pageWidth - 130 });
+
+      // Prices
+      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textLight);
+      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosla`];
+      if (pkg.pricePerChild > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerChild)}/dziecko`);
+      if (pkg.pricePerToddler > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerToddler)}/maluch`);
+      doc.text(priceParts.join('  |  '), left + 15, pkgHeaderY + 32, { width: pageWidth - 40 });
+
+      doc.y = pkgHeaderY + headerHeight + 8;
+
+      // Description
+      if (pkg.description) {
+        doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+        doc.text(pkg.description, left, doc.y, { width: pageWidth });
+        doc.moveDown(0.3);
+      }
+
+      // Included items — info box style
+      if (pkg.includedItems && pkg.includedItems.length > 0) {
+        doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.success);
+        doc.text('W cenie: ', left, doc.y, { continued: true });
+        doc.font(this.getRegularFont()).fillColor(COLORS.textDark);
+        doc.text(pkg.includedItems.join(', '), { width: pageWidth - 60 });
+        doc.moveDown(0.3);
+      }
+
+      // ── COURSES as compact tables ──
+      if (pkg.courses.length > 0) {
+        pkg.courses.forEach((course) => {
+          this.safePageBreak(doc, 120);
+          doc.moveDown(0.4);
+
+          // Course header
+          const selectText = course.minSelect === course.maxSelect
+            ? `wybierz ${course.minSelect}`
+            : `wybierz ${course.minSelect}-${course.maxSelect}`;
+
+          doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
+          doc.text(course.name, left, doc.y, { continued: true });
+          doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+          doc.text(`  (${selectText} z ${course.dishes.length})`);
+
+          /* istanbul ignore next */
+          if (course.description) {
+            doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+            doc.text(course.description, left, doc.y);
+          }
+
+          doc.moveDown(0.2);
+
+          // Build dish table rows
+          const courseAllergens = new Set<string>();
+          const dishRows: string[][] = [];
+
+          course.dishes.forEach((dish) => {
+            let marker = '';
+            /* istanbul ignore next */
+            if (dish.isRecommended) marker = '* ';
+            else if (dish.isDefault) marker = '> ';
+
+            const descText = dish.description || '';
+            const allergenText = (dish.allergens && dish.allergens.length > 0)
+              ? dish.allergens.map(a => ALLERGEN_LABELS[a] || a).join(', ')
+              : '';
+
+            if (dish.allergens) dish.allergens.forEach(a => courseAllergens.add(a));
+
+            dishRows.push([
+              `${marker}${dish.name}`,
+              descText,
+              allergenText,
+            ]);
+          });
+
+          // Dish table — 3 columns: name, description, allergens
+          const dishColWidths = [
+            Math.round(pageWidth * 0.35),
+            Math.round(pageWidth * 0.45),
+            Math.round(pageWidth * 0.20),
+          ];
+          this.drawCompactTable(
+            doc,
+            ['Danie', 'Opis', 'Alergeny'],
+            dishRows,
+            dishColWidths,
+            left
+          );
+
+          // Allergen summary for this course
+          if (courseAllergens.size > 0) {
+            doc.moveDown(0.1);
+            const labels = Array.from(courseAllergens).map(a => ALLERGEN_LABELS[a] || a).join(', ');
+            doc.fontSize(6).fillColor(COLORS.allergen);
+            doc.text(`Alergeny w kursie: ${labels}`, left);
+            doc.fillColor(COLORS.textDark);
+          }
+        });
+      }
+
+      // ── OPTIONS ──
+      const requiredOptions = pkg.options.filter(o => o.isRequired);
+      const activeOptions = pkg.options.filter(o => !o.isRequired);
+
+      if (requiredOptions.length > 0) {
+        this.safePageBreak(doc, 80);
+        doc.moveDown(0.5);
+
+        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.success);
+        doc.text('W PAKIECIE', left, doc.y);
+        doc.moveDown(0.2);
+
+        const reqRows = requiredOptions.map(opt => [
+          `+ ${opt.name}`,
+          opt.description || '',
+        ]);
+        const reqColWidths = [Math.round(pageWidth * 0.40), Math.round(pageWidth * 0.60)];
+        this.drawCompactTable(doc, ['Opcja', 'Opis'], reqRows, reqColWidths, left);
+      }
+
+      if (activeOptions.length > 0) {
+        this.safePageBreak(doc, 80);
+        doc.moveDown(0.5);
+
+        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.purple);
+        doc.text('OPCJE DODATKOWE', left, doc.y);
+        doc.moveDown(0.2);
+
+        const optRows = activeOptions.map(opt => {
+          const priceLabel = opt.priceType === 'PER_PERSON'
+            ? `+${this.formatCurrency(opt.priceAmount)}/os.`
+            : `+${this.formatCurrency(opt.priceAmount)}`;
+          return [
+            opt.name,
+            opt.description || '',
+            priceLabel,
+          ];
+        });
+        const optColWidths = [
+          Math.round(pageWidth * 0.30),
+          Math.round(pageWidth * 0.45),
+          Math.round(pageWidth * 0.25),
+        ];
+        this.drawCompactTable(doc, ['Opcja', 'Opis', 'Cena'], optRows, optColWidths, left);
+      }
     });
-  }
 
-  private addHeader(doc: PDFKit.PDFDocument): void {
-    doc.fontSize(18).font(this.getBoldFont()).fillColor('#2c3e50').text(this.restaurantData.name, {
-      align: 'center',
-    });
-
-    doc.moveDown(0.3);
-    doc.fontSize(9).font(this.getRegularFont()).fillColor('#7f8c8d');
-    if (this.restaurantData.address) {
-      doc.text(this.restaurantData.address, { align: 'center' });
-    }
-    const contactParts = [];
-    if (this.restaurantData.phone) contactParts.push(`Tel: ${this.restaurantData.phone}`);
-    if (this.restaurantData.email) contactParts.push(`Email: ${this.restaurantData.email}`);
-    if (contactParts.length > 0) {
-      doc.text(contactParts.join(' | '), { align: 'center' });
-    }
-    if (this.restaurantData.website) {
-      doc.text(this.restaurantData.website, { align: 'center' });
-    }
-    if (this.restaurantData.nip) {
-      doc.text(`NIP: ${this.restaurantData.nip}`, { align: 'center' });
-    }
-  }
-
-  private addSeparator(doc: PDFKit.PDFDocument): void {
-    const y = doc.y;
-    doc
-      .strokeColor('#cccccc')
-      .lineWidth(1)
-      .moveTo(50, y)
-      .lineTo(doc.page.width - 50, y)
-      .stroke();
-  }
-
-  private addStatusBadge(doc: PDFKit.PDFDocument, status: string): void {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      RESERVED: { label: 'Lista rezerwowa', color: '#3498db' },
-      PENDING: { label: 'Oczekująca', color: '#f39c12' },
-      CONFIRMED: { label: 'Potwierdzona', color: '#27ae60' },
-      COMPLETED: { label: 'Zakończona', color: '#95a5a6' },
-      CANCELLED: { label: 'Anulowana', color: '#e74c3c' },
-    };
-
-    /* istanbul ignore next -- status always in map */
-    const statusInfo = statusMap[status] || { label: status, color: '#95a5a6' };
-    const x = doc.x;
-    const y = doc.y;
-
-    doc
-      .rect(x, y, 120, 20)
-      .fillAndStroke(statusInfo.color, statusInfo.color);
-
-    doc.fillColor('#ffffff').fontSize(10).font(this.getBoldFont());
-    doc.text(statusInfo.label.toUpperCase(), x + 10, y + 5, {
-      width: 100,
-      align: 'center',
-    });
-
-    doc.fillColor('#000000');
+    // ── 4. LEGEND ──
     doc.moveDown(1);
-  }
+    this.safePageBreak(doc, 80);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.3);
 
-  private addFooter(doc: PDFKit.PDFDocument): void {
-    const bottomY = doc.page.height - 100;
+    this.drawInfoBox(doc, 'LEGENDA', left, doc.y, pageWidth, [
+      '* = polecane przez szefa kuchni',
+      '> = domyslny wybor',
+      '+ = w cenie pakietu',
+    ]);
+    const legendHeight = this.calculateInfoBoxHeight(3);
+    doc.y = doc.y + legendHeight + 5;
 
-    doc.fontSize(8).fillColor('#7f8c8d').font(this.getRegularFont());
-    doc.text(
-      'Dziękujemy za wybranie naszej restauracji. W razie pytań prosimy o kontakt.',
-      50,
-      bottomY,
-      {
-        align: 'center',
-        width: doc.page.width - 100,
-      }
-    );
-
+    // ── 5. FOOTER ──
     doc.moveDown(0.5);
-    doc.fontSize(7).text(
-      `Dokument wygenerowany automatycznie przez system ${this.restaurantData.name}`,
-      {
-        align: 'center',
-      }
-    );
+    this.drawInlineFooter(doc, left, pageWidth);
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM REVENUE REPORT PDF — Zadanie 4
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildRevenueReportPDF(doc: PDFKit.PDFDocument, data: RevenueReportPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. HEADER BANNER ──
+    this.drawHeaderBanner(doc, 'RAPORT', COLORS.info);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('RAPORT PRZYCHODOW', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    const metaParts: string[] = [`Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}`];
+    if (data.filters.groupBy) metaParts.push(`Grupowanie: ${data.filters.groupBy}`);
+    metaParts.push(`Wygenerowano: ${this.formatDate(new Date())}`);
+    doc.text(metaParts.join('  |  '), left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // ── 3. SUMMARY INFO BOX ──
+    const summaryLines: string[] = [
+      `Calkowity przychod: ${this.formatCurrency(data.summary.totalRevenue)}`,
+      `Sredni przychod na rezerwacje: ${this.formatCurrency(data.summary.avgRevenuePerReservation)}`,
+      `Liczba rezerwacji: ${data.summary.totalReservations}`,
+      `Ukonczone rezerwacje: ${data.summary.completedReservations}`,
+      `Oczekujacy przychod: ${this.formatCurrency(data.summary.pendingRevenue)}`,
+      `Wzrost: ${data.summary.growthPercent}%`,
+    ];
+    if (data.summary.extrasRevenue !== undefined && data.summary.extrasRevenue > 0) {
+      summaryLines.push(`Przychody z uslug dodatkowych: ${this.formatCurrency(data.summary.extrasRevenue)}`);
+    }
+
+    this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
+    const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
+    doc.y = doc.y + summaryBoxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. BREAKDOWN BY PERIOD ──
+    if (data.breakdown.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'ROZKLAD WG OKRESU', left, pageWidth);
+
+      const breakdownRows = data.breakdown.slice(0, 20).map(item => [
+        item.period,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const breakdownCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Okres', 'Przychod', 'Liczba', 'Srednia'], breakdownRows, breakdownCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 5. BY HALL ──
+    if (data.byHall.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'PRZYCHODY WG SAL', left, pageWidth);
+
+      const hallRows = data.byHall.slice(0, 20).map(item => [
+        item.hallName,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const hallCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Sala', 'Przychod', 'Liczba', 'Srednia'], hallRows, hallCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 6. BY EVENT TYPE ──
+    if (data.byEventType.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'PRZYCHODY WG TYPU WYDARZENIA', left, pageWidth);
+
+      const eventRows = data.byEventType.slice(0, 20).map(item => [
+        item.eventTypeName,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const eventCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Typ wydarzenia', 'Przychod', 'Liczba', 'Srednia'], eventRows, eventCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 7. BY SERVICE ITEM (extras) ──
+    if (data.byServiceItem && data.byServiceItem.length > 0) {
+      this.safePageBreak(doc, 100);
+
+      doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.purple);
+      doc.text('USLUGI DODATKOWE — PRZYCHODY', left, doc.y);
+      doc.moveDown(0.3);
+
+      const extrasRows = data.byServiceItem.slice(0, 20).map(item => [
+        item.name,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const extrasCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Usluga', 'Przychod', 'Uzyc', 'Sr. przychod'], extrasRows, extrasCols, left);
+
+      // Total extras row
+      if (data.summary.extrasRevenue && data.summary.extrasRevenue > 0) {
+        doc.moveDown(0.2);
+        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.purple);
+        doc.text(`Razem extras: ${this.formatCurrency(data.summary.extrasRevenue)}`, left, doc.y);
+        doc.fillColor(COLORS.textDark);
+      }
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 8. FOOTER ──
+    doc.moveDown(0.5);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM OCCUPANCY REPORT PDF — Zadanie 4
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildOccupancyReportPDF(doc: PDFKit.PDFDocument, data: OccupancyReportPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. HEADER BANNER ──
+    this.drawHeaderBanner(doc, 'RAPORT', COLORS.info);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('RAPORT ZAJETOSCI', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(
+      `Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}  |  Wygenerowano: ${this.formatDate(new Date())}`,
+      left, doc.y, { align: 'center', width: pageWidth }
+    );
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // ── 3. SUMMARY INFO BOX ──
+    const summaryLines: string[] = [
+      `Srednia zajetosc: ${data.summary.avgOccupancy}%`,
+      `Najpopularniejszy dzien: ${this.translateDayOfWeek(data.summary.peakDay)}`,
+      `Najpopularniejsza sala: ${data.summary.peakHall || 'Brak danych'}`,
+      `Liczba rezerwacji: ${data.summary.totalReservations}`,
+      `Dni w okresie: ${data.summary.totalDaysInPeriod}`,
+    ];
+
+    this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
+    const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
+    doc.y = doc.y + summaryBoxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. HALLS RANKING ──
+    if (data.halls.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'ZAJETOSC SAL', left, pageWidth);
+
+      const hallRows = data.halls.slice(0, 20).map(hall => [
+        hall.hallName,
+        `${hall.occupancy}%`,
+        `${hall.reservations}`,
+        `${hall.avgGuestsPerReservation}`,
+      ]);
+      const hallCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Sala', 'Zajetosc %', 'Rezerwacje', 'Sr. gosci'], hallRows, hallCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 5. PEAK HOURS ──
+    if (data.peakHours.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'NAJPOPULARNIEJSZE GODZINY', left, pageWidth);
+
+      const hourRows = data.peakHours.slice(0, 20).map(hour => [
+        `${hour.hour}:00`,
+        `${hour.count}`,
+      ]);
+      const hourCols = [
+        Math.round(pageWidth * 0.50),
+        Math.round(pageWidth * 0.50),
+      ];
+      this.drawCompactTable(doc, ['Godzina', 'Liczba rezerwacji'], hourRows, hourCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 6. PEAK DAYS OF WEEK ──
+    if (data.peakDaysOfWeek.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'NAJPOPULARNIEJSZE DNI TYGODNIA', left, pageWidth);
+
+      const dayRows = data.peakDaysOfWeek.map(day => [
+        this.translateDayOfWeek(day.dayOfWeek),
+        `${day.count}`,
+      ]);
+      const dayCols = [
+        Math.round(pageWidth * 0.50),
+        Math.round(pageWidth * 0.50),
+      ];
+      this.drawCompactTable(doc, ['Dzien tygodnia', 'Liczba rezerwacji'], dayRows, dayCols, left);
+
+      doc.moveDown(0.4);
+    }
+
+    // ── 7. FOOTER ──
+    doc.moveDown(0.5);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  SHARED FORMATTERS
+  // ═══════════════════════════════════════════════════════════════
 
   private getRegularFont(): string {
     return this.useCustomFonts ? 'DejaVu' : 'Helvetica';
@@ -1211,7 +1814,7 @@ export class PDFService {
     }).format(date);
   }
 
-  /* istanbul ignore next -- formatDateTime never called */
+  /* istanbul ignore next */
   private formatDateTime(date: Date): string {
     return new Intl.DateTimeFormat('pl-PL', {
       year: 'numeric',
@@ -1223,7 +1826,7 @@ export class PDFService {
   }
 
   private formatCurrency(amount: number | string): string {
-    /* istanbul ignore next -- amount always number */
+    /* istanbul ignore next */
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('pl-PL', {
       style: 'currency',
