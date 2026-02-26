@@ -148,8 +148,6 @@ interface MenuCardDish {
   name: string;
   description?: string | null;
   allergens?: string[];
-  isDefault?: boolean;
-  isRecommended?: boolean;
 }
 
 interface MenuCardCourse {
@@ -177,8 +175,6 @@ interface MenuCardPackage {
   pricePerAdult: number;
   pricePerChild: number;
   pricePerToddler: number;
-  isPopular?: boolean;
-  isRecommended?: boolean;
   badgeText?: string | null;
   includedItems?: string[];
   courses: MenuCardCourse[];
@@ -1351,15 +1347,13 @@ export class PDFService {
       doc.rect(left, pkgHeaderY, pageWidth, headerHeight).fill(COLORS.primary);
       doc.rect(left, pkgHeaderY + headerHeight - 3, pageWidth, 3).fill(COLORS.accent);
 
-      // Badge (POPULARNY / POLECANY / custom) — roundedRect style
-      /* istanbul ignore next */
-      const badgeText = pkg.badgeText || (pkg.isPopular ? 'POPULARNY' : pkg.isRecommended ? 'POLECANY' : null);
-      if (badgeText) {
+      // Badge (custom badgeText only)
+      if (pkg.badgeText) {
         const pkgBadgeWidth = 90;
         const pkgBadgeX = left + pageWidth - pkgBadgeWidth - 10;
         doc.roundedRect(pkgBadgeX, pkgHeaderY + 8, pkgBadgeWidth, 18, 4).fill(COLORS.accent);
         doc.fillColor(COLORS.primary).fontSize(7).font(this.getBoldFont());
-        doc.text(badgeText, pkgBadgeX, pkgHeaderY + 12, { width: pkgBadgeWidth, align: 'center' });
+        doc.text(pkg.badgeText, pkgBadgeX, pkgHeaderY + 12, { width: pkgBadgeWidth, align: 'center' });
       }
 
       // Package name
@@ -1420,11 +1414,6 @@ export class PDFService {
           const dishRows: string[][] = [];
 
           course.dishes.forEach((dish) => {
-            let marker = '';
-            /* istanbul ignore next */
-            if (dish.isRecommended) marker = '* ';
-            else if (dish.isDefault) marker = '> ';
-
             const descText = dish.description || '';
             const allergenText = (dish.allergens && dish.allergens.length > 0)
               ? dish.allergens.map(a => ALLERGEN_LABELS[a] || a).join(', ')
@@ -1433,7 +1422,7 @@ export class PDFService {
             if (dish.allergens) dish.allergens.forEach(a => courseAllergens.add(a));
 
             dishRows.push([
-              `${marker}${dish.name}`,
+              dish.name,
               descText,
               allergenText,
             ]);
@@ -1512,22 +1501,8 @@ export class PDFService {
       }
     });
 
-    // ── 4. LEGEND ──
+    // ── 4. FOOTER ──
     doc.moveDown(1);
-    this.safePageBreak(doc, 80);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.3);
-
-    this.drawInfoBox(doc, 'LEGENDA', left, doc.y, pageWidth, [
-      '* = polecane przez szefa kuchni',
-      '> = domyslny wybor',
-      '+ = w cenie pakietu',
-    ]);
-    const legendHeight = this.calculateInfoBoxHeight(3);
-    doc.y = doc.y + legendHeight + 5;
-
-    // ── 5. FOOTER ──
-    doc.moveDown(0.5);
     this.drawInlineFooter(doc, left, pageWidth);
   }
 
