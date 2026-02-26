@@ -194,6 +194,39 @@ export interface MenuCardPDFData {
   packages: MenuCardPackage[];
 }
 
+// ═══════════════ REPORT PDF TYPES — Zadanie 4 ═══════════════
+
+export interface RevenueReportPDFData {
+  filters: { dateFrom: string; dateTo: string; groupBy?: string };
+  summary: {
+    totalRevenue: number;
+    avgRevenuePerReservation: number;
+    totalReservations: number;
+    completedReservations: number;
+    pendingRevenue: number;
+    growthPercent: number;
+    extrasRevenue?: number;
+  };
+  breakdown: Array<{ period: string; revenue: number; count: number; avgRevenue: number }>;
+  byHall: Array<{ hallName: string; revenue: number; count: number; avgRevenue: number }>;
+  byEventType: Array<{ eventTypeName: string; revenue: number; count: number; avgRevenue: number }>;
+  byServiceItem?: Array<{ name: string; revenue: number; count: number; avgRevenue: number }>;
+}
+
+export interface OccupancyReportPDFData {
+  filters: { dateFrom: string; dateTo: string };
+  summary: {
+    avgOccupancy: number;
+    peakDay: string;
+    peakHall?: string;
+    totalReservations: number;
+    totalDaysInPeriod: number;
+  };
+  halls: Array<{ hallName: string; occupancy: number; reservations: number; avgGuestsPerReservation: number }>;
+  peakHours: Array<{ hour: number; count: number }>;
+  peakDaysOfWeek: Array<{ dayOfWeek: string; count: number }>;
+}
+
 // ═══════════════ CONSTANTS ═══════════════
 
 const ALLERGEN_LABELS: Record<string, string> = {
@@ -239,6 +272,17 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CASH: 'Gotowka',
   BLIK: 'BLIK',
   CARD: 'Karta platnicza',
+};
+
+/** Polish day-of-week translations (shared helper) */
+const DAY_OF_WEEK_PL: Record<string, string> = {
+  'Monday': 'Poniedzialek',
+  'Tuesday': 'Wtorek',
+  'Wednesday': 'Sroda',
+  'Thursday': 'Czwartek',
+  'Friday': 'Piatek',
+  'Saturday': 'Sobota',
+  'Sunday': 'Niedziela',
 };
 
 // ═══════════════ PDF SERVICE ═══════════════
@@ -537,6 +581,14 @@ export class PDFService {
     doc.y = y + 3;
   }
 
+  /**
+   * Translate English day-of-week name to Polish.
+   * Shared helper used by report builders.
+   */
+  private translateDayOfWeek(day: string): string {
+    return DAY_OF_WEEK_PL[day] || day;
+  }
+
   // ═══════════════ PUBLIC API ═══════════════
 
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
@@ -620,6 +672,70 @@ export class PDFService {
       /* istanbul ignore next */
       doc.on('error', (error) => reject(error));
       this.buildMenuCardPremium(doc, data);
+      doc.end();
+    });
+  }
+
+  /**
+   * Generate premium revenue report PDF.
+   * Migrated from reports-export.service.ts (Zadanie 4).
+   */
+  async generateRevenueReportPDF(data: RevenueReportPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      console.log('[PDF Service] Generating revenue report PDF');
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: {
+          Title: 'Raport Przychodow',
+          Author: this.restaurantData.name,
+          Subject: 'Raport przychodow',
+        },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] Revenue report PDF generated, size: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
+      this.buildRevenueReportPDF(doc, data);
+      doc.end();
+    });
+  }
+
+  /**
+   * Generate premium occupancy report PDF.
+   * Migrated from reports-export.service.ts (Zadanie 4).
+   */
+  async generateOccupancyReportPDF(data: OccupancyReportPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      console.log('[PDF Service] Generating occupancy report PDF');
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: {
+          Title: 'Raport Zajetosci',
+          Author: this.restaurantData.name,
+          Subject: 'Raport zajetosci sal',
+        },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        console.log(`[PDF Service] Occupancy report PDF generated, size: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+      /* istanbul ignore next */
+      doc.on('error', (error) => reject(error));
+      this.buildOccupancyReportPDF(doc, data);
       doc.end();
     });
   }
@@ -1396,6 +1512,277 @@ export class PDFService {
     doc.y = doc.y + legendHeight + 5;
 
     // ── 5. FOOTER ──
+    doc.moveDown(0.5);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM REVENUE REPORT PDF — Zadanie 4
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildRevenueReportPDF(doc: PDFKit.PDFDocument, data: RevenueReportPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. HEADER BANNER ──
+    this.drawHeaderBanner(doc, 'RAPORT', COLORS.info);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('RAPORT PRZYCHODOW', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    const metaParts: string[] = [`Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}`];
+    if (data.filters.groupBy) metaParts.push(`Grupowanie: ${data.filters.groupBy}`);
+    metaParts.push(`Wygenerowano: ${this.formatDate(new Date())}`);
+    doc.text(metaParts.join('  |  '), left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // ── 3. SUMMARY INFO BOX ──
+    const summaryLines: string[] = [
+      `Calkowity przychod: ${this.formatCurrency(data.summary.totalRevenue)}`,
+      `Sredni przychod na rezerwacje: ${this.formatCurrency(data.summary.avgRevenuePerReservation)}`,
+      `Liczba rezerwacji: ${data.summary.totalReservations}`,
+      `Ukonczone rezerwacje: ${data.summary.completedReservations}`,
+      `Oczekujacy przychod: ${this.formatCurrency(data.summary.pendingRevenue)}`,
+      `Wzrost: ${data.summary.growthPercent}%`,
+    ];
+    if (data.summary.extrasRevenue !== undefined && data.summary.extrasRevenue > 0) {
+      summaryLines.push(`Przychody z uslug dodatkowych: ${this.formatCurrency(data.summary.extrasRevenue)}`);
+    }
+
+    this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
+    const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
+    doc.y = doc.y + summaryBoxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. BREAKDOWN BY PERIOD ──
+    if (data.breakdown.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'ROZKLAD WG OKRESU', left, pageWidth);
+
+      const breakdownRows = data.breakdown.slice(0, 20).map(item => [
+        item.period,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const breakdownCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Okres', 'Przychod', 'Liczba', 'Srednia'], breakdownRows, breakdownCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 5. BY HALL ──
+    if (data.byHall.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'PRZYCHODY WG SAL', left, pageWidth);
+
+      const hallRows = data.byHall.slice(0, 20).map(item => [
+        item.hallName,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const hallCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Sala', 'Przychod', 'Liczba', 'Srednia'], hallRows, hallCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 6. BY EVENT TYPE ──
+    if (data.byEventType.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'PRZYCHODY WG TYPU WYDARZENIA', left, pageWidth);
+
+      const eventRows = data.byEventType.slice(0, 20).map(item => [
+        item.eventTypeName,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const eventCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Typ wydarzenia', 'Przychod', 'Liczba', 'Srednia'], eventRows, eventCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 7. BY SERVICE ITEM (extras) ──
+    if (data.byServiceItem && data.byServiceItem.length > 0) {
+      this.safePageBreak(doc, 100);
+
+      doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.purple);
+      doc.text('USLUGI DODATKOWE — PRZYCHODY', left, doc.y);
+      doc.moveDown(0.3);
+
+      const extrasRows = data.byServiceItem.slice(0, 20).map(item => [
+        item.name,
+        this.formatCurrency(item.revenue),
+        `${item.count}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const extrasCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Usluga', 'Przychod', 'Uzyc', 'Sr. przychod'], extrasRows, extrasCols, left);
+
+      // Total extras row
+      if (data.summary.extrasRevenue && data.summary.extrasRevenue > 0) {
+        doc.moveDown(0.2);
+        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.purple);
+        doc.text(`Razem extras: ${this.formatCurrency(data.summary.extrasRevenue)}`, left, doc.y);
+        doc.fillColor(COLORS.textDark);
+      }
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 8. FOOTER ──
+    doc.moveDown(0.5);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ██  PREMIUM OCCUPANCY REPORT PDF — Zadanie 4
+  // ═══════════════════════════════════════════════════════════════
+
+  private buildOccupancyReportPDF(doc: PDFKit.PDFDocument, data: OccupancyReportPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // ── 1. HEADER BANNER ──
+    this.drawHeaderBanner(doc, 'RAPORT', COLORS.info);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('RAPORT ZAJETOSCI', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(
+      `Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}  |  Wygenerowano: ${this.formatDate(new Date())}`,
+      left, doc.y, { align: 'center', width: pageWidth }
+    );
+
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // ── 3. SUMMARY INFO BOX ──
+    const summaryLines: string[] = [
+      `Srednia zajetosc: ${data.summary.avgOccupancy}%`,
+      `Najpopularniejszy dzien: ${this.translateDayOfWeek(data.summary.peakDay)}`,
+      `Najpopularniejsza sala: ${data.summary.peakHall || 'Brak danych'}`,
+      `Liczba rezerwacji: ${data.summary.totalReservations}`,
+      `Dni w okresie: ${data.summary.totalDaysInPeriod}`,
+    ];
+
+    this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
+    const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
+    doc.y = doc.y + summaryBoxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. HALLS RANKING ──
+    if (data.halls.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'ZAJETOSC SAL', left, pageWidth);
+
+      const hallRows = data.halls.slice(0, 20).map(hall => [
+        hall.hallName,
+        `${hall.occupancy}%`,
+        `${hall.reservations}`,
+        `${hall.avgGuestsPerReservation}`,
+      ]);
+      const hallCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Sala', 'Zajetosc %', 'Rezerwacje', 'Sr. gosci'], hallRows, hallCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 5. PEAK HOURS ──
+    if (data.peakHours.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'NAJPOPULARNIEJSZE GODZINY', left, pageWidth);
+
+      const hourRows = data.peakHours.slice(0, 20).map(hour => [
+        `${hour.hour}:00`,
+        `${hour.count}`,
+      ]);
+      const hourCols = [
+        Math.round(pageWidth * 0.50),
+        Math.round(pageWidth * 0.50),
+      ];
+      this.drawCompactTable(doc, ['Godzina', 'Liczba rezerwacji'], hourRows, hourCols, left);
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 6. PEAK DAYS OF WEEK ──
+    if (data.peakDaysOfWeek.length > 0) {
+      this.safePageBreak(doc, 100);
+      this.drawSectionHeader(doc, 'NAJPOPULARNIEJSZE DNI TYGODNIA', left, pageWidth);
+
+      const dayRows = data.peakDaysOfWeek.map(day => [
+        this.translateDayOfWeek(day.dayOfWeek),
+        `${day.count}`,
+      ]);
+      const dayCols = [
+        Math.round(pageWidth * 0.50),
+        Math.round(pageWidth * 0.50),
+      ];
+      this.drawCompactTable(doc, ['Dzien tygodnia', 'Liczba rezerwacji'], dayRows, dayCols, left);
+
+      doc.moveDown(0.4);
+    }
+
+    // ── 7. FOOTER ──
     doc.moveDown(0.5);
     this.drawInlineFooter(doc, left, pageWidth);
   }
