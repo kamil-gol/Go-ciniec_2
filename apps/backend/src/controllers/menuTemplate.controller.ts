@@ -296,10 +296,15 @@ export class MenuTemplateController {
 
       console.log(`[MenuTemplate PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
 
-      const filename = `Karta_menu_${template.name.replace(/\s+/g, '_')}.pdf`;
+      // RFC 5987 encoding for Polish characters in filename
+      const safeFilename = `Karta_menu_${template.name.replace(/\s+/g, '_')}.pdf`;
+      const encodedFilename = encodeURIComponent(safeFilename);
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="menu.pdf"; filename*=UTF-8''${encodedFilename}`
+      );
       res.setHeader('Content-Length', pdfBuffer.length);
       return res.send(pdfBuffer);
     } catch (error) {
