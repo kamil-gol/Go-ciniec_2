@@ -987,10 +987,7 @@ export class PDFService {
         return `${qty}${d.dishName}`;
       });
 
-      let dishText = dishNames.join(', ');
-      if (dishText.length > 80) {
-        dishText = dishText.substring(0, 77) + '...';
-      }
+      const dishText = dishNames.join(', ');
 
       tableRows.push([category.categoryName, `${category.dishes.length}`, dishText]);
     });
@@ -1034,8 +1031,7 @@ export class PDFService {
         const qty = d.quantity > 1 ? `${d.quantity}x ` : '';
         return `${qty}${d.dishName}`;
       });
-      let dishText = dishNames.join(', ');
-      if (dishText.length > 80) dishText = dishText.substring(0, 77) + '...';
+      const dishText = dishNames.join(', ');
       tableRows.push([category.categoryName, `${category.dishes.length}`, dishText]);
     });
 
