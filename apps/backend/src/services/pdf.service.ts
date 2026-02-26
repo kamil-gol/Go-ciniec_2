@@ -233,6 +233,13 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'ANULOWANA', color: COLORS.danger },
 };
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  TRANSFER: 'Przelew bankowy',
+  CASH: 'Gotowka',
+  BLIK: 'BLIK',
+  CARD: 'Karta platnicza',
+};
+
 // ═══════════════ PDF SERVICE ═══════════════
 
 export class PDFService {
@@ -317,6 +324,228 @@ export class PDFService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // ██  SHARED PREMIUM HELPERS (Zadanie 1)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Premium header banner — navy background + gold accent + restaurant info.
+   * Optionally shows a status badge in the top-right corner.
+   * Used by: reservation, payment confirmation, menu card, reports.
+   */
+  private drawHeaderBanner(
+    doc: PDFKit.PDFDocument,
+    badgeLabel?: string,
+    badgeColor?: string
+  ): void {
+    const bannerHeight = 65;
+    const pageWidth = doc.page.width;
+
+    // Dark navy banner
+    doc.rect(0, 0, pageWidth, bannerHeight).fill(COLORS.primary);
+
+    // Gold accent line at bottom
+    doc.rect(0, bannerHeight - 3, pageWidth, 3).fill(COLORS.accent);
+
+    // Restaurant name
+    doc.fillColor('#ffffff').fontSize(18).font(this.getBoldFont());
+    doc.text(this.restaurantData.name, 40, 14, { width: pageWidth - 200 });
+
+    // Contact info
+    doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textLight);
+    const contactParts: string[] = [];
+    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
+    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
+    if (this.restaurantData.website) contactParts.push(this.restaurantData.website);
+    if (contactParts.length > 0) {
+      doc.text(contactParts.join('  |  '), 40, 38, { width: pageWidth - 200 });
+    }
+    if (this.restaurantData.nip) {
+      doc.text(`NIP: ${this.restaurantData.nip}`, 40, 50, { width: pageWidth - 200 });
+    }
+
+    // Status badge (top-right) — optional
+    if (badgeLabel) {
+      const color = badgeColor || COLORS.textMuted;
+      const badgeWidth = 120;
+      const badgeHeight = 22;
+      const badgeX = pageWidth - badgeWidth - 40;
+      const badgeY = 20;
+
+      doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(color);
+      doc.fillColor('#ffffff').fontSize(9).font(this.getBoldFont());
+      doc.text(badgeLabel, badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
+    }
+  }
+
+  /**
+   * Premium section header — bold title with gold accent bar on left.
+   * Used for: KLIENT, WYDARZENIE, WYBRANE MENU, PODSUMOWANIE, etc.
+   */
+  private drawSectionHeader(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    left: number,
+    pageWidth: number
+  ): void {
+    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(title, left, doc.y);
+    doc.moveDown(0.3);
+  }
+
+  /**
+   * Safe page break — adds a new page if remaining space is less than minSpace.
+   * Returns the current Y position after potential page break.
+   */
+  private safePageBreak(doc: PDFKit.PDFDocument, minSpace: number = 100): number {
+    if (doc.y > doc.page.height - minSpace) {
+      doc.addPage();
+      doc.y = 50;
+    }
+    return doc.y;
+  }
+
+  /**
+   * Info box with title, accent bar, and content lines.
+   * Reusable for client info, event info, payment details, etc.
+   */
+  private drawInfoBox(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    x: number,
+    y: number,
+    width: number,
+    lines: string[]
+  ): void {
+    const boxHeight = this.calculateInfoBoxHeight(lines.length);
+
+    // Background
+    doc.rect(x, y, width, boxHeight).fill(COLORS.bgLight);
+
+    // Left accent bar
+    doc.rect(x, y, 3, boxHeight).fill(COLORS.accent);
+
+    // Title
+    doc.fillColor(COLORS.textMuted).fontSize(7).font(this.getBoldFont());
+    doc.text(title, x + 12, y + 8, { width: width - 20 });
+
+    // Lines
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
+    let lineY = y + 22;
+    lines.forEach((line, i) => {
+      if (i === 0) {
+        doc.font(this.getBoldFont()).fontSize(10);
+      } else {
+        doc.font(this.getRegularFont()).fontSize(8);
+      }
+      doc.text(line, x + 12, lineY, { width: width - 20 });
+      lineY += i === 0 ? 15 : 12;
+    });
+  }
+
+  private calculateInfoBoxHeight(lineCount: number): number {
+    return Math.max(60, 28 + lineCount * 13);
+  }
+
+  /**
+   * Thin horizontal separator line.
+   */
+  private drawSeparator(doc: PDFKit.PDFDocument, left: number, width: number): void {
+    const y = doc.y;
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(left, y).lineTo(left + width, y).stroke();
+  }
+
+  /**
+   * Inline footer — sits in the flow (no absolute positioning).
+   * Shows restaurant name, contact, and "generated automatically" note.
+   */
+  private drawInlineFooter(doc: PDFKit.PDFDocument, left: number, pageWidth: number): void {
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    doc.fontSize(7).fillColor(COLORS.textMuted).font(this.getRegularFont());
+
+    const footerParts: string[] = [
+      `Dziekujemy za wybor ${this.restaurantData.name}!`,
+    ];
+    const contactParts: string[] = [];
+    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
+    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
+    if (contactParts.length > 0) {
+      footerParts.push(`W razie pytan: ${contactParts.join(' | ')}`);
+    }
+    doc.text(footerParts.join('  |  '), left, doc.y, {
+      align: 'center', width: pageWidth,
+    });
+
+    doc.moveDown(0.2);
+    doc.fontSize(6).fillColor(COLORS.textLight);
+    doc.text(
+      `Dokument wygenerowany automatycznie przez system ${this.restaurantData.name}`,
+      left, doc.y,
+      { align: 'center', width: pageWidth },
+    );
+  }
+
+  /**
+   * Compact table with header row, alternating backgrounds, page-break support.
+   */
+  private drawCompactTable(
+    doc: PDFKit.PDFDocument,
+    headers: string[],
+    rows: string[][],
+    colWidths: number[],
+    startX: number
+  ): void {
+    const rowHeight = 16;
+    const headerHeight = 18;
+    const totalWidth = colWidths.reduce((a, b) => a + b, 0);
+    let y = doc.y;
+
+    // Header row
+    doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
+    let x = startX;
+    headers.forEach((header, i) => {
+      doc.fillColor('#ffffff').fontSize(7).font(this.getBoldFont());
+      doc.text(header, x + 5, y + 5, { width: colWidths[i] - 10 });
+      x += colWidths[i];
+    });
+    y += headerHeight;
+
+    // Data rows
+    rows.forEach((row, rowIndex) => {
+      // Check for page break
+      /* istanbul ignore next */
+      if (y > doc.page.height - 80) {
+        doc.addPage();
+        y = 50;
+      }
+
+      // Alternating bg
+      if (rowIndex % 2 === 0) {
+        doc.rect(startX, y, totalWidth, rowHeight).fill(COLORS.bgLight);
+      }
+
+      x = startX;
+      row.forEach((cell, i) => {
+        const isFirstCol = i === 0;
+        doc.fillColor(COLORS.textDark)
+           .fontSize(7)
+           .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
+        doc.text(cell, x + 5, y + 4, { width: colWidths[i] - 10 });
+        x += colWidths[i];
+      });
+      y += rowHeight;
+    });
+
+    // Bottom border
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(startX, y).lineTo(startX + totalWidth, y).stroke();
+
+    doc.y = y + 3;
+  }
+
   // ═══════════════ PUBLIC API ═══════════════
 
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
@@ -353,7 +582,7 @@ export class PDFService {
       console.log(`[PDF Service] Generating payment confirmation PDF for deposit ${data.depositId}`);
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50,
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
         info: {
           Title: `Potwierdzenie wplaty ${data.depositId}`,
           Author: this.restaurantData.name,
@@ -370,7 +599,7 @@ export class PDFService {
       });
       /* istanbul ignore next */
       doc.on('error', (error) => reject(error));
-      this.buildPaymentConfirmationContent(doc, data);
+      this.buildPaymentConfirmationPremium(doc, data);
       doc.end();
     });
   }
@@ -413,7 +642,9 @@ export class PDFService {
     const pageWidth = doc.page.width - 80; // 40+40 margins
 
     // ── 1. PREMIUM HEADER BANNER ──
-    this.drawHeaderBanner(doc, r.status);
+    /* istanbul ignore next */
+    const statusInfo = STATUS_MAP[r.status] || { label: r.status, color: COLORS.textMuted };
+    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
 
     // ── 2. TITLE + META ──
     doc.y = 80;
@@ -475,48 +706,6 @@ export class PDFService {
     // ── 8. FOOTER (inline, Bug #1 + #4 fix) ──
     doc.moveDown(1);
     this.drawInlineFooter(doc, left, pageWidth);
-  }
-
-  // ── HEADER BANNER ──
-  private drawHeaderBanner(doc: PDFKit.PDFDocument, status: string): void {
-    const bannerHeight = 65;
-    const pageWidth = doc.page.width;
-
-    // Dark navy banner
-    doc.rect(0, 0, pageWidth, bannerHeight).fill(COLORS.primary);
-
-    // Gold accent line at bottom
-    doc.rect(0, bannerHeight - 3, pageWidth, 3).fill(COLORS.accent);
-
-    // Restaurant name
-    doc.fillColor('#ffffff').fontSize(18).font(this.getBoldFont());
-    doc.text(this.restaurantData.name, 40, 14, { width: pageWidth - 200 });
-
-    // Contact info
-    doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textLight);
-    const contactParts: string[] = [];
-    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
-    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
-    if (this.restaurantData.website) contactParts.push(this.restaurantData.website);
-    if (contactParts.length > 0) {
-      doc.text(contactParts.join('  |  '), 40, 38, { width: pageWidth - 200 });
-    }
-    if (this.restaurantData.nip) {
-      doc.text(`NIP: ${this.restaurantData.nip}`, 40, 50, { width: pageWidth - 200 });
-    }
-
-    // Status badge (top-right)
-    /* istanbul ignore next */
-    const statusInfo = STATUS_MAP[status] || { label: status, color: COLORS.textMuted };
-    const badgeWidth = 120;
-    const badgeHeight = 22;
-    const badgeX = pageWidth - badgeWidth - 40;
-    const badgeY = 20;
-
-    doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4)
-       .fill(statusInfo.color);
-    doc.fillColor('#ffffff').fontSize(9).font(this.getBoldFont());
-    doc.text(statusInfo.label, badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
   }
 
   // ── TWO-COLUMN: CLIENT | EVENT ──
@@ -581,45 +770,6 @@ export class PDFService {
     doc.y = startY + boxHeight + 5;
   }
 
-  // ── INFO BOX ──
-  private drawInfoBox(
-    doc: PDFKit.PDFDocument,
-    title: string,
-    x: number,
-    y: number,
-    width: number,
-    lines: string[]
-  ): void {
-    const boxHeight = this.calculateInfoBoxHeight(lines.length);
-
-    // Background
-    doc.rect(x, y, width, boxHeight).fill(COLORS.bgLight);
-
-    // Left accent bar
-    doc.rect(x, y, 3, boxHeight).fill(COLORS.accent);
-
-    // Title
-    doc.fillColor(COLORS.textMuted).fontSize(7).font(this.getBoldFont());
-    doc.text(title, x + 12, y + 8, { width: width - 20 });
-
-    // Lines
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
-    let lineY = y + 22;
-    lines.forEach((line, i) => {
-      if (i === 0) {
-        doc.font(this.getBoldFont()).fontSize(10);
-      } else {
-        doc.font(this.getRegularFont()).fontSize(8);
-      }
-      doc.text(line, x + 12, lineY, { width: width - 20 });
-      lineY += i === 0 ? 15 : 12;
-    });
-  }
-
-  private calculateInfoBoxHeight(lineCount: number): number {
-    return Math.max(60, 28 + lineCount * 13);
-  }
-
   // ── MENU TABLE ──
   private drawMenuTable(
     doc: PDFKit.PDFDocument,
@@ -627,11 +777,9 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
-    // Section header
     /* istanbul ignore next */
     const packageName = menuSnapshot.menuData?.packageName || menuSnapshot.menuData?.package?.name || '';
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text('WYBRANE MENU', left, doc.y);
+    this.drawSectionHeader(doc, 'WYBRANE MENU', left, pageWidth);
     if (packageName) {
       doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
       doc.text(`Pakiet: ${packageName}  |  Cena menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`, left, doc.y);
@@ -645,19 +793,16 @@ export class PDFService {
       return;
     }
 
-    // Build table data + collect allergens
     const allAllergens = new Set<string>();
     const tableRows: string[][] = [];
 
     dishSelections.forEach((category) => {
       const dishNames = category.dishes.map((d) => {
-        // Collect allergens
         if (d.allergens) d.allergens.forEach((a) => allAllergens.add(a));
         const qty = d.quantity > 1 ? `${d.quantity}x ` : '';
         return `${qty}${d.dishName}`;
       });
 
-      // Join dishes, truncate if too long
       let dishText = dishNames.join(', ');
       if (dishText.length > 80) {
         dishText = dishText.substring(0, 77) + '...';
@@ -670,11 +815,9 @@ export class PDFService {
       ]);
     });
 
-    // Draw table
     const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
     this.drawCompactTable(doc, ['Kategoria', 'Ilosc', 'Wybrane dania'], tableRows, colWidths, left);
 
-    // Allergens summary (collected, deduplicated)
     if (allAllergens.size > 0) {
       doc.moveDown(0.2);
       const labels = Array.from(allAllergens)
@@ -692,8 +835,7 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text('WYBRANE DANIA', left, doc.y);
+    this.drawSectionHeader(doc, 'WYBRANE DANIA', left, pageWidth);
     if (menuData.packageName) {
       doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
       doc.text(`Pakiet: ${menuData.packageName}`, left, doc.y);
@@ -738,11 +880,8 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text('USLUGI DODATKOWE', left, doc.y);
-    doc.moveDown(0.2);
+    this.drawSectionHeader(doc, 'USLUGI DODATKOWE', left, pageWidth);
 
-    // Group by category for cleaner display
     const grouped = new Map<string, ReservationExtraForPDF[]>();
     for (const extra of extras) {
       const catName = extra.serviceItem.category?.name || 'Inne';
@@ -772,7 +911,6 @@ export class PDFService {
 
       doc.text(`  ${chips.join('  |  ')}`, { width: pageWidth - 10 });
 
-      // Notes for items that have them
       for (const item of items) {
         if (item.note) {
           doc.fontSize(7).fillColor(COLORS.textMuted);
@@ -811,6 +949,7 @@ export class PDFService {
     if (deposit) rowCount += 2; // Zaliczka + Do zapłaty
     const boxHeight = 30 + rowCount * 18 + (deposit ? 20 : 0);
 
+    this.safePageBreak(doc, boxHeight + 20);
     const boxY = doc.y;
 
     // Box background
@@ -826,7 +965,6 @@ export class PDFService {
     const labelX = left + 15;
     const rightEdge = left + pageWidth - 15;
 
-    // Amount column for regular rows — full width, no badge space needed
     const valueWidth = 115;
     const valueX = rightEdge - valueWidth;
 
@@ -879,7 +1017,6 @@ export class PDFService {
 
     // Deposit row (Bug #2 fix — integrated into summary)
     if (deposit) {
-      // Deposit row layout: [label] [amount (narrower)] [gap] [badge]
       const depositBadgeWidth = 40;
       const depositBadgeGap = 6;
       const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
@@ -894,7 +1031,7 @@ export class PDFService {
       doc.text(depositLabel, labelX, y);
       doc.text(`-${this.formatCurrency(deposit.amount)}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
-      // Status badge — positioned after the narrower amount column with gap
+      // Status badge
       const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
       const statusText = deposit.paid ? 'OK' : 'OCZEK.';
       const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
@@ -909,7 +1046,7 @@ export class PDFService {
          .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
       y += 8;
 
-      // DO ZAPŁATY — uses full valueWidth like RAZEM
+      // DO ZAPŁATY
       const remaining = displayTotal - Number(deposit.amount);
       doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
       doc.text('DO ZAPLATY', labelX, y);
@@ -919,193 +1056,158 @@ export class PDFService {
     doc.y = boxY + boxHeight + 5;
   }
 
-  // ── INLINE FOOTER (Bug #1 + #4 fix) ──
-  private drawInlineFooter(doc: PDFKit.PDFDocument, left: number, pageWidth: number): void {
-    // Thin separator
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.4);
-
-    doc.fontSize(7).fillColor(COLORS.textMuted).font(this.getRegularFont());
-
-    // Bug #4 fix: Use restaurantData from CompanySettings (Ustawienia → Dane firmy)
-    const footerParts: string[] = [
-      `Dziekujemy za wybor ${this.restaurantData.name}!`,
-    ];
-    const contactParts: string[] = [];
-    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
-    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
-    if (contactParts.length > 0) {
-      footerParts.push(`W razie pytan: ${contactParts.join(' | ')}`);
-    }
-    doc.text(footerParts.join('  |  '), left, doc.y, {
-      align: 'center', width: pageWidth,
-    });
-
-    doc.moveDown(0.2);
-    doc.fontSize(6).fillColor(COLORS.textLight);
-    doc.text(
-      `Dokument wygenerowany automatycznie przez system ${this.restaurantData.name}`,
-      left, doc.y,
-      { align: 'center', width: pageWidth },
-    );
-  }
-
   // ═══════════════════════════════════════════════════════════════
-  // ██  COMPACT TABLE UTILITY
+  // ██  PREMIUM PAYMENT CONFIRMATION — Zadanie 2
   // ═══════════════════════════════════════════════════════════════
 
-  private drawCompactTable(
-    doc: PDFKit.PDFDocument,
-    headers: string[],
-    rows: string[][],
-    colWidths: number[],
-    startX: number
-  ): void {
-    const rowHeight = 16;
-    const headerHeight = 18;
-    const totalWidth = colWidths.reduce((a, b) => a + b, 0);
-    let y = doc.y;
-
-    // Header row
-    doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
-    let x = startX;
-    headers.forEach((header, i) => {
-      doc.fillColor('#ffffff').fontSize(7).font(this.getBoldFont());
-      doc.text(header, x + 5, y + 5, { width: colWidths[i] - 10 });
-      x += colWidths[i];
-    });
-    y += headerHeight;
-
-    // Data rows
-    rows.forEach((row, rowIndex) => {
-      // Check for page break
-      /* istanbul ignore next */
-      if (y > doc.page.height - 80) {
-        doc.addPage();
-        y = 50;
-      }
-
-      // Alternating bg
-      if (rowIndex % 2 === 0) {
-        doc.rect(startX, y, totalWidth, rowHeight).fill(COLORS.bgLight);
-      }
-
-      x = startX;
-      row.forEach((cell, i) => {
-        const isFirstCol = i === 0;
-        doc.fillColor(COLORS.textDark)
-           .fontSize(7)
-           .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
-        doc.text(cell, x + 5, y + 4, { width: colWidths[i] - 10 });
-        x += colWidths[i];
-      });
-      y += rowHeight;
-    });
-
-    // Bottom border
-    doc.strokeColor(COLORS.border).lineWidth(0.5)
-       .moveTo(startX, y).lineTo(startX + totalWidth, y).stroke();
-
-    doc.y = y + 3;
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // ██  SEPARATOR UTILITY
-  // ═══════════════════════════════════════════════════════════════
-
-  private drawSeparator(doc: PDFKit.PDFDocument, left: number, width: number): void {
-    const y = doc.y;
-    doc.strokeColor(COLORS.border).lineWidth(0.5)
-       .moveTo(left, y).lineTo(left + width, y).stroke();
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // ██  PAYMENT CONFIRMATION (unchanged structure, updated footer)
-  // ═══════════════════════════════════════════════════════════════
-
-  private buildPaymentConfirmationContent(
+  private buildPaymentConfirmationPremium(
     doc: PDFKit.PDFDocument,
     data: PaymentConfirmationData
   ): void {
-    this.addLegacyHeader(doc);
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
 
-    doc.moveDown(2);
-    doc.fontSize(20).font(this.getBoldFont()).fillColor('#16a34a').text('POTWIERDZENIE WPLATY ZALICZKI', {
-      align: 'center',
+    // ── 1. HEADER BANNER with "OPLACONA" badge ──
+    this.drawHeaderBanner(doc, 'OPLACONA', COLORS.success);
+
+    // ── 2. TITLE + META ──
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('POTWIERDZENIE WPLATY ZALICZKI', left, doc.y, { align: 'center', width: pageWidth });
+
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    const shortDepositId = data.depositId.length > 20 ? data.depositId.substring(0, 8) + '...' : data.depositId;
+    doc.text(`Nr: ${shortDepositId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+      align: 'center', width: pageWidth,
     });
 
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
-    doc.fontSize(10).font(this.getRegularFont()).fillColor('#666666');
-    doc.text(`Numer depozytu: ${data.depositId}`, { align: 'center' });
-    doc.text(`Data wygenerowania: ${this.formatDate(new Date())}`, { align: 'center' });
 
-    doc.moveDown(1);
-    this.addLegacySeparator(doc);
+    // ── 3. TWO-COLUMN: KLIENT | WPLATA ──
+    const colGap = 20;
+    const colWidth = (pageWidth - colGap) / 2;
+    const startY = doc.y;
 
-    doc.moveDown(1);
-    doc.fillColor('#000000').fontSize(14).font(this.getBoldFont()).text('Szczegoly wplaty');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
+    // LEFT — Client info
+    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, [
+      `${data.client.firstName} ${data.client.lastName}`,
+      data.client.email || '',
+      data.client.phone,
+      data.client.address || '',
+    ].filter(Boolean));
 
-    const methodLabels: Record<string, string> = {
-      TRANSFER: 'Przelew bankowy',
-      CASH: 'Gotowka',
-      BLIK: 'BLIK',
-      CARD: 'Karta platnicza',
-    };
-
-    doc.font(this.getBoldFont()).text(`Kwota: ${this.formatCurrency(data.amount)}`);
-    doc.font(this.getRegularFont());
-    doc.text(`Data wplaty: ${this.formatDate(data.paidAt)}`);
+    // RIGHT — Payment details
     /* istanbul ignore next */
-    doc.text(`Metoda platnosci: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
+    const methodLabel = PAYMENT_METHOD_LABELS[data.paymentMethod] || data.paymentMethod;
+    const paymentLines: string[] = [
+      this.formatCurrency(data.amount),
+      `Data: ${this.formatDate(data.paidAt)}`,
+      `Metoda: ${methodLabel}`,
+    ];
     if (data.paymentReference) {
-      doc.text(`Numer referencyjny: ${data.paymentReference}`);
+      paymentLines.push(`Ref: ${data.paymentReference}`);
     }
 
+    this.drawInfoBox(doc, 'SZCZEGOLY WPLATY', left + colWidth + colGap, startY, colWidth, paymentLines);
+
+    // Move Y past both columns
+    const leftLines = [data.client.firstName, data.client.email, data.client.phone, data.client.address].filter(Boolean).length;
+    const boxHeight = this.calculateInfoBoxHeight(Math.max(leftLines, paymentLines.length));
+    doc.y = startY + boxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 4. RESERVATION INFO BOX (full-width) ──
+    const resLines: string[] = [
+      `${data.reservation.date}  ${data.reservation.startTime} - ${data.reservation.endTime}`,
+    ];
+    if (data.reservation.hall) resLines.push(`Sala: ${data.reservation.hall}`);
+    if (data.reservation.eventType) resLines.push(`Typ: ${data.reservation.eventType}`);
+    resLines.push(`Gosci: ${data.reservation.guests}`);
+
+    const shortResId = data.reservation.id.length > 20
+      ? data.reservation.id.substring(0, 8) + '...'
+      : data.reservation.id;
+    resLines.push(`Nr rezerwacji: ${shortResId}`);
+
+    this.drawInfoBox(doc, 'REZERWACJA', left, doc.y, pageWidth, resLines);
+    const resBoxHeight = this.calculateInfoBoxHeight(resLines.length);
+    doc.y = doc.y + resBoxHeight + 5;
+
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // ── 5. FINANCIAL SUMMARY BOX ──
+    const totalPrice = Number(data.reservation.totalPrice);
+    const paidAmount = Number(data.amount);
+    const remaining = totalPrice - paidAmount;
+
+    // Box height: total + paid + separator + remaining = ~4 rows
+    const finBoxHeight = 30 + 4 * 18 + 10;
+
+    this.safePageBreak(doc, finBoxHeight + 20);
+    const finBoxY = doc.y;
+
+    doc.rect(left, finBoxY, pageWidth, finBoxHeight).fill(COLORS.bgLight);
+    doc.rect(left, finBoxY, 3, finBoxHeight).fill(COLORS.accent);
+
+    doc.fillColor(COLORS.textDark).fontSize(11).font(this.getBoldFont());
+    doc.text('PODSUMOWANIE FINANSOWE', left + 15, finBoxY + 10);
+
+    let y = finBoxY + 30;
+    const labelX = left + 15;
+    const rightEdge = left + pageWidth - 15;
+    const valueWidth = 115;
+    const valueX = rightEdge - valueWidth;
+
+    // Total price
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
+    doc.text('Calkowita cena rezerwacji', labelX, y);
+    doc.text(this.formatCurrency(totalPrice), valueX, y, { width: valueWidth, align: 'right' });
+    y += 16;
+
+    // Paid amount with badge
+    const depositBadgeWidth = 40;
+    const depositBadgeGap = 6;
+    const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
+
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
+    doc.text('Wplacona zaliczka', labelX, y);
+    doc.text(`-${this.formatCurrency(paidAmount)}`, valueX, y, { width: depositValueWidth, align: 'right' });
+
+    // Badge "ZAKS." (zaksięgowana)
+    const badgeX = valueX + depositValueWidth + depositBadgeGap;
+    doc.roundedRect(badgeX, y - 1, depositBadgeWidth, 13, 3).fill(COLORS.success);
+    doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
+    doc.text('ZAKS.', badgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
+    y += 18;
+
+    // Separator
+    y += 4;
+    doc.strokeColor(COLORS.accent).lineWidth(1)
+       .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
+    y += 8;
+
+    // Remaining
+    doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
+    doc.text('POZOSTALO DO ZAPLATY', labelX, y);
+    doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
+
+    doc.y = finBoxY + finBoxHeight + 5;
+
+    // ── 6. FOOTER ──
     doc.moveDown(1);
-    this.addLegacySeparator(doc);
-
-    doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Dane klienta');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Imie i nazwisko: ${data.client.firstName} ${data.client.lastName}`);
-    if (data.client.email) {
-      doc.text(`Email: ${data.client.email}`);
-    }
-    doc.text(`Telefon: ${data.client.phone}`);
-    if (data.client.address) {
-      doc.text(`Adres: ${data.client.address}`);
-    }
-
-    doc.moveDown(1);
-    this.addLegacySeparator(doc);
-
-    doc.moveDown(1);
-    doc.fontSize(14).font(this.getBoldFont()).text('Szczegoly rezerwacji');
-    doc.moveDown(0.5);
-    doc.fontSize(11).font(this.getRegularFont());
-    doc.text(`Numer rezerwacji: ${data.reservation.id}`);
-    doc.text(`Data: ${data.reservation.date}`);
-    doc.text(`Godzina: ${data.reservation.startTime} - ${data.reservation.endTime}`);
-    if (data.reservation.eventType) {
-      doc.text(`Typ wydarzenia: ${data.reservation.eventType}`);
-    }
-    doc.text(`Liczba gosci: ${data.reservation.guests}`);
-    doc.text(`Calkowita cena rezerwacji: ${this.formatCurrency(data.reservation.totalPrice)}`);
-
-    doc.moveDown(1.5);
-    doc.fontSize(11).fillColor('#16a34a');
-    doc.font(this.getBoldFont()).text('Wplata zaksiegowana pomyslnie', { align: 'center' });
-    doc.fillColor('#000000');
-
-    // Bug #4 fix: Footer with contact data from CompanySettings
-    this.addLegacyFooter(doc);
+    this.drawInlineFooter(doc, left, pageWidth);
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // ██  MENU CARD BUILDER (unchanged structure)
+  // ██  MENU CARD BUILDER (unchanged structure — Zadanie 3 pending)
   // ═══════════════════════════════════════════════════════════════
 
   private buildMenuCardContent(doc: PDFKit.PDFDocument, data: MenuCardPDFData): void {
@@ -1145,8 +1247,7 @@ export class PDFService {
     );
 
     data.packages.forEach((pkg) => {
-      /* istanbul ignore next */
-      if (doc.y > doc.page.height - 250) doc.addPage();
+      this.safePageBreak(doc, 250);
 
       doc.moveDown(1.5);
       this.addLegacySeparator(doc);
@@ -1194,8 +1295,7 @@ export class PDFService {
 
       if (pkg.courses.length > 0) {
         pkg.courses.forEach((course) => {
-          /* istanbul ignore next */
-          if (doc.y > doc.page.height - 150) doc.addPage();
+          this.safePageBreak(doc, 150);
 
           doc.moveDown(0.7);
 
@@ -1217,8 +1317,7 @@ export class PDFService {
           doc.moveDown(0.3);
 
           course.dishes.forEach((dish) => {
-            /* istanbul ignore next */
-            if (doc.y > doc.page.height - 100) doc.addPage();
+            this.safePageBreak(doc, 100);
 
             let marker = '  ';
             /* istanbul ignore next */
@@ -1253,8 +1352,7 @@ export class PDFService {
       const activeOptions = pkg.options.filter(o => !o.isRequired);
 
       if (requiredOptions.length > 0) {
-        /* istanbul ignore next */
-        if (doc.y > doc.page.height - 120) doc.addPage();
+        this.safePageBreak(doc, 120);
 
         doc.moveDown(0.7);
         doc.fontSize(11).font(this.getBoldFont()).fillColor('#27ae60');
@@ -1273,8 +1371,7 @@ export class PDFService {
       }
 
       if (activeOptions.length > 0) {
-        /* istanbul ignore next */
-        if (doc.y > doc.page.height - 120) doc.addPage();
+        this.safePageBreak(doc, 120);
 
         doc.moveDown(0.7);
         doc.fontSize(11).font(this.getBoldFont()).fillColor('#8e44ad');
@@ -1312,7 +1409,7 @@ export class PDFService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // ██  LEGACY HELPERS (for payment confirmation & menu card)
+  // ██  LEGACY HELPERS (kept for menu card — will be removed in Zadanie 3)
   // ═══════════════════════════════════════════════════════════════
 
   private addLegacyHeader(doc: PDFKit.PDFDocument): void {
@@ -1349,7 +1446,6 @@ export class PDFService {
     const bottomY = doc.page.height - 100;
     doc.fontSize(8).fillColor('#7f8c8d').font(this.getRegularFont());
 
-    // Build footer with contact data from CompanySettings (Ustawienia → Dane firmy)
     const contactParts: string[] = [];
     if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
     if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
