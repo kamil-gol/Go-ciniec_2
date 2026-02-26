@@ -824,8 +824,11 @@ export class PDFService {
 
     let y = boxY + 30;
     const labelX = left + 15;
-    const valueX = left + pageWidth - 130;
-    const valueWidth = 115;
+    // Layout: labels on left, amounts right-aligned, then badge after amounts
+    const badgeSpace = 50; // space reserved for the OK/OCZEK. badge on deposit row
+    const rightEdge = left + pageWidth - 15;
+    const valueWidth = 100;
+    const valueX = rightEdge - badgeSpace - valueWidth;
 
     doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
 
@@ -865,7 +868,7 @@ export class PDFService {
     // Separator before RAZEM
     y += 4;
     doc.strokeColor(COLORS.border).lineWidth(0.5)
-       .moveTo(labelX, y).lineTo(left + pageWidth - 15, y).stroke();
+       .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
     y += 8;
 
     // RAZEM
@@ -885,19 +888,20 @@ export class PDFService {
       doc.text(depositLabel, labelX, y);
       doc.text(`-${this.formatCurrency(deposit.amount)}`, valueX, y, { width: valueWidth, align: 'right' });
 
-      // Status indicator
+      // Status indicator badge — positioned AFTER the amount column with gap
       const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
       const statusText = deposit.paid ? 'OK' : 'OCZEK.';
-      const badgeX = left + pageWidth - 15;
-      doc.roundedRect(badgeX - 38, y - 1, 36, 13, 3).fill(statusColor);
+      const depositBadgeWidth = 40;
+      const depositBadgeX = valueX + valueWidth + 8; // 8px gap after amount
+      doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 13, 3).fill(statusColor);
       doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
-      doc.text(statusText, badgeX - 38, y + 2, { width: 36, align: 'center' });
+      doc.text(statusText, depositBadgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
 
       y += 18;
 
       // Separator before DO ZAPŁATY
       doc.strokeColor(COLORS.accent).lineWidth(1)
-         .moveTo(labelX, y).lineTo(left + pageWidth - 15, y).stroke();
+         .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
       y += 8;
 
       // DO ZAPŁATY
