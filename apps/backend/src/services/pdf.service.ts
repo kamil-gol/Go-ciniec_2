@@ -527,6 +527,7 @@ export class PDFService {
 
   /**
    * Compact table with header row, alternating backgrounds, page-break support.
+   * Row height is calculated dynamically based on the tallest cell content.
    */
   private drawCompactTable(
     doc: PDFKit.PDFDocument,
@@ -535,8 +536,10 @@ export class PDFService {
     colWidths: number[],
     startX: number
   ): void {
-    const rowHeight = 16;
+    const minRowHeight = 16;
     const headerHeight = 18;
+    const cellPadding = 4;
+    const cellFontSize = 7;
     const totalWidth = colWidths.reduce((a, b) => a + b, 0);
     let y = doc.y;
 
@@ -544,13 +547,13 @@ export class PDFService {
     doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
     let x = startX;
     headers.forEach((header, i) => {
-      doc.fillColor('#ffffff').fontSize(7).font(this.getBoldFont());
+      doc.fillColor('#ffffff').fontSize(cellFontSize).font(this.getBoldFont());
       doc.text(header, x + 5, y + 5, { width: colWidths[i] - 10 });
       x += colWidths[i];
     });
     y += headerHeight;
 
-    // Data rows
+    // Data rows — dynamic height based on text content
     rows.forEach((row, rowIndex) => {
       /* istanbul ignore next */
       if (y > doc.page.height - 80) {
@@ -558,20 +561,31 @@ export class PDFService {
         y = 50;
       }
 
+      // Calculate the tallest cell in this row
+      let maxCellHeight = minRowHeight;
+      row.forEach((cell, i) => {
+        const isFirstCol = i === 0;
+        doc.fontSize(cellFontSize)
+           .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
+        const textHeight = doc.heightOfString(cell, { width: colWidths[i] - 10 });
+        const cellHeight = textHeight + cellPadding * 2;
+        if (cellHeight > maxCellHeight) maxCellHeight = cellHeight;
+      });
+
       if (rowIndex % 2 === 0) {
-        doc.rect(startX, y, totalWidth, rowHeight).fill(COLORS.bgLight);
+        doc.rect(startX, y, totalWidth, maxCellHeight).fill(COLORS.bgLight);
       }
 
       x = startX;
       row.forEach((cell, i) => {
         const isFirstCol = i === 0;
         doc.fillColor(COLORS.textDark)
-           .fontSize(7)
+           .fontSize(cellFontSize)
            .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
-        doc.text(cell, x + 5, y + 4, { width: colWidths[i] - 10 });
+        doc.text(cell, x + 5, y + cellPadding, { width: colWidths[i] - 10 });
         x += colWidths[i];
       });
-      y += rowHeight;
+      y += maxCellHeight;
     });
 
     // Bottom border
@@ -1426,10 +1440,11 @@ export class PDFService {
           });
 
           // Dish table — 3 columns: name, description, allergens
+          // Wider allergens column (30%) to prevent text clipping
           const dishColWidths = [
-            Math.round(pageWidth * 0.35),
-            Math.round(pageWidth * 0.45),
-            Math.round(pageWidth * 0.20),
+            Math.round(pageWidth * 0.30),
+            Math.round(pageWidth * 0.40),
+            Math.round(pageWidth * 0.30),
           ];
           this.drawCompactTable(
             doc,
