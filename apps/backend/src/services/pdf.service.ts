@@ -840,8 +840,7 @@ export class PDFService {
 
     doc.moveDown(0.2);
     doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    const shortId = r.id.length > 20 ? r.id.substring(0, 8) + '...' : r.id;
-    doc.text(`Nr: ${shortId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+    doc.text(`Nr: ${r.id}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
       align: 'center', width: pageWidth,
     });
 
@@ -1245,8 +1244,7 @@ export class PDFService {
 
     doc.moveDown(0.2);
     doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    const shortDepositId = data.depositId.length > 20 ? data.depositId.substring(0, 8) + '...' : data.depositId;
-    doc.text(`Nr: ${shortDepositId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+    doc.text(`Nr: ${data.depositId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
       align: 'center', width: pageWidth,
     });
 
@@ -1294,11 +1292,7 @@ export class PDFService {
     if (data.reservation.hall) resLines.push(`Sala: ${data.reservation.hall}`);
     if (data.reservation.eventType) resLines.push(`Typ: ${data.reservation.eventType}`);
     resLines.push(`Gości: ${data.reservation.guests}`);
-
-    const shortResId = data.reservation.id.length > 20
-      ? data.reservation.id.substring(0, 8) + '...'
-      : data.reservation.id;
-    resLines.push(`Nr rezerwacji: ${shortResId}`);
+    resLines.push(`Nr rezerwacji: ${data.reservation.id}`);
 
     this.drawInfoBox(doc, 'REZERWACJA', left, doc.y, pageWidth, resLines);
     const resBoxHeight = this.calculateInfoBoxHeight(resLines.length);
