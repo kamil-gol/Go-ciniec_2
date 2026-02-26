@@ -599,6 +599,35 @@ export class PDFService {
     return DAY_OF_WEEK_PL[day] || day;
   }
 
+  /**
+   * Build a detailed allergen summary: "Alergen (danie1, danie2), ..."
+   * Groups dishes by allergen for clear, non-duplicated display.
+   */
+  private buildAllergenSummary(dishes: MenuCardDish[]): string {
+    const allergenToDishes = new Map<string, string[]>();
+
+    for (const dish of dishes) {
+      if (dish.allergens && dish.allergens.length > 0) {
+        for (const allergen of dish.allergens) {
+          if (!allergenToDishes.has(allergen)) {
+            allergenToDishes.set(allergen, []);
+          }
+          allergenToDishes.get(allergen)!.push(dish.name);
+        }
+      }
+    }
+
+    if (allergenToDishes.size === 0) return '';
+
+    const parts: string[] = [];
+    for (const [allergen, dishNames] of allergenToDishes) {
+      const label = ALLERGEN_LABELS[allergen] || allergen;
+      parts.push(`${label} (${dishNames.join(', ')})`);
+    }
+
+    return parts.join(', ');
+  }
+
   // ═══════════════ PUBLIC API ═══════════════
 
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
@@ -1385,7 +1414,7 @@ export class PDFService {
         doc.moveDown(0.3);
       }
 
-      // ── COURSES as compact tables ──
+      // ── COURSES — 2-column tables (no allergens column) ──
       if (pkg.courses.length > 0) {
         pkg.courses.forEach((course) => {
           this.safePageBreak(doc, 120);
@@ -1409,46 +1438,38 @@ export class PDFService {
 
           doc.moveDown(0.2);
 
-          // Build dish table rows
-          const courseAllergens = new Set<string>();
+          // Build dish table rows — 2 columns: name, description (no allergens column)
           const dishRows: string[][] = [];
 
           course.dishes.forEach((dish) => {
             const descText = dish.description || '';
-            const allergenText = (dish.allergens && dish.allergens.length > 0)
-              ? dish.allergens.map(a => ALLERGEN_LABELS[a] || a).join(', ')
-              : '';
-
-            if (dish.allergens) dish.allergens.forEach(a => courseAllergens.add(a));
-
             dishRows.push([
               dish.name,
               descText,
-              allergenText,
             ]);
           });
 
-          // Dish table — 3 columns: name, description, allergens
-          // Wider allergens column (30%) to prevent text clipping
+          // Dish table — 2 columns: name (35%), description (65%)
           const dishColWidths = [
-            Math.round(pageWidth * 0.30),
-            Math.round(pageWidth * 0.40),
-            Math.round(pageWidth * 0.30),
+            Math.round(pageWidth * 0.35),
+            Math.round(pageWidth * 0.65),
           ];
           this.drawCompactTable(
             doc,
-            ['Danie', 'Opis', 'Alergeny'],
+            ['Danie', 'Opis'],
             dishRows,
             dishColWidths,
             left
           );
 
-          // Allergen summary for this course
-          if (courseAllergens.size > 0) {
+          // Enhanced allergen summary — grouped by allergen with dish names
+          const allergenSummary = this.buildAllergenSummary(course.dishes);
+          if (allergenSummary) {
             doc.moveDown(0.1);
-            const labels = Array.from(courseAllergens).map(a => ALLERGEN_LABELS[a] || a).join(', ');
-            doc.fontSize(6).fillColor(COLORS.allergen);
-            doc.text(`Alergeny w kursie: ${labels}`, left);
+            doc.fontSize(7).font(this.getBoldFont()).fillColor(COLORS.allergen);
+            doc.text('Alergeny: ', left, doc.y, { continued: true });
+            doc.font(this.getRegularFont()).fillColor(COLORS.allergen);
+            doc.text(allergenSummary, { width: pageWidth - 60 });
             doc.fillColor(COLORS.textDark);
           }
         });
