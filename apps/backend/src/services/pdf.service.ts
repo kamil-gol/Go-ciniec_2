@@ -600,32 +600,73 @@ export class PDFService {
   }
 
   /**
-   * Build a detailed allergen summary: "Alergen (danie1, danie2), ..."
-   * Groups dishes by allergen for clear, non-duplicated display.
+   * Collect all allergens from all packages/courses into a single map.
+   * Returns Map<allergenKey, Set<dishName>> for global deduplication.
    */
-  private buildAllergenSummary(dishes: MenuCardDish[]): string {
-    const allergenToDishes = new Map<string, string[]>();
+  private collectAllAllergens(packages: MenuCardPackage[]): Map<string, Set<string>> {
+    const allergenToDishes = new Map<string, Set<string>>();
 
-    for (const dish of dishes) {
-      if (dish.allergens && dish.allergens.length > 0) {
-        for (const allergen of dish.allergens) {
-          if (!allergenToDishes.has(allergen)) {
-            allergenToDishes.set(allergen, []);
+    for (const pkg of packages) {
+      for (const course of pkg.courses) {
+        for (const dish of course.dishes) {
+          if (dish.allergens && dish.allergens.length > 0) {
+            for (const allergen of dish.allergens) {
+              if (!allergenToDishes.has(allergen)) {
+                allergenToDishes.set(allergen, new Set());
+              }
+              allergenToDishes.get(allergen)!.add(dish.name);
+            }
           }
-          allergenToDishes.get(allergen)!.push(dish.name);
         }
       }
     }
 
-    if (allergenToDishes.size === 0) return '';
+    return allergenToDishes;
+  }
 
-    const parts: string[] = [];
-    for (const [allergen, dishNames] of allergenToDishes) {
+  /**
+   * Draw a compact allergen summary section at the end of the menu card PDF.
+   * Lists each allergen once with all dishes that contain it.
+   */
+  private drawAllergenSection(
+    doc: PDFKit.PDFDocument,
+    allergenMap: Map<string, Set<string>>,
+    left: number,
+    pageWidth: number
+  ): void {
+    if (allergenMap.size === 0) return;
+
+    this.safePageBreak(doc, 120);
+
+    doc.moveDown(0.5);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // Section header
+    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.allergen);
+    doc.text('INFORMACJA O ALERGENACH', left, doc.y);
+    doc.moveDown(0.3);
+
+    doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(
+      'Ponizej znajduje sie lista alergenow wystepujacych w daniach z karty menu.',
+      left, doc.y, { width: pageWidth }
+    );
+    doc.moveDown(0.4);
+
+    // Build table rows: Allergen | Dishes
+    const rows: string[][] = [];
+    for (const [allergen, dishNames] of allergenMap) {
       const label = ALLERGEN_LABELS[allergen] || allergen;
-      parts.push(`${label} (${dishNames.join(', ')})`);
+      const dishes = Array.from(dishNames).join(', ');
+      rows.push([label, dishes]);
     }
 
-    return parts.join(', ');
+    const colWidths = [
+      Math.round(pageWidth * 0.20),
+      Math.round(pageWidth * 0.80),
+    ];
+    this.drawCompactTable(doc, ['Alergen', 'Wystepuje w daniach'], rows, colWidths, left);
   }
 
   // ═══════════════ PUBLIC API ═══════════════
@@ -1414,7 +1455,7 @@ export class PDFService {
         doc.moveDown(0.3);
       }
 
-      // ── COURSES — 2-column tables (no allergens column) ──
+      // ── COURSES — 2-column tables (no allergens per course) ──
       if (pkg.courses.length > 0) {
         pkg.courses.forEach((course) => {
           this.safePageBreak(doc, 120);
@@ -1438,7 +1479,7 @@ export class PDFService {
 
           doc.moveDown(0.2);
 
-          // Build dish table rows — 2 columns: name, description (no allergens column)
+          // Build dish table rows — 2 columns: name, description
           const dishRows: string[][] = [];
 
           course.dishes.forEach((dish) => {
@@ -1462,16 +1503,7 @@ export class PDFService {
             left
           );
 
-          // Enhanced allergen summary — grouped by allergen with dish names
-          const allergenSummary = this.buildAllergenSummary(course.dishes);
-          if (allergenSummary) {
-            doc.moveDown(0.1);
-            doc.fontSize(7).font(this.getBoldFont()).fillColor(COLORS.allergen);
-            doc.text('Alergeny: ', left, doc.y, { continued: true });
-            doc.font(this.getRegularFont()).fillColor(COLORS.allergen);
-            doc.text(allergenSummary, { width: pageWidth - 60 });
-            doc.fillColor(COLORS.textDark);
-          }
+          // No per-course allergen summary — moved to end of document
         });
       }
 
@@ -1522,7 +1554,11 @@ export class PDFService {
       }
     });
 
-    // ── 4. FOOTER ──
+    // ── 4. GLOBAL ALLERGEN SECTION (at the end, before footer) ──
+    const allergenMap = this.collectAllAllergens(data.packages);
+    this.drawAllergenSection(doc, allergenMap, left, pageWidth);
+
+    // ── 5. FOOTER ──
     doc.moveDown(1);
     this.drawInlineFooter(doc, left, pageWidth);
   }
