@@ -7,8 +7,11 @@
  * Generates premium PDF for preparations report (service extras).
  *
  * Two views:
- * - detailed: daily timeline → per reservation → extras breakdown
- * - summary: aggregated table per service item
+ * - detailed: daily timeline → per category → extras breakdown
+ * - summary: aggregated table per day
+ *
+ * Aligned with actual API response structure (summary.totalExtras,
+ * summary.totalReservationsWithExtras, days[], summaryDays[], etc.)
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
@@ -71,17 +74,26 @@ export function buildPreparationsReportPDF(
   doc.moveDown(0.5);
 
   // ── 3. KPI SUMMARY INFO BOX ──
+  const summary = data.summary as any;
   const summaryLines: string[] = [
-    `Łączna liczba usług: ${data.summary.totalItems}`,
-    `Łączna wartość: ${formatCurrency(data.summary.totalValue)}`,
-    `Liczba rezerwacji: ${data.summary.totalReservations}`,
-    `Dni z wydarzeniami: ${data.summary.daysWithEvents}`,
+    `Łączna liczba usług: ${summary.totalExtras ?? 0}`,
+    `Rezerwacje z extras: ${summary.totalReservationsWithExtras ?? 0}`,
   ];
-  if (data.summary.topCategory) {
-    summaryLines.push(`Top kategoria: ${data.summary.topCategory}`);
+  if (summary.topCategory) {
+    const tc = summary.topCategory;
+    if (typeof tc === 'object' && tc.name) {
+      summaryLines.push(`Top kategoria: ${tc.icon || ''} ${tc.name} (${tc.count || 0})`);
+    } else {
+      summaryLines.push(`Top kategoria: ${tc}`);
+    }
   }
-  if (data.summary.nearestEvent) {
-    summaryLines.push(`Najbliższe wydarzenie: ${data.summary.nearestEvent}`);
+  if (summary.nearestEvent) {
+    const ne = summary.nearestEvent;
+    if (typeof ne === 'object' && ne.date) {
+      summaryLines.push(`Najbliższe wydarzenie: ${ne.date} ${ne.startTime || ''} — ${ne.clientName || ''}`);
+    } else {
+      summaryLines.push(`Najbliższe wydarzenie: ${ne}`);
+    }
   }
 
   drawInfoBox(ctx, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
@@ -93,8 +105,9 @@ export function buildPreparationsReportPDF(
   doc.moveDown(0.4);
 
   // ── 4. DETAILED VIEW — daily timeline ──
-  if (data.filters.view === 'detailed' && data.detailed && data.detailed.length > 0) {
-    for (const dayGroup of data.detailed) {
+  const days = (data as any).days;
+  if (data.filters.view === 'detailed' && days && days.length > 0) {
+    for (const day of days) {
       safePageBreak(doc, 120);
 
       // Day header bar
@@ -103,28 +116,45 @@ export function buildPreparationsReportPDF(
       doc.rect(left, dayHeaderY, 4, 22).fill(COLORS.accent);
       doc.fillColor('#ffffff').fontSize(10).font(ctx.boldFont);
       doc.text(
-        `📅  ${dayGroup.dateLabel}`,
+        `${day.dateLabel}`,
         left + 14, dayHeaderY + 5,
-        { width: pageWidth - 30 }
+        { width: pageWidth - 100 }
+      );
+      // Right-aligned count
+      doc.text(
+        `Usług: ${day.totalItems || 0}`,
+        left + pageWidth - 100, dayHeaderY + 5,
+        { width: 90, align: 'right' }
       );
       doc.y = dayHeaderY + 26;
 
       // Categories within the day
-      for (const category of dayGroup.categories) {
+      for (const category of day.categories) {
         safePageBreak(doc, 80);
 
         doc.fontSize(9).font(ctx.boldFont).fillColor(COLORS.purple);
-        doc.text(category.categoryName.toUpperCase(), left + 8, doc.y);
+        doc.text(
+          `${category.categoryIcon || ''} ${category.categoryName}`.toUpperCase(),
+          left + 8, doc.y
+        );
         doc.moveDown(0.2);
 
         // Build table for items in this category
-        const rows: string[][] = category.items.map(item => [
-          item.serviceName,
-          `${item.quantity}`,
-          formatCurrency(item.totalPrice),
-          item.reservationLabel || '',
-          item.note || '',
-        ]);
+        const rows: string[][] = category.items.map((item: any) => {
+          const reservationLabel = item.reservation
+            ? `${item.reservation.clientName} (${item.reservation.hallName})`
+            : (item.reservationLabel || '');
+          const priceStr = item.priceType === 'FREE'
+            ? 'Gratis'
+            : formatCurrency(item.totalPrice);
+          return [
+            item.serviceName,
+            `${item.quantity}`,
+            priceStr,
+            reservationLabel,
+            item.note || '',
+          ];
+        });
 
         const colWidths = [
           Math.round(pageWidth * 0.22),
@@ -145,57 +175,70 @@ export function buildPreparationsReportPDF(
         doc.moveDown(0.3);
       }
 
-      // Day subtotal
-      if (dayGroup.dayTotal !== undefined) {
-        doc.fontSize(8).font(ctx.boldFont).fillColor(COLORS.textDark);
-        doc.text(
-          `Razem ${dayGroup.dateLabel}: ${dayGroup.dayItemCount || 0} usług, ${formatCurrency(dayGroup.dayTotal)}`,
-          left + 8, doc.y
-        );
-        doc.moveDown(0.2);
-      }
-
       doc.moveDown(0.3);
       drawSeparator(ctx, left, pageWidth);
       doc.moveDown(0.3);
     }
   }
 
-  // ── 5. SUMMARY VIEW — aggregated table ──
-  if (data.filters.view === 'summary' && data.summaryTable && data.summaryTable.length > 0) {
-    safePageBreak(doc, 100);
+  // ── 5. SUMMARY VIEW — aggregated table per day ──
+  const summaryDays = (data as any).summaryDays;
+  if (data.filters.view === 'summary' && summaryDays && summaryDays.length > 0) {
+    for (const day of summaryDays) {
+      safePageBreak(doc, 100);
 
-    doc.fontSize(11).font(ctx.boldFont).fillColor(COLORS.purple);
-    doc.text('ZESTAWIENIE ZBIORCZE USŁUG', left, doc.y);
-    doc.moveDown(0.3);
+      // Day header bar
+      const dayHeaderY = doc.y;
+      doc.rect(left, dayHeaderY, pageWidth, 22).fill(COLORS.primaryLight);
+      doc.rect(left, dayHeaderY, 4, 22).fill(COLORS.accent);
+      doc.fillColor('#ffffff').fontSize(10).font(ctx.boldFont);
+      doc.text(
+        `${day.dateLabel}`,
+        left + 14, dayHeaderY + 5,
+        { width: pageWidth - 150 }
+      );
+      doc.text(
+        `Usług: ${day.totalItems || 0}  |  Rez.: ${day.totalReservations || 0}`,
+        left + pageWidth - 150, dayHeaderY + 5,
+        { width: 140, align: 'right' }
+      );
+      doc.y = dayHeaderY + 26;
 
-    const summaryRows = data.summaryTable.map(item => [
-      item.serviceName,
-      item.categoryName,
-      `${item.totalQuantity}`,
-      formatCurrency(item.totalValue),
-      `${item.reservationCount}`,
-    ]);
+      doc.moveDown(0.2);
 
-    const summaryCols = [
-      Math.round(pageWidth * 0.25),
-      Math.round(pageWidth * 0.20),
-      Math.round(pageWidth * 0.12),
-      Math.round(pageWidth * 0.20),
-      Math.round(pageWidth * 0.23),
-    ];
+      const summaryRows = day.items.map((item: any) => {
+        const clientNames = item.reservations
+          ? item.reservations.map((r: any) => `${r.clientName} (${r.quantity})`).join(', ')
+          : '';
+        return [
+          item.serviceName,
+          `${item.categoryIcon || ''} ${item.categoryName}`,
+          `${item.totalQuantity}`,
+          `${item.reservationCount}`,
+          clientNames,
+        ];
+      });
 
-    drawCompactTable(
-      ctx,
-      ['Usługa', 'Kategoria', 'Łącznie szt.', 'Wartość', 'Rezerwacji'],
-      summaryRows,
-      summaryCols,
-      left
-    );
+      const summaryCols = [
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.12),
+        Math.round(pageWidth * 0.13),
+        Math.round(pageWidth * 0.30),
+      ];
 
-    doc.moveDown(0.4);
-    drawSeparator(ctx, left, pageWidth);
-    doc.moveDown(0.4);
+      drawCompactTable(
+        ctx,
+        ['Usługa', 'Kategoria', 'Łącznie szt.', 'Rezerwacji', 'Klienci'],
+        summaryRows,
+        summaryCols,
+        left
+      );
+
+      doc.moveDown(0.3);
+      drawSeparator(ctx, left, pageWidth);
+      doc.moveDown(0.3);
+    }
   }
 
   // ── 6. FOOTER ──
@@ -379,6 +422,7 @@ function formatDate(date: Date): string {
 
 function formatCurrency(amount: number | string): string {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return '0,00 zł';
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
