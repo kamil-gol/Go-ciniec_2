@@ -46,6 +46,15 @@ router.get('/occupancy', reportsController.getOccupancyReport.bind(reportsContro
  */
 router.get('/preparations', reportsController.getPreparationsReport.bind(reportsController));
 
+/**
+ * GET /api/reports/menu-preparations
+ * Get menu preparations report — what dishes/courses need to be prepared
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query view - 'detailed' (per reservation) or 'summary' (aggregated per dish) [optional, default: detailed]
+ */
+router.get('/menu-preparations', reportsController.getMenuPreparationsReport.bind(reportsController));
+
 // ============================================
 // EXPORT ENDPOINTS
 // ============================================
