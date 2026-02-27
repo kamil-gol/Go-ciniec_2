@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { BarChart3, FileSpreadsheet, FileText, ClipboardList, DollarSign, Building2 } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, FileText, ClipboardList, DollarSign, Building2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   useRevenueReport,
@@ -34,6 +34,15 @@ const formatCurrency = (amount: number): string => {
 
 const formatPercent = (value: number): string => {
   return `${value > 0 ? '+' : ''}${value}%`;
+};
+
+/**
+ * Format startTime for display: "16:00" or null/undefined → ""
+ */
+const formatTime = (time: string | null | undefined): string => {
+  if (!time) return '';
+  // Already HH:MM or HH:MM:SS — just take HH:MM
+  return time.substring(0, 5);
 };
 
 /**
@@ -274,6 +283,7 @@ export default function ReportsPage() {
 /* ============================================
    PREPARATIONS TAB (#159)
    Aligned with actual API response structure
+   + startTime display in REZERWACJA column
    ============================================ */
 
 function PreparationsTab({ query, view }: {
@@ -309,7 +319,7 @@ function PreparationsTab({ query, view }: {
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najbli\u017csze wydarzenie"}</p>
           <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {summary.nearestEvent.date} o {summary.nearestEvent.startTime} &mdash; {summary.nearestEvent.clientName}
+            {summary.nearestEvent.date} o {summary.nearestEvent.startTime || '\u2014'} &mdash; {summary.nearestEvent.clientName}
           </p>
         </div>
       )}
@@ -354,7 +364,15 @@ function PreparationsTab({ query, view }: {
                               {item.priceType === 'FREE' ? 'Gratis' : formatCurrency(item.totalPrice)}
                             </td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs hidden sm:table-cell">
-                              {item.reservation.clientName} ({item.reservation.hallName})
+                              <div className="flex flex-col">
+                                <span>{item.reservation.clientName} ({item.reservation.hallName})</span>
+                                {item.reservation.startTime && (
+                                  <span className="flex items-center gap-1 text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                    <Clock className="h-3 w-3" />
+                                    {formatTime(item.reservation.startTime)}{item.reservation.endTime ? ` \u2013 ${formatTime(item.reservation.endTime)}` : ''}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell">{item.note || '\u2014'}</td>
                           </tr>
@@ -408,7 +426,12 @@ function PreparationsTab({ query, view }: {
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.totalQuantity}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{item.reservationCount}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell">
-                          {item.reservations.map((r) => `${r.clientName} (${r.quantity})`).join(', ')}
+                          {item.reservations.map((r) => {
+                            const time = formatTime(r.startTime);
+                            return time
+                              ? `${r.clientName} (${r.quantity}) ${time}`
+                              : `${r.clientName} (${r.quantity})`;
+                          }).join(', ')}
                         </td>
                       </tr>
                     ))}

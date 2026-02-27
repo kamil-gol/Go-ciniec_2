@@ -38,6 +38,7 @@ export function useRevenueReport(
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
     staleTime: 60000,
+    retry: false, // Don't retry on 401 — avoids console spam
   });
 }
 
@@ -62,6 +63,7 @@ export function useOccupancyReport(
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
     staleTime: 60000,
+    retry: false,
   });
 }
 
@@ -88,6 +90,7 @@ export function usePreparationsReport(
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
     staleTime: 60000,
+    retry: false,
   });
 }
 

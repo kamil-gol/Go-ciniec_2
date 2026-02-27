@@ -6,6 +6,7 @@
  * Updated: extras revenue columns in exports
  * Updated: preparations report PDF export (#159)
  * Updated: preparations report Excel export (#159)
+ * Updated: added Godzina (startTime) column to preparations exports
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
@@ -305,6 +306,7 @@ class ReportsExportService {
   /**
    * Export preparations report to Excel (XLSX)
    * Supports both detailed and summary views
+   * Now includes Godzina (startTime) column
    */
   async exportPreparationsToExcel(report: PreparationsReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -316,7 +318,7 @@ class ReportsExportService {
     );
 
     // ── Title ──
-    sheet.mergeCells('A1:E1');
+    sheet.mergeCells('A1:F1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = `Raport Przygotowań — ${isDetailed ? 'Widok szczegółowy' : 'Widok zbiorczy'}`;
     titleCell.font = { size: 16, bold: true };
@@ -331,7 +333,7 @@ class ReportsExportService {
     // ── Summary KPI ──
     const summary = report.summary;
     sheet.addRow([]);
-    const summaryHeader = sheet.addRow(['PODSUMOWANIE', '', '', '', '']);
+    const summaryHeader = sheet.addRow(['PODSUMOWANIE', '', '', '', '', '']);
     summaryHeader.font = { bold: true, size: 12 };
     summaryHeader.fill = {
       type: 'pattern',
@@ -346,15 +348,15 @@ class ReportsExportService {
       sheet.addRow(['Top kategoria', `${summary.topCategory.icon} ${summary.topCategory.name} (${summary.topCategory.count})`]);
     }
     if (summary.nearestEvent) {
-      sheet.addRow(['Najbliższe wydarzenie', `${summary.nearestEvent.date} ${summary.nearestEvent.startTime} — ${summary.nearestEvent.clientName}`]);
+      sheet.addRow(['Najbliższe wydarzenie', `${summary.nearestEvent.date} ${summary.nearestEvent.startTime || ''} — ${summary.nearestEvent.clientName}`]);
     }
 
     // ── Data section ──
     sheet.addRow([]);
 
     if (isDetailed && report.days) {
-      // Detailed view — day → category → items
-      const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '']);
+      // Detailed view — day → category → items (now with Godzina column)
+      const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '', '']);
       dataHeader.font = { bold: true, size: 12 };
       dataHeader.fill = {
         type: 'pattern',
@@ -367,12 +369,13 @@ class ReportsExportService {
         { key: 'col2', width: 25 },
         { key: 'col3', width: 12 },
         { key: 'col4', width: 18 },
-        { key: 'col5', width: 30 },
+        { key: 'col5', width: 14 },
+        { key: 'col6', width: 30 },
       ];
 
       for (const day of report.days) {
         sheet.addRow([]);
-        const dayRow = sheet.addRow([`📅 ${day.dateLabel}`, '', '', '', `Usług: ${day.totalItems}`]);
+        const dayRow = sheet.addRow([`📅 ${day.dateLabel}`, '', '', '', '', `Usług: ${day.totalItems}`]);
         dayRow.font = { bold: true, size: 11 };
         dayRow.fill = {
           type: 'pattern',
@@ -381,26 +384,33 @@ class ReportsExportService {
         };
 
         for (const cat of day.categories) {
-          const catRow = sheet.addRow([`  ${cat.categoryIcon} ${cat.categoryName}`, '', '', '', '']);
+          const catRow = sheet.addRow([`  ${cat.categoryIcon} ${cat.categoryName}`, '', '', '', '', '']);
           catRow.font = { bold: true, color: { argb: 'FF7C3AED' } };
 
-          // Column headers for items
-          const colRow = sheet.addRow(['  Usługa', 'Rezerwacja', 'Ilość', 'Wartość', 'Uwagi']);
+          // Column headers for items — added Godzina
+          const colRow = sheet.addRow(['  Usługa', 'Rezerwacja', 'Ilość', 'Wartość', 'Godzina', 'Uwagi']);
           colRow.font = { bold: true, size: 9 };
 
           for (const item of cat.items) {
+            const timeStr = item.reservation.startTime
+              ? (item.reservation.endTime
+                  ? `${item.reservation.startTime.substring(0, 5)} – ${item.reservation.endTime.substring(0, 5)}`
+                  : item.reservation.startTime.substring(0, 5))
+              : '—';
+
             sheet.addRow([
               `  ${item.serviceName}`,
               `${item.reservation.clientName} (${item.reservation.hallName})`,
               item.quantity,
               item.priceType === 'FREE' ? 'Gratis' : this.formatCurrency(item.totalPrice),
+              timeStr,
               item.note || '—',
             ]);
           }
         }
       }
     } else if (report.summaryDays) {
-      // Summary view — aggregated by day
+      // Summary view — aggregated by day (now with startTime in Klienci column)
       const dataHeader = sheet.addRow(['ZESTAWIENIE ZBIORCZE', '', '', '', '']);
       dataHeader.font = { bold: true, size: 12 };
       dataHeader.fill = {
@@ -414,7 +424,7 @@ class ReportsExportService {
         { key: 'col2', width: 25 },
         { key: 'col3', width: 15 },
         { key: 'col4', width: 15 },
-        { key: 'col5', width: 30 },
+        { key: 'col5', width: 40 },
       ];
 
       for (const day of report.summaryDays) {
@@ -433,12 +443,15 @@ class ReportsExportService {
           fgColor: { argb: 'FFF9FAFB' },
         };
 
-        const colRow = sheet.addRow(['Usługa', 'Kategoria', 'Łącznie szt.', 'Rezerwacji', 'Klienci']);
+        const colRow = sheet.addRow(['Usługa', 'Kategoria', 'Łącznie szt.', 'Rezerwacji', 'Klienci (ilość) godzina']);
         colRow.font = { bold: true, size: 9 };
 
         for (const item of day.items) {
           const clientNames = item.reservations
-            .map((r: any) => `${r.clientName} (${r.quantity})`)
+            .map((r: any) => {
+              const time = r.startTime ? ` ${r.startTime.substring(0, 5)}` : '';
+              return `${r.clientName} (${r.quantity})${time}`;
+            })
             .join(', ');
 
           sheet.addRow([
