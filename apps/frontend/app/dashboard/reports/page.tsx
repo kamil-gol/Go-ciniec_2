@@ -348,17 +348,15 @@ function PreparationsTab({ query, view }: {
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm table-fixed">
                       <colgroup>
-                        <col className="w-[25%]" />
-                        <col className="w-[8%]" />
-                        <col className="w-[12%]" />
-                        <col className="w-[30%] hidden sm:table-column" />
+                        <col className="w-[30%]" />
+                        <col className="w-[10%]" />
+                        <col className="w-[35%] hidden sm:table-column" />
                         <col className="w-[25%] hidden lg:table-column" />
                       </colgroup>
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase truncate">{"Usługa"}</th>
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilość"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Wartość"}</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacja</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Uwagi</th>
                         </tr>
@@ -368,9 +366,6 @@ function PreparationsTab({ query, view }: {
                           <tr key={item.extraId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                             <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.quantity}</td>
-                            <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">
-                              {item.priceType === 'FREE' ? 'Gratis' : formatCurrency(item.totalPrice)}
-                            </td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs hidden sm:table-cell">
                               <div className="flex flex-col">
                                 <span className="truncate">{item.reservation.clientName} ({item.reservation.hallName})</span>
@@ -426,7 +421,7 @@ function PreparationsTab({ query, view }: {
                       <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Kategoria</th>
                       <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Łącznie szt."}</th>
                       <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacji</th>
-                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Klienci</th>
+                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-column">Klienci</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -440,7 +435,7 @@ function PreparationsTab({ query, view }: {
                         </td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.totalQuantity}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{item.reservationCount}</td>
-                        <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
+                        <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-column truncate">
                           {item.reservations.map((r) => {
                             const time = formatTime(r.startTime);
                             return time
