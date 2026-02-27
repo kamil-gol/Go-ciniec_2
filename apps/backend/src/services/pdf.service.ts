@@ -1165,7 +1165,7 @@ export class PDFService {
     }
   }
 
-  // ── FINANCIAL SUMMARY BOX ──
+  // ── FINANCIAL SUMMARY BOX (compact) ──
   private drawFinancialSummary(
     doc: PDFKit.PDFDocument,
     r: ReservationPDFData,
@@ -1188,76 +1188,76 @@ export class PDFService {
     if (r.toddlers > 0 && r.pricePerToddler > 0) rowCount++;
     if (extrasTotalCalc > 0) rowCount++;
     if (venueSurchargeAmount > 0) rowCount++;
-    rowCount++;
-    if (deposit) rowCount += 2;
-    const boxHeight = 30 + rowCount * 18 + (deposit ? 20 : 0);
+    rowCount++; // RAZEM
+    if (deposit) rowCount += 2; // deposit + DO ZAPŁATY
+    const boxHeight = 22 + rowCount * 13 + (deposit ? 14 : 0);
 
-    this.safePageBreak(doc, boxHeight + 20);
+    this.safePageBreak(doc, boxHeight + 15);
     const boxY = doc.y;
 
     doc.rect(left, boxY, pageWidth, boxHeight).fill(COLORS.bgLight);
     doc.rect(left, boxY, 3, boxHeight).fill(COLORS.accent);
 
-    doc.fillColor(COLORS.textDark).fontSize(11).font(this.getBoldFont());
-    doc.text('PODSUMOWANIE', left + 15, boxY + 10);
+    doc.fillColor(COLORS.textDark).fontSize(9).font(this.getBoldFont());
+    doc.text('PODSUMOWANIE', left + 12, boxY + 7);
 
-    let y = boxY + 30;
-    const labelX = left + 15;
-    const rightEdge = left + pageWidth - 15;
-    const valueWidth = 115;
+    let y = boxY + 22;
+    const labelX = left + 12;
+    const rightEdge = left + pageWidth - 12;
+    const valueWidth = 100;
     const valueX = rightEdge - valueWidth;
 
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textDark);
 
     if (r.adults > 0 && r.pricePerAdult > 0) {
       const adultTotal = r.adults * Number(r.pricePerAdult);
       doc.text(`Dorośli: ${r.adults} os. x ${this.formatCurrency(r.pricePerAdult)}`, labelX, y);
       doc.text(this.formatCurrency(adultTotal), valueX, y, { width: valueWidth, align: 'right' });
-      y += 16;
+      y += 13;
     }
     /* istanbul ignore next */
     if (r.children > 0 && r.pricePerChild > 0) {
       const childTotal = r.children * Number(r.pricePerChild);
       doc.text(`Dzieci (4-12 lat): ${r.children} os. x ${this.formatCurrency(r.pricePerChild)}`, labelX, y);
       doc.text(this.formatCurrency(childTotal), valueX, y, { width: valueWidth, align: 'right' });
-      y += 16;
+      y += 13;
     }
     /* istanbul ignore next */
     if (r.toddlers > 0 && r.pricePerToddler > 0) {
       const toddlerTotal = r.toddlers * Number(r.pricePerToddler);
       doc.text(`Maluchy (0-3 lata): ${r.toddlers} os. x ${this.formatCurrency(r.pricePerToddler)}`, labelX, y);
       doc.text(this.formatCurrency(toddlerTotal), valueX, y, { width: valueWidth, align: 'right' });
-      y += 16;
+      y += 13;
     }
     if (extrasTotalCalc > 0) {
       doc.text('Usługi dodatkowe', labelX, y);
       doc.text(this.formatCurrency(extrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
-      y += 16;
+      y += 13;
     }
     if (venueSurchargeAmount > 0) {
       const surchargeLabel = r.venueSurchargeLabel || 'Dopłata za cały obiekt';
       doc.text(surchargeLabel, labelX, y);
       doc.text(this.formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
-      y += 16;
+      y += 13;
     }
 
-    y += 4;
+    y += 2;
     doc.strokeColor(COLORS.border).lineWidth(0.5)
        .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
-    y += 8;
+    y += 5;
 
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
     doc.text('RAZEM', labelX, y);
     doc.text(this.formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
-    y += 20;
+    y += 14;
 
     if (deposit) {
-      const depositBadgeWidth = 40;
-      const depositBadgeGap = 6;
+      const depositBadgeWidth = 32;
+      const depositBadgeGap = 4;
       const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
       const depositValueX = valueX;
 
-      doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
+      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
       /* istanbul ignore next */
       const dueDate = deposit.dueDate instanceof Date
         ? this.formatDate(deposit.dueDate)
@@ -1269,23 +1269,23 @@ export class PDFService {
       const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
       const statusText = deposit.paid ? 'OK' : 'OCZEK.';
       const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
-      doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 13, 3).fill(statusColor);
-      doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
-      doc.text(statusText, depositBadgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
+      doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(statusColor);
+      doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
+      doc.text(statusText, depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
 
-      y += 18;
+      y += 14;
 
-      doc.strokeColor(COLORS.accent).lineWidth(1)
+      doc.strokeColor(COLORS.accent).lineWidth(0.8)
          .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
-      y += 8;
+      y += 5;
 
       const remaining = displayTotal - Number(deposit.amount);
-      doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
+      doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.primary);
       doc.text('DO ZAPŁATY', labelX, y);
       doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
     }
 
-    doc.y = boxY + boxHeight + 5;
+    doc.y = boxY + boxHeight + 3;
   }
 
   // ═══════════════════════════════════════════════════════════════
