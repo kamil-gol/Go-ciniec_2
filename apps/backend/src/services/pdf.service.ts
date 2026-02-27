@@ -672,17 +672,55 @@ export class PDFService {
   /**
    * Draw "Ważne informacje" section — reservation terms and payment rules.
    * Displayed as a compact box with gold accent bar before the footer.
+   * Accepts optional eventDate to calculate guest confirmation deadline dynamically.
+   * Banner color: gold (>30d), orange (3-30d), red (<=3d).
    */
   private drawImportantInfoSection(
     doc: PDFKit.PDFDocument,
     left: number,
-    pageWidth: number
+    pageWidth: number,
+    eventDate?: Date
   ): void {
-    this.safePageBreak(doc, 160);
+    this.safePageBreak(doc, 200);
 
     doc.moveDown(0.5);
     this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
+
+    // ── Calculate days until event for dynamic text ──
+    const now = new Date();
+    let daysUntilEvent: number | null = null;
+    if (eventDate) {
+      daysUntilEvent = Math.ceil(
+        (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+    }
+
+    // ── Highlighted banner with guest confirmation deadline ──
+    if (eventDate && daysUntilEvent !== null) {
+      let bannerText: string;
+      let bannerColor: string;
+
+      if (daysUntilEvent > 30) {
+        const deadline = new Date(eventDate);
+        deadline.setDate(deadline.getDate() - 30);
+        bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(deadline)}`;
+        bannerColor = COLORS.accent;
+      } else if (daysUntilEvent > 3) {
+        bannerText = 'UWAGA: Ostateczną liczbę gości należy potwierdzić niezwłocznie przy rezerwacji';
+        bannerColor = COLORS.warning;
+      } else {
+        bannerText = 'UWAGA: Liczba gości musi zostać potwierdzona przy rezerwacji i nie podlega zmianie';
+        bannerColor = COLORS.danger;
+      }
+
+      const bannerHeight = 20;
+      const bannerY = doc.y;
+      doc.rect(left, bannerY, pageWidth, bannerHeight).fill(bannerColor);
+      doc.fillColor('#ffffff').fontSize(8).font(this.getBoldFont());
+      doc.text(bannerText, left + 10, bannerY + 5, { width: pageWidth - 20, align: 'center' });
+      doc.y = bannerY + bannerHeight + 6;
+    }
 
     // Section title with icon-like accent
     const titleY = doc.y;
@@ -693,13 +731,41 @@ export class PDFService {
 
     doc.y = titleY + 22;
 
+    // ── Dynamic info items based on days until event ──
+
+    // Point 1 — menu confirmation (with last-minute fallback)
+    const menuItem = 'Ustalenie menu następuje nie później niż 30 dni przed przyjęciem. '
+      + 'W przypadku rezerwacji złożonej w terminie krótszym niż 30 dni przed wydarzeniem '
+      + '— menu należy ustalić niezwłocznie przy rezerwacji.';
+
+    // Point 2 — guest count confirmation (3 variants based on daysUntilEvent)
+    let guestItem: string;
+    if (daysUntilEvent !== null && daysUntilEvent <= 3) {
+      // Variant C: <= 3 days — no changes possible
+      guestItem = 'Ostateczna liczba gości powinna zostać potwierdzona niezwłocznie '
+        + 'przy rezerwacji. Ze względu na bliski termin wydarzenia, zmiana '
+        + 'potwierdzonej liczby gości nie jest możliwa.';
+    } else if (daysUntilEvent !== null && daysUntilEvent <= 30) {
+      // Variant B: 3-30 days — immediate confirmation, but 10% reduction still possible
+      guestItem = 'Ostateczna liczba gości powinna zostać potwierdzona nie później niż '
+        + '30 dni przed przyjęciem. W przypadku rezerwacji złożonej w terminie '
+        + 'krótszym — potwierdzenie wymagane jest niezwłocznie przy rezerwacji. '
+        + 'Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.';
+    } else {
+      // Variant A: > 30 days (or no eventDate) — standard
+      guestItem = 'Ostateczna liczba gości powinna zostać potwierdzona nie później niż '
+        + '30 dni przed przyjęciem. Potwierdzoną liczbę można zmniejszyć maks. '
+        + 'o 10% do 3 dni przed terminem.';
+    }
+
+    // Point 3 — payment terms (unchanged)
+    const paymentItem = 'Warunki płatności: 500,00 zł przy rezerwacji terminu, 50% całości na 3 dni '
+      + 'przed przyjęciem, pozostała kwota w dniu przyjęcia (przed rozpoczęciem lub do godz. 20:00).';
+
+    const items = [menuItem, guestItem, paymentItem];
+
     // Info items — numbered list in a light box
     const boxY = doc.y;
-    const items = [
-      'Potwierdzenie rezerwacji oraz ustalenie menu następuje nie później niż 30 dni przed planowanym przyjęciem.',
-      'Ostateczna liczba gości powinna zostać potwierdzona min. 30 dni przed przyjęciem. Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.',
-      'Warunki płatności: 500,00 zł przy rezerwacji terminu, 50% całości na 3 dni przed przyjęciem, pozostała kwota w dniu przyjęcia (przed rozpoczęciem lub do godz. 20:00).',
-    ];
 
     // Calculate box height
     doc.fontSize(7).font(this.getRegularFont());
@@ -958,7 +1024,12 @@ export class PDFService {
     }
 
     // ── 8. IMPORTANT INFO SECTION ──
-    this.drawImportantInfoSection(doc, left, pageWidth);
+    const eventDate = r.startDateTime
+      ? new Date(r.startDateTime)
+      : r.date
+        ? new Date(r.date)
+        : undefined;
+    this.drawImportantInfoSection(doc, left, pageWidth, eventDate);
 
     // ── 9. FOOTER ──
     doc.moveDown(1);
