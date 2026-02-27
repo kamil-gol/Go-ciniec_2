@@ -7,11 +7,13 @@
  * Updated: preparations report PDF export (#159)
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
+ * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
  * Excel generation remains here (ExcelJS).
  */
 
 import ExcelJS from 'exceljs';
 import { pdfService } from './pdf.service';
+import { generatePreparationsReportPDF } from './pdf-preparations.integration';
 import type {
   RevenueReport,
   OccupancyReport,
@@ -29,7 +31,7 @@ class ReportsExportService {
    */
   async exportRevenueToExcel(report: RevenueReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Raport Przychod\u00f3w');
+    const sheet = workbook.addWorksheet('Raport Przychodów');
 
     // Set column widths
     sheet.columns = [
@@ -40,7 +42,7 @@ class ReportsExportService {
     // Title
     sheet.mergeCells('A1:B1');
     const titleCell = sheet.getCell('A1');
-    titleCell.value = 'Raport Przychod\u00f3w';
+    titleCell.value = 'Raport Przychodów';
     titleCell.font = { size: 16, bold: true };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     sheet.getRow(1).height = 30;
@@ -62,17 +64,17 @@ class ReportsExportService {
       fgColor: { argb: 'FFE0E0E0' },
     };
 
-    sheet.addRow(['Ca\u0142kowity przych\u00f3d', this.formatCurrency(report.summary.totalRevenue)]);
-    sheet.addRow(['\u015aredni przych\u00f3d na rezerwacj\u0119', this.formatCurrency(report.summary.avgRevenuePerReservation)]);
+    sheet.addRow(['Całkowity przychód', this.formatCurrency(report.summary.totalRevenue)]);
+    sheet.addRow(['Średni przychód na rezerwację', this.formatCurrency(report.summary.avgRevenuePerReservation)]);
     sheet.addRow(['Liczba rezerwacji', report.summary.totalReservations]);
-    sheet.addRow(['Uko\u0144czone rezerwacje', report.summary.completedReservations]);
-    sheet.addRow(['Oczekuj\u0105cy przych\u00f3d', this.formatCurrency(report.summary.pendingRevenue)]);
+    sheet.addRow(['Ukończone rezerwacje', report.summary.completedReservations]);
+    sheet.addRow(['Oczekujący przychód', this.formatCurrency(report.summary.pendingRevenue)]);
     sheet.addRow(['Wzrost %', `${report.summary.growthPercent}%`]);
 
     // Extras revenue in summary
     const extrasRevenue = (report.summary as any).extrasRevenue;
     if (extrasRevenue !== undefined && extrasRevenue > 0) {
-      const extrasRow = sheet.addRow(['Przychody z us\u0142ug dodatkowych (extras)', this.formatCurrency(extrasRevenue)]);
+      const extrasRow = sheet.addRow(['Przychody z usług dodatkowych (extras)', this.formatCurrency(extrasRevenue)]);
       extrasRow.getCell(1).font = { bold: true, color: { argb: 'FF7C3AED' } };
       extrasRow.getCell(2).font = { bold: true, color: { argb: 'FF7C3AED' } };
     }
@@ -80,7 +82,7 @@ class ReportsExportService {
     // Breakdown by period
     if (report.breakdown.length > 0) {
       sheet.addRow([]);
-      const breakdownHeader = sheet.addRow(['ROZK\u0141AD WG OKRESU', '']);
+      const breakdownHeader = sheet.addRow(['ROZKŁAD WG OKRESU', '']);
       breakdownHeader.font = { bold: true, size: 12 };
       breakdownHeader.fill = {
         type: 'pattern',
@@ -88,7 +90,7 @@ class ReportsExportService {
         fgColor: { argb: 'FFE0E0E0' },
       };
 
-      sheet.addRow(['Okres', 'Przych\u00f3d', 'Liczba', '\u015arednia']);
+      sheet.addRow(['Okres', 'Przychód', 'Liczba', 'Średnia']);
       sheet.columns = [
         { key: 'period', width: 20 },
         { key: 'revenue', width: 20 },
@@ -117,7 +119,7 @@ class ReportsExportService {
         fgColor: { argb: 'FFE0E0E0' },
       };
 
-      sheet.addRow(['Sala', 'Przych\u00f3d', 'Liczba', '\u015arednia']);
+      sheet.addRow(['Sala', 'Przychód', 'Liczba', 'Średnia']);
       report.byHall.forEach(item => {
         sheet.addRow([
           item.hallName,
@@ -139,7 +141,7 @@ class ReportsExportService {
         fgColor: { argb: 'FFE0E0E0' },
       };
 
-      sheet.addRow(['Typ wydarzenia', 'Przych\u00f3d', 'Liczba', '\u015arednia']);
+      sheet.addRow(['Typ wydarzenia', 'Przychód', 'Liczba', 'Średnia']);
       report.byEventType.forEach(item => {
         sheet.addRow([
           item.eventTypeName,
@@ -154,7 +156,7 @@ class ReportsExportService {
     const byServiceItem = (report as any).byServiceItem;
     if (byServiceItem && byServiceItem.length > 0) {
       sheet.addRow([]);
-      const extrasHeader = sheet.addRow(['PRZYCHODY Z US\u0141UG DODATKOWYCH', '']);
+      const extrasHeader = sheet.addRow(['PRZYCHODY Z USŁUG DODATKOWYCH', '']);
       extrasHeader.font = { bold: true, size: 12, color: { argb: 'FF7C3AED' } };
       extrasHeader.fill = {
         type: 'pattern',
@@ -162,7 +164,7 @@ class ReportsExportService {
         fgColor: { argb: 'FFF5F3FF' },
       };
 
-      const colHeader = sheet.addRow(['Us\u0142uga', 'Przych\u00f3d', 'U\u017cy\u0107', '\u015ar. przych\u00f3d']);
+      const colHeader = sheet.addRow(['Usługa', 'Przychód', 'Użyć', 'Śr. przychód']);
       colHeader.font = { bold: true };
 
       byServiceItem.forEach((item: any) => {
@@ -191,7 +193,7 @@ class ReportsExportService {
    */
   async exportOccupancyToExcel(report: OccupancyReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Raport Zaj\u0119to\u015bci');
+    const sheet = workbook.addWorksheet('Raport Zajętości');
 
     // Set column widths
     sheet.columns = [
@@ -202,7 +204,7 @@ class ReportsExportService {
     // Title
     sheet.mergeCells('A1:B1');
     const titleCell = sheet.getCell('A1');
-    titleCell.value = 'Raport Zaj\u0119to\u015bci';
+    titleCell.value = 'Raport Zajętości';
     titleCell.font = { size: 16, bold: true };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     sheet.getRow(1).height = 30;
@@ -221,8 +223,8 @@ class ReportsExportService {
       fgColor: { argb: 'FFE0E0E0' },
     };
 
-    sheet.addRow(['\u015arednia zaj\u0119to\u015b\u0107', `${report.summary.avgOccupancy}%`]);
-    sheet.addRow(['Najpopularniejszy dzie\u0144', report.summary.peakDay]);
+    sheet.addRow(['Średnia zajętość', `${report.summary.avgOccupancy}%`]);
+    sheet.addRow(['Najpopularniejszy dzień', report.summary.peakDay]);
     sheet.addRow(['Najpopularniejsza sala', report.summary.peakHall || 'Brak danych']);
     sheet.addRow(['Liczba rezerwacji', report.summary.totalReservations]);
     sheet.addRow(['Dni w okresie', report.summary.totalDaysInPeriod]);
@@ -230,7 +232,7 @@ class ReportsExportService {
     // Halls ranking
     if (report.halls.length > 0) {
       sheet.addRow([]);
-      const hallsHeader = sheet.addRow(['ZAJ\u0118TO\u015a\u0106 SAL', '']);
+      const hallsHeader = sheet.addRow(['ZAJĘTOŚĆ SAL', '']);
       hallsHeader.font = { bold: true, size: 12 };
       hallsHeader.fill = {
         type: 'pattern',
@@ -238,7 +240,7 @@ class ReportsExportService {
         fgColor: { argb: 'FFE0E0E0' },
       };
 
-      sheet.addRow(['Sala', 'Zaj\u0119to\u015b\u0107 %', 'Rezerwacje', '\u015ar. go\u015bci']);
+      sheet.addRow(['Sala', 'Zajętość %', 'Rezerwacje', 'Śr. gości']);
       sheet.columns = [
         { key: 'hall', width: 25 },
         { key: 'occupancy', width: 15 },
@@ -284,7 +286,7 @@ class ReportsExportService {
         fgColor: { argb: 'FFE0E0E0' },
       };
 
-      sheet.addRow(['Dzie\u0144 tygodnia', 'Liczba rezerwacji']);
+      sheet.addRow(['Dzień tygodnia', 'Liczba rezerwacji']);
       report.peakDaysOfWeek.forEach(day => {
         sheet.addRow([this.translateDayOfWeek(day.dayOfWeek), day.count]);
       });
@@ -318,11 +320,11 @@ class ReportsExportService {
 
   /**
    * Export preparations report to PDF (premium design).
-   * Delegates to pdfService.generatePreparationsReportPDF().
-   * #159
+   * Uses standalone module: pdf-preparations.integration.ts
+   * #159 — Raport przygotowań usług dodatkowych
    */
   async exportPreparationsToPDF(report: PreparationsReport): Promise<Buffer> {
-    return pdfService.generatePreparationsReportPDF(report);
+    return generatePreparationsReportPDF(report);
   }
 
   // ============================================
@@ -344,11 +346,11 @@ class ReportsExportService {
    */
   private translateDayOfWeek(day: string): string {
     const translations: Record<string, string> = {
-      'Monday': 'Poniedzia\u0142ek',
+      'Monday': 'Poniedziałek',
       'Tuesday': 'Wtorek',
-      'Wednesday': '\u015aroda',
+      'Wednesday': 'Środa',
       'Thursday': 'Czwartek',
-      'Friday': 'Pi\u0105tek',
+      'Friday': 'Piątek',
       'Saturday': 'Sobota',
       'Sunday': 'Niedziela',
     };
