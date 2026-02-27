@@ -83,6 +83,14 @@ router.get('/export/occupancy/excel', reportsController.exportOccupancyExcel.bin
 router.get('/export/occupancy/pdf', reportsController.exportOccupancyPDF.bind(reportsController));
 
 /**
+ * GET /api/reports/export/preparations/excel
+ * Export preparations report to Excel (XLSX)
+ * @query Same parameters as /preparations endpoint
+ * @returns XLSX file download
+ */
+router.get('/export/preparations/excel', reportsController.exportPreparationsExcel.bind(reportsController));
+
+/**
  * GET /api/reports/export/preparations/pdf
  * Export preparations report to PDF (premium design)
  * @query Same parameters as /preparations endpoint
