@@ -16,6 +16,7 @@
  * FIX: Removed emoji/icons from PDF text — PDFKit cannot render emoji
  * in standard fonts, causing [] artifacts.
  * FIX: Added startTime to reservation labels in both views.
+ * FIX: Removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
@@ -188,6 +189,7 @@ export function buildPreparationsReportPDF(
   }
 
   // ── 5. SUMMARY VIEW — aggregated table per day ──
+  // FIX: removed (quantity) from Klienci column — duplicates Łącznie szt. column
   const summaryDays = (data as any).summaryDays;
   if (data.filters.view === 'summary' && summaryDays && summaryDays.length > 0) {
     for (const day of summaryDays) {
@@ -213,8 +215,13 @@ export function buildPreparationsReportPDF(
       doc.moveDown(0.2);
 
       const summaryRows = day.items.map((item: any) => {
+        // Changed from: clientName startTime (quantity)
+        // To: clientName startTime (no quantity — already in Łącznie szt. column)
         const clientNames = item.reservations
-          ? item.reservations.map((r: any) => `${r.clientName}${r.startTime ? ' ' + r.startTime : ''} (${r.quantity})`).join(', ')
+          ? item.reservations.map((r: any) => {
+              const time = r.startTime ? ` ${r.startTime}` : '';
+              return `${r.clientName}${time}`;
+            }).join(', ')
           : '';
         return [
           item.serviceName,
