@@ -8,6 +8,7 @@
  * Updated: preparations report Excel export (#159)
  * Updated: added Godzina (startTime) column to preparations exports
  * Updated: removed (quantity) from summary Klienci — duplicates Łącznie szt. column
+ * Updated: removed PODSUMOWANIE section and nearestEvent from preparations exports
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
@@ -309,6 +310,7 @@ class ReportsExportService {
    * Supports both detailed and summary views
    * Now includes Godzina (startTime) column
    * FIX: removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
+   * FIX: removed PODSUMOWANIE section and nearestEvent from preparations exports
    */
   async exportPreparationsToExcel(report: PreparationsReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -332,28 +334,7 @@ class ReportsExportService {
     sheet.addRow(['Okres:', `${filters.dateFrom} — ${filters.dateTo}`]);
     sheet.addRow(['Widok:', isDetailed ? 'Szczegółowy' : 'Zbiorczy']);
 
-    // ── Summary KPI ──
-    const summary = report.summary;
-    sheet.addRow([]);
-    const summaryHeader = sheet.addRow(['PODSUMOWANIE', '', '', '', '', '']);
-    summaryHeader.font = { bold: true, size: 12 };
-    summaryHeader.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFF3E8FF' },
-    };
-
-    sheet.addRow(['Łączna liczba usług', summary.totalExtras]);
-    sheet.addRow(['Rezerwacje z extras', summary.totalReservationsWithExtras]);
-
-    if (summary.topCategory) {
-      sheet.addRow(['Top kategoria', `${summary.topCategory.icon} ${summary.topCategory.name} (${summary.topCategory.count})`]);
-    }
-    if (summary.nearestEvent) {
-      sheet.addRow(['Najbliższe wydarzenie', `${summary.nearestEvent.date} ${summary.nearestEvent.startTime || ''} — ${summary.nearestEvent.clientName}`]);
-    }
-
-    // ── Data section ──
+    // ── Data section (no PODSUMOWANIE) ──
     sheet.addRow([]);
 
     if (isDetailed && report.days) {

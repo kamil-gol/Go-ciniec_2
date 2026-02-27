@@ -17,6 +17,7 @@
  * in standard fonts, causing [] artifacts.
  * FIX: Added startTime to reservation labels in both views.
  * FIX: Removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
+ * FIX: Removed PODSUMOWANIE section and nearestEvent from PDF export.
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
@@ -78,39 +79,7 @@ export function buildPreparationsReportPDF(
   drawSeparator(ctx, left, pageWidth);
   doc.moveDown(0.5);
 
-  // ── 3. KPI SUMMARY INFO BOX ──
-  const summary = data.summary as any;
-  const summaryLines: string[] = [
-    `Łączna liczba usług: ${summary.totalExtras ?? 0}`,
-    `Rezerwacje z extras: ${summary.totalReservationsWithExtras ?? 0}`,
-  ];
-  if (summary.topCategory) {
-    const tc = summary.topCategory;
-    if (typeof tc === 'object' && tc.name) {
-      summaryLines.push(`Top kategoria: ${tc.name} (${tc.count || 0})`);
-    } else {
-      summaryLines.push(`Top kategoria: ${tc}`);
-    }
-  }
-  if (summary.nearestEvent) {
-    const ne = summary.nearestEvent;
-    if (typeof ne === 'object' && ne.date) {
-      const neTime = ne.startTime ? ` ${ne.startTime}` : '';
-      summaryLines.push(`Najbliższe wydarzenie: ${ne.date}${neTime} — ${ne.clientName || ''}`);
-    } else {
-      summaryLines.push(`Najbliższe wydarzenie: ${ne}`);
-    }
-  }
-
-  drawInfoBox(ctx, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
-  const summaryBoxHeight = calculateInfoBoxHeight(summaryLines.length);
-  doc.y = doc.y + summaryBoxHeight + 5;
-
-  doc.moveDown(0.4);
-  drawSeparator(ctx, left, pageWidth);
-  doc.moveDown(0.4);
-
-  // ── 4. DETAILED VIEW — daily timeline ──
+  // ── 3. DETAILED VIEW — daily timeline ──
   const days = (data as any).days;
   if (data.filters.view === 'detailed' && days && days.length > 0) {
     for (const day of days) {
@@ -188,7 +157,7 @@ export function buildPreparationsReportPDF(
     }
   }
 
-  // ── 5. SUMMARY VIEW — aggregated table per day ──
+  // ── 4. SUMMARY VIEW — aggregated table per day ──
   // FIX: removed (quantity) from Klienci column — duplicates Łącznie szt. column
   const summaryDays = (data as any).summaryDays;
   if (data.filters.view === 'summary' && summaryDays && summaryDays.length > 0) {
@@ -254,7 +223,7 @@ export function buildPreparationsReportPDF(
     }
   }
 
-  // ── 6. FOOTER ──
+  // ── 5. FOOTER ──
   doc.moveDown(0.5);
   drawInlineFooter(ctx, left, pageWidth);
 }
@@ -287,36 +256,6 @@ function drawHeaderBanner(ctx: PreparationsPDFContext, badgeLabel: string, badge
   doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(badgeColor);
   doc.fillColor('#ffffff').fontSize(9).font(ctx.boldFont);
   doc.text(badgeLabel, badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
-}
-
-function drawInfoBox(
-  ctx: PreparationsPDFContext, title: string,
-  x: number, y: number, width: number, lines: string[]
-): void {
-  const { doc } = ctx;
-  const boxHeight = calculateInfoBoxHeight(lines.length);
-
-  doc.rect(x, y, width, boxHeight).fill(COLORS.bgLight);
-  doc.rect(x, y, 3, boxHeight).fill(COLORS.accent);
-
-  doc.fillColor(COLORS.textMuted).fontSize(7).font(ctx.boldFont);
-  doc.text(title, x + 12, y + 8, { width: width - 20 });
-
-  doc.fontSize(9).font(ctx.regularFont).fillColor(COLORS.textDark);
-  let lineY = y + 22;
-  lines.forEach((line, i) => {
-    if (i === 0) {
-      doc.font(ctx.boldFont).fontSize(10);
-    } else {
-      doc.font(ctx.regularFont).fontSize(8);
-    }
-    doc.text(line, x + 12, lineY, { width: width - 20 });
-    lineY += i === 0 ? 15 : 12;
-  });
-}
-
-function calculateInfoBoxHeight(lineCount: number): number {
-  return Math.max(60, 28 + lineCount * 13);
 }
 
 function drawSeparator(ctx: PreparationsPDFContext, left: number, width: number): void {
