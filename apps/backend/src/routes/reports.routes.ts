@@ -36,6 +36,16 @@ router.get('/revenue', reportsController.getRevenueReport.bind(reportsController
  */
 router.get('/occupancy', reportsController.getOccupancyReport.bind(reportsController));
 
+/**
+ * GET /api/reports/preparations
+ * Get preparations report — what service extras need to be prepared
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query categoryId - Filter by ServiceCategory UUID [optional]
+ * @query view - 'detailed' (per reservation) or 'summary' (aggregated) [optional, default: detailed]
+ */
+router.get('/preparations', reportsController.getPreparationsReport.bind(reportsController));
+
 // ============================================
 // EXPORT ENDPOINTS
 // ============================================
@@ -71,5 +81,13 @@ router.get('/export/occupancy/excel', reportsController.exportOccupancyExcel.bin
  * @returns PDF file download
  */
 router.get('/export/occupancy/pdf', reportsController.exportOccupancyPDF.bind(reportsController));
+
+/**
+ * GET /api/reports/export/preparations/pdf
+ * Export preparations report to PDF (premium design)
+ * @query Same parameters as /preparations endpoint
+ * @returns PDF file download
+ */
+router.get('/export/preparations/pdf', reportsController.exportPreparationsPDF.bind(reportsController));
 
 export default router;
