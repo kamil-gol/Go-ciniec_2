@@ -9,6 +9,9 @@ import type {
   OccupancyReportFilters,
   OccupancyReport,
   OccupancyReportResponse,
+  PreparationsReportFilters,
+  PreparationsReport,
+  PreparationsReportResponse,
 } from '@/types/reports.types';
 
 // ============================================
@@ -34,7 +37,8 @@ export function useRevenueReport(
       return response.data.data;
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
-    staleTime: 60000, // 1 min
+    staleTime: 60000,
+    retry: false, // Don't retry on 401 — avoids console spam
   });
 }
 
@@ -59,6 +63,34 @@ export function useOccupancyReport(
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
     staleTime: 60000,
+    retry: false,
+  });
+}
+
+// ============================================
+// PREPARATIONS REPORT HOOK (#159)
+// ============================================
+
+export function usePreparationsReport(
+  filters: PreparationsReportFilters,
+  enabled: boolean = true
+): UseQueryResult<PreparationsReport> {
+  return useQuery({
+    queryKey: ['reports', 'preparations', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('dateFrom', filters.dateFrom);
+      params.append('dateTo', filters.dateTo);
+      params.append('view', filters.view);
+      if (filters.categoryId) params.append('categoryId', filters.categoryId);
+      if (filters.status) params.append('status', filters.status);
+
+      const response = await api.get<PreparationsReportResponse>(`/reports/preparations?${params.toString()}`);
+      return response.data.data;
+    },
+    enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
+    staleTime: 60000,
+    retry: false,
   });
 }
 
@@ -91,7 +123,6 @@ export const exportRevenueExcel = (filters: RevenueReportFilters) => {
   if (filters.hallId) params.append('hallId', filters.hallId);
   if (filters.eventTypeId) params.append('eventTypeId', filters.eventTypeId);
   if (filters.status) params.append('status', filters.status);
-
   return downloadFile(
     `/reports/export/revenue/excel?${params.toString()}`,
     `raport_przychody_${filters.dateFrom}_${filters.dateTo}.xlsx`
@@ -106,7 +137,6 @@ export const exportRevenuePDF = (filters: RevenueReportFilters) => {
   if (filters.hallId) params.append('hallId', filters.hallId);
   if (filters.eventTypeId) params.append('eventTypeId', filters.eventTypeId);
   if (filters.status) params.append('status', filters.status);
-
   return downloadFile(
     `/reports/export/revenue/pdf?${params.toString()}`,
     `raport_przychody_${filters.dateFrom}_${filters.dateTo}.pdf`
@@ -118,7 +148,6 @@ export const exportOccupancyExcel = (filters: OccupancyReportFilters) => {
   params.append('dateFrom', filters.dateFrom);
   params.append('dateTo', filters.dateTo);
   if (filters.hallId) params.append('hallId', filters.hallId);
-
   return downloadFile(
     `/reports/export/occupancy/excel?${params.toString()}`,
     `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.xlsx`
@@ -130,9 +159,38 @@ export const exportOccupancyPDF = (filters: OccupancyReportFilters) => {
   params.append('dateFrom', filters.dateFrom);
   params.append('dateTo', filters.dateTo);
   if (filters.hallId) params.append('hallId', filters.hallId);
-
   return downloadFile(
     `/reports/export/occupancy/pdf?${params.toString()}`,
     `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.pdf`
+  );
+};
+
+// ============================================
+// PREPARATIONS EXPORT HELPERS (#159)
+// ============================================
+
+export const exportPreparationsExcel = (filters: PreparationsReportFilters) => {
+  const params = new URLSearchParams();
+  params.append('dateFrom', filters.dateFrom);
+  params.append('dateTo', filters.dateTo);
+  params.append('view', filters.view);
+  if (filters.categoryId) params.append('categoryId', filters.categoryId);
+  if (filters.status) params.append('status', filters.status);
+  return downloadFile(
+    `/reports/export/preparations/excel?${params.toString()}`,
+    `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.xlsx`
+  );
+};
+
+export const exportPreparationsPDF = (filters: PreparationsReportFilters) => {
+  const params = new URLSearchParams();
+  params.append('dateFrom', filters.dateFrom);
+  params.append('dateTo', filters.dateTo);
+  params.append('view', filters.view);
+  if (filters.categoryId) params.append('categoryId', filters.categoryId);
+  if (filters.status) params.append('status', filters.status);
+  return downloadFile(
+    `/reports/export/preparations/pdf?${params.toString()}`,
+    `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.pdf`
   );
 };

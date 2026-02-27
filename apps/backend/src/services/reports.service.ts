@@ -2,8 +2,12 @@
 
 /**
  * Reports Service
- * Business logic for revenue, occupancy, and other reports
+ * Business logic for revenue, occupancy, preparations, and other reports
  * Updated: extras revenue tracking in revenue reports
+ * Updated: preparations report for service extras (#159)
+ * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
+ * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
+ * FIX: fallback startTime/endTime from startDateTime/endDateTime
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -20,7 +24,44 @@ import type {
   OccupancyByHallItem,
   PeakHourItem,
   PeakDayOfWeekItem,
+  PreparationsReportFilters,
+  PreparationsReport,
+  PreparationItem,
+  PreparationCategoryGroup,
+  PreparationDayGroup,
+  PreparationSummaryItem,
+  PreparationSummaryDayGroup,
 } from '@/types/reports.types';
+
+// Polish day/month names for date labels
+const DAY_NAMES_PL = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+const MONTH_NAMES_PL = [
+  'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
+  'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia',
+];
+
+/**
+ * Format date as Polish label: "Sobota, 15 marca 2026"
+ */
+function formatDateLabelPL(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  const dayName = DAY_NAMES_PL[d.getDay()];
+  const day = d.getDate();
+  const month = MONTH_NAMES_PL[d.getMonth()];
+  const year = d.getFullYear();
+  return `${dayName}, ${day} ${month} ${year}`;
+}
+
+/**
+ * Extract HH:MM time string from a DateTime field.
+ * Fallback when varchar startTime/endTime is null.
+ */
+function extractTimeFromDateTime(dt: Date | string | null | undefined): string | null {
+  if (!dt) return null;
+  const d = typeof dt === 'string' ? new Date(dt) : dt;
+  if (isNaN(d.getTime())) return null;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 /**
  * Calculate extras revenue for a single reservation from its extras.
@@ -195,9 +236,7 @@ class ReportsService {
       summary: {
         totalRevenue: Math.round(totalRevenue * 100) / 100,
         avgRevenuePerReservation: Math.round(avgRevenuePerReservation * 100) / 100,
-        /* istanbul ignore next -- null when no reservations in period */
         maxRevenueDay: maxRevenueDay?.period || null,
-        /* istanbul ignore next */
         maxRevenueDayAmount: Math.round((maxRevenueDay?.revenue || 0) * 100) / 100,
         growthPercent,
         totalReservations,
@@ -251,7 +290,7 @@ class ReportsService {
     const grouped = new Map<string, { revenue: number; count: number }>();
 
     reservations.forEach(r => {
-      const period = r.date; // "2026-02-16"
+      const period = r.date;
       const existing = grouped.get(period) || { revenue: 0, count: 0 };
       grouped.set(period, {
         revenue: existing.revenue + Number(r.totalPrice || 0),
@@ -283,7 +322,7 @@ class ReportsService {
 
       switch (groupBy) {
         case 'day':
-          period = r.date; // "2026-02-16"
+          period = r.date;
           break;
         case 'week':
           const weekNum = this.getWeekNumber(date);
@@ -387,15 +426,9 @@ class ReportsService {
   // OCCUPANCY REPORTS
   // ============================================
 
-  /**
-   * Get comprehensive occupancy report
-   * @param filters - date range, optional hallId
-   * @returns Occupancy report with summary, hall rankings, peak times
-   */
   async getOccupancyReport(filters: OccupancyReportFilters): Promise<OccupancyReport> {
     const { dateFrom, dateTo, hallId } = filters;
 
-    // Build where clause
     const whereClause: any = {
       date: { gte: dateFrom, lte: dateTo },
       status: { not: 'CANCELLED' },
@@ -403,7 +436,6 @@ class ReportsService {
 
     if (hallId) whereClause.hallId = hallId;
 
-    // Get all reservations in period
     const reservations = await prisma.reservation.findMany({
       where: whereClause,
       select: {
@@ -416,29 +448,22 @@ class ReportsService {
       orderBy: { date: 'asc' },
     });
 
-    // Calculate total days in period
     const from = new Date(dateFrom);
     const to = new Date(dateTo);
     const totalDaysInPeriod = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Get unique dates with reservations
     const uniqueDates = new Set(reservations.map(r => r.date));
     const daysWithReservations = uniqueDates.size;
 
-    // Calculate avg occupancy %
     const avgOccupancy = totalDaysInPeriod > 0
       ? Math.round((daysWithReservations / totalDaysInPeriod) * 100 * 10) / 10
       : 0;
 
-    // Peak day of week analysis
     const peakDaysOfWeek = this.analyzePeakDaysOfWeek(reservations);
-    /* istanbul ignore next -- empty when no reservations in period */
     const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'Brak danych';
 
-    // Peak hour analysis
     const peakHours = this.analyzePeakHours(reservations);
 
-    // Occupancy by hall
     const hallsData = this.analyzeOccupancyByHall(reservations, totalDaysInPeriod);
     const peakHall = hallsData.sort((a, b) => b.reservations - a.reservations)[0] || null;
 
@@ -446,30 +471,25 @@ class ReportsService {
       summary: {
         avgOccupancy,
         peakDay,
-        /* istanbul ignore next -- null when no halls have reservations */
         peakHall: peakHall?.hallName || null,
-        /* istanbul ignore next */
         peakHallId: peakHall?.hallId || null,
         totalReservations: reservations.length,
         totalDaysInPeriod,
       },
       halls: hallsData,
-      peakHours: peakHours.slice(0, 10), // Top 10 hours
+      peakHours: peakHours.slice(0, 10),
       peakDaysOfWeek,
       filters,
     };
   }
 
-  /**
-   * Analyze peak days of week
-   */
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
-    const dayNames = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
+    const dayNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
     const counts = new Map<number, number>();
 
     reservations.forEach(r => {
       const date = new Date(r.date);
-      const dayOfWeek = date.getDay(); // 0-6
+      const dayOfWeek = date.getDay();
       counts.set(dayOfWeek, (counts.get(dayOfWeek) || 0) + 1);
     });
 
@@ -482,9 +502,6 @@ class ReportsService {
       .sort((a, b) => b.count - a.count);
   }
 
-  /**
-   * Analyze peak hours (0-23)
-   */
   private analyzePeakHours(reservations: any[]): PeakHourItem[] {
     const counts = new Map<number, number>();
 
@@ -500,9 +517,6 @@ class ReportsService {
       .sort((a, b) => b.count - a.count);
   }
 
-  /**
-   * Analyze occupancy by hall
-   */
   private analyzeOccupancyByHall(
     reservations: any[],
     totalDaysInPeriod: number
@@ -524,7 +538,6 @@ class ReportsService {
       };
       existing.dates.add(r.date);
       existing.reservations += 1;
-      /* istanbul ignore next -- guests always present on reservation */
       existing.totalGuests += r.guests || 0;
       hallData.set(r.hall.id, existing);
     });
@@ -540,6 +553,345 @@ class ReportsService {
           : 0,
       }))
       .sort((a, b) => b.occupancy - a.occupancy);
+  }
+
+  // ============================================
+  // PREPARATIONS REPORTS (Service Extras) #159
+  // ============================================
+
+  /**
+   * Get preparations report — what service extras need to be prepared.
+   * Groups by date → category → service item, with reservation details.
+   * Supports detailed (per-reservation) and summary (aggregated) views.
+   *
+   * FIX: Query uses OR condition for date/startDateTime to catch all reservations.
+   * FIX: Removed Prisma `extras: { some: ... }` pre-filter — now fetches ALL
+   * reservations in date range and filters extras in-memory. This avoids edge
+   * cases where Prisma relation filters silently exclude valid data.
+   * FIX: startTime/endTime fallback from startDateTime/endDateTime.
+   */
+  async getPreparationsReport(filters: PreparationsReportFilters): Promise<PreparationsReport> {
+    const { dateFrom, dateTo, categoryId, view = 'detailed' } = filters;
+
+    // Build date range for startDateTime comparison
+    const dateFromDT = new Date(dateFrom + 'T00:00:00');
+    const dateToDT = new Date(dateTo + 'T23:59:59');
+
+    // Build extras where clause for the nested select filter
+    const extrasWhere: any = {
+      status: { not: 'CANCELLED' },
+    };
+    if (categoryId) {
+      extrasWhere.serviceItem = { categoryId };
+    }
+
+    // FIX: Query reservations by BOTH date (varchar) AND startDateTime (datetime)
+    // Some reservations may only have one of these fields populated.
+    // Also: removed `extras: { some: extrasWhere }` — fetch all reservations
+    // in range, then filter those with matching extras in-memory.
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        status: { not: 'CANCELLED' },
+        OR: [
+          // Match by date varchar field (YYYY-MM-DD)
+          {
+            date: {
+              not: null,
+              gte: dateFrom,
+              lte: dateTo,
+            },
+          },
+          // Match by startDateTime field (DateTime)
+          {
+            startDateTime: {
+              not: null,
+              gte: dateFromDT,
+              lte: dateToDT,
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        date: true,
+        startTime: true,
+        endTime: true,
+        guests: true,
+        adults: true,
+        children: true,
+        toddlers: true,
+        startDateTime: true,
+        endDateTime: true,
+        client: {
+          select: {
+            firstName: true,
+            lastName: true,
+            companyName: true,
+            clientType: true,
+          },
+        },
+        hall: { select: { id: true, name: true } },
+        eventType: { select: { id: true, name: true } },
+        extras: {
+          where: extrasWhere,
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            priceType: true,
+            totalPrice: true,
+            note: true,
+            status: true,
+            serviceItem: {
+              select: {
+                id: true,
+                name: true,
+                priceType: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                    icon: true,
+                    color: true,
+                    displayOrder: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+    });
+
+    // FIX: Filter out reservations that have no matching extras (post-query)
+    const reservationsWithExtras = reservations.filter(r => r.extras.length > 0);
+
+    // Build client display name helper
+    const getClientName = (client: any): string => {
+      if (client.clientType === 'COMPANY' && client.companyName) {
+        return client.companyName;
+      }
+      return `${client.firstName} ${client.lastName}`;
+    };
+
+    // Helper: get the effective date string for a reservation
+    // Prefers the `date` field, falls back to startDateTime
+    const getReservationDate = (r: any): string => {
+      if (r.date) return r.date;
+      if (r.startDateTime) {
+        return new Date(r.startDateTime).toISOString().split('T')[0];
+      }
+      return '';
+    };
+
+    // Flatten all extras with reservation context
+    const allItems: PreparationItem[] = [];
+
+    for (const r of reservationsWithExtras) {
+      const effectiveDate = getReservationDate(r);
+      if (!effectiveDate) continue; // skip if no date at all
+
+      for (const extra of r.extras) {
+        allItems.push({
+          extraId: extra.id,
+          serviceName: extra.serviceItem.name,
+          serviceItemId: extra.serviceItem.id,
+          quantity: extra.quantity,
+          priceType: extra.priceType,
+          unitPrice: Number(extra.unitPrice),
+          totalPrice: Number(extra.totalPrice),
+          note: extra.note,
+          status: extra.status,
+          reservation: {
+            id: r.id,
+            clientName: getClientName(r.client),
+            hallName: r.hall?.name || null,
+            eventTypeName: r.eventType?.name || null,
+            date: effectiveDate,
+            startTime: r.startTime || extractTimeFromDateTime(r.startDateTime),
+            endTime: r.endTime || extractTimeFromDateTime(r.endDateTime),
+            guests: r.guests,
+            adults: r.adults,
+            children: r.children,
+            toddlers: r.toddlers,
+          },
+        });
+      }
+    }
+
+    // === DETAILED VIEW: group by date → category ===
+    const dayMap = new Map<string, Map<string, { category: any; items: PreparationItem[] }>>();
+
+    for (const item of allItems) {
+      const date = item.reservation.date;
+      if (!dayMap.has(date)) dayMap.set(date, new Map());
+
+      const catMap = dayMap.get(date)!;
+      // Find category from the reservation/extra data
+      const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
+      const extra = r?.extras.find(e => e.id === item.extraId);
+      const cat = extra?.serviceItem.category;
+
+      if (!cat) continue;
+
+      if (!catMap.has(cat.id)) {
+        catMap.set(cat.id, {
+          category: cat,
+          items: [],
+        });
+      }
+      catMap.get(cat.id)!.items.push(item);
+    }
+
+    // Convert to sorted arrays
+    const days: PreparationDayGroup[] = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, catMap]) => {
+        const categories: PreparationCategoryGroup[] = Array.from(catMap.entries())
+          .sort(([, a], [, b]) => (a.category.displayOrder || 0) - (b.category.displayOrder || 0))
+          .map(([catId, data]) => ({
+            categoryId: catId,
+            categoryName: data.category.name,
+            categoryIcon: data.category.icon,
+            categoryColor: data.category.color,
+            items: data.items.sort((a, b) => {
+              const timeA = a.reservation.startTime || '99:99';
+              const timeB = b.reservation.startTime || '99:99';
+              return timeA.localeCompare(timeB);
+            }),
+            itemCount: data.items.length,
+          }));
+
+        return {
+          date,
+          dateLabel: formatDateLabelPL(date),
+          categories,
+          totalItems: categories.reduce((sum, c) => sum + c.itemCount, 0),
+        };
+      });
+
+    // === SUMMARY VIEW: aggregate per service item per day ===
+    let summaryDays: PreparationSummaryDayGroup[] | undefined;
+
+    if (view === 'summary') {
+      const summaryDayMap = new Map<string, Map<string, PreparationSummaryItem>>();
+
+      for (const item of allItems) {
+        const date = item.reservation.date;
+        if (!summaryDayMap.has(date)) summaryDayMap.set(date, new Map());
+
+        const serviceMap = summaryDayMap.get(date)!;
+
+        const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
+        const extra = r?.extras.find(e => e.id === item.extraId);
+        const cat = extra?.serviceItem.category;
+
+        if (!serviceMap.has(item.serviceItemId)) {
+          serviceMap.set(item.serviceItemId, {
+            serviceItemId: item.serviceItemId,
+            serviceName: item.serviceName,
+            categoryName: cat?.name || '',
+            categoryIcon: cat?.icon || null,
+            categoryColor: cat?.color || null,
+            totalQuantity: 0,
+            totalPersons: 0,
+            reservationCount: 0,
+            reservations: [],
+          });
+        }
+
+        const summary = serviceMap.get(item.serviceItemId)!;
+        summary.totalQuantity += item.quantity;
+        summary.reservationCount += 1;
+
+        if (item.priceType === 'PER_PERSON') {
+          summary.totalPersons += item.reservation.guests;
+        }
+
+        summary.reservations.push({
+          id: item.reservation.id,
+          clientName: item.reservation.clientName,
+          date: item.reservation.date,
+          startTime: item.reservation.startTime,
+          quantity: item.quantity,
+        });
+      }
+
+      summaryDays = Array.from(summaryDayMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, serviceMap]) => {
+          const items = Array.from(serviceMap.values())
+            .sort((a, b) => a.categoryName.localeCompare(b.categoryName) || a.serviceName.localeCompare(b.serviceName));
+
+          const uniqueReservationIds = new Set(
+            items.flatMap(i => i.reservations.map(r => r.id))
+          );
+
+          return {
+            date,
+            dateLabel: formatDateLabelPL(date),
+            items,
+            totalItems: items.reduce((sum, i) => sum + i.totalQuantity, 0),
+            totalReservations: uniqueReservationIds.size,
+          };
+        });
+    }
+
+    // === KPI SUMMARY ===
+    const totalExtras = allItems.length;
+    const uniqueReservationIds = new Set(allItems.map(i => i.reservation.id));
+    const totalReservationsWithExtras = uniqueReservationIds.size;
+
+    // Nearest event (from today)
+    const today = new Date().toISOString().split('T')[0];
+    const futureItems = allItems
+      .filter(i => i.reservation.date >= today)
+      .sort((a, b) => {
+        const dateCompare = a.reservation.date.localeCompare(b.reservation.date);
+        if (dateCompare !== 0) return dateCompare;
+        return (a.reservation.startTime || '').localeCompare(b.reservation.startTime || '');
+      });
+
+    const nearestEvent = futureItems.length > 0
+      ? {
+          date: futureItems[0].reservation.date,
+          startTime: futureItems[0].reservation.startTime,
+          clientName: futureItems[0].reservation.clientName,
+        }
+      : null;
+
+    // Top category by count
+    const categoryCounts = new Map<string, { name: string; icon: string | null; count: number }>();
+    for (const item of allItems) {
+      const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
+      const extra = r?.extras.find(e => e.id === item.extraId);
+      const cat = extra?.serviceItem.category;
+      if (!cat) continue;
+
+      const existing = categoryCounts.get(cat.id) || { name: cat.name, icon: cat.icon, count: 0 };
+      existing.count += 1;
+      categoryCounts.set(cat.id, existing);
+    }
+
+    const topCategoryEntry = Array.from(categoryCounts.values())
+      .sort((a, b) => b.count - a.count)[0] || null;
+
+    const topCategory = topCategoryEntry
+      ? { name: topCategoryEntry.name, icon: topCategoryEntry.icon, count: topCategoryEntry.count }
+      : null;
+
+    return {
+      summary: {
+        totalExtras,
+        totalReservationsWithExtras,
+        nearestEvent,
+        topCategory,
+      },
+      days,
+      ...(summaryDays ? { summaryDays } : {}),
+      filters,
+    };
   }
 }
 

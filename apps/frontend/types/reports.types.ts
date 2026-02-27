@@ -21,6 +21,14 @@ export interface OccupancyReportFilters {
   hallId?: string;
 }
 
+export interface PreparationsReportFilters {
+  dateFrom: string;
+  dateTo: string;
+  view: 'detailed' | 'summary';
+  categoryId?: string;
+  status?: string;
+}
+
 // ============================================
 // REVENUE REPORT
 // ============================================
@@ -108,6 +116,113 @@ export interface OccupancyReport {
 }
 
 // ============================================
+// PREPARATIONS REPORT (#159)
+// Aligned with actual API response structure
+// ============================================
+
+/** KPI summary returned by API */
+export interface PreparationsSummary {
+  totalExtras: number;
+  totalReservationsWithExtras: number;
+  nearestEvent: {
+    date: string;
+    startTime: string;
+    clientName: string;
+  } | null;
+  topCategory: {
+    name: string;
+    icon: string;
+    count: number;
+  } | null;
+}
+
+/** Reservation info nested inside detailed items */
+export interface PreparationsReservationInfo {
+  id: string;
+  clientName: string;
+  hallName: string;
+  eventTypeName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  guests: number;
+  adults: number;
+  children: number;
+  toddlers: number;
+}
+
+/** Single service extra in detailed view */
+export interface PreparationsDetailedItem {
+  extraId: string;
+  serviceName: string;
+  serviceItemId: string;
+  quantity: number;
+  priceType: string;
+  unitPrice: number;
+  totalPrice: number;
+  note: string | null;
+  status: string;
+  reservation: PreparationsReservationInfo;
+}
+
+/** Category grouping within a day (detailed view) */
+export interface PreparationsDetailedCategory {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  items: PreparationsDetailedItem[];
+  itemCount: number;
+}
+
+/** Single day in detailed view */
+export interface PreparationsDetailedDay {
+  date: string;
+  dateLabel: string;
+  categories: PreparationsDetailedCategory[];
+  totalItems: number;
+}
+
+/** Reservation reference in summary view */
+export interface PreparationsSummaryReservation {
+  id: string;
+  clientName: string;
+  date: string;
+  startTime: string;
+  quantity: number;
+}
+
+/** Aggregated service item in summary view */
+export interface PreparationsSummaryItem {
+  serviceItemId: string;
+  serviceName: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  totalQuantity: number;
+  totalPersons: number;
+  reservationCount: number;
+  reservations: PreparationsSummaryReservation[];
+}
+
+/** Single day in summary view */
+export interface PreparationsSummaryDay {
+  date: string;
+  dateLabel: string;
+  items: PreparationsSummaryItem[];
+  totalItems: number;
+  totalReservations: number;
+}
+
+/** Full preparations report as returned by API */
+export interface PreparationsReport {
+  summary: PreparationsSummary;
+  days?: PreparationsDetailedDay[];
+  summaryDays?: PreparationsSummaryDay[];
+  filters: PreparationsReportFilters;
+}
+
+// ============================================
 // API RESPONSE WRAPPERS
 // ============================================
 
@@ -119,4 +234,9 @@ export interface RevenueReportResponse {
 export interface OccupancyReportResponse {
   success: boolean;
   data: OccupancyReport;
+}
+
+export interface PreparationsReportResponse {
+  success: boolean;
+  data: PreparationsReport;
 }

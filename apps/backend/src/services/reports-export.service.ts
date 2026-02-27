@@ -4,16 +4,25 @@
  * Reports Export Service
  * Generate Excel (XLSX) and PDF files from report data
  * Updated: extras revenue columns in exports
+ * Updated: preparations report PDF export (#159)
+ * Updated: preparations report Excel export (#159)
+ * Updated: added Godzina (startTime) column to preparations exports
+ * Updated: removed (quantity) from summary Klienci — duplicates Łącznie szt. column
+ * Updated: removed PODSUMOWANIE section and nearestEvent from preparations exports
+ * Updated: removed Wartość column from preparations exports (ops document, prices in reservation form)
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
+ * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
  * Excel generation remains here (ExcelJS).
  */
 
 import ExcelJS from 'exceljs';
 import { pdfService } from './pdf.service';
+import { generatePreparationsReportPDF } from './pdf-preparations.integration';
 import type {
   RevenueReport,
   OccupancyReport,
+  PreparationsReport,
 } from '@/types/reports.types';
 
 class ReportsExportService {
@@ -294,6 +303,160 @@ class ReportsExportService {
   }
 
   // ============================================
+  // PREPARATIONS EXCEL EXPORT (#159)
+  // ============================================
+
+  /**
+   * Export preparations report to Excel (XLSX)
+   * Supports both detailed and summary views
+   * Now includes Godzina (startTime) column
+   * FIX: removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
+   * FIX: removed PODSUMOWANIE section and nearestEvent from preparations exports
+   * FIX: removed Wartość column — preparations report is for staff ops, prices are in reservation form
+   */
+  async exportPreparationsToExcel(report: PreparationsReport): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const filters = report.filters;
+    const isDetailed = filters.view === 'detailed';
+
+    const sheet = workbook.addWorksheet(
+      isDetailed ? 'Przygotowania — Szczegółowy' : 'Przygotowania — Zbiorczy'
+    );
+
+    // ── Title ──
+    sheet.mergeCells('A1:E1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = `Raport Przygotowań — ${isDetailed ? 'Widok szczegółowy' : 'Widok zbiorczy'}`;
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    sheet.getRow(1).height = 30;
+
+    // ── Filters info ──
+    sheet.addRow([]);
+    sheet.addRow(['Okres:', `${filters.dateFrom} — ${filters.dateTo}`]);
+    sheet.addRow(['Widok:', isDetailed ? 'Szczegółowy' : 'Zbiorczy']);
+
+    // ── Data section (no PODSUMOWANIE) ──
+    sheet.addRow([]);
+
+    if (isDetailed && report.days) {
+      // Detailed view — day → category → items
+      // Columns: Usługa, Rezerwacja, Ilość, Godzina, Uwagi (no Wartość)
+      const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '']);
+      dataHeader.font = { bold: true, size: 12 };
+      dataHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      sheet.columns = [
+        { key: 'col1', width: 35 },
+        { key: 'col2', width: 30 },
+        { key: 'col3', width: 12 },
+        { key: 'col4', width: 14 },
+        { key: 'col5', width: 30 },
+      ];
+
+      for (const day of report.days) {
+        sheet.addRow([]);
+        const dayRow = sheet.addRow([`📅 ${day.dateLabel}`, '', '', '', `Usług: ${day.totalItems}`]);
+        dayRow.font = { bold: true, size: 11 };
+        dayRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF9FAFB' },
+        };
+
+        for (const cat of day.categories) {
+          const catRow = sheet.addRow([`  ${cat.categoryIcon} ${cat.categoryName}`, '', '', '', '']);
+          catRow.font = { bold: true, color: { argb: 'FF7C3AED' } };
+
+          // Column headers for items — no Wartość
+          const colRow = sheet.addRow(['  Usługa', 'Rezerwacja', 'Ilość', 'Godzina', 'Uwagi']);
+          colRow.font = { bold: true, size: 9 };
+
+          for (const item of cat.items) {
+            const timeStr = item.reservation.startTime
+              ? (item.reservation.endTime
+                  ? `${item.reservation.startTime.substring(0, 5)} – ${item.reservation.endTime.substring(0, 5)}`
+                  : item.reservation.startTime.substring(0, 5))
+              : '—';
+
+            sheet.addRow([
+              `  ${item.serviceName}`,
+              `${item.reservation.clientName} (${item.reservation.hallName})`,
+              item.quantity,
+              timeStr,
+              item.note || '—',
+            ]);
+          }
+        }
+      }
+    } else if (report.summaryDays) {
+      // Summary view — aggregated by day
+      // FIX: removed (quantity) from Klienci — duplicates Łącznie szt. column
+      const dataHeader = sheet.addRow(['ZESTAWIENIE ZBIORCZE', '', '', '', '']);
+      dataHeader.font = { bold: true, size: 12 };
+      dataHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      sheet.columns = [
+        { key: 'col1', width: 35 },
+        { key: 'col2', width: 25 },
+        { key: 'col3', width: 15 },
+        { key: 'col4', width: 15 },
+        { key: 'col5', width: 40 },
+      ];
+
+      for (const day of report.summaryDays) {
+        sheet.addRow([]);
+        const dayRow = sheet.addRow([
+          `📅 ${day.dateLabel}`,
+          '',
+          `Usług: ${day.totalItems}`,
+          `Rez.: ${day.totalReservations}`,
+          '',
+        ]);
+        dayRow.font = { bold: true, size: 11 };
+        dayRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF9FAFB' },
+        };
+
+        const colRow = sheet.addRow(['Usługa', 'Kategoria', 'Łącznie szt.', 'Rezerwacji', 'Klienci']);
+        colRow.font = { bold: true, size: 9 };
+
+        for (const item of day.items) {
+          // Changed from: clientName (quantity) startTime
+          // To: clientName startTime (no quantity — already in Łącznie szt. column)
+          const clientNames = item.reservations
+            .map((r: any) => {
+              const time = r.startTime ? ` ${r.startTime.substring(0, 5)}` : '';
+              return `${r.clientName}${time}`;
+            })
+            .join(', ');
+
+          sheet.addRow([
+            item.serviceName,
+            `${item.categoryIcon} ${item.categoryName}`,
+            item.totalQuantity,
+            item.reservationCount,
+            clientNames,
+          ]);
+        }
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============================================
   // PDF EXPORTS — delegated to pdf.service.ts
   // ============================================
 
@@ -312,6 +475,15 @@ class ReportsExportService {
    */
   async exportOccupancyToPDF(report: OccupancyReport): Promise<Buffer> {
     return pdfService.generateOccupancyReportPDF(report as any);
+  }
+
+  /**
+   * Export preparations report to PDF (premium design).
+   * Uses standalone module: pdf-preparations.integration.ts
+   * #159 — Raport przygotowań usług dodatkowych
+   */
+  async exportPreparationsToPDF(report: PreparationsReport): Promise<Buffer> {
+    return generatePreparationsReportPDF(report);
   }
 
   // ============================================
