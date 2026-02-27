@@ -21,6 +21,14 @@ export interface OccupancyReportFilters {
   hallId?: string;
 }
 
+export interface PreparationsReportFilters {
+  dateFrom: string;
+  dateTo: string;
+  view: 'detailed' | 'summary';
+  categoryId?: string;
+  status?: string;
+}
+
 // ============================================
 // REVENUE REPORT
 // ============================================
@@ -108,6 +116,54 @@ export interface OccupancyReport {
 }
 
 // ============================================
+// PREPARATIONS REPORT (#159)
+// ============================================
+
+export interface PreparationsSummary {
+  totalItems: number;
+  totalValue: number;
+  totalReservations: number;
+  daysWithEvents: number;
+  topCategory: string | null;
+  nearestEvent: string | null;
+}
+
+export interface PreparationsDetailedItem {
+  serviceName: string;
+  quantity: number;
+  totalPrice: number;
+  reservationLabel: string;
+  note?: string;
+}
+
+export interface PreparationsDetailedCategory {
+  categoryName: string;
+  items: PreparationsDetailedItem[];
+}
+
+export interface PreparationsDetailedDay {
+  dateLabel: string;
+  dayTotal: number;
+  dayItemCount: number;
+  categories: PreparationsDetailedCategory[];
+}
+
+export interface PreparationsSummaryTableItem {
+  serviceName: string;
+  categoryName: string;
+  totalQuantity: number;
+  totalValue: number;
+  reservationCount: number;
+}
+
+export interface PreparationsReport {
+  summary: PreparationsSummary;
+  detailed: PreparationsDetailedDay[] | null;
+  summaryTable: PreparationsSummaryTableItem[] | null;
+  filters: PreparationsReportFilters;
+}
+
+// ============================================
 // API RESPONSE WRAPPERS
 // ============================================
 
@@ -119,4 +175,9 @@ export interface RevenueReportResponse {
 export interface OccupancyReportResponse {
   success: boolean;
   data: OccupancyReport;
+}
+
+export interface PreparationsReportResponse {
+  success: boolean;
+  data: PreparationsReport;
 }
