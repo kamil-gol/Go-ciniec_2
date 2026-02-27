@@ -669,6 +669,68 @@ export class PDFService {
     this.drawCompactTable(doc, ['Alergen', 'Występuje w daniach'], rows, colWidths, left);
   }
 
+  /**
+   * Draw "Ważne informacje" section — reservation terms and payment rules.
+   * Displayed as a compact box with gold accent bar before the footer.
+   */
+  private drawImportantInfoSection(
+    doc: PDFKit.PDFDocument,
+    left: number,
+    pageWidth: number
+  ): void {
+    this.safePageBreak(doc, 160);
+
+    doc.moveDown(0.5);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // Section title with icon-like accent
+    const titleY = doc.y;
+    doc.rect(left, titleY, pageWidth, 18).fill(COLORS.primaryLight);
+    doc.rect(left, titleY, 4, 18).fill(COLORS.accent);
+    doc.fillColor('#ffffff').fontSize(9).font(this.getBoldFont());
+    doc.text('WAŻNE INFORMACJE', left + 14, titleY + 4, { width: pageWidth - 20 });
+
+    doc.y = titleY + 22;
+
+    // Info items — numbered list in a light box
+    const boxY = doc.y;
+    const items = [
+      'Potwierdzenie rezerwacji oraz ustalenie menu następuje nie później niż 30 dni przed planowanym przyjęciem.',
+      'Ostateczna liczba gości powinna zostać potwierdzona min. 30 dni przed przyjęciem. Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.',
+      'Warunki płatności: 500,00 zł przy rezerwacji terminu, 50% całości na 3 dni przed przyjęciem, pozostałe 50% w dniu przyjęcia (przed rozpoczęciem lub do godz. 20:00).',
+    ];
+
+    // Calculate box height
+    doc.fontSize(7).font(this.getRegularFont());
+    let totalTextHeight = 0;
+    items.forEach((item) => {
+      totalTextHeight += doc.heightOfString(`0.  ${item}`, { width: pageWidth - 36 }) + 5;
+    });
+    const boxHeight = totalTextHeight + 16;
+
+    doc.rect(left, boxY, pageWidth, boxHeight).fill(COLORS.bgLight);
+    doc.rect(left, boxY, 4, boxHeight).fill(COLORS.accent);
+
+    let itemY = boxY + 8;
+    items.forEach((item, idx) => {
+      // Number circle
+      const circleX = left + 16;
+      const circleY = itemY + 3;
+      doc.circle(circleX, circleY, 5).fill(COLORS.accent);
+      doc.fillColor(COLORS.primary).fontSize(6).font(this.getBoldFont());
+      doc.text(`${idx + 1}`, circleX - 3, circleY - 3, { width: 6, align: 'center' });
+
+      // Item text
+      doc.fillColor(COLORS.textDark).fontSize(7).font(this.getRegularFont());
+      const textHeight = doc.heightOfString(item, { width: pageWidth - 36 });
+      doc.text(item, left + 26, itemY, { width: pageWidth - 36 });
+      itemY += textHeight + 5;
+    });
+
+    doc.y = boxY + boxHeight + 3;
+  }
+
   // ═══════════════ PUBLIC API ═══════════════
 
   async generateReservationPDF(reservation: ReservationPDFData): Promise<Buffer> {
@@ -889,7 +951,10 @@ export class PDFService {
       doc.text(r.notes, { width: pageWidth - 40 });
     }
 
-    // ── 8. FOOTER ──
+    // ── 8. IMPORTANT INFO SECTION ──
+    this.drawImportantInfoSection(doc, left, pageWidth);
+
+    // ── 9. FOOTER ──
     doc.moveDown(1);
     this.drawInlineFooter(doc, left, pageWidth);
   }
