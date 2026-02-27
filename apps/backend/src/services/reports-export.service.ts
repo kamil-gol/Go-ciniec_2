@@ -7,6 +7,7 @@
  * Updated: preparations report PDF export (#159)
  * Updated: preparations report Excel export (#159)
  * Updated: added Godzina (startTime) column to preparations exports
+ * Updated: removed (quantity) from summary Klienci — duplicates Łącznie szt. column
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
@@ -307,6 +308,7 @@ class ReportsExportService {
    * Export preparations report to Excel (XLSX)
    * Supports both detailed and summary views
    * Now includes Godzina (startTime) column
+   * FIX: removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
    */
   async exportPreparationsToExcel(report: PreparationsReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -410,7 +412,8 @@ class ReportsExportService {
         }
       }
     } else if (report.summaryDays) {
-      // Summary view — aggregated by day (now with startTime in Klienci column)
+      // Summary view — aggregated by day
+      // FIX: removed (quantity) from Klienci — duplicates Łącznie szt. column
       const dataHeader = sheet.addRow(['ZESTAWIENIE ZBIORCZE', '', '', '', '']);
       dataHeader.font = { bold: true, size: 12 };
       dataHeader.fill = {
@@ -443,14 +446,16 @@ class ReportsExportService {
           fgColor: { argb: 'FFF9FAFB' },
         };
 
-        const colRow = sheet.addRow(['Usługa', 'Kategoria', 'Łącznie szt.', 'Rezerwacji', 'Klienci (ilość) godzina']);
+        const colRow = sheet.addRow(['Usługa', 'Kategoria', 'Łącznie szt.', 'Rezerwacji', 'Klienci']);
         colRow.font = { bold: true, size: 9 };
 
         for (const item of day.items) {
+          // Changed from: clientName (quantity) startTime
+          // To: clientName startTime (no quantity — already in Łącznie szt. column)
           const clientNames = item.reservations
             .map((r: any) => {
               const time = r.startTime ? ` ${r.startTime.substring(0, 5)}` : '';
-              return `${r.clientName} (${r.quantity})${time}`;
+              return `${r.clientName}${time}`;
             })
             .join(', ');
 
