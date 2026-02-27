@@ -10,19 +10,23 @@
  * Updated: removed (quantity) from summary Klienci — duplicates Łącznie szt. column
  * Updated: removed PODSUMOWANIE section and nearestEvent from preparations exports
  * Updated: removed Wartość column from preparations exports (ops document, prices in reservation form)
+ * Updated: menu preparations Excel + PDF export (#160)
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
+ * Menu Preparations PDF uses standalone module: pdf-menu-preparations.integration.ts (#160)
  * Excel generation remains here (ExcelJS).
  */
 
 import ExcelJS from 'exceljs';
 import { pdfService } from './pdf.service';
 import { generatePreparationsReportPDF } from './pdf-preparations.integration';
+import { generateMenuPreparationsReportPDF } from './pdf-menu-preparations.integration';
 import type {
   RevenueReport,
   OccupancyReport,
   PreparationsReport,
+  MenuPreparationsReport,
 } from '@/types/reports.types';
 
 class ReportsExportService {
@@ -457,6 +461,191 @@ class ReportsExportService {
   }
 
   // ============================================
+  // MENU PREPARATIONS EXCEL EXPORT (#160)
+  // ============================================
+
+  /**
+   * Export menu preparations report to Excel (XLSX)
+   * Supports both detailed (per-reservation with courses/dishes) and
+   * summary (aggregated per course → per dish with portions) views.
+   */
+  async exportMenuPreparationsToExcel(report: MenuPreparationsReport): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const filters = report.filters;
+    const isDetailed = filters.view === 'detailed';
+
+    const sheet = workbook.addWorksheet(
+      isDetailed ? 'Menu — Szczegółowy' : 'Menu — Zbiorczy'
+    );
+
+    // ── Title ──
+    sheet.mergeCells('A1:F1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = `Raport Menu — ${isDetailed ? 'Widok szczegółowy' : 'Widok zbiorczy'}`;
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    sheet.getRow(1).height = 30;
+
+    // ── Filters ──
+    sheet.addRow([]);
+    sheet.addRow(['Okres:', `${filters.dateFrom} — ${filters.dateTo}`]);
+    sheet.addRow(['Widok:', isDetailed ? 'Szczegółowy' : 'Zbiorczy']);
+
+    // ── KPI Summary ──
+    sheet.addRow([]);
+    const kpiHeader = sheet.addRow(['PODSUMOWANIE', '']);
+    kpiHeader.font = { bold: true, size: 12 };
+    kpiHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFEF3C7' },
+    };
+
+    sheet.addRow(['Rezerwacje z menu', report.summary.totalMenus]);
+    sheet.addRow(['Łącznie gości', report.summary.totalGuests]);
+    sheet.addRow(['Dorośli', report.summary.totalAdults]);
+    sheet.addRow(['Dzieci', report.summary.totalChildren]);
+    sheet.addRow(['Maluchy', report.summary.totalToddlers]);
+    sheet.addRow(['Top pakiet', report.summary.topPackage ? `${report.summary.topPackage.name} (${report.summary.topPackage.count})` : 'Brak']);
+
+    sheet.addRow([]);
+
+    if (isDetailed && report.days) {
+      // ── DETAILED: per-reservation with courses & dishes ──
+      const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '', '']);
+      dataHeader.font = { bold: true, size: 12 };
+      dataHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      sheet.columns = [
+        { key: 'col1', width: 30 },
+        { key: 'col2', width: 25 },
+        { key: 'col3', width: 14 },
+        { key: 'col4', width: 20 },
+        { key: 'col5', width: 22 },
+        { key: 'col6', width: 30 },
+      ];
+
+      for (const day of report.days) {
+        sheet.addRow([]);
+        const dayRow = sheet.addRow([
+          `📅 ${day.dateLabel}`, '', '',
+          `Rezerwacji: ${day.totalReservations}`,
+          `Gości: ${day.totalGuests}`, '',
+        ]);
+        dayRow.font = { bold: true, size: 11 };
+        dayRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF9FAFB' },
+        };
+
+        for (const res of day.reservations) {
+          // Reservation header
+          const timeStr = res.startTime
+            ? `${res.startTime.substring(0, 5)}${res.endTime ? ' – ' + res.endTime.substring(0, 5) : ''}`
+            : '';
+          const guestStr = `${res.guests.total} os. (${res.guests.adults}D + ${res.guests.children}Dz + ${res.guests.toddlers}M)`;
+
+          const resRow = sheet.addRow([
+            `  👤 ${res.clientName}`,
+            res.hallName || '',
+            timeStr,
+            guestStr,
+            `Pakiet: ${res.package.name}`,
+            '',
+          ]);
+          resRow.font = { bold: true };
+          resRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFEF3C7' },
+          };
+
+          // Courses & dishes
+          for (const course of res.courses) {
+            const courseRow = sheet.addRow([`    🍽️ ${course.courseName}`, '', '', '', '', '']);
+            courseRow.font = { bold: true, color: { argb: 'FFD97706' } };
+
+            for (const dish of course.dishes) {
+              sheet.addRow([
+                `      • ${dish.name}`,
+                dish.description || '',
+                '', '', '', '',
+              ]);
+            }
+          }
+
+          if (res.courses.length === 0) {
+            sheet.addRow(['      (brak dań w menu)', '', '', '', '', '']);
+          }
+        }
+      }
+    } else if (report.summaryDays) {
+      // ── SUMMARY: aggregated per course → per dish ──
+      const dataHeader = sheet.addRow(['ZESTAWIENIE ZBIORCZE', '', '', '', '', '']);
+      dataHeader.font = { bold: true, size: 12 };
+      dataHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      sheet.columns = [
+        { key: 'col1', width: 30 },
+        { key: 'col2', width: 15 },
+        { key: 'col3', width: 15 },
+        { key: 'col4', width: 15 },
+        { key: 'col5', width: 40 },
+      ];
+
+      for (const day of report.summaryDays) {
+        sheet.addRow([]);
+        const dayRow = sheet.addRow([
+          `📅 ${day.dateLabel}`,
+          `Rez.: ${day.totalReservations}`,
+          `Gości: ${day.totalGuests}`,
+          '', '',
+        ]);
+        dayRow.font = { bold: true, size: 11 };
+        dayRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF9FAFB' },
+        };
+
+        for (const course of day.courses) {
+          const courseRow = sheet.addRow([`  🍽️ ${course.courseName}`, '', '', '', '']);
+          courseRow.font = { bold: true, color: { argb: 'FFD97706' } };
+
+          const colRow = sheet.addRow(['  Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Klienci']);
+          colRow.font = { bold: true, size: 9 };
+
+          for (const dish of course.dishes) {
+            const clientStr = dish.reservations
+              .map(r => `${r.clientName} (${r.guests})`)
+              .join(', ');
+
+            sheet.addRow([
+              `  ${dish.dishName}`,
+              dish.totalPortions,
+              dish.adultPortions,
+              dish.childrenPortions,
+              clientStr,
+            ]);
+          }
+        }
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============================================
   // PDF EXPORTS — delegated to pdf.service.ts
   // ============================================
 
@@ -484,6 +673,15 @@ class ReportsExportService {
    */
   async exportPreparationsToPDF(report: PreparationsReport): Promise<Buffer> {
     return generatePreparationsReportPDF(report);
+  }
+
+  /**
+   * Export menu preparations report to PDF (premium design).
+   * Uses standalone module: pdf-menu-preparations.integration.ts
+   * #160 — Raport przygotowań menu
+   */
+  async exportMenuPreparationsToPDF(report: MenuPreparationsReport): Promise<Buffer> {
+    return generateMenuPreparationsReportPDF(report);
   }
 
   // ============================================

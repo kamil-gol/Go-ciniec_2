@@ -107,4 +107,24 @@ router.get('/export/preparations/excel', reportsController.exportPreparationsExc
  */
 router.get('/export/preparations/pdf', reportsController.exportPreparationsPDF.bind(reportsController));
 
+/**
+ * GET /api/reports/export/menu-preparations/excel
+ * Export menu preparations report to Excel (XLSX)
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query view - 'detailed' or 'summary' [optional, default: detailed]
+ * @returns XLSX file download
+ */
+router.get('/export/menu-preparations/excel', reportsController.exportMenuPreparationsExcel.bind(reportsController));
+
+/**
+ * GET /api/reports/export/menu-preparations/pdf
+ * Export menu preparations report to PDF (premium design)
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query view - 'detailed' or 'summary' [optional, default: detailed]
+ * @returns PDF file download
+ */
+router.get('/export/menu-preparations/pdf', reportsController.exportMenuPreparationsPDF.bind(reportsController));
+
 export default router;

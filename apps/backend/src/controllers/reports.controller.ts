@@ -3,6 +3,7 @@
 /**
  * Reports Controller
  * Endpoints for revenue, occupancy, preparations, menu-preparations, and other analytics
+ * Updated: menu preparations export endpoints (#160)
  */
 
 import { Request, Response } from 'express';
@@ -216,6 +217,106 @@ export class ReportsController {
       res.status(500).json({
         success: false,
         message: 'Failed to generate menu preparations report',
+        error: error.message,
+      });
+    }
+  }
+
+  // ============================================
+  // MENU PREPARATIONS EXPORT ENDPOINTS (#160)
+  // ============================================
+
+  /**
+   * GET /api/reports/export/menu-preparations/excel
+   * Export menu preparations report to Excel (XLSX)
+   */
+  async exportMenuPreparationsExcel(req: Request, res: Response): Promise<void> {
+    try {
+      const validation = menuPreparationsQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as MenuPreparationsReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      const report = await reportsService.getMenuPreparationsReport(filters);
+      const buffer = await reportsExportService.exportMenuPreparationsToExcel(report);
+
+      const filename = `raport_menu_${filters.dateFrom}_${filters.dateTo}.xlsx`;
+      const encodedFilename = encodeURIComponent(filename);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
+      );
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportMenuPreparationsExcel:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export menu preparations report to Excel',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /api/reports/export/menu-preparations/pdf
+   * Export menu preparations report to PDF
+   */
+  async exportMenuPreparationsPDF(req: Request, res: Response): Promise<void> {
+    try {
+      const validation = menuPreparationsQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as MenuPreparationsReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      const report = await reportsService.getMenuPreparationsReport(filters);
+      const buffer = await reportsExportService.exportMenuPreparationsToPDF(report);
+
+      const filename = `raport_menu_${filters.dateFrom}_${filters.dateTo}.pdf`;
+      const encodedFilename = encodeURIComponent(filename);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
+      );
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportMenuPreparationsPDF:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export menu preparations report to PDF',
         error: error.message,
       });
     }
