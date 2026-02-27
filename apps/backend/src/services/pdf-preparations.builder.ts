@@ -18,6 +18,7 @@
  * FIX: Added startTime to reservation labels in both views.
  * FIX: Removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
  * FIX: Removed PODSUMOWANIE section and nearestEvent from PDF export.
+ * FIX: Removed Wartość column — preparations report is for staff ops, prices in reservation form.
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
@@ -80,6 +81,7 @@ export function buildPreparationsReportPDF(
   doc.moveDown(0.5);
 
   // ── 3. DETAILED VIEW — daily timeline ──
+  // Columns: Usługa, Ilość, Rezerwacja, Uwagi (no Wartość)
   const days = (data as any).days;
   if (data.filters.view === 'detailed' && days && days.length > 0) {
     for (const day of days) {
@@ -114,35 +116,30 @@ export function buildPreparationsReportPDF(
         );
         doc.moveDown(0.2);
 
-        // Build table for items in this category
+        // Build table for items in this category — no Wartość column
         const rows: string[][] = category.items.map((item: any) => {
           const timeStr = item.reservation?.startTime ? ` ${item.reservation.startTime}` : '';
           const reservationLabel = item.reservation
             ? `${item.reservation.clientName}${timeStr} (${item.reservation.hallName})`
             : (item.reservationLabel || '');
-          const priceStr = item.priceType === 'FREE'
-            ? 'Gratis'
-            : formatCurrency(item.totalPrice);
           return [
             item.serviceName,
             `${item.quantity}`,
-            priceStr,
             reservationLabel,
             item.note || '',
           ];
         });
 
         const colWidths = [
-          Math.round(pageWidth * 0.22),
-          Math.round(pageWidth * 0.08),
-          Math.round(pageWidth * 0.15),
-          Math.round(pageWidth * 0.30),
+          Math.round(pageWidth * 0.25),
+          Math.round(pageWidth * 0.10),
+          Math.round(pageWidth * 0.40),
           Math.round(pageWidth * 0.25),
         ];
 
         drawCompactTable(
           ctx,
-          ['Usługa', 'Ilość', 'Wartość', 'Rezerwacja', 'Uwagi'],
+          ['Usługa', 'Ilość', 'Rezerwacja', 'Uwagi'],
           rows,
           colWidths,
           left
@@ -370,13 +367,4 @@ function formatDate(date: Date): string {
     month: '2-digit',
     day: '2-digit',
   }).format(date);
-}
-
-function formatCurrency(amount: number | string): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(numAmount)) return '0,00 zł';
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-  }).format(numAmount);
 }
