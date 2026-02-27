@@ -6,6 +6,7 @@
  * Updated: extras revenue tracking in revenue reports
  * Updated: preparations report for service extras (#159)
  * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
+ * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -32,10 +33,10 @@ import type {
 } from '@/types/reports.types';
 
 // Polish day/month names for date labels
-const DAY_NAMES_PL = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
+const DAY_NAMES_PL = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
 const MONTH_NAMES_PL = [
   'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
-  'lipca', 'sierpnia', 'wrze\u015bnia', 'pa\u017adziernika', 'listopada', 'grudnia',
+  'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia',
 ];
 
 /**
@@ -471,7 +472,7 @@ class ReportsService {
   }
 
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
-    const dayNames = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
+    const dayNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
     const counts = new Map<number, number>();
 
     reservations.forEach(r => {
@@ -551,21 +552,19 @@ class ReportsService {
    * Groups by date → category → service item, with reservation details.
    * Supports detailed (per-reservation) and summary (aggregated) views.
    *
-   * FIX: extras filter changed from whitelist {in: ['PENDING','CONFIRMED']}
-   * to blacklist {not: 'CANCELLED'} to include all non-cancelled extras
-   * regardless of their specific status value.
+   * FIX: Query uses OR condition for date/startDateTime to catch all reservations.
+   * FIX: Removed Prisma `extras: { some: ... }` pre-filter — now fetches ALL
+   * reservations in date range and filters extras in-memory. This avoids edge
+   * cases where Prisma relation filters silently exclude valid data.
    */
   async getPreparationsReport(filters: PreparationsReportFilters): Promise<PreparationsReport> {
     const { dateFrom, dateTo, categoryId, view = 'detailed' } = filters;
 
-    // Build reservation where clause
-    const reservationWhere: any = {
-      date: { gte: dateFrom, lte: dateTo },
-      status: { not: 'CANCELLED' },
-    };
+    // Build date range for startDateTime comparison
+    const dateFromDT = new Date(dateFrom + 'T00:00:00');
+    const dateToDT = new Date(dateTo + 'T23:59:59');
 
-    // Build extras where clause
-    // FIX: use blacklist instead of whitelist to catch all non-cancelled extras
+    // Build extras where clause for the nested select filter
     const extrasWhere: any = {
       status: { not: 'CANCELLED' },
     };
@@ -573,11 +572,31 @@ class ReportsService {
       extrasWhere.serviceItem = { categoryId };
     }
 
-    // Query all reservations with their extras in period
+    // FIX: Query reservations by BOTH date (varchar) AND startDateTime (datetime)
+    // Some reservations may only have one of these fields populated.
+    // Also: removed `extras: { some: extrasWhere }` — fetch all reservations
+    // in range, then filter those with matching extras in-memory.
     const reservations = await prisma.reservation.findMany({
       where: {
-        ...reservationWhere,
-        extras: { some: extrasWhere },
+        status: { not: 'CANCELLED' },
+        OR: [
+          // Match by date varchar field (YYYY-MM-DD)
+          {
+            date: {
+              not: null,
+              gte: dateFrom,
+              lte: dateTo,
+            },
+          },
+          // Match by startDateTime field (DateTime)
+          {
+            startDateTime: {
+              not: null,
+              gte: dateFromDT,
+              lte: dateToDT,
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -588,6 +607,7 @@ class ReportsService {
         adults: true,
         children: true,
         toddlers: true,
+        startDateTime: true,
         client: {
           select: {
             firstName: true,
@@ -630,6 +650,9 @@ class ReportsService {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 
+    // FIX: Filter out reservations that have no matching extras (post-query)
+    const reservationsWithExtras = reservations.filter(r => r.extras.length > 0);
+
     // Build client display name helper
     const getClientName = (client: any): string => {
       if (client.clientType === 'COMPANY' && client.companyName) {
@@ -638,10 +661,23 @@ class ReportsService {
       return `${client.firstName} ${client.lastName}`;
     };
 
+    // Helper: get the effective date string for a reservation
+    // Prefers the `date` field, falls back to startDateTime
+    const getReservationDate = (r: any): string => {
+      if (r.date) return r.date;
+      if (r.startDateTime) {
+        return new Date(r.startDateTime).toISOString().split('T')[0];
+      }
+      return '';
+    };
+
     // Flatten all extras with reservation context
     const allItems: PreparationItem[] = [];
 
-    for (const r of reservations) {
+    for (const r of reservationsWithExtras) {
+      const effectiveDate = getReservationDate(r);
+      if (!effectiveDate) continue; // skip if no date at all
+
       for (const extra of r.extras) {
         allItems.push({
           extraId: extra.id,
@@ -658,7 +694,7 @@ class ReportsService {
             clientName: getClientName(r.client),
             hallName: r.hall?.name || null,
             eventTypeName: r.eventType?.name || null,
-            date: r.date || '',
+            date: effectiveDate,
             startTime: r.startTime,
             endTime: r.endTime,
             guests: r.guests,
@@ -678,7 +714,8 @@ class ReportsService {
       if (!dayMap.has(date)) dayMap.set(date, new Map());
 
       const catMap = dayMap.get(date)!;
-      const r = reservations.find(res => res.id === item.reservation.id);
+      // Find category from the reservation/extra data
+      const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
       const extra = r?.extras.find(e => e.id === item.extraId);
       const cat = extra?.serviceItem.category;
 
@@ -732,7 +769,7 @@ class ReportsService {
 
         const serviceMap = summaryDayMap.get(date)!;
 
-        const r = reservations.find(res => res.id === item.reservation.id);
+        const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
         const extra = r?.extras.find(e => e.id === item.extraId);
         const cat = extra?.serviceItem.category;
 
@@ -813,7 +850,7 @@ class ReportsService {
     // Top category by count
     const categoryCounts = new Map<string, { name: string; icon: string | null; count: number }>();
     for (const item of allItems) {
-      const r = reservations.find(res => res.id === item.reservation.id);
+      const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
       const extra = r?.extras.find(e => e.id === item.extraId);
       const cat = extra?.serviceItem.category;
       if (!cat) continue;
