@@ -674,6 +674,7 @@ export class PDFService {
    * Displayed as a compact box with gold accent bar before the footer.
    * Accepts optional eventDate to calculate guest confirmation deadline dynamically.
    * Banner color: gold (>30d), orange (3-30d), red (<=3d).
+   * For <30 days the deadline shown is today's date (reservation day).
    */
   private drawImportantInfoSection(
     doc: PDFKit.PDFDocument,
@@ -707,10 +708,10 @@ export class PDFService {
         bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(deadline)}`;
         bannerColor = COLORS.accent;
       } else if (daysUntilEvent > 3) {
-        bannerText = 'UWAGA: Ostateczną liczbę gości należy potwierdzić niezwłocznie przy rezerwacji';
+        bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(now)}`;
         bannerColor = COLORS.warning;
       } else {
-        bannerText = 'UWAGA: Liczba gości musi zostać potwierdzona przy rezerwacji i nie podlega zmianie';
+        bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(now)}`;
         bannerColor = COLORS.danger;
       }
 
@@ -747,14 +748,12 @@ export class PDFService {
         + 'potwierdzonej liczby gości nie jest możliwa.';
     } else if (daysUntilEvent !== null && daysUntilEvent <= 30) {
       // Variant B: 3-30 days — immediate confirmation, but 10% reduction still possible
-      guestItem = 'Ostateczna liczba gości powinna zostać potwierdzona nie później niż '
-        + '30 dni przed przyjęciem. W przypadku rezerwacji złożonej w terminie '
-        + 'krótszym — potwierdzenie wymagane jest niezwłocznie przy rezerwacji. '
-        + 'Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.';
+      guestItem = 'W przypadku rezerwacji złożonej w terminie krótszym niż 30 dni '
+        + 'przed przyjęciem — potwierdzenie liczby gości wymagane jest niezwłocznie '
+        + 'przy rezerwacji. Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.';
     } else {
       // Variant A: > 30 days (or no eventDate) — standard
-      guestItem = 'Ostateczna liczba gości powinna zostać potwierdzona nie później niż '
-        + '30 dni przed przyjęciem. Potwierdzoną liczbę można zmniejszyć maks. '
+      guestItem = 'Potwierdzoną liczbę gości można zmniejszyć maks. '
         + 'o 10% do 3 dni przed terminem.';
     }
 
