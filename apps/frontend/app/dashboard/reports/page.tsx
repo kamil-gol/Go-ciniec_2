@@ -324,16 +324,6 @@ function PreparationsTab({ query, view }: {
         />
       </div>
 
-      {/* Extra info cards */}
-      {summary.nearestEvent && (
-        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najbliższe wydarzenie"}</p>
-          <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {summary.nearestEvent.date}{summary.nearestEvent.startTime ? ` o ${formatTime(summary.nearestEvent.startTime)}` : ''} &mdash; {summary.nearestEvent.clientName}
-          </p>
-        </div>
-      )}
-
       {/* DETAILED VIEW */}
       {view === 'detailed' && days && days.length > 0 && (
         <div className="space-y-4">
