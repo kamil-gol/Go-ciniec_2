@@ -68,6 +68,14 @@ const getDatePresets = () => {
   const year = now.getFullYear();
   const month = now.getMonth();
 
+  // Today
+  const today = formatDateStr(now);
+
+  // Tomorrow
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const tomorrowStr = formatDateStr(tomorrow);
+
   // This week (Mon-Sun)
   const thisMonday = getMonday(now);
   const thisSunday = new Date(thisMonday);
@@ -92,18 +100,20 @@ const getDatePresets = () => {
     : `${year}-${String(month).padStart(2, '0')}-${String(lastDayLastMonth.getDate()).padStart(2, '0')}`;
 
   return [
-    { label: 'Ten tydzie\u0144', dateFrom: formatDateStr(thisMonday), dateTo: formatDateStr(thisSunday) },
-    { label: 'Nast\u0119pny tydzie\u0144', dateFrom: formatDateStr(nextMonday), dateTo: formatDateStr(nextSunday) },
-    { label: 'Ten miesi\u0105c', dateFrom: firstDayThisMonth, dateTo: lastDayThisMonthStr },
-    { label: 'Poprzedni miesi\u0105c', dateFrom: firstDayLastMonth, dateTo: lastDayLastMonthStr },
+    { label: 'Dziś', dateFrom: today, dateTo: today },
+    { label: 'Jutro', dateFrom: tomorrowStr, dateTo: tomorrowStr },
+    { label: 'Ten tydzień', dateFrom: formatDateStr(thisMonday), dateTo: formatDateStr(thisSunday) },
+    { label: 'Następny tydzień', dateFrom: formatDateStr(nextMonday), dateTo: formatDateStr(nextSunday) },
+    { label: 'Ten miesiąc', dateFrom: firstDayThisMonth, dateTo: lastDayThisMonthStr },
+    { label: 'Poprzedni miesiąc', dateFrom: firstDayLastMonth, dateTo: lastDayLastMonthStr },
     { label: 'Ten rok', dateFrom: `${year}-01-01`, dateTo: `${year}-12-31` },
-    { label: 'Ubieg\u0142y rok', dateFrom: `${year - 1}-01-01`, dateTo: `${year - 1}-12-31` },
+    { label: 'Ubiegły rok', dateFrom: `${year - 1}-01-01`, dateTo: `${year - 1}-12-31` },
   ];
 };
 
 const dayNamesPL: Record<string, string> = {
-  Sunday: 'Niedziela', Monday: 'Poniedzia\u0142ek', Tuesday: 'Wtorek',
-  Wednesday: '\u015aroda', Thursday: 'Czwartek', Friday: 'Pi\u0105tek', Saturday: 'Sobota',
+  Sunday: 'Niedziela', Monday: 'Poniedziałek', Tuesday: 'Wtorek',
+  Wednesday: 'Środa', Thursday: 'Czwartek', Friday: 'Piątek', Saturday: 'Sobota',
 };
 
 export default function ReportsPage() {
@@ -146,7 +156,7 @@ export default function ReportsPage() {
       if (activeTab === 'revenue') await exportRevenueExcel(revenueFilters);
       else if (activeTab === 'occupancy') await exportOccupancyExcel(occupancyFilters);
       else await exportPreparationsExcel(preparationsFilters);
-    } catch { alert('B\u0142\u0105d eksportu Excel. Spr\u00f3buj ponownie.'); }
+    } catch { alert('Błąd eksportu Excel. Spróbuj ponownie.'); }
     finally { setExportingExcel(false); }
   }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters]);
 
@@ -156,7 +166,7 @@ export default function ReportsPage() {
       if (activeTab === 'revenue') await exportRevenuePDF(revenueFilters);
       else if (activeTab === 'occupancy') await exportOccupancyPDF(occupancyFilters);
       else await exportPreparationsPDF(preparationsFilters);
-    } catch { alert('B\u0142\u0105d eksportu PDF. Spr\u00f3buj ponownie.'); }
+    } catch { alert('Błąd eksportu PDF. Spróbuj ponownie.'); }
     finally { setExportingPDF(false); }
   }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters]);
 
@@ -174,7 +184,7 @@ export default function ReportsPage() {
       <PageHero
         accent={accent}
         title="Raporty"
-        subtitle={"Analityka przychod\u00f3w, zaj\u0119to\u015bci sal i przygotowa\u0144"}
+        subtitle={"Analityka przychodów, zajętości sal i przygotowań"}
         icon={BarChart3}
         action={
           <div className="flex gap-2">
@@ -203,7 +213,7 @@ export default function ReportsPage() {
           <button onClick={() => setActiveTab('occupancy')}
             className={tabClass(activeTab === 'occupancy', 'blue')}>
             <Building2 className="h-3.5 w-3.5" />
-            {"Zaj\u0119to\u015b\u0107 sal"}
+            {"Zajętość sal"}
           </button>
           <button onClick={() => setActiveTab('preparations')}
             className={tabClass(activeTab === 'preparations', 'purple')}>
@@ -247,9 +257,9 @@ export default function ReportsPage() {
                 <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Grupuj po</label>
                 <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupByPeriod)}
                   className="w-full sm:w-auto px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                  <option value="day">{"Dzie\u0144"}</option>
-                  <option value="week">{"Tydzie\u0144"}</option>
-                  <option value="month">{"Miesi\u0105c"}</option>
+                  <option value="day">{"Dzień"}</option>
+                  <option value="week">{"Tydzień"}</option>
+                  <option value="month">{"Miesiąc"}</option>
                   <option value="year">Rok</option>
                 </select>
               </div>
@@ -260,7 +270,7 @@ export default function ReportsPage() {
                 <div className="flex rounded-lg border border-neutral-300 dark:border-neutral-600 overflow-hidden">
                   <button onClick={() => setPrepView('detailed')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${prepView === 'detailed' ? 'bg-purple-600 text-white' : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
-                    {"Szczeg\u00f3\u0142owy"}
+                    {"Szczegółowy"}
                   </button>
                   <button onClick={() => setPrepView('summary')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${prepView === 'summary' ? 'bg-purple-600 text-white' : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
@@ -291,8 +301,8 @@ function PreparationsTab({ query, view }: {
   view: 'detailed' | 'summary';
 }) {
   if (query.isLoading) return <ReportLoadingState />;
-  if (query.isError) return <ReportErrorState message={"B\u0142\u0105d \u0142adowania raportu przygotowa\u0144"} />;
-  if (!query.data) return <ReportEmptyState message={"Brak danych do wy\u015bwietlenia"} />;
+  if (query.isError) return <ReportErrorState message={"Błąd ładowania raportu przygotowań"} />;
+  if (!query.data) return <ReportEmptyState message={"Brak danych do wyświetlenia"} />;
 
   const { summary, days, summaryDays } = query.data;
 
@@ -300,7 +310,7 @@ function PreparationsTab({ query, view }: {
     <div className="space-y-4 sm:space-y-6">
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <SummaryCard title={"\u0141\u0105czna liczba us\u0142ug"} value={`${summary.totalExtras}`} color="purple" />
+        <SummaryCard title={"Łączna liczba usług"} value={`${summary.totalExtras}`} color="purple" />
         <SummaryCard title={"Rezerwacje z extras"} value={`${summary.totalReservationsWithExtras}`} color="blue" />
         <SummaryCard
           title="Top kategoria"
@@ -308,7 +318,7 @@ function PreparationsTab({ query, view }: {
           color="green"
         />
         <SummaryCard
-          title={"Najbli\u017csze wydarzenie"}
+          title={"Najbliższe wydarzenie"}
           value={summary.nearestEvent ? `${summary.nearestEvent.date}` : 'Brak'}
           color="orange"
         />
@@ -317,7 +327,7 @@ function PreparationsTab({ query, view }: {
       {/* Extra info cards */}
       {summary.nearestEvent && (
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najbli\u017csze wydarzenie"}</p>
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najbliższe wydarzenie"}</p>
           <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">
             {summary.nearestEvent.date}{summary.nearestEvent.startTime ? ` o ${formatTime(summary.nearestEvent.startTime)}` : ''} &mdash; {summary.nearestEvent.clientName}
           </p>
@@ -331,10 +341,10 @@ function PreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span>{"\ud83d\udcc5"}</span> {day.dateLabel}
+                  <span>{"📅"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
-                  {day.totalItems} {day.totalItems === 1 ? 'us\u0142uga' : 'us\u0142ug'}
+                  {day.totalItems} {day.totalItems === 1 ? 'usługa' : 'usług'}
                 </span>
               </div>
               {day.categories.map((cat) => (
@@ -348,9 +358,9 @@ function PreparationsTab({ query, view }: {
                     <table className="w-full text-sm">
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Us\u0142uga"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilo\u015b\u0107"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Warto\u015b\u0107"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Usługa"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilość"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Wartość"}</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacja</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Uwagi</th>
                         </tr>
@@ -369,12 +379,12 @@ function PreparationsTab({ query, view }: {
                                 {item.reservation.startTime && (
                                   <span className="flex items-center gap-1 text-neutral-400 dark:text-neutral-500 mt-0.5">
                                     <Clock className="h-3 w-3" />
-                                    {formatTime(item.reservation.startTime)}{item.reservation.endTime ? ` \u2013 ${formatTime(item.reservation.endTime)}` : ''}
+                                    {formatTime(item.reservation.startTime)}{item.reservation.endTime ? ` – ${formatTime(item.reservation.endTime)}` : ''}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell">{item.note || '\u2014'}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell">{item.note || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -387,7 +397,7 @@ function PreparationsTab({ query, view }: {
         </div>
       )}
       {view === 'detailed' && (!days || days.length === 0) && (
-        <ReportEmptyState message={"Brak danych szczeg\u00f3\u0142owych dla wybranego okresu"} />
+        <ReportEmptyState message={"Brak danych szczegółowych dla wybranego okresu"} />
       )}
 
       {/* SUMMARY VIEW */}
@@ -397,19 +407,19 @@ function PreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span>{"\ud83d\udcc5"}</span> {day.dateLabel}
+                  <span>{"📅"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
-                  {day.totalItems} {day.totalItems === 1 ? 'us\u0142uga' : 'us\u0142ug'} &middot; {day.totalReservations} rez.
+                  {day.totalItems} {day.totalItems === 1 ? 'usługa' : 'usług'} &middot; {day.totalReservations} rez.
                 </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-neutral-50 dark:bg-neutral-800">
                     <tr>
-                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Us\u0142uga"}</th>
+                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Usługa"}</th>
                       <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Kategoria</th>
-                      <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"\u0141\u0105cznie szt."}</th>
+                      <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Łącznie szt."}</th>
                       <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacji</th>
                       <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Klienci</th>
                     </tr>
@@ -429,8 +439,8 @@ function PreparationsTab({ query, view }: {
                           {item.reservations.map((r) => {
                             const time = formatTime(r.startTime);
                             return time
-                              ? `${r.clientName} (${r.quantity}) ${time}`
-                              : `${r.clientName} (${r.quantity})`;
+                              ? `${r.clientName} ${time}`
+                              : r.clientName;
                           }).join(', ')}
                         </td>
                       </tr>
@@ -455,28 +465,28 @@ function PreparationsTab({ query, view }: {
 
 function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
   if (query.isLoading) return <ReportLoadingState />;
-  if (query.isError) return <ReportErrorState message={"B\u0142\u0105d \u0142adowania raportu przychod\u00f3w"} />;
-  if (!query.data) return <ReportEmptyState message={"Brak danych do wy\u015bwietlenia"} />;
+  if (query.isError) return <ReportErrorState message={"Błąd ładowania raportu przychodów"} />;
+  if (!query.data) return <ReportEmptyState message={"Brak danych do wyświetlenia"} />;
 
   const { summary, breakdown, byHall, byEventType } = query.data;
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <SummaryCard title={"\u0141\u0105czny przych\u00f3d"} value={formatCurrency(summary.totalRevenue)} color="blue" />
-        <SummaryCard title={"\u015ar. / rezerwacj\u0119"} value={formatCurrency(summary.avgRevenuePerReservation)} color="green" />
-        <SummaryCard title={"Wzrost vs wcze\u015bniej"} value={formatPercent(summary.growthPercent)} color={summary.growthPercent >= 0 ? 'green' : 'red'} />
+        <SummaryCard title={"Łączny przychód"} value={formatCurrency(summary.totalRevenue)} color="blue" />
+        <SummaryCard title={"Śr. / rezerwację"} value={formatCurrency(summary.avgRevenuePerReservation)} color="green" />
+        <SummaryCard title={"Wzrost vs wcześniej"} value={formatPercent(summary.growthPercent)} color={summary.growthPercent >= 0 ? 'green' : 'red'} />
         <SummaryCard title="Rezerwacje" value={`${summary.totalReservations} (${summary.completedReservations} zreal.)`} color="purple" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najlepszy dzie\u0144"}</p>
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najlepszy dzień"}</p>
           <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">{summary.maxRevenueDay || 'Brak danych'}</p>
           <p className="text-sm text-green-600 dark:text-green-400 font-medium">{formatCurrency(summary.maxRevenueDayAmount)}</p>
         </div>
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Oczekuj\u0105cy przych\u00f3d"}</p>
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Oczekujący przychód"}</p>
           <p className="text-base sm:text-lg font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(summary.pendingRevenue)}</p>
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Z {summary.totalReservations - summary.completedReservations} niezrealizowanych</p>
         </div>
@@ -492,9 +502,9 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Okres</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przych\u00f3d"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przychód"}</th>
                   <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rez.</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"\u015ar."}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Śr."}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -523,8 +533,8 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
                 <thead className="bg-neutral-50 dark:bg-neutral-800">
                   <tr>
                     <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Sala</th>
-                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przych\u00f3d"}</th>
-                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilo\u015b\u0107"}</th>
+                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przychód"}</th>
+                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilość"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -550,8 +560,8 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
                 <thead className="bg-neutral-50 dark:bg-neutral-800">
                   <tr>
                     <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Typ</th>
-                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przych\u00f3d"}</th>
-                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilo\u015b\u0107"}</th>
+                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przychód"}</th>
+                    <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilość"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -578,16 +588,16 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
 
 function OccupancyTab({ query }: { query: ReturnType<typeof useOccupancyReport> }) {
   if (query.isLoading) return <ReportLoadingState />;
-  if (query.isError) return <ReportErrorState message={"B\u0142\u0105d \u0142adowania raportu zaj\u0119to\u015bci"} />;
-  if (!query.data) return <ReportEmptyState message={"Brak danych do wy\u015bwietlenia"} />;
+  if (query.isError) return <ReportErrorState message={"Błąd ładowania raportu zajętości"} />;
+  if (!query.data) return <ReportEmptyState message={"Brak danych do wyświetlenia"} />;
 
   const { summary, halls, peakHours, peakDaysOfWeek } = query.data;
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <SummaryCard title={"\u015ar. zaj\u0119to\u015b\u0107"} value={`${summary.avgOccupancy}%`} color="blue" />
-        <SummaryCard title={"Najlepszy dzie\u0144"} value={dayNamesPL[summary.peakDay] || summary.peakDay} color="green" />
+        <SummaryCard title={"Śr. zajętość"} value={`${summary.avgOccupancy}%`} color="blue" />
+        <SummaryCard title={"Najlepszy dzień"} value={dayNamesPL[summary.peakDay] || summary.peakDay} color="green" />
         <SummaryCard title="Top sala" value={summary.peakHall || 'Brak'} color="purple" />
         <SummaryCard title="Rezerwacje" value={`${summary.totalReservations} / ${summary.totalDaysInPeriod} dni`} color="orange" />
       </div>
@@ -595,16 +605,16 @@ function OccupancyTab({ query }: { query: ReturnType<typeof useOccupancyReport> 
       {halls.length > 0 && (
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{"Zaj\u0119to\u015b\u0107 wg sali"}</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{"Zajętość wg sali"}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Sala</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Zaj\u0119to\u015b\u0107"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Zajętość"}</th>
                   <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rez.</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"\u015ar. go\u015bci"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Śr. gości"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -711,7 +721,7 @@ function ReportLoadingState() {
     <div className="flex items-center justify-center py-12">
       <div className="text-center">
         <div className="animate-spin text-3xl sm:text-4xl mb-3">&#9203;</div>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">{"\u0141adowanie raportu..."}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{"Ładowanie raportu..."}</p>
       </div>
     </div>
   );
@@ -722,7 +732,7 @@ function ReportErrorState({ message }: { message: string }) {
     <div className="flex items-center justify-center py-12">
       <div className="text-center">
         <p className="text-sm text-red-600 dark:text-red-400 font-medium">{message}</p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{"Spr\u00f3buj od\u015bwie\u017cy\u0107 stron\u0119"}</p>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{"Spróbuj odświeżyć stronę"}</p>
       </div>
     </div>
   );
