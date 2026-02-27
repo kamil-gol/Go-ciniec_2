@@ -304,7 +304,7 @@ function PreparationsTab({ query, view }: {
         <SummaryCard title={"Rezerwacje z extras"} value={`${summary.totalReservationsWithExtras}`} color="blue" />
         <SummaryCard
           title="Top kategoria"
-          value={summary.topCategory ? `${summary.topCategory.icon} ${summary.topCategory.name} (${summary.topCategory.count})` : 'Brak'}
+          value={summary.topCategory ? `${summary.topCategory.name} (${summary.topCategory.count})` : 'Brak'}
           color="green"
         />
         <SummaryCard
@@ -319,7 +319,7 @@ function PreparationsTab({ query, view }: {
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{"Najbli\u017csze wydarzenie"}</p>
           <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {summary.nearestEvent.date} o {summary.nearestEvent.startTime || '\u2014'} &mdash; {summary.nearestEvent.clientName}
+            {summary.nearestEvent.date}{summary.nearestEvent.startTime ? ` o ${formatTime(summary.nearestEvent.startTime)}` : ''} &mdash; {summary.nearestEvent.clientName}
           </p>
         </div>
       )}
@@ -331,7 +331,7 @@ function PreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span>\ud83d\udcc5</span> {day.dateLabel}
+                  <span>{"\ud83d\udcc5"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
                   {day.totalItems} {day.totalItems === 1 ? 'us\u0142uga' : 'us\u0142ug'}
@@ -341,7 +341,7 @@ function PreparationsTab({ query, view }: {
                 <div key={cat.categoryId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   <div className="px-4 py-2 bg-purple-50 dark:bg-purple-950/20">
                     <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
-                      {cat.categoryIcon} {cat.categoryName}
+                      {cat.categoryName}
                     </span>
                   </div>
                   <div className="overflow-x-auto">
@@ -397,7 +397,7 @@ function PreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span>\ud83d\udcc5</span> {day.dateLabel}
+                  <span>{"\ud83d\udcc5"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
                   {day.totalItems} {day.totalItems === 1 ? 'us\u0142uga' : 'us\u0142ug'} &middot; {day.totalReservations} rez.
@@ -420,7 +420,7 @@ function PreparationsTab({ query, view }: {
                         <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.serviceName}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                            {item.categoryIcon} {item.categoryName}
+                            {item.categoryName}
                           </span>
                         </td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.totalQuantity}</td>
