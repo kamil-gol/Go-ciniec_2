@@ -29,6 +29,12 @@ export interface PreparationsReportFilters {
   status?: string;
 }
 
+export interface MenuPreparationsReportFilters {
+  dateFrom: string;
+  dateTo: string;
+  view: 'detailed' | 'summary';
+}
+
 // ============================================
 // REVENUE REPORT
 // ============================================
@@ -117,10 +123,8 @@ export interface OccupancyReport {
 
 // ============================================
 // PREPARATIONS REPORT (#159)
-// Aligned with actual API response structure
 // ============================================
 
-/** KPI summary returned by API */
 export interface PreparationsSummary {
   totalExtras: number;
   totalReservationsWithExtras: number;
@@ -136,7 +140,6 @@ export interface PreparationsSummary {
   } | null;
 }
 
-/** Reservation info nested inside detailed items */
 export interface PreparationsReservationInfo {
   id: string;
   clientName: string;
@@ -151,7 +154,6 @@ export interface PreparationsReservationInfo {
   toddlers: number;
 }
 
-/** Single service extra in detailed view */
 export interface PreparationsDetailedItem {
   extraId: string;
   serviceName: string;
@@ -165,7 +167,6 @@ export interface PreparationsDetailedItem {
   reservation: PreparationsReservationInfo;
 }
 
-/** Category grouping within a day (detailed view) */
 export interface PreparationsDetailedCategory {
   categoryId: string;
   categoryName: string;
@@ -175,7 +176,6 @@ export interface PreparationsDetailedCategory {
   itemCount: number;
 }
 
-/** Single day in detailed view */
 export interface PreparationsDetailedDay {
   date: string;
   dateLabel: string;
@@ -183,7 +183,6 @@ export interface PreparationsDetailedDay {
   totalItems: number;
 }
 
-/** Reservation reference in summary view */
 export interface PreparationsSummaryReservation {
   id: string;
   clientName: string;
@@ -192,7 +191,6 @@ export interface PreparationsSummaryReservation {
   quantity: number;
 }
 
-/** Aggregated service item in summary view */
 export interface PreparationsSummaryItem {
   serviceItemId: string;
   serviceName: string;
@@ -205,7 +203,6 @@ export interface PreparationsSummaryItem {
   reservations: PreparationsSummaryReservation[];
 }
 
-/** Single day in summary view */
 export interface PreparationsSummaryDay {
   date: string;
   dateLabel: string;
@@ -214,12 +211,111 @@ export interface PreparationsSummaryDay {
   totalReservations: number;
 }
 
-/** Full preparations report as returned by API */
 export interface PreparationsReport {
   summary: PreparationsSummary;
   days?: PreparationsDetailedDay[];
   summaryDays?: PreparationsSummaryDay[];
   filters: PreparationsReportFilters;
+}
+
+// ============================================
+// MENU PREPARATIONS REPORT (#160)
+// ============================================
+
+export interface MenuPreparationsSummary {
+  totalMenus: number;
+  totalGuests: number;
+  totalAdults: number;
+  totalChildren: number;
+  totalToddlers: number;
+  topPackage: {
+    name: string;
+    count: number;
+  } | null;
+  nearestEvent: {
+    date: string;
+    startTime: string | null;
+    clientName: string;
+  } | null;
+}
+
+export interface MenuPreparationDish {
+  name: string;
+  description: string | null;
+}
+
+export interface MenuPreparationCourse {
+  courseName: string;
+  icon: string | null;
+  dishes: MenuPreparationDish[];
+}
+
+export interface MenuPreparationGuests {
+  adults: number;
+  children: number;
+  toddlers: number;
+  total: number;
+}
+
+export interface MenuPreparationPackage {
+  name: string;
+  description: string | null;
+}
+
+export interface MenuPreparationReservation {
+  reservationId: string;
+  clientName: string;
+  hallName: string | null;
+  eventTypeName: string | null;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  guests: MenuPreparationGuests;
+  package: MenuPreparationPackage;
+  courses: MenuPreparationCourse[];
+  packagePrice: number;
+  totalMenuPrice: number;
+}
+
+export interface MenuPreparationDayGroup {
+  date: string;
+  dateLabel: string;
+  reservations: MenuPreparationReservation[];
+  totalReservations: number;
+  totalGuests: number;
+}
+
+export interface MenuPreparationSummaryDish {
+  dishName: string;
+  totalPortions: number;
+  adultPortions: number;
+  childrenPortions: number;
+  reservations: Array<{
+    id: string;
+    clientName: string;
+    guests: number;
+  }>;
+}
+
+export interface MenuPreparationSummaryCourseGroup {
+  courseName: string;
+  icon: string | null;
+  dishes: MenuPreparationSummaryDish[];
+}
+
+export interface MenuPreparationSummaryDayGroup {
+  date: string;
+  dateLabel: string;
+  courses: MenuPreparationSummaryCourseGroup[];
+  totalReservations: number;
+  totalGuests: number;
+}
+
+export interface MenuPreparationsReport {
+  summary: MenuPreparationsSummary;
+  days: MenuPreparationDayGroup[];
+  summaryDays?: MenuPreparationSummaryDayGroup[];
+  filters: MenuPreparationsReportFilters;
 }
 
 // ============================================
@@ -239,4 +335,9 @@ export interface OccupancyReportResponse {
 export interface PreparationsReportResponse {
   success: boolean;
   data: PreparationsReport;
+}
+
+export interface MenuPreparationsReportResponse {
+  success: boolean;
+  data: MenuPreparationsReport;
 }

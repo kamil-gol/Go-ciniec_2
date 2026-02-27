@@ -1,23 +1,27 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { BarChart3, FileSpreadsheet, FileText, ClipboardList, DollarSign, Building2, Clock } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, FileText, ClipboardList, DollarSign, Building2, Clock, UtensilsCrossed, Users, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   useRevenueReport,
   useOccupancyReport,
   usePreparationsReport,
+  useMenuPreparationsReport,
   exportRevenueExcel,
   exportRevenuePDF,
   exportOccupancyExcel,
   exportOccupancyPDF,
   exportPreparationsExcel,
   exportPreparationsPDF,
+  exportMenuPreparationsExcel,
+  exportMenuPreparationsPDF,
 } from '@/hooks/use-reports';
 import type {
   RevenueReportFilters,
   OccupancyReportFilters,
   PreparationsReportFilters,
+  MenuPreparationsReportFilters,
   GroupByPeriod,
 } from '@/types/reports.types';
 import { PageLayout, PageHero } from '@/components/shared';
@@ -41,7 +45,6 @@ const formatPercent = (value: number): string => {
  */
 const formatTime = (time: string | null | undefined): string => {
   if (!time) return '';
-  // Already HH:MM or HH:MM:SS — just take HH:MM
   return time.substring(0, 5);
 };
 
@@ -49,8 +52,8 @@ const formatTime = (time: string | null | undefined): string => {
  * Helper: get Monday of the week containing the given date (ISO week, Monday-based).
  */
 function getMonday(d: Date): Date {
-  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(d);
   monday.setDate(diff);
   return monday;
@@ -68,31 +71,25 @@ const getDatePresets = () => {
   const year = now.getFullYear();
   const month = now.getMonth();
 
-  // Today
   const today = formatDateStr(now);
 
-  // Tomorrow
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
   const tomorrowStr = formatDateStr(tomorrow);
 
-  // This week (Mon-Sun)
   const thisMonday = getMonday(now);
   const thisSunday = new Date(thisMonday);
   thisSunday.setDate(thisMonday.getDate() + 6);
 
-  // Next week (Mon-Sun)
   const nextMonday = new Date(thisMonday);
   nextMonday.setDate(thisMonday.getDate() + 7);
   const nextSunday = new Date(nextMonday);
   nextSunday.setDate(nextMonday.getDate() + 6);
 
-  // This month
   const firstDayThisMonth = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const lastDayThisMonth = new Date(year, month + 1, 0);
   const lastDayThisMonthStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayThisMonth.getDate()).padStart(2, '0')}`;
 
-  // Previous month
   const firstDayLastMonth = month === 0 ? `${year - 1}-12-01` : `${year}-${String(month).padStart(2, '0')}-01`;
   const lastDayLastMonth = new Date(year, month, 0);
   const lastDayLastMonthStr = month === 0
@@ -116,21 +113,23 @@ const dayNamesPL: Record<string, string> = {
   Wednesday: 'Środa', Thursday: 'Czwartek', Friday: 'Piątek', Saturday: 'Sobota',
 };
 
+type ReportTab = 'revenue' | 'occupancy' | 'preparations' | 'menu-preparations';
+
 export default function ReportsPage() {
   const accent = moduleAccents.reports || moduleAccents.calendar;
 
-  // Default dates = this week (first preset)
   const defaultPresets = useMemo(() => getDatePresets(), []);
   const defaultFrom = defaultPresets[0].dateFrom;
   const defaultTo = defaultPresets[0].dateTo;
 
-  const [activeTab, setActiveTab] = useState<'revenue' | 'occupancy' | 'preparations'>('revenue');
+  const [activeTab, setActiveTab] = useState<ReportTab>('revenue');
   const [dateFrom, setDateFrom] = useState(defaultFrom);
   const [dateTo, setDateTo] = useState(defaultTo);
   const [groupBy, setGroupBy] = useState<GroupByPeriod>('month');
   const [hallId] = useState<string>('');
   const [eventTypeId] = useState<string>('');
   const [prepView, setPrepView] = useState<'detailed' | 'summary'>('detailed');
+  const [menuPrepView, setMenuPrepView] = useState<'detailed' | 'summary'>('detailed');
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
 
@@ -145,30 +144,36 @@ export default function ReportsPage() {
   const preparationsFilters: PreparationsReportFilters = {
     dateFrom, dateTo, view: prepView,
   };
+  const menuPreparationsFilters: MenuPreparationsReportFilters = {
+    dateFrom, dateTo, view: menuPrepView,
+  };
 
   const revenueQuery = useRevenueReport(revenueFilters, activeTab === 'revenue');
   const occupancyQuery = useOccupancyReport(occupancyFilters, activeTab === 'occupancy');
   const preparationsQuery = usePreparationsReport(preparationsFilters, activeTab === 'preparations');
+  const menuPreparationsQuery = useMenuPreparationsReport(menuPreparationsFilters, activeTab === 'menu-preparations');
 
   const handleExportExcel = useCallback(async () => {
     setExportingExcel(true);
     try {
       if (activeTab === 'revenue') await exportRevenueExcel(revenueFilters);
       else if (activeTab === 'occupancy') await exportOccupancyExcel(occupancyFilters);
-      else await exportPreparationsExcel(preparationsFilters);
+      else if (activeTab === 'preparations') await exportPreparationsExcel(preparationsFilters);
+      else await exportMenuPreparationsExcel(menuPreparationsFilters);
     } catch { alert('Błąd eksportu Excel. Spróbuj ponownie.'); }
     finally { setExportingExcel(false); }
-  }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters]);
+  }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters, menuPreparationsFilters]);
 
   const handleExportPDF = useCallback(async () => {
     setExportingPDF(true);
     try {
       if (activeTab === 'revenue') await exportRevenuePDF(revenueFilters);
       else if (activeTab === 'occupancy') await exportOccupancyPDF(occupancyFilters);
-      else await exportPreparationsPDF(preparationsFilters);
+      else if (activeTab === 'preparations') await exportPreparationsPDF(preparationsFilters);
+      else await exportMenuPreparationsPDF(menuPreparationsFilters);
     } catch { alert('Błąd eksportu PDF. Spróbuj ponownie.'); }
     finally { setExportingPDF(false); }
-  }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters]);
+  }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters, menuPreparationsFilters]);
 
   const presets = defaultPresets;
 
@@ -179,12 +184,17 @@ export default function ReportsPage() {
         : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300'
     }`;
 
+  const showViewToggle = activeTab === 'preparations' || activeTab === 'menu-preparations';
+  const currentView = activeTab === 'menu-preparations' ? menuPrepView : prepView;
+  const setCurrentView = activeTab === 'menu-preparations' ? setMenuPrepView : setPrepView;
+  const viewColor = activeTab === 'menu-preparations' ? 'amber' : 'purple';
+
   return (
     <PageLayout>
       <PageHero
         accent={accent}
         title="Raporty"
-        subtitle={"Analityka przychodów, zajętości sal i przygotowań"}
+        subtitle={"Analityka przychodów, zajętości sal, przygotowań i menu"}
         icon={BarChart3}
         action={
           <div className="flex gap-2">
@@ -204,7 +214,7 @@ export default function ReportsPage() {
 
       {/* Tabs */}
       <div className="border-b border-neutral-200 dark:border-neutral-700">
-        <nav className="flex gap-4" aria-label="Tabs">
+        <nav className="flex gap-4 overflow-x-auto" aria-label="Tabs">
           <button onClick={() => setActiveTab('revenue')}
             className={tabClass(activeTab === 'revenue', 'blue')}>
             <DollarSign className="h-3.5 w-3.5" />
@@ -219,6 +229,11 @@ export default function ReportsPage() {
             className={tabClass(activeTab === 'preparations', 'purple')}>
             <ClipboardList className="h-3.5 w-3.5" />
             Przygotowania
+          </button>
+          <button onClick={() => setActiveTab('menu-preparations')}
+            className={tabClass(activeTab === 'menu-preparations', 'amber')}>
+            <UtensilsCrossed className="h-3.5 w-3.5" />
+            <span className="whitespace-nowrap">Menu</span>
           </button>
         </nav>
       </div>
@@ -264,16 +279,16 @@ export default function ReportsPage() {
                 </select>
               </div>
             )}
-            {activeTab === 'preparations' && (
+            {showViewToggle && (
               <div>
                 <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Widok</label>
                 <div className="flex rounded-lg border border-neutral-300 dark:border-neutral-600 overflow-hidden">
-                  <button onClick={() => setPrepView('detailed')}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${prepView === 'detailed' ? 'bg-purple-600 text-white' : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  <button onClick={() => setCurrentView('detailed')}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                     {"Szczegółowy"}
                   </button>
-                  <button onClick={() => setPrepView('summary')}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${prepView === 'summary' ? 'bg-purple-600 text-white' : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  <button onClick={() => setCurrentView('summary')}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                     Zbiorczy
                   </button>
                 </div>
@@ -286,7 +301,196 @@ export default function ReportsPage() {
       {activeTab === 'revenue' && <RevenueTab query={revenueQuery} />}
       {activeTab === 'occupancy' && <OccupancyTab query={occupancyQuery} />}
       {activeTab === 'preparations' && <PreparationsTab query={preparationsQuery} view={prepView} />}
+      {activeTab === 'menu-preparations' && <MenuPreparationsTab query={menuPreparationsQuery} view={menuPrepView} />}
     </PageLayout>
+  );
+}
+
+/* ============================================
+   MENU PREPARATIONS TAB (#160)
+   Detailed: per-reservation cards with courses & dishes
+   Summary: aggregated per course → per dish with portions
+   ============================================ */
+
+function MenuPreparationsTab({ query, view }: {
+  query: ReturnType<typeof useMenuPreparationsReport>;
+  view: 'detailed' | 'summary';
+}) {
+  if (query.isLoading) return <ReportLoadingState />;
+  if (query.isError) return <ReportErrorState message={"Błąd ładowania raportu menu"} />;
+  if (!query.data) return <ReportEmptyState message={"Brak danych do wyświetlenia"} />;
+
+  const { summary, days, summaryDays } = query.data;
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <SummaryCard title={"Rezerwacje z menu"} value={`${summary.totalMenus}`} color="orange" />
+        <SummaryCard
+          title={"Łącznie gości"}
+          value={`${summary.totalGuests}`}
+          color="blue"
+        />
+        <SummaryCard
+          title="Top pakiet"
+          value={summary.topPackage ? `${summary.topPackage.name} (${summary.topPackage.count})` : 'Brak'}
+          color="green"
+        />
+        <SummaryCard
+          title={"Goście (D/Dz/M)"}
+          value={`${summary.totalAdults} / ${summary.totalChildren} / ${summary.totalToddlers}`}
+          color="purple"
+        />
+      </div>
+
+      {/* DETAILED VIEW */}
+      {view === 'detailed' && days && days.length > 0 && (
+        <div className="space-y-4">
+          {days.map((day) => (
+            <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+              <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <span>{"📅"}</span> {day.dateLabel}
+                </h3>
+                <span className="text-xs text-neutral-300">
+                  {day.totalReservations} {day.totalReservations === 1 ? 'rezerwacja' : 'rezerwacji'} &middot; {day.totalGuests} gości
+                </span>
+              </div>
+              {day.reservations.map((res) => (
+                <div key={res.reservationId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
+                  {/* Reservation header */}
+                  <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                        {res.clientName}
+                      </span>
+                      {res.hallName && (
+                        <span className="text-xs text-amber-600 dark:text-amber-400">
+                          ({res.hallName})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+                      {res.startTime && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(res.startTime)}{res.endTime ? ` – ${formatTime(res.endTime)}` : ''}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {res.guests.total} ({res.guests.adults}D + {res.guests.children}Dz + {res.guests.toddlers}M)
+                      </span>
+                    </div>
+                  </div>
+                  {/* Package info */}
+                  <div className="px-4 py-2 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-100 dark:border-neutral-800">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                      <ChefHat className="h-3 w-3" />
+                      Pakiet: <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{res.package.name}</span>
+                    </span>
+                  </div>
+                  {/* Courses & dishes */}
+                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {res.courses.map((course, ci) => (
+                      <div key={ci} className="px-4 py-2">
+                        <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">
+                          {course.courseName}
+                        </div>
+                        <div className="space-y-0.5">
+                          {course.dishes.map((dish, di) => (
+                            <div key={di} className="flex items-start gap-2 text-sm">
+                              <span className="text-neutral-400 mt-0.5">•</span>
+                              <div>
+                                <span className="text-neutral-900 dark:text-neutral-100">{dish.name}</span>
+                                {dish.description && (
+                                  <span className="text-neutral-400 dark:text-neutral-500 text-xs ml-1.5">— {dish.description}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {res.courses.length === 0 && (
+                      <div className="px-4 py-3 text-xs text-neutral-400">Brak dań w menu</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {view === 'detailed' && (!days || days.length === 0) && (
+        <ReportEmptyState message={"Brak danych menu dla wybranego okresu"} />
+      )}
+
+      {/* SUMMARY VIEW */}
+      {view === 'summary' && summaryDays && summaryDays.length > 0 && (
+        <div className="space-y-4">
+          {summaryDays.map((day) => (
+            <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+              <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <span>{"📅"}</span> {day.dateLabel}
+                </h3>
+                <span className="text-xs text-neutral-300">
+                  {day.totalReservations} rez. &middot; {day.totalGuests} gości
+                </span>
+              </div>
+              {day.courses.map((course, ci) => (
+                <div key={ci} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
+                  <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                      {course.courseName}
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm table-fixed">
+                      <colgroup>
+                        <col className="w-[30%]" />
+                        <col className="w-[12%]" />
+                        <col className="w-[12%] hidden sm:table-column" />
+                        <col className="w-[12%] hidden sm:table-column" />
+                        <col className="w-[34%] hidden lg:table-column" />
+                      </colgroup>
+                      <thead className="bg-neutral-50 dark:bg-neutral-800">
+                        <tr>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase truncate">Danie</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Porcje</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Dorosłe"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Dziecięce</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Klienci</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {course.dishes.map((dish, di) => (
+                          <tr key={di} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                            <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{dish.dishName}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{dish.totalPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.adultPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.childrenPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
+                              {dish.reservations.map((r) => `${r.clientName} (${r.guests})`).join(', ')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {view === 'summary' && (!summaryDays || summaryDays.length === 0) && (
+        <ReportEmptyState message={"Brak danych zbiorczych menu dla wybranego okresu"} />
+      )}
+    </div>
   );
 }
 
