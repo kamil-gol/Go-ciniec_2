@@ -698,7 +698,7 @@ export class PDFService {
     const items = [
       'Potwierdzenie rezerwacji oraz ustalenie menu następuje nie później niż 30 dni przed planowanym przyjęciem.',
       'Ostateczna liczba gości powinna zostać potwierdzona min. 30 dni przed przyjęciem. Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.',
-      'Warunki płatności: 500,00 zł przy rezerwacji terminu, 50% całości na 3 dni przed przyjęciem, pozostałe 50% w dniu przyjęcia (przed rozpoczęciem lub do godz. 20:00).',
+      'Warunki płatności: 500,00 zł przy rezerwacji terminu, 50% całości na 3 dni przed przyjęciem, pozostała kwota w dniu przyjęcia (przed rozpoczęciem lub do godz. 20:00).',
     ];
 
     // Calculate box height
