@@ -294,6 +294,7 @@ export default function ReportsPage() {
    PREPARATIONS TAB (#159)
    Aligned with actual API response structure
    + startTime display in REZERWACJA column
+   + table-fixed layout for consistent column alignment
    ============================================ */
 
 function PreparationsTab({ query, view }: {
@@ -345,10 +346,17 @@ function PreparationsTab({ query, view }: {
                     </span>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm table-fixed">
+                      <colgroup>
+                        <col className="w-[25%]" />
+                        <col className="w-[8%]" />
+                        <col className="w-[12%]" />
+                        <col className="w-[30%] hidden sm:table-column" />
+                        <col className="w-[25%] hidden lg:table-column" />
+                      </colgroup>
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Usługa"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase truncate">{"Usługa"}</th>
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilość"}</th>
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Wartość"}</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacja</th>
@@ -358,23 +366,23 @@ function PreparationsTab({ query, view }: {
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                         {cat.items.map((item) => (
                           <tr key={item.extraId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                            <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.serviceName}</td>
+                            <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.quantity}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">
                               {item.priceType === 'FREE' ? 'Gratis' : formatCurrency(item.totalPrice)}
                             </td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs hidden sm:table-cell">
                               <div className="flex flex-col">
-                                <span>{item.reservation.clientName} ({item.reservation.hallName})</span>
+                                <span className="truncate">{item.reservation.clientName} ({item.reservation.hallName})</span>
                                 {item.reservation.startTime && (
                                   <span className="flex items-center gap-1 text-neutral-400 dark:text-neutral-500 mt-0.5">
-                                    <Clock className="h-3 w-3" />
+                                    <Clock className="h-3 w-3 flex-shrink-0" />
                                     {formatTime(item.reservation.startTime)}{item.reservation.endTime ? ` – ${formatTime(item.reservation.endTime)}` : ''}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell">{item.note || '—'}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">{item.note || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -404,7 +412,14 @@ function PreparationsTab({ query, view }: {
                 </span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm table-fixed">
+                  <colgroup>
+                    <col className="w-[25%]" />
+                    <col className="w-[18%] hidden sm:table-column" />
+                    <col className="w-[12%]" />
+                    <col className="w-[12%] hidden sm:table-column" />
+                    <col className="w-[33%] hidden lg:table-column" />
+                  </colgroup>
                   <thead className="bg-neutral-50 dark:bg-neutral-800">
                     <tr>
                       <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Usługa"}</th>
@@ -417,15 +432,15 @@ function PreparationsTab({ query, view }: {
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                     {day.items.map((item) => (
                       <tr key={item.serviceItemId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                        <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.serviceName}</td>
+                        <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 truncate">
                             {item.categoryName}
                           </span>
                         </td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.totalQuantity}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{item.reservationCount}</td>
-                        <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell">
+                        <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
                           {item.reservations.map((r) => {
                             const time = formatTime(r.startTime);
                             return time
