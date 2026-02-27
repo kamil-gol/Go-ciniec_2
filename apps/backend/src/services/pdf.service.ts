@@ -945,10 +945,16 @@ export class PDFService {
     // ── 7. NOTES ──
     if (r.notes) {
       doc.moveDown(0.4);
+      const noteIndent = 10;
       doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
-      doc.text('Uwagi: ', left, doc.y, { continued: true });
+      doc.text('Uwagi:', left, doc.y);
+      doc.moveDown(0.15);
+      // Split notes into individual lines and render each with uniform indent
+      const noteLines = r.notes.split('\n').filter(line => line.trim() !== '');
       doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
-      doc.text(r.notes, { width: pageWidth - 40 });
+      noteLines.forEach((line) => {
+        doc.text(line.trim(), left + noteIndent, doc.y, { width: pageWidth - noteIndent });
+      });
     }
 
     // ── 8. IMPORTANT INFO SECTION ──
