@@ -5,6 +5,7 @@
  * Business logic for revenue, occupancy, preparations, and other reports
  * Updated: extras revenue tracking in revenue reports
  * Updated: preparations report for service extras (#159)
+ * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -222,9 +223,7 @@ class ReportsService {
       summary: {
         totalRevenue: Math.round(totalRevenue * 100) / 100,
         avgRevenuePerReservation: Math.round(avgRevenuePerReservation * 100) / 100,
-        /* istanbul ignore next -- null when no reservations in period */
         maxRevenueDay: maxRevenueDay?.period || null,
-        /* istanbul ignore next */
         maxRevenueDayAmount: Math.round((maxRevenueDay?.revenue || 0) * 100) / 100,
         growthPercent,
         totalReservations,
@@ -278,7 +277,7 @@ class ReportsService {
     const grouped = new Map<string, { revenue: number; count: number }>();
 
     reservations.forEach(r => {
-      const period = r.date; // "2026-02-16"
+      const period = r.date;
       const existing = grouped.get(period) || { revenue: 0, count: 0 };
       grouped.set(period, {
         revenue: existing.revenue + Number(r.totalPrice || 0),
@@ -310,7 +309,7 @@ class ReportsService {
 
       switch (groupBy) {
         case 'day':
-          period = r.date; // "2026-02-16"
+          period = r.date;
           break;
         case 'week':
           const weekNum = this.getWeekNumber(date);
@@ -414,15 +413,9 @@ class ReportsService {
   // OCCUPANCY REPORTS
   // ============================================
 
-  /**
-   * Get comprehensive occupancy report
-   * @param filters - date range, optional hallId
-   * @returns Occupancy report with summary, hall rankings, peak times
-   */
   async getOccupancyReport(filters: OccupancyReportFilters): Promise<OccupancyReport> {
     const { dateFrom, dateTo, hallId } = filters;
 
-    // Build where clause
     const whereClause: any = {
       date: { gte: dateFrom, lte: dateTo },
       status: { not: 'CANCELLED' },
@@ -430,7 +423,6 @@ class ReportsService {
 
     if (hallId) whereClause.hallId = hallId;
 
-    // Get all reservations in period
     const reservations = await prisma.reservation.findMany({
       where: whereClause,
       select: {
@@ -443,29 +435,22 @@ class ReportsService {
       orderBy: { date: 'asc' },
     });
 
-    // Calculate total days in period
     const from = new Date(dateFrom);
     const to = new Date(dateTo);
     const totalDaysInPeriod = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Get unique dates with reservations
     const uniqueDates = new Set(reservations.map(r => r.date));
     const daysWithReservations = uniqueDates.size;
 
-    // Calculate avg occupancy %
     const avgOccupancy = totalDaysInPeriod > 0
       ? Math.round((daysWithReservations / totalDaysInPeriod) * 100 * 10) / 10
       : 0;
 
-    // Peak day of week analysis
     const peakDaysOfWeek = this.analyzePeakDaysOfWeek(reservations);
-    /* istanbul ignore next -- empty when no reservations in period */
     const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'Brak danych';
 
-    // Peak hour analysis
     const peakHours = this.analyzePeakHours(reservations);
 
-    // Occupancy by hall
     const hallsData = this.analyzeOccupancyByHall(reservations, totalDaysInPeriod);
     const peakHall = hallsData.sort((a, b) => b.reservations - a.reservations)[0] || null;
 
@@ -473,30 +458,25 @@ class ReportsService {
       summary: {
         avgOccupancy,
         peakDay,
-        /* istanbul ignore next -- null when no halls have reservations */
         peakHall: peakHall?.hallName || null,
-        /* istanbul ignore next */
         peakHallId: peakHall?.hallId || null,
         totalReservations: reservations.length,
         totalDaysInPeriod,
       },
       halls: hallsData,
-      peakHours: peakHours.slice(0, 10), // Top 10 hours
+      peakHours: peakHours.slice(0, 10),
       peakDaysOfWeek,
       filters,
     };
   }
 
-  /**
-   * Analyze peak days of week
-   */
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
     const dayNames = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
     const counts = new Map<number, number>();
 
     reservations.forEach(r => {
       const date = new Date(r.date);
-      const dayOfWeek = date.getDay(); // 0-6
+      const dayOfWeek = date.getDay();
       counts.set(dayOfWeek, (counts.get(dayOfWeek) || 0) + 1);
     });
 
@@ -509,9 +489,6 @@ class ReportsService {
       .sort((a, b) => b.count - a.count);
   }
 
-  /**
-   * Analyze peak hours (0-23)
-   */
   private analyzePeakHours(reservations: any[]): PeakHourItem[] {
     const counts = new Map<number, number>();
 
@@ -527,9 +504,6 @@ class ReportsService {
       .sort((a, b) => b.count - a.count);
   }
 
-  /**
-   * Analyze occupancy by hall
-   */
   private analyzeOccupancyByHall(
     reservations: any[],
     totalDaysInPeriod: number
@@ -551,7 +525,6 @@ class ReportsService {
       };
       existing.dates.add(r.date);
       existing.reservations += 1;
-      /* istanbul ignore next -- guests always present on reservation */
       existing.totalGuests += r.guests || 0;
       hallData.set(r.hall.id, existing);
     });
@@ -577,6 +550,10 @@ class ReportsService {
    * Get preparations report — what service extras need to be prepared.
    * Groups by date → category → service item, with reservation details.
    * Supports detailed (per-reservation) and summary (aggregated) views.
+   *
+   * FIX: extras filter changed from whitelist {in: ['PENDING','CONFIRMED']}
+   * to blacklist {not: 'CANCELLED'} to include all non-cancelled extras
+   * regardless of their specific status value.
    */
   async getPreparationsReport(filters: PreparationsReportFilters): Promise<PreparationsReport> {
     const { dateFrom, dateTo, categoryId, view = 'detailed' } = filters;
@@ -588,8 +565,9 @@ class ReportsService {
     };
 
     // Build extras where clause
+    // FIX: use blacklist instead of whitelist to catch all non-cancelled extras
     const extrasWhere: any = {
-      status: { in: ['PENDING', 'CONFIRMED'] },
+      status: { not: 'CANCELLED' },
     };
     if (categoryId) {
       extrasWhere.serviceItem = { categoryId };
@@ -700,7 +678,6 @@ class ReportsService {
       if (!dayMap.has(date)) dayMap.set(date, new Map());
 
       const catMap = dayMap.get(date)!;
-      // Find category from the original extras data
       const r = reservations.find(res => res.id === item.reservation.id);
       const extra = r?.extras.find(e => e.id === item.extraId);
       const cat = extra?.serviceItem.category;
@@ -728,7 +705,6 @@ class ReportsService {
             categoryIcon: data.category.icon,
             categoryColor: data.category.color,
             items: data.items.sort((a, b) => {
-              // Sort by startTime within category
               const timeA = a.reservation.startTime || '99:99';
               const timeB = b.reservation.startTime || '99:99';
               return timeA.localeCompare(timeB);
@@ -756,7 +732,6 @@ class ReportsService {
 
         const serviceMap = summaryDayMap.get(date)!;
 
-        // Find category info
         const r = reservations.find(res => res.id === item.reservation.id);
         const extra = r?.extras.find(e => e.id === item.extraId);
         const cat = extra?.serviceItem.category;

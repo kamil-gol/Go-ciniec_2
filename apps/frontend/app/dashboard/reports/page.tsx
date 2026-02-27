@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { BarChart3, FileSpreadsheet, FileText, ClipboardList, DollarSign, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,21 +36,57 @@ const formatPercent = (value: number): string => {
   return `${value > 0 ? '+' : ''}${value}%`;
 };
 
+/**
+ * Helper: get Monday of the week containing the given date (ISO week, Monday-based).
+ */
+function getMonday(d: Date): Date {
+  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+  const monday = new Date(d);
+  monday.setDate(diff);
+  return monday;
+}
+
+function formatDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 const getDatePresets = () => {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
+
+  // This week (Mon-Sun)
+  const thisMonday = getMonday(now);
+  const thisSunday = new Date(thisMonday);
+  thisSunday.setDate(thisMonday.getDate() + 6);
+
+  // Next week (Mon-Sun)
+  const nextMonday = new Date(thisMonday);
+  nextMonday.setDate(thisMonday.getDate() + 7);
+  const nextSunday = new Date(nextMonday);
+  nextSunday.setDate(nextMonday.getDate() + 6);
+
+  // This month
   const firstDayThisMonth = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const lastDayThisMonth = new Date(year, month + 1, 0);
   const lastDayThisMonthStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayThisMonth.getDate()).padStart(2, '0')}`;
+
+  // Previous month
   const firstDayLastMonth = month === 0 ? `${year - 1}-12-01` : `${year}-${String(month).padStart(2, '0')}-01`;
   const lastDayLastMonth = new Date(year, month, 0);
   const lastDayLastMonthStr = month === 0
     ? `${year - 1}-12-${String(lastDayLastMonth.getDate()).padStart(2, '0')}`
     : `${year}-${String(month).padStart(2, '0')}-${String(lastDayLastMonth.getDate()).padStart(2, '0')}`;
+
   return [
+    { label: 'Ten tydzie\u0144', dateFrom: formatDateStr(thisMonday), dateTo: formatDateStr(thisSunday) },
+    { label: 'Nast\u0119pny tydzie\u0144', dateFrom: formatDateStr(nextMonday), dateTo: formatDateStr(nextSunday) },
     { label: 'Ten miesi\u0105c', dateFrom: firstDayThisMonth, dateTo: lastDayThisMonthStr },
-    { label: 'Poprzedni', dateFrom: firstDayLastMonth, dateTo: lastDayLastMonthStr },
+    { label: 'Poprzedni miesi\u0105c', dateFrom: firstDayLastMonth, dateTo: lastDayLastMonthStr },
     { label: 'Ten rok', dateFrom: `${year}-01-01`, dateTo: `${year}-12-31` },
     { label: 'Ubieg\u0142y rok', dateFrom: `${year - 1}-01-01`, dateTo: `${year - 1}-12-31` },
   ];
@@ -62,12 +98,16 @@ const dayNamesPL: Record<string, string> = {
 };
 
 export default function ReportsPage() {
-  const now = new Date();
-  const year = now.getFullYear();
   const accent = moduleAccents.reports || moduleAccents.calendar;
+
+  // Default dates = this week (first preset)
+  const defaultPresets = useMemo(() => getDatePresets(), []);
+  const defaultFrom = defaultPresets[0].dateFrom;
+  const defaultTo = defaultPresets[0].dateTo;
+
   const [activeTab, setActiveTab] = useState<'revenue' | 'occupancy' | 'preparations'>('revenue');
-  const [dateFrom, setDateFrom] = useState(`${year}-01-01`);
-  const [dateTo, setDateTo] = useState(`${year}-12-31`);
+  const [dateFrom, setDateFrom] = useState(defaultFrom);
+  const [dateTo, setDateTo] = useState(defaultTo);
   const [groupBy, setGroupBy] = useState<GroupByPeriod>('month');
   const [hallId] = useState<string>('');
   const [eventTypeId] = useState<string>('');
@@ -111,7 +151,7 @@ export default function ReportsPage() {
     finally { setExportingPDF(false); }
   }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters]);
 
-  const presets = getDatePresets();
+  const presets = defaultPresets;
 
   const tabClass = (isActive: boolean, color: string) =>
     `py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${
