@@ -12,6 +12,10 @@
  *
  * Aligned with actual API response structure (summary.totalExtras,
  * summary.totalReservationsWithExtras, days[], summaryDays[], etc.)
+ *
+ * FIX: Removed emoji/icons from PDF text — PDFKit cannot render emoji
+ * in standard fonts, causing [] artifacts.
+ * FIX: Added startTime to reservation labels in both views.
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
@@ -82,7 +86,7 @@ export function buildPreparationsReportPDF(
   if (summary.topCategory) {
     const tc = summary.topCategory;
     if (typeof tc === 'object' && tc.name) {
-      summaryLines.push(`Top kategoria: ${tc.icon || ''} ${tc.name} (${tc.count || 0})`);
+      summaryLines.push(`Top kategoria: ${tc.name} (${tc.count || 0})`);
     } else {
       summaryLines.push(`Top kategoria: ${tc}`);
     }
@@ -90,7 +94,8 @@ export function buildPreparationsReportPDF(
   if (summary.nearestEvent) {
     const ne = summary.nearestEvent;
     if (typeof ne === 'object' && ne.date) {
-      summaryLines.push(`Najbliższe wydarzenie: ${ne.date} ${ne.startTime || ''} — ${ne.clientName || ''}`);
+      const neTime = ne.startTime ? ` ${ne.startTime}` : '';
+      summaryLines.push(`Najbliższe wydarzenie: ${ne.date}${neTime} — ${ne.clientName || ''}`);
     } else {
       summaryLines.push(`Najbliższe wydarzenie: ${ne}`);
     }
@@ -134,15 +139,16 @@ export function buildPreparationsReportPDF(
 
         doc.fontSize(9).font(ctx.boldFont).fillColor(COLORS.purple);
         doc.text(
-          `${category.categoryIcon || ''} ${category.categoryName}`.toUpperCase(),
+          `${category.categoryName}`.toUpperCase(),
           left + 8, doc.y
         );
         doc.moveDown(0.2);
 
         // Build table for items in this category
         const rows: string[][] = category.items.map((item: any) => {
+          const timeStr = item.reservation?.startTime ? ` ${item.reservation.startTime}` : '';
           const reservationLabel = item.reservation
-            ? `${item.reservation.clientName} (${item.reservation.hallName})`
+            ? `${item.reservation.clientName}${timeStr} (${item.reservation.hallName})`
             : (item.reservationLabel || '');
           const priceStr = item.priceType === 'FREE'
             ? 'Gratis'
@@ -208,11 +214,11 @@ export function buildPreparationsReportPDF(
 
       const summaryRows = day.items.map((item: any) => {
         const clientNames = item.reservations
-          ? item.reservations.map((r: any) => `${r.clientName} (${r.quantity})`).join(', ')
+          ? item.reservations.map((r: any) => `${r.clientName}${r.startTime ? ' ' + r.startTime : ''} (${r.quantity})`).join(', ')
           : '';
         return [
           item.serviceName,
-          `${item.categoryIcon || ''} ${item.categoryName}`,
+          `${item.categoryName}`,
           `${item.totalQuantity}`,
           `${item.reservationCount}`,
           clientNames,

@@ -7,6 +7,7 @@
  * Updated: preparations report for service extras (#159)
  * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
+ * FIX: fallback startTime/endTime from startDateTime/endDateTime
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -49,6 +50,17 @@ function formatDateLabelPL(dateStr: string): string {
   const month = MONTH_NAMES_PL[d.getMonth()];
   const year = d.getFullYear();
   return `${dayName}, ${day} ${month} ${year}`;
+}
+
+/**
+ * Extract HH:MM time string from a DateTime field.
+ * Fallback when varchar startTime/endTime is null.
+ */
+function extractTimeFromDateTime(dt: Date | string | null | undefined): string | null {
+  if (!dt) return null;
+  const d = typeof dt === 'string' ? new Date(dt) : dt;
+  if (isNaN(d.getTime())) return null;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 /**
@@ -556,6 +568,7 @@ class ReportsService {
    * FIX: Removed Prisma `extras: { some: ... }` pre-filter — now fetches ALL
    * reservations in date range and filters extras in-memory. This avoids edge
    * cases where Prisma relation filters silently exclude valid data.
+   * FIX: startTime/endTime fallback from startDateTime/endDateTime.
    */
   async getPreparationsReport(filters: PreparationsReportFilters): Promise<PreparationsReport> {
     const { dateFrom, dateTo, categoryId, view = 'detailed' } = filters;
@@ -608,6 +621,7 @@ class ReportsService {
         children: true,
         toddlers: true,
         startDateTime: true,
+        endDateTime: true,
         client: {
           select: {
             firstName: true,
@@ -695,8 +709,8 @@ class ReportsService {
             hallName: r.hall?.name || null,
             eventTypeName: r.eventType?.name || null,
             date: effectiveDate,
-            startTime: r.startTime,
-            endTime: r.endTime,
+            startTime: r.startTime || extractTimeFromDateTime(r.startDateTime),
+            endTime: r.endTime || extractTimeFromDateTime(r.endDateTime),
             guests: r.guests,
             adults: r.adults,
             children: r.children,
