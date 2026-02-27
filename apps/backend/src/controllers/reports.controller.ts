@@ -2,7 +2,7 @@
 
 /**
  * Reports Controller
- * Endpoints for revenue, occupancy, and other analytics
+ * Endpoints for revenue, occupancy, preparations, and other analytics
  */
 
 import { Request, Response } from 'express';
@@ -12,6 +12,7 @@ import reportsExportService from '../services/reports-export.service';
 import type {
   RevenueReportFilters,
   OccupancyReportFilters,
+  PreparationsReportFilters,
 } from '@/types/reports.types';
 
 // ============================================
@@ -31,6 +32,13 @@ const occupancyQuerySchema = z.object({
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
   hallId: z.string().uuid().optional(),
+});
+
+const preparationsQuerySchema = z.object({
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
+  categoryId: z.string().uuid().optional(),
+  view: z.enum(['detailed', 'summary']).optional().default('detailed'),
 });
 
 export class ReportsController {
@@ -138,6 +146,106 @@ export class ReportsController {
       res.status(500).json({
         success: false,
         message: 'Failed to generate occupancy report',
+        error: error.message,
+      });
+    }
+  }
+
+  // ============================================
+  // PREPARATIONS REPORTS (Service Extras) #159
+  // ============================================
+
+  /**
+   * GET /api/reports/preparations
+   * Get preparations report — what service extras need to be prepared
+   * @query dateFrom - Start date (YYYY-MM-DD)
+   * @query dateTo - End date (YYYY-MM-DD)
+   * @query categoryId - Filter by ServiceCategory UUID (optional)
+   * @query view - 'detailed' (per reservation) or 'summary' (aggregated)
+   */
+  async getPreparationsReport(req: Request, res: Response): Promise<void> {
+    try {
+      const validation = preparationsQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as PreparationsReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      const report = await reportsService.getPreparationsReport(filters);
+
+      res.status(200).json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error('Error in getPreparationsReport:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate preparations report',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /api/reports/export/preparations/pdf
+   * Export preparations report to PDF
+   * @query Same parameters as /preparations endpoint
+   */
+  async exportPreparationsPDF(req: Request, res: Response): Promise<void> {
+    try {
+      const validation = preparationsQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid query parameters',
+          errors: validation.error.errors,
+        });
+        return;
+      }
+
+      const filters = validation.data as PreparationsReportFilters;
+
+      if (filters.dateFrom > filters.dateTo) {
+        res.status(400).json({
+          success: false,
+          message: 'dateFrom must be before or equal to dateTo',
+        });
+        return;
+      }
+
+      const report = await reportsService.getPreparationsReport(filters);
+      const buffer = await reportsExportService.exportPreparationsToPDF(report);
+
+      const filename = `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.pdf`;
+      const encodedFilename = encodeURIComponent(filename);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
+      );
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Error in exportPreparationsPDF:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export preparations report to PDF',
         error: error.message,
       });
     }
