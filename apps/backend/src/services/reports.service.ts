@@ -6,6 +6,7 @@
  * Updated: extras revenue tracking in revenue reports
  * Updated: preparations report for service extras (#159)
  * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
+ * Updated: menu preparations report (#160)
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
@@ -31,6 +32,15 @@ import type {
   PreparationDayGroup,
   PreparationSummaryItem,
   PreparationSummaryDayGroup,
+  MenuPreparationsReportFilters,
+  MenuPreparationsReport,
+  MenuPreparationReservation,
+  MenuPreparationCourse,
+  MenuPreparationDish,
+  MenuPreparationDayGroup,
+  MenuPreparationSummaryDish,
+  MenuPreparationSummaryCourseGroup,
+  MenuPreparationSummaryDayGroup,
 } from '@/types/reports.types';
 
 // Polish day/month names for date labels
@@ -99,6 +109,29 @@ function calculateExtrasRevenue(
   }
 
   return { total: Math.round(total * 100) / 100, items };
+}
+
+/**
+ * Build client display name helper.
+ * Shared by preparations and menu-preparations reports.
+ */
+function getClientName(client: { clientType: string; companyName?: string | null; firstName: string; lastName: string }): string {
+  if (client.clientType === 'COMPANY' && client.companyName) {
+    return client.companyName;
+  }
+  return `${client.firstName} ${client.lastName}`;
+}
+
+/**
+ * Get the effective date string for a reservation.
+ * Prefers the `date` field, falls back to startDateTime.
+ */
+function getReservationDate(r: { date: string | null; startDateTime: Date | string | null }): string {
+  if (r.date) return r.date;
+  if (r.startDateTime) {
+    return new Date(r.startDateTime).toISOString().split('T')[0];
+  }
+  return '';
 }
 
 class ReportsService {
@@ -667,24 +700,6 @@ class ReportsService {
     // FIX: Filter out reservations that have no matching extras (post-query)
     const reservationsWithExtras = reservations.filter(r => r.extras.length > 0);
 
-    // Build client display name helper
-    const getClientName = (client: any): string => {
-      if (client.clientType === 'COMPANY' && client.companyName) {
-        return client.companyName;
-      }
-      return `${client.firstName} ${client.lastName}`;
-    };
-
-    // Helper: get the effective date string for a reservation
-    // Prefers the `date` field, falls back to startDateTime
-    const getReservationDate = (r: any): string => {
-      if (r.date) return r.date;
-      if (r.startDateTime) {
-        return new Date(r.startDateTime).toISOString().split('T')[0];
-      }
-      return '';
-    };
-
     // Flatten all extras with reservation context
     const allItems: PreparationItem[] = [];
 
@@ -887,6 +902,286 @@ class ReportsService {
         totalReservationsWithExtras,
         nearestEvent,
         topCategory,
+      },
+      days,
+      ...(summaryDays ? { summaryDays } : {}),
+      filters,
+    };
+  }
+
+  // ============================================
+  // MENU PREPARATIONS REPORTS #160
+  // ============================================
+
+  /**
+   * Get menu preparations report — what dishes/courses need to be prepared.
+   * Reads ReservationMenuSnapshot.menuData (JSON) and groups by date.
+   * Supports detailed (per-reservation) and summary (aggregated per dish) views.
+   *
+   * Query pattern: same OR date/startDateTime as preparations (#159).
+   * menuData structure (MenuSnapshotData from menu.types.ts):
+   *   packageName, packageDescription, templateName,
+   *   dishSelections[]: { categoryId, categoryName, categoryIcon, dishes[]: { dishId, dishName, description, allergens, quantity } }
+   *   selectedOptions[]: { name, priceType, priceAmount, quantity }
+   */
+  async getMenuPreparationsReport(filters: MenuPreparationsReportFilters): Promise<MenuPreparationsReport> {
+    const { dateFrom, dateTo, view = 'detailed' } = filters;
+
+    const dateFromDT = new Date(dateFrom + 'T00:00:00');
+    const dateToDT = new Date(dateTo + 'T23:59:59');
+
+    // Query: all menu snapshots for reservations in date range (not cancelled)
+    const snapshots = await prisma.reservationMenuSnapshot.findMany({
+      where: {
+        reservation: {
+          status: { not: 'CANCELLED' },
+          OR: [
+            { date: { not: null, gte: dateFrom, lte: dateTo } },
+            { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
+          ],
+        },
+      },
+      select: {
+        id: true,
+        menuData: true,
+        packagePrice: true,
+        totalMenuPrice: true,
+        adultsCount: true,
+        childrenCount: true,
+        toddlersCount: true,
+        reservation: {
+          select: {
+            id: true,
+            date: true,
+            startTime: true,
+            endTime: true,
+            guests: true,
+            adults: true,
+            children: true,
+            toddlers: true,
+            startDateTime: true,
+            endDateTime: true,
+            client: {
+              select: {
+                firstName: true,
+                lastName: true,
+                companyName: true,
+                clientType: true,
+              },
+            },
+            hall: { select: { id: true, name: true } },
+            eventType: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    // Parse menuData and build detailed reservation items
+    const allReservations: (MenuPreparationReservation & { _date: string })[] = [];
+
+    for (const snap of snapshots) {
+      const r = snap.reservation;
+      const effectiveDate = getReservationDate(r);
+      if (!effectiveDate) continue;
+
+      const menuData = snap.menuData as any;
+
+      // Extract courses from dishSelections
+      const courses: MenuPreparationCourse[] = [];
+      const dishSelections = menuData?.dishSelections || [];
+
+      for (const catSel of dishSelections) {
+        const dishes: MenuPreparationDish[] = (catSel.dishes || []).map((d: any) => ({
+          name: d.dishName || d.name || 'Nieznane danie',
+          description: d.description || null,
+        }));
+
+        if (dishes.length > 0) {
+          courses.push({
+            courseName: catSel.categoryName || 'Nieznana kategoria',
+            icon: catSel.categoryIcon || null,
+            dishes,
+          });
+        }
+      }
+
+      allReservations.push({
+        _date: effectiveDate,
+        reservationId: r.id,
+        clientName: getClientName(r.client),
+        hallName: r.hall?.name || null,
+        eventTypeName: r.eventType?.name || null,
+        date: effectiveDate,
+        startTime: r.startTime || extractTimeFromDateTime(r.startDateTime),
+        endTime: r.endTime || extractTimeFromDateTime(r.endDateTime),
+        guests: {
+          adults: snap.adultsCount,
+          children: snap.childrenCount,
+          toddlers: snap.toddlersCount,
+          total: snap.adultsCount + snap.childrenCount + snap.toddlersCount,
+        },
+        package: {
+          name: menuData?.packageName || 'Nieznany pakiet',
+          description: menuData?.packageDescription || null,
+        },
+        courses,
+        packagePrice: Number(snap.packagePrice),
+        totalMenuPrice: Number(snap.totalMenuPrice),
+      });
+    }
+
+    // Sort by date, then startTime
+    allReservations.sort((a, b) => {
+      const dateCompare = a._date.localeCompare(b._date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.startTime || '99:99').localeCompare(b.startTime || '99:99');
+    });
+
+    // === DETAILED VIEW: group by date ===
+    const dayMap = new Map<string, MenuPreparationReservation[]>();
+
+    for (const item of allReservations) {
+      if (!dayMap.has(item._date)) dayMap.set(item._date, []);
+      // Remove internal _date field from output
+      const { _date, ...reservationData } = item;
+      dayMap.get(item._date)!.push(reservationData);
+    }
+
+    const days: MenuPreparationDayGroup[] = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, reservations]) => ({
+        date,
+        dateLabel: formatDateLabelPL(date),
+        reservations,
+        totalReservations: reservations.length,
+        totalGuests: reservations.reduce((sum, r) => sum + r.guests.total, 0),
+      }));
+
+    // === SUMMARY VIEW: aggregate per course → per dish per day ===
+    let summaryDays: MenuPreparationSummaryDayGroup[] | undefined;
+
+    if (view === 'summary') {
+      // Map: date → courseName → dishName → aggregated data
+      const summaryDayMap = new Map<string, Map<string, Map<string, {
+        dish: MenuPreparationSummaryDish;
+        courseIcon: string | null;
+      }>>>();
+
+      for (const item of allReservations) {
+        const date = item._date;
+        if (!summaryDayMap.has(date)) summaryDayMap.set(date, new Map());
+        const courseMap = summaryDayMap.get(date)!;
+
+        for (const course of item.courses) {
+          if (!courseMap.has(course.courseName)) courseMap.set(course.courseName, new Map());
+          const dishMap = courseMap.get(course.courseName)!;
+
+          for (const dish of course.dishes) {
+            if (!dishMap.has(dish.name)) {
+              dishMap.set(dish.name, {
+                courseIcon: course.icon,
+                dish: {
+                  dishName: dish.name,
+                  totalPortions: 0,
+                  adultPortions: 0,
+                  childrenPortions: 0,
+                  reservations: [],
+                },
+              });
+            }
+
+            const entry = dishMap.get(dish.name)!;
+            entry.dish.totalPortions += item.guests.total;
+            entry.dish.adultPortions += item.guests.adults;
+            entry.dish.childrenPortions += item.guests.children;
+            entry.dish.reservations.push({
+              id: item.reservationId,
+              clientName: item.clientName,
+              guests: item.guests.total,
+            });
+          }
+        }
+      }
+
+      summaryDays = Array.from(summaryDayMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, courseMap]) => {
+          const courses: MenuPreparationSummaryCourseGroup[] = Array.from(courseMap.entries())
+            .map(([courseName, dishMap]) => {
+              const dishes = Array.from(dishMap.values())
+                .map(entry => entry.dish)
+                .sort((a, b) => b.totalPortions - a.totalPortions);
+
+              // Get icon from first dish entry
+              const firstEntry = Array.from(dishMap.values())[0];
+
+              return {
+                courseName,
+                icon: firstEntry?.courseIcon || null,
+                dishes,
+              };
+            });
+
+          // Compute day-level totals from the reservations in this date
+          const dayReservations = allReservations.filter(r => r._date === date);
+          const uniqueIds = new Set(dayReservations.map(r => r.reservationId));
+
+          return {
+            date,
+            dateLabel: formatDateLabelPL(date),
+            courses,
+            totalReservations: uniqueIds.size,
+            totalGuests: dayReservations.reduce((sum, r) => sum + r.guests.total, 0),
+          };
+        });
+    }
+
+    // === KPI SUMMARY ===
+    const totalMenus = allReservations.length;
+    const totalGuests = allReservations.reduce((sum, r) => sum + r.guests.total, 0);
+    const totalAdults = allReservations.reduce((sum, r) => sum + r.guests.adults, 0);
+    const totalChildren = allReservations.reduce((sum, r) => sum + r.guests.children, 0);
+    const totalToddlers = allReservations.reduce((sum, r) => sum + r.guests.toddlers, 0);
+
+    // Top package
+    const packageCounts = new Map<string, number>();
+    for (const r of allReservations) {
+      const name = r.package.name;
+      packageCounts.set(name, (packageCounts.get(name) || 0) + 1);
+    }
+    const topPackageEntry = Array.from(packageCounts.entries())
+      .sort(([, a], [, b]) => b - a)[0] || null;
+    const topPackage = topPackageEntry
+      ? { name: topPackageEntry[0], count: topPackageEntry[1] }
+      : null;
+
+    // Nearest event
+    const today = new Date().toISOString().split('T')[0];
+    const futureReservations = allReservations
+      .filter(r => r._date >= today)
+      .sort((a, b) => {
+        const dateCompare = a._date.localeCompare(b._date);
+        if (dateCompare !== 0) return dateCompare;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+
+    const nearestEvent = futureReservations.length > 0
+      ? {
+          date: futureReservations[0]._date,
+          startTime: futureReservations[0].startTime,
+          clientName: futureReservations[0].clientName,
+        }
+      : null;
+
+    return {
+      summary: {
+        totalMenus,
+        totalGuests,
+        totalAdults,
+        totalChildren,
+        totalToddlers,
+        topPackage,
+        nearestEvent,
       },
       days,
       ...(summaryDays ? { summaryDays } : {}),
