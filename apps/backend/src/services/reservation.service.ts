@@ -7,6 +7,7 @@
  * Updated: allowWithWholeVenue — Strzecha Tył/Przód/Góra coexist with whole venue
  * Updated: #144 — ARCHIVED status support + auto-archive CRON preparation
  * Updated: Etap 5 — internalNotes field (excluded from PDF)
+ * Updated: fix/recalculate-totalPrice — centralized price recalculation
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -34,6 +35,7 @@ import {
   formatChangesSummary
 } from '../utils/reservation.utils';
 import { calculateVenueSurcharge } from '../utils/venue-surcharge';
+import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import reservationMenuService from './reservation-menu.service';
 import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE, VENUE_SURCHARGE } from '../i18n/pl';
 
@@ -441,6 +443,9 @@ export class ReservationService {
         },
       });
 
+      // Recalculate totalPrice after menu removal
+      await recalculateReservationTotalPrice(reservationId);
+
       return { message: MENU.MENU_REMOVED };
     }
 
@@ -498,14 +503,14 @@ export class ReservationService {
         await prisma.reservationMenuSnapshot.create({ data: snapshotData });
       }
 
-      // #137: Include venue surcharge in totalPrice when updating menu
-      const existingSurcharge = Number((reservation as any).venueSurcharge) || 0;
-      const totalPriceWithSurcharge = totalMenuPrice + existingSurcharge;
-
+      // Update guest counts and per-person prices (totalPrice recalculated below)
       await prisma.reservation.update({
         where: { id: reservationId },
-        data: { pricePerAdult, pricePerChild, pricePerToddler, totalPrice: totalPriceWithSurcharge, adults, children, toddlers, guests }
+        data: { pricePerAdult, pricePerChild, pricePerToddler, adults, children, toddlers, guests }
       });
+
+      // Recalculate totalPrice including extras + discount + surcharge
+      const newTotalPrice = await recalculateReservationTotalPrice(reservationId);
 
       await this.createHistoryEntry(
         reservationId, userId, 'MENU_UPDATED', 'menu',
@@ -532,7 +537,7 @@ export class ReservationService {
         },
       });
 
-      return { message: MENU.MENU_UPDATED, totalPrice: totalPriceWithSurcharge };
+      return { message: MENU.MENU_UPDATED, totalPrice: newTotalPrice };
     }
 
     throw new Error(MENU.INVALID_MENU_DATA);
