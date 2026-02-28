@@ -9,6 +9,7 @@ export interface Hall {
   images: string[]
   isActive: boolean
   isWholeVenue: boolean
+  allowMultipleBookings: boolean
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +27,16 @@ export interface HallAvailability {
   reservationStatus?: string
 }
 
+export interface HallAvailableCapacity {
+  hallId: string
+  hallName: string
+  totalCapacity: number
+  occupiedCapacity: number
+  availableCapacity: number
+  allowMultipleBookings: boolean
+  overlappingReservations: number
+}
+
 export interface CreateHallInput {
   name: string
   capacity: number
@@ -33,6 +44,7 @@ export interface CreateHallInput {
   amenities?: string[]
   images?: string[]
   isActive?: boolean
+  allowMultipleBookings?: boolean
 }
 
 export interface UpdateHallInput {
@@ -42,6 +54,7 @@ export interface UpdateHallInput {
   amenities?: string[]
   images?: string[]
   isActive?: boolean
+  allowMultipleBookings?: boolean
 }
 
 export const hallsApi = {
@@ -67,6 +80,21 @@ export const hallsApi = {
    */
   async getById(id: string): Promise<Hall> {
     const { data } = await apiClient.get(`/halls/${id}`)
+    return data.data || data
+  },
+
+  /**
+   * #165: Get available capacity for a hall in a given time range
+   */
+  async getAvailableCapacity(
+    hallId: string,
+    startDateTime: string,
+    endDateTime: string,
+    excludeReservationId?: string
+  ): Promise<HallAvailableCapacity> {
+    const { data } = await apiClient.get(`/halls/${hallId}/available-capacity`, {
+      params: { startDateTime, endDateTime, excludeReservationId }
+    })
     return data.data || data
   },
 
@@ -150,3 +178,4 @@ export const createHall = hallsApi.create
 export const updateHall = hallsApi.update
 export const deleteHall = hallsApi.delete
 export const getHallAvailability = hallsApi.getAvailability
+export const getAvailableCapacity = hallsApi.getAvailableCapacity
