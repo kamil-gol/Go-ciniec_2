@@ -160,7 +160,6 @@ export function buildMenuPreparationsReportPDF(
   // ── DETAILED VIEW (enhanced design) ──
   if (isDetailed && data.days) {
     for (const day of data.days) {
-      // Day header: 20px height + some margin
       ensureSpace(doc, 80);
 
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
@@ -170,7 +169,6 @@ export function buildMenuPreparationsReportPDF(
       doc.y += 22;
 
       for (const res of day.reservations) {
-        // Reservation header (16px) + package (10px) + at least one course header (9px) + one dish (~15px)
         ensureSpace(doc, 100);
 
         const timePart = res.startTime
@@ -190,26 +188,24 @@ export function buildMenuPreparationsReportPDF(
         doc.y += 10;
 
         for (const course of res.courses) {
-          // Course header (9px) + at least one dish (~15px)
           ensureSpace(doc, 30);
 
+          // Course category bar (matches summary view style)
+          doc.rect(LEFT + 10, doc.y, W - 20, 14).fill(COLORS.bgLight);
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
-          doc.text(course.courseName.toUpperCase(), LEFT + 14, doc.y);
-          doc.y += 9;
+          doc.text(course.courseName.toUpperCase(), LEFT + 18, doc.y + 4);
+          doc.y += 16;
 
           for (const dish of course.dishes) {
-            // Single bullet point: ~12-18px depending on text wrapping
             ensureSpace(doc, 20);
 
             doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
-            const dishText = dish.description
-              ? `• ${dish.name}  — ${dish.description}`
-              : `• ${dish.name}`;
+            const dishText = `• ${dish.name}`;
             const textHeight = doc.heightOfString(dishText, { width: W - 40 });
             doc.text(dishText, LEFT + 20, doc.y, { width: W - 40 });
             doc.y += textHeight + 2;
           }
-          doc.y += 2;
+          doc.y += 4;
         }
 
         if (res.courses.length === 0) {
@@ -239,19 +235,20 @@ export function buildMenuPreparationsReportPDF(
       doc.y += 22;
 
       for (const course of day.courses) {
-        // Course header (14px) + table header (12px) + at least one row (9px)
         ensureSpace(doc, 40);
 
+        // Category bar
         doc.rect(LEFT, doc.y, W, 14).fill(COLORS.bgLight);
         doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
         doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 4);
-        doc.y += 16;
+        doc.y += 14; // flush — no gap before table header
 
         const colPct = [0.24, 0.09, 0.09, 0.09, 0.09, 0.40];
         const colW = colPct.map(p => W * p);
         const colX: number[] = [LEFT];
         for (let i = 1; i < colW.length; i++) colX.push(colX[i - 1] + colW[i - 1]);
 
+        // Table header (flush under category bar)
         const headerY = doc.y;
         doc.rect(LEFT, headerY, W, 12).fill(COLORS.primaryLight);
         const headers = ['Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Maluchy', 'Klienci'];
@@ -260,33 +257,32 @@ export function buildMenuPreparationsReportPDF(
           const align = (i >= 1 && i <= 4) ? 'right' as const : 'left' as const;
           doc.text(h, colX[i] + 4, headerY + 3, { width: colW[i] - 8, align });
         });
-        doc.y = headerY + 14;
+        doc.y = headerY + 12; // flush — rows start right after header
 
         for (const dish of course.dishes) {
-          // Single table row: 9px
           ensureSpace(doc, 15);
 
           const rowY = doc.y;
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(dish.dishName, colX[0] + 3, rowY + 1, { width: colW[0] - 6, lineBreak: false, ellipsis: true });
+          doc.text(dish.dishName, colX[0] + 3, rowY + 2, { width: colW[0] - 6, lineBreak: false, ellipsis: true });
 
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(`${dish.totalPortions}`, colX[1] + 3, rowY + 1, { width: colW[1] - 6, align: 'right' });
+          doc.text(`${dish.totalPortions}`, colX[1] + 3, rowY + 2, { width: colW[1] - 6, align: 'right' });
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-          doc.text(`${dish.adultPortions}`, colX[2] + 3, rowY + 1, { width: colW[2] - 6, align: 'right' });
-          doc.text(`${dish.childrenPortions}`, colX[3] + 3, rowY + 1, { width: colW[3] - 6, align: 'right' });
-          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, rowY + 1, { width: colW[4] - 6, align: 'right' });
+          doc.text(`${dish.adultPortions}`, colX[2] + 3, rowY + 2, { width: colW[2] - 6, align: 'right' });
+          doc.text(`${dish.childrenPortions}`, colX[3] + 3, rowY + 2, { width: colW[3] - 6, align: 'right' });
+          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, rowY + 2, { width: colW[4] - 6, align: 'right' });
 
           const clientStr = dish.reservations.map(r => `${r.clientName} (${r.guests})`).join(', ');
           doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
-          doc.text(clientStr, colX[5] + 3, rowY + 1, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
+          doc.text(clientStr, colX[5] + 3, rowY + 2, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
 
-          doc.y = rowY + 9;
+          doc.y = rowY + 11; // row height: 11px (was 9px — prevented overlap)
         }
 
-        doc.y += 3;
+        doc.y += 10; // breathing room before next category (was 3px)
       }
 
       doc.y += 4;
