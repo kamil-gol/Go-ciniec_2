@@ -4,6 +4,9 @@
  * Single source of truth for the final totalPrice formula:
  *   totalPrice = basePricing + extrasTotal + venueSurcharge - discountAmount
  *
+ * Also maintains priceBeforeDiscount for the discount UI section:
+ *   priceBeforeDiscount = basePricing + extrasTotal + venueSurcharge
+ *
  * Called from:
  *   - serviceExtra.service.ts  (after add/update/remove extras)
  *   - reservation.service.ts   (after guest count or price changes)
@@ -35,11 +38,13 @@ export interface RecalculationResult {
   extrasTotal: number;
   venueSurcharge: number;
   discountAmount: number;
+  priceBeforeDiscount: number;
   totalPrice: number;
 }
 
 /**
- * Recalculate and persist the reservation's totalPrice and extrasTotalPrice.
+ * Recalculate and persist the reservation's totalPrice, extrasTotalPrice,
+ * and priceBeforeDiscount.
  *
  * @param reservationId - UUID of the reservation
  * @returns Breakdown of all price components + final totalPrice
@@ -77,24 +82,33 @@ export async function recalculateReservationTotal(
   // 4. Discount (already stored on the reservation)
   const discountAmount = Number(reservation.discountAmount) || 0;
 
-  // 5. Final total
-  const totalPrice = Math.round(
-    (basePricing + extrasTotal + venueSurcharge - discountAmount) * 100
+  // 5. Price before discount (used by frontend "Cena bazowa" in discount section)
+  const priceBeforeDiscount = Math.round(
+    (basePricing + extrasTotal + venueSurcharge) * 100
   ) / 100;
 
-  // Persist
+  // 6. Final total
+  const totalPrice = Math.round(
+    (priceBeforeDiscount - discountAmount) * 100
+  ) / 100;
+
+  // Persist all pricing fields atomically
   await prisma.reservation.update({
     where: { id: reservationId },
     data: {
       totalPrice: new Decimal(totalPrice),
       extrasTotalPrice: new Decimal(extrasTotal),
+      priceBeforeDiscount: discountAmount > 0
+        ? new Decimal(priceBeforeDiscount)
+        : null,
     },
   });
 
   logger.info(
     `[recalculateTotal] Reservation ${reservationId}: ` +
-    `base=${basePricing} + extras=${extrasTotal} + surcharge=${venueSurcharge} - discount=${discountAmount} = ${totalPrice}`
+    `base=${basePricing} + extras=${extrasTotal} + surcharge=${venueSurcharge} ` +
+    `= ${priceBeforeDiscount} (before discount) - discount=${discountAmount} = ${totalPrice}`
   );
 
-  return { basePricing, extrasTotal, venueSurcharge, discountAmount, totalPrice };
+  return { basePricing, extrasTotal, venueSurcharge, discountAmount, priceBeforeDiscount, totalPrice };
 }
