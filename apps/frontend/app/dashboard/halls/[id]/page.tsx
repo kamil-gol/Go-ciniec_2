@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, Clock, MapPin, Plus } from 'lucide-react'
+import { ArrowLeft, Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, Clock, MapPin, Plus, UsersRound, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -65,7 +65,7 @@ export default function HallDetailsPage() {
         {/* Premium Hero Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-          
+
           <div className="relative z-10 space-y-6">
             {/* Back Button */}
             <Link href="/dashboard/halls">
@@ -87,7 +87,7 @@ export default function HallDetailsPage() {
                     <p className="text-white/90 text-lg mt-1">Szczegóły sali weselnej</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   {hall.isActive ? (
                     <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -102,6 +102,18 @@ export default function HallDetailsPage() {
                     <Users className="h-3 w-3 mr-1" />
                     Pojemność: {hall.capacity} osób
                   </Badge>
+                  {/* #165: Booking mode badge */}
+                  {hall.allowMultipleBookings ? (
+                    <Badge className="bg-violet-400/30 backdrop-blur-sm border-violet-300/30 text-white">
+                      <UsersRound className="h-3 w-3 mr-1" />
+                      Wiele rezerwacji
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-blue-400/30 backdrop-blur-sm border-blue-300/30 text-white">
+                      <UserCheck className="h-3 w-3 mr-1" />
+                      Wyłączność
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -155,7 +167,7 @@ export default function HallDetailsPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {hall.amenities.map((amenity, idx) => (
-                    <Badge 
+                    <Badge
                       key={idx}
                       className="text-sm py-2 px-3 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300"
                     >
@@ -177,21 +189,27 @@ export default function HallDetailsPage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Kalendarz Rezerwacji</h2>
-                <p className="text-white/90">Zobacz dostępne terminy i wielokrotne rezerwacje dziennie</p>
+                <p className="text-white/90">
+                  {hall.allowMultipleBookings
+                    ? `Tryb wielu rezerwacji — pojemność ${hall.capacity} osób`
+                    : 'Zobacz dostępne terminy i rezerwacje'}
+                </p>
               </div>
             </div>
           </div>
           <CardContent className="p-8">
-            <HallReservationsCalendar 
-              hallId={hall.id} 
+            <HallReservationsCalendar
+              hallId={hall.id}
               hallName={hall.name}
+              hallCapacity={hall.capacity}
+              allowMultipleBookings={hall.allowMultipleBookings}
               onCreateReservation={handleCreateReservation}
             />
           </CardContent>
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
             <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6">
               <div className="flex items-center gap-4">
@@ -215,6 +233,25 @@ export default function HallDetailsPage() {
                 <div>
                   <div className="text-sm text-muted-foreground font-medium">Status</div>
                   <div className="text-2xl font-bold">{hall.isActive ? 'Aktywna' : 'Nieaktywna'}</div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* #165: Booking mode stat card */}
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg">
+                  {hall.allowMultipleBookings
+                    ? <UsersRound className="h-6 w-6 text-white" />
+                    : <UserCheck className="h-6 w-6 text-white" />}
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground font-medium">Tryb rezerwacji</div>
+                  <div className="text-2xl font-bold">
+                    {hall.allowMultipleBookings ? 'Wiele' : 'Wyłączność'}
+                  </div>
                 </div>
               </div>
             </div>
