@@ -3,6 +3,7 @@
  * Type definitions for hall management
  * UPDATED: Added isWholeVenue flag for "Cały Obiekt" protection
  * UPDATED: Added allowWithWholeVenue — halls that can coexist with whole venue bookings
+ * UPDATED: #165 — allowMultipleBookings for shared hall capacity
  */
 
 export interface CreateHallDTO {
@@ -14,6 +15,7 @@ export interface CreateHallDTO {
   isActive?: boolean;
   isWholeVenue?: boolean;
   allowWithWholeVenue?: boolean;
+  allowMultipleBookings?: boolean;
 }
 
 export interface UpdateHallDTO {
@@ -24,6 +26,7 @@ export interface UpdateHallDTO {
   images?: string[];
   isActive?: boolean;
   allowWithWholeVenue?: boolean;
+  allowMultipleBookings?: boolean;
 }
 
 export interface HallResponse {
@@ -36,6 +39,7 @@ export interface HallResponse {
   isActive: boolean;
   isWholeVenue: boolean;
   allowWithWholeVenue: boolean;
+  allowMultipleBookings: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
