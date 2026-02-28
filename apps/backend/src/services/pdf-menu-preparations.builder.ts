@@ -2,10 +2,11 @@
 
 /**
  * PDF builder for Menu Preparations Report (#160)
- * Premium design: amber accent, course/dish layout, KPI cards.
- * Supports detailed (per-reservation) and summary (aggregated per dish) views.
- *
- * Same architectural pattern as pdf-preparations.builder.ts (#159).
+ * Premium design matching #159 preparations report:
+ * - Dark charcoal header with purple accent badge
+ * - Compact spacing (no wasted vertical space)
+ * - Clean table layouts with proper alignment
+ * - Professional footer with page numbers
  */
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
@@ -20,16 +21,16 @@ export interface PDFContext {
 }
 
 const COLORS = {
-  primary: '#D97706',
-  primaryDark: '#92400E',
-  primaryLight: '#FEF3C7',
+  primary: '#1a2332',
+  primaryLight: '#2c3e50',
+  accent: '#8e44ad',       // purple accent (matching preparations)
+  textDark: '#1a2332',
+  textMuted: '#7f8c8d',
+  textLight: '#bdc3c7',
+  border: '#dce1e8',
+  bgLight: '#f4f6f9',
+  bgWhite: '#ffffff',
   courseBg: '#FFFBEB',
-  dark: '#1F2937',
-  medium: '#6B7280',
-  light: '#F3F4F6',
-  white: '#FFFFFF',
-  border: '#E5E7EB',
-  headerBg: '#1F2937',
 };
 
 const PAGE_WIDTH = 595.28;
@@ -38,15 +39,23 @@ const RIGHT = PAGE_WIDTH - 40;
 const W = RIGHT - LEFT;
 
 function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
-  if (doc.y + needed > 780) {
+  if (doc.y + needed > 750) {
     doc.addPage();
-    doc.y = 40;
+    doc.y = 50;
   }
 }
 
 function formatTime(time: string | null | undefined): string {
   if (!time) return '';
   return time.substring(0, 5);
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('pl-PL', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
 export function buildMenuPreparationsReportPDF(
@@ -57,20 +66,54 @@ export function buildMenuPreparationsReportPDF(
   const { filters, summary } = data;
   const isDetailed = filters.view === 'detailed';
 
-  // ── HEADER BAR ──
-  doc.rect(0, 0, PAGE_WIDTH, 80).fill(COLORS.primary);
-  doc.font(ctx.boldFont).fontSize(20).fillColor(COLORS.white);
-  doc.text('Raport Menu — Przygotowania', LEFT, 18, { width: W });
-  doc.font(ctx.regularFont).fontSize(10).fillColor(COLORS.primaryLight);
-  doc.text(
-    `${ctx.restaurantName}  |  ${filters.dateFrom} — ${filters.dateTo}  |  ${isDetailed ? 'Widok szczegółowy' : 'Widok zbiorczy'}`,
-    LEFT, 48, { width: W }
-  );
+  // ── HEADER BANNER (matching #159) ──
+  const bannerHeight = 65;
+  doc.rect(0, 0, PAGE_WIDTH, bannerHeight).fill(COLORS.primary);
+  doc.rect(0, bannerHeight - 3, PAGE_WIDTH, 3).fill(COLORS.accent);
 
-  doc.y = 100;
+  doc.fillColor('#ffffff').fontSize(18).font(ctx.boldFont);
+  doc.text(ctx.restaurantName, LEFT, 14, { width: W - 150 });
 
-  // ── KPI CARDS ──
-  const kpiGap = 5;
+  doc.fontSize(7).font(ctx.regularFont).fillColor(COLORS.textLight);
+  const contactParts: string[] = [];
+  if (ctx.restaurantPhone) contactParts.push(ctx.restaurantPhone);
+  if (ctx.restaurantEmail) contactParts.push(ctx.restaurantEmail);
+  if (contactParts.length > 0) {
+    doc.text(contactParts.join('  |  '), LEFT, 38, { width: W - 150 });
+  }
+
+  // Badge
+  const badgeWidth = 120;
+  const badgeHeight = 22;
+  const badgeX = PAGE_WIDTH - badgeWidth - LEFT;
+  const badgeY = 20;
+  doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(COLORS.accent);
+  doc.fillColor('#ffffff').fontSize(9).font(ctx.boldFont);
+  doc.text('MENU', badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
+
+  // Title
+  doc.y = 80;
+  doc.fillColor(COLORS.textDark).fontSize(16).font(ctx.boldFont);
+  doc.text('RAPORT MENU — PRZYGOTOWANIA', LEFT, doc.y, { align: 'center', width: W });
+
+  doc.moveDown(0.2);
+  doc.fontSize(8).font(ctx.regularFont).fillColor(COLORS.textMuted);
+  const viewLabel = isDetailed ? 'Widok szczegółowy' : 'Widok zbiorczy';
+  const metaParts = [
+    `Okres: ${filters.dateFrom} - ${filters.dateTo}`,
+    viewLabel,
+    `Wygenerowano: ${formatDate(new Date())}`,
+  ];
+  doc.text(metaParts.join('  |  '), LEFT, doc.y, { align: 'center', width: W });
+
+  doc.moveDown(0.6);
+  const sepY = doc.y;
+  doc.strokeColor(COLORS.border).lineWidth(0.5)
+     .moveTo(LEFT, sepY).lineTo(RIGHT, sepY).stroke();
+  doc.moveDown(0.5);
+
+  // ── KPI CARDS (compact spacing) ──
+  const kpiGap = 8;
   const kpiW = (W - kpiGap * 3) / 4;
   const kpiStartY = doc.y;
   const kpis = [
@@ -82,14 +125,14 @@ export function buildMenuPreparationsReportPDF(
 
   kpis.forEach((kpi, i) => {
     const x = LEFT + i * (kpiW + kpiGap);
-    doc.rect(x, kpiStartY, kpiW, 44).fill(COLORS.light);
-    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.medium);
+    doc.rect(x, kpiStartY, kpiW, 38).fill(COLORS.bgLight);
+    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
     doc.text(kpi.label, x + 6, kpiStartY + 6, { width: kpiW - 12 });
-    doc.font(ctx.boldFont).fontSize(10).fillColor(COLORS.dark);
-    doc.text(kpi.value, x + 6, kpiStartY + 20, { width: kpiW - 12 });
+    doc.font(ctx.boldFont).fontSize(10).fillColor(COLORS.textDark);
+    doc.text(kpi.value, x + 6, kpiStartY + 18, { width: kpiW - 12 });
   });
 
-  doc.y = kpiStartY + 58;
+  doc.y = kpiStartY + 48;
 
   // ── DETAILED VIEW ──
   if (isDetailed && data.days) {
@@ -97,23 +140,24 @@ export function buildMenuPreparationsReportPDF(
       ensureSpace(doc, 60);
 
       // Day header
-      doc.rect(LEFT, doc.y, W, 22).fill(COLORS.headerBg);
-      doc.font(ctx.boldFont).fontSize(9).fillColor(COLORS.white);
-      doc.text(day.dateLabel, LEFT + 8, doc.y + 6, { width: W * 0.6 });
-      doc.font(ctx.regularFont).fontSize(7).fillColor('#D1D5DB');
+      doc.rect(LEFT, doc.y, W, 22).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 22).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(10).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W * 0.6 });
+      doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textLight);
       doc.text(
         `${day.totalReservations} rez.  |  ${day.totalGuests} gości`,
-        LEFT + 8, doc.y + 6, { width: W - 16, align: 'right' }
+        LEFT + 14, doc.y + 5, { width: W - 28, align: 'right' }
       );
       doc.y += 26;
 
       for (const res of day.reservations) {
-        ensureSpace(doc, 55);
+        ensureSpace(doc, 50);
 
-        // Reservation header (amber)
-        doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
-        doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.primaryDark);
-        doc.text(res.clientName, LEFT + 8, doc.y + 5, { width: W * 0.35 });
+        // Reservation card
+        doc.rect(LEFT, doc.y, W, 18).fill(COLORS.bgLight);
+        doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
+        doc.text(res.clientName, LEFT + 8, doc.y + 5, { width: W * 0.4 });
 
         const timePart = res.startTime
           ? `${formatTime(res.startTime)}${res.endTime ? ' – ' + formatTime(res.endTime) : ''}`
@@ -121,37 +165,39 @@ export function buildMenuPreparationsReportPDF(
         const guestPart = `${res.guests.total} os. (${res.guests.adults}D + ${res.guests.children}Dz + ${res.guests.toddlers}M)`;
         const metaParts = [res.hallName, timePart, guestPart].filter(Boolean).join('  |  ');
 
-        doc.font(ctx.regularFont).fontSize(7).fillColor('#B45309');
+        doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
         doc.text(metaParts, LEFT + 8, doc.y + 5, { width: W - 16, align: 'right' });
-        doc.y += 22;
+        doc.y += 20;
 
         // Package line
-        doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.medium);
+        doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
         doc.text('Pakiet: ', LEFT + 8, doc.y + 2, { continued: true });
-        doc.font(ctx.boldFont).fillColor(COLORS.dark);
+        doc.font(ctx.boldFont).fillColor(COLORS.textDark);
         doc.text(res.package.name);
-        doc.y += 14;
+        doc.y += 12;
 
-        // Courses
+        // Courses (removed redundant "Danie" header)
         for (const course of res.courses) {
-          ensureSpace(doc, 26);
-          doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.primary);
+          ensureSpace(doc, 24);
+          doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
           doc.text(course.courseName.toUpperCase(), LEFT + 12, doc.y + 2);
-          doc.y += 12;
+          doc.y += 10;
 
           for (const dish of course.dishes) {
-            ensureSpace(doc, 14);
-            doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.dark);
+            ensureSpace(doc, 12);
+            doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
             const dishText = dish.description
               ? `• ${dish.name}  — ${dish.description}`
               : `• ${dish.name}`;
+            const textHeight = doc.heightOfString(dishText, { width: W - 36 });
             doc.text(dishText, LEFT + 18, doc.y, { width: W - 36 });
-            doc.y += doc.heightOfString(dishText, { width: W - 36 }) + 3;
+            doc.y += textHeight + 2;
           }
+          doc.y += 2;
         }
 
         if (res.courses.length === 0) {
-          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.medium);
+          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
           doc.text('Brak dań w menu', LEFT + 18, doc.y);
           doc.y += 12;
         }
@@ -162,88 +208,111 @@ export function buildMenuPreparationsReportPDF(
         doc.y += 6;
       }
 
-      doc.y += 8;
+      doc.y += 4;
     }
   }
 
-  // ── SUMMARY VIEW ──
+  // ── SUMMARY VIEW (compact table) ──
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
       ensureSpace(doc, 60);
 
       // Day header
-      doc.rect(LEFT, doc.y, W, 22).fill(COLORS.headerBg);
-      doc.font(ctx.boldFont).fontSize(9).fillColor(COLORS.white);
-      doc.text(day.dateLabel, LEFT + 8, doc.y + 6, { width: W * 0.6 });
-      doc.font(ctx.regularFont).fontSize(7).fillColor('#D1D5DB');
+      doc.rect(LEFT, doc.y, W, 22).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 22).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(10).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W * 0.6 });
+      doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textLight);
       doc.text(
         `${day.totalReservations} rez.  |  ${day.totalGuests} gości`,
-        LEFT + 8, doc.y + 6, { width: W - 16, align: 'right' }
+        LEFT + 14, doc.y + 5, { width: W - 28, align: 'right' }
       );
       doc.y += 26;
 
       for (const course of day.courses) {
         ensureSpace(doc, 44);
 
-        // Course header
-        doc.rect(LEFT, doc.y, W, 18).fill(COLORS.courseBg);
-        doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.primary);
+        // Course header (subtle)
+        doc.rect(LEFT, doc.y, W, 16).fill(COLORS.bgLight);
+        doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
         doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 5);
-        doc.y += 20;
+        doc.y += 18;
 
-        // Table columns: Danie | Porcje | Dorosłe | Dziecięce | Klienci
-        const colPct = [0.30, 0.12, 0.12, 0.12, 0.34];
+        // Table: Danie | Porcje | Dorosłe | Dziecięce | Klienci
+        const colPct = [0.28, 0.10, 0.10, 0.10, 0.42];
         const colW = colPct.map(p => W * p);
         const colX: number[] = [LEFT];
         for (let i = 1; i < colW.length; i++) colX.push(colX[i - 1] + colW[i - 1]);
 
         // Table header
-        doc.rect(LEFT, doc.y, W, 14).fill(COLORS.light);
+        const headerY = doc.y;
+        doc.rect(LEFT, headerY, W, 14).fill(COLORS.primaryLight);
         const headers = ['Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Klienci'];
-        doc.font(ctx.boldFont).fontSize(6).fillColor(COLORS.medium);
+        doc.font(ctx.boldFont).fontSize(6).fillColor('#ffffff');
         headers.forEach((h, i) => {
           const align = (i >= 1 && i <= 3) ? 'right' as const : 'left' as const;
-          doc.text(h, colX[i] + 4, doc.y + 4, { width: colW[i] - 8, align });
+          doc.text(h, colX[i] + 4, headerY + 4, { width: colW[i] - 8, align });
         });
-        doc.y += 16;
+        doc.y = headerY + 16;
 
-        // Dish rows
+        // Dish rows (tight vertical spacing)
         for (const dish of course.dishes) {
-          ensureSpace(doc, 14);
-          const rowY = doc.y + 2;
+          ensureSpace(doc, 12);
+          const rowY = doc.y;
 
-          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.dark);
-          doc.text(dish.dishName, colX[0] + 4, rowY, { width: colW[0] - 8 });
+          // All text on same baseline (rowY + 2)
+          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
+          doc.text(dish.dishName, colX[0] + 4, rowY + 2, { width: colW[0] - 8 });
 
-          doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.dark);
-          doc.text(`${dish.totalPortions}`, colX[1] + 4, rowY, { width: colW[1] - 8, align: 'right' });
+          doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.textDark);
+          doc.text(`${dish.totalPortions}`, colX[1] + 4, rowY + 2, { width: colW[1] - 8, align: 'right' });
 
-          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.medium);
-          doc.text(`${dish.adultPortions}`, colX[2] + 4, rowY, { width: colW[2] - 8, align: 'right' });
-          doc.text(`${dish.childrenPortions}`, colX[3] + 4, rowY, { width: colW[3] - 8, align: 'right' });
+          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+          doc.text(`${dish.adultPortions}`, colX[2] + 4, rowY + 2, { width: colW[2] - 8, align: 'right' });
+          doc.text(`${dish.childrenPortions}`, colX[3] + 4, rowY + 2, { width: colW[3] - 8, align: 'right' });
 
           const clientStr = dish.reservations.map(r => `${r.clientName} (${r.guests})`).join(', ');
-          doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.medium);
-          doc.text(clientStr, colX[4] + 4, rowY, { width: colW[4] - 8 });
+          doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
+          doc.text(clientStr, colX[4] + 4, rowY + 2, { width: colW[4] - 8 });
 
-          doc.y += 14;
+          doc.y = rowY + 11;
         }
 
-        doc.y += 4;
+        doc.y += 3;
       }
 
-      doc.y += 8;
+      doc.y += 6;
     }
   }
 
-  // ── FOOTER (page numbers) ──
+  // ── FOOTER (matching #159) ──
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
-    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.medium);
+    const footerY = 810;
+    const sepFooterY = footerY - 10;
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(LEFT, sepFooterY).lineTo(RIGHT, sepFooterY).stroke();
+
+    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+    const footerParts: string[] = [
+      `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
+    ];
+    const contactParts: string[] = [];
+    if (ctx.restaurantPhone) contactParts.push(ctx.restaurantPhone);
+    if (ctx.restaurantEmail) contactParts.push(ctx.restaurantEmail);
+    if (contactParts.length > 0) {
+      footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
+    }
+    doc.text(footerParts.join('  |  '), LEFT, footerY, {
+      align: 'center', width: W,
+    });
+
+    doc.fontSize(6).fillColor(COLORS.textLight);
     doc.text(
-      `${ctx.restaurantName}  |  Wygenerowano: ${new Date().toLocaleDateString('pl-PL')}  |  Strona ${i + 1} z ${range.count}`,
-      LEFT, 810, { width: W, align: 'center' }
+      `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`,
+      LEFT, footerY + 12,
+      { align: 'center', width: W },
     );
   }
 }
