@@ -4,6 +4,7 @@
  * Updated: Phase 2 Audit — logChange() for all queue operations
  * FIX: Replaced raw SQL auto_cancel_expired_reserved() with Prisma ORM (19.02.2026)
  * FIX: BUG8 — position > max and swap-self now throw AppError.badRequest (20.02.2026)
+ * Updated: #165 — capacity-based overlap check in promoteReservation()
  * 🇵🇱 Spolonizowany — komunikaty po polsku
  */
 
@@ -11,6 +12,7 @@ import { ReservationStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
+import { RESERVATION, HALL } from '../i18n/pl';
 import {
   CreateReservedDTO,
   PromoteReservationDTO,
@@ -493,21 +495,53 @@ export class QueueService {
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) throw new Error('Nieprawid\u0142owy format daty/godziny');
     if (endDateTime <= startDateTime) throw new Error('Godzina zako\u0144czenia musi by\u0107 p\u00f3\u017aniejsza ni\u017c godzina rozpocz\u0119cia');
 
-    const conflictingReservation = await prisma.reservation.findFirst({
-      where: {
-        id: { not: reservationId }, hallId: data.hallId,
-        status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
-        OR: [
-          { AND: [{ startDateTime: { lte: startDateTime } }, { endDateTime: { gt: startDateTime } }] },
-          { AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gte: endDateTime } }] },
-          { AND: [{ startDateTime: { gte: startDateTime } }, { endDateTime: { lte: endDateTime } }] }
-        ]
-      }
+    // ══ #165: Validate hall exists and is active ══
+    const hall = await prisma.hall.findUnique({
+      where: { id: data.hallId },
+      select: { id: true, name: true, capacity: true, isWholeVenue: true, isActive: true, allowMultipleBookings: true, allowWithWholeVenue: true }
     });
-    if (conflictingReservation) throw new Error('Sala jest ju\u017c zarezerwowana w tym terminie');
+    if (!hall) throw new Error(HALL.NOT_FOUND);
+    if (!hall.isActive) throw new Error(HALL.NOT_ACTIVE);
 
-    const hall = await prisma.hall.findUnique({ where: { id: data.hallId }, select: { name: true } });
     const eventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId }, select: { name: true } });
+
+    const guests = data.adults + (data.children || 0) + (data.toddlers || 0);
+
+    // ══ #165: Single-reservation capacity guard ══
+    if (guests > hall.capacity) {
+      throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(guests, hall.capacity));
+    }
+
+    // ══ #165: Capacity-based overlap check (replaces old binary findFirst) ══
+    const overlapping = await prisma.reservation.findMany({
+      where: {
+        id: { not: reservationId },
+        hallId: data.hallId,
+        status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+        archivedAt: null,
+        AND: [
+          { startDateTime: { lt: endDateTime } },
+          { endDateTime: { gt: startDateTime } },
+        ],
+      },
+      select: { id: true, guests: true },
+    });
+
+    if (overlapping.length > 0) {
+      if (!hall.allowMultipleBookings) {
+        throw new Error(RESERVATION.MULTIPLE_BOOKINGS_DISABLED);
+      }
+
+      const occupiedCapacity = overlapping.reduce((sum, r) => sum + (r.guests || 0), 0);
+      const availableCapacity = Math.max(0, hall.capacity - occupiedCapacity);
+
+      if (guests > availableCapacity) {
+        throw new Error(RESERVATION.CAPACITY_EXCEEDED(guests, availableCapacity, hall.capacity));
+      }
+    }
+
+    // ══ #165: Whole venue conflict check ══
+    await this.checkWholeVenueConflict(data.hallId, hall, startDateTime, endDateTime, reservationId);
 
     const totalPrice = data.adults * data.pricePerAdult + (data.children || 0) * (data.pricePerChild || 0) + (data.toddlers || 0) * (data.pricePerToddler || 0);
     const newStatus = data.status === 'CONFIRMED' ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING;
@@ -518,7 +552,7 @@ export class QueueService {
         status: newStatus,
         hallId: data.hallId, eventTypeId: data.eventTypeId, startDateTime, endDateTime,
         adults: data.adults, children: data.children || 0, toddlers: data.toddlers || 0,
-        guests: data.adults + (data.children || 0) + (data.toddlers || 0),
+        guests,
         pricePerAdult: data.pricePerAdult, pricePerChild: data.pricePerChild || 0,
         pricePerToddler: data.pricePerToddler || 0, totalPrice,
         notes: data.notes || reservation.notes,
@@ -567,13 +601,89 @@ export class QueueService {
           status: newStatus,
           startDateTime: startDateTime.toISOString(),
           endDateTime: endDateTime.toISOString(),
-          guests: data.adults + (data.children || 0) + (data.toddlers || 0),
+          guests,
           totalPrice,
         },
       },
     });
 
     return updated;
+  }
+
+  /**
+   * #165: Check whole-venue conflict (mirrors reservation.service.ts logic).
+   */
+  private async checkWholeVenueConflict(
+    hallId: string,
+    hall: { isWholeVenue: boolean; allowWithWholeVenue?: boolean },
+    startDateTime: Date,
+    endDateTime: Date,
+    excludeReservationId?: string
+  ): Promise<void> {
+    const activeStatuses = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED];
+
+    const baseWhere: any = {
+      status: { in: activeStatuses },
+      archivedAt: null,
+      AND: [
+        { startDateTime: { lt: endDateTime } },
+        { endDateTime: { gt: startDateTime } }
+      ]
+    };
+
+    if (excludeReservationId) {
+      baseWhere.id = { not: excludeReservationId };
+    }
+
+    if (hall.isWholeVenue) {
+      // Booking whole venue — check if any non-compatible hall has a reservation
+      const conflict = await prisma.reservation.findFirst({
+        where: {
+          ...baseWhere,
+          hallId: { not: hallId },
+          hall: { allowWithWholeVenue: false },
+        },
+        include: {
+          hall: { select: { name: true } },
+          client: { select: { firstName: true, lastName: true } }
+        }
+      });
+
+      if (conflict) {
+        const clientName = conflict.client
+          ? `${conflict.client.firstName} ${conflict.client.lastName}`
+          : 'nieznany klient';
+        const hallName = (conflict as any).hall?.name || 'inna sala';
+        throw new Error(
+          `Nie mo\u017cna zarezerwowa\u0107 ca\u0142ego obiektu \u2014 sala "${hallName}" ma ju\u017c rezerwacj\u0119 w tym terminie (${clientName}).`
+        );
+      }
+    } else {
+      // Booking regular hall — check if whole venue is booked
+      if (hall.allowWithWholeVenue) return;
+
+      const wholeVenueHall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
+      if (!wholeVenueHall) return;
+
+      const conflict = await prisma.reservation.findFirst({
+        where: {
+          ...baseWhere,
+          hallId: wholeVenueHall.id,
+        },
+        include: {
+          client: { select: { firstName: true, lastName: true } }
+        }
+      });
+
+      if (conflict) {
+        const clientName = conflict.client
+          ? `${conflict.client.firstName} ${conflict.client.lastName}`
+          : 'nieznany klient';
+        throw new Error(
+          `Nie mo\u017cna zarezerwowa\u0107 tej sali \u2014 ca\u0142y obiekt jest ju\u017c zarezerwowany w tym terminie (${clientName}).`
+        );
+      }
+    }
   }
 
   async getQueueStats(): Promise<QueueStats> {
