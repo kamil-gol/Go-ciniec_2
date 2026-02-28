@@ -11,6 +11,7 @@
  * Updated: removed PODSUMOWANIE section and nearestEvent from preparations exports
  * Updated: removed Wartość column from preparations exports (ops document, prices in reservation form)
  * Updated: menu preparations Excel + PDF export (#160)
+ * FIX: added Maluchy column to menu preparations summary Excel export
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
@@ -436,8 +437,6 @@ class ReportsExportService {
         colRow.font = { bold: true, size: 9 };
 
         for (const item of day.items) {
-          // Changed from: clientName (quantity) startTime
-          // To: clientName startTime (no quantity — already in Łącznie szt. column)
           const clientNames = item.reservations
             .map((r: any) => {
               const time = r.startTime ? ` ${r.startTime.substring(0, 5)}` : '';
@@ -468,6 +467,7 @@ class ReportsExportService {
    * Export menu preparations report to Excel (XLSX)
    * Supports both detailed (per-reservation with courses/dishes) and
    * summary (aggregated per course → per dish with portions) views.
+   * FIX: added Maluchy column to summary view
    */
   async exportMenuPreparationsToExcel(report: MenuPreparationsReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -585,7 +585,7 @@ class ReportsExportService {
         }
       }
     } else if (report.summaryDays) {
-      // ── SUMMARY: aggregated per course → per dish ──
+      // ── SUMMARY: aggregated per course → per dish (with Maluchy column) ──
       const dataHeader = sheet.addRow(['ZESTAWIENIE ZBIORCZE', '', '', '', '', '']);
       dataHeader.font = { bold: true, size: 12 };
       dataHeader.fill = {
@@ -599,7 +599,8 @@ class ReportsExportService {
         { key: 'col2', width: 15 },
         { key: 'col3', width: 15 },
         { key: 'col4', width: 15 },
-        { key: 'col5', width: 40 },
+        { key: 'col5', width: 15 },
+        { key: 'col6', width: 40 },
       ];
 
       for (const day of report.summaryDays) {
@@ -608,7 +609,7 @@ class ReportsExportService {
           `📅 ${day.dateLabel}`,
           `Rez.: ${day.totalReservations}`,
           `Gości: ${day.totalGuests}`,
-          '', '',
+          '', '', '',
         ]);
         dayRow.font = { bold: true, size: 11 };
         dayRow.fill = {
@@ -618,10 +619,10 @@ class ReportsExportService {
         };
 
         for (const course of day.courses) {
-          const courseRow = sheet.addRow([`  🍽️ ${course.courseName}`, '', '', '', '']);
+          const courseRow = sheet.addRow([`  🍽️ ${course.courseName}`, '', '', '', '', '']);
           courseRow.font = { bold: true, color: { argb: 'FFD97706' } };
 
-          const colRow = sheet.addRow(['  Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Klienci']);
+          const colRow = sheet.addRow(['  Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Maluchy', 'Klienci']);
           colRow.font = { bold: true, size: 9 };
 
           for (const dish of course.dishes) {
@@ -634,6 +635,7 @@ class ReportsExportService {
               dish.totalPortions,
               dish.adultPortions,
               dish.childrenPortions,
+              dish.toddlerPortions,
               clientStr,
             ]);
           }

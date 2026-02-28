@@ -310,6 +310,7 @@ export default function ReportsPage() {
    MENU PREPARATIONS TAB (#160)
    Detailed: per-reservation cards with courses & dishes
    Summary: aggregated per course → per dish with portions
+   FIX: added Maluchy column to summary table
    ============================================ */
 
 function MenuPreparationsTab({ query, view }: {
@@ -428,7 +429,7 @@ function MenuPreparationsTab({ query, view }: {
         <ReportEmptyState message={"Brak danych menu dla wybranego okresu"} />
       )}
 
-      {/* SUMMARY VIEW */}
+      {/* SUMMARY VIEW — with Maluchy column */}
       {view === 'summary' && summaryDays && summaryDays.length > 0 && (
         <div className="space-y-4">
           {summaryDays.map((day) => (
@@ -451,10 +452,11 @@ function MenuPreparationsTab({ query, view }: {
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm table-fixed">
                       <colgroup>
-                        <col className="w-[30%]" />
-                        <col className="w-[12%]" />
-                        <col className="w-[12%] hidden sm:table-column" />
-                        <col className="w-[12%] hidden sm:table-column" />
+                        <col className="w-[26%]" />
+                        <col className="w-[10%]" />
+                        <col className="w-[10%] hidden sm:table-column" />
+                        <col className="w-[10%] hidden sm:table-column" />
+                        <col className="w-[10%] hidden sm:table-column" />
                         <col className="w-[34%] hidden lg:table-column" />
                       </colgroup>
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
@@ -463,6 +465,7 @@ function MenuPreparationsTab({ query, view }: {
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Porcje</th>
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Dorosłe"}</th>
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Dziecięce</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Maluchy</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Klienci</th>
                         </tr>
                       </thead>
@@ -473,6 +476,7 @@ function MenuPreparationsTab({ query, view }: {
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{dish.totalPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.adultPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.childrenPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.toddlerPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
                               {dish.reservations.map((r) => `${r.clientName} (${r.guests})`).join(', ')}
                             </td>
