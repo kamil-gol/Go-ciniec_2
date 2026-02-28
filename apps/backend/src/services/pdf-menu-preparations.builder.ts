@@ -117,11 +117,11 @@ export function buildMenuPreparationsReportPDF(
   // Title
   doc.y = 80;
   doc.fillColor(COLORS.textDark).fontSize(16).font(ctx.boldFont);
-  doc.text('RAPORT MENU — PRZYGOTOWANIA', LEFT, doc.y, { align: 'center', width: W });
+  doc.text('RAPORT MENU \u2014 PRZYGOTOWANIA', LEFT, doc.y, { align: 'center', width: W });
 
   doc.moveDown(0.2);
   doc.fontSize(8).font(ctx.regularFont).fillColor(COLORS.textMuted);
-  const viewLabel = isDetailed ? 'Widok szczegółowy' : 'Widok zbiorczy';
+  const viewLabel = isDetailed ? 'Widok szczeg\u00f3\u0142owy' : 'Widok zbiorczy';
   const metaParts = [
     `Okres: ${filters.dateFrom} - ${filters.dateTo}`,
     viewLabel,
@@ -141,9 +141,9 @@ export function buildMenuPreparationsReportPDF(
   const kpiStartY = doc.y;
   const kpis = [
     { label: 'Rezerwacje z menu', value: `${summary.totalMenus}` },
-    { label: 'Łącznie gości', value: `${summary.totalGuests}` },
+    { label: '\u0141\u0105cznie go\u015bci', value: `${summary.totalGuests}` },
     { label: 'Top pakiet', value: summary.topPackage ? `${summary.topPackage.name} (${summary.topPackage.count})` : 'Brak' },
-    { label: 'Goście (D / Dz / M)', value: `${summary.totalAdults} / ${summary.totalChildren} / ${summary.totalToddlers}` },
+    { label: 'Go\u015bcie (D / Dz / M)', value: `${summary.totalAdults} / ${summary.totalChildren} / ${summary.totalToddlers}` },
   ];
 
   kpis.forEach((kpi, i) => {
@@ -157,132 +157,149 @@ export function buildMenuPreparationsReportPDF(
 
   doc.y = kpiStartY + 48;
 
-  // ── DETAILED VIEW (enhanced design) ──
+  // ══════════════════════════════════════════════════════════════
+  // ── DETAILED VIEW (ultra-compact for single-page output) ──
+  // ══════════════════════════════════════════════════════════════
   if (isDetailed && data.days) {
     for (const day of data.days) {
-      ensureSpace(doc, 80);
+      ensureSpace(doc, 60);
 
-      doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
-      doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
-      doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
-      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
-      doc.y += 22;
+      // Day header (compact: 16px)
+      doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
+      doc.y += 17;
 
       for (const res of day.reservations) {
-        ensureSpace(doc, 100);
+        ensureSpace(doc, 50);
 
+        // Reservation header (compact: 13px)
         const timePart = res.startTime
-          ? `${formatTime(res.startTime)}${res.endTime ? ' – ' + formatTime(res.endTime) : ''}`
+          ? `${formatTime(res.startTime)}${res.endTime ? ' \u2013 ' + formatTime(res.endTime) : ''}`
           : '';
-        const guestPart = `${res.guests.total} os. (${res.guests.adults}D + ${res.guests.children}Dz + ${res.guests.toddlers}M)`;
+        const guestPart = `${res.guests.total} os. (${res.guests.adults}D+${res.guests.children}Dz+${res.guests.toddlers}M)`;
         const headerParts = [res.hallName, timePart, guestPart].filter(Boolean);
         const fullHeader = `${res.clientName}  |  ${headerParts.join('  |  ')}`;
 
-        doc.rect(LEFT, doc.y, W, 16).fill(COLORS.reservationBg);
-        doc.font(ctx.boldFont).fontSize(9).fillColor(COLORS.textDark);
-        doc.text(fullHeader, LEFT + 10, doc.y + 4, { width: W - 20 });
-        doc.y += 18;
+        doc.rect(LEFT, doc.y, W, 13).fill(COLORS.reservationBg);
+        doc.font(ctx.boldFont).fontSize(7.5).fillColor(COLORS.textDark);
+        doc.text(fullHeader, LEFT + 8, doc.y + 3, { width: W - 16 });
+        doc.y += 14;
 
-        doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
-        doc.text(`Pakiet: ${res.package.name}`, LEFT + 10, doc.y, { width: W - 20 });
-        doc.y += 10;
+        // Package (inline, compact)
+        doc.font(ctx.regularFont).fontSize(5.5).fillColor(COLORS.textMuted);
+        doc.text(`Pakiet: ${res.package.name}`, LEFT + 8, doc.y, { width: W - 16 });
+        doc.y += 7;
 
         for (const course of res.courses) {
-          ensureSpace(doc, 30);
+          ensureSpace(doc, 18);
 
-          // Course category bar (matches summary view style)
-          doc.rect(LEFT + 10, doc.y, W - 20, 14).fill(COLORS.bgLight);
-          doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
-          doc.text(course.courseName.toUpperCase(), LEFT + 18, doc.y + 4);
-          doc.y += 16;
+          // Course header — compact bold text with subtle left accent line
+          doc.rect(LEFT + 8, doc.y, 2, 8).fill(COLORS.accent);
+          doc.font(ctx.boldFont).fontSize(6.5).fillColor(COLORS.accent);
+          doc.text(course.courseName.toUpperCase(), LEFT + 14, doc.y + 1);
+          doc.y += 9;
 
           for (const dish of course.dishes) {
-            ensureSpace(doc, 20);
+            ensureSpace(doc, 12);
 
-            doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
-            const dishText = `• ${dish.name}`;
-            const textHeight = doc.heightOfString(dishText, { width: W - 40 });
-            doc.text(dishText, LEFT + 20, doc.y, { width: W - 40 });
-            doc.y += textHeight + 2;
+            doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
+            const dishText = `\u2022 ${dish.name}`;
+            const textHeight = doc.heightOfString(dishText, { width: W - 36 });
+            doc.text(dishText, LEFT + 18, doc.y, { width: W - 36 });
+            doc.y += textHeight + 1;
           }
-          doc.y += 4;
+          doc.y += 1;
         }
 
         if (res.courses.length === 0) {
-          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-          doc.text('Brak dań w menu', LEFT + 20, doc.y);
-          doc.y += 10;
+          doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
+          doc.text('Brak da\u0144 w menu', LEFT + 18, doc.y);
+          doc.y += 8;
         }
 
-        doc.moveTo(LEFT + 10, doc.y).lineTo(RIGHT - 10, doc.y)
-          .strokeColor(COLORS.border).lineWidth(0.5).stroke();
-        doc.y += 5;
+        // Thin separator between reservations
+        doc.moveTo(LEFT + 8, doc.y).lineTo(RIGHT - 8, doc.y)
+          .strokeColor(COLORS.border).lineWidth(0.3).stroke();
+        doc.y += 3;
       }
 
       doc.y += 2;
     }
   }
 
-  // ── SUMMARY VIEW (compact table) ──
+  // ══════════════════════════════════════════════════════════════
+  // ── SUMMARY VIEW (compact table with dynamic row heights) ──
+  // ══════════════════════════════════════════════════════════════
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
-      ensureSpace(doc, 80);
+      ensureSpace(doc, 60);
 
-      doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
-      doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
-      doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
-      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
-      doc.y += 22;
+      doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
+      doc.y += 17;
 
       for (const course of day.courses) {
-        ensureSpace(doc, 40);
+        ensureSpace(doc, 35);
 
-        // Category bar
-        doc.rect(LEFT, doc.y, W, 14).fill(COLORS.bgLight);
-        doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
-        doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 4);
-        doc.y += 14; // flush — no gap before table header
+        // Category bar (compact: 11px)
+        doc.rect(LEFT, doc.y, W, 11).fill(COLORS.bgLight);
+        doc.font(ctx.boldFont).fontSize(6.5).fillColor(COLORS.accent);
+        doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 3);
+        doc.y += 13; // 11px bar + 2px minimal gap
 
         const colPct = [0.24, 0.09, 0.09, 0.09, 0.09, 0.40];
         const colW = colPct.map(p => W * p);
         const colX: number[] = [LEFT];
         for (let i = 1; i < colW.length; i++) colX.push(colX[i - 1] + colW[i - 1]);
 
-        // Table header (flush under category bar)
+        // Table header
         const headerY = doc.y;
-        doc.rect(LEFT, headerY, W, 12).fill(COLORS.primaryLight);
-        const headers = ['Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Maluchy', 'Klienci'];
+        doc.rect(LEFT, headerY, W, 11).fill(COLORS.primaryLight);
+        const headers = ['Danie', 'Porcje', 'Doros\u0142e', 'Dzieci\u0119ce', 'Maluchy', 'Klienci'];
         doc.font(ctx.boldFont).fontSize(6).fillColor('#ffffff');
         headers.forEach((h, i) => {
           const align = (i >= 1 && i <= 4) ? 'right' as const : 'left' as const;
-          doc.text(h, colX[i] + 4, headerY + 3, { width: colW[i] - 8, align });
+          doc.text(h, colX[i] + 3, headerY + 3, { width: colW[i] - 6, align });
         });
-        doc.y = headerY + 12; // flush — rows start right after header
+        doc.y = headerY + 11;
 
         for (const dish of course.dishes) {
-          ensureSpace(doc, 15);
+          // Measure dish name height to handle text wrapping
+          doc.font(ctx.regularFont).fontSize(7);
+          const dishNameHeight = doc.heightOfString(dish.dishName, { width: colW[0] - 6 });
+          const rowHeight = Math.max(11, dishNameHeight + 4); // min 11px, or text + padding
+
+          ensureSpace(doc, rowHeight);
 
           const rowY = doc.y;
 
+          // Dish name (allows wrapping)
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(dish.dishName, colX[0] + 3, rowY + 2, { width: colW[0] - 6, lineBreak: false, ellipsis: true });
+          doc.text(dish.dishName, colX[0] + 3, rowY + 2, { width: colW[0] - 6 });
+
+          // Numeric columns (vertically centered in row)
+          const numY = rowY + 2;
 
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(`${dish.totalPortions}`, colX[1] + 3, rowY + 2, { width: colW[1] - 6, align: 'right' });
+          doc.text(`${dish.totalPortions}`, colX[1] + 3, numY, { width: colW[1] - 6, align: 'right' });
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-          doc.text(`${dish.adultPortions}`, colX[2] + 3, rowY + 2, { width: colW[2] - 6, align: 'right' });
-          doc.text(`${dish.childrenPortions}`, colX[3] + 3, rowY + 2, { width: colW[3] - 6, align: 'right' });
-          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, rowY + 2, { width: colW[4] - 6, align: 'right' });
+          doc.text(`${dish.adultPortions}`, colX[2] + 3, numY, { width: colW[2] - 6, align: 'right' });
+          doc.text(`${dish.childrenPortions}`, colX[3] + 3, numY, { width: colW[3] - 6, align: 'right' });
+          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, numY, { width: colW[4] - 6, align: 'right' });
 
           const clientStr = dish.reservations.map(r => `${r.clientName} (${r.guests})`).join(', ');
           doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
-          doc.text(clientStr, colX[5] + 3, rowY + 2, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
+          doc.text(clientStr, colX[5] + 3, numY, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
 
-          doc.y = rowY + 11; // row height: 11px (was 9px — prevented overlap)
+          doc.y = rowY + rowHeight;
         }
 
-        doc.y += 10; // breathing room before next category (was 3px)
+        doc.y += 8; // breathing room before next category
       }
 
       doc.y += 4;
@@ -302,13 +319,13 @@ export function buildMenuPreparationsReportPDF(
 
     // Footer line 1
     const footerParts: string[] = [
-      `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
+      `Dzi\u0119kujemy za wyb\u00f3r restauracji ${ctx.restaurantName}!`,
     ];
     const contactParts2: string[] = [];
     if (ctx.restaurantPhone) contactParts2.push(ctx.restaurantPhone);
     if (ctx.restaurantEmail) contactParts2.push(ctx.restaurantEmail);
     if (contactParts2.length > 0) {
-      footerParts.push(`W razie pytań: ${contactParts2.join(' | ')}`);
+      footerParts.push(`W razie pyta\u0144: ${contactParts2.join(' | ')}`);
     }
     const footerLine1 = footerParts.join('  |  ');
 
