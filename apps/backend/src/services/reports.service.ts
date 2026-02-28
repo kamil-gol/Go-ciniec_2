@@ -9,6 +9,7 @@
  * Updated: menu preparations report (#160)
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
+ * FIX: added toddlerPortions to summary dish aggregation
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -1085,6 +1086,7 @@ class ReportsService {
                   totalPortions: 0,
                   adultPortions: 0,
                   childrenPortions: 0,
+                  toddlerPortions: 0,
                   reservations: [],
                 },
               });
@@ -1094,6 +1096,7 @@ class ReportsService {
             entry.dish.totalPortions += item.guests.total;
             entry.dish.adultPortions += item.guests.adults;
             entry.dish.childrenPortions += item.guests.children;
+            entry.dish.toddlerPortions += item.guests.toddlers;
             entry.dish.reservations.push({
               id: item.reservationId,
               clientName: item.clientName,
