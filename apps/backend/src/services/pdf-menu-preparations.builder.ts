@@ -1,19 +1,5 @@
 // apps/backend/src/services/pdf-menu-preparations.builder.ts
 
-/**
- * PDF builder for Menu Preparations Report (#160)
- * Premium design with enhanced UX:
- * - 2-column layout for detailed view (compact, fits 1 page)
- * - Portion sizes shown next to dish names
- * - Dynamic header backgrounds (covers wrapped text)
- * - Compact spacing (no wasted vertical space, no empty pages)
- * - Clear visual hierarchy
- * - Prominent reservation details in detailed view
- * - Clean table layouts with proper alignment
- * - Professional footer with page numbers
- * - Smart pagination with controlled page breaks
- */
-
 import type { MenuPreparationsReport } from '@/types/reports.types';
 
 export interface PDFContext {
@@ -84,9 +70,11 @@ function measureTextWidth(
 }
 
 /**
- * Render a single reservation card at explicit (x, y) position with given width.
+ * Render a single reservation card at explicit (x, y) position.
+ * 2-line header:
+ *   Line 1 (bold):   "13:00 \u2013 04:00  |  Marek Kowalski"
+ *   Line 2 (muted):  "99 os. (90D+5Dz+4M)  |  Sala Z\u0142ota"
  * Returns the final Y position after rendering.
- * Header background dynamically sized to cover wrapped text.
  */
 function renderReservationCard(
   ctx: PDFContext,
@@ -99,25 +87,41 @@ function renderReservationCard(
   const innerPad = 6;
   const textWidth = colWidth - innerPad * 2;
 
-  // Build header text
+  // Build header parts
   const timePart = res.startTime
     ? `${formatTime(res.startTime)}${res.endTime ? ' \u2013 ' + formatTime(res.endTime) : ''}`
     : '';
   const guestPart = `${res.guests.total} os. (${res.guests.adults}D+${res.guests.children}Dz+${res.guests.toddlers}M)`;
-  const headerParts = [res.hallName, timePart, guestPart].filter(Boolean);
-  const fullHeader = `${res.clientName}  |  ${headerParts.join('  |  ')}`;
 
-  // Measure text height FIRST, then draw background to cover all lines
+  // Line 1: time | client name
+  const line1Parts = [timePart, res.clientName].filter(Boolean);
+  const headerLine1 = line1Parts.join('  |  ');
+
+  // Line 2: guests | hall name
+  const line2Parts = [guestPart, res.hallName].filter(Boolean);
+  const headerLine2 = line2Parts.join('  |  ');
+
+  // Measure both lines to compute total header height
   doc.font(ctx.boldFont).fontSize(8);
-  const headerTextHeight = doc.heightOfString(fullHeader, { width: textWidth });
-  const headerHeight = headerTextHeight + 6;
+  const line1Height = doc.heightOfString(headerLine1, { width: textWidth });
+  doc.font(ctx.regularFont).fontSize(7);
+  const line2Height = doc.heightOfString(headerLine2, { width: textWidth });
+  const headerHeight = line1Height + line2Height + 7;
 
+  // Draw background covering both lines
   doc.rect(x, y, colWidth, headerHeight).fill(COLORS.reservationBg);
+
+  // Render line 1 (bold, dark)
   doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
-  doc.text(fullHeader, x + innerPad, y + 3, { width: textWidth });
+  doc.text(headerLine1, x + innerPad, y + 3, { width: textWidth });
+
+  // Render line 2 (regular, muted) immediately after
+  doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+  doc.text(headerLine2, x + innerPad, doc.y, { width: textWidth });
+
   y += headerHeight + 2;
 
-  // Courses (no package line)
+  // Courses
   for (const course of res.courses) {
     doc.rect(x + innerPad, y, 2, 9).fill(COLORS.accent);
     doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
@@ -156,7 +160,7 @@ export function buildMenuPreparationsReportPDF(
   const { filters, summary } = data;
   const isDetailed = filters.view === 'detailed';
 
-  // ── HEADER BANNER ──
+  // HEADER BANNER
   const bannerHeight = 65;
   doc.rect(0, 0, PAGE_WIDTH, bannerHeight).fill(COLORS.primary);
   doc.rect(0, bannerHeight - 3, PAGE_WIDTH, 3).fill(COLORS.accent);
@@ -202,7 +206,7 @@ export function buildMenuPreparationsReportPDF(
      .moveTo(LEFT, sepY).lineTo(RIGHT, sepY).stroke();
   doc.moveDown(0.5);
 
-  // ── KPI CARDS (3 cards, no "Top pakiet") ──
+  // KPI CARDS (3 cards)
   const kpiGap = 8;
   const kpiW = (W - kpiGap * 2) / 3;
   const kpiStartY = doc.y;
@@ -213,31 +217,27 @@ export function buildMenuPreparationsReportPDF(
   ];
 
   kpis.forEach((kpi, i) => {
-    const x = LEFT + i * (kpiW + kpiGap);
-    doc.rect(x, kpiStartY, kpiW, 38).fill(COLORS.bgLight);
+    const kx = LEFT + i * (kpiW + kpiGap);
+    doc.rect(kx, kpiStartY, kpiW, 38).fill(COLORS.bgLight);
     doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-    doc.text(kpi.label, x + 6, kpiStartY + 6, { width: kpiW - 12 });
+    doc.text(kpi.label, kx + 6, kpiStartY + 6, { width: kpiW - 12 });
     doc.font(ctx.boldFont).fontSize(10).fillColor(COLORS.textDark);
-    doc.text(kpi.value, x + 6, kpiStartY + 18, { width: kpiW - 12 });
+    doc.text(kpi.value, kx + 6, kpiStartY + 18, { width: kpiW - 12 });
   });
 
   doc.y = kpiStartY + 48;
 
-  // ══════════════════════════════════════════════════════════════
-  // ── DETAILED VIEW (2-column layout) ──
-  // ══════════════════════════════════════════════════════════════
+  // DETAILED VIEW (2-column layout)
   if (isDetailed && data.days) {
     for (const day of data.days) {
       ensureSpace(doc, 60);
 
-      // Day header (full width)
       doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
       doc.y += 17;
 
-      // Render reservations in pairs (2-column layout)
       const reservations = day.reservations;
       for (let i = 0; i < reservations.length; i += 2) {
         const leftRes = reservations[i];
@@ -266,9 +266,7 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // ── SUMMARY VIEW (compact table with dynamic row heights) ──
-  // ══════════════════════════════════════════════════════════════
+  // SUMMARY VIEW
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
       ensureSpace(doc, 60);
@@ -338,7 +336,7 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // ── FOOTER ──
+  // FOOTER
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
