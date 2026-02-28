@@ -279,6 +279,7 @@ export interface MenuPreparationSummaryDish {
   totalPortions: number;        // sum of guests across reservations with this dish
   adultPortions: number;
   childrenPortions: number;
+  toddlerPortions: number;      // FIX: added toddler portions
   reservations: Array<{
     id: string;
     clientName: string;
