@@ -8,7 +8,7 @@
  * - Prominent reservation details in detailed view
  * - Clean table layouts with proper alignment
  * - Professional footer with page numbers
- * - Natural pagination (PDFKit handles page breaks)
+ * - Smart pagination with controlled page breaks
  */
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
@@ -56,6 +56,44 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
+/**
+ * Smart page break - ensures minimum space remaining before continuing.
+ * Prevents content from being cut off or overlapping footer.
+ * @param doc PDFDocument instance
+ * @param minSpace Minimum space required (default: 120px)
+ * @returns Current Y position after potential page break
+ */
+function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number = 120): number {
+  if (doc.y > MAX_CONTENT_Y - minSpace) {
+    doc.addPage();
+    return 50; // Return to top margin after page break
+  }
+  return doc.y;
+}
+
+/**
+ * Calculate text dimensions without rendering.
+ * Used for safe footer positioning.
+ */
+function measureText(
+  doc: PDFKit.PDFDocument,
+  text: string,
+  fontSize: number,
+  font: string,
+  width: number
+): { width: number; height: number } {
+  const savedFont = doc._font;
+  const savedFontSize = doc._fontSize;
+  
+  doc.font(font).fontSize(fontSize);
+  const textWidth = doc.widthOfString(text, { width });
+  const textHeight = doc.heightOfString(text, { width });
+  
+  doc.font(savedFont).fontSize(savedFontSize);
+  
+  return { width: textWidth, height: textHeight };
+}
+
 export function buildMenuPreparationsReportPDF(
   ctx: PDFContext,
   data: MenuPreparationsReport
@@ -63,6 +101,9 @@ export function buildMenuPreparationsReportPDF(
   const { doc } = ctx;
   const { filters, summary } = data;
   const isDetailed = filters.view === 'detailed';
+
+  // Track last content Y position to prevent footer on empty pages
+  let lastContentY = 0;
 
   // ── HEADER BANNER ──
   const bannerHeight = 65;
@@ -110,6 +151,8 @@ export function buildMenuPreparationsReportPDF(
      .moveTo(LEFT, sepY).lineTo(RIGHT, sepY).stroke();
   doc.moveDown(0.5);
 
+  lastContentY = doc.y;
+
   // ── KPI CARDS ──
   const kpiGap = 8;
   const kpiW = (W - kpiGap * 3) / 4;
@@ -131,18 +174,26 @@ export function buildMenuPreparationsReportPDF(
   });
 
   doc.y = kpiStartY + 48;
+  lastContentY = doc.y;
 
   // ── DETAILED VIEW (enhanced design) ──
   if (isDetailed && data.days) {
     for (const day of data.days) {
+      // Ensure space for day header
+      ensureSpace(doc, 120);
+
       // Day header (clean, no redundant counts)
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
       doc.y += 22;
+      lastContentY = doc.y;
 
       for (const res of day.reservations) {
+        // Ensure space for reservation card
+        ensureSpace(doc, 150);
+
         // ── PREMIUM RESERVATION HEADER ──
         // Merged: Client Name | Hall | Time | Guests (all in one prominent line)
         const timePart = res.startTime
@@ -164,11 +215,15 @@ export function buildMenuPreparationsReportPDF(
 
         // Courses
         for (const course of res.courses) {
+          ensureSpace(doc, 80);
+
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
           doc.text(course.courseName.toUpperCase(), LEFT + 14, doc.y);
           doc.y += 9;
 
           for (const dish of course.dishes) {
+            ensureSpace(doc, 60);
+
             doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
             const dishText = dish.description
               ? `• ${dish.name}  — ${dish.description}`
@@ -190,23 +245,31 @@ export function buildMenuPreparationsReportPDF(
         doc.moveTo(LEFT + 10, doc.y).lineTo(RIGHT - 10, doc.y)
           .strokeColor(COLORS.border).lineWidth(0.5).stroke();
         doc.y += 5;
+        lastContentY = doc.y;
       }
 
       doc.y += 2;
+      lastContentY = doc.y;
     }
   }
 
   // ── SUMMARY VIEW (compact table) ──
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
+      // Ensure space for day header
+      ensureSpace(doc, 120);
+
       // Day header (clean)
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
       doc.y += 22;
+      lastContentY = doc.y;
 
       for (const course of day.courses) {
+        ensureSpace(doc, 100);
+
         // Course header
         doc.rect(LEFT, doc.y, W, 14).fill(COLORS.bgLight);
         doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
@@ -232,6 +295,8 @@ export function buildMenuPreparationsReportPDF(
 
         // Dish rows (tight)
         for (const dish of course.dishes) {
+          ensureSpace(doc, 50);
+
           const rowY = doc.y;
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
@@ -253,19 +318,24 @@ export function buildMenuPreparationsReportPDF(
         }
 
         doc.y += 3;
+        lastContentY = doc.y;
       }
 
       doc.y += 4;
+      lastContentY = doc.y;
     }
   }
 
-  // ── FOOTER (fixed position, prevents page breaks) ──
+  // ── FOOTER (safe rendering without auto-pagination) ──
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
     
-    // Save current cursor position to prevent text engine from advancing it
-    const savedY = doc.y;
+    // Skip footer on pages without content
+    // (Only render on pages where actual content was written)
+    if (i > 0 && lastContentY < 80) {
+      continue;
+    }
     
     const footerY = 810;
     const sepFooterY = footerY - 10;
@@ -274,33 +344,35 @@ export function buildMenuPreparationsReportPDF(
     doc.strokeColor(COLORS.border).lineWidth(0.5)
        .moveTo(LEFT, sepFooterY).lineTo(RIGHT, sepFooterY).stroke();
 
-    // Footer text line 1
-    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+    // ── Footer text line 1 (safe rendering without cursor movement) ──
     const footerParts: string[] = [
       `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
     ];
-    const contactParts: string[] = [];
-    if (ctx.restaurantPhone) contactParts.push(ctx.restaurantPhone);
-    if (ctx.restaurantEmail) contactParts.push(ctx.restaurantEmail);
-    if (contactParts.length > 0) {
-      footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
+    const contactParts2: string[] = [];
+    if (ctx.restaurantPhone) contactParts2.push(ctx.restaurantPhone);
+    if (ctx.restaurantEmail) contactParts2.push(ctx.restaurantEmail);
+    if (contactParts2.length > 0) {
+      footerParts.push(`W razie pytań: ${contactParts2.join(' | ')}`);
     }
-    doc.text(footerParts.join('  |  '), LEFT, footerY, {
-      align: 'center', width: W, lineBreak: false,
-    });
-    
-    // Restore cursor to prevent page break
-    doc.y = savedY;
+    const footerLine1 = footerParts.join('  |  ');
 
-    // Footer text line 2
-    doc.fontSize(6).fillColor(COLORS.textLight);
-    doc.text(
-      `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`,
-      LEFT, footerY + 12,
-      { align: 'center', width: W, lineBreak: false },
-    );
+    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
     
-    // Restore cursor again
-    doc.y = savedY;
+    // Measure text to center it correctly
+    const line1Dims = measureText(doc, footerLine1, 7, ctx.regularFont, W);
+    const line1X = LEFT + (W - line1Dims.width) / 2;
+    
+    // Draw using low-level API (no auto-pagination)
+    doc._fragment(footerLine1, line1X, footerY, { width: W, align: 'left', lineBreak: false });
+
+    // ── Footer text line 2 (safe rendering) ──
+    const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
+    
+    doc.fontSize(6).fillColor(COLORS.textLight);
+    
+    const line2Dims = measureText(doc, footerLine2, 6, ctx.regularFont, W);
+    const line2X = LEFT + (W - line2Dims.width) / 2;
+    
+    doc._fragment(footerLine2, line2X, footerY + 12, { width: W, align: 'left', lineBreak: false });
   }
 }
