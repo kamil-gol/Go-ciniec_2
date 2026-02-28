@@ -2,6 +2,7 @@
  * Hall Controller
  * Handles HTTP requests for hall management
  * UPDATED: Removed pricePerPerson validation (pricing removed from halls)
+ * UPDATED: #165 — getAvailableCapacity endpoint
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -38,6 +39,35 @@ class HallController {
     try {
       const hall = await hallService.getHallById(req.params.id);
       res.json({ success: true, data: hall });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * #165: Get available capacity for a hall in a given time range
+   * Query params: startDateTime, endDateTime, excludeReservationId (optional)
+   */
+  async getAvailableCapacity(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { startDateTime, endDateTime, excludeReservationId } = req.query;
+
+      if (!startDateTime || !endDateTime) {
+        res.status(400).json({
+          success: false,
+          message: 'Parametry startDateTime i endDateTime są wymagane',
+        });
+        return;
+      }
+
+      const result = await hallService.getOccupiedCapacity(
+        req.params.id,
+        startDateTime as string,
+        endDateTime as string,
+        excludeReservationId as string | undefined
+      );
+
+      res.json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

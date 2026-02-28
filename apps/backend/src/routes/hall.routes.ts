@@ -1,6 +1,7 @@
 /**
  * Hall Routes
  * MIGRATED: asyncHandler + validateUUID
+ * UPDATED: #165 — GET /:id/available-capacity endpoint
  */
 
 import { Router } from 'express';
@@ -26,6 +27,16 @@ router.get(
   authMiddleware,
   asyncHandler(async (req, res, next) => {
     await hallController.getHalls(req, res, next);
+  })
+);
+
+// #165: Available capacity for a hall in a given time range
+router.get(
+  '/:id/available-capacity',
+  authMiddleware,
+  validateUUID('id'),
+  asyncHandler(async (req, res, next) => {
+    await hallController.getAvailableCapacity(req, res, next);
   })
 );
 
