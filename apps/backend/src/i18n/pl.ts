@@ -93,6 +93,10 @@ export const RESERVATION = {
   GUESTS_REQUIRED: 'Wymagana jest co najmniej jedna osoba (dorośli, dzieci lub maluchy)',
   GUESTS_EXCEED_CAPACITY: (guests: number, capacity: number) =>
     `Liczba gości (${guests}) przekracza pojemność sali (${capacity})`,
+  // #165: Aggregate capacity check — multiple reservations on same hall
+  CAPACITY_EXCEEDED: (requested: number, available: number, total: number) =>
+    `Brak wystarczającej pojemności sali. Żądano miejsc: ${requested}, dostępne: ${available}/${total}`,
+  MULTIPLE_BOOKINGS_DISABLED: 'Ta sala nie dopuszcza wielu rezerwacji w tym samym czasie',
   CANNOT_UPDATE_COMPLETED: 'Nie można edytować zakończonej rezerwacji',
   CANNOT_UPDATE_CANCELLED: 'Nie można edytować anulowanej rezerwacji',
   CANNOT_UPDATE_ARCHIVED: 'Nie można edytować zarchiwizowanej rezerwacji',
@@ -186,6 +190,10 @@ export const HALL = {
   CAPACITY_POSITIVE: 'Pojemność sali musi być większa od 0',
   CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć sali posiadającej rezerwacje',
   DELETED: 'Sala została usunięta',
+  // #165: Capacity-based booking messages
+  CAPACITY_EXCEEDED: (requested: number, available: number, total: number) =>
+    `Brak wystarczającej pojemności sali. Żądano: ${requested}, dostępne: ${available}/${total}`,
+  MULTIPLE_BOOKINGS_DISABLED: 'Ta sala nie dopuszcza wielu rezerwacji w tym samym czasie',
 } as const;
 
 // ═══════════════════════════════════════

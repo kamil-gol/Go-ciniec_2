@@ -157,17 +157,18 @@ model RefreshToken {
 }
 
 model Hall {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                 String   @unique @db.VarChar(255)
-  capacity             Int      @db.SmallInt
-  description          String?  @db.Text
-  amenities            String[] @db.Text
-  images               String[] @db.Text
-  isActive             Boolean  @default(true)
-  isWholeVenue         Boolean  @default(false)
-  allowWithWholeVenue  Boolean  @default(false)   // Sala może współistnieć z rezerwacją "Cały Obiekt"
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String   @unique @db.VarChar(255)
+  capacity              Int      @db.SmallInt
+  description           String?  @db.Text
+  amenities             String[] @db.Text
+  images                String[] @db.Text
+  isActive              Boolean  @default(true)
+  isWholeVenue          Boolean  @default(false)
+  allowWithWholeVenue   Boolean  @default(false)   // Sala może współistnieć z rezerwacją "Cały Obiekt"
+  allowMultipleBookings Boolean  @default(true)     // #165: Czy sala dopuszcza wiele rezerwacji jednocześnie (w ramach limitu pojemności)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   reservations    Reservation[]
 
