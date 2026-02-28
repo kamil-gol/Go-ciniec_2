@@ -40,8 +40,8 @@ const PAGE_HEIGHT = 841.89;  // A4 height
 const LEFT = 40;
 const RIGHT = PAGE_WIDTH - 40;
 const W = RIGHT - LEFT;
-const FOOTER_AREA = 50;  // reserved space for footer
-const MAX_CONTENT_Y = PAGE_HEIGHT - FOOTER_AREA;
+const FOOTER_Y = 800;  // footer separator line position
+const TOP_MARGIN = 50; // top margin on new pages
 
 function formatTime(time: string | null | undefined): string {
   if (!time) return '';
@@ -57,15 +57,14 @@ function formatDate(date: Date): string {
 }
 
 /**
- * Smart page break - ensures minimum space remaining before continuing.
- * Prevents content from being cut off or overlapping footer.
+ * Smart page break — ensures minimum space remaining before continuing.
+ * Adds new page and sets doc.y to TOP_MARGIN if not enough space.
  */
-function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number = 120): number {
-  if (doc.y > MAX_CONTENT_Y - minSpace) {
+function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number): void {
+  if (doc.y + minSpace > FOOTER_Y) {
     doc.addPage();
-    return 50;
+    doc.y = TOP_MARGIN;
   }
-  return doc.y;
 }
 
 /**
@@ -89,8 +88,6 @@ export function buildMenuPreparationsReportPDF(
   const { doc } = ctx;
   const { filters, summary } = data;
   const isDetailed = filters.view === 'detailed';
-
-  let lastContentY = 0;
 
   // ── HEADER BANNER ──
   const bannerHeight = 65;
@@ -138,8 +135,6 @@ export function buildMenuPreparationsReportPDF(
      .moveTo(LEFT, sepY).lineTo(RIGHT, sepY).stroke();
   doc.moveDown(0.5);
 
-  lastContentY = doc.y;
-
   // ── KPI CARDS ──
   const kpiGap = 8;
   const kpiW = (W - kpiGap * 3) / 4;
@@ -161,22 +156,22 @@ export function buildMenuPreparationsReportPDF(
   });
 
   doc.y = kpiStartY + 48;
-  lastContentY = doc.y;
 
   // ── DETAILED VIEW (enhanced design) ──
   if (isDetailed && data.days) {
     for (const day of data.days) {
-      ensureSpace(doc, 120);
+      // Day header: 20px height + some margin
+      ensureSpace(doc, 80);
 
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
       doc.y += 22;
-      lastContentY = doc.y;
 
       for (const res of day.reservations) {
-        ensureSpace(doc, 150);
+        // Reservation header (16px) + package (10px) + at least one course header (9px) + one dish (~15px)
+        ensureSpace(doc, 100);
 
         const timePart = res.startTime
           ? `${formatTime(res.startTime)}${res.endTime ? ' – ' + formatTime(res.endTime) : ''}`
@@ -195,14 +190,16 @@ export function buildMenuPreparationsReportPDF(
         doc.y += 10;
 
         for (const course of res.courses) {
-          ensureSpace(doc, 80);
+          // Course header (9px) + at least one dish (~15px)
+          ensureSpace(doc, 30);
 
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
           doc.text(course.courseName.toUpperCase(), LEFT + 14, doc.y);
           doc.y += 9;
 
           for (const dish of course.dishes) {
-            ensureSpace(doc, 60);
+            // Single bullet point: ~12-18px depending on text wrapping
+            ensureSpace(doc, 20);
 
             doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
             const dishText = dish.description
@@ -224,28 +221,26 @@ export function buildMenuPreparationsReportPDF(
         doc.moveTo(LEFT + 10, doc.y).lineTo(RIGHT - 10, doc.y)
           .strokeColor(COLORS.border).lineWidth(0.5).stroke();
         doc.y += 5;
-        lastContentY = doc.y;
       }
 
       doc.y += 2;
-      lastContentY = doc.y;
     }
   }
 
   // ── SUMMARY VIEW (compact table) ──
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
-      ensureSpace(doc, 120);
+      ensureSpace(doc, 80);
 
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
       doc.y += 22;
-      lastContentY = doc.y;
 
       for (const course of day.courses) {
-        ensureSpace(doc, 100);
+        // Course header (14px) + table header (12px) + at least one row (9px)
+        ensureSpace(doc, 40);
 
         doc.rect(LEFT, doc.y, W, 14).fill(COLORS.bgLight);
         doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
@@ -268,7 +263,8 @@ export function buildMenuPreparationsReportPDF(
         doc.y = headerY + 14;
 
         for (const dish of course.dishes) {
-          ensureSpace(doc, 50);
+          // Single table row: 9px
+          ensureSpace(doc, 15);
 
           const rowY = doc.y;
 
@@ -291,11 +287,9 @@ export function buildMenuPreparationsReportPDF(
         }
 
         doc.y += 3;
-        lastContentY = doc.y;
       }
 
       doc.y += 4;
-      lastContentY = doc.y;
     }
   }
 
@@ -304,8 +298,8 @@ export function buildMenuPreparationsReportPDF(
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
 
-    const footerY = 810;
-    const sepFooterY = footerY - 10;
+    const footerTextY = 810;
+    const sepFooterY = FOOTER_Y;
 
     doc.strokeColor(COLORS.border).lineWidth(0.5)
        .moveTo(LEFT, sepFooterY).lineTo(RIGHT, sepFooterY).stroke();
@@ -322,17 +316,16 @@ export function buildMenuPreparationsReportPDF(
     }
     const footerLine1 = footerParts.join('  |  ');
 
-    // measureTextWidth sets font+size as side effect, then we render
     const line1W = measureTextWidth(doc, footerLine1, 7, ctx.regularFont);
     doc.fillColor(COLORS.textMuted);
     const line1X = LEFT + (W - line1W) / 2;
-    doc._fragment(footerLine1, line1X, footerY, { lineBreak: false });
+    doc._fragment(footerLine1, line1X, footerTextY, { lineBreak: false });
 
     // Footer line 2
     const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
     const line2W = measureTextWidth(doc, footerLine2, 6, ctx.regularFont);
     doc.fillColor(COLORS.textLight);
     const line2X = LEFT + (W - line2W) / 2;
-    doc._fragment(footerLine2, line2X, footerY + 12, { lineBreak: false });
+    doc._fragment(footerLine2, line2X, footerTextY + 12, { lineBreak: false });
   }
 }
