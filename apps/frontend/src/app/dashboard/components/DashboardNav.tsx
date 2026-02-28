@@ -15,7 +15,6 @@ import {
   Menu,
   X,
   Building2,
-  DoorOpen,
 } from 'lucide-react';
 
 // ── Nav item types ─────────────────────────────────────
@@ -53,11 +52,6 @@ const NAV_ITEMS: NavItem[] = [
     href: '/dashboard/settings',
     icon: <Settings className="h-4 w-4" />,
     children: [
-      {
-        label: 'Sale',
-        href: '/dashboard/halls',
-        icon: <DoorOpen className="h-4 w-4" />,
-      },
       {
         label: 'Firma',
         href: '/dashboard/settings/company',
