@@ -290,6 +290,7 @@ export interface MenuPreparationSummaryDish {
   totalPortions: number;
   adultPortions: number;
   childrenPortions: number;
+  toddlerPortions: number;
   reservations: Array<{
     id: string;
     clientName: string;
