@@ -29,7 +29,8 @@ const PAGE_HEIGHT = 841.89;
 const LEFT = 40;
 const RIGHT = PAGE_WIDTH - 40;
 const W = RIGHT - LEFT;
-const FOOTER_Y = 800;
+const FOOTER_HEIGHT = 50; // Space reserved for footer (separator + 2 lines of text)
+const FOOTER_START = PAGE_HEIGHT - FOOTER_HEIGHT; // 791.89
 const TOP_MARGIN = 50;
 
 const COL_GAP = 10;
@@ -53,7 +54,7 @@ function formatDateTime(date: Date): string {
 }
 
 function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number): void {
-  if (doc.y + minSpace > FOOTER_Y) {
+  if (doc.y + minSpace > FOOTER_START) {
     doc.addPage();
     doc.y = TOP_MARGIN;
   }
@@ -67,6 +68,56 @@ function measureTextWidth(
 ): number {
   doc.font(font).fontSize(fontSize);
   return doc.widthOfString(text);
+}
+
+// Calculate card height before rendering
+function calculateReservationCardHeight(
+  ctx: PDFContext,
+  res: any,
+  colWidth: number
+): number {
+  const { doc } = ctx;
+  const innerPad = 6;
+  const textWidth = colWidth - innerPad * 2;
+
+  const timePart = res.startTime
+    ? `${formatTime(res.startTime)}${res.endTime ? ' \u2013 ' + formatTime(res.endTime) : ''}`
+    : '';
+  const guestPart = `${res.guests.total} os. (${res.guests.adults}D+${res.guests.children}Dz+${res.guests.toddlers}M)`;
+
+  const line1Parts = [timePart, res.clientName].filter(Boolean);
+  const headerLine1 = line1Parts.join('  |  ');
+
+  const line2Parts = [guestPart, res.hallName].filter(Boolean);
+  const headerLine2 = line2Parts.join('  |  ');
+
+  doc.font(ctx.boldFont).fontSize(8);
+  const line1Height = doc.heightOfString(headerLine1, { width: textWidth });
+  const line2Height = doc.heightOfString(headerLine2, { width: textWidth });
+  const headerHeight = line1Height + line2Height + 7;
+
+  let contentHeight = headerHeight + 2;
+
+  for (const course of res.courses) {
+    contentHeight += 9 + 2; // Course header
+
+    for (const dish of course.dishes) {
+      doc.font(ctx.regularFont).fontSize(7.5);
+      let dishText = `\u2022 ${dish.name}`;
+      if (dish.portionSize != null && dish.portionSize !== 1) {
+        dishText += ` (\u00d7${dish.portionSize})`;
+      }
+      const textHeight = doc.heightOfString(dishText, { width: textWidth - 10 });
+      contentHeight += textHeight + 1;
+    }
+    contentHeight += 2;
+  }
+
+  if (res.courses.length === 0) {
+    contentHeight += 10;
+  }
+
+  return contentHeight;
 }
 
 function renderReservationCard(
@@ -225,7 +276,15 @@ export function buildMenuPreparationsReportPDF(
         const leftRes = reservations[i];
         const rightRes = reservations[i + 1];
 
-        ensureSpace(doc, 50);
+        // Calculate heights BEFORE checking space
+        const leftHeight = calculateReservationCardHeight(ctx, leftRes, COL_W);
+        const rightHeight = rightRes ? calculateReservationCardHeight(ctx, rightRes, COL_W) : 0;
+        const maxHeight = Math.max(leftHeight, rightHeight);
+
+        // Check if pair fits on current page (including separator if not last pair)
+        const pairHeight = maxHeight + (i + 2 < reservations.length ? 3 : 0);
+        ensureSpace(doc, pairHeight);
+
         const startY = doc.y;
 
         const leftEndY = renderReservationCard(ctx, leftRes, COL_LEFT_X, startY, COL_W);
@@ -322,8 +381,8 @@ export function buildMenuPreparationsReportPDF(
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
 
-    const footerTextY = 810;
-    const sepFooterY = FOOTER_Y;
+    const footerTextY = FOOTER_START + 10;
+    const sepFooterY = FOOTER_START;
 
     doc.strokeColor(COLORS.border).lineWidth(0.5)
        .moveTo(LEFT, sepFooterY).lineTo(RIGHT, sepFooterY).stroke();
