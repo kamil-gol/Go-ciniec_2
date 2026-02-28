@@ -6,8 +6,12 @@
  * Updated: extras revenue tracking in revenue reports
  * Updated: preparations report for service extras (#159)
  * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
+ * Updated: menu preparations report (#160)
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
+ * FIX: added portionSize from menuData.quantity to dish mapping
+ * FIX: totalPortions excludes toddlers (adults + children only)
+ * FIX: removed toddlerPortions from summary dish aggregation (not displayed)
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -31,18 +35,23 @@ import type {
   PreparationDayGroup,
   PreparationSummaryItem,
   PreparationSummaryDayGroup,
+  MenuPreparationsReportFilters,
+  MenuPreparationsReport,
+  MenuPreparationReservation,
+  MenuPreparationCourse,
+  MenuPreparationDish,
+  MenuPreparationDayGroup,
+  MenuPreparationSummaryDish,
+  MenuPreparationSummaryCourseGroup,
+  MenuPreparationSummaryDayGroup,
 } from '@/types/reports.types';
 
-// Polish day/month names for date labels
-const DAY_NAMES_PL = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+const DAY_NAMES_PL = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
 const MONTH_NAMES_PL = [
   'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
-  'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia',
+  'lipca', 'sierpnia', 'wrze\u015bnia', 'pa\u017adziernika', 'listopada', 'grudnia',
 ];
 
-/**
- * Format date as Polish label: "Sobota, 15 marca 2026"
- */
 function formatDateLabelPL(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   const dayName = DAY_NAMES_PL[d.getDay()];
@@ -52,10 +61,6 @@ function formatDateLabelPL(dateStr: string): string {
   return `${dayName}, ${day} ${month} ${year}`;
 }
 
-/**
- * Extract HH:MM time string from a DateTime field.
- * Fallback when varchar startTime/endTime is null.
- */
 function extractTimeFromDateTime(dt: Date | string | null | undefined): string | null {
   if (!dt) return null;
   const d = typeof dt === 'string' ? new Date(dt) : dt;
@@ -63,10 +68,6 @@ function extractTimeFromDateTime(dt: Date | string | null | undefined): string |
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-/**
- * Calculate extras revenue for a single reservation from its extras.
- * Supports FLAT (price × qty), PER_PERSON (price × qty × guests), FREE (0).
- */
 function calculateExtrasRevenue(
   extras: Array<{ quantity: number; unitPrice: number | null; totalPrice: number | null; serviceItem: { basePrice: number; priceType: string; name: string; id: string } }>,
   guests: number
@@ -75,24 +76,20 @@ function calculateExtrasRevenue(
   const items: Array<{ serviceItemId: string; name: string; revenue: number }> = [];
 
   for (const extra of extras) {
-    // Prefer pre-calculated totalPrice, then compute from unitPrice
     let revenue = 0;
     if (extra.totalPrice !== null && extra.totalPrice !== undefined) {
       revenue = Number(extra.totalPrice);
     } else {
       const price = extra.unitPrice !== null ? Number(extra.unitPrice) : Number(extra.serviceItem.basePrice);
       const qty = extra.quantity || 1;
-
       if (extra.serviceItem.priceType === 'PER_PERSON') {
         revenue = price * qty * guests;
       } else if (extra.serviceItem.priceType === 'FREE') {
         revenue = 0;
       } else {
-        // FLAT
         revenue = price * qty;
       }
     }
-
     revenue = Math.round(revenue * 100) / 100;
     total += revenue;
     items.push({ serviceItemId: extra.serviceItem.id, name: extra.serviceItem.name, revenue });
@@ -101,15 +98,26 @@ function calculateExtrasRevenue(
   return { total: Math.round(total * 100) / 100, items };
 }
 
+function getClientName(client: { clientType: string; companyName?: string | null; firstName: string; lastName: string }): string {
+  if (client.clientType === 'COMPANY' && client.companyName) {
+    return client.companyName;
+  }
+  return `${client.firstName} ${client.lastName}`;
+}
+
+function getReservationDate(r: { date: string | null; startDateTime: Date | string | null }): string {
+  if (r.date) return r.date;
+  if (r.startDateTime) {
+    return new Date(r.startDateTime).toISOString().split('T')[0];
+  }
+  return '';
+}
+
 class ReportsService {
   // ============================================
   // REVENUE REPORTS
   // ============================================
 
-  /**
-   * Get comprehensive revenue report with breakdown
-   * Now includes extras revenue tracking
-   */
   async getRevenueReport(filters: RevenueReportFilters): Promise<RevenueReport> {
     const {
       dateFrom,
@@ -120,7 +128,6 @@ class ReportsService {
       status,
     } = filters;
 
-    // Build where clause
     const whereClause: any = {
       date: { gte: dateFrom, lte: dateTo },
       status: { not: 'CANCELLED' },
@@ -130,13 +137,11 @@ class ReportsService {
     if (eventTypeId) whereClause.eventTypeId = eventTypeId;
     if (status) whereClause.status = status;
 
-    // Parallel queries for performance
     const [
       reservations,
       completedReservations,
       previousPeriodRevenue,
     ] = await Promise.all([
-      // All reservations in period — now with extras
       prisma.reservation.findMany({
         where: whereClause,
         select: {
@@ -158,17 +163,12 @@ class ReportsService {
         },
         orderBy: { date: 'asc' },
       }),
-
-      // Completed reservations count
       prisma.reservation.count({
         where: { ...whereClause, status: 'COMPLETED' },
       }),
-
-      // Previous period revenue for growth calculation
       this.getPreviousPeriodRevenue(dateFrom, dateTo, whereClause),
     ]);
 
-    // Calculate summary
     const totalRevenue = reservations.reduce(
       (sum, r) => sum + Number(r.totalPrice || 0),
       0
@@ -178,17 +178,14 @@ class ReportsService {
       ? totalRevenue / totalReservations
       : 0;
 
-    // Calculate extras revenue
     let totalExtrasRevenue = 0;
     const serviceItemRevenueMap = new Map<string, { name: string; revenue: number; count: number }>();
 
     for (const r of reservations) {
       const extras = (r as any).extras || [];
       if (extras.length === 0) continue;
-
       const extrasCalc = calculateExtrasRevenue(extras, r.guests || 0);
       totalExtrasRevenue += extrasCalc.total;
-
       for (const item of extrasCalc.items) {
         const existing = serviceItemRevenueMap.get(item.serviceItemId) || { name: item.name, revenue: 0, count: 0 };
         existing.revenue += item.revenue;
@@ -197,7 +194,6 @@ class ReportsService {
       }
     }
 
-    // Build byServiceItem ranking
     const byServiceItem = Array.from(serviceItemRevenueMap.entries())
       .map(([serviceItemId, data]) => ({
         serviceItemId,
@@ -208,28 +204,20 @@ class ReportsService {
       }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    // Find max revenue day
     const revenueByDay = this.groupRevenueByDay(reservations);
     const maxRevenueDay = revenueByDay.sort((a, b) => b.revenue - a.revenue)[0];
 
-    // Completed vs pending revenue
     const completedRevenue = reservations
       .filter(r => r.status === 'COMPLETED')
       .reduce((sum, r) => sum + Number(r.totalPrice || 0), 0);
     const pendingRevenue = totalRevenue - completedRevenue;
 
-    // Growth % vs previous period
     const growthPercent = previousPeriodRevenue > 0
       ? Math.round(((totalRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100)
       : 0;
 
-    // Breakdown by period
     const breakdown = this.groupRevenueByPeriod(reservations, groupBy);
-
-    // Revenue by hall
     const byHall = this.groupRevenueByHall(reservations);
-
-    // Revenue by event type
     const byEventType = this.groupRevenueByEventType(reservations);
 
     return {
@@ -252,9 +240,6 @@ class ReportsService {
     } as any;
   }
 
-  /**
-   * Get revenue for previous period (for growth calculation)
-   */
   private async getPreviousPeriodRevenue(
     dateFrom: string,
     dateTo: string,
@@ -283,12 +268,8 @@ class ReportsService {
     return Number(result._sum.totalPrice || 0);
   }
 
-  /**
-   * Group revenue by day (for finding max revenue day)
-   */
   private groupRevenueByDay(reservations: any[]): RevenueBreakdownItem[] {
     const grouped = new Map<string, { revenue: number; count: number }>();
-
     reservations.forEach(r => {
       const period = r.date;
       const existing = grouped.get(period) || { revenue: 0, count: 0 };
@@ -297,7 +278,6 @@ class ReportsService {
         count: existing.count + 1,
       });
     });
-
     return Array.from(grouped.entries())
       .map(([period, data]) => ({
         period,
@@ -307,19 +287,14 @@ class ReportsService {
       }));
   }
 
-  /**
-   * Group revenue by period (day/week/month/year)
-   */
   private groupRevenueByPeriod(
     reservations: any[],
     groupBy: GroupByPeriod
   ): RevenueBreakdownItem[] {
     const grouped = new Map<string, { revenue: number; count: number }>();
-
     reservations.forEach(r => {
       const date = new Date(r.date);
       let period: string;
-
       switch (groupBy) {
         case 'day':
           period = r.date;
@@ -335,14 +310,12 @@ class ReportsService {
           period = `${date.getFullYear()}`;
           break;
       }
-
       const existing = grouped.get(period) || { revenue: 0, count: 0 };
       grouped.set(period, {
         revenue: existing.revenue + Number(r.totalPrice || 0),
         count: existing.count + 1,
       });
     });
-
     return Array.from(grouped.entries())
       .map(([period, data]) => ({
         period,
@@ -353,9 +326,6 @@ class ReportsService {
       .sort((a, b) => a.period.localeCompare(b.period));
   }
 
-  /**
-   * Get ISO week number (1-53)
-   */
   private getWeekNumber(date: Date): number {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
@@ -364,12 +334,8 @@ class ReportsService {
     return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
 
-  /**
-   * Group revenue by hall
-   */
   private groupRevenueByHall(reservations: any[]): RevenueByHallItem[] {
     const grouped = new Map<string, { name: string; revenue: number; count: number }>();
-
     reservations.forEach(r => {
       if (!r.hall) return;
       const existing = grouped.get(r.hall.id) || { name: r.hall.name, revenue: 0, count: 0 };
@@ -379,7 +345,6 @@ class ReportsService {
         count: existing.count + 1,
       });
     });
-
     return Array.from(grouped.entries())
       .map(([hallId, data]) => ({
         hallId,
@@ -391,12 +356,8 @@ class ReportsService {
       .sort((a, b) => b.revenue - a.revenue);
   }
 
-  /**
-   * Group revenue by event type
-   */
   private groupRevenueByEventType(reservations: any[]): RevenueByEventTypeItem[] {
     const grouped = new Map<string, { name: string; revenue: number; count: number }>();
-
     reservations.forEach(r => {
       if (!r.eventType) return;
       const existing = grouped.get(r.eventType.id) || {
@@ -410,7 +371,6 @@ class ReportsService {
         count: existing.count + 1,
       });
     });
-
     return Array.from(grouped.entries())
       .map(([eventTypeId, data]) => ({
         eventTypeId,
@@ -484,15 +444,13 @@ class ReportsService {
   }
 
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
-    const dayNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+    const dayNames = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
     const counts = new Map<number, number>();
-
     reservations.forEach(r => {
       const date = new Date(r.date);
       const dayOfWeek = date.getDay();
       counts.set(dayOfWeek, (counts.get(dayOfWeek) || 0) + 1);
     });
-
     return Array.from(counts.entries())
       .map(([dayOfWeekNum, count]) => ({
         dayOfWeek: dayNames[dayOfWeekNum],
@@ -504,14 +462,12 @@ class ReportsService {
 
   private analyzePeakHours(reservations: any[]): PeakHourItem[] {
     const counts = new Map<number, number>();
-
     reservations.forEach(r => {
       if (!r.startTime) return;
       const hour = parseInt(r.startTime.split(':')[0], 10);
       if (isNaN(hour)) return;
       counts.set(hour, (counts.get(hour) || 0) + 1);
     });
-
     return Array.from(counts.entries())
       .map(([hour, count]) => ({ hour, count }))
       .sort((a, b) => b.count - a.count);
@@ -527,7 +483,6 @@ class ReportsService {
       reservations: number;
       totalGuests: number;
     }>();
-
     reservations.forEach(r => {
       if (!r.hall) return;
       const existing = hallData.get(r.hall.id) || {
@@ -541,7 +496,6 @@ class ReportsService {
       existing.totalGuests += r.guests || 0;
       hallData.set(r.hall.id, existing);
     });
-
     return Array.from(hallData.entries())
       .map(([hallId, data]) => ({
         hallId,
@@ -559,25 +513,12 @@ class ReportsService {
   // PREPARATIONS REPORTS (Service Extras) #159
   // ============================================
 
-  /**
-   * Get preparations report — what service extras need to be prepared.
-   * Groups by date → category → service item, with reservation details.
-   * Supports detailed (per-reservation) and summary (aggregated) views.
-   *
-   * FIX: Query uses OR condition for date/startDateTime to catch all reservations.
-   * FIX: Removed Prisma `extras: { some: ... }` pre-filter — now fetches ALL
-   * reservations in date range and filters extras in-memory. This avoids edge
-   * cases where Prisma relation filters silently exclude valid data.
-   * FIX: startTime/endTime fallback from startDateTime/endDateTime.
-   */
   async getPreparationsReport(filters: PreparationsReportFilters): Promise<PreparationsReport> {
     const { dateFrom, dateTo, categoryId, view = 'detailed' } = filters;
 
-    // Build date range for startDateTime comparison
     const dateFromDT = new Date(dateFrom + 'T00:00:00');
     const dateToDT = new Date(dateTo + 'T23:59:59');
 
-    // Build extras where clause for the nested select filter
     const extrasWhere: any = {
       status: { not: 'CANCELLED' },
     };
@@ -585,30 +526,12 @@ class ReportsService {
       extrasWhere.serviceItem = { categoryId };
     }
 
-    // FIX: Query reservations by BOTH date (varchar) AND startDateTime (datetime)
-    // Some reservations may only have one of these fields populated.
-    // Also: removed `extras: { some: extrasWhere }` — fetch all reservations
-    // in range, then filter those with matching extras in-memory.
     const reservations = await prisma.reservation.findMany({
       where: {
         status: { not: 'CANCELLED' },
         OR: [
-          // Match by date varchar field (YYYY-MM-DD)
-          {
-            date: {
-              not: null,
-              gte: dateFrom,
-              lte: dateTo,
-            },
-          },
-          // Match by startDateTime field (DateTime)
-          {
-            startDateTime: {
-              not: null,
-              gte: dateFromDT,
-              lte: dateToDT,
-            },
-          },
+          { date: { not: null, gte: dateFrom, lte: dateTo } },
+          { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
         ],
       },
       select: {
@@ -664,33 +587,13 @@ class ReportsService {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 
-    // FIX: Filter out reservations that have no matching extras (post-query)
     const reservationsWithExtras = reservations.filter(r => r.extras.length > 0);
 
-    // Build client display name helper
-    const getClientName = (client: any): string => {
-      if (client.clientType === 'COMPANY' && client.companyName) {
-        return client.companyName;
-      }
-      return `${client.firstName} ${client.lastName}`;
-    };
-
-    // Helper: get the effective date string for a reservation
-    // Prefers the `date` field, falls back to startDateTime
-    const getReservationDate = (r: any): string => {
-      if (r.date) return r.date;
-      if (r.startDateTime) {
-        return new Date(r.startDateTime).toISOString().split('T')[0];
-      }
-      return '';
-    };
-
-    // Flatten all extras with reservation context
     const allItems: PreparationItem[] = [];
 
     for (const r of reservationsWithExtras) {
       const effectiveDate = getReservationDate(r);
-      if (!effectiveDate) continue; // skip if no date at all
+      if (!effectiveDate) continue;
 
       for (const extra of r.extras) {
         allItems.push({
@@ -720,7 +623,6 @@ class ReportsService {
       }
     }
 
-    // === DETAILED VIEW: group by date → category ===
     const dayMap = new Map<string, Map<string, { category: any; items: PreparationItem[] }>>();
 
     for (const item of allItems) {
@@ -728,7 +630,6 @@ class ReportsService {
       if (!dayMap.has(date)) dayMap.set(date, new Map());
 
       const catMap = dayMap.get(date)!;
-      // Find category from the reservation/extra data
       const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
       const extra = r?.extras.find(e => e.id === item.extraId);
       const cat = extra?.serviceItem.category;
@@ -736,15 +637,11 @@ class ReportsService {
       if (!cat) continue;
 
       if (!catMap.has(cat.id)) {
-        catMap.set(cat.id, {
-          category: cat,
-          items: [],
-        });
+        catMap.set(cat.id, { category: cat, items: [] });
       }
       catMap.get(cat.id)!.items.push(item);
     }
 
-    // Convert to sorted arrays
     const days: PreparationDayGroup[] = Array.from(dayMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, catMap]) => {
@@ -771,7 +668,6 @@ class ReportsService {
         };
       });
 
-    // === SUMMARY VIEW: aggregate per service item per day ===
     let summaryDays: PreparationSummaryDayGroup[] | undefined;
 
     if (view === 'summary') {
@@ -838,12 +734,10 @@ class ReportsService {
         });
     }
 
-    // === KPI SUMMARY ===
     const totalExtras = allItems.length;
     const uniqueReservationIds = new Set(allItems.map(i => i.reservation.id));
     const totalReservationsWithExtras = uniqueReservationIds.size;
 
-    // Nearest event (from today)
     const today = new Date().toISOString().split('T')[0];
     const futureItems = allItems
       .filter(i => i.reservation.date >= today)
@@ -861,14 +755,12 @@ class ReportsService {
         }
       : null;
 
-    // Top category by count
     const categoryCounts = new Map<string, { name: string; icon: string | null; count: number }>();
     for (const item of allItems) {
       const r = reservationsWithExtras.find(res => res.id === item.reservation.id);
       const extra = r?.extras.find(e => e.id === item.extraId);
       const cat = extra?.serviceItem.category;
       if (!cat) continue;
-
       const existing = categoryCounts.get(cat.id) || { name: cat.name, icon: cat.icon, count: 0 };
       existing.count += 1;
       categoryCounts.set(cat.id, existing);
@@ -887,6 +779,268 @@ class ReportsService {
         totalReservationsWithExtras,
         nearestEvent,
         topCategory,
+      },
+      days,
+      ...(summaryDays ? { summaryDays } : {}),
+      filters,
+    };
+  }
+
+  // ============================================
+  // MENU PREPARATIONS REPORTS #160
+  // ============================================
+
+  async getMenuPreparationsReport(filters: MenuPreparationsReportFilters): Promise<MenuPreparationsReport> {
+    const { dateFrom, dateTo, view = 'detailed' } = filters;
+
+    const dateFromDT = new Date(dateFrom + 'T00:00:00');
+    const dateToDT = new Date(dateTo + 'T23:59:59');
+
+    const snapshots = await prisma.reservationMenuSnapshot.findMany({
+      where: {
+        reservation: {
+          status: { not: 'CANCELLED' },
+          OR: [
+            { date: { not: null, gte: dateFrom, lte: dateTo } },
+            { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
+          ],
+        },
+      },
+      select: {
+        id: true,
+        menuData: true,
+        packagePrice: true,
+        totalMenuPrice: true,
+        adultsCount: true,
+        childrenCount: true,
+        toddlersCount: true,
+        reservation: {
+          select: {
+            id: true,
+            date: true,
+            startTime: true,
+            endTime: true,
+            guests: true,
+            adults: true,
+            children: true,
+            toddlers: true,
+            startDateTime: true,
+            endDateTime: true,
+            client: {
+              select: {
+                firstName: true,
+                lastName: true,
+                companyName: true,
+                clientType: true,
+              },
+            },
+            hall: { select: { id: true, name: true } },
+            eventType: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    const allReservations: (MenuPreparationReservation & { _date: string })[] = [];
+
+    for (const snap of snapshots) {
+      const r = snap.reservation;
+      const effectiveDate = getReservationDate(r);
+      if (!effectiveDate) continue;
+
+      const menuData = snap.menuData as any;
+
+      const courses: MenuPreparationCourse[] = [];
+      const dishSelections = menuData?.dishSelections || [];
+
+      for (const catSel of dishSelections) {
+        const dishes: MenuPreparationDish[] = (catSel.dishes || []).map((d: any) => ({
+          name: d.dishName || d.name || 'Nieznane danie',
+          description: d.description || null,
+          portionSize: d.quantity != null ? Number(d.quantity) : 1,
+        }));
+
+        if (dishes.length > 0) {
+          courses.push({
+            courseName: catSel.categoryName || 'Nieznana kategoria',
+            icon: catSel.categoryIcon || null,
+            dishes,
+          });
+        }
+      }
+
+      allReservations.push({
+        _date: effectiveDate,
+        reservationId: r.id,
+        clientName: getClientName(r.client),
+        hallName: r.hall?.name || null,
+        eventTypeName: r.eventType?.name || null,
+        date: effectiveDate,
+        startTime: r.startTime || extractTimeFromDateTime(r.startDateTime),
+        endTime: r.endTime || extractTimeFromDateTime(r.endDateTime),
+        guests: {
+          adults: snap.adultsCount,
+          children: snap.childrenCount,
+          toddlers: snap.toddlersCount,
+          total: snap.adultsCount + snap.childrenCount + snap.toddlersCount,
+        },
+        package: {
+          name: menuData?.packageName || 'Nieznany pakiet',
+          description: menuData?.packageDescription || null,
+        },
+        courses,
+        packagePrice: Number(snap.packagePrice),
+        totalMenuPrice: Number(snap.totalMenuPrice),
+      });
+    }
+
+    allReservations.sort((a, b) => {
+      const dateCompare = a._date.localeCompare(b._date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.startTime || '99:99').localeCompare(b.startTime || '99:99');
+    });
+
+    const dayMap = new Map<string, MenuPreparationReservation[]>();
+
+    for (const item of allReservations) {
+      if (!dayMap.has(item._date)) dayMap.set(item._date, []);
+      const { _date, ...reservationData } = item;
+      dayMap.get(item._date)!.push(reservationData);
+    }
+
+    const days: MenuPreparationDayGroup[] = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, reservations]) => ({
+        date,
+        dateLabel: formatDateLabelPL(date),
+        reservations,
+        totalReservations: reservations.length,
+        totalGuests: reservations.reduce((sum, r) => sum + r.guests.total, 0),
+      }));
+
+    // SUMMARY VIEW: aggregate per course -> per dish per day
+    // totalPortions = (adults + children) * portionSize — toddlers excluded
+    // toddlerPortions removed from response entirely
+    let summaryDays: MenuPreparationSummaryDayGroup[] | undefined;
+
+    if (view === 'summary') {
+      const summaryDayMap = new Map<string, Map<string, Map<string, {
+        dish: MenuPreparationSummaryDish;
+        courseIcon: string | null;
+      }>>>();
+
+      for (const item of allReservations) {
+        const date = item._date;
+        if (!summaryDayMap.has(date)) summaryDayMap.set(date, new Map());
+        const courseMap = summaryDayMap.get(date)!;
+
+        for (const course of item.courses) {
+          if (!courseMap.has(course.courseName)) courseMap.set(course.courseName, new Map());
+          const dishMap = courseMap.get(course.courseName)!;
+
+          for (const dish of course.dishes) {
+            if (!dishMap.has(dish.name)) {
+              dishMap.set(dish.name, {
+                courseIcon: course.icon,
+                dish: {
+                  dishName: dish.name,
+                  totalPortions: 0,
+                  adultPortions: 0,
+                  childrenPortions: 0,
+                  reservations: [],
+                },
+              });
+            }
+
+            const entry = dishMap.get(dish.name)!;
+            const pSize = dish.portionSize ?? 1;
+            // totalPortions = adults + children only (toddlers excluded from portions)
+            entry.dish.totalPortions += (item.guests.adults + item.guests.children) * pSize;
+            entry.dish.adultPortions += item.guests.adults * pSize;
+            entry.dish.childrenPortions += item.guests.children * pSize;
+            entry.dish.reservations.push({
+              id: item.reservationId,
+              clientName: item.clientName,
+              guests: item.guests.total,
+            });
+          }
+        }
+      }
+
+      summaryDays = Array.from(summaryDayMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, courseMap]) => {
+          const courses: MenuPreparationSummaryCourseGroup[] = Array.from(courseMap.entries())
+            .map(([courseName, dishMap]) => {
+              const dishes = Array.from(dishMap.values())
+                .map(entry => entry.dish)
+                .sort((a, b) => b.totalPortions - a.totalPortions);
+
+              const firstEntry = Array.from(dishMap.values())[0];
+
+              return {
+                courseName,
+                icon: firstEntry?.courseIcon || null,
+                dishes,
+              };
+            });
+
+          const dayReservations = allReservations.filter(r => r._date === date);
+          const uniqueIds = new Set(dayReservations.map(r => r.reservationId));
+
+          return {
+            date,
+            dateLabel: formatDateLabelPL(date),
+            courses,
+            totalReservations: uniqueIds.size,
+            totalGuests: dayReservations.reduce((sum, r) => sum + r.guests.total, 0),
+          };
+        });
+    }
+
+    const totalMenus = allReservations.length;
+    const totalGuests = allReservations.reduce((sum, r) => sum + r.guests.total, 0);
+    const totalAdults = allReservations.reduce((sum, r) => sum + r.guests.adults, 0);
+    const totalChildren = allReservations.reduce((sum, r) => sum + r.guests.children, 0);
+    const totalToddlers = allReservations.reduce((sum, r) => sum + r.guests.toddlers, 0);
+
+    const packageCounts = new Map<string, number>();
+    for (const r of allReservations) {
+      const name = r.package.name;
+      packageCounts.set(name, (packageCounts.get(name) || 0) + 1);
+    }
+    const topPackageEntry = Array.from(packageCounts.entries())
+      .sort(([, a], [, b]) => b - a)[0] || null;
+    const topPackage = topPackageEntry
+      ? { name: topPackageEntry[0], count: topPackageEntry[1] }
+      : null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const futureReservations = allReservations
+      .filter(r => r._date >= today)
+      .sort((a, b) => {
+        const dateCompare = a._date.localeCompare(b._date);
+        if (dateCompare !== 0) return dateCompare;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+
+    const nearestEvent = futureReservations.length > 0
+      ? {
+          date: futureReservations[0]._date,
+          startTime: futureReservations[0].startTime,
+          clientName: futureReservations[0].clientName,
+        }
+      : null;
+
+    return {
+      summary: {
+        totalMenus,
+        totalGuests,
+        totalAdults,
+        totalChildren,
+        totalToddlers,
+        topPackage,
+        nearestEvent,
       },
       days,
       ...(summaryDays ? { summaryDays } : {}),

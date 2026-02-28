@@ -46,6 +46,15 @@ router.get('/occupancy', reportsController.getOccupancyReport.bind(reportsContro
  */
 router.get('/preparations', reportsController.getPreparationsReport.bind(reportsController));
 
+/**
+ * GET /api/reports/menu-preparations
+ * Get menu preparations report — what dishes/courses need to be prepared
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query view - 'detailed' (per reservation) or 'summary' (aggregated per dish) [optional, default: detailed]
+ */
+router.get('/menu-preparations', reportsController.getMenuPreparationsReport.bind(reportsController));
+
 // ============================================
 // EXPORT ENDPOINTS
 // ============================================
@@ -97,5 +106,25 @@ router.get('/export/preparations/excel', reportsController.exportPreparationsExc
  * @returns PDF file download
  */
 router.get('/export/preparations/pdf', reportsController.exportPreparationsPDF.bind(reportsController));
+
+/**
+ * GET /api/reports/export/menu-preparations/excel
+ * Export menu preparations report to Excel (XLSX)
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query view - 'detailed' or 'summary' [optional, default: detailed]
+ * @returns XLSX file download
+ */
+router.get('/export/menu-preparations/excel', reportsController.exportMenuPreparationsExcel.bind(reportsController));
+
+/**
+ * GET /api/reports/export/menu-preparations/pdf
+ * Export menu preparations report to PDF (premium design)
+ * @query dateFrom - Start date (YYYY-MM-DD) [required]
+ * @query dateTo - End date (YYYY-MM-DD) [required]
+ * @query view - 'detailed' or 'summary' [optional, default: detailed]
+ * @returns PDF file download
+ */
+router.get('/export/menu-preparations/pdf', reportsController.exportMenuPreparationsPDF.bind(reportsController));
 
 export default router;
