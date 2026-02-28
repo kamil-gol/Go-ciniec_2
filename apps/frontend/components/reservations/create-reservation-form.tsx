@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateReservation } from '@/hooks/use-reservations'
-import { useHalls } from '@/hooks/use-halls'
+import { useHalls, useAvailableCapacity } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { useMenuTemplates } from '@/hooks/use-menu-templates'
@@ -241,8 +241,16 @@ export function CreateReservationForm({
     hallId, startDateTimeISO, endDateTimeISO
   )
 
+  // #165: Available capacity for multi-booking halls
+  const { data: availableCapacity, isLoading: capacityLoading } = useAvailableCapacity(
+    hallId, startDateTimeISO, endDateTimeISO
+  )
+
   const selectedHall = useMemo(() => hallsArray.find((h) => h.id === hallId), [hallsArray, hallId])
   const selectedHallCapacity = selectedHall?.capacity || 0
+
+  // #165: Is this hall in multi-booking mode?
+  const isMultiBookingHall = !!(selectedHall as any)?.allowMultipleBookings
 
   const selectedEventTypeName = useMemo(() => {
     const t = eventTypesArray.find((t) => t.id === selectedEventTypeId)
@@ -829,6 +837,54 @@ export function CreateReservationForm({
               ))}
             </div>
           )}
+        </motion.div>
+      )}
+
+      {/* #165: Capacity banner for multi-booking halls */}
+      {isMultiBookingHall && hallId && startDateTimeISO && endDateTimeISO && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="p-4 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20"
+        >
+          {capacityLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie pojemności...</span>
+            </div>
+          ) : availableCapacity ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm font-medium text-purple-900 dark:text-purple-100">Tryb wielu rezerwacji — pojemność sali</span>
+              </div>
+              <div className="flex justify-between text-xs text-purple-700 dark:text-purple-300">
+                <span>Zajęto: {availableCapacity.occupiedCapacity} osób</span>
+                <span>Wolne: {availableCapacity.availableCapacity} z {availableCapacity.totalCapacity}</span>
+              </div>
+              <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    availableCapacity.availableCapacity === 0
+                      ? 'bg-red-500'
+                      : availableCapacity.occupiedCapacity / availableCapacity.totalCapacity >= 0.9
+                      ? 'bg-amber-500'
+                      : 'bg-purple-500'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.round((availableCapacity.occupiedCapacity / availableCapacity.totalCapacity) * 100))}%` }}
+                />
+              </div>
+              {availableCapacity.overlappingReservations > 0 && (
+                <p className="text-xs text-purple-600 dark:text-purple-400">
+                  {availableCapacity.overlappingReservations}{' '}
+                  {availableCapacity.overlappingReservations === 1 ? 'rezerwacja' : availableCapacity.overlappingReservations < 5 ? 'rezerwacje' : 'rezerwacji'} w tym terminie
+                </p>
+              )}
+              {availableCapacity.availableCapacity === 0 && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                  ⚠ Sala jest całkowicie zajęta — brak wolnych miejsc
+                </p>
+              )}
+            </div>
+          ) : null}
         </motion.div>
       )}
     </div>
