@@ -125,7 +125,11 @@ export class PdfMenuPreparationsBuilder {
       // Dishes
       doc.font(ctx.regularFont).fontSize(7);
       for (const dish of course.dishes) {
-        const dishText = `• ${dish.dishName}`;
+        // Format portion size (1.0 porcji, 0.5 porcji, etc.)
+        const portionPerGuest = dish.portions / reservation.totalGuests;
+        const portionText = portionPerGuest !== 1.0 ? ` (${portionPerGuest.toFixed(2)} porcji)` : '';
+        const dishText = `• ${dish.dishName}${portionText}`;
+        
         const textHeight = doc.heightOfString(dishText, { width: columnWidth });
         doc.text(dishText, x, y, { width: columnWidth });
         y += textHeight + 1;
