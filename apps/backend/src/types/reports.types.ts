@@ -274,13 +274,12 @@ export interface MenuPreparationDayGroup {
   totalGuests: number;
 }
 
-/** Summary: single dish aggregated across all reservations in a day */
+/** Summary: single dish aggregated across all reservations in a day (no toddlerPortions) */
 export interface MenuPreparationSummaryDish {
   dishName: string;
-  totalPortions: number;        // sum of guests across reservations with this dish
+  totalPortions: number;        // (adults + children) * portionSize — toddlers excluded
   adultPortions: number;
   childrenPortions: number;
-  toddlerPortions: number;
   reservations: Array<{
     id: string;
     clientName: string;

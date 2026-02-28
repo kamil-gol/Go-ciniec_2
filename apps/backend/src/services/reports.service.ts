@@ -9,9 +9,9 @@
  * Updated: menu preparations report (#160)
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
- * FIX: added toddlerPortions to summary dish aggregation
  * FIX: added portionSize from menuData.quantity to dish mapping
  * FIX: totalPortions excludes toddlers (adults + children only)
+ * FIX: removed toddlerPortions from summary dish aggregation (not displayed)
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -920,6 +920,7 @@ class ReportsService {
 
     // SUMMARY VIEW: aggregate per course -> per dish per day
     // totalPortions = (adults + children) * portionSize — toddlers excluded
+    // toddlerPortions removed from response entirely
     let summaryDays: MenuPreparationSummaryDayGroup[] | undefined;
 
     if (view === 'summary') {
@@ -946,7 +947,6 @@ class ReportsService {
                   totalPortions: 0,
                   adultPortions: 0,
                   childrenPortions: 0,
-                  toddlerPortions: 0,
                   reservations: [],
                 },
               });
@@ -958,7 +958,6 @@ class ReportsService {
             entry.dish.totalPortions += (item.guests.adults + item.guests.children) * pSize;
             entry.dish.adultPortions += item.guests.adults * pSize;
             entry.dish.childrenPortions += item.guests.children * pSize;
-            entry.dish.toddlerPortions += item.guests.toddlers * pSize;
             entry.dish.reservations.push({
               id: item.reservationId,
               clientName: item.clientName,
