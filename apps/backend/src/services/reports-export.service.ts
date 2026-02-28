@@ -12,6 +12,7 @@
  * Updated: removed Wartość column from preparations exports (ops document, prices in reservation form)
  * Updated: menu preparations Excel + PDF export (#160)
  * FIX: removed Maluchy column from menu preparations summary Excel export
+ * FIX: removed Top pakiet from KPI summary + package info from detailed reservation header
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
@@ -468,6 +469,7 @@ class ReportsExportService {
    * Supports both detailed (per-reservation with courses/dishes) and
    * summary (aggregated per course → per dish with portions) views.
    * Summary: 5 columns — Danie, Porcje, Dorosłe, Dziecięce, Klienci (no Maluchy)
+   * KPI: no Top pakiet; Detailed: no package info per reservation
    */
   async exportMenuPreparationsToExcel(report: MenuPreparationsReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -491,7 +493,7 @@ class ReportsExportService {
     sheet.addRow(['Okres:', `${filters.dateFrom} — ${filters.dateTo}`]);
     sheet.addRow(['Widok:', isDetailed ? 'Szczegółowy' : 'Zbiorczy']);
 
-    // ── KPI Summary ──
+    // ── KPI Summary (no Top pakiet) ──
     sheet.addRow([]);
     const kpiHeader = sheet.addRow(['PODSUMOWANIE', '']);
     kpiHeader.font = { bold: true, size: 12 };
@@ -506,13 +508,12 @@ class ReportsExportService {
     sheet.addRow(['Dorośli', report.summary.totalAdults]);
     sheet.addRow(['Dzieci', report.summary.totalChildren]);
     sheet.addRow(['Maluchy', report.summary.totalToddlers]);
-    sheet.addRow(['Top pakiet', report.summary.topPackage ? `${report.summary.topPackage.name} (${report.summary.topPackage.count})` : 'Brak']);
 
     sheet.addRow([]);
 
     if (isDetailed && report.days) {
-      // ── DETAILED: per-reservation with courses & dishes ──
-      const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '', '']);
+      // ── DETAILED: per-reservation with courses & dishes (no package info) ──
+      const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '']);
       dataHeader.font = { bold: true, size: 12 };
       dataHeader.fill = {
         type: 'pattern',
@@ -525,8 +526,7 @@ class ReportsExportService {
         { key: 'col2', width: 25 },
         { key: 'col3', width: 14 },
         { key: 'col4', width: 20 },
-        { key: 'col5', width: 22 },
-        { key: 'col6', width: 30 },
+        { key: 'col5', width: 30 },
       ];
 
       for (const day of report.days) {
@@ -534,7 +534,7 @@ class ReportsExportService {
         const dayRow = sheet.addRow([
           `📅 ${day.dateLabel}`, '', '',
           `Rezerwacji: ${day.totalReservations}`,
-          `Gości: ${day.totalGuests}`, '',
+          `Gości: ${day.totalGuests}`,
         ]);
         dayRow.font = { bold: true, size: 11 };
         dayRow.fill = {
@@ -544,7 +544,7 @@ class ReportsExportService {
         };
 
         for (const res of day.reservations) {
-          // Reservation header
+          // Reservation header — no package info
           const timeStr = res.startTime
             ? `${res.startTime.substring(0, 5)}${res.endTime ? ' – ' + res.endTime.substring(0, 5) : ''}`
             : '';
@@ -555,7 +555,6 @@ class ReportsExportService {
             res.hallName || '',
             timeStr,
             guestStr,
-            `Pakiet: ${res.package.name}`,
             '',
           ]);
           resRow.font = { bold: true };
@@ -567,20 +566,20 @@ class ReportsExportService {
 
           // Courses & dishes
           for (const course of res.courses) {
-            const courseRow = sheet.addRow([`    🍽️ ${course.courseName}`, '', '', '', '', '']);
+            const courseRow = sheet.addRow([`    🍽️ ${course.courseName}`, '', '', '', '']);
             courseRow.font = { bold: true, color: { argb: 'FFD97706' } };
 
             for (const dish of course.dishes) {
               sheet.addRow([
                 `      • ${dish.name}`,
                 dish.description || '',
-                '', '', '', '',
+                '', '', '',
               ]);
             }
           }
 
           if (res.courses.length === 0) {
-            sheet.addRow(['      (brak dań w menu)', '', '', '', '', '']);
+            sheet.addRow(['      (brak dań w menu)', '', '', '', '']);
           }
         }
       }
