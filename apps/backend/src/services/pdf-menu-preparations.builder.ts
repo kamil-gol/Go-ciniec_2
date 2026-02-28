@@ -32,6 +32,7 @@ const W = RIGHT - LEFT;
 const FOOTER_HEIGHT = 50; // Space reserved for footer (separator + 2 lines of text)
 const FOOTER_START = PAGE_HEIGHT - FOOTER_HEIGHT; // 791.89
 const TOP_MARGIN = 50;
+const DAY_HEADER_HEIGHT = 16 + 17; // Day header height + margin after
 
 const COL_GAP = 10;
 const COL_W = (W - COL_GAP) / 2;
@@ -263,27 +264,40 @@ export function buildMenuPreparationsReportPDF(
   // DETAILED VIEW (2-column layout)
   if (isDetailed && data.days) {
     for (const day of data.days) {
-      ensureSpace(doc, 60);
+      const reservations = day.reservations;
+      if (reservations.length === 0) continue;
 
+      // Calculate height of first pair to check if day header + first pair fit together
+      const firstRes = reservations[0];
+      const secondRes = reservations.length > 1 ? reservations[1] : null;
+      const firstHeight = calculateReservationCardHeight(ctx, firstRes, COL_W);
+      const secondHeight = secondRes ? calculateReservationCardHeight(ctx, secondRes, COL_W) : 0;
+      const firstPairHeight = Math.max(firstHeight, secondHeight);
+      
+      // Ensure day header + first pair fit together on page
+      const dayBlockHeight = DAY_HEADER_HEIGHT + firstPairHeight;
+      ensureSpace(doc, dayBlockHeight);
+
+      // Render day header
       doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
       doc.y += 17;
 
-      const reservations = day.reservations;
+      // Render all reservation pairs
       for (let i = 0; i < reservations.length; i += 2) {
         const leftRes = reservations[i];
         const rightRes = reservations[i + 1];
 
-        // Calculate heights BEFORE checking space
-        const leftHeight = calculateReservationCardHeight(ctx, leftRes, COL_W);
-        const rightHeight = rightRes ? calculateReservationCardHeight(ctx, rightRes, COL_W) : 0;
-        const maxHeight = Math.max(leftHeight, rightHeight);
-
-        // Check if pair fits on current page (including separator if not last pair)
-        const pairHeight = maxHeight + (i + 2 < reservations.length ? 3 : 0);
-        ensureSpace(doc, pairHeight);
+        // For subsequent pairs (not first), check space independently
+        if (i > 0) {
+          const leftHeight = calculateReservationCardHeight(ctx, leftRes, COL_W);
+          const rightHeight = rightRes ? calculateReservationCardHeight(ctx, rightRes, COL_W) : 0;
+          const maxHeight = Math.max(leftHeight, rightHeight);
+          const pairHeight = maxHeight + (i + 2 < reservations.length ? 3 : 0);
+          ensureSpace(doc, pairHeight);
+        }
 
         const startY = doc.y;
 
@@ -310,7 +324,12 @@ export function buildMenuPreparationsReportPDF(
   // SUMMARY VIEW (5 columns: Danie, Porcje, Doros\u0142e, Dzieci\u0119ce, Klienci — no Maluchy)
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
-      ensureSpace(doc, 60);
+      // Calculate minimum height needed for day header + first course section
+      let minDayHeight = DAY_HEADER_HEIGHT;
+      if (day.courses.length > 0) {
+        minDayHeight += 11 + 13 + 11 + 15; // course name + header + min row + buffer
+      }
+      ensureSpace(doc, minDayHeight);
 
       doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
