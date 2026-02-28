@@ -13,6 +13,7 @@
  * Updated: menu preparations Excel + PDF export (#160)
  * FIX: removed Maluchy column from menu preparations summary Excel export
  * FIX: removed Top pakiet from KPI summary + package info from detailed reservation header
+ * FIX: removed dish description from detailed menu export
  *
  * PDF generation delegated to pdf.service.ts (Zadanie 4b — #157)
  * Preparations PDF uses standalone module: pdf-preparations.integration.ts (#159)
@@ -469,7 +470,7 @@ class ReportsExportService {
    * Supports both detailed (per-reservation with courses/dishes) and
    * summary (aggregated per course → per dish with portions) views.
    * Summary: 5 columns — Danie, Porcje, Dorosłe, Dziecięce, Klienci (no Maluchy)
-   * KPI: no Top pakiet; Detailed: no package info per reservation
+   * KPI: no Top pakiet; Detailed: no package info, no dish description
    */
   async exportMenuPreparationsToExcel(report: MenuPreparationsReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
@@ -512,7 +513,7 @@ class ReportsExportService {
     sheet.addRow([]);
 
     if (isDetailed && report.days) {
-      // ── DETAILED: per-reservation with courses & dishes (no package info) ──
+      // ── DETAILED: per-reservation with courses & dishes (no package, no description) ──
       const dataHeader = sheet.addRow(['SZCZEGÓŁY WG DNI', '', '', '', '']);
       dataHeader.font = { bold: true, size: 12 };
       dataHeader.fill = {
@@ -564,7 +565,7 @@ class ReportsExportService {
             fgColor: { argb: 'FFFEF3C7' },
           };
 
-          // Courses & dishes
+          // Courses & dishes (name only, no description)
           for (const course of res.courses) {
             const courseRow = sheet.addRow([`    🍽️ ${course.courseName}`, '', '', '', '']);
             courseRow.font = { bold: true, color: { argb: 'FFD97706' } };
@@ -572,8 +573,7 @@ class ReportsExportService {
             for (const dish of course.dishes) {
               sheet.addRow([
                 `      • ${dish.name}`,
-                dish.description || '',
-                '', '', '',
+                '', '', '', '',
               ]);
             }
           }
