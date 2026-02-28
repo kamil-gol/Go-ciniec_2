@@ -7,6 +7,7 @@
  * Updated: allowWithWholeVenue — Strzecha Tył/Przód/Góra coexist with whole venue
  * Updated: #144 — ARCHIVED status support + auto-archive CRON preparation
  * Updated: Etap 5 — internalNotes field (excluded from PDF)
+ * Updated: fix/pricing-recalculation — centralized recalculateReservationTotal
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -16,6 +17,7 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { recalculateReservationTotal } from '../utils/recalculate-total';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -498,14 +500,14 @@ export class ReservationService {
         await prisma.reservationMenuSnapshot.create({ data: snapshotData });
       }
 
-      // #137: Include venue surcharge in totalPrice when updating menu
-      const existingSurcharge = Number((reservation as any).venueSurcharge) || 0;
-      const totalPriceWithSurcharge = totalMenuPrice + existingSurcharge;
-
+      // fix/pricing-recalculation: Update per-person prices and guest counts,
+      // then use centralized recalculation for totalPrice (includes extras + surcharge - discount)
       await prisma.reservation.update({
         where: { id: reservationId },
-        data: { pricePerAdult, pricePerChild, pricePerToddler, totalPrice: totalPriceWithSurcharge, adults, children, toddlers, guests }
+        data: { pricePerAdult, pricePerChild, pricePerToddler, adults, children, toddlers, guests }
       });
+
+      const recalcResult = await recalculateReservationTotal(reservationId);
 
       await this.createHistoryEntry(
         reservationId, userId, 'MENU_UPDATED', 'menu',
@@ -532,7 +534,7 @@ export class ReservationService {
         },
       });
 
-      return { message: MENU.MENU_UPDATED, totalPrice: totalPriceWithSurcharge };
+      return { message: MENU.MENU_UPDATED, totalPrice: recalcResult.totalPrice };
     }
 
     throw new Error(MENU.INVALID_MENU_DATA);
@@ -785,25 +787,20 @@ export class ReservationService {
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
     const isUsingMenuPackage = hasMenuSnapshot && data.menuPackageId !== null;
     
+    // fix/pricing-recalculation: When using menu package with guest changes,
+    // still recalculate snapshot but DON'T set totalPrice here — defer to recalculateReservationTotal
     if (isUsingMenuPackage && guestsChanged) {
       const recalcResult = await reservationMenuService.recalculateForGuestChange(
         id, newAdults, newChildren, newToddlers
       );
-
+      // NOTE: We no longer set updateData.totalPrice here.
+      // recalculateReservationTotal() at the end will compute the correct total.
       /* istanbul ignore next */
       if (recalcResult) {
-        updateData.totalPrice = recalcResult.totalMenuPrice;
-        console.log(`[Reservation] Auto-recalculated menu for ${id}: ${recalcResult.totalMenuPrice} (was ${Number(existingReservation.totalPrice)})`);
+        console.log(`[Reservation] Auto-recalculated menu snapshot for ${id}: menuPrice=${recalcResult.totalMenuPrice}`);
       }
     } else if (!isUsingMenuPackage) {
-      if (guestsChanged ||
-          data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-        const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
-        const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
-        const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
-        updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, finalPricePerAdult, finalPricePerChild, newToddlers, finalPricePerToddler);
-      }
-
+      // Update per-person prices if provided (will be used by recalculateReservationTotal)
       if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
       if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
       if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
@@ -821,14 +818,12 @@ export class ReservationService {
       updateData.venueSurcharge = surcharge.amount;
       updateData.venueSurchargeLabel = surcharge.label;
 
-      // Adjust totalPrice to reflect surcharge change
-      if (oldSurcharge !== newSurcharge) {
-        const baseTotal = updateData.totalPrice ?? Number(existingReservation.totalPrice);
-        updateData.totalPrice = Math.round((baseTotal - oldSurcharge + newSurcharge) * 100) / 100;
+      // NOTE: We no longer manually adjust totalPrice for surcharge here.
+      // recalculateReservationTotal() at the end handles surcharge in the formula.
 
-        // Audit-friendly log message for different scenarios
+      // Audit-friendly log message for different scenarios
+      if (oldSurcharge !== newSurcharge) {
         if (!oldIsWholeVenue && newIsWholeVenue) {
-          // Scenario A: Normal hall → Whole venue (surcharge applied)
           console.log(`[Reservation] Venue surcharge APPLIED for ${id}: +${newSurcharge} PLN (hall changed to whole venue)`);
           await this.createHistoryEntry(
             id, userId, 'SURCHARGE_APPLIED', 'venueSurcharge',
@@ -836,7 +831,6 @@ export class ReservationService {
             VENUE_SURCHARGE.AUDIT_APPLIED(newSurcharge, finalGuests)
           );
         } else if (oldIsWholeVenue && !newIsWholeVenue) {
-          // Scenario B: Whole venue → Normal hall (surcharge removed)
           console.log(`[Reservation] Venue surcharge REMOVED for ${id}: -${oldSurcharge} PLN (hall changed to normal)`);
           await this.createHistoryEntry(
             id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge',
@@ -844,7 +838,6 @@ export class ReservationService {
             VENUE_SURCHARGE.AUDIT_REMOVED
           );
         } else {
-          // Scenario C: Still whole venue, but surcharge amount changed (guests threshold crossed)
           console.log(`[Reservation] Venue surcharge RECALCULATED for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
           await this.createHistoryEntry(
             id, userId, 'SURCHARGE_RECALC', 'venueSurcharge',
@@ -880,6 +873,17 @@ export class ReservationService {
       data: updateData,
       include: RESERVATION_INCLUDE
     });
+
+    // fix/pricing-recalculation: Centralized total recalculation after ALL fields are persisted.
+    // This ensures totalPrice = basePricing + extrasTotal + venueSurcharge - discountAmount
+    // regardless of which fields were changed (guests, prices, hall, menu, etc.).
+    const pricingChanged = guestsChanged || hallChanged
+      || data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined
+      || data.menuPackageId !== undefined;
+
+    if (pricingChanged) {
+      await recalculateReservationTotal(id);
+    }
 
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
