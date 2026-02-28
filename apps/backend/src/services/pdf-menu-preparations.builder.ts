@@ -7,6 +7,7 @@
  * - Compact spacing (no wasted vertical space)
  * - Clean table layouts with proper alignment
  * - Professional footer with page numbers
+ * FIX: Added Maluchy (toddlers) column to summary table
  */
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
@@ -212,7 +213,7 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // ── SUMMARY VIEW (compact table) ──
+  // ── SUMMARY VIEW (compact table with Maluchy column) ──
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
       ensureSpace(doc, 60);
@@ -238,8 +239,9 @@ export function buildMenuPreparationsReportPDF(
         doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 5);
         doc.y += 18;
 
-        // Table: Danie | Porcje | Dorosłe | Dziecięce | Klienci
-        const colPct = [0.28, 0.10, 0.10, 0.10, 0.42];
+        // Table: Danie | Porcje | Dorosłe | Dziecięce | Maluchy | Klienci
+        // Adjusted column widths to fit Maluchy column
+        const colPct = [0.24, 0.09, 0.09, 0.09, 0.09, 0.40];
         const colW = colPct.map(p => W * p);
         const colX: number[] = [LEFT];
         for (let i = 1; i < colW.length; i++) colX.push(colX[i - 1] + colW[i - 1]);
@@ -247,35 +249,36 @@ export function buildMenuPreparationsReportPDF(
         // Table header
         const headerY = doc.y;
         doc.rect(LEFT, headerY, W, 14).fill(COLORS.primaryLight);
-        const headers = ['Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Klienci'];
+        const headers = ['Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Maluchy', 'Klienci'];
         doc.font(ctx.boldFont).fontSize(6).fillColor('#ffffff');
         headers.forEach((h, i) => {
-          const align = (i >= 1 && i <= 3) ? 'right' as const : 'left' as const;
+          const align = (i >= 1 && i <= 4) ? 'right' as const : 'left' as const;
           doc.text(h, colX[i] + 4, headerY + 4, { width: colW[i] - 8, align });
         });
         doc.y = headerY + 16;
 
-        // Dish rows (tight vertical spacing)
+        // Dish rows (tight vertical spacing, prevent text wrapping by reducing line height)
         for (const dish of course.dishes) {
-          ensureSpace(doc, 12);
+          ensureSpace(doc, 10);
           const rowY = doc.y;
 
           // All text on same baseline (rowY + 2)
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(dish.dishName, colX[0] + 4, rowY + 2, { width: colW[0] - 8 });
+          doc.text(dish.dishName, colX[0] + 3, rowY + 2, { width: colW[0] - 6, lineBreak: false, ellipsis: true });
 
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(`${dish.totalPortions}`, colX[1] + 4, rowY + 2, { width: colW[1] - 8, align: 'right' });
+          doc.text(`${dish.totalPortions}`, colX[1] + 3, rowY + 2, { width: colW[1] - 6, align: 'right' });
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-          doc.text(`${dish.adultPortions}`, colX[2] + 4, rowY + 2, { width: colW[2] - 8, align: 'right' });
-          doc.text(`${dish.childrenPortions}`, colX[3] + 4, rowY + 2, { width: colW[3] - 8, align: 'right' });
+          doc.text(`${dish.adultPortions}`, colX[2] + 3, rowY + 2, { width: colW[2] - 6, align: 'right' });
+          doc.text(`${dish.childrenPortions}`, colX[3] + 3, rowY + 2, { width: colW[3] - 6, align: 'right' });
+          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, rowY + 2, { width: colW[4] - 6, align: 'right' });
 
           const clientStr = dish.reservations.map(r => `${r.clientName} (${r.guests})`).join(', ');
           doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
-          doc.text(clientStr, colX[4] + 4, rowY + 2, { width: colW[4] - 8 });
+          doc.text(clientStr, colX[5] + 3, rowY + 2, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
 
-          doc.y = rowY + 11;
+          doc.y = rowY + 10;
         }
 
         doc.y += 3;
