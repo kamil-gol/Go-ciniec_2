@@ -8,6 +8,7 @@
  * - Prominent reservation details in detailed view
  * - Clean table layouts with proper alignment
  * - Professional footer with page numbers
+ * - Natural pagination (PDFKit handles page breaks)
  */
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
@@ -35,16 +36,12 @@ const COLORS = {
 };
 
 const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;  // A4 height
 const LEFT = 40;
 const RIGHT = PAGE_WIDTH - 40;
 const W = RIGHT - LEFT;
-
-function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
-  if (doc.y + needed > 770) {  // increased threshold to prevent empty pages
-    doc.addPage();
-    doc.y = 50;
-  }
-}
+const FOOTER_AREA = 50;  // reserved space for footer
+const MAX_CONTENT_Y = PAGE_HEIGHT - FOOTER_AREA;
 
 function formatTime(time: string | null | undefined): string {
   if (!time) return '';
@@ -138,18 +135,14 @@ export function buildMenuPreparationsReportPDF(
   // ── DETAILED VIEW (enhanced design) ──
   if (isDetailed && data.days) {
     for (const day of data.days) {
-      ensureSpace(doc, 50);
-
       // Day header (clean, no redundant counts)
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
-      doc.y += 22;  // reduced gap
+      doc.y += 22;
 
       for (const res of day.reservations) {
-        ensureSpace(doc, 40);
-
         // ── PREMIUM RESERVATION HEADER ──
         // Merged: Client Name | Hall | Time | Guests (all in one prominent line)
         const timePart = res.startTime
@@ -171,13 +164,11 @@ export function buildMenuPreparationsReportPDF(
 
         // Courses
         for (const course of res.courses) {
-          ensureSpace(doc, 20);
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
           doc.text(course.courseName.toUpperCase(), LEFT + 14, doc.y);
           doc.y += 9;
 
           for (const dish of course.dishes) {
-            ensureSpace(doc, 10);
             doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
             const dishText = dish.description
               ? `• ${dish.name}  — ${dish.description}`
@@ -208,18 +199,14 @@ export function buildMenuPreparationsReportPDF(
   // ── SUMMARY VIEW (compact table) ──
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
-      ensureSpace(doc, 50);
-
       // Day header (clean)
       doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
-      doc.y += 22;  // reduced gap
+      doc.y += 22;
 
       for (const course of day.courses) {
-        ensureSpace(doc, 40);
-
         // Course header
         doc.rect(LEFT, doc.y, W, 14).fill(COLORS.bgLight);
         doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
@@ -245,7 +232,6 @@ export function buildMenuPreparationsReportPDF(
 
         // Dish rows (tight)
         for (const dish of course.dishes) {
-          ensureSpace(doc, 9);
           const rowY = doc.y;
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
