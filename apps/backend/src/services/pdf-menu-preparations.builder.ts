@@ -259,15 +259,22 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // ── FOOTER ──
+  // ── FOOTER (fixed position, prevents page breaks) ──
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
+    
+    // Save current cursor position to prevent text engine from advancing it
+    const savedY = doc.y;
+    
     const footerY = 810;
     const sepFooterY = footerY - 10;
+    
+    // Draw separator line (doesn't affect doc.y)
     doc.strokeColor(COLORS.border).lineWidth(0.5)
        .moveTo(LEFT, sepFooterY).lineTo(RIGHT, sepFooterY).stroke();
 
+    // Footer text line 1
     doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
     const footerParts: string[] = [
       `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
@@ -279,14 +286,21 @@ export function buildMenuPreparationsReportPDF(
       footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
     }
     doc.text(footerParts.join('  |  '), LEFT, footerY, {
-      align: 'center', width: W,
+      align: 'center', width: W, lineBreak: false,
     });
+    
+    // Restore cursor to prevent page break
+    doc.y = savedY;
 
+    // Footer text line 2
     doc.fontSize(6).fillColor(COLORS.textLight);
     doc.text(
       `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`,
       LEFT, footerY + 12,
-      { align: 'center', width: W },
+      { align: 'center', width: W, lineBreak: false },
     );
+    
+    // Restore cursor again
+    doc.y = savedY;
   }
 }
