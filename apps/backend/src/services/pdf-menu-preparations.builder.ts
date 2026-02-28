@@ -71,9 +71,9 @@ function measureTextWidth(
 
 /**
  * Render a single reservation card at explicit (x, y) position.
- * 2-line header:
- *   Line 1 (bold):   "13:00 \u2013 04:00  |  Marek Kowalski"
- *   Line 2 (muted):  "99 os. (90D+5Dz+4M)  |  Sala Z\u0142ota"
+ * 2-line header (both lines same bold 8pt dark style):
+ *   Line 1: "13:00 \u2013 04:00  |  Marek Kowalski"
+ *   Line 2: "99 os. (90D+5Dz+4M)  |  Sala Z\u0142ota"
  * Returns the final Y position after rendering.
  */
 function renderReservationCard(
@@ -101,10 +101,9 @@ function renderReservationCard(
   const line2Parts = [guestPart, res.hallName].filter(Boolean);
   const headerLine2 = line2Parts.join('  |  ');
 
-  // Measure both lines to compute total header height
+  // Measure both lines (same font for both)
   doc.font(ctx.boldFont).fontSize(8);
   const line1Height = doc.heightOfString(headerLine1, { width: textWidth });
-  doc.font(ctx.regularFont).fontSize(7);
   const line2Height = doc.heightOfString(headerLine2, { width: textWidth });
   const headerHeight = line1Height + line2Height + 7;
 
@@ -115,8 +114,8 @@ function renderReservationCard(
   doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
   doc.text(headerLine1, x + innerPad, y + 3, { width: textWidth });
 
-  // Render line 2 (regular, muted) immediately after
-  doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+  // Render line 2 (same style as line 1)
+  doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
   doc.text(headerLine2, x + innerPad, doc.y, { width: textWidth });
 
   y += headerHeight + 2;
