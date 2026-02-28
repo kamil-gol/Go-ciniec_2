@@ -231,6 +231,7 @@ export interface MenuPreparationsReportFilters {
 export interface MenuPreparationDish {
   name: string;
   description: string | null;
+  portionSize: number; // portion per guest (e.g. 1.0, 0.5, 0.25) — from menuData quantity
 }
 
 /** Single course with its selected dishes */
@@ -279,7 +280,7 @@ export interface MenuPreparationSummaryDish {
   totalPortions: number;        // sum of guests across reservations with this dish
   adultPortions: number;
   childrenPortions: number;
-  toddlerPortions: number;      // FIX: added toddler portions
+  toddlerPortions: number;
   reservations: Array<{
     id: string;
     clientName: string;
