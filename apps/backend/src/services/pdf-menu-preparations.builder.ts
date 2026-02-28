@@ -69,13 +69,6 @@ function measureTextWidth(
   return doc.widthOfString(text);
 }
 
-/**
- * Render a single reservation card at explicit (x, y) position.
- * 2-line header (both lines same bold 8pt dark style):
- *   Line 1: "13:00 \u2013 04:00  |  Marek Kowalski"
- *   Line 2: "99 os. (90D+5Dz+4M)  |  Sala Z\u0142ota"
- * Returns the final Y position after rendering.
- */
 function renderReservationCard(
   ctx: PDFContext,
   res: any,
@@ -87,40 +80,32 @@ function renderReservationCard(
   const innerPad = 6;
   const textWidth = colWidth - innerPad * 2;
 
-  // Build header parts
   const timePart = res.startTime
     ? `${formatTime(res.startTime)}${res.endTime ? ' \u2013 ' + formatTime(res.endTime) : ''}`
     : '';
   const guestPart = `${res.guests.total} os. (${res.guests.adults}D+${res.guests.children}Dz+${res.guests.toddlers}M)`;
 
-  // Line 1: time | client name
   const line1Parts = [timePart, res.clientName].filter(Boolean);
   const headerLine1 = line1Parts.join('  |  ');
 
-  // Line 2: guests | hall name
   const line2Parts = [guestPart, res.hallName].filter(Boolean);
   const headerLine2 = line2Parts.join('  |  ');
 
-  // Measure both lines (same font for both)
   doc.font(ctx.boldFont).fontSize(8);
   const line1Height = doc.heightOfString(headerLine1, { width: textWidth });
   const line2Height = doc.heightOfString(headerLine2, { width: textWidth });
   const headerHeight = line1Height + line2Height + 7;
 
-  // Draw background covering both lines
   doc.rect(x, y, colWidth, headerHeight).fill(COLORS.reservationBg);
 
-  // Render line 1 (bold, dark)
   doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
   doc.text(headerLine1, x + innerPad, y + 3, { width: textWidth });
 
-  // Render line 2 (same style as line 1)
   doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
   doc.text(headerLine2, x + innerPad, doc.y, { width: textWidth });
 
   y += headerHeight + 2;
 
-  // Courses
   for (const course of res.courses) {
     doc.rect(x + innerPad, y, 2, 9).fill(COLORS.accent);
     doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
@@ -175,7 +160,6 @@ export function buildMenuPreparationsReportPDF(
     doc.text(contactParts.join('  |  '), LEFT, 38, { width: W - 150 });
   }
 
-  // Badge
   const badgeWidth = 120;
   const badgeHeight = 22;
   const badgeX = PAGE_WIDTH - badgeWidth - LEFT;
@@ -184,7 +168,6 @@ export function buildMenuPreparationsReportPDF(
   doc.fillColor('#ffffff').fontSize(9).font(ctx.boldFont);
   doc.text('MENU', badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
 
-  // Title
   doc.y = 80;
   doc.fillColor(COLORS.textDark).fontSize(16).font(ctx.boldFont);
   doc.text('RAPORT MENU \u2014 PRZYGOTOWANIA', LEFT, doc.y, { align: 'center', width: W });
@@ -265,7 +248,7 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // SUMMARY VIEW
+  // SUMMARY VIEW (5 columns: Danie, Porcje, Doros\u0142e, Dzieci\u0119ce, Klienci — no Maluchy)
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
       ensureSpace(doc, 60);
@@ -284,17 +267,17 @@ export function buildMenuPreparationsReportPDF(
         doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 3);
         doc.y += 13;
 
-        const colPct = [0.24, 0.09, 0.09, 0.09, 0.09, 0.40];
+        const colPct = [0.26, 0.10, 0.10, 0.10, 0.44];
         const colW = colPct.map(p => W * p);
         const colX: number[] = [LEFT];
         for (let ci = 1; ci < colW.length; ci++) colX.push(colX[ci - 1] + colW[ci - 1]);
 
         const headerY = doc.y;
         doc.rect(LEFT, headerY, W, 11).fill(COLORS.primaryLight);
-        const headers = ['Danie', 'Porcje', 'Doros\u0142e', 'Dzieci\u0119ce', 'Maluchy', 'Klienci'];
+        const headers = ['Danie', 'Porcje', 'Doros\u0142e', 'Dzieci\u0119ce', 'Klienci'];
         doc.font(ctx.boldFont).fontSize(6).fillColor('#ffffff');
         headers.forEach((h, hi) => {
-          const align = (hi >= 1 && hi <= 4) ? 'right' as const : 'left' as const;
+          const align = (hi >= 1 && hi <= 3) ? 'right' as const : 'left' as const;
           doc.text(h, colX[hi] + 3, headerY + 3, { width: colW[hi] - 6, align });
         });
         doc.y = headerY + 11;
@@ -319,11 +302,10 @@ export function buildMenuPreparationsReportPDF(
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
           doc.text(`${dish.adultPortions}`, colX[2] + 3, numY, { width: colW[2] - 6, align: 'right' });
           doc.text(`${dish.childrenPortions}`, colX[3] + 3, numY, { width: colW[3] - 6, align: 'right' });
-          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, numY, { width: colW[4] - 6, align: 'right' });
 
           const clientStr = dish.reservations.map((r: any) => `${r.clientName} (${r.guests})`).join(', ');
           doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
-          doc.text(clientStr, colX[5] + 3, numY, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
+          doc.text(clientStr, colX[4] + 3, numY, { width: colW[4] - 6, lineBreak: false, ellipsis: true });
 
           doc.y = rowY + rowHeight;
         }

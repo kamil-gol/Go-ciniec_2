@@ -11,6 +11,7 @@
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
  * FIX: added toddlerPortions to summary dish aggregation
  * FIX: added portionSize from menuData.quantity to dish mapping
+ * FIX: totalPortions excludes toddlers (adults + children only)
  * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
@@ -45,7 +46,6 @@ import type {
   MenuPreparationSummaryDayGroup,
 } from '@/types/reports.types';
 
-// Polish day/month names for date labels
 const DAY_NAMES_PL = ['Niedziela', 'Poniedzia\u0142ek', 'Wtorek', '\u015aroda', 'Czwartek', 'Pi\u0105tek', 'Sobota'];
 const MONTH_NAMES_PL = [
   'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
@@ -623,7 +623,6 @@ class ReportsService {
       }
     }
 
-    // DETAILED VIEW: group by date -> category
     const dayMap = new Map<string, Map<string, { category: any; items: PreparationItem[] }>>();
 
     for (const item of allItems) {
@@ -669,7 +668,6 @@ class ReportsService {
         };
       });
 
-    // SUMMARY VIEW
     let summaryDays: PreparationSummaryDayGroup[] | undefined;
 
     if (view === 'summary') {
@@ -736,7 +734,6 @@ class ReportsService {
         });
     }
 
-    // KPI SUMMARY
     const totalExtras = allItems.length;
     const uniqueReservationIds = new Set(allItems.map(i => i.reservation.id));
     const totalReservationsWithExtras = uniqueReservationIds.size;
@@ -903,7 +900,6 @@ class ReportsService {
       return (a.startTime || '99:99').localeCompare(b.startTime || '99:99');
     });
 
-    // DETAILED VIEW: group by date
     const dayMap = new Map<string, MenuPreparationReservation[]>();
 
     for (const item of allReservations) {
@@ -923,6 +919,7 @@ class ReportsService {
       }));
 
     // SUMMARY VIEW: aggregate per course -> per dish per day
+    // totalPortions = (adults + children) * portionSize — toddlers excluded
     let summaryDays: MenuPreparationSummaryDayGroup[] | undefined;
 
     if (view === 'summary') {
@@ -957,7 +954,8 @@ class ReportsService {
 
             const entry = dishMap.get(dish.name)!;
             const pSize = dish.portionSize ?? 1;
-            entry.dish.totalPortions += item.guests.total * pSize;
+            // totalPortions = adults + children only (toddlers excluded from portions)
+            entry.dish.totalPortions += (item.guests.adults + item.guests.children) * pSize;
             entry.dish.adultPortions += item.guests.adults * pSize;
             entry.dish.childrenPortions += item.guests.children * pSize;
             entry.dish.toddlerPortions += item.guests.toddlers * pSize;
@@ -1001,7 +999,6 @@ class ReportsService {
         });
     }
 
-    // KPI SUMMARY
     const totalMenus = allReservations.length;
     const totalGuests = allReservations.reduce((sum, r) => sum + r.guests.total, 0);
     const totalAdults = allReservations.reduce((sum, r) => sum + r.guests.adults, 0);
