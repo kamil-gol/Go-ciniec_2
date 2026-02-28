@@ -1,338 +1,353 @@
-import PDFDocument from 'pdfkit';
-import { MenuReport, ReservationWithMenu } from '../types/menu-report.types';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+// apps/backend/src/services/pdf-menu-preparations.builder.ts
 
-interface PdfContext {
+import type { MenuPreparationsReport } from '@/types/reports.types';
+
+export interface PDFContext {
+  doc: PDFKit.PDFDocument;
   regularFont: string;
   boldFont: string;
-  italicFont: string;
+  restaurantName: string;
+  restaurantPhone: string;
+  restaurantEmail: string;
 }
 
-const PAGE_MARGIN = 40;
-const COLUMN_WIDTH = 250;
-const COLUMN_GAP = 15;
-const LEFT_COLUMN_X = PAGE_MARGIN;
-const RIGHT_COLUMN_X = LEFT_COLUMN_X + COLUMN_WIDTH + COLUMN_GAP;
+const COLORS = {
+  primary: '#1a2332',
+  primaryLight: '#2c3e50',
+  accent: '#8e44ad',
+  textDark: '#1a2332',
+  textMuted: '#7f8c8d',
+  textLight: '#bdc3c7',
+  border: '#dce1e8',
+  bgLight: '#f4f6f9',
+  bgWhite: '#ffffff',
+  reservationBg: '#EDE9FE',
+};
 
-export class PdfMenuPreparationsBuilder {
-  private doc: typeof PDFDocument;
-  private ctx: PdfContext;
+const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;
+const LEFT = 40;
+const RIGHT = PAGE_WIDTH - 40;
+const W = RIGHT - LEFT;
+const FOOTER_Y = 800;
+const TOP_MARGIN = 50;
 
-  constructor() {
-    this.doc = new PDFDocument({ 
-      size: 'A4', 
-      margin: PAGE_MARGIN,
-      bufferPages: true 
-    });
-    
-    this.ctx = {
-      regularFont: 'Helvetica',
-      boldFont: 'Helvetica-Bold',
-      italicFont: 'Helvetica-Oblique',
-    };
+const COL_GAP = 10;
+const COL_W = (W - COL_GAP) / 2;
+const COL_LEFT_X = LEFT;
+const COL_RIGHT_X = LEFT + COL_W + COL_GAP;
+
+function formatTime(time: string | null | undefined): string {
+  if (!time) return '';
+  return time.substring(0, 5);
+}
+
+function formatDateTime(date: Date): string {
+  return new Intl.DateTimeFormat('pl-PL', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number): void {
+  if (doc.y + minSpace > FOOTER_Y) {
+    doc.addPage();
+    doc.y = TOP_MARGIN;
   }
+}
 
-  private renderHeader(report: MenuReport): void {
-    const doc = this.doc;
-    const ctx = this.ctx;
+function measureTextWidth(
+  doc: PDFKit.PDFDocument,
+  text: string,
+  fontSize: number,
+  font: string
+): number {
+  doc.font(font).fontSize(fontSize);
+  return doc.widthOfString(text);
+}
 
-    // Title
-    doc.font(ctx.boldFont).fontSize(18);
-    doc.text('RAPORT MENU — PRZYGOTOWANIA', PAGE_MARGIN, PAGE_MARGIN, {
-      align: 'center',
-      width: doc.page.width - 2 * PAGE_MARGIN,
-    });
+function renderReservationCard(
+  ctx: PDFContext,
+  res: any,
+  x: number,
+  y: number,
+  colWidth: number
+): number {
+  const { doc } = ctx;
+  const innerPad = 6;
+  const textWidth = colWidth - innerPad * 2;
 
-    doc.moveDown(0.5);
+  const timePart = res.startTime
+    ? `${formatTime(res.startTime)}${res.endTime ? ' \u2013 ' + formatTime(res.endTime) : ''}`
+    : '';
+  const guestPart = `${res.guests.total} os. (${res.guests.adults}D+${res.guests.children}Dz+${res.guests.toddlers}M)`;
 
-    // Period and details
-    doc.font(ctx.regularFont).fontSize(10);
-    const periodStr = `Okres: ${format(new Date(report.startDate), 'yyyy-MM-dd', { locale: pl })} - ${format(new Date(report.endDate), 'yyyy-MM-dd', { locale: pl })}`;
-    const detailsStr = `Widok szczegółowy | Wygenerowano: ${format(new Date(), 'dd.MM.yyyy', { locale: pl })}`;
-    
-    doc.text(periodStr + '  |  ' + detailsStr, {
-      align: 'center',
-    });
+  const line1Parts = [timePart, res.clientName].filter(Boolean);
+  const headerLine1 = line1Parts.join('  |  ');
 
-    doc.moveDown(1);
+  const line2Parts = [guestPart, res.hallName].filter(Boolean);
+  const headerLine2 = line2Parts.join('  |  ');
 
-    // Summary table
-    const tableY = doc.y;
-    const colWidths = [130, 130, 130, 130];
-    const headers = ['Rezerwacje z menu', 'Łącznie gości', 'Top pakiet', 'Goście (D / Dz / M)'];
-    
-    doc.font(ctx.boldFont).fontSize(9);
-    let xPos = PAGE_MARGIN;
-    headers.forEach((header, i) => {
-      doc.text(header, xPos, tableY, { width: colWidths[i], align: 'center' });
-      xPos += colWidths[i];
-    });
+  doc.font(ctx.boldFont).fontSize(8);
+  const line1Height = doc.heightOfString(headerLine1, { width: textWidth });
+  const line2Height = doc.heightOfString(headerLine2, { width: textWidth });
+  const headerHeight = line1Height + line2Height + 7;
 
-    doc.moveDown(0.5);
-    const valuesY = doc.y;
-    
-    doc.font(ctx.regularFont).fontSize(11);
-    xPos = PAGE_MARGIN;
-    const values = [
-      report.totalReservations.toString(),
-      report.totalGuests.toString(),
-      `${report.topPackage} (${report.topPackageCount})`,
-      `${report.adultsCount} / ${report.childrenCount} / ${report.infantsCount}`,
-    ];
-    
-    values.forEach((value, i) => {
-      doc.text(value, xPos, valuesY, { width: colWidths[i], align: 'center' });
-      xPos += colWidths[i];
-    });
+  doc.rect(x, y, colWidth, headerHeight).fill(COLORS.reservationBg);
 
-    doc.moveDown(1.5);
-  }
+  doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
+  doc.text(headerLine1, x + innerPad, y + 3, { width: textWidth });
 
-  private renderReservationCard(
-    reservation: ReservationWithMenu,
-    x: number,
-    y: number,
-    columnWidth: number
-  ): number {
-    const doc = this.doc;
-    const ctx = this.ctx;
-    const startY = y;
+  doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
+  doc.text(headerLine2, x + innerPad, doc.y, { width: textWidth });
 
-    // Reservation header
-    doc.font(ctx.boldFont).fontSize(11);
-    const headerText = `${reservation.clientName} | ${reservation.hallName} | ${reservation.timeRange} | ${reservation.totalGuests} os. (${reservation.adultCount}D + ${reservation.childCount}Dz + ${reservation.infantCount}M)`;
-    
-    doc.text(headerText, x, y, {
-      width: columnWidth,
-      lineGap: 1,
-    });
+  y += headerHeight + 2;
 
-    y = doc.y + 7;
+  for (const course of res.courses) {
+    doc.rect(x + innerPad, y, 2, 9).fill(COLORS.accent);
+    doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
+    doc.text(course.courseName.toUpperCase(), x + innerPad + 6, y + 1, { width: textWidth - 6 });
+    y = doc.y + 2;
 
-    // Package info
-    doc.font(ctx.italicFont).fontSize(8);
-    doc.text(`Pakiet: ${reservation.packageName}`, x, y, { width: columnWidth });
-    y = doc.y + 7;
+    for (const dish of course.dishes) {
+      doc.font(ctx.regularFont).fontSize(7.5).fillColor(COLORS.textDark);
 
-    // Render courses
-    for (const course of reservation.courses) {
-      // Course header (no bar, just bold text)
-      doc.font(ctx.boldFont).fontSize(8);
-      doc.text(course.courseName, x, y, { width: columnWidth });
-      y = doc.y + 1;
-
-      // Dishes
-      doc.font(ctx.regularFont).fontSize(7);
-      for (const dish of course.dishes) {
-        // Format portion size (1.0 porcji, 0.5 porcji, etc.)
-        const portionPerGuest = dish.portions / reservation.totalGuests;
-        const portionText = portionPerGuest !== 1.0 ? ` (${portionPerGuest.toFixed(2)} porcji)` : '';
-        const dishText = `• ${dish.dishName}${portionText}`;
-        
-        const textHeight = doc.heightOfString(dishText, { width: columnWidth });
-        doc.text(dishText, x, y, { width: columnWidth });
-        y += textHeight + 1;
+      let dishText = `\u2022 ${dish.name}`;
+      if (dish.portionSize != null && dish.portionSize !== 1) {
+        dishText += ` (\u00d7${dish.portionSize})`;
       }
 
-      y += 1; // Space between courses
+      const textHeight = doc.heightOfString(dishText, { width: textWidth - 10 });
+      doc.text(dishText, x + innerPad + 10, y, { width: textWidth - 10 });
+      y += textHeight + 1;
     }
-
-    y += 3; // Space after reservation
-
-    return y - startY; // Return height used
+    y += 2;
   }
 
-  public renderDetailedView(report: MenuReport): void {
-    const doc = this.doc;
-    
-    this.renderHeader(report);
+  if (res.courses.length === 0) {
+    doc.font(ctx.regularFont).fontSize(6.5).fillColor(COLORS.textMuted);
+    doc.text('Brak da\u0144 w menu', x + innerPad + 10, y);
+    y += 10;
+  }
 
-    // Group reservations by date
-    const byDate: Map<string, ReservationWithMenu[]> = new Map();
-    for (const res of report.reservations) {
-      const dateKey = format(new Date(res.eventDate), 'yyyy-MM-dd', { locale: pl });
-      if (!byDate.has(dateKey)) {
-        byDate.set(dateKey, []);
-      }
-      byDate.get(dateKey)!.push(res);
-    }
+  return y;
+}
 
-    // Render each day
-    for (const [dateKey, reservations] of byDate.entries()) {
-      // Day header
-      doc.font(this.ctx.boldFont).fontSize(16);
-      const dayStr = format(new Date(dateKey), 'EEEE, d MMMM yyyy', { locale: pl });
-      doc.text(dayStr.charAt(0).toUpperCase() + dayStr.slice(1), PAGE_MARGIN, doc.y, {
-        width: doc.page.width - 2 * PAGE_MARGIN,
-        align: 'left',
-      });
-      doc.moveDown(1);
+export function buildMenuPreparationsReportPDF(
+  ctx: PDFContext,
+  data: MenuPreparationsReport
+): void {
+  const { doc } = ctx;
+  const { filters, summary } = data;
+  const isDetailed = filters.view === 'detailed';
 
-      // Split reservations into pairs for 2-column layout
+  // HEADER BANNER
+  const bannerHeight = 65;
+  doc.rect(0, 0, PAGE_WIDTH, bannerHeight).fill(COLORS.primary);
+  doc.rect(0, bannerHeight - 3, PAGE_WIDTH, 3).fill(COLORS.accent);
+
+  doc.fillColor('#ffffff').fontSize(18).font(ctx.boldFont);
+  doc.text(ctx.restaurantName, LEFT, 14, { width: W - 150 });
+
+  doc.fontSize(7).font(ctx.regularFont).fillColor(COLORS.textLight);
+  const contactParts: string[] = [];
+  if (ctx.restaurantPhone) contactParts.push(ctx.restaurantPhone);
+  if (ctx.restaurantEmail) contactParts.push(ctx.restaurantEmail);
+  if (contactParts.length > 0) {
+    doc.text(contactParts.join('  |  '), LEFT, 38, { width: W - 150 });
+  }
+
+  const badgeWidth = 120;
+  const badgeHeight = 22;
+  const badgeX = PAGE_WIDTH - badgeWidth - LEFT;
+  const badgeY = 20;
+  doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(COLORS.accent);
+  doc.fillColor('#ffffff').fontSize(9).font(ctx.boldFont);
+  doc.text('MENU', badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
+
+  doc.y = 80;
+  doc.fillColor(COLORS.textDark).fontSize(16).font(ctx.boldFont);
+  doc.text('RAPORT MENU \u2014 PRZYGOTOWANIA', LEFT, doc.y, { align: 'center', width: W });
+
+  doc.moveDown(0.2);
+  doc.fontSize(8).font(ctx.regularFont).fillColor(COLORS.textMuted);
+  const viewLabel = isDetailed ? 'Widok szczeg\u00f3\u0142owy' : 'Widok zbiorczy';
+  const metaParts = [
+    `Okres: ${filters.dateFrom} - ${filters.dateTo}`,
+    viewLabel,
+    `Wygenerowano: ${formatDateTime(new Date())}`,
+  ];
+  doc.text(metaParts.join('  |  '), LEFT, doc.y, { align: 'center', width: W });
+
+  doc.moveDown(0.6);
+  const sepY = doc.y;
+  doc.strokeColor(COLORS.border).lineWidth(0.5)
+     .moveTo(LEFT, sepY).lineTo(RIGHT, sepY).stroke();
+  doc.moveDown(0.5);
+
+  // KPI CARDS (3 cards)
+  const kpiGap = 8;
+  const kpiW = (W - kpiGap * 2) / 3;
+  const kpiStartY = doc.y;
+  const kpis = [
+    { label: 'Rezerwacje z menu', value: `${summary.totalMenus}` },
+    { label: '\u0141\u0105cznie go\u015bci', value: `${summary.totalGuests}` },
+    { label: 'Go\u015bcie (D / Dz / M)', value: `${summary.totalAdults} / ${summary.totalChildren} / ${summary.totalToddlers}` },
+  ];
+
+  kpis.forEach((kpi, i) => {
+    const kx = LEFT + i * (kpiW + kpiGap);
+    doc.rect(kx, kpiStartY, kpiW, 38).fill(COLORS.bgLight);
+    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+    doc.text(kpi.label, kx + 6, kpiStartY + 6, { width: kpiW - 12 });
+    doc.font(ctx.boldFont).fontSize(10).fillColor(COLORS.textDark);
+    doc.text(kpi.value, kx + 6, kpiStartY + 18, { width: kpiW - 12 });
+  });
+
+  doc.y = kpiStartY + 48;
+
+  // DETAILED VIEW (2-column layout)
+  if (isDetailed && data.days) {
+    for (const day of data.days) {
+      ensureSpace(doc, 60);
+
+      doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
+      doc.y += 17;
+
+      const reservations = day.reservations;
       for (let i = 0; i < reservations.length; i += 2) {
         const leftRes = reservations[i];
         const rightRes = reservations[i + 1];
 
+        ensureSpace(doc, 50);
         const startY = doc.y;
 
-        // Check if we need new page
-        if (startY + 200 > doc.page.height - PAGE_MARGIN) {
-          doc.addPage();
-        }
+        const leftEndY = renderReservationCard(ctx, leftRes, COL_LEFT_X, startY, COL_W);
 
-        // Render left column
-        const leftHeight = this.renderReservationCard(
-          leftRes,
-          LEFT_COLUMN_X,
-          startY,
-          COLUMN_WIDTH
-        );
-
-        // Render right column (if exists)
-        let rightHeight = 0;
+        let rightEndY = startY;
         if (rightRes) {
-          rightHeight = this.renderReservationCard(
-            rightRes,
-            RIGHT_COLUMN_X,
-            startY,
-            COLUMN_WIDTH
-          );
+          rightEndY = renderReservationCard(ctx, rightRes, COL_RIGHT_X, startY, COL_W);
         }
 
-        // Move cursor down by the taller column
-        const maxHeight = Math.max(leftHeight, rightHeight);
-        doc.y = startY + maxHeight;
+        doc.y = Math.max(leftEndY, rightEndY);
 
-        // Add separator between pairs
         if (i + 2 < reservations.length) {
+          doc.moveTo(LEFT + 8, doc.y).lineTo(RIGHT - 8, doc.y)
+            .strokeColor(COLORS.border).lineWidth(0.3).stroke();
           doc.y += 3;
         }
       }
 
-      // Space after day
-      doc.moveDown(2);
+      doc.y += 2;
     }
   }
 
-  public renderSummaryView(report: MenuReport): void {
-    const doc = this.doc;
-    const ctx = this.ctx;
+  // SUMMARY VIEW (5 columns: Danie, Porcje, Doros\u0142e, Dzieci\u0119ce, Klienci — no Maluchy)
+  if (!isDetailed && data.summaryDays) {
+    for (const day of data.summaryDays) {
+      ensureSpace(doc, 60);
 
-    this.renderHeader(report);
+      doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
+      doc.y += 17;
 
-    // Build aggregated data
-    interface DishAgg {
-      dishName: string;
-      totalPortions: number;
-      adults: number;
-      children: number;
-      infants: number;
-      clients: string[];
-    }
+      for (const course of day.courses) {
+        ensureSpace(doc, 35);
 
-    const courseMap: Map<string, Map<string, DishAgg>> = new Map();
+        doc.rect(LEFT, doc.y, W, 11).fill(COLORS.bgLight);
+        doc.font(ctx.boldFont).fontSize(6.5).fillColor(COLORS.accent);
+        doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 3);
+        doc.y += 13;
 
-    for (const res of report.reservations) {
-      for (const course of res.courses) {
-        if (!courseMap.has(course.courseName)) {
-          courseMap.set(course.courseName, new Map());
-        }
-        const dishMap = courseMap.get(course.courseName)!;
+        const colPct = [0.26, 0.10, 0.10, 0.10, 0.44];
+        const colW = colPct.map(p => W * p);
+        const colX: number[] = [LEFT];
+        for (let ci = 1; ci < colW.length; ci++) colX.push(colX[ci - 1] + colW[ci - 1]);
+
+        const headerY = doc.y;
+        doc.rect(LEFT, headerY, W, 11).fill(COLORS.primaryLight);
+        const headers = ['Danie', 'Porcje', 'Doros\u0142e', 'Dzieci\u0119ce', 'Klienci'];
+        doc.font(ctx.boldFont).fontSize(6).fillColor('#ffffff');
+        headers.forEach((h, hi) => {
+          const align = (hi >= 1 && hi <= 3) ? 'right' as const : 'left' as const;
+          doc.text(h, colX[hi] + 3, headerY + 3, { width: colW[hi] - 6, align });
+        });
+        doc.y = headerY + 11;
 
         for (const dish of course.dishes) {
-          if (!dishMap.has(dish.dishName)) {
-            dishMap.set(dish.dishName, {
-              dishName: dish.dishName,
-              totalPortions: 0,
-              adults: 0,
-              children: 0,
-              infants: 0,
-              clients: [],
-            });
-          }
+          doc.font(ctx.regularFont).fontSize(7);
+          const dishNameHeight = doc.heightOfString(dish.dishName, { width: colW[0] - 6 });
+          const rowHeight = Math.max(11, dishNameHeight + 4);
 
-          const agg = dishMap.get(dish.dishName)!;
-          agg.totalPortions += dish.portions;
-          agg.adults += dish.adultsCount;
-          agg.children += dish.childrenCount;
-          agg.infants += dish.infantsCount;
-          
-          const clientStr = `${res.clientName} (${dish.portions})`;
-          if (!agg.clients.includes(clientStr)) {
-            agg.clients.push(clientStr);
-          }
+          ensureSpace(doc, rowHeight);
+
+          const rowY = doc.y;
+
+          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
+          doc.text(dish.dishName, colX[0] + 3, rowY + 2, { width: colW[0] - 6 });
+
+          const numY = rowY + 2;
+
+          doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.textDark);
+          doc.text(`${dish.totalPortions}`, colX[1] + 3, numY, { width: colW[1] - 6, align: 'right' });
+
+          doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
+          doc.text(`${dish.adultPortions}`, colX[2] + 3, numY, { width: colW[2] - 6, align: 'right' });
+          doc.text(`${dish.childrenPortions}`, colX[3] + 3, numY, { width: colW[3] - 6, align: 'right' });
+
+          const clientStr = dish.reservations.map((r: any) => `${r.clientName} (${r.guests})`).join(', ');
+          doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
+          doc.text(clientStr, colX[4] + 3, numY, { width: colW[4] - 6, lineBreak: false, ellipsis: true });
+
+          doc.y = rowY + rowHeight;
         }
-      }
-    }
 
-    // Render summary
-    for (const [courseName, dishMap] of courseMap.entries()) {
-      // Category header
-      doc.font(ctx.boldFont).fontSize(11).fillColor('#8B4513');
-      doc.text(courseName.toUpperCase(), PAGE_MARGIN, doc.y, {
-        width: doc.page.width - 2 * PAGE_MARGIN,
-      });
-      doc.fillColor('#000000');
-      doc.moveDown(0.2);
-
-      // Table header
-      const colW = [200, 60, 60, 60, 60, 180];
-      const tableX = PAGE_MARGIN;
-      let currentY = doc.y;
-
-      doc.font(ctx.boldFont).fontSize(8).fillColor('#FFFFFF');
-      doc.rect(tableX, currentY, doc.page.width - 2 * PAGE_MARGIN, 14).fill('#2F4F4F');
-      
-      doc.fillColor('#FFFFFF');
-      doc.text('Danie', tableX + 3, currentY + 3, { width: colW[0] - 6, lineBreak: false });
-      doc.text('Porcje', tableX + colW[0] + 3, currentY + 3, { width: colW[1] - 6, align: 'center', lineBreak: false });
-      doc.text('Dorośli', tableX + colW[0] + colW[1] + 3, currentY + 3, { width: colW[2] - 6, align: 'center', lineBreak: false });
-      doc.text('Dziecięce', tableX + colW[0] + colW[1] + colW[2] + 3, currentY + 3, { width: colW[3] - 6, align: 'center', lineBreak: false });
-      doc.text('Maluchy', tableX + colW[0] + colW[1] + colW[2] + colW[3] + 3, currentY + 3, { width: colW[4] - 6, align: 'center', lineBreak: false });
-      doc.text('Klienci', tableX + colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + 3, currentY + 3, { width: colW[5] - 6, lineBreak: false });
-
-      currentY += 14;
-      doc.fillColor('#000000');
-
-      // Table rows - with dynamic height
-      const dishes = Array.from(dishMap.values());
-      for (let i = 0; i < dishes.length; i++) {
-        const dish = dishes[i];
-
-        // Measure dish name height
-        doc.font(ctx.regularFont).fontSize(7);
-        const dishNameHeight = doc.heightOfString(dish.dishName, { width: colW[0] - 6 });
-        const rowHeight = Math.max(11, dishNameHeight + 4);
-
-        // Background
-        if (i % 2 === 0) {
-          doc.rect(tableX, currentY, doc.page.width - 2 * PAGE_MARGIN, rowHeight).fill('#F5F5F5');
-        }
-        doc.fillColor('#000000');
-
-        // Dish name
-        doc.font(ctx.regularFont).fontSize(7);
-        doc.text(dish.dishName, tableX + 3, currentY + 2, { width: colW[0] - 6 });
-
-        // Numbers
-        doc.text(dish.totalPortions.toString(), tableX + colW[0] + 3, currentY + 2, { width: colW[1] - 6, align: 'center' });
-        doc.text(dish.adults.toString(), tableX + colW[0] + colW[1] + 3, currentY + 2, { width: colW[2] - 6, align: 'center' });
-        doc.text(dish.children.toString(), tableX + colW[0] + colW[1] + colW[2] + 3, currentY + 2, { width: colW[3] - 6, align: 'center' });
-        doc.text(dish.infants.toString(), tableX + colW[0] + colW[1] + colW[2] + colW[3] + 3, currentY + 2, { width: colW[4] - 6, align: 'center' });
-
-        // Clients
-        doc.font(ctx.regularFont).fontSize(6);
-        doc.text(dish.clients.join(', '), tableX + colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + 3, currentY + 2, { width: colW[5] - 6 });
-
-        currentY += rowHeight;
+        doc.y += 8;
       }
 
-      doc.y = currentY + 8;
+      doc.y += 4;
     }
   }
 
-  public getDocument(): typeof PDFDocument {
-    return this.doc;
+  // FOOTER
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(i);
+
+    const footerTextY = 810;
+    const sepFooterY = FOOTER_Y;
+
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(LEFT, sepFooterY).lineTo(RIGHT, sepFooterY).stroke();
+
+    const footerParts: string[] = [
+      `Dzi\u0119kujemy za wyb\u00f3r restauracji ${ctx.restaurantName}!`,
+    ];
+    const contactParts2: string[] = [];
+    if (ctx.restaurantPhone) contactParts2.push(ctx.restaurantPhone);
+    if (ctx.restaurantEmail) contactParts2.push(ctx.restaurantEmail);
+    if (contactParts2.length > 0) {
+      footerParts.push(`W razie pyta\u0144: ${contactParts2.join(' | ')}`);
+    }
+    const footerLine1 = footerParts.join('  |  ');
+
+    const line1W = measureTextWidth(doc, footerLine1, 7, ctx.regularFont);
+    doc.fillColor(COLORS.textMuted);
+    const line1X = LEFT + (W - line1W) / 2;
+    doc._fragment(footerLine1, line1X, footerTextY, { lineBreak: false });
+
+    const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
+    const line2W = measureTextWidth(doc, footerLine2, 6, ctx.regularFont);
+    doc.fillColor(COLORS.textLight);
+    const line2X = LEFT + (W - line2W) / 2;
+    doc._fragment(footerLine2, line2X, footerTextY + 12, { lineBreak: false });
   }
 }
