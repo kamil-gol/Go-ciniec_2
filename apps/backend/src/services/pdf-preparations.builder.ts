@@ -20,11 +20,11 @@
  * FIX: Removed PODSUMOWANIE section and nearestEvent from PDF export.
  * FIX: Removed Wartość column — preparations report is for staff ops, prices in reservation form.
  * FIX: Applied footer pagination fix (mirrors #160 menu report fix).
+ * FIX: Fixed measureText crash — doc._font is Font object, not string.
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
 
-// Re-use COLORS from pdf.service palette
 const COLORS = {
   primary: '#1a2332',
   primaryLight: '#2c3e50',
@@ -56,26 +56,17 @@ export interface PreparationsPDFContext {
 }
 
 /**
- * Calculate text dimensions without rendering.
- * Used for safe footer positioning.
+ * Measure text width for manual centering.
+ * Sets font+size as side effect (caller renders immediately after).
  */
-function measureText(
+function measureTextWidth(
   doc: PDFKit.PDFDocument,
   text: string,
   fontSize: number,
-  font: string,
-  width: number
-): { width: number; height: number } {
-  const savedFont = doc._font;
-  const savedFontSize = doc._fontSize;
-  
+  font: string
+): number {
   doc.font(font).fontSize(fontSize);
-  const textWidth = doc.widthOfString(text, { width });
-  const textHeight = doc.heightOfString(text, { width });
-  
-  doc.font(savedFont).fontSize(savedFontSize);
-  
-  return { width: textWidth, height: textHeight };
+  return doc.widthOfString(text);
 }
 
 /**
@@ -122,13 +113,11 @@ export function buildPreparationsReportPDF(
   lastContentY = doc.y;
 
   // ── 3. DETAILED VIEW — daily timeline ──
-  // Columns: Usługa, Ilość, Rezerwacja, Uwagi (no Wartość)
   const days = (data as any).days;
   if (data.filters.view === 'detailed' && days && days.length > 0) {
     for (const day of days) {
       ensureSpace(doc, 120);
 
-      // Day header bar
       const dayHeaderY = doc.y;
       doc.rect(left, dayHeaderY, pageWidth, 22).fill(COLORS.primaryLight);
       doc.rect(left, dayHeaderY, 4, 22).fill(COLORS.accent);
@@ -138,7 +127,6 @@ export function buildPreparationsReportPDF(
         left + 14, dayHeaderY + 5,
         { width: pageWidth - 100 }
       );
-      // Right-aligned count
       doc.text(
         `Usług: ${day.totalItems || 0}`,
         left + pageWidth - 100, dayHeaderY + 5,
@@ -146,7 +134,6 @@ export function buildPreparationsReportPDF(
       );
       doc.y = dayHeaderY + 26;
 
-      // Categories within the day
       for (const category of day.categories) {
         ensureSpace(doc, 80);
 
@@ -157,7 +144,6 @@ export function buildPreparationsReportPDF(
         );
         doc.moveDown(0.2);
 
-        // Build table for items in this category — no Wartość column
         const rows: string[][] = category.items.map((item: any) => {
           const timeStr = item.reservation?.startTime ? ` ${item.reservation.startTime}` : '';
           const reservationLabel = item.reservation
@@ -197,13 +183,11 @@ export function buildPreparationsReportPDF(
   }
 
   // ── 4. SUMMARY VIEW — aggregated table per day ──
-  // FIX: removed (quantity) from Klienci column — duplicates Łącznie szt. column
   const summaryDays = (data as any).summaryDays;
   if (data.filters.view === 'summary' && summaryDays && summaryDays.length > 0) {
     for (const day of summaryDays) {
       ensureSpace(doc, 100);
 
-      // Day header bar
       const dayHeaderY = doc.y;
       doc.rect(left, dayHeaderY, pageWidth, 22).fill(COLORS.primaryLight);
       doc.rect(left, dayHeaderY, 4, 22).fill(COLORS.accent);
@@ -223,8 +207,6 @@ export function buildPreparationsReportPDF(
       doc.moveDown(0.2);
 
       const summaryRows = day.items.map((item: any) => {
-        // Changed from: clientName startTime (quantity)
-        // To: clientName startTime (no quantity — already in Łącznie szt. column)
         const clientNames = item.reservations
           ? item.reservations.map((r: any) => {
               const time = r.startTime ? ` ${r.startTime}` : '';
@@ -267,20 +249,14 @@ export function buildPreparationsReportPDF(
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
-    
-    // Skip footer on pages without content
-    if (i > 0 && lastContentY < 80) {
-      continue;
-    }
-    
+
     const footerY = 810;
     const sepFooterY = footerY - 10;
-    
-    // Draw separator line
+
     doc.strokeColor(COLORS.border).lineWidth(0.5)
        .moveTo(left, sepFooterY).lineTo(left + pageWidth, sepFooterY).stroke();
 
-    // ── Footer text line 1 (safe rendering) ──
+    // Footer line 1
     const footerParts: string[] = [
       `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
     ];
@@ -292,26 +268,21 @@ export function buildPreparationsReportPDF(
     }
     const footerLine1 = footerParts.join('  |  ');
 
-    doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-    
-    const line1Dims = measureText(doc, footerLine1, 7, ctx.regularFont, pageWidth);
-    const line1X = left + (pageWidth - line1Dims.width) / 2;
-    
-    doc._fragment(footerLine1, line1X, footerY, { width: pageWidth, align: 'left', lineBreak: false });
+    const line1W = measureTextWidth(doc, footerLine1, 7, ctx.regularFont);
+    doc.fillColor(COLORS.textMuted);
+    const line1X = left + (pageWidth - line1W) / 2;
+    doc._fragment(footerLine1, line1X, footerY, { lineBreak: false });
 
-    // ── Footer text line 2 (safe rendering) ──
+    // Footer line 2
     const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
-    
-    doc.fontSize(6).fillColor(COLORS.textLight);
-    
-    const line2Dims = measureText(doc, footerLine2, 6, ctx.regularFont, pageWidth);
-    const line2X = left + (pageWidth - line2Dims.width) / 2;
-    
-    doc._fragment(footerLine2, line2X, footerY + 12, { width: pageWidth, align: 'left', lineBreak: false });
+    const line2W = measureTextWidth(doc, footerLine2, 6, ctx.regularFont);
+    doc.fillColor(COLORS.textLight);
+    const line2X = left + (pageWidth - line2W) / 2;
+    doc._fragment(footerLine2, line2X, footerY + 12, { lineBreak: false });
   }
 }
 
-// ═══════════════ SHARED HELPERS (mirror pdf.service.ts) ═══════════════
+// ═══════════════ SHARED HELPERS ═══════════════
 
 function drawHeaderBanner(ctx: PreparationsPDFContext, badgeLabel: string, badgeColor: string): void {
   const { doc } = ctx;
@@ -363,7 +334,6 @@ function drawCompactTable(
   const totalWidth = colWidths.reduce((a, b) => a + b, 0);
   let y = doc.y;
 
-  // Header row
   doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
   let x = startX;
   headers.forEach((header, i) => {
@@ -373,7 +343,6 @@ function drawCompactTable(
   });
   y += headerHeight;
 
-  // Data rows
   rows.forEach((row, rowIndex) => {
     if (y > MAX_CONTENT_Y - 80) {
       doc.addPage();
