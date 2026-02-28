@@ -2,12 +2,12 @@
 
 /**
  * PDF builder for Menu Preparations Report (#160)
- * Premium design matching #159 preparations report:
- * - Dark charcoal header with purple accent badge
- * - Compact spacing (no wasted vertical space)
+ * Premium design with enhanced UX:
+ * - Compact spacing (no wasted vertical space, no empty pages)
+ * - Clear visual hierarchy
+ * - Prominent reservation details in detailed view
  * - Clean table layouts with proper alignment
  * - Professional footer with page numbers
- * FIX: Added Maluchy (toddlers) column to summary table
  */
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
@@ -24,14 +24,14 @@ export interface PDFContext {
 const COLORS = {
   primary: '#1a2332',
   primaryLight: '#2c3e50',
-  accent: '#8e44ad',       // purple accent (matching preparations)
+  accent: '#8e44ad',       // purple accent
   textDark: '#1a2332',
   textMuted: '#7f8c8d',
   textLight: '#bdc3c7',
   border: '#dce1e8',
   bgLight: '#f4f6f9',
   bgWhite: '#ffffff',
-  courseBg: '#FFFBEB',
+  reservationBg: '#EDE9FE',  // light purple for reservation cards
 };
 
 const PAGE_WIDTH = 595.28;
@@ -40,7 +40,7 @@ const RIGHT = PAGE_WIDTH - 40;
 const W = RIGHT - LEFT;
 
 function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
-  if (doc.y + needed > 750) {
+  if (doc.y + needed > 770) {  // increased threshold to prevent empty pages
     doc.addPage();
     doc.y = 50;
   }
@@ -67,7 +67,7 @@ export function buildMenuPreparationsReportPDF(
   const { filters, summary } = data;
   const isDetailed = filters.view === 'detailed';
 
-  // ── HEADER BANNER (matching #159) ──
+  // ── HEADER BANNER ──
   const bannerHeight = 65;
   doc.rect(0, 0, PAGE_WIDTH, bannerHeight).fill(COLORS.primary);
   doc.rect(0, bannerHeight - 3, PAGE_WIDTH, 3).fill(COLORS.accent);
@@ -113,7 +113,7 @@ export function buildMenuPreparationsReportPDF(
      .moveTo(LEFT, sepY).lineTo(RIGHT, sepY).stroke();
   doc.moveDown(0.5);
 
-  // ── KPI CARDS (compact spacing) ──
+  // ── KPI CARDS ──
   const kpiGap = 8;
   const kpiW = (W - kpiGap * 3) / 4;
   const kpiStartY = doc.y;
@@ -135,63 +135,55 @@ export function buildMenuPreparationsReportPDF(
 
   doc.y = kpiStartY + 48;
 
-  // ── DETAILED VIEW ──
+  // ── DETAILED VIEW (enhanced design) ──
   if (isDetailed && data.days) {
     for (const day of data.days) {
-      ensureSpace(doc, 60);
+      ensureSpace(doc, 50);
 
-      // Day header
-      doc.rect(LEFT, doc.y, W, 22).fill(COLORS.primaryLight);
-      doc.rect(LEFT, doc.y, 4, 22).fill(COLORS.accent);
-      doc.font(ctx.boldFont).fontSize(10).fillColor('#ffffff');
-      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W * 0.6 });
-      doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textLight);
-      doc.text(
-        `${day.totalReservations} rez.  |  ${day.totalGuests} gości`,
-        LEFT + 14, doc.y + 5, { width: W - 28, align: 'right' }
-      );
-      doc.y += 26;
+      // Day header (clean, no redundant counts)
+      doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
+      doc.y += 22;  // reduced gap
 
       for (const res of day.reservations) {
-        ensureSpace(doc, 50);
+        ensureSpace(doc, 40);
 
-        // Reservation card
-        doc.rect(LEFT, doc.y, W, 18).fill(COLORS.bgLight);
-        doc.font(ctx.boldFont).fontSize(8).fillColor(COLORS.textDark);
-        doc.text(res.clientName, LEFT + 8, doc.y + 5, { width: W * 0.4 });
-
+        // ── PREMIUM RESERVATION HEADER ──
+        // Merged: Client Name | Hall | Time | Guests (all in one prominent line)
         const timePart = res.startTime
           ? `${formatTime(res.startTime)}${res.endTime ? ' – ' + formatTime(res.endTime) : ''}`
           : '';
         const guestPart = `${res.guests.total} os. (${res.guests.adults}D + ${res.guests.children}Dz + ${res.guests.toddlers}M)`;
-        const metaParts = [res.hallName, timePart, guestPart].filter(Boolean).join('  |  ');
+        const headerParts = [res.hallName, timePart, guestPart].filter(Boolean);
+        const fullHeader = `${res.clientName}  |  ${headerParts.join('  |  ')}`;
 
-        doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-        doc.text(metaParts, LEFT + 8, doc.y + 5, { width: W - 16, align: 'right' });
-        doc.y += 20;
+        doc.rect(LEFT, doc.y, W, 16).fill(COLORS.reservationBg);
+        doc.font(ctx.boldFont).fontSize(9).fillColor(COLORS.textDark);
+        doc.text(fullHeader, LEFT + 10, doc.y + 4, { width: W - 20 });
+        doc.y += 18;
 
-        // Package line
-        doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-        doc.text('Pakiet: ', LEFT + 8, doc.y + 2, { continued: true });
-        doc.font(ctx.boldFont).fillColor(COLORS.textDark);
-        doc.text(res.package.name);
-        doc.y += 12;
+        // Package info (subtle, compact)
+        doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
+        doc.text(`Pakiet: ${res.package.name}`, LEFT + 10, doc.y, { width: W - 20 });
+        doc.y += 10;
 
-        // Courses (removed redundant "Danie" header)
+        // Courses
         for (const course of res.courses) {
-          ensureSpace(doc, 24);
+          ensureSpace(doc, 20);
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
-          doc.text(course.courseName.toUpperCase(), LEFT + 12, doc.y + 2);
-          doc.y += 10;
+          doc.text(course.courseName.toUpperCase(), LEFT + 14, doc.y);
+          doc.y += 9;
 
           for (const dish of course.dishes) {
-            ensureSpace(doc, 12);
+            ensureSpace(doc, 10);
             doc.font(ctx.regularFont).fontSize(8).fillColor(COLORS.textDark);
             const dishText = dish.description
               ? `• ${dish.name}  — ${dish.description}`
               : `• ${dish.name}`;
-            const textHeight = doc.heightOfString(dishText, { width: W - 36 });
-            doc.text(dishText, LEFT + 18, doc.y, { width: W - 36 });
+            const textHeight = doc.heightOfString(dishText, { width: W - 40 });
+            doc.text(dishText, LEFT + 20, doc.y, { width: W - 40 });
             doc.y += textHeight + 2;
           }
           doc.y += 2;
@@ -199,48 +191,42 @@ export function buildMenuPreparationsReportPDF(
 
         if (res.courses.length === 0) {
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-          doc.text('Brak dań w menu', LEFT + 18, doc.y);
-          doc.y += 12;
+          doc.text('Brak dań w menu', LEFT + 20, doc.y);
+          doc.y += 10;
         }
 
-        // Separator
+        // Separator between reservations
         doc.moveTo(LEFT + 10, doc.y).lineTo(RIGHT - 10, doc.y)
           .strokeColor(COLORS.border).lineWidth(0.5).stroke();
-        doc.y += 6;
+        doc.y += 5;
       }
 
-      doc.y += 4;
+      doc.y += 2;
     }
   }
 
-  // ── SUMMARY VIEW (compact table with Maluchy column) ──
+  // ── SUMMARY VIEW (compact table) ──
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
-      ensureSpace(doc, 60);
+      ensureSpace(doc, 50);
 
-      // Day header
-      doc.rect(LEFT, doc.y, W, 22).fill(COLORS.primaryLight);
-      doc.rect(LEFT, doc.y, 4, 22).fill(COLORS.accent);
-      doc.font(ctx.boldFont).fontSize(10).fillColor('#ffffff');
-      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W * 0.6 });
-      doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textLight);
-      doc.text(
-        `${day.totalReservations} rez.  |  ${day.totalGuests} gości`,
-        LEFT + 14, doc.y + 5, { width: W - 28, align: 'right' }
-      );
-      doc.y += 26;
+      // Day header (clean)
+      doc.rect(LEFT, doc.y, W, 20).fill(COLORS.primaryLight);
+      doc.rect(LEFT, doc.y, 4, 20).fill(COLORS.accent);
+      doc.font(ctx.boldFont).fontSize(11).fillColor('#ffffff');
+      doc.text(day.dateLabel, LEFT + 14, doc.y + 5, { width: W - 28 });
+      doc.y += 22;  // reduced gap
 
       for (const course of day.courses) {
-        ensureSpace(doc, 44);
+        ensureSpace(doc, 40);
 
-        // Course header (subtle)
-        doc.rect(LEFT, doc.y, W, 16).fill(COLORS.bgLight);
+        // Course header
+        doc.rect(LEFT, doc.y, W, 14).fill(COLORS.bgLight);
         doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
-        doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 5);
-        doc.y += 18;
+        doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 4);
+        doc.y += 16;
 
         // Table: Danie | Porcje | Dorosłe | Dziecięce | Maluchy | Klienci
-        // Adjusted column widths to fit Maluchy column
         const colPct = [0.24, 0.09, 0.09, 0.09, 0.09, 0.40];
         const colW = colPct.map(p => W * p);
         const colX: number[] = [LEFT];
@@ -248,47 +234,46 @@ export function buildMenuPreparationsReportPDF(
 
         // Table header
         const headerY = doc.y;
-        doc.rect(LEFT, headerY, W, 14).fill(COLORS.primaryLight);
+        doc.rect(LEFT, headerY, W, 12).fill(COLORS.primaryLight);
         const headers = ['Danie', 'Porcje', 'Dorosłe', 'Dziecięce', 'Maluchy', 'Klienci'];
         doc.font(ctx.boldFont).fontSize(6).fillColor('#ffffff');
         headers.forEach((h, i) => {
           const align = (i >= 1 && i <= 4) ? 'right' as const : 'left' as const;
-          doc.text(h, colX[i] + 4, headerY + 4, { width: colW[i] - 8, align });
+          doc.text(h, colX[i] + 4, headerY + 3, { width: colW[i] - 8, align });
         });
-        doc.y = headerY + 16;
+        doc.y = headerY + 14;
 
-        // Dish rows (tight vertical spacing, prevent text wrapping by reducing line height)
+        // Dish rows (tight)
         for (const dish of course.dishes) {
-          ensureSpace(doc, 10);
+          ensureSpace(doc, 9);
           const rowY = doc.y;
 
-          // All text on same baseline (rowY + 2)
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(dish.dishName, colX[0] + 3, rowY + 2, { width: colW[0] - 6, lineBreak: false, ellipsis: true });
+          doc.text(dish.dishName, colX[0] + 3, rowY + 1, { width: colW[0] - 6, lineBreak: false, ellipsis: true });
 
           doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.textDark);
-          doc.text(`${dish.totalPortions}`, colX[1] + 3, rowY + 2, { width: colW[1] - 6, align: 'right' });
+          doc.text(`${dish.totalPortions}`, colX[1] + 3, rowY + 1, { width: colW[1] - 6, align: 'right' });
 
           doc.font(ctx.regularFont).fontSize(7).fillColor(COLORS.textMuted);
-          doc.text(`${dish.adultPortions}`, colX[2] + 3, rowY + 2, { width: colW[2] - 6, align: 'right' });
-          doc.text(`${dish.childrenPortions}`, colX[3] + 3, rowY + 2, { width: colW[3] - 6, align: 'right' });
-          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, rowY + 2, { width: colW[4] - 6, align: 'right' });
+          doc.text(`${dish.adultPortions}`, colX[2] + 3, rowY + 1, { width: colW[2] - 6, align: 'right' });
+          doc.text(`${dish.childrenPortions}`, colX[3] + 3, rowY + 1, { width: colW[3] - 6, align: 'right' });
+          doc.text(`${dish.toddlerPortions}`, colX[4] + 3, rowY + 1, { width: colW[4] - 6, align: 'right' });
 
           const clientStr = dish.reservations.map(r => `${r.clientName} (${r.guests})`).join(', ');
           doc.font(ctx.regularFont).fontSize(6).fillColor(COLORS.textMuted);
-          doc.text(clientStr, colX[5] + 3, rowY + 2, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
+          doc.text(clientStr, colX[5] + 3, rowY + 1, { width: colW[5] - 6, lineBreak: false, ellipsis: true });
 
-          doc.y = rowY + 10;
+          doc.y = rowY + 9;
         }
 
         doc.y += 3;
       }
 
-      doc.y += 6;
+      doc.y += 4;
     }
   }
 
-  // ── FOOTER (matching #159) ──
+  // ── FOOTER ──
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
