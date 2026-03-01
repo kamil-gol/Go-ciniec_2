@@ -76,6 +76,7 @@ beforeEach(() => {
   // Default mocks for overlapping check
   if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
   if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
+  db.reservation.findMany.mockResolvedValue([]);
   if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
   // Default: user exists
   mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'test@test.pl' });
