@@ -961,6 +961,24 @@ export function CreateReservationForm({
           <span className="text-sm text-red-800 dark:text-red-200">Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!</span>
         </motion.div>
       )}
+
+      {/* #165: Purple warning banner — multi-booking available capacity exceeded */}
+      {isMultiBookingHall && availableCapacity && totalGuests > availableCapacity.availableCapacity && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
+              Zbyt wielu gości dla tego terminu
+            </p>
+            <p className="text-xs text-purple-700 dark:text-purple-300 mt-0.5">
+              Wpisano {totalGuests} gości, ale w wybranym terminie dostępne jest tylko{' '}
+              <strong>{availableCapacity.availableCapacity}</strong> miejsc
+              (zajęto {availableCapacity.occupiedCapacity} z {availableCapacity.totalCapacity}).
+              Zmniejsz liczbę gości, aby przejść dalej.
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 
