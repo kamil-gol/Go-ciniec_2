@@ -1,13 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { DishCategory, CategorySettingInput } from '@/types/menu';
-import { AlertCircle } from 'lucide-react';
+import type { DishCategory, CategorySettingInput, PortionTarget } from '@/types/menu';
+import { PORTION_TARGET_LABELS, PORTION_TARGET_ICONS } from '@/types/menu';
+import { AlertCircle, Users, User, Baby } from 'lucide-react';
 
 interface CategorySettingsSectionProps {
   categories: DishCategory[];
   settings: CategorySettingInput[];
   onChange: (settings: CategorySettingInput[]) => void;
+}
+
+/** #166: Icon component for portion target */
+function PortionTargetIcon({ target, className = 'w-4 h-4' }: { target: PortionTarget; className?: string }) {
+  switch (target) {
+    case 'ADULTS_ONLY': return <User className={className} />;
+    case 'CHILDREN_ONLY': return <Baby className={className} />;
+    default: return <Users className={className} />;
+  }
 }
 
 export default function CategorySettingsSection({
@@ -35,7 +45,6 @@ export default function CategorySettingsSection({
     let newSettings = [...localSettings];
 
     if (enabled) {
-      // Add if not exists
       if (!getSetting(categoryId)) {
         newSettings.push({
           categoryId,
@@ -43,16 +52,15 @@ export default function CategorySettingsSection({
           maxSelect: 1,
           isRequired: true,
           isEnabled: true,
+          portionTarget: 'ALL', // #166: default
           displayOrder: newSettings.length,
         });
       } else {
-        // Update existing
         newSettings = newSettings.map((s) =>
           s.categoryId === categoryId ? { ...s, isEnabled: true } : s
         );
       }
     } else {
-      // Disable
       newSettings = newSettings.map((s) =>
         s.categoryId === categoryId ? { ...s, isEnabled: false } : s
       );
@@ -71,7 +79,6 @@ export default function CategorySettingsSection({
       s.categoryId === categoryId ? { ...s, [field]: value } : s
     );
 
-    // Auto-fix: if minSelect > maxSelect, adjust maxSelect
     if (field === 'minSelect') {
       newSettings = newSettings.map((s) => {
         if (s.categoryId === categoryId && s.minSelect > s.maxSelect) {
@@ -81,7 +88,6 @@ export default function CategorySettingsSection({
       });
     }
 
-    // Auto-fix: if maxSelect < minSelect, adjust minSelect
     if (field === 'maxSelect') {
       newSettings = newSettings.map((s) => {
         if (s.categoryId === categoryId && s.maxSelect < s.minSelect) {
@@ -156,12 +162,28 @@ export default function CategorySettingsSection({
                     </div>
                   </label>
 
-                  {hasError && (
-                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-medium bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
-                      <AlertCircle className="w-4 h-4" />
-                      Min &gt; Max!
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {/* #166: Portion target badge */}
+                    {enabled && setting && (
+                      <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                        setting.portionTarget === 'ADULTS_ONLY'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          : setting.portionTarget === 'CHILDREN_ONLY'
+                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
+                            : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                      }`}>
+                        <PortionTargetIcon target={setting.portionTarget || 'ALL'} className="w-3.5 h-3.5" />
+                        {PORTION_TARGET_LABELS[setting.portionTarget || 'ALL']}
+                      </div>
+                    )}
+
+                    {hasError && (
+                      <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-medium bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
+                        <AlertCircle className="w-4 h-4" />
+                        Min &gt; Max!
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Settings (only if enabled) */}
@@ -169,7 +191,7 @@ export default function CategorySettingsSection({
                   <div className={`mt-4 pt-4 border-t ${
                     hasError ? 'border-red-200 dark:border-red-800' : 'border-blue-200 dark:border-blue-800'
                   }`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                       {/* Min Select */}
                       <div>
                         <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
@@ -218,6 +240,29 @@ export default function CategorySettingsSection({
                               : 'border-neutral-300 dark:border-neutral-600 focus:ring-blue-500'
                           }`}
                         />
+                      </div>
+
+                      {/* #166: Portion Target Select */}
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                          Porcje dla
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={setting.portionTarget || 'ALL'}
+                            onChange={(e) =>
+                              handleChange(category.id, 'portionTarget', e.target.value as PortionTarget)
+                            }
+                            className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer pr-8"
+                          >
+                            <option value="ALL">{PORTION_TARGET_ICONS.ALL} Wszyscy goście</option>
+                            <option value="ADULTS_ONLY">{PORTION_TARGET_ICONS.ADULTS_ONLY} Tylko dorośli</option>
+                            <option value="CHILDREN_ONLY">{PORTION_TARGET_ICONS.CHILDREN_ONLY} Tylko dzieci</option>
+                          </select>
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                            <PortionTargetIcon target={setting.portionTarget || 'ALL'} className="w-4 h-4 text-neutral-500" />
+                          </div>
+                        </div>
                       </div>
 
                       {/* Is Required */}
@@ -283,11 +328,21 @@ export default function CategorySettingsSection({
               .map((s) => {
                 const cat = categories.find((c) => c.id === s.categoryId);
                 const error = hasValidationError(s);
+                const target = s.portionTarget || 'ALL';
                 return (
-                  <li key={s.categoryId} className={error ? 'text-red-700 dark:text-red-400 font-medium' : ''}>
+                  <li key={s.categoryId} className={`flex items-center gap-2 ${error ? 'text-red-700 dark:text-red-400 font-medium' : ''}`}>
                     {error && '⚠️ '}
                     {'•'} <strong>{cat?.name}</strong>: {s.minSelect}{'–'}{s.maxSelect} wyborów
                     {s.isRequired && ' (wymagane)'}
+                    {target !== 'ALL' && (
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                        target === 'ADULTS_ONLY'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
+                      }`}>
+                        {PORTION_TARGET_ICONS[target]} {PORTION_TARGET_LABELS[target]}
+                      </span>
+                    )}
                     {error && ' - NIEPRAWIDŁOWE!'}
                   </li>
                 );
