@@ -67,7 +67,7 @@ export interface RevenueReport {
 }
 
 // ============================================
-// OCCUPANCY REPORTS
+// OCCUPANCY REPORTS (#165: capacity utilization)
 // ============================================
 
 export interface OccupancyReportFilters {
@@ -77,20 +77,24 @@ export interface OccupancyReportFilters {
 }
 
 export interface OccupancyReportSummary {
-  avgOccupancy: number; // % dni z rezerwacją
-  peakDay: string; // "Saturday"
+  avgOccupancy: number; // % dni z rezerwacja
+  peakDay: string; // "Sobota"
   peakHall: string | null; // nazwa sali
   peakHallId: string | null;
   totalReservations: number;
   totalDaysInPeriod: number;
+  avgCapacityUtilization: number | null; // srednie wykorzystanie pojemnosci sal multi-booking (%)
 }
 
 export interface OccupancyByHallItem {
   hallId: string;
   hallName: string;
-  occupancy: number; // %
+  occupancy: number; // % dni z rezerwacja
   reservations: number;
   avgGuestsPerReservation: number;
+  capacity: number | null; // pojemnosc sali (#165)
+  allowMultipleBookings: boolean; // tryb wielu rezerwacji (#165)
+  avgCapacityUtilization: number | null; // srednie wykorzystanie pojemnosci (%) - tylko dla multi-booking (#165)
 }
 
 export interface PeakHourItem {
@@ -99,7 +103,7 @@ export interface PeakHourItem {
 }
 
 export interface PeakDayOfWeekItem {
-  dayOfWeek: string; // "Monday", "Tuesday", etc.
+  dayOfWeek: string; // "Poniedzialek", "Wtorek", etc.
   dayOfWeekNum: number; // 0-6 (0 = Sunday)
   count: number;
 }
@@ -167,7 +171,7 @@ export interface PreparationDayGroup {
   totalItems: number;
 }
 
-/** Summary item — aggregated per service across all reservations */
+/** Summary item - aggregated per service across all reservations */
 export interface PreparationSummaryItem {
   serviceItemId: string;
   serviceName: string;
@@ -186,7 +190,7 @@ export interface PreparationSummaryItem {
   }>;
 }
 
-/** Summary day group — aggregated view */
+/** Summary day group - aggregated view */
 export interface PreparationSummaryDayGroup {
   date: string;
   dateLabel: string;
@@ -231,7 +235,7 @@ export interface MenuPreparationsReportFilters {
 export interface MenuPreparationDish {
   name: string;
   description: string | null;
-  portionSize: number; // portion per guest (e.g. 1.0, 0.5, 0.25) — from menuData quantity
+  portionSize: number; // portion per guest (e.g. 1.0, 0.5, 0.25) - from menuData quantity
 }
 
 /** Single course with its selected dishes */
@@ -277,7 +281,7 @@ export interface MenuPreparationDayGroup {
 /** Summary: single dish aggregated across all reservations in a day (no toddlerPortions) */
 export interface MenuPreparationSummaryDish {
   dishName: string;
-  totalPortions: number;        // (adults + children) * portionSize — toddlers excluded
+  totalPortions: number;        // (adults + children) * portionSize - toddlers excluded
   adultPortions: number;
   childrenPortions: number;
   reservations: Array<{
@@ -294,7 +298,7 @@ export interface MenuPreparationSummaryCourseGroup {
   dishes: MenuPreparationSummaryDish[];
 }
 
-/** Summary day group — aggregated per course → per dish */
+/** Summary day group - aggregated per course -> per dish */
 export interface MenuPreparationSummaryDayGroup {
   date: string;
   dateLabel: string;
