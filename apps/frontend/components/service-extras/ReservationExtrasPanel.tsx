@@ -80,17 +80,18 @@ function priceSuffix(priceType: string): string {
 /** Quantity label based on price type */
 function quantityLabel(priceType: string): string {
   switch (priceType) {
-    case 'PER_UNIT': return 'Ilość (szt.)';
-    case 'PER_PERSON': return 'Ilość (os.)';
-    default: return 'Ilość';
+    case 'PER_UNIT': return 'Ilo\u015b\u0107 (szt.)';
+    case 'PER_PERSON': return 'Ilo\u015b\u0107 (os.)';
+    default: return 'Ilo\u015b\u0107';
   }
 }
 
 interface ReservationExtrasPanelProps {
   reservationId: string;
+  readOnly?: boolean;
 }
 
-export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanelProps) {
+export function ReservationExtrasPanel({ reservationId, readOnly = false }: ReservationExtrasPanelProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
@@ -129,8 +130,9 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     : 0;
 
   const handleAddExtra = async () => {
+    if (readOnly) return;
     if (!selectedItemId) {
-      toast({ title: 'Wybierz pozycję', variant: 'destructive' });
+      toast({ title: 'Wybierz pozycj\u0119', variant: 'destructive' });
       return;
     }
 
@@ -149,58 +151,62 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         note: note.trim() || undefined,
         customPrice: customPrice ? parseFloat(customPrice) : undefined,
       });
-      toast({ title: 'Usługa dodana', description: selectedItem?.name });
+      toast({ title: 'Us\u0142uga dodana', description: selectedItem?.name });
       resetAddForm();
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się dodać',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 doda\u0107',
         variant: 'destructive',
       });
     }
   };
 
   const handleRemoveExtra = async (extraId: string, name: string) => {
+    if (readOnly) return;
     try {
       await removeExtra.mutateAsync(extraId);
-      toast({ title: 'Usługa usunięta', description: name });
+      toast({ title: 'Us\u0142uga usuni\u0119ta', description: name });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się usunąć',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 usun\u0105\u0107',
         variant: 'destructive',
       });
     }
   };
 
   const handleStatusChange = async (extraId: string, status: ExtraStatus) => {
+    if (readOnly) return;
     try {
       await updateExtra.mutateAsync({ extraId, data: { status } });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zaktualizować',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107',
         variant: 'destructive',
       });
     }
   };
 
   const handleQuantityChange = async (extraId: string, newQuantity: number) => {
+    if (readOnly) return;
     if (newQuantity < 1) return;
     try {
       await updateExtra.mutateAsync({ extraId, data: { quantity: newQuantity } });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zaktualizować ilości',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zaktualizowa\u0107 ilo\u015bci',
         variant: 'destructive',
       });
     }
   };
 
-  // ── Inline note editing ──────────────────────────────────────────
+  // \u2500\u2500 Inline note editing \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   const startEditingNote = (extraId: string, currentNote: string | null | undefined) => {
+    if (readOnly) return;
     setEditingNoteId(extraId);
     setEditingNoteValue(currentNote || '');
   };
@@ -211,6 +217,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
   };
 
   const saveNote = async (extraId: string) => {
+    if (readOnly) return;
     const trimmed = editingNoteValue.trim();
     setSavingNoteId(extraId);
     try {
@@ -218,11 +225,11 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         extraId,
         data: { note: trimmed || null },
       });
-      toast({ title: trimmed ? 'Notatka zapisana' : 'Notatka usunięta' });
+      toast({ title: trimmed ? 'Notatka zapisana' : 'Notatka usuni\u0119ta' });
     } catch (error: any) {
       toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zapisać notatki',
+        title: 'B\u0142\u0105d',
+        description: error?.response?.data?.message || 'Nie uda\u0142o si\u0119 zapisa\u0107 notatki',
         variant: 'destructive',
       });
     } finally {
@@ -242,7 +249,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     }
   };
 
-  // ── Reset add form ───────────────────────────────────────────────
+  // \u2500\u2500 Reset add form \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   const resetAddForm = () => {
     setAddDialogOpen(false);
@@ -263,16 +270,16 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
     if (pt === 'FREE') return 'Gratis';
 
     if (pt === 'PER_UNIT' && qty > 1) {
-      return `${unit} zł/szt. × ${qty} szt. = ${total} zł`;
+      return `${unit} z\u0142/szt. \u00d7 ${qty} szt. = ${total} z\u0142`;
     }
     if (pt === 'PER_PERSON' && qty > 1) {
-      return `${unit} zł/os. × ${qty} = ${total} zł`;
+      return `${unit} z\u0142/os. \u00d7 ${qty} = ${total} z\u0142`;
     }
     if (pt === 'FLAT' && qty > 1) {
-      return `${unit} zł × ${qty} = ${total} zł`;
+      return `${unit} z\u0142 \u00d7 ${qty} = ${total} z\u0142`;
     }
 
-    return `${total} zł`;
+    return `${total} z\u0142`;
   };
 
   return (
@@ -287,27 +294,29 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                   <Gift className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">Usługi dodatkowe</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold">Us\u0142ugi dodatkowe</h2>
                   {extras.length > 0 && (
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
                       {totalPrice > 0 && (
                         <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          — {totalPrice.toLocaleString('pl-PL')} zł
+                          \u2014 {totalPrice.toLocaleString('pl-PL')} z\u0142
                         </span>
                       )}
                     </p>
                   )}
                 </div>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setAddDialogOpen(true)}
-                className="bg-violet-600 hover:bg-violet-700 text-white shadow-md"
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Dodaj
-              </Button>
+              {!readOnly && (
+                <Button
+                  size="sm"
+                  onClick={() => setAddDialogOpen(true)}
+                  className="bg-violet-600 hover:bg-violet-700 text-white shadow-md"
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Dodaj
+                </Button>
+              )}
             </div>
           </div>
 
@@ -320,15 +329,17 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
             ) : extras.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
-                <p>Brak usług dodatkowych</p>
-                <p className="text-xs mt-1">Kliknij „Dodaj” aby przypisać tort, muzykę, dekoracje...</p>
+                <p>Brak us\u0142ug dodatkowych</p>
+                {!readOnly && (
+                  <p className="text-xs mt-1">Kliknij \u201eDodaj\u201d aby przypisa\u0107 tort, muzyk\u0119, dekoracje...</p>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
                 {extras.map((extra) => {
                   const statusCfg = STATUS_CONFIG[extra.status as ExtraStatus] || STATUS_CONFIG.PENDING;
                   const StatusIcon = statusCfg.icon;
-                  const canEditQuantity = extra.priceType !== 'FREE' && extra.status !== 'CANCELLED';
+                  const canEditQuantity = !readOnly && extra.priceType !== 'FREE' && extra.status !== 'CANCELLED';
                   const isEditingThisNote = editingNoteId === extra.id;
                   const isSavingThisNote = savingNoteId === extra.id;
 
@@ -345,7 +356,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-lg flex-shrink-0">
-                            {extra.serviceItem?.icon || '📦'}
+                            {extra.serviceItem?.icon || '\ud83d\udce6'}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
@@ -363,74 +374,80 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                          {/* Inline quantity controls */}
-                          {canEditQuantity && (
-                            <div className="inline-flex items-center rounded-md border border-neutral-200 dark:border-neutral-700 mr-1">
-                              <button
-                                className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-l-md disabled:opacity-40"
-                                onClick={() => handleQuantityChange(extra.id, extra.quantity - 1)}
-                                disabled={extra.quantity <= 1 || updateExtra.isPending}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="w-7 text-center text-xs font-semibold tabular-nums border-x border-neutral-200 dark:border-neutral-700 leading-7">
-                                {extra.quantity}
-                              </span>
-                              <button
-                                className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-r-md disabled:opacity-40"
-                                onClick={() => handleQuantityChange(extra.id, extra.quantity + 1)}
-                                disabled={updateExtra.isPending}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
-                            </div>
-                          )}
+                        {!readOnly && (
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            {/* Inline quantity controls */}
+                            {canEditQuantity && (
+                              <div className="inline-flex items-center rounded-md border border-neutral-200 dark:border-neutral-700 mr-1">
+                                <button
+                                  className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-l-md disabled:opacity-40"
+                                  onClick={() => handleQuantityChange(extra.id, extra.quantity - 1)}
+                                  disabled={extra.quantity <= 1 || updateExtra.isPending}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="w-7 text-center text-xs font-semibold tabular-nums border-x border-neutral-200 dark:border-neutral-700 leading-7">
+                                  {extra.quantity}
+                                </span>
+                                <button
+                                  className="h-7 w-7 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors rounded-r-md disabled:opacity-40"
+                                  onClick={() => handleQuantityChange(extra.id, extra.quantity + 1)}
+                                  disabled={updateExtra.isPending}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
 
-                          <Select
-                            value={extra.status}
-                            onValueChange={(v) =>
-                              handleStatusChange(extra.id, v as ExtraStatus)
-                            }
-                          >
-                            <SelectTrigger className="h-7 w-[110px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="PENDING">Oczekuje</SelectItem>
-                              <SelectItem value="CONFIRMED">Potwierdzone</SelectItem>
-                              <SelectItem value="CANCELLED">Anulowane</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            <Select
+                              value={extra.status}
+                              onValueChange={(v) =>
+                                handleStatusChange(extra.id, v as ExtraStatus)
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-[110px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PENDING">Oczekuje</SelectItem>
+                                <SelectItem value="CONFIRMED">Potwierdzone</SelectItem>
+                                <SelectItem value="CANCELLED">Anulowane</SelectItem>
+                              </SelectContent>
+                            </Select>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            onClick={() =>
-                              handleRemoveExtra(
-                                extra.id,
-                                extra.serviceItem?.name || ''
-                              )
-                            }
-                            disabled={removeExtra.isPending}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              onClick={() =>
+                                handleRemoveExtra(
+                                  extra.id,
+                                  extra.serviceItem?.name || ''
+                                )
+                              }
+                              disabled={removeExtra.isPending}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Editable note row */}
+                      {/* Note row */}
                       {extra.status !== 'CANCELLED' && (
                         <div className="mt-2 ml-9">
-                          {isEditingThisNote ? (
+                          {readOnly ? (
+                            extra.note ? (
+                              <span className="text-xs text-muted-foreground italic">{extra.note}</span>
+                            ) : null
+                          ) : isEditingThisNote ? (
                             <div className="space-y-1.5">
                               <textarea
                                 autoFocus
                                 value={editingNoteValue}
                                 onChange={(e) => setEditingNoteValue(e.target.value)}
                                 onKeyDown={(e) => handleNoteKeyDown(e, extra.id)}
-                                placeholder="Wpisz notatkę..."
+                                placeholder="Wpisz notatk\u0119..."
                                 rows={2}
                                 className="w-full text-xs px-2.5 py-1.5 rounded-md border border-violet-300 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent resize-none placeholder:text-violet-400 dark:placeholder:text-violet-600"
                               />
@@ -470,7 +487,7 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
                                 <span className="italic">{extra.note}</span>
                               ) : (
                                 <span className="text-violet-400 dark:text-violet-600 opacity-60 group-hover:opacity-100">
-                                  Dodaj notatkę...
+                                  Dodaj notatk\u0119...
                                 </span>
                               )}
                             </button>
@@ -483,9 +500,9 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
 
                 {/* Total */}
                 <div className="flex items-center justify-between p-3 mt-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl text-white shadow-lg">
-                  <span className="text-sm font-bold">Razem usługi dodatkowe</span>
+                  <span className="text-sm font-bold">Razem us\u0142ugi dodatkowe</span>
                   <span className="text-lg font-bold">
-                    {totalPrice.toLocaleString('pl-PL')} zł
+                    {totalPrice.toLocaleString('pl-PL')} z\u0142
                   </span>
                 </div>
               </div>
@@ -494,185 +511,187 @@ export function ReservationExtrasPanel({ reservationId }: ReservationExtrasPanel
         </div>
       </Card>
 
-      {/* Add Extra Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={resetAddForm}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
-                <Gift className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-              </div>
-              Dodaj usługę dodatkową
-            </DialogTitle>
-          </DialogHeader>
+      {/* Add Extra Dialog \u2014 only render when not readOnly */}
+      {!readOnly && (
+        <Dialog open={addDialogOpen} onOpenChange={resetAddForm}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
+                  <Gift className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                </div>
+                Dodaj us\u0142ug\u0119 dodatkow\u0105
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Category select */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">Kategoria</Label>
-              <Select
-                value={selectedCategoryId}
-                onValueChange={(v) => {
-                  setSelectedCategoryId(v);
-                  setSelectedItemId('');
-                  setQuantity(1);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Wybierz kategorię" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.icon} {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Item select */}
-            {selectedCategoryId && (
+            <div className="space-y-4">
+              {/* Category select */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-semibold">Pozycja</Label>
+                <Label className="text-sm font-semibold">Kategoria</Label>
                 <Select
-                  value={selectedItemId}
+                  value={selectedCategoryId}
                   onValueChange={(v) => {
-                    setSelectedItemId(v);
+                    setSelectedCategoryId(v);
+                    setSelectedItemId('');
                     setQuantity(1);
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Wybierz pozycję" />
+                    <SelectValue placeholder="Wybierz kategori\u0119" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableItems.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{item.icon || '📦'}</span>
-                          <span>{item.name}</span>
-                          {item.priceType !== 'FREE' && (
-                            <span className="text-muted-foreground">
-                              — {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
-                            </span>
-                          )}
-                          {item.priceType === 'FREE' && (
-                            <span className="text-green-600">— Gratis</span>
-                          )}
-                        </div>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            )}
 
-            {/* Quantity stepper - show for non-FREE items */}
-            {selectedItem && selectedItem.priceType !== 'FREE' && (
-              <div className="space-y-1.5">
-                <Label className="text-sm font-semibold">
-                  {quantityLabel(selectedItem.priceType)}
-                </Label>
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
-                    <button
-                      type="button"
-                      className="h-10 w-10 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (!isNaN(val) && val >= 1) setQuantity(val);
-                        else if (e.target.value === '') setQuantity(1);
-                      }}
-                      className="h-10 w-14 text-center font-semibold text-sm border-x border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:bg-violet-50 dark:focus:bg-violet-900/20 tabular-nums"
-                    />
-                    <button
-                      type="button"
-                      className="h-10 w-10 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                      onClick={() => setQuantity(quantity + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {quantity > 1 && (
-                    <span className="text-sm text-muted-foreground">
-                      = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
-                    </span>
-                  )}
+              {/* Item select */}
+              {selectedCategoryId && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Pozycja</Label>
+                  <Select
+                    value={selectedItemId}
+                    onValueChange={(v) => {
+                      setSelectedItemId(v);
+                      setQuantity(1);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wybierz pozycj\u0119" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableItems.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{item.icon || '\ud83d\udce6'}</span>
+                            <span>{item.name}</span>
+                            {item.priceType !== 'FREE' && (
+                              <span className="text-muted-foreground">
+                                \u2014 {Number(item.basePrice).toLocaleString('pl-PL')} z\u0142{priceSuffix(item.priceType)}
+                              </span>
+                            )}
+                            {item.priceType === 'FREE' && (
+                              <span className="text-green-600">\u2014 Gratis</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Note (if required or user wants) */}
-            {selectedItem && (
-              <div className="space-y-1.5">
-                <Label htmlFor="extra-note" className="text-sm font-semibold">
-                  {selectedItem.noteLabel || 'Uwagi'}
-                  {selectedItem.requiresNote && ' *'}
-                </Label>
-                <Textarea
-                  id="extra-note"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder={
-                    selectedItem.requiresNote
-                      ? 'Podaj szczegóły (wymagane)'
-                      : 'Opcjonalne uwagi'
-                  }
-                  rows={2}
-                />
-              </div>
-            )}
+              {/* Quantity stepper - show for non-FREE items */}
+              {selectedItem && selectedItem.priceType !== 'FREE' && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">
+                    {quantityLabel(selectedItem.priceType)}
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex items-center rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                      <button
+                        type="button"
+                        className="h-10 w-10 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={quantity}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 1) setQuantity(val);
+                          else if (e.target.value === '') setQuantity(1);
+                        }}
+                        className="h-10 w-14 text-center font-semibold text-sm border-x border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:bg-violet-50 dark:focus:bg-violet-900/20 tabular-nums"
+                      />
+                      <button
+                        type="button"
+                        className="h-10 w-10 inline-flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                        onClick={() => setQuantity(quantity + 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {quantity > 1 && (
+                      <span className="text-sm text-muted-foreground">
+                        = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} z\u0142</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
-            {/* Custom price override */}
-            {selectedItem && selectedItem.priceType !== 'FREE' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="extra-price" className="text-sm font-semibold">
-                  Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztukę' : selectedItem.priceType === 'PER_PERSON' ? ' za osobę' : ''} (opcjonalnie)
-                </Label>
-                <Input
-                  id="extra-price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value)}
-                  placeholder={`Domyślna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} zł${priceSuffix(selectedItem.priceType)}`}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Pozostaw puste, aby użyć ceny domyślnej
-                </p>
-              </div>
-            )}
+              {/* Note (if required or user wants) */}
+              {selectedItem && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="extra-note" className="text-sm font-semibold">
+                    {selectedItem.noteLabel || 'Uwagi'}
+                    {selectedItem.requiresNote && ' *'}
+                  </Label>
+                  <Textarea
+                    id="extra-note"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={
+                      selectedItem.requiresNote
+                        ? 'Podaj szczeg\u00f3\u0142y (wymagane)'
+                        : 'Opcjonalne uwagi'
+                    }
+                    rows={2}
+                  />
+                </div>
+              )}
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={resetAddForm}>
-                Anuluj
-              </Button>
-              <Button
-                onClick={handleAddExtra}
-                disabled={!selectedItemId || assignExtra.isPending}
-                className="bg-violet-600 hover:bg-violet-700 text-white"
-              >
-                {assignExtra.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Dodaj usługę
-              </Button>
+              {/* Custom price override */}
+              {selectedItem && selectedItem.priceType !== 'FREE' && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="extra-price" className="text-sm font-semibold">
+                    Cena indywidualna{selectedItem.priceType === 'PER_UNIT' ? ' za sztuk\u0119' : selectedItem.priceType === 'PER_PERSON' ? ' za osob\u0119' : ''} (opcjonalnie)
+                  </Label>
+                  <Input
+                    id="extra-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    placeholder={`Domy\u015blna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} z\u0142${priceSuffix(selectedItem.priceType)}`}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Pozostaw puste, aby u\u017cy\u0107 ceny domy\u015blnej
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={resetAddForm}>
+                  Anuluj
+                </Button>
+                <Button
+                  onClick={handleAddExtra}
+                  disabled={!selectedItemId || assignExtra.isPending}
+                  className="bg-violet-600 hover:bg-violet-700 text-white"
+                >
+                  {assignExtra.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Dodaj us\u0142ug\u0119
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
