@@ -27,9 +27,10 @@ interface DiscountSectionProps {
     discountReason?: string | null
     priceBeforeDiscount?: number | string | null
   }
+  readOnly?: boolean
 }
 
-export function DiscountSection({ reservation }: DiscountSectionProps) {
+export function DiscountSection({ reservation, readOnly }: DiscountSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE')
   const [discountValue, setDiscountValue] = useState('')
@@ -64,7 +65,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
   }
 
   const handleRemove = async () => {
-    if (!confirm('Czy na pewno chcesz usunąć rabat?')) return
+    if (!confirm('Czy na pewno chcesz usun\u0105\u0107 rabat?')) return
     try {
       await removeDiscount.mutateAsync(reservation.id)
     } catch (error) {
@@ -87,8 +88,9 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
     : Number(discountValue || 0)
   const previewFinal = Math.max(0, reservation.totalPrice - previewAmount)
 
-  // STATE 1: No discount — show "Add" button
+  // STATE 1: No discount \u2014 show \"Add\" button (hidden when readOnly)
   if (!hasDiscount && !isEditing) {
+    if (readOnly) return null
     return (
       <button
         type="button"
@@ -129,12 +131,12 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PERCENTAGE">{'Procent (%)'}</SelectItem>
-                <SelectItem value="FIXED">{'Kwota (zł)'}</SelectItem>
+                <SelectItem value="FIXED">{'Kwota (z\u0142)'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs font-medium">{'Wartość'}</Label>
+            <Label className="text-xs font-medium">{'Warto\u015b\u0107'}</Label>
             <Input
               type="number"
               min="0"
@@ -149,11 +151,11 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
         </div>
 
         <div>
-          <Label className="text-xs font-medium">{'Powód rabatu'}</Label>
+          <Label className="text-xs font-medium">{'Pow\u00f3d rabatu'}</Label>
           <Input
             value={discountReason}
             onChange={(e) => setDiscountReason(e.target.value)}
-            placeholder={'np. Stały klient, promocja...'}
+            placeholder={'np. Sta\u0142y klient, promocja...'}
             className="h-8 text-xs mt-1"
           />
         </div>
@@ -193,7 +195,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
     )
   }
 
-  // STATE 3: Has discount — compact vertical display
+  // STATE 3: Has discount \u2014 compact vertical display
   const finalPrice = Number(reservation.totalPrice) - Number(reservation.discountAmount || 0)
 
   return (
@@ -208,23 +210,25 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
               : formatCurrency(Number(reservation.discountValue || 0))}
           </span>
         </div>
-        <div className="flex gap-1">
-          <button
-            onClick={handleStartEdit}
-            className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
-            title="Edytuj rabat"
-          >
-            <Pencil className="h-3 w-3 text-orange-600" />
-          </button>
-          <button
-            onClick={handleRemove}
-            disabled={removeDiscount.isPending}
-            className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            title={'Usuń rabat'}
-          >
-            <X className="h-3 w-3 text-red-500" />
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex gap-1">
+            <button
+              onClick={handleStartEdit}
+              className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+              title="Edytuj rabat"
+            >
+              <Pencil className="h-3 w-3 text-orange-600" />
+            </button>
+            <button
+              onClick={handleRemove}
+              disabled={removeDiscount.isPending}
+              className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              title={'Usu\u0144 rabat'}
+            >
+              <X className="h-3 w-3 text-red-500" />
+            </button>
+          </div>
+        )}
       </div>
 
       {reservation.discountReason && (
