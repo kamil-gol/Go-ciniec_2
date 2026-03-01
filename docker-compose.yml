@@ -9,6 +9,9 @@
 #   Test: docker compose -f docker-compose.yml -f docker-compose.test.yml up
 #
 # Or use Makefile shortcuts: make dev / make prod / make test-all
+#
+# NOTE: Ports are NOT defined here — each override defines its own
+# ports to avoid conflicts when running dev + prod simultaneously.
 # ============================================
 
 services:
@@ -20,8 +23,6 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env file}
       POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env file}
       POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8'
-    ports:
-      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -35,8 +36,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: rezerwacje-cache
-    ports:
-      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
     volumes:
       - redis_data:/data
     networks:
@@ -54,9 +53,6 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     command: server /data --console-address ":9001"
-    ports:
-      - '127.0.0.1:${MINIO_PORT:-9000}:9000'
-      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001'
     volumes:
       - minio_data:/data
     networks:
