@@ -41,12 +41,12 @@ function PortionTargetBadge({ target }: { target?: PortionTarget | string }) {
   const label = PORTION_TARGET_LABELS[target as PortionTarget] || target;
   
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
       isAdults
         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
         : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
     }`}>
-      <Icon className="w-3.5 h-3.5" />
+      <Icon className="w-3 h-3" />
       {label}
     </span>
   );
@@ -89,8 +89,8 @@ export function DishSelector({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex items-center justify-center py-8">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -234,17 +234,17 @@ export function DishSelector({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Wyb\u00f3r Da\u0144</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl font-bold mb-1">Wyb\u00f3r Da\u0144</h2>
+        <p className="text-sm text-muted-foreground">
           Wybierz dania z ka\u017cdej kategorii zgodnie z limitami
         </p>
       </div>
 
       {/* Categories */}
-      <div className="space-y-6">
+      <div className="space-y-3">
         {categories.map((category: any) => {
           const total = getCategoryTotal(category.categoryId)
           const remaining = getCategoryRemaining(category.categoryId)
@@ -255,16 +255,16 @@ export function DishSelector({
           const portionTarget = category.portionTarget as PortionTarget | undefined
 
           return (
-            <Card key={category.categoryId} className="border-2 shadow-lg">
-              <CardContent className="p-6">
+            <Card key={category.categoryId} className="border shadow-sm">
+              <CardContent className="p-4">
                 {/* Category Header */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{category.categoryIcon}</span>
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{category.categoryIcon}</span>
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-2xl font-bold">{category.customLabel || category.categoryName}</h3>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="text-lg font-bold">{category.customLabel || category.categoryName}</h3>
                           {/* #166: Portion target badge */}
                           <PortionTargetBadge target={portionTarget} />
                         </div>
@@ -284,13 +284,13 @@ export function DishSelector({
                     </div>
                     <div className="flex items-center gap-2">
                       {!isAtMaxLimit && total > 0 && (
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           Pozosta\u0142o: {remaining}
                         </span>
                       )}
                       <Badge 
                         variant={isValid ? "default" : "secondary"}
-                        className={`text-lg px-4 py-2 ${
+                        className={`text-sm px-2.5 py-1 ${
                           isValid 
                             ? isOptional && total === 0
                               ? 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
@@ -304,7 +304,7 @@ export function DishSelector({
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="relative h-3 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden shadow-inner">
+                  <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-300 ${
                         !isOptional && total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
@@ -319,24 +319,24 @@ export function DishSelector({
                   </div>
                   
                   {isAtMaxLimit && (
-                    <Alert className="mt-3 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                      <Info className="h-4 w-4 text-blue-600" />
-                      <AlertDescription className="text-blue-900 dark:text-blue-100">
+                    <Alert className="mt-2 py-2 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                      <Info className="h-3.5 w-3.5 text-blue-600" />
+                      <AlertDescription className="text-xs text-blue-900 dark:text-blue-100">
                         Osi\u0105gni\u0119to maksymaln\u0105 liczb\u0119 pozycji. Odznacz danie aby wybra\u0107 inne.
                       </AlertDescription>
                     </Alert>
                   )}
                   
                   {hasError && (
-                    <Alert variant="destructive" className="mt-3">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{hasError}</AlertDescription>
+                    <Alert variant="destructive" className="mt-2 py-2">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      <AlertDescription className="text-xs">{hasError}</AlertDescription>
                     </Alert>
                   )}
                 </div>
 
                 {/* Dishes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {category.dishes.map((dish: any) => {
                     const isSelected = !!selections[category.categoryId]?.[dish.id]
                     const quantity = selections[category.categoryId]?.[dish.id] || 1
@@ -346,42 +346,42 @@ export function DishSelector({
                     return (
                       <div
                         key={dish.id}
-                        className={`group relative p-5 border-2 rounded-xl transition-all duration-200 ${
+                        className={`group relative p-3 border rounded-lg transition-all duration-200 ${
                           isDisabled
                             ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
                             : isSelected 
-                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-lg scale-[1.02] cursor-pointer' 
-                              : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-md hover:scale-[1.01] cursor-pointer'
+                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-md scale-[1.01] cursor-pointer' 
+                              : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-sm cursor-pointer'
                         }`}
                         onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
                       >
                         {isDisabled && (
-                          <div className="absolute top-3 right-3 w-7 h-7 bg-neutral-400 rounded-full flex items-center justify-center">
-                            <Lock className="h-4 w-4 text-white" />
+                          <div className="absolute top-2 right-2 w-5 h-5 bg-neutral-400 rounded-full flex items-center justify-center">
+                            <Lock className="h-3 w-3 text-white" />
                           </div>
                         )}
 
                         {isSelected && (
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
-                            <Check className="h-5 w-5 text-white font-bold" strokeWidth={3} />
+                          <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
+                            <Check className="h-3.5 w-3.5 text-white font-bold" strokeWidth={3} />
                           </div>
                         )}
 
-                        <div className="flex items-start gap-4">
-                          <div className={`flex-shrink-0 mt-0.5 w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                             isDisabled
                               ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600'
                               : isSelected
-                                ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-md'
+                                ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-sm'
                                 : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-400 dark:border-neutral-500 group-hover:border-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30'
                           }`}>
                             {isSelected && (
-                              <CheckCircle2 className="h-5 w-5 text-white" strokeWidth={3} />
+                              <CheckCircle2 className="h-3.5 w-3.5 text-white" strokeWidth={3} />
                             )}
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h4 className={`font-bold text-base mb-1 ${
+                            <h4 className={`font-semibold text-sm ${
                               isDisabled
                                 ? 'text-neutral-400 dark:text-neutral-600'
                                 : isSelected 
@@ -391,7 +391,7 @@ export function DishSelector({
                               {dish.name}
                             </h4>
                             {dish.description && (
-                              <p className={`text-sm mt-1 line-clamp-2 ${
+                              <p className={`text-xs mt-0.5 line-clamp-2 ${
                                 isDisabled ? 'text-neutral-400' : 'text-muted-foreground'
                               }`}>
                                 {dish.description}
@@ -399,12 +399,12 @@ export function DishSelector({
                             )}
                             
                             {dish.allergens && dish.allergens.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
+                              <div className="flex flex-wrap gap-1 mt-1.5">
                                 {dish.allergens.map((allergen: string) => (
                                   <Badge 
                                     key={allergen} 
                                     variant="outline" 
-                                    className="text-xs border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
+                                    className="text-[10px] px-1.5 py-0 border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
                                   >
                                     {allergen}
                                   </Badge>
@@ -413,8 +413,8 @@ export function DishSelector({
                             )}
 
                             {isSelected && (
-                              <div className="mt-4 p-3 bg-white dark:bg-neutral-800 rounded-lg border-2 border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
-                                <label className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 block">
+                              <div className="mt-2 p-2 bg-white dark:bg-neutral-800 rounded-md border border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
+                                <label className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1 block">
                                   Ilo\u015b\u0107 porcji:
                                 </label>
                                 <select
@@ -424,7 +424,7 @@ export function DishSelector({
                                     dish.id, 
                                     parseFloat(e.target.value)
                                   )}
-                                  className="w-full px-4 py-2.5 border-2 border-blue-300 dark:border-blue-700 rounded-lg text-base font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+                                  className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
                                 >
                                   {availableOptions.map(opt => (
                                     <option key={opt} value={opt}>
@@ -447,23 +447,23 @@ export function DishSelector({
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between pt-6 border-t-2">
+      <div className="flex justify-between pt-4 border-t">
         <Button
           variant="outline"
-          size="lg"
+          size="default"
           onClick={onBack}
-          className="border-2 px-6"
+          className="border px-4"
         >
-          <ChevronLeft className="mr-2 h-5 w-5" />
+          <ChevronLeft className="mr-1.5 h-4 w-4" />
           Wstecz
         </Button>
         <Button
           onClick={handleComplete}
-          size="lg"
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8 shadow-lg text-lg font-bold"
+          size="default"
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6 shadow-md font-bold"
         >
           Zatwierd\u017a wyb\u00f3r
-          <ChevronRight className="ml-2 h-5 w-5" />
+          <ChevronRight className="ml-1.5 h-4 w-4" />
         </Button>
       </div>
     </div>
