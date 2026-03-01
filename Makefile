@@ -4,7 +4,7 @@
 # Development:   make dev
 # Production:    make prod
 # Testing:       make test-unit / test-integration / test-all
-# Storage:       make migrate-minio / minio-stats
+# Storage:       make migrate-minio / minio-stats / minio-backup
 # Cleanup:       make down / test-down
 # ============================================
 
@@ -12,7 +12,8 @@
         test-unit test-integration test-frontend test-e2e test-all \
         test-coverage test-frontend-coverage test-down \
         migrate-minio migrate-minio-dry minio-stats minio-ls \
-        logs logs-backend logs-frontend status help
+        minio-backup minio-policies \
+        logs logs-backend logs-frontend logs-minio status help
 
 # ============================================
 # Compose file combinations
@@ -113,6 +114,14 @@ minio-stats:
 	@$(COMPOSE_DEV) --env-file .env.dev exec minio \
 		sh -c "mc alias set local http://localhost:9000 \$$MINIO_ROOT_USER \$$MINIO_ROOT_PASSWORD >/dev/null 2>&1 && mc du local/attachments/"
 
+minio-backup:
+	@chmod +x scripts/minio-backup.sh
+	@./scripts/minio-backup.sh
+
+minio-policies:
+	@chmod +x scripts/minio-set-policies.sh
+	@./scripts/minio-set-policies.sh
+
 # ============================================
 # Logs & Status
 # ============================================
@@ -184,6 +193,8 @@ help:
 	@echo "    make migrate-minio-dry  Dry run migration (no upload)"
 	@echo "    make minio-ls           List all files in MinIO"
 	@echo "    make minio-stats        Show bucket size/count"
+	@echo "    make minio-backup       Backup all MinIO data to /data/backups/minio"
+	@echo "    make minio-policies     Set private policies + versioning on buckets"
 	@echo ""
 	@echo "  UTILITIES:"
 	@echo "    make logs               Follow all logs (dev)"
