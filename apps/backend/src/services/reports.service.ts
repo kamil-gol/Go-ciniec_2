@@ -116,9 +116,10 @@ function getReservationDate(r: { date: string | null; startDateTime: Date | stri
 }
 
 /**
- * #166: Calculate adult/children portions based on portionTarget
+ * #166: Calculate adult/children portions based on portionTarget.
+ * Exported for unit testing.
  */
-function calculatePortions(
+export function calculatePortions(
   portionTarget: string,
   adults: number,
   children: number,
@@ -464,7 +465,6 @@ class ReportsService {
     const hallsData = this.analyzeOccupancyByHall(reservations, totalDaysInPeriod);
     const peakHall = hallsData.sort((a, b) => b.reservations - a.reservations)[0] || null;
 
-    // #165: Average capacity utilization across all multi-booking halls
     const multiBookingHalls = hallsData.filter(h => h.allowMultipleBookings && h.avgCapacityUtilization !== null);
     const avgCapacityUtilization = multiBookingHalls.length > 0
       ? Math.round((multiBookingHalls.reduce((sum, h) => sum + (h.avgCapacityUtilization || 0), 0) / multiBookingHalls.length) * 10) / 10
@@ -543,14 +543,12 @@ class ReportsService {
       existing.dates.add(r.date);
       existing.reservations += 1;
       existing.totalGuests += r.guests || 0;
-      // #165: accumulate guests per date for capacity utilization
       const currentDateGuests = existing.guestsPerDate.get(r.date) || 0;
       existing.guestsPerDate.set(r.date, currentDateGuests + (r.guests || 0));
       hallData.set(r.hall.id, existing);
     });
     return Array.from(hallData.entries())
       .map(([hallId, data]) => {
-        // #165: Calculate average capacity utilization for multi-booking halls
         let avgCapacityUtilization: number | null = null;
         if (data.allowMultipleBookings && data.capacity && data.capacity > 0 && data.guestsPerDate.size > 0) {
           const dailyUtilizations = Array.from(data.guestsPerDate.values())
@@ -931,7 +929,6 @@ class ReportsService {
           courses.push({
             courseName: catSel.categoryName || 'Nieznana kategoria',
             icon: catSel.categoryIcon || null,
-            // #166: pass portionTarget from snapshot for report display
             portionTarget: catSel.portionTarget || 'ALL',
             dishes,
           });
@@ -1006,7 +1003,6 @@ class ReportsService {
           if (!courseMap.has(course.courseName)) courseMap.set(course.courseName, new Map());
           const dishMap = courseMap.get(course.courseName)!;
 
-          // #166: Read portionTarget from course (set during snapshot or defaulting to ALL)
           const portionTarget = (course as any).portionTarget || 'ALL';
 
           for (const dish of course.dishes) {
@@ -1027,7 +1023,6 @@ class ReportsService {
             const entry = dishMap.get(dish.name)!;
             const pSize = dish.portionSize ?? 1;
 
-            // #166: Use portionTarget to determine which guest types get portions
             const portions = calculatePortions(
               portionTarget,
               item.guests.adults,
