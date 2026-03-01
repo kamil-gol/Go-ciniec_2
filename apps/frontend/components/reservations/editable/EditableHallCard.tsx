@@ -78,6 +78,7 @@ interface EditableHallCardProps {
   totalGuests: number
   currentVenueSurcharge?: number | null
   onUpdated?: () => void
+  disabled?: boolean
 }
 
 export function EditableHallCard({
@@ -91,6 +92,7 @@ export function EditableHallCard({
   totalGuests,
   currentVenueSurcharge = null,
   onUpdated,
+  disabled = false,
 }: EditableHallCardProps) {
   const [selectedHallId, setSelectedHallId] = useState(initialHallId)
 
@@ -189,6 +191,7 @@ export function EditableHallCard({
       iconGradient="from-purple-500 to-pink-500"
       onSave={handleSave}
       onCancel={handleCancel}
+      disabled={disabled}
     >
       {(editing) => {
         if (!editing) {
