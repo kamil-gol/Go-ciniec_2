@@ -11,12 +11,14 @@ interface EditableInternalNotesCardProps {
   reservationId: string
   internalNotes: string | null
   onUpdated?: () => void
+  disabled?: boolean
 }
 
 export function EditableInternalNotesCard({
   reservationId,
   internalNotes: initialNotes,
   onUpdated,
+  disabled,
 }: EditableInternalNotesCardProps) {
   const [notes, setNotes] = useState(initialNotes || '')
   const [isDirty, setIsDirty] = useState(false)
@@ -39,14 +41,14 @@ export function EditableInternalNotesCard({
         id: reservationId,
         input: {
           internalNotes: notes || undefined,
-          reason: 'Aktualizacja notatki wewnętrznej',
+          reason: 'Aktualizacja notatki wewn\u0119trznej',
         } as any,
       })
       setIsDirty(false)
-      toast.success('Notatka wewnętrzna zapisana')
+      toast.success('Notatka wewn\u0119trzna zapisana')
       onUpdated?.()
     } catch {
-      toast.error('Nie udało się zapisać notatki wewnętrznej')
+      toast.error('Nie uda\u0142o si\u0119 zapisa\u0107 notatki wewn\u0119trznej')
     }
   }
 
@@ -59,13 +61,13 @@ export function EditableInternalNotesCard({
               <Lock className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold">Notatka wewnętrzna</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">Notatka wewn\u0119trzna</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                \uD83D\uDD12 Tylko dla pracowników — nie pojawia się w PDF
+                \uD83D\uDD12 Tylko dla pracownik\u00f3w \u2014 nie pojawia si\u0119 w PDF
               </p>
             </div>
           </div>
-          {isDirty && (
+          {isDirty && !disabled && (
             <Button
               size="sm"
               onClick={handleSave}
@@ -81,9 +83,10 @@ export function EditableInternalNotesCard({
         <textarea
           value={notes}
           onChange={(e) => handleChange(e.target.value)}
-          className="w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none"
+          disabled={disabled}
+          className="w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none disabled:opacity-60 disabled:cursor-not-allowed"
           rows={3}
-          placeholder="Wewnętrzne uwagi, preferencje klienta, info dla zespołu..."
+          placeholder="Wewn\u0119trzne uwagi, preferencje klienta, info dla zespo\u0142u..."
         />
       </div>
     </Card>

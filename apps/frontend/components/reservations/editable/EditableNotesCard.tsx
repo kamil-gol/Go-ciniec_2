@@ -15,6 +15,7 @@ interface EditableNotesCardProps {
   confirmationDeadline: string | null
   startDateTime: string | null
   onUpdated?: () => void
+  disabled?: boolean
 }
 
 export function EditableNotesCard({
@@ -23,6 +24,7 @@ export function EditableNotesCard({
   confirmationDeadline: initialDeadline,
   startDateTime,
   onUpdated,
+  disabled,
 }: EditableNotesCardProps) {
   const [notes, setNotes] = useState(initialNotes || '')
   const [deadline, setDeadline] = useState(
@@ -64,6 +66,7 @@ export function EditableNotesCard({
       iconGradient="from-orange-500 to-amber-500"
       onSave={handleSave}
       onCancel={handleCancel}
+      disabled={disabled}
     >
       {(editing) => {
         if (!editing) {
@@ -108,11 +111,11 @@ export function EditableNotesCard({
                 value={deadline}
                 onChange={setDeadline}
                 label="Termin potwierdzenia (opcjonalnie)"
-                placeholder="Wybierz datę..."
+                placeholder="Wybierz dat\u0119..."
                 minDate={new Date()}
               />
               <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
+                Musi by\u0107 co najmniej 1 dzie\u0144 przed rozpocz\u0119ciem wydarzenia
               </p>
             </div>
           </div>
