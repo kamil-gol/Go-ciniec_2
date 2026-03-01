@@ -1,6 +1,6 @@
 /**
  * Attachment Service — Unit Tests
- * 37 test cases covering all service methods
+ * Covers all service methods including #146 storageService abstraction
  *
  * Run: cd apps/backend && npm test
  */
@@ -13,6 +13,7 @@ const mockPrisma = {
   attachment: {
     create: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -45,6 +46,45 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
   renameSync: jest.fn(),
   unlinkSync: jest.fn(),
+  readFileSync: jest.fn(() => Buffer.from('fake-file-content')),
+}));
+
+const mockStorageService = {
+  upload: jest.fn().mockResolvedValue(undefined),
+  getStream: jest.fn().mockResolvedValue({ pipe: jest.fn() }),
+  getPresignedUrl: jest.fn().mockResolvedValue('https://minio.local/presigned-url'),
+  delete: jest.fn().mockResolvedValue(undefined),
+  exists: jest.fn().mockResolvedValue(true),
+};
+
+jest.mock('../services/storage', () => ({
+  storageService: mockStorageService,
+}));
+
+jest.mock('../config/storage.config', () => ({
+  storageConfig: {
+    driver: 'minio',
+    buckets: { attachments: 'attachments', pdfs: 'pdfs', exports: 'exports' },
+    minio: { publicEndpoint: 'https://minio.local' },
+    presignedTtl: { sensitive: 300, standard: 900 },
+  },
+}));
+
+jest.mock('../utils/image-compression', () => ({
+  compressIfImage: jest.fn().mockImplementation(async (buffer: Buffer) => ({
+    buffer,
+    originalSize: buffer.length,
+    compressedSize: buffer.length,
+    wasCompressed: false,
+  })),
+}));
+
+jest.mock('../utils/file-hash', () => ({
+  computeFileHash: jest.fn(() => 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'),
+}));
+
+jest.mock('../utils/audit-logger', () => ({
+  logChange: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../constants/attachmentCategories', () => ({
@@ -107,6 +147,7 @@ const mockRecord = (overrides: any = {}) => ({
   mimeType: 'application/pdf',
   sizeBytes: 12345,
   storagePath: 'clients/abc123-test.pdf',
+  fileHash: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
   isArchived: false,
   uploadedById: MOCK_USER_ID,
   createdAt: new Date('2026-01-15'),
@@ -122,10 +163,9 @@ const mockRecord = (overrides: any = {}) => ({
 beforeEach(() => {
   jest.clearAllMocks();
 
-  // Reset fs.existsSync to default (file exists)
   (fs.existsSync as jest.Mock).mockReturnValue(true);
+  (fs.readFileSync as jest.Mock).mockReturnValue(Buffer.from('fake-file-content'));
 
-  // Default: all entities exist
   mockPrisma.client.findUnique.mockResolvedValue({ id: MOCK_CLIENT_ID });
   mockPrisma.reservation.findUnique.mockResolvedValue({
     id: MOCK_RESERVATION_ID,
@@ -135,6 +175,8 @@ beforeEach(() => {
     id: MOCK_DEPOSIT_ID,
     reservation: { clientId: MOCK_CLIENT_ID },
   });
+  mockPrisma.attachment.findFirst.mockResolvedValue(null);
+  mockStorageService.exists.mockResolvedValue(true);
 });
 
 /* ═══════════════════════════════════════════════════════════════
@@ -157,10 +199,10 @@ describe('AttachmentService', () => {
       expect(result.entityType).toBe('CLIENT');
       expect(result.entityId).toBe(MOCK_CLIENT_ID);
       expect(mockPrisma.attachment.create).toHaveBeenCalledTimes(1);
-      expect(fs.renameSync).toHaveBeenCalled();
+      expect(mockStorageService.upload).toHaveBeenCalled();
     });
 
-    it('should store file in correct entity subdirectory', async () => {
+    it('should upload file to correct storage path', async () => {
       mockPrisma.attachment.create.mockResolvedValue(mockRecord());
 
       await attachmentService.createAttachment(
@@ -171,6 +213,18 @@ describe('AttachmentService', () => {
 
       const createCall = mockPrisma.attachment.create.mock.calls[0][0];
       expect(createCall.data.storagePath).toMatch(/^clients\//);
+    });
+
+    it('should cleanup staging file after upload', async () => {
+      mockPrisma.attachment.create.mockResolvedValue(mockRecord());
+
+      await attachmentService.createAttachment(
+        { entityType: 'CLIENT', entityId: MOCK_CLIENT_ID, category: 'RODO' },
+        mockFile(),
+        MOCK_USER_ID,
+      );
+
+      expect(fs.unlinkSync).toHaveBeenCalled();
     });
 
     it('should reject invalid entityType', async () => {
@@ -271,8 +325,7 @@ describe('AttachmentService', () => {
       ).rejects.toThrow(/klient/i);
     });
 
-    it('should create destination directory if it does not exist', async () => {
-      (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+    it('should save fileHash in created record', async () => {
       mockPrisma.attachment.create.mockResolvedValue(mockRecord());
 
       await attachmentService.createAttachment(
@@ -281,10 +334,25 @@ describe('AttachmentService', () => {
         MOCK_USER_ID,
       );
 
-      expect(fs.mkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('clients'),
-        { recursive: true },
+      const createCall = mockPrisma.attachment.create.mock.calls[0][0];
+      expect(createCall.data.fileHash).toBeDefined();
+      expect(createCall.data.fileHash).toHaveLength(64);
+    });
+
+    it('should return existing attachment on dedup hit', async () => {
+      const existingRecord = mockRecord({ id: 'att-existing' });
+      mockPrisma.attachment.findFirst.mockResolvedValue(existingRecord);
+
+      const result = await attachmentService.createAttachment(
+        { entityType: 'CLIENT', entityId: MOCK_CLIENT_ID, category: 'RODO' },
+        mockFile(),
+        MOCK_USER_ID,
       );
+
+      expect(result._deduplicated).toBe(true);
+      expect(result.id).toBe('att-existing');
+      expect(mockPrisma.attachment.create).not.toHaveBeenCalled();
+      expect(mockStorageService.upload).not.toHaveBeenCalled();
     });
   });
 
@@ -367,8 +435,8 @@ describe('AttachmentService', () => {
       });
 
       mockPrisma.attachment.findMany
-        .mockResolvedValueOnce([ownAtt])      // getAttachments()
-        .mockResolvedValueOnce([clientRodo]);  // client RODO query
+        .mockResolvedValueOnce([ownAtt])
+        .mockResolvedValueOnce([clientRodo]);
 
       const result = await attachmentService.getAttachmentsWithClientRodo(
         'RESERVATION',
@@ -376,10 +444,8 @@ describe('AttachmentService', () => {
       );
 
       expect(result).toHaveLength(2);
-      // Client RODO comes first and has _fromClient flag
       expect(result[0]).toHaveProperty('_fromClient', true);
       expect(result[0].category).toBe('RODO');
-      // Own attachment second
       expect(result[1].category).toBe('CONTRACT');
     });
 
@@ -392,7 +458,6 @@ describe('AttachmentService', () => {
       );
 
       expect(result).toHaveLength(1);
-      // Only one findMany call (no client RODO cross-reference)
       expect(mockPrisma.attachment.findMany).toHaveBeenCalledTimes(1);
     });
 
@@ -406,7 +471,6 @@ describe('AttachmentService', () => {
       );
 
       expect(result).toEqual([]);
-      // Should not attempt second findMany for client RODO
       expect(mockPrisma.attachment.findMany).toHaveBeenCalledTimes(1);
     });
   });
@@ -481,27 +545,86 @@ describe('AttachmentService', () => {
   /* ─── hardDeleteAttachment ────────────────────────────────── */
 
   describe('hardDeleteAttachment()', () => {
-    it('should delete file from disk and DB record', async () => {
+    it('should delete file from storage and DB record', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
       mockPrisma.attachment.delete.mockResolvedValue(mockRecord());
 
       await attachmentService.hardDeleteAttachment(MOCK_ATTACHMENT_ID);
 
-      expect(fs.unlinkSync).toHaveBeenCalled();
+      expect(mockStorageService.delete).toHaveBeenCalledWith('attachments', 'clients/abc123-test.pdf');
       expect(mockPrisma.attachment.delete).toHaveBeenCalledWith({
         where: { id: MOCK_ATTACHMENT_ID },
       });
     });
 
-    it('should skip file deletion if file not on disk', async () => {
+    it('should still delete DB record if storage file not found', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
       mockPrisma.attachment.delete.mockResolvedValue(mockRecord());
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      mockStorageService.delete.mockRejectedValueOnce(new Error('Not found'));
 
       await attachmentService.hardDeleteAttachment(MOCK_ATTACHMENT_ID);
 
-      expect(fs.unlinkSync).not.toHaveBeenCalled();
       expect(mockPrisma.attachment.delete).toHaveBeenCalled();
+    });
+  });
+
+  /* ─── getFileStream ───────────────────────────────────────── */
+
+  describe('getFileStream()', () => {
+    it('should return stream and attachment when file exists', async () => {
+      mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
+      mockStorageService.exists.mockResolvedValue(true);
+      const mockStream = { pipe: jest.fn() };
+      mockStorageService.getStream.mockResolvedValue(mockStream);
+
+      const { stream, attachment } = await attachmentService.getFileStream(MOCK_ATTACHMENT_ID);
+
+      expect(stream).toBe(mockStream);
+      expect(attachment.id).toBe(MOCK_ATTACHMENT_ID);
+      expect(mockStorageService.getStream).toHaveBeenCalledWith('attachments', 'clients/abc123-test.pdf');
+    });
+
+    it('should throw when file not in storage', async () => {
+      mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
+      mockStorageService.exists.mockResolvedValue(false);
+
+      await expect(
+        attachmentService.getFileStream(MOCK_ATTACHMENT_ID),
+      ).rejects.toThrow(/storage/i);
+    });
+
+    it('should throw when attachment not found', async () => {
+      mockPrisma.attachment.findUnique.mockResolvedValue(null);
+
+      await expect(
+        attachmentService.getFileStream(MOCK_ATTACHMENT_ID),
+      ).rejects.toThrow();
+    });
+  });
+
+  /* ─── getDownloadUrl ──────────────────────────────────────── */
+
+  describe('getDownloadUrl()', () => {
+    it('should return presigned URL when MinIO + publicEndpoint configured', async () => {
+      mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
+      mockStorageService.exists.mockResolvedValue(true);
+
+      const result = await attachmentService.getDownloadUrl(MOCK_ATTACHMENT_ID);
+
+      expect(result.url).toContain('presigned');
+      expect(result.direct).toBe(true);
+      expect(result.expiresIn).toBeGreaterThan(0);
+      expect(result.filename).toBe('test.pdf');
+      expect(result.mimeType).toBe('application/pdf');
+    });
+
+    it('should throw when file not in storage', async () => {
+      mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
+      mockStorageService.exists.mockResolvedValue(false);
+
+      await expect(
+        attachmentService.getDownloadUrl(MOCK_ATTACHMENT_ID),
+      ).rejects.toThrow(/storage/i);
     });
   });
 
@@ -641,29 +764,6 @@ describe('AttachmentService', () => {
       const result = await attachmentService.countByCategory('CLIENT', MOCK_CLIENT_ID);
 
       expect(result).toEqual({});
-    });
-  });
-
-  /* ─── getFilePath ─────────────────────────────────────────── */
-
-  describe('getFilePath()', () => {
-    it('should return file path when file exists on disk', async () => {
-      mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      const { filePath, attachment } = await attachmentService.getFilePath(MOCK_ATTACHMENT_ID);
-
-      expect(filePath).toContain('clients/abc123-test.pdf');
-      expect(attachment.id).toBe(MOCK_ATTACHMENT_ID);
-    });
-
-    it('should throw when file not found on disk', async () => {
-      mockPrisma.attachment.findUnique.mockResolvedValue(mockRecord());
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
-
-      await expect(
-        attachmentService.getFilePath(MOCK_ATTACHMENT_ID),
-      ).rejects.toThrow();
     });
   });
 });
