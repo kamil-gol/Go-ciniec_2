@@ -275,22 +275,24 @@ export function StatusChanger({
               <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
               Potwierdź zmianę statusu
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                Czy na pewno chcesz zmienić status z{' '}
-                <strong>{STATUS_CONFIG[statusKey]?.label}</strong> na{' '}
-                <strong className="text-red-600 dark:text-red-400">
-                  {selectedStatus ? STATUS_CONFIG[selectedStatus]?.label : ''}
-                </strong>?
-              </p>
-              {selectedStatus === 'CANCELLED' && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200">
-                  <strong>Uwaga:</strong> Anulowanie rezerwacji jest operacją nieodwracalną.
-                  Klient zostanie poinformowany o anulowaniu.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Czy na pewno chcesz zmienić status z{' '}
+                  <strong>{STATUS_CONFIG[statusKey]?.label}</strong> na{' '}
+                  <strong className="text-red-600 dark:text-red-400">
+                    {selectedStatus ? STATUS_CONFIG[selectedStatus]?.label : ''}
+                  </strong>?
+                </p>
+                {selectedStatus === 'CANCELLED' && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200">
+                    <strong>Uwaga:</strong> Anulowanie rezerwacji jest operacją nieodwracalną.
+                    Klient zostanie poinformowany o anulowaniu.
+                  </div>
+                )}
+                <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm">
+                  <strong>Powód:</strong> {reason}
                 </div>
-              )}
-              <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm">
-                <strong>Powód:</strong> {reason}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
