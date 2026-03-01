@@ -7,6 +7,7 @@
  * This ensures all RODO documents are in one place per client.
  * 
  * Updated: Phase 3 Audit — logChange() for all CRUD operations
+ * Updated: #146 — storageService abstraction (local/MinIO)
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
@@ -16,33 +17,37 @@ import { logChange } from '../utils/audit-logger';
 import { ATTACHMENT } from '../i18n/pl';
 import { CreateAttachmentDTO, UpdateAttachmentDTO, AttachmentFilters } from '../types/attachment.types';
 import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../constants/attachmentCategories';
-import { UPLOAD_BASE } from '../middlewares/upload';
+import { storageService } from './storage';
+import { storageConfig } from '../config/storage.config';
 import logger from '../utils/logger';
 import fs from 'fs';
-import path from 'path';
 
 class AttachmentService {
   /**
-   * Move file from staging to correct entity subdirectory.
-   * Returns the relative storagePath for DB.
+   * Upload file from staging to storage backend.
+   * Returns the storage key (relative path within the bucket).
+   * Removes the staging file after successful upload.
    */
-  private moveToEntityDir(file: Express.Multer.File, entityType: EntityType): string {
+  private async uploadToStorage(file: Express.Multer.File, entityType: EntityType): Promise<string> {
     const subDir = STORAGE_DIRS[entityType] || 'other';
-    const destDir = path.join(UPLOAD_BASE, subDir);
+    const storageKey = `${subDir}/${file.filename}`;
+    const bucket = storageConfig.buckets.attachments;
 
-    // Ensure dest dir exists
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
+    const fileBuffer = fs.readFileSync(file.path);
+
+    await storageService.upload(bucket, storageKey, fileBuffer, {
+      'Content-Type': file.mimetype,
+      'X-Original-Name': encodeURIComponent(file.originalname),
+    });
+
+    // Cleanup staging file
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+      logger.debug(`Staging file removed: ${file.path}`);
     }
 
-    const destPath = path.join(destDir, file.filename);
-
-    // Move file from staging to entity dir
-    fs.renameSync(file.path, destPath);
-
-    logger.info(`File moved: _staging/${file.filename} -> ${subDir}/${file.filename}`);
-
-    return `${subDir}/${file.filename}`;
+    logger.info(`File uploaded to storage: ${bucket}/${storageKey}`);
+    return storageKey;
   }
 
   /**
@@ -127,8 +132,8 @@ class AttachmentService {
       finalEntityId = clientId;
     }
 
-    // Move file to correct subdirectory (uses FINAL entityType)
-    const storagePath = this.moveToEntityDir(file, finalEntityType);
+    // Upload file to storage backend (uses FINAL entityType for key)
+    const storagePath = await this.uploadToStorage(file, finalEntityType);
 
     const attachment = await prisma.attachment.create({
       data: {
@@ -281,19 +286,21 @@ class AttachmentService {
   }
 
   /**
-   * Get full file path for download
+   * Get file stream for download.
+   * Returns a readable stream + attachment metadata.
    */
-  async getFilePath(id: string): Promise<{ filePath: string; attachment: any }> {
+  async getFileStream(id: string): Promise<{ stream: NodeJS.ReadableStream; attachment: any }> {
     const attachment = await this.getAttachmentById(id);
+    const bucket = storageConfig.buckets.attachments;
 
-    const filePath = path.join(UPLOAD_BASE, attachment.storagePath);
-
-    if (!fs.existsSync(filePath)) {
-      logger.error(`File not found on disk: ${filePath} (attachment: ${id})`);
-      throw AppError.notFound('Plik nie istnieje na dysku');
+    const fileExists = await storageService.exists(bucket, attachment.storagePath);
+    if (!fileExists) {
+      logger.error(`File not found in storage: ${bucket}/${attachment.storagePath} (attachment: ${id})`);
+      throw AppError.notFound('Plik nie istnieje w storage');
     }
 
-    return { filePath, attachment };
+    const stream = await storageService.getStream(bucket, attachment.storagePath);
+    return { stream, attachment };
   }
 
   /**
@@ -385,11 +392,12 @@ class AttachmentService {
   }
 
   /**
-   * Hard-delete attachment (remove file + DB record)
+   * Hard-delete attachment (remove from storage + DB record)
    * Only for admin cleanup
    */
   async hardDeleteAttachment(id: string, userId?: string) {
     const attachment = await this.getAttachmentById(id);
+    const bucket = storageConfig.buckets.attachments;
 
     // Save info for audit before deletion
     const auditData = {
@@ -401,11 +409,12 @@ class AttachmentService {
       storagePath: attachment.storagePath,
     };
 
-    // Delete file from disk
-    const filePath = path.join(UPLOAD_BASE, attachment.storagePath);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      logger.info(`File deleted from disk: ${filePath}`);
+    // Delete file from storage
+    try {
+      await storageService.delete(bucket, attachment.storagePath);
+      logger.info(`File deleted from storage: ${bucket}/${attachment.storagePath}`);
+    } catch (error) {
+      logger.warn(`File not found in storage during hard delete: ${bucket}/${attachment.storagePath}`);
     }
 
     // Delete DB record
