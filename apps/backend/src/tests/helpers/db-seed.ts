@@ -23,6 +23,8 @@ export interface TestSeedData {
   readonlyUser: any;
   hall1: any;
   hall2: any;
+  /** #165: Hall with allowMultipleReservations=true and capacity=300 */
+  hallMultiBooking: any;
   eventType1: any;
   eventType2: any;
   client1: any;
@@ -125,6 +127,20 @@ export async function seedTestData(): Promise<TestSeedData> {
     }),
   );
 
+  // #165: Hall that allows multiple simultaneous reservations
+  const hallMultiBooking = await findOrCreate(
+    () => prismaTest.hall.findUnique({ where: { name: 'Sala Wielorezerwacyjna' } }),
+    () => prismaTest.hall.create({
+      data: {
+        name: 'Sala Wielorezerwacyjna',
+        capacity: 300,
+        description: 'Sala umo\u017cliwiaj\u0105ca wiele rezerwacji w tym samym terminie',
+        isActive: true,
+        allowMultipleReservations: true,
+      },
+    }),
+  );
+
   // ── Event Types ──
   const eventType1 = await findOrCreate(
     () => prismaTest.eventType.findUnique({ where: { name: 'Wesele' } }),
@@ -179,6 +195,7 @@ export async function seedTestData(): Promise<TestSeedData> {
     readonlyUser,
     hall1,
     hall2,
+    hallMultiBooking,
     eventType1,
     eventType2,
     client1,
