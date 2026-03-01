@@ -2,14 +2,16 @@
  * Package Category Settings Service
  * Business logic for managing category settings for menu packages
  * 🇵🇱 Spolonizowany — komunikaty po polsku
- * Updated: #166 — portionTarget field (ALL | ADULTS_ONLY | CHILDREN_ONLY)
+ * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
  */
 
 import { DishCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { MENU_CRUD } from '../i18n/pl';
 
-export type PortionTarget = 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
+// Valid portionTarget values
+export const PORTION_TARGETS = ['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'] as const;
+export type PortionTarget = typeof PORTION_TARGETS[number];
 
 export interface CreateCategorySettingInput {
   packageId: string;

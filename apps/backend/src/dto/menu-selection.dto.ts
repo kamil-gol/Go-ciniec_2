@@ -2,7 +2,7 @@
  * Menu Selection DTOs
  * 
  * Data Transfer Objects for menu selection and reservation menu management
- * Updated: #166 — portionTarget per category in snapshot
+ * Updated: #166 — Added portionTarget to dishSelections in MenuSnapshotData
  */
 
 /**
@@ -65,12 +65,6 @@ export interface UpdateGuestCountsDTO {
 }
 
 /**
- * Portion target — determines which guest group a category applies to.
- * ALL = all guests, ADULTS_ONLY = only adults, CHILDREN_ONLY = only children+toddlers
- */
-export type PortionTarget = 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
-
-/**
  * Menu snapshot saved in database (JSONB field)
  */
 export interface MenuSnapshotData {
@@ -88,10 +82,11 @@ export interface MenuSnapshotData {
   toddlers: number;
   
   // NEW: Selected dishes with categories
+  // #166: portionTarget determines which guests this category feeds
   dishSelections?: {
     categoryId: string;
     categoryName: string;
-    portionTarget?: PortionTarget;
+    portionTarget?: 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
     dishes: {
       dishId: string;
       dishName: string;
