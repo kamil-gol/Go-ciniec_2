@@ -101,7 +101,7 @@ describe('createReservation — legacy date format (lines 590-593)', () => {
       date: futureDate, startTime: '20:00', endTime: '14:00',
       adults: 50, children: 10, toddlers: 5,
       pricePerAdult: 200, pricePerChild: 100,
-    } as any, UID)).rejects.toThrow('End time must be after start time');
+    } as any, UID)).rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
   });
 
   it('should throw when legacy date has overlap', async () => {

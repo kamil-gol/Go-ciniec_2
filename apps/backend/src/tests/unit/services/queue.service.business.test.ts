@@ -114,12 +114,12 @@ describe('QueueService', () => {
 
     it('should throw when IDs are missing', async () => {
       await expect(service.swapPositions('', 'res-002', TEST_USER_ID))
-        .rejects.toThrow('Both reservation IDs are required');
+        .rejects.toThrow('Wymagane są identyfikatory obu rezerwacji');
     });
 
     it('should throw when swapping with itself', async () => {
       await expect(service.swapPositions('res-001', 'res-001', TEST_USER_ID))
-        .rejects.toThrow('Cannot swap reservation with itself');
+        .rejects.toThrow('Nie można zamienić rezerwacji z samą sobą');
     });
 
     it('should throw when one reservation not found', async () => {
@@ -128,7 +128,7 @@ describe('QueueService', () => {
         .mockResolvedValueOnce(null);
 
       await expect(service.swapPositions('res-001', 'res-999', TEST_USER_ID))
-        .rejects.toThrow('One or both reservations not found');
+        .rejects.toThrow('Nie znaleziono jednej lub obu rezerwacji');
     });
 
     it('should throw when reservations are on different dates', async () => {
@@ -165,7 +165,7 @@ describe('QueueService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
 
       await expect(service.moveToPosition('res-999', 2, TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when reservation is not RESERVED', async () => {
@@ -211,7 +211,7 @@ describe('QueueService', () => {
 
     it('should throw when updates array is empty', async () => {
       await expect(service.batchUpdatePositions([], TEST_USER_ID))
-        .rejects.toThrow('At least one update is required');
+        .rejects.toThrow('Wymagana jest co najmniej jedna aktualizacja');
     });
 
     it('should throw when some reservations not found', async () => {
@@ -326,7 +326,7 @@ describe('QueueService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
 
       await expect(service.promoteReservation('res-999', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when reservation is not RESERVED', async () => {

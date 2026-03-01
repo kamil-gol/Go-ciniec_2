@@ -122,7 +122,7 @@ describe('DepositService', () => {
         reservationId: 'res-uuid-001',
         amount: 0,
         dueDate: '2026-06-01',
-      }, TEST_USER_ID)).rejects.toThrow(/wieksza od 0/);
+      }, TEST_USER_ID)).rejects.toThrow(/większa od 0/);
     });
 
     it('should throw when sum of deposits exceeds reservation total', async () => {
@@ -283,12 +283,12 @@ describe('DepositService', () => {
       });
 
       await expect(depositService.update('dep-uuid-001', { amount: 3000 }, TEST_USER_ID))
-        .rejects.toThrow(/oplaconej/);
+        .rejects.toThrow(/opłaconej/);
     });
 
     it('should throw when amount is 0', async () => {
       await expect(depositService.update('dep-uuid-001', { amount: 0 }, TEST_USER_ID))
-        .rejects.toThrow(/wieksza od 0/);
+        .rejects.toThrow(/większa od 0/);
     });
 
     it('should throw when new amount exceeds reservation total', async () => {
@@ -340,7 +340,7 @@ describe('DepositService', () => {
     it('should throw when deposit is paid', async () => {
       mockPrisma.deposit.findUnique.mockResolvedValue({ ...TEST_DEPOSIT, paid: true });
       await expect(depositService.delete('dep-uuid-001', TEST_USER_ID))
-        .rejects.toThrow(/oplaconej/);
+        .rejects.toThrow(/opłaconej/);
     });
   });
 });

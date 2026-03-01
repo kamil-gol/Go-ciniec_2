@@ -85,7 +85,7 @@ describe('PackageCategoryController branches', () => {
       const res = mockRes();
       await packageCategoryController.getByPackage(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Wewnętrzny błąd serwera' });
     });
   });
 
@@ -239,7 +239,7 @@ describe('PackageCategoryController branches', () => {
       const req = { params: { id: 'cs1' }, body: {} } as any;
       const res = mockRes();
       await packageCategoryController.update(req, res);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Wewnętrzny błąd serwera' });
     });
   });
 
@@ -267,7 +267,7 @@ describe('PackageCategoryController branches', () => {
       const req = { params: { id: 'cs1' } } as any;
       const res = mockRes();
       await packageCategoryController.delete(req, res);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Wewnętrzny błąd serwera' });
     });
   });
 
