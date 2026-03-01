@@ -3,7 +3,7 @@
  * 
  * Handles CRUD for PackageCategorySettings
  * Links packages to dish categories with min/max selection rules
- * Updated: #166 — portionTarget field (ALL | ADULTS_ONLY | CHILDREN_ONLY)
+ * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
  */
 
 import { Request, Response } from 'express';
@@ -144,9 +144,8 @@ class PackageCategoryController {
       }
 
       // Validate portionTarget if provided
-      const validTargets = ['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'];
-      if (portionTarget && !validTargets.includes(portionTarget)) {
-        return res.status(400).json({ error: `portionTarget musi być jednym z: ${validTargets.join(', ')}` });
+      if (portionTarget && !['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'].includes(portionTarget)) {
+        return res.status(400).json({ error: 'portionTarget musi by\u0107: ALL, ADULTS_ONLY lub CHILDREN_ONLY' });
       }
 
       // Check if package exists
@@ -228,9 +227,8 @@ class PackageCategoryController {
       }
 
       // Validate portionTarget if provided
-      const validTargets = ['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'];
-      if (portionTarget && !validTargets.includes(portionTarget)) {
-        return res.status(400).json({ error: `portionTarget musi być jednym z: ${validTargets.join(', ')}` });
+      if (portionTarget !== undefined && !['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'].includes(portionTarget)) {
+        return res.status(400).json({ error: 'portionTarget musi by\u0107: ALL, ADULTS_ONLY lub CHILDREN_ONLY' });
       }
 
       // Check if setting exists
