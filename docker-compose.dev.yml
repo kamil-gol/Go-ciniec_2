@@ -28,6 +28,14 @@ services:
     volumes:
       - redis_data_dev:/data
 
+  minio:
+    container_name: rezerwacje-minio-dev
+    ports:
+      - '127.0.0.1:${MINIO_PORT:-9002}:9000'
+      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9003}:9001'
+    volumes:
+      - minio_data_dev:/data
+
   backend:
     build:
       context: ./apps/backend
@@ -40,11 +48,20 @@ services:
       NODE_ENV: development
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       LOG_LEVEL: debug
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_ATTACHMENTS: ${MINIO_BUCKET_ATTACHMENTS:-attachments}
+      MINIO_BUCKET_PDFS: ${MINIO_BUCKET_PDFS:-pdfs}
+      MINIO_BUCKET_EXPORTS: ${MINIO_BUCKET_EXPORTS:-exports}
     ports:
       - '127.0.0.1:${API_PORT:-4001}:3001'
       - '127.0.0.1:9229:9229'  # Node.js debugger
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     volumes:
       - ./apps/backend:/app
@@ -83,4 +100,6 @@ volumes:
   postgres_data_dev:
     driver: local
   redis_data_dev:
+    driver: local
+  minio_data_dev:
     driver: local
