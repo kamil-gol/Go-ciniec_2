@@ -4,12 +4,14 @@
 # Development:   make dev
 # Production:    make prod
 # Testing:       make test-unit / test-integration / test-all
+# Storage:       make migrate-minio / minio-stats
 # Cleanup:       make down / test-down
 # ============================================
 
 .PHONY: dev dev-build dev-down prod prod-build prod-down \
         test-unit test-integration test-frontend test-e2e test-all \
         test-coverage test-frontend-coverage test-down \
+        migrate-minio migrate-minio-dry minio-stats minio-ls \
         logs logs-backend logs-frontend status help
 
 # ============================================
@@ -89,6 +91,29 @@ test-down:
 	$(COMPOSE_TEST) down -v --remove-orphans
 
 # ============================================
+# Storage / MinIO (#146)
+# ============================================
+
+migrate-minio:
+	@echo "\n=== Migracja plików: local -> MinIO ==="
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "STORAGE_DRIVER=minio npx tsx src/scripts/migrate-to-minio.ts"
+
+migrate-minio-dry:
+	@echo "\n=== Migracja plików: DRY RUN ==="
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "STORAGE_DRIVER=minio DRY_RUN=true npx tsx src/scripts/migrate-to-minio.ts"
+
+minio-ls:
+	@$(COMPOSE_DEV) --env-file .env.dev exec minio \
+		sh -c "mc alias set local http://localhost:9000 \$$MINIO_ROOT_USER \$$MINIO_ROOT_PASSWORD >/dev/null 2>&1 && mc ls local/attachments/ --recursive"
+
+minio-stats:
+	@echo "\n=== MinIO Bucket Stats ==="
+	@$(COMPOSE_DEV) --env-file .env.dev exec minio \
+		sh -c "mc alias set local http://localhost:9000 \$$MINIO_ROOT_USER \$$MINIO_ROOT_PASSWORD >/dev/null 2>&1 && mc du local/attachments/"
+
+# ============================================
 # Logs & Status
 # ============================================
 
@@ -100,6 +125,9 @@ logs-backend:
 
 logs-frontend:
 	$(COMPOSE_DEV) --env-file .env.dev logs -f frontend
+
+logs-minio:
+	$(COMPOSE_DEV) --env-file .env.dev logs -f minio
 
 logs-prod:
 	$(COMPOSE_PROD) --env-file .env.prod logs -f
@@ -151,9 +179,16 @@ help:
 	@echo "    make test-all           All tests (unit + integration + frontend)"
 	@echo "    make test-down          Stop test containers"
 	@echo ""
+	@echo "  STORAGE / MINIO (#146):"
+	@echo "    make migrate-minio      Migrate files: local -> MinIO"
+	@echo "    make migrate-minio-dry  Dry run migration (no upload)"
+	@echo "    make minio-ls           List all files in MinIO"
+	@echo "    make minio-stats        Show bucket size/count"
+	@echo ""
 	@echo "  UTILITIES:"
 	@echo "    make logs               Follow all logs (dev)"
 	@echo "    make logs-backend       Follow backend logs (dev)"
+	@echo "    make logs-minio         Follow MinIO logs (dev)"
 	@echo "    make logs-prod          Follow all logs (prod)"
 	@echo "    make logs-prod-backend  Follow backend logs (prod)"
 	@echo "    make status             Show running containers (both envs)"
