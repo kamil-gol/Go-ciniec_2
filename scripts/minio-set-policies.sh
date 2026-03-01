@@ -2,23 +2,24 @@
 # ============================================
 # MinIO Bucket Policies Setup (H4)
 # ============================================
-# Sets explicit private policies on all buckets
-# and enables versioning on attachments bucket.
+# Sets explicit private policies on all buckets,
+# enables versioning on attachments bucket,
+# and configures lifecycle rules for exports.
 #
 # Usage:
-#   chmod +x scripts/minio-set-policies.sh
-#   ./scripts/minio-set-policies.sh
-# Or:
 #   make minio-policies
+#   ./scripts/minio-set-policies.sh
 # ============================================
 
 set -euo pipefail
+
+log() { echo "[$(date -Iseconds)] $*"; }
 
 # Find running minio container
 CONTAINER=$(docker ps --filter "name=rezerwacje-minio" --format "{{.Names}}" | head -1)
 
 if [ -z "$CONTAINER" ]; then
-  echo "❌ No running MinIO container found."
+  log "ERROR: No running MinIO container found."
   exit 1
 fi
 
@@ -26,43 +27,85 @@ ENV="unknown"
 if echo "$CONTAINER" | grep -q "dev"; then ENV="dev"; fi
 if echo "$CONTAINER" | grep -q "prod"; then ENV="prod"; fi
 
-echo ""
-echo "═══ MinIO Bucket Policies Setup (${ENV}) ═══"
-echo "  Container: ${CONTAINER}"
-echo ""
+log "=== MinIO Bucket Policies (${ENV}) ==="
+log "  Container: ${CONTAINER}"
 
-# Setup mc alias
-docker exec "${CONTAINER}" mc alias set local http://localhost:9000 "${MINIO_ROOT_USER:-minioadmin}" "${MINIO_ROOT_PASSWORD:-minioadmin123}" > /dev/null 2>&1 || \
-  docker exec "${CONTAINER}" sh -c 'mc alias set local http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD' > /dev/null 2>&1
+# Helper: run mc command inside container
+# Uses container's own env vars for credentials
+mc_exec() {
+  docker exec "${CONTAINER}" sh -c "mc $*" 2>/dev/null
+}
+
+# Setup mc alias (using container env vars)
+log "Setting up mc alias..."
+docker exec "${CONTAINER}" sh -c \
+  'mc alias set local http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD' \
+  > /dev/null 2>&1
+
+if ! mc_exec "alias list local" > /dev/null 2>&1; then
+  log "ERROR: Failed to configure mc alias."
+  exit 1
+fi
+
+log "  mc alias configured"
 
 # Get bucket list
-BUCKETS=$(docker exec "${CONTAINER}" mc ls local/ 2>/dev/null | sed 's/.*[0-9]B //' | tr -d '/' | tr -d ' ')
+BUCKETS=$(mc_exec "ls local/" | sed 's/.*[0-9]B //' | tr -d '/' | tr -d ' ' || true)
 
 if [ -z "$BUCKETS" ]; then
-  echo "⚠️  No buckets found."
+  log "WARNING: No buckets found."
   exit 0
 fi
 
+log ""
+
 for BUCKET in $BUCKETS; do
-  echo "📦 Bucket: ${BUCKET}"
+  log "Bucket: ${BUCKET}"
 
-  # Set private policy (deny all anonymous access)
-  docker exec "${CONTAINER}" mc anonymous set none "local/${BUCKET}" 2>/dev/null || true
-  echo "   ✅ Policy: private (no anonymous access)"
+  # 1. Set private policy (deny all anonymous access)
+  mc_exec "anonymous set none local/${BUCKET}" > /dev/null 2>&1 || true
+  log "  Policy: private (no anonymous access)"
 
-  # Enable versioning on attachments bucket
+  # 2. Enable versioning on attachments bucket (protects against accidental deletes)
   if [ "${BUCKET}" = "attachments" ]; then
-    docker exec "${CONTAINER}" mc version enable "local/${BUCKET}" 2>/dev/null && \
-      echo "   ✅ Versioning: enabled" || \
-      echo "   ⚠️  Versioning: not supported (single drive, needs erasure coding)"
+    if mc_exec "version enable local/${BUCKET}" > /dev/null 2>&1; then
+      log "  Versioning: enabled"
+    else
+      log "  Versioning: skipped (single-drive setup, needs erasure coding)"
+    fi
   fi
 
-  # Show stats
-  COUNT=$(docker exec "${CONTAINER}" mc ls "local/${BUCKET}/" --recursive 2>/dev/null | wc -l)
-  SIZE=$(docker exec "${CONTAINER}" mc du "local/${BUCKET}/" 2>/dev/null | tail -1 | sed 's/ .*//')
-  echo "   📊 Files: ${COUNT}, Size: ${SIZE:-0B}"
-  echo ""
+  # 3. Lifecycle rule: auto-delete exports after 7 days
+  if [ "${BUCKET}" = "exports" ]; then
+    # Create lifecycle config JSON inside container
+    docker exec "${CONTAINER}" sh -c 'cat > /tmp/lifecycle.json << LCEOF
+{
+  "Rules": [
+    {
+      "ID": "auto-cleanup-exports",
+      "Status": "Enabled",
+      "Expiration": {
+        "Days": 7
+      }
+    }
+  ]
+}
+LCEOF
+mc ilm import local/exports < /tmp/lifecycle.json && rm -f /tmp/lifecycle.json' 2>/dev/null && \
+      log "  Lifecycle: auto-delete after 7 days" || \
+      log "  Lifecycle: skipped (mc ilm not available or single-drive)"
+  fi
+
+  # 4. Stats
+  COUNT=$(mc_exec "ls local/${BUCKET}/ --recursive" | wc -l || echo "0")
+  SIZE=$(mc_exec "du local/${BUCKET}/" | tail -1 | sed 's/ .*//' || echo "0B")
+  log "  Files: ${COUNT}, Size: ${SIZE:-0B}"
+  log ""
 done
 
-echo "✅ Bucket policies configured."
-echo ""
+# Summary
+log "=== Policies Applied ==="
+log "  All buckets: private (no anonymous access)"
+log "  attachments: versioning enabled (if erasure coding available)"
+log "  exports: auto-delete after 7 days"
+log ""
