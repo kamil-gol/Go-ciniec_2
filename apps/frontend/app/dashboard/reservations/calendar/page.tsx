@@ -109,7 +109,40 @@ function isToday(date: Date): boolean {
   return date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
 }
 
-function ReservationPill({ reservation, onClick }: { reservation: CalendarReservation; onClick: () => void }) {
+/** #165: Build pill tooltip — includes capacity info for multi-booking halls */
+function buildPillTooltip(
+  reservation: CalendarReservation,
+  allDayReservations: CalendarReservation[]
+): string {
+  const eventName = reservation.eventType?.name || 'Wydarzenie'
+  const clientName = reservation.client
+    ? `${reservation.client.firstName} ${reservation.client.lastName}`
+    : 'Klient'
+  const time = reservation.startTime || ''
+
+  let base = `${eventName} — ${clientName}${time ? ` (${time})` : ''}`
+
+  const hall = reservation.hall
+  if (hall?.allowMultipleBookings && hall?.capacity && hall.capacity > 0) {
+    const sameHallActive = allDayReservations.filter(
+      (r) => r.hall?.id === hall.id && r.status !== 'CANCELLED'
+    )
+    const totalGuests = sameHallActive.reduce((sum, r) => sum + (r.guests || 0), 0)
+    base += ` · ${hall.name}: ${totalGuests}/${hall.capacity} osób`
+  }
+
+  return base
+}
+
+function ReservationPill({
+  reservation,
+  allDayReservations,
+  onClick,
+}: {
+  reservation: CalendarReservation
+  allDayReservations: CalendarReservation[]
+  onClick: () => void
+}) {
   const color = reservation.eventType?.color || '#6366f1'
   const status = STATUS_CONFIG[reservation.status]
   const name = reservation.client
@@ -120,7 +153,7 @@ function ReservationPill({ reservation, onClick }: { reservation: CalendarReserv
       onClick={(e) => { e.stopPropagation(); onClick() }}
       className="group w-full text-left rounded px-1.5 py-[3px] text-[11px] leading-tight font-medium truncate transition-all hover:shadow-sm cursor-pointer"
       style={{ backgroundColor: `${color}18`, color, borderLeft: `3px solid ${color}` }}
-      title={`${reservation.eventType?.name || 'Wydarzenie'} \u2014 ${reservation.client?.firstName} ${reservation.client?.lastName} (${reservation.startTime || ''})`}
+      title={buildPillTooltip(reservation, allDayReservations)}
     >
       <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-neutral-400')} />
       {reservation.startTime && <span className="opacity-70">{reservation.startTime} </span>}
@@ -129,7 +162,6 @@ function ReservationPill({ reservation, onClick }: { reservation: CalendarReserv
   )
 }
 
-/* Mobile dots: colored dots for each reservation on small screens */
 function MobileDots({ reservations }: { reservations: CalendarReservation[] }) {
   if (reservations.length === 0) return null
   const maxDots = 4
@@ -151,6 +183,46 @@ function MobileDots({ reservations }: { reservations: CalendarReservation[] }) {
   )
 }
 
+/** #165: Mini capacity bars for multi-booking halls in calendar grid cells */
+function CellCapacityBars({ reservations }: { reservations: CalendarReservation[] }) {
+  const hallBars = useMemo(() => {
+    const halls = new Map<string, { name: string; capacity: number; totalGuests: number }>()
+    for (const r of reservations) {
+      const h = r.hall
+      if (!h?.allowMultipleBookings || !h?.capacity || h.capacity <= 0) continue
+      if (r.status === 'CANCELLED') continue
+      if (!halls.has(h.id)) halls.set(h.id, { name: h.name, capacity: h.capacity, totalGuests: 0 })
+      halls.get(h.id)!.totalGuests += r.guests || 0
+    }
+    return Array.from(halls.values())
+  }, [reservations])
+
+  if (hallBars.length === 0) return null
+
+  return (
+    <div className="hidden md:flex flex-col gap-[2px] mt-1">
+      {hallBars.map((bar) => {
+        const pct = Math.min(100, Math.round((bar.totalGuests / bar.capacity) * 100))
+        return (
+          <div
+            key={bar.name}
+            className="w-full h-[3px] bg-violet-100 dark:bg-violet-900/30 rounded-full overflow-hidden"
+            title={`${bar.name}: ${bar.totalGuests}/${bar.capacity} osób (${pct}%)`}
+          >
+            <div
+              className={cn(
+                'h-full rounded-full',
+                pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-violet-500'
+              )}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function SkeletonGrid() {
   return (
     <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-700 rounded-xl overflow-hidden">
@@ -167,11 +239,23 @@ function SkeletonGrid() {
   )
 }
 
+/* #165: DayDetailPanel — groups reservations by hall with capacity bars */
 function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
   date: Date; reservations: CalendarReservation[]; onClose: () => void; onReservationClick: (id: string) => void
 }) {
   const dayName = date.toLocaleDateString('pl-PL', { weekday: 'long' })
   const fullDate = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  const hallGroups = useMemo(() => {
+    const groups = new Map<string, { hall: CalendarReservation['hall']; reservations: CalendarReservation[] }>()
+    for (const r of reservations) {
+      const key = r.hall?.id || '__no_hall__'
+      if (!groups.has(key)) groups.set(key, { hall: r.hall, reservations: [] })
+      groups.get(key)!.reservations.push(r)
+    }
+    return Array.from(groups.values())
+  }, [reservations])
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
@@ -192,37 +276,88 @@ function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
           <p className="text-sm">Brak rezerwacji</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {reservations.map((r) => {
-            const color = r.eventType?.color || '#6366f1'
-            const status = STATUS_CONFIG[r.status]
+        <div className="space-y-4">
+          {hallGroups.map(({ hall, reservations: hallReservations }) => {
+            const isMulti = hall?.allowMultipleBookings && hall?.capacity && hall.capacity > 0
+            const activeRes = hallReservations.filter((r) => r.status !== 'CANCELLED')
+            const totalGuests = activeRes.reduce((sum, r) => sum + (r.guests || 0), 0)
+            const occupancyPct = isMulti ? Math.min(100, Math.round((totalGuests / hall!.capacity!) * 100)) : 0
+
             return (
-              <button key={r.id} onClick={() => onReservationClick(r.id)}
-                className="group w-full text-left rounded-xl p-3 border border-neutral-100 dark:border-neutral-700/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all cursor-pointer"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-full min-h-[40px] rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
-                        {r.eventType?.name || r.customEventType || 'Wydarzenie'}
+              <div key={hall?.id || '__no_hall__'}>
+                {/* Hall section header */}
+                {(hallGroups.length > 1 || isMulti) && (
+                  <div className="mb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="h-3.5 w-3.5 text-violet-500" />
+                      <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                        {hall?.name || 'Bez sali'}
                       </span>
-                      {status && (
-                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', status.bgClass)}>{status.label}</span>
+                      {isMulti && (
+                        <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">
+                          {totalGuests}/{hall!.capacity} osób — {activeRes.length} rez.
+                        </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.client?.firstName} {r.client?.lastName}</span>
-                      {r.startTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
-                      {r.hall && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{r.hall.name}</span>}
-                    </div>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">{r.guests} os. \u2022 {formatCurrency(r.totalPrice)}</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    {isMulti && (
+                      <div className="w-full h-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all duration-500',
+                            occupancyPct >= 90 ? 'bg-red-500' : occupancyPct >= 70 ? 'bg-amber-500' : 'bg-violet-500'
+                          )}
+                          style={{ width: `${occupancyPct}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {/* Reservation cards */}
+                <div className="space-y-2">
+                  {hallReservations.map((r) => {
+                    const color = r.eventType?.color || '#6366f1'
+                    const status = STATUS_CONFIG[r.status]
+                    return (
+                      <button key={r.id} onClick={() => onReservationClick(r.id)}
+                        className="group w-full text-left rounded-xl p-3 border border-neutral-100 dark:border-neutral-700/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-1 h-full min-h-[40px] rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
+                                {r.eventType?.name || r.customEventType || 'Wydarzenie'}
+                              </span>
+                              {status && (
+                                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', status.bgClass)}>{status.label}</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                              <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.client?.firstName} {r.client?.lastName}</span>
+                              {r.startTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
+                              {hallGroups.length <= 1 && r.hall && (
+                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{r.hall.name}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                                {r.guests} os. • {formatCurrency(r.totalPrice)}
+                                {isMulti && hall?.capacity && (
+                                  <span className="text-violet-500 ml-1">
+                                    ({Math.round(((r.guests || 0) / hall.capacity) * 100)}% sali)
+                                  </span>
+                                )}
+                              </span>
+                              <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
@@ -342,10 +477,9 @@ export default function CalendarPage() {
         <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
       </div>
 
-      {/* Controls bar — row 1: view toggle + month nav */}
+      {/* Controls bar */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* View Toggle */}
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
             <Link
               href="/dashboard/reservations/list"
@@ -360,7 +494,6 @@ export default function CalendarPage() {
             </span>
           </div>
 
-          {/* Month Navigation */}
           <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
             <button onClick={goToPrevMonth} className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors shadow-sm">
               <ChevronLeft className="h-4 w-4" />
@@ -377,7 +510,6 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Row 2: Hall filter (if halls exist) */}
         {halls && halls.length > 0 && (
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
@@ -437,21 +569,26 @@ export default function CalendarPage() {
                         )}
                       </div>
 
-                      {/* Mobile: colored dots */}
                       <div className="sm:hidden">
                         <MobileDots reservations={dayReservations} />
                       </div>
 
-                      {/* Desktop: full pills */}
                       <div className="hidden sm:block space-y-0.5">
                         {dayReservations.slice(0, MAX_PILLS).map((r) => (
-                          <ReservationPill key={r.id} reservation={r} onClick={() => router.push(`/dashboard/reservations/${r.id}`)} />
+                          <ReservationPill
+                            key={r.id}
+                            reservation={r}
+                            allDayReservations={dayReservations}
+                            onClick={() => router.push(`/dashboard/reservations/${r.id}`)}
+                          />
                         ))}
                         {dayReservations.length > MAX_PILLS && (
                           <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
                             +{dayReservations.length - MAX_PILLS} więcej
                           </div>
                         )}
+                        {/* #165: Mini capacity bars for multi-booking halls */}
+                        <CellCapacityBars reservations={dayReservations} />
                       </div>
                     </div>
                   )
