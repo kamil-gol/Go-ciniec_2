@@ -8,8 +8,8 @@
 
 // ═══ Mock Prisma with $transaction ═══
 const txMock = {
-  reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
-  deposit: { findMany: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
+  reservation: { update: jest.fn(), findFirst: jest.fn() },
+  deposit: { findMany: jest.fn(), updateMany: jest.fn() },
   reservationHistory: { create: jest.fn() },
   reservationMenuSnapshot: { delete: jest.fn(), update: jest.fn(), create: jest.fn() },
 };
@@ -87,14 +87,6 @@ let svc: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
-
-  // txMock defaults for overlap/conflict checks
-  if (txMock.reservation?.findMany) txMock.reservation.findMany.mockResolvedValue([]);
-  if (txMock.reservation?.create) txMock.reservation.create.mockResolvedValue(RES_BASE || {});
-  if (txMock.hall?.findFirst) txMock.hall.findFirst.mockResolvedValue(null);
-  if (txMock.hall?.findUnique) txMock.hall.findUnique.mockResolvedValue(null);
-  if (txMock.deposit?.create) txMock.deposit.create.mockResolvedValue({});
-  if (txMock.activityLog?.create) txMock.activityLog.create.mockResolvedValue({});
   svc = new ReservationService();
 
   db.user.findUnique.mockResolvedValue({ id: UID });
@@ -152,7 +144,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when guests above maxGuests', async () => {
       db.menuPackage.findUnique.mockResolvedValue({ ...MENU_PKG, maxGuests: 10 });
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maksimum 10 go/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maximum 10 guests/);
     });
 
     it('should process PER_PERSON option correctly', async () => {
@@ -179,7 +171,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when no prices and no menu package', async () => {
       const dto = { ...BASE_DTO, pricePerAdult: undefined, pricePerChild: undefined };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za dorosłego/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za osobę dorosłą/);
     });
   });
 
@@ -204,7 +196,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when exceeding maxQuantity', async () => {
       db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'D', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: true, maxQuantity: 3, category: 'X', description: '' }]);
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 10 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/aksimum 3/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Maximum 3/);
     });
 
     it('should throw when non-multiple option quantity > 1', async () => {
@@ -304,7 +296,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw on invalid confirmation deadline', async () => {
       const dto = { ...BASE_DTO, confirmationDeadline: FUTURE };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/termin potwierdzenia/i);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Termin potwierdzenia/);
     });
 
     it('should throw when endDateTime before startDateTime', async () => {
@@ -362,7 +354,7 @@ describe('ReservationService — Branch Coverage', () => {
         .mockResolvedValueOnce({ id: 'x', hall: { name: 'Sala B' }, client: { firstName: 'Anna', lastName: 'Nowak' } });
 
       const dto = { ...BASE_DTO, hallId: HALL_WHOLE.id };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/całego obiektu/i);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Nie można zarezerwować całego obiektu/);
     });
 
     it('should throw when regular hall but whole venue is booked', async () => {
@@ -372,7 +364,7 @@ describe('ReservationService — Branch Coverage', () => {
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ id: 'wh', client: { firstName: 'Piotr', lastName: 'W' } });
 
-      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow(/cały obiekt/i);
+      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow(/cały obiekt jest już zarezerwowany/);
     });
 
     it('should proceed when no whole venue hall exists', async () => {
@@ -388,7 +380,7 @@ describe('ReservationService — Branch Coverage', () => {
         .mockResolvedValueOnce({ id: 'x', hall: { name: 'Sala C' }, client: null });
 
       const dto = { ...BASE_DTO, hallId: HALL_WHOLE.id };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nieznany klient/i);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nieznany klient/);
     });
 
     it('should handle non-whole-venue conflict with null client', async () => {
@@ -398,7 +390,7 @@ describe('ReservationService — Branch Coverage', () => {
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ id: 'wh', client: null });
 
-      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow(/nieznany klient/i);
+      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow(/nieznany klient/);
     });
   });
 
