@@ -159,10 +159,10 @@ describe('DepositService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
 
       await expect(depositService.create({ ...createInput, amount: 0 }, userId))
-        .rejects.toThrow(/wieksza od 0/);
+        .rejects.toThrow(/większa od 0/);
 
       await expect(depositService.create({ ...createInput, amount: -100 }, userId))
-        .rejects.toThrow(/wieksza od 0/);
+        .rejects.toThrow(/większa od 0/);
     });
 
     it('should exclude CANCELLED deposits from sum calculation', async () => {
@@ -331,14 +331,14 @@ describe('DepositService', () => {
       mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
 
       await expect(depositService.update('dep-paid', { amount: 3000 }, userId))
-        .rejects.toThrow(/oplaconej/);
+        .rejects.toThrow(/opłaconej/);
     });
 
     it('should throw when amount <= 0', async () => {
       mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
 
       await expect(depositService.update('dep-1', { amount: 0 }, userId))
-        .rejects.toThrow(/wieksza od 0/);
+        .rejects.toThrow(/większa od 0/);
     });
 
     it('should throw when new amount + other deposits > totalPrice', async () => {
@@ -378,7 +378,7 @@ describe('DepositService', () => {
       mockPrisma.deposit.findUnique.mockResolvedValue(mockPaidDeposit);
 
       await expect(depositService.delete('dep-paid', userId))
-        .rejects.toThrow(/oplaconej/);
+        .rejects.toThrow(/opłaconej/);
     });
 
     it('should throw 404 when deposit not found', async () => {
@@ -574,7 +574,7 @@ describe('DepositService', () => {
       mockPrisma.deposit.findUnique.mockResolvedValue(mockDeposit);
 
       await expect(depositService.sendConfirmationEmail('dep-1'))
-        .rejects.toThrow(/oplaconej/);
+        .rejects.toThrow(/opłaconej/);
     });
 
     it('should throw 404 when deposit not found', async () => {

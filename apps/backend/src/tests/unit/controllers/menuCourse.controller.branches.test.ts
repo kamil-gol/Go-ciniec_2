@@ -80,7 +80,7 @@ describe('MenuCourseController — branches', () => {
     });
 
     it('should return 404 when Course not found', async () => {
-      svc.getById.mockRejectedValue(new Error('Course not found'));
+      svc.getById.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const r = res();
       await menuCourseController.getById(req({ params: { id: 'bad' } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -110,7 +110,7 @@ describe('MenuCourseController — branches', () => {
     });
 
     it('should return 404 when Package not found', async () => {
-      svc.create.mockRejectedValue(new Error('Package not found'));
+      svc.create.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const r = res();
       await menuCourseController.create(req({ body: { name: 'X' } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -140,7 +140,7 @@ describe('MenuCourseController — branches', () => {
     });
 
     it('should return 404 when Course not found', async () => {
-      svc.update.mockRejectedValue(new Error('Course not found'));
+      svc.update.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const r = res();
       await menuCourseController.update(req({ params: { id: 'bad' }, body: {} }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -163,7 +163,7 @@ describe('MenuCourseController — branches', () => {
     });
 
     it('should return 404 when Course not found', async () => {
-      svc.delete.mockRejectedValue(new Error('Course not found'));
+      svc.delete.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const r = res();
       await menuCourseController.delete(req({ params: { id: 'bad' } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -193,7 +193,7 @@ describe('MenuCourseController — branches', () => {
     });
 
     it('should return 404 when Course not found', async () => {
-      svc.assignDishes.mockRejectedValue(new Error('Course not found'));
+      svc.assignDishes.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const r = res();
       await menuCourseController.assignDishes(req({ params: { id: 'bad' }, body: { dishes: ['d1'] } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -224,7 +224,7 @@ describe('MenuCourseController — branches', () => {
     });
 
     it('should return 404 when Course not found', async () => {
-      svc.removeDish.mockRejectedValue(new Error('Course not found'));
+      svc.removeDish.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const r = res();
       await menuCourseController.removeDish(req({ params: { courseId: 'bad', dishId: 'd1' } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);

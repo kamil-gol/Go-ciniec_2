@@ -63,7 +63,7 @@ describe('errorHandler — conflict patterns', () => {
 
   it('should return 409 for "already exists" error', () => {
     const res = mockRes();
-    errorHandler(new Error('Email already exists'), mockReq, res, mockNext);
+    errorHandler(new Error('Użytkownik z tym adresem email już istnieje'), mockReq, res, mockNext);
     expect(res.status).toHaveBeenCalledWith(409);
   });
 

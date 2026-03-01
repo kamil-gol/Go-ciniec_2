@@ -127,7 +127,7 @@ describe('errorHandler', () => {
     });
 
     it('should return 404 for P2025 (record not found)', () => {
-      const error = new Prisma.PrismaClientKnownRequestError('Record not found', {
+      const error = new Prisma.PrismaClientKnownRequestError('Nie znaleziono rekordu', {
         code: 'P2025',
         clientVersion: '5.0.0',
       });
@@ -173,26 +173,26 @@ describe('errorHandler', () => {
 
   describe('legacy bridge patterns', () => {
     it('should return 404 for errors with "not found" in message', () => {
-      const error = new Error('Reservation not found');
+      const error = new Error('Nie znaleziono rezerwacji');
 
       errorHandler(error, req as Request, res as Response, next as NextFunction);
 
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Reservation not found',
+        error: 'Nie znaleziono rezerwacji',
       });
     });
 
     it('should return 409 for errors with "already exists" in message', () => {
-      const error = new Error('Email already exists');
+      const error = new Error('Użytkownik z tym adresem email już istnieje');
 
       errorHandler(error, req as Request, res as Response, next as NextFunction);
 
       expect(res.status).toHaveBeenCalledWith(409);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Email already exists',
+        error: 'Użytkownik z tym adresem email już istnieje',
       });
     });
 

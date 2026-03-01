@@ -76,7 +76,7 @@ describe('MenuPackageController', () => {
     });
 
     it('should return 404', async () => {
-      svc.getPackageById.mockRejectedValue(new Error('Package not found'));
+      svc.getPackageById.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const response = res();
       await controller.getById(req({ params: { id: 'x' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -99,7 +99,7 @@ describe('MenuPackageController', () => {
 
   describe('update()', () => {
     it('should return 404', async () => {
-      svc.updatePackage.mockRejectedValue(new Error('Package not found'));
+      svc.updatePackage.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const response = res();
       await controller.update(req({ params: { id: 'x' }, body: { name: 'U' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);

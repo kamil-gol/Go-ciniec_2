@@ -37,7 +37,7 @@ describe('menu-package-categories.controller', () => {
       const res = mockRes();
       await getPackageCategories(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Package not found' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Nie znaleziono pakietu menu' });
     });
 
     it('should return categories with dishes', async () => {
@@ -102,7 +102,7 @@ describe('menu-package-categories.controller', () => {
       const res = mockRes();
       await getPackageCategories(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Wewnętrzny błąd serwera' });
     });
 
     it('should handle package with empty categorySettings', async () => {

@@ -93,7 +93,7 @@ describe('MenuTemplateController', () => {
       await ctrl.list(req(), response, next);
       expect(response.status).toHaveBeenCalledWith(400);
       expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: 'Validation error' })
+        expect.objectContaining({ error: 'Błąd walidacji' })
       );
     });
 
@@ -114,7 +114,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 404 when template not found', async () => {
-      svc.getMenuTemplateById.mockRejectedValue(new Error('Menu template not found'));
+      svc.getMenuTemplateById.mockRejectedValue(new Error('Nie znaleziono szablonu menu'));
       const response = res();
       await ctrl.getById(req({ params: { id: 'x' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -216,7 +216,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 404 when not found', async () => {
-      svc.updateMenuTemplate.mockRejectedValue(new Error('Menu template not found'));
+      svc.updateMenuTemplate.mockRejectedValue(new Error('Nie znaleziono szablonu menu'));
       const response = res();
       await ctrl.update(req({ params: { id: 'x' }, body: {} }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -253,7 +253,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 404 when not found', async () => {
-      svc.deleteMenuTemplate.mockRejectedValue(new Error('Menu template not found'));
+      svc.deleteMenuTemplate.mockRejectedValue(new Error('Nie znaleziono szablonu menu'));
       const response = res();
       await ctrl.delete(req({ params: { id: 'x' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -290,7 +290,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 404 when not found', async () => {
-      svc.duplicateMenuTemplate.mockRejectedValue(new Error('Menu template not found'));
+      svc.duplicateMenuTemplate.mockRejectedValue(new Error('Nie znaleziono szablonu menu'));
       const response = res();
       await ctrl.duplicate(req({ params: { id: 'x' }, body: { newName: 'X' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -486,7 +486,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 404 when template not found', async () => {
-      svc.getMenuTemplateById.mockRejectedValue(new Error('Menu template not found'));
+      svc.getMenuTemplateById.mockRejectedValue(new Error('Nie znaleziono szablonu menu'));
       const response = res();
       await ctrl.downloadPdf(req({ params: { id: 'x' } }), response);
       expect(response.status).toHaveBeenCalledWith(404);
