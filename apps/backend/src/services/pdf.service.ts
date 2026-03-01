@@ -1430,7 +1430,6 @@ export class PDFService {
     const resLines: string[] = [
       `${data.reservation.date}  ${data.reservation.startTime} - ${data.reservation.endTime}`,
     ];
-    if (data.reservation.hall) resLines.push(`Sala: ${data.reservation.hall}`);
     if (data.reservation.eventType) resLines.push(`Typ: ${data.reservation.eventType}`);
     resLines.push(`Gości: ${data.reservation.guests}`);
     resLines.push(`Nr rezerwacji: ${data.reservation.id}`);
@@ -1439,63 +1438,7 @@ export class PDFService {
     const resBoxHeight = this.calculateInfoBoxHeight(resLines.length);
     doc.y = doc.y + resBoxHeight + 5;
 
-    doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.4);
-
-    // ── 5. FINANCIAL SUMMARY BOX ──
-    const totalPrice = Number(data.reservation.totalPrice);
-    const paidAmount = Number(data.amount);
-    const remaining = totalPrice - paidAmount;
-
-    const finBoxHeight = 30 + 4 * 18 + 10;
-
-    this.safePageBreak(doc, finBoxHeight + 20);
-    const finBoxY = doc.y;
-
-    doc.rect(left, finBoxY, pageWidth, finBoxHeight).fill(COLORS.bgLight);
-    doc.rect(left, finBoxY, 3, finBoxHeight).fill(COLORS.accent);
-
-    doc.fillColor(COLORS.textDark).fontSize(11).font(this.getBoldFont());
-    doc.text('PODSUMOWANIE FINANSOWE', left + 15, finBoxY + 10);
-
-    let y = finBoxY + 30;
-    const labelX = left + 15;
-    const rightEdge = left + pageWidth - 15;
-    const valueWidth = 115;
-    const valueX = rightEdge - valueWidth;
-
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
-    doc.text('Całkowita cena rezerwacji', labelX, y);
-    doc.text(this.formatCurrency(totalPrice), valueX, y, { width: valueWidth, align: 'right' });
-    y += 16;
-
-    const depositBadgeWidth = 40;
-    const depositBadgeGap = 6;
-    const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
-
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
-    doc.text('Wpłacona zaliczka', labelX, y);
-    doc.text(`-${this.formatCurrency(paidAmount)}`, valueX, y, { width: depositValueWidth, align: 'right' });
-
-    const badgeX = valueX + depositValueWidth + depositBadgeGap;
-    doc.roundedRect(badgeX, y - 1, depositBadgeWidth, 13, 3).fill(COLORS.success);
-    doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
-    doc.text('ZAKS.', badgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
-    y += 18;
-
-    y += 4;
-    doc.strokeColor(COLORS.accent).lineWidth(1)
-       .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
-    y += 8;
-
-    doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
-    doc.text('POZOSTAŁO DO ZAPŁATY', labelX, y);
-    doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
-
-    doc.y = finBoxY + finBoxHeight + 5;
-
-    // ── 6. FOOTER ──
+    // ── 5. FOOTER (sekcja finansowa usunieta - #172) ──
     doc.moveDown(1);
     this.drawInlineFooter(doc, left, pageWidth);
   }
