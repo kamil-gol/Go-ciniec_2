@@ -41,14 +41,14 @@ export function EditableInternalNotesCard({
         id: reservationId,
         input: {
           internalNotes: notes || undefined,
-          reason: 'Aktualizacja notatki wewn\u0119trznej',
+          reason: 'Aktualizacja notatki wewnętrznej',
         } as any,
       })
       setIsDirty(false)
-      toast.success('Notatka wewn\u0119trzna zapisana')
+      toast.success('Notatka wewnętrzna zapisana')
       onUpdated?.()
     } catch {
-      toast.error('Nie uda\u0142o si\u0119 zapisa\u0107 notatki wewn\u0119trznej')
+      toast.error('Nie udało się zapisać notatki wewnętrznej')
     }
   }
 
@@ -61,9 +61,9 @@ export function EditableInternalNotesCard({
               <Lock className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold">Notatka wewn\u0119trzna</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">Notatka wewnętrzna</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                \uD83D\uDD12 Tylko dla pracownik\u00f3w \u2014 nie pojawia si\u0119 w PDF
+                \uD83D\uDD12 Tylko dla pracowników \u2014 nie pojawia się w PDF
               </p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function EditableInternalNotesCard({
           readOnly={disabled}
           className={`w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none${disabled ? ' opacity-60 cursor-not-allowed' : ''}`}
           rows={3}
-          placeholder="Wewn\u0119trzne uwagi, preferencje klienta, info dla zespo\u0142u..."
+          placeholder="Wewnętrzne uwagi, preferencje klienta, info dla zespołu..."
         />
       </div>
     </Card>
