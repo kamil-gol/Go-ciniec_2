@@ -100,7 +100,7 @@ export function DishSelector({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Ten pakiet nie wymaga wyboru da\u0144 z kategorii.
+          Ten pakiet nie wymaga wyboru dań z kategorii.
         </AlertDescription>
       </Alert>
     )
@@ -139,8 +139,8 @@ export function DishSelector({
       
       if (remaining <= 0) {
         toast({
-          title: 'Limit osi\u0105gni\u0119ty',
-          description: `Mo\u017cesz wybra\u0107 maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inn\u0105 pozycj\u0119 aby doda\u0107 now\u0105.`,
+          title: 'Limit osiągnięty',
+          description: `Możesz wybrać maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inną pozycję aby dodać nową.`,
           variant: 'destructive',
         })
         return
@@ -195,12 +195,12 @@ export function DishSelector({
       const label = category.customLabel || category.categoryName
       
       if (category.minSelect > 0 && total < category.minSelect) {
-        newErrors[category.categoryId] = `\u201e${label}\u201d: wybierz minimum ${category.minSelect} pozycji (masz ${total})`
+        newErrors[category.categoryId] = `\u201E${label}\u201D: wybierz minimum ${category.minSelect} pozycji (masz ${total})`
         isValid = false
       }
       
       if (total > category.maxSelect) {
-        newErrors[category.categoryId] = `\u201e${label}\u201d: maksymalnie ${category.maxSelect} pozycji (masz ${total})`
+        newErrors[category.categoryId] = `\u201E${label}\u201D: maksymalnie ${category.maxSelect} pozycji (masz ${total})`
         isValid = false
       }
     })
@@ -215,7 +215,7 @@ export function DishSelector({
     if (!isValid) {
       const errorMessages = Object.values(errorMap)
       toast({
-        title: 'Nie mo\u017cna zatwierdzi\u0107 wyboru',
+        title: 'Nie można zatwierdzić wyboru',
         description: errorMessages.join('. ') + '.',
         variant: 'destructive',
       })
@@ -237,9 +237,9 @@ export function DishSelector({
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold mb-1">Wyb\u00f3r Da\u0144</h2>
+        <h2 className="text-xl font-bold mb-1">Wybór Dań</h2>
         <p className="text-sm text-muted-foreground">
-          Wybierz dania z ka\u017cdej kategorii zgodnie z limitami
+          Wybierz dania z każdej kategorii zgodnie z limitami
         </p>
       </div>
 
@@ -271,21 +271,21 @@ export function DishSelector({
                         {/* #166: Subtitle for non-ALL targets */}
                         {portionTarget && portionTarget !== 'ALL' && (
                           <span className="text-xs text-muted-foreground">
-                            Porcje liczone {portionTarget === 'ADULTS_ONLY' ? 'tylko dla doros\u0142ych' : 'tylko dla dzieci'}
+                            Porcje liczone {portionTarget === 'ADULTS_ONLY' ? 'tylko dla dorosłych' : 'tylko dla dzieci'}
                           </span>
                         )}
                         {isOptional && !portionTarget?.startsWith('ADULTS') && !portionTarget?.startsWith('CHILDREN') && (
                           <span className="text-xs font-medium text-muted-foreground">Opcjonalna kategoria</span>
                         )}
                         {isOptional && portionTarget && portionTarget !== 'ALL' && (
-                          <span className="text-xs font-medium text-muted-foreground"> \u00b7 Opcjonalna</span>
+                          <span className="text-xs font-medium text-muted-foreground"> · Opcjonalna</span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {!isAtMaxLimit && total > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          Pozosta\u0142o: {remaining}
+                          Pozostało: {remaining}
                         </span>
                       )}
                       <Badge 
@@ -322,7 +322,7 @@ export function DishSelector({
                     <Alert className="mt-2 py-2 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                       <Info className="h-3.5 w-3.5 text-blue-600" />
                       <AlertDescription className="text-xs text-blue-900 dark:text-blue-100">
-                        Osi\u0105gni\u0119to maksymaln\u0105 liczb\u0119 pozycji. Odznacz danie aby wybra\u0107 inne.
+                        Osiągnięto maksymalną liczbę pozycji. Odznacz danie aby wybrać inne.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -415,7 +415,7 @@ export function DishSelector({
                             {isSelected && (
                               <div className="mt-2 p-2 bg-white dark:bg-neutral-800 rounded-md border border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
                                 <label className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1 block">
-                                  Ilo\u015b\u0107 porcji:
+                                  Ilość porcji:
                                 </label>
                                 <select
                                   value={quantity}
@@ -462,7 +462,7 @@ export function DishSelector({
           size="default"
           className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6 shadow-md font-bold"
         >
-          Zatwierd\u017a wyb\u00f3r
+          Zatwierdź wybór
           <ChevronRight className="ml-1.5 h-4 w-4" />
         </Button>
       </div>
