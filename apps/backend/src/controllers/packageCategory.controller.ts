@@ -4,6 +4,7 @@
  * Handles CRUD for PackageCategorySettings
  * Links packages to dish categories with min/max selection rules
  * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
+ * Fix: Sort by category.displayOrder (global order) instead of packageCategorySettings.displayOrder
  */
 
 import { Request, Response } from 'express';
@@ -43,7 +44,6 @@ class PackageCategoryController {
                 },
               },
             },
-            orderBy: { displayOrder: 'asc' },
           },
         },
       });
@@ -52,8 +52,15 @@ class PackageCategoryController {
         return res.status(404).json({ error: 'Package not found' });
       }
 
+      // Sort by the GLOBAL category displayOrder (from DishCategory table)
+      // This ensures categories always appear in the order defined in "Kategorie Dań",
+      // regardless of the order they were toggled on in the package settings.
+      const sortedSettings = [...menuPackage.categorySettings].sort(
+        (a, b) => (a.category.displayOrder ?? 0) - (b.category.displayOrder ?? 0)
+      );
+
       // Transform to frontend-friendly format
-      const categories = menuPackage.categorySettings.map((setting) => ({
+      const categories = sortedSettings.map((setting) => ({
         id: setting.id,
         categoryId: setting.categoryId,
         categoryName: setting.category.name,
@@ -310,19 +317,6 @@ class PackageCategoryController {
   /**
    * PUT /api/menu-packages/:packageId/categories
    * Bulk update category settings for a package (Admin only)
-   * 
-   * Body: {
-   *   settings: Array<{
-   *     categoryId: string;
-   *     minSelect: number;
-   *     maxSelect: number;
-   *     isRequired: boolean;
-   *     isEnabled: boolean;
-   *     portionTarget?: 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
-   *     displayOrder: number;
-   *     customLabel?: string;
-   *   }>
-   * }
    */
   async bulkUpdate(req: Request, res: Response) {
     try {
@@ -337,7 +331,7 @@ class PackageCategoryController {
       if (!validation.success) {
         console.error('[PackageCategory] Validation failed:', validation.error.errors);
         return res.status(400).json({
-          error: 'Błąd walidacji',
+          error: 'B\u0142\u0105d walidacji',
           details: validation.error.errors.map(err => ({
             path: err.path.join('.'),
             message: err.message
