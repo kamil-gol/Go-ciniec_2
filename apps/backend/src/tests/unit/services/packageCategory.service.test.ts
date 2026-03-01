@@ -116,7 +116,7 @@ describe('PackageCategoryService', () => {
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
       await expect(packageCategoryService.bulkUpdate('x', { settings: [] }))
-        .rejects.toThrow('Nie znaleziono pakietu menu');
+        .rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 

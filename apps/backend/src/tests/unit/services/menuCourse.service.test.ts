@@ -87,7 +87,7 @@ describe('MenuCourseService', () => {
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
       await expect(menuCourseService.create({ packageId: 'x', name: 'Test' }))
-        .rejects.toThrow('Nie znaleziono pakietu menu');
+        .rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 

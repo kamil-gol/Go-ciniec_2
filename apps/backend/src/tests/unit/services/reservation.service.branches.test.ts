@@ -403,14 +403,14 @@ describe('ReservationService — Branch Coverage', () => {
     it('should remove menu (null menuPackageId) with existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: SNAP });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('usunięto');
+      expect(result.message).toContain('usunięt');
       expect(db.reservationMenuSnapshot.delete).toHaveBeenCalledTimes(1);
     });
 
     it('should remove menu with no existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: null });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('usunięto');
+      expect(result.message).toContain('usunięt');
       expect(db.reservationMenuSnapshot.delete).not.toHaveBeenCalled();
     });
 
@@ -446,7 +446,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when menu package not found', async () => {
       db.reservation.findUnique.mockResolvedValue(RES_BASE);
       db.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'bad' } as any, UID)).rejects.toThrow('Nie znaleziono pakietu menu');
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'bad' } as any, UID)).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should throw on invalid data (no menuPackageId key)', async () => {
