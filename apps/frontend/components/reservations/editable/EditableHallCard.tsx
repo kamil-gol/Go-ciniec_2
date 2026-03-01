@@ -17,7 +17,6 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 
-/** Extract "HH:mm" in UTC from an ISO datetime string */
 function utcTime(iso: string): string {
   try {
     return new Date(iso).toISOString().slice(11, 16)
@@ -26,10 +25,6 @@ function utcTime(iso: string): string {
   }
 }
 
-/**
- * Calculate venue surcharge preview (mirrors backend logic).
- * Whole-venue halls: <30 guests → 3000 PLN, ≥30 → 2000 PLN
- */
 function calculateVenueSurchargePreview(isWholeVenue: boolean, totalGuests: number): number {
   if (!isWholeVenue) return 0
   return totalGuests < 30 ? 3000 : 2000
@@ -50,7 +45,6 @@ interface AvailableCapacityData {
   }>
 }
 
-/** Hook to fetch available capacity for a hall in a time range (#165) */
 function useAvailableCapacity(
   hallId: string | undefined,
   startDateTime: string | undefined,
@@ -118,7 +112,6 @@ export function EditableHallCard({
   const selectedAllowMultiple = selectedHall?.allowMultipleBookings ?? true
   const hallChanged = selectedHallId !== initialHallId
 
-  // Venue surcharge preview for selected hall
   const surchargePreview = useMemo(
     () => calculateVenueSurchargePreview(selectedIsWholeVenue, totalGuests),
     [selectedIsWholeVenue, totalGuests]
@@ -126,7 +119,6 @@ export function EditableHallCard({
   const currentSurcharge = currentVenueSurcharge ? Number(currentVenueSurcharge) : 0
   const surchargeWillChange = hallChanged && surchargePreview !== currentSurcharge
 
-  // #165: Capacity-based availability check (replaces binary useCheckAvailability)
   const { data: capacityData, isLoading: capacityLoading } = useAvailableCapacity(
     hallChanged ? selectedHallId : undefined,
     hallChanged ? startDateTime || undefined : undefined,
@@ -134,17 +126,10 @@ export function EditableHallCard({
     reservationId
   )
 
-  // Derive availability status from capacity data
   const availabilityStatus = useMemo(() => {
     if (!hallChanged || !capacityData) return null
-
     const hasOverlaps = capacityData.overlappingReservations.length > 0
-
-    if (!hasOverlaps) {
-      return { type: 'available' as const }
-    }
-
-    // Multi-booking hall: check capacity
+    if (!hasOverlaps) return { type: 'available' as const }
     if (selectedAllowMultiple) {
       if (totalGuests <= capacityData.availableCapacity) {
         return { type: 'available-with-others' as const }
@@ -152,8 +137,6 @@ export function EditableHallCard({
         return { type: 'capacity-exceeded' as const }
       }
     }
-
-    // Single-booking hall: any overlap = blocked
     return { type: 'blocked' as const }
   }, [hallChanged, capacityData, selectedAllowMultiple, totalGuests])
 
@@ -167,26 +150,20 @@ export function EditableHallCard({
 
   const handleSave = async (reason: string) => {
     if (!selectedHallId) throw new Error('Wybierz salę')
-
     if (hallChanged && capacityData) {
       if (availabilityStatus?.type === 'blocked') {
-        throw new Error('Wybrana sala nie jest dostępna w tym terminie — tryb wyłączności')
+        throw new Error('Wybrana sala nie jest dostępna w tym terminie \u2014 tryb wy\u0142\u0105czno\u015bci')
       }
       if (availabilityStatus?.type === 'capacity-exceeded') {
         throw new Error(
-          `Brak wystarczającej pojemności — dostępne ${capacityData.availableCapacity} miejsc, potrzeba ${totalGuests}`
+          `Brak wystarczaj\u0105cej pojemno\u015bci \u2014 dost\u0119pne ${capacityData.availableCapacity} miejsc, potrzeba ${totalGuests}`
         )
       }
     }
-
     await updateMutation.mutateAsync({
       id: reservationId,
-      input: {
-        hallId: selectedHallId,
-        reason,
-      },
+      input: { hallId: selectedHallId, reason },
     })
-
     toast.success('Sala zaktualizowana')
     onUpdated?.()
   }
@@ -195,7 +172,6 @@ export function EditableHallCard({
     setSelectedHallId(initialHallId)
   }
 
-  // Capacity utilization helpers
   const utilizationPercent = capacityData && capacityData.totalCapacity > 0
     ? Math.round(((capacityData.occupiedCapacity + totalGuests) / capacityData.totalCapacity) * 100)
     : 0
@@ -225,13 +201,13 @@ export function EditableHallCard({
               {initialCapacity && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-4 w-4" />
-                  <span>Pojemność: {initialCapacity} osób</span>
+                  <span>Pojemno\u015b\u0107: {initialCapacity} os\u00f3b</span>
                 </div>
               )}
               {initialIsWholeVenue && (
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                   <Landmark className="h-4 w-4" />
-                  <span className="text-sm font-medium">Cały obiekt</span>
+                  <span className="text-sm font-medium">Ca\u0142y obiekt</span>
                 </div>
               )}
             </div>
@@ -244,12 +220,12 @@ export function EditableHallCard({
               <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sala</label>
               <Select value={selectedHallId} onValueChange={setSelectedHallId}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Wybierz salę..." />
+                  <SelectValue placeholder="Wybierz sal\u0119..." />
                 </SelectTrigger>
                 <SelectContent>
                   {hallsArray.map((hall: any) => (
                     <SelectItem key={hall.id} value={hall.id}>
-                      {hall.name} (max {hall.capacity} osób)
+                      {hall.name} (max {hall.capacity} os\u00f3b)
                       {hall.isWholeVenue ? ' \uD83C\uDFDB' : ''}
                     </SelectItem>
                   ))}
@@ -259,16 +235,15 @@ export function EditableHallCard({
 
             {selectedCapacity > 0 && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Pojemność: {selectedCapacity} osób
+                Pojemno\u015b\u0107: {selectedCapacity} os\u00f3b
                 {totalGuests > selectedCapacity && (
                   <span className="text-red-600 dark:text-red-400 font-medium">
-                    {' '}— Uwaga! Gości: {totalGuests} (przekroczenie!)
+                    {' '}\u2014 Uwaga! Go\u015bci: {totalGuests} (przekroczenie!)
                   </span>
                 )}
               </p>
             )}
 
-            {/* Venue surcharge preview — whole venue selected */}
             {selectedIsWholeVenue && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -284,24 +259,23 @@ export function EditableHallCard({
                 }`} />
                 <div className="text-sm">
                   <span className={surchargeWillChange ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}>
-                    Cały obiekt — dopłata:{' '}
-                    <strong>{surchargePreview.toLocaleString('pl-PL')} zł</strong>
+                    Ca\u0142y obiekt \u2014 dop\u0142ata:{' '}
+                    <strong>{surchargePreview.toLocaleString('pl-PL')} z\u0142</strong>
                     {totalGuests < 30
-                      ? ' (poniżej 30 gości)'
-                      : ' (30+ gości)'}
+                      ? ' (poni\u017cej 30 go\u015bci)'
+                      : ' (30+ go\u015bci)'}
                   </span>
                   {surchargeWillChange && (
                     <span className="block text-xs text-amber-600 dark:text-amber-400 mt-1">
                       {currentSurcharge > 0
-                        ? `Zmiana z ${currentSurcharge.toLocaleString('pl-PL')} zł \u2192 ${surchargePreview.toLocaleString('pl-PL')} zł po zapisaniu`
-                        : `Nowa dopłata ${surchargePreview.toLocaleString('pl-PL')} zł zostanie naliczona po zapisaniu`}
+                        ? `Zmiana z ${currentSurcharge.toLocaleString('pl-PL')} z\u0142 \u2192 ${surchargePreview.toLocaleString('pl-PL')} z\u0142 po zapisaniu`
+                        : `Nowa dop\u0142ata ${surchargePreview.toLocaleString('pl-PL')} z\u0142 zostanie naliczona po zapisaniu`}
                     </span>
                   )}
                 </div>
               </motion.div>
             )}
 
-            {/* Hall no longer whole venue — surcharge will be removed */}
             {!selectedIsWholeVenue && hallChanged && currentSurcharge > 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -310,12 +284,11 @@ export function EditableHallCard({
               >
                 <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-green-800 dark:text-green-200">
-                  Dopłata za cały obiekt ({currentSurcharge.toLocaleString('pl-PL')} zł) zostanie usunięta po zmianie sali
+                  Dop\u0142ata za ca\u0142y obiekt ({currentSurcharge.toLocaleString('pl-PL')} z\u0142) zostanie usuni\u0119ta po zmianie sali
                 </span>
               </motion.div>
             )}
 
-            {/* Availability / capacity status */}
             {hallChanged && startDateTime && endDateTime && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -325,7 +298,7 @@ export function EditableHallCard({
                   <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-950/30 border-neutral-200 dark:border-neutral-800">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dost\u0119pno\u015bci...</span>
                     </div>
                   </div>
                 ) : availabilityStatus?.type === 'available' ? (
@@ -333,32 +306,28 @@ export function EditableHallCard({
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                       <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                        Sala jest dostępna w wybranym terminie
+                        Sala jest dost\u0119pna w wybranym terminie
                       </span>
                     </div>
                   </div>
                 ) : availabilityStatus?.type === 'available-with-others' && capacityData ? (
-                  /* Multi-booking: capacity sufficient, show info about existing reservations */
                   <div className={`p-4 rounded-lg border ${getCapacityColor(utilizationPercent).bg}`}>
                     <div className="flex items-center gap-2 mb-3">
                       <Info className={`w-5 h-5 ${getCapacityColor(utilizationPercent).text}`} />
                       <span className={`text-sm font-medium ${getCapacityColor(utilizationPercent).text}`}>
-                        Sala dostępna — istnieją inne rezerwacje w tym terminie
+                        Sala dost\u0119pna \u2014 istniej\u0105 inne rezerwacje w tym terminie
                       </span>
                     </div>
-
-                    {/* Capacity bar */}
                     <div className="mb-3">
                       <div className="flex justify-between text-xs mb-1">
                         <span className={getCapacityColor(utilizationPercent).text}>
-                          Zajęte: {capacityData.occupiedCapacity} + Twoje: {totalGuests} = {capacityData.occupiedCapacity + totalGuests} osób
+                          Zaj\u0119te: {capacityData.occupiedCapacity} + Twoje: {totalGuests} = {capacityData.occupiedCapacity + totalGuests} os\u00f3b
                         </span>
                         <span className={getCapacityColor(utilizationPercent).text}>
                           {capacityData.totalCapacity} max
                         </span>
                       </div>
                       <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2.5 overflow-hidden">
-                        {/* Occupied portion */}
                         <div className="h-full rounded-full flex">
                           <div
                             className="bg-neutral-400 dark:bg-neutral-500 h-full transition-all"
@@ -375,50 +344,46 @@ export function EditableHallCard({
                         <span className={getCapacityColor(utilizationPercent).text}>{utilizationPercent}%</span>
                       </div>
                     </div>
-
-                    {/* Overlapping reservations list */}
                     <div className="space-y-1">
                       {capacityData.overlappingReservations.map((r) => (
                         <div key={r.id} className="ml-1 text-xs text-neutral-600 dark:text-neutral-400">
-                          \u2022 {r.clientName} \u2014 {r.eventTypeName || 'Wydarzenie'} ({utcTime(r.startDateTime)}\u2013{utcTime(r.endDateTime)}, {r.guests} os.)
+                          {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${utcTime(r.startDateTime)}\u2013${utcTime(r.endDateTime)}, ${r.guests} os.)`}
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : availabilityStatus?.type === 'capacity-exceeded' && capacityData ? (
-                  /* Multi-booking: capacity exceeded */
                   <div className="p-4 rounded-lg border bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800">
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Brak wystarczającej pojemności!
+                        Brak wystarczaj\u0105cej pojemno\u015bci!
                       </span>
                     </div>
                     <p className="ml-7 text-xs text-red-700 dark:text-red-300 mb-2">
-                      Potrzeba {totalGuests} miejsc, dostępne tylko {capacityData.availableCapacity} z {capacityData.totalCapacity}
-                      {' '}(zajęte: {capacityData.occupiedCapacity})
+                      Potrzeba {totalGuests} miejsc, dost\u0119pne tylko {capacityData.availableCapacity} z {capacityData.totalCapacity}
+                      {' '}(zaj\u0119te: {capacityData.occupiedCapacity})
                     </p>
                     {capacityData.overlappingReservations.map((r) => (
                       <div key={r.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
-                        \u2022 {r.clientName} \u2014 {r.eventTypeName || 'Wydarzenie'} ({utcTime(r.startDateTime)}\u2013{utcTime(r.endDateTime)}, {r.guests} os.)
+                        {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${utcTime(r.startDateTime)}\u2013${utcTime(r.endDateTime)}, ${r.guests} os.)`}
                       </div>
                     ))}
                   </div>
                 ) : availabilityStatus?.type === 'blocked' && capacityData ? (
-                  /* Single-booking: hard block */
                   <div className="p-4 rounded-lg border bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800">
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Kolizja z istniejącą rezerwacją!
+                        Kolizja z istniej\u0105c\u0105 rezerwacj\u0105!
                       </span>
                     </div>
                     <p className="ml-7 text-xs text-red-700 dark:text-red-300 mb-1">
-                      Ta sala nie obsługuje wielu rezerwacji jednocześnie.
+                      Ta sala nie obs\u0142uguje wielu rezerwacji jednocze\u015bnie.
                     </p>
                     {capacityData.overlappingReservations.map((r) => (
                       <div key={r.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
-                        \u2022 {r.clientName} \u2014 {r.eventTypeName || 'Wydarzenie'} ({utcTime(r.startDateTime)}\u2013{utcTime(r.endDateTime)})
+                        {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${utcTime(r.startDateTime)}\u2013${utcTime(r.endDateTime)})`}
                       </div>
                     ))}
                   </div>
