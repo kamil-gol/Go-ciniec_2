@@ -152,11 +152,11 @@ export function EditableHallCard({
     if (!selectedHallId) throw new Error('Wybierz salę')
     if (hallChanged && capacityData) {
       if (availabilityStatus?.type === 'blocked') {
-        throw new Error('Wybrana sala nie jest dostępna w tym terminie \u2014 tryb wy\u0142\u0105czno\u015bci')
+        throw new Error('Wybrana sala nie jest dostępna w tym terminie \u2014 tryb wyłączności')
       }
       if (availabilityStatus?.type === 'capacity-exceeded') {
         throw new Error(
-          `Brak wystarczaj\u0105cej pojemno\u015bci \u2014 dost\u0119pne ${capacityData.availableCapacity} miejsc, potrzeba ${totalGuests}`
+          `Brak wystarczającej pojemności \u2014 dostępne ${capacityData.availableCapacity} miejsc, potrzeba ${totalGuests}`
         )
       }
     }
@@ -201,13 +201,13 @@ export function EditableHallCard({
               {initialCapacity && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-4 w-4" />
-                  <span>Pojemno\u015b\u0107: {initialCapacity} os\u00f3b</span>
+                  <span>Pojemność: {initialCapacity} osób</span>
                 </div>
               )}
               {initialIsWholeVenue && (
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                   <Landmark className="h-4 w-4" />
-                  <span className="text-sm font-medium">Ca\u0142y obiekt</span>
+                  <span className="text-sm font-medium">Cały obiekt</span>
                 </div>
               )}
             </div>
@@ -220,12 +220,12 @@ export function EditableHallCard({
               <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sala</label>
               <Select value={selectedHallId} onValueChange={setSelectedHallId}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Wybierz sal\u0119..." />
+                  <SelectValue placeholder="Wybierz salę..." />
                 </SelectTrigger>
                 <SelectContent>
                   {hallsArray.map((hall: any) => (
                     <SelectItem key={hall.id} value={hall.id}>
-                      {hall.name} (max {hall.capacity} os\u00f3b)
+                      {hall.name} (max {hall.capacity} osób)
                       {hall.isWholeVenue ? ' \uD83C\uDFDB' : ''}
                     </SelectItem>
                   ))}
@@ -235,10 +235,10 @@ export function EditableHallCard({
 
             {selectedCapacity > 0 && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Pojemno\u015b\u0107: {selectedCapacity} os\u00f3b
+                Pojemność: {selectedCapacity} osób
                 {totalGuests > selectedCapacity && (
                   <span className="text-red-600 dark:text-red-400 font-medium">
-                    {' '}\u2014 Uwaga! Go\u015bci: {totalGuests} (przekroczenie!)
+                    {' '}\u2014 Uwaga! Gości: {totalGuests} (przekroczenie!)
                   </span>
                 )}
               </p>
@@ -259,17 +259,17 @@ export function EditableHallCard({
                 }`} />
                 <div className="text-sm">
                   <span className={surchargeWillChange ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}>
-                    Ca\u0142y obiekt \u2014 dop\u0142ata:{' '}
-                    <strong>{surchargePreview.toLocaleString('pl-PL')} z\u0142</strong>
+                    Cały obiekt \u2014 dopłata:{' '}
+                    <strong>{surchargePreview.toLocaleString('pl-PL')} zł</strong>
                     {totalGuests < 30
-                      ? ' (poni\u017cej 30 go\u015bci)'
-                      : ' (30+ go\u015bci)'}
+                      ? ' (poniżej 30 gości)'
+                      : ' (30+ gości)'}
                   </span>
                   {surchargeWillChange && (
                     <span className="block text-xs text-amber-600 dark:text-amber-400 mt-1">
                       {currentSurcharge > 0
-                        ? `Zmiana z ${currentSurcharge.toLocaleString('pl-PL')} z\u0142 \u2192 ${surchargePreview.toLocaleString('pl-PL')} z\u0142 po zapisaniu`
-                        : `Nowa dop\u0142ata ${surchargePreview.toLocaleString('pl-PL')} z\u0142 zostanie naliczona po zapisaniu`}
+                        ? `Zmiana z ${currentSurcharge.toLocaleString('pl-PL')} zł \u2192 ${surchargePreview.toLocaleString('pl-PL')} zł po zapisaniu`
+                        : `Nowa dopłata ${surchargePreview.toLocaleString('pl-PL')} zł zostanie naliczona po zapisaniu`}
                     </span>
                   )}
                 </div>
@@ -284,7 +284,7 @@ export function EditableHallCard({
               >
                 <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-green-800 dark:text-green-200">
-                  Dop\u0142ata za ca\u0142y obiekt ({currentSurcharge.toLocaleString('pl-PL')} z\u0142) zostanie usuni\u0119ta po zmianie sali
+                  Dopłata za cały obiekt ({currentSurcharge.toLocaleString('pl-PL')} zł) zostanie usunięta po zmianie sali
                 </span>
               </motion.div>
             )}
@@ -298,7 +298,7 @@ export function EditableHallCard({
                   <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-950/30 border-neutral-200 dark:border-neutral-800">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dost\u0119pno\u015bci...</span>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
                     </div>
                   </div>
                 ) : availabilityStatus?.type === 'available' ? (
@@ -306,7 +306,7 @@ export function EditableHallCard({
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                       <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                        Sala jest dost\u0119pna w wybranym terminie
+                        Sala jest dostępna w wybranym terminie
                       </span>
                     </div>
                   </div>
@@ -315,13 +315,13 @@ export function EditableHallCard({
                     <div className="flex items-center gap-2 mb-3">
                       <Info className={`w-5 h-5 ${getCapacityColor(utilizationPercent).text}`} />
                       <span className={`text-sm font-medium ${getCapacityColor(utilizationPercent).text}`}>
-                        Sala dost\u0119pna \u2014 istniej\u0105 inne rezerwacje w tym terminie
+                        Sala dostępna \u2014 istnieją inne rezerwacje w tym terminie
                       </span>
                     </div>
                     <div className="mb-3">
                       <div className="flex justify-between text-xs mb-1">
                         <span className={getCapacityColor(utilizationPercent).text}>
-                          Zaj\u0119te: {capacityData.occupiedCapacity} + Twoje: {totalGuests} = {capacityData.occupiedCapacity + totalGuests} os\u00f3b
+                          Zajęte: {capacityData.occupiedCapacity} + Twoje: {totalGuests} = {capacityData.occupiedCapacity + totalGuests} osób
                         </span>
                         <span className={getCapacityColor(utilizationPercent).text}>
                           {capacityData.totalCapacity} max
@@ -357,12 +357,12 @@ export function EditableHallCard({
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Brak wystarczaj\u0105cej pojemno\u015bci!
+                        Brak wystarczającej pojemności!
                       </span>
                     </div>
                     <p className="ml-7 text-xs text-red-700 dark:text-red-300 mb-2">
-                      Potrzeba {totalGuests} miejsc, dost\u0119pne tylko {capacityData.availableCapacity} z {capacityData.totalCapacity}
-                      {' '}(zaj\u0119te: {capacityData.occupiedCapacity})
+                      Potrzeba {totalGuests} miejsc, dostępne tylko {capacityData.availableCapacity} z {capacityData.totalCapacity}
+                      {' '}(zajęte: {capacityData.occupiedCapacity})
                     </p>
                     {capacityData.overlappingReservations.map((r) => (
                       <div key={r.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
@@ -375,11 +375,11 @@ export function EditableHallCard({
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Kolizja z istniej\u0105c\u0105 rezerwacj\u0105!
+                        Kolizja z istniejącą rezerwacją!
                       </span>
                     </div>
                     <p className="ml-7 text-xs text-red-700 dark:text-red-300 mb-1">
-                      Ta sala nie obs\u0142uguje wielu rezerwacji jednocze\u015bnie.
+                      Ta sala nie obsługuje wielu rezerwacji jednocześnie.
                     </p>
                     {capacityData.overlappingReservations.map((r) => (
                       <div key={r.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
