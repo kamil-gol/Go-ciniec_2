@@ -92,6 +92,9 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
@@ -172,7 +175,7 @@ describe('ReservationService', () => {
         adults: 90,
         children: 20,
         reason: 'Zwiększenie liczby gości na weselu',
-      }, TEST_USER_ID)).rejects.toThrow(/exceeds hall capacity/);
+      }, TEST_USER_ID)).rejects.toThrow(/przekracza pojemność sali/);
     });
   });
 

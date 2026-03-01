@@ -313,7 +313,7 @@ describe('ReservationController branches', () => {
     it('should throw notFound when null', async () => {
       (reservationService.getReservationById as jest.Mock).mockResolvedValue(null);
       const req = { params: { id: 'x' } } as any;
-      await expect(ctrl.getReservationById(req, mockRes())).rejects.toThrow('not found');
+      await expect(ctrl.getReservationById(req, mockRes())).rejects.toThrow('nie znaleziono');
     });
   });
 
@@ -322,7 +322,7 @@ describe('ReservationController branches', () => {
     it('should throw notFound when reservation missing', async () => {
       (reservationService.getReservationById as jest.Mock).mockResolvedValue(null);
       const req = { params: { id: 'x' } } as any;
-      await expect(ctrl.downloadPDF(req, mockRes())).rejects.toThrow('not found');
+      await expect(ctrl.downloadPDF(req, mockRes())).rejects.toThrow('nie znaleziono');
     });
 
     it('should return PDF buffer', async () => {

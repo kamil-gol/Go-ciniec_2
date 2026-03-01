@@ -82,6 +82,9 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });

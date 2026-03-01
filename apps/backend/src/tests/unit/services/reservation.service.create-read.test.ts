@@ -111,6 +111,10 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default mocks for overlapping check
+  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
+  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
+  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   // Default mocks — happy path
@@ -169,7 +173,7 @@ describe('ReservationService', () => {
     it('should throw when guests exceed hall capacity', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue({ ...TEST_HALL, capacity: 30 });
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow(/exceeds hall capacity/);
+        .rejects.toThrow(/przekracza pojemność sali/);
     });
 
     it('should throw when no datetime provided', async () => {

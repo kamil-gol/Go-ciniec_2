@@ -70,6 +70,13 @@ beforeAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
+  // Default mocks for overlapping check
+  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
+  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
+  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
   // Default: user exists
   mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'test@test.pl' });
 });
@@ -220,7 +227,7 @@ describe('ReservationService — archiveReservation / unarchiveReservation', () 
     });
 
     await expect(service.archiveReservation('r1', 'u1'))
-      .rejects.toThrow('already archived');
+      .rejects.toThrow('już zarchiwizowana');
   });
 
   it('should unarchive a reservation', async () => {
@@ -246,7 +253,7 @@ describe('ReservationService — archiveReservation / unarchiveReservation', () 
     });
 
     await expect(service.unarchiveReservation('r1', 'u1'))
-      .rejects.toThrow('not archived');
+      .rejects.toThrow('nie jest zarchiwizowana');
   });
 });
 

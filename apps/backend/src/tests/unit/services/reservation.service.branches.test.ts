@@ -403,14 +403,14 @@ describe('ReservationService — Branch Coverage', () => {
     it('should remove menu (null menuPackageId) with existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: SNAP });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('removed');
+      expect(result.message).toContain('usunięto');
       expect(db.reservationMenuSnapshot.delete).toHaveBeenCalledTimes(1);
     });
 
     it('should remove menu with no existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: null });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('removed');
+      expect(result.message).toContain('usunięto');
       expect(db.reservationMenuSnapshot.delete).not.toHaveBeenCalled();
     });
 
@@ -483,7 +483,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when already archived', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date() });
-      await expect(svc.archiveReservation('res-001', UID)).rejects.toThrow('already archived');
+      await expect(svc.archiveReservation('res-001', UID)).rejects.toThrow('już zarchiwizowana');
     });
 
     it('should throw when not found', async () => {
@@ -495,7 +495,7 @@ describe('ReservationService — Branch Coverage', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: null });
       await svc.archiveReservation('res-001', UID);
       const histCall = db.reservationHistory.create.mock.calls[0][0];
-      expect(histCall.data.reason).toContain('archived');
+      expect(histCall.data.reason).toContain('zarchiwizowana');
     });
 
     it('should handle hall.name being null', async () => {
@@ -517,7 +517,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when not archived', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: null });
-      await expect(svc.unarchiveReservation('res-001', UID)).rejects.toThrow('not archived');
+      await expect(svc.unarchiveReservation('res-001', UID)).rejects.toThrow('nie jest zarchiwizowana');
     });
 
     it('should throw when not found', async () => {
@@ -529,7 +529,7 @@ describe('ReservationService — Branch Coverage', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date() });
       await svc.unarchiveReservation('res-001', UID);
       const histCall = db.reservationHistory.create.mock.calls[0][0];
-      expect(histCall.data.reason).toContain('restored');
+      expect(histCall.data.reason).toContain('przywrócona');
     });
   });
 
@@ -574,12 +574,12 @@ describe('ReservationService — Branch Coverage', () => {
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.cancelReservation('res-001', UID);
       const hist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toContain('Reservation cancelled');
+      expect(hist.data.reason).toContain('Rezerwacja anulowana');
     });
 
     it('should throw when already cancelled', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'CANCELLED' });
-      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('already cancelled');
+      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('już anulowana');
     });
 
     it('should throw when completed', async () => {
@@ -641,7 +641,7 @@ describe('ReservationService — Branch Coverage', () => {
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.updateStatus('res-001', { status: ReservationStatus.CANCELLED } as any, UID);
       const hist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toContain('Status changed');
+      expect(hist.data.reason).toContain('Zmiana statusu');
     });
 
     it('should throw on invalid status transition', async () => {
