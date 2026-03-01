@@ -2,6 +2,7 @@
  * Attachment Controller
  * Handles HTTP requests for attachment CRUD operations
  * Updated: Phase 3 Audit — pass userId to mutating service methods
+ * Updated: #146 — stream-based download (storageService)
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -83,12 +84,15 @@ class AttachmentController {
   async download(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { filePath, attachment } = await attachmentService.getFilePath(id);
+      const { stream, attachment } = await attachmentService.getFileStream(id);
 
       res.setHeader('Content-Type', attachment.mimeType);
-      res.setHeader('Content-Disposition', `inline; filename="${attachment.originalName}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.originalName)}"`);
+      if (attachment.sizeBytes) {
+        res.setHeader('Content-Length', attachment.sizeBytes);
+      }
 
-      return res.sendFile(filePath);
+      (stream as NodeJS.ReadableStream).pipe(res);
     } catch (error) {
       next(error);
     }
