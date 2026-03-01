@@ -10,6 +10,8 @@
 #   - Dev commands (npm run dev)
 #   - Debug-friendly settings
 #   - Uses .env.dev for environment variables
+#
+# Ports (dev): postgres=5433, redis=6380, minio=9002/9003, api=4001, web=4000
 # ============================================
 
 services:

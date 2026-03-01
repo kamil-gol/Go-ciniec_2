@@ -9,19 +9,27 @@
 #   - Automatic restart on failure
 #   - No mounted volumes for code
 #   - Uses .env.prod for environment variables
+#
+# Ports (prod): postgres=5432, redis=6379, minio=9000 (no console), api=3001, web=3000
 # ============================================
 
 services:
   postgres:
     restart: always
+    ports:
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - ./apps/backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 
   redis:
     restart: always
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
 
   minio:
     restart: always
+    ports:
+      - '127.0.0.1:${MINIO_PORT:-9000}:9000'
     volumes:
       - /data/minio:/data
     deploy:
