@@ -426,6 +426,10 @@ export function CreateReservationForm({
         await trigger('adults')
         return false
       }
+      // #165: Block if guests exceed available capacity for multi-booking halls
+      if (isMultiBookingHall && availableCapacity && (adults + children + toddlers) > availableCapacity.availableCapacity) {
+        return false
+      }
     }
 
     if (currentStep === 3) {
@@ -437,7 +441,7 @@ export function CreateReservationForm({
     }
 
     return await trigger(fields)
-  }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuTemplateId, menuPackageId])
+  }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuTemplateId, menuPackageId, isMultiBookingHall, availableCapacity])
 
   const goToNextStep = useCallback(async () => {
     const isValid = await validateCurrentStep()
