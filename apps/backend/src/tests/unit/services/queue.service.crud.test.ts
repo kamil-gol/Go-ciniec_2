@@ -114,7 +114,7 @@ describe('QueueService', () => {
       await expect(service.addToQueue({
         reservationQueueDate: FUTURE_DATE,
         guests: 50,
-      } as any, TEST_USER_ID)).rejects.toThrow('Client, queue date, and guests are required');
+      } as any, TEST_USER_ID)).rejects.toThrow('Klient, data kolejki i liczba gości są wymagane');
     });
 
     it('should throw when guests is 0 (falsy — caught by required check)', async () => {
@@ -122,7 +122,7 @@ describe('QueueService', () => {
         clientId: TEST_CLIENT.id,
         reservationQueueDate: FUTURE_DATE,
         guests: 0,
-      } as any, TEST_USER_ID)).rejects.toThrow('Client, queue date, and guests are required');
+      } as any, TEST_USER_ID)).rejects.toThrow('Klient, data kolejki i liczba gości są wymagane');
     });
 
     it('should throw when guests < 1 (negative)', async () => {
@@ -130,7 +130,7 @@ describe('QueueService', () => {
         clientId: TEST_CLIENT.id,
         reservationQueueDate: FUTURE_DATE,
         guests: -1,
-      } as any, TEST_USER_ID)).rejects.toThrow('Number of guests must be at least 1');
+      } as any, TEST_USER_ID)).rejects.toThrow('Liczba gości musi wynosić co najmniej 1');
     });
 
     it('should throw when date is in the past', async () => {
@@ -138,7 +138,7 @@ describe('QueueService', () => {
         clientId: TEST_CLIENT.id,
         reservationQueueDate: '2020-01-01',
         guests: 50,
-      } as any, TEST_USER_ID)).rejects.toThrow('Queue date cannot be in the past');
+      } as any, TEST_USER_ID)).rejects.toThrow('Data kolejki nie może być w przeszłości');
     });
 
     it('should throw when client not found', async () => {
@@ -148,7 +148,7 @@ describe('QueueService', () => {
         clientId: 'nonexistent',
         reservationQueueDate: FUTURE_DATE,
         guests: 50,
-      } as any, TEST_USER_ID)).rejects.toThrow('Client not found');
+      } as any, TEST_USER_ID)).rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should throw on invalid date format', async () => {
@@ -156,7 +156,7 @@ describe('QueueService', () => {
         clientId: TEST_CLIENT.id,
         reservationQueueDate: 'not-a-date',
         guests: 50,
-      } as any, TEST_USER_ID)).rejects.toThrow('Invalid queue date format');
+      } as any, TEST_USER_ID)).rejects.toThrow('Nieprawidłowy format daty kolejki');
     });
 
     it('should handle P2002 unique constraint error', async () => {
@@ -193,7 +193,7 @@ describe('QueueService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
 
       await expect(service.updateQueueReservation('nonexistent', {}, TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when reservation is not RESERVED', async () => {
@@ -203,7 +203,7 @@ describe('QueueService', () => {
       });
 
       await expect(service.updateQueueReservation('res-queue-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Can only update RESERVED reservations');
+        .rejects.toThrow('Można edytować tylko rezerwacje ze statusem RESERVED');
     });
 
     it('should recalculate position when date changes', async () => {
@@ -224,7 +224,7 @@ describe('QueueService', () => {
     it('should throw when new date is in the past', async () => {
       await expect(service.updateQueueReservation('res-queue-001', {
         reservationQueueDate: '2020-01-01',
-      } as any, TEST_USER_ID)).rejects.toThrow('Queue date cannot be in the past');
+      } as any, TEST_USER_ID)).rejects.toThrow('Data kolejki nie może być w przeszłości');
     });
   });
 

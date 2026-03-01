@@ -3,6 +3,7 @@
  * Tests for recalculateForGuestChange: PER_PERSON vs FLAT options, no options, no snapshot
  * Also tests: removeMenu with/without existing snapshot, calculateOptionsPrice unknown priceType
  * NOTE: menuOption mock removed — MenuOption model no longer in Prisma
+ * FIX: spolonizowane komunikaty błędów
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
@@ -155,6 +156,6 @@ describe('ReservationMenuService — getReservationMenu', () => {
   it('should throw when no menu snapshot exists', async () => {
     mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
     await expect(reservationMenuService.getReservationMenu('r1'))
-      .rejects.toThrow('Menu not selected for this reservation');
+      .rejects.toThrow('Menu nie zostało wybrane dla tej rezerwacji');
   });
 });

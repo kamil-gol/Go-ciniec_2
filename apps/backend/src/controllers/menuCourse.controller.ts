@@ -50,7 +50,7 @@ export class MenuCourseController {
         data: course
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Course not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Course not found'
@@ -80,11 +80,11 @@ export class MenuCourseController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Package not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || error.message.includes('not found'))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
@@ -116,11 +116,11 @@ export class MenuCourseController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Course not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Course not found'
@@ -145,7 +145,7 @@ export class MenuCourseController {
         message: 'Course deleted successfully'
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Course not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Course not found'
@@ -177,11 +177,11 @@ export class MenuCourseController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Course not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Course not found'
@@ -212,7 +212,7 @@ export class MenuCourseController {
         message: 'Dish removed from course successfully'
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Course not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Course not found'

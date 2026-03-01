@@ -82,6 +82,9 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
@@ -153,7 +156,7 @@ describe('ReservationService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.updateReservationMenu('nonexistent', {
         menuPackageId: 'pkg-uuid-001',
-      }, TEST_USER_ID)).rejects.toThrow('Reservation not found');
+      }, TEST_USER_ID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when reservation is completed', async () => {
@@ -164,7 +167,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
-      }, TEST_USER_ID)).rejects.toThrow(/completed or cancelled/);
+      }, TEST_USER_ID)).rejects.toThrow(/zakończonej/);
     });
 
     it('should throw when guests below package minimum', async () => {
@@ -175,7 +178,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
-      }, TEST_USER_ID)).rejects.toThrow(/at least 100 guests/);
+      }, TEST_USER_ID)).rejects.toThrow(/minimum 100 gości/);
     });
 
     it('should throw when guests above package maximum', async () => {
@@ -186,7 +189,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
-      }, TEST_USER_ID)).rejects.toThrow(/maximum 30 guests/);
+      }, TEST_USER_ID)).rejects.toThrow(/maksimum 30 go/);
     });
   });
 
@@ -255,7 +258,7 @@ describe('ReservationService', () => {
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
         selectedOptions: [{ optionId: 'opt-999' }],
-      }, TEST_USER_ID)).rejects.toThrow(/not found/);
+      }, TEST_USER_ID)).rejects.toThrow(/nie znaleziono/i);
     });
 
     it('should throw when option is inactive', async () => {
@@ -266,7 +269,7 @@ describe('ReservationService', () => {
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
         selectedOptions: [{ optionId: 'opt-001' }],
-      }, TEST_USER_ID)).rejects.toThrow(/not active/);
+      }, TEST_USER_ID)).rejects.toThrow(/nieaktywna/);
     });
 
     it('should throw when quantity exceeds maxQuantity', async () => {
@@ -275,7 +278,7 @@ describe('ReservationService', () => {
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
         selectedOptions: [{ optionId: 'opt-002', quantity: 10 }], // max is 5
-      }, TEST_USER_ID)).rejects.toThrow(/Maximum 5/);
+      }, TEST_USER_ID)).rejects.toThrow(/aksimum 5/);
     });
   });
 
@@ -294,7 +297,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.PENDING,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should block COMPLETED → PENDING', async () => {
@@ -307,7 +310,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.PENDING,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
   });
 });

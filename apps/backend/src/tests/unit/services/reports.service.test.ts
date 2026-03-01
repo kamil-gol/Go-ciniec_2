@@ -4,6 +4,7 @@
  * all 4 groupBy periods (day/week/month/year), growthPercent branches,
  * null hall/eventType guards, getOccupancyReport branches,
  * peakHours startTime guards, peakDay N/A fallback.
+ * FIX: spolonizowane komunikaty
  */
 
 jest.mock('../../../lib/prisma', () => ({
@@ -146,10 +147,10 @@ describe('ReportsService', () => {
       expect(call.where.hallId).toBe('h1');
     });
 
-    it('should return N/A for peakDay when no reservations', async () => {
+    it('should return Brak danych for peakDay when no reservations', async () => {
       mockOccupancy([]);
       const result = await svc.getOccupancyReport({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
-      expect(result.summary.peakDay).toBe('N/A');
+      expect(result.summary.peakDay).toBe('Brak danych');
       expect(result.summary.peakHall).toBeNull();
     });
 

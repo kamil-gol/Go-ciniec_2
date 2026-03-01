@@ -6,7 +6,7 @@
 // ═══ Mock Prisma ═══
 jest.mock('../../../lib/prisma', () => {
   const txMock = {
-    reservation: { update: jest.fn(), findFirst: jest.fn() },
+    reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     deposit: { findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
   };
@@ -92,6 +92,9 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
@@ -106,6 +109,7 @@ beforeEach(() => {
   // Transaction mocks
   txMock.reservation.update.mockResolvedValue(EXISTING_RESERVATION);
   txMock.reservation.findFirst.mockResolvedValue(null);
+  txMock.reservation.findMany.mockResolvedValue([]);
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({ count: 0 });
   txMock.reservationHistory.create.mockResolvedValue({});
@@ -127,7 +131,7 @@ describe('ReservationService', () => {
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.updateReservation('nonexistent', {}, TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when updating completed reservation', async () => {
@@ -136,7 +140,7 @@ describe('ReservationService', () => {
         status: ReservationStatus.COMPLETED,
       });
       await expect(service.updateReservation('res-uuid-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Cannot update completed reservation');
+        .rejects.toThrow('Nie można edytować zakończonej rezerwacji');
     });
 
     it('should throw when updating cancelled reservation', async () => {
@@ -145,7 +149,7 @@ describe('ReservationService', () => {
         status: ReservationStatus.CANCELLED,
       });
       await expect(service.updateReservation('res-uuid-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Cannot update cancelled reservation');
+        .rejects.toThrow('Nie można edytować anulowanej rezerwacji');
     });
 
     it('should require reason (min 10 chars) when changes detected', async () => {
@@ -172,7 +176,7 @@ describe('ReservationService', () => {
         adults: 90,
         children: 20,
         reason: 'Zwiększenie liczby gości na weselu',
-      }, TEST_USER_ID)).rejects.toThrow(/exceeds hall capacity/);
+      }, TEST_USER_ID)).rejects.toThrow(/przekracza pojemność sali/);
     });
   });
 
@@ -206,7 +210,7 @@ describe('ReservationService', () => {
     it('should throw on invalid transition PENDING → COMPLETED', async () => {
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.COMPLETED,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should throw on invalid transition COMPLETED → anything', async () => {
@@ -217,7 +221,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.CANCELLED,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should throw on invalid transition CANCELLED → anything', async () => {
@@ -228,7 +232,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.CONFIRMED,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should allow CONFIRMED → COMPLETED for past events', async () => {
@@ -270,7 +274,7 @@ describe('ReservationService', () => {
       });
 
       await expect(service.cancelReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Reservation is already cancelled');
+        .rejects.toThrow('Rezerwacja jest już anulowana');
     });
 
     it('should throw when reservation is completed', async () => {
@@ -280,7 +284,7 @@ describe('ReservationService', () => {
       });
 
       await expect(service.cancelReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Cannot cancel completed reservation');
+        .rejects.toThrow('Nie można anulować zakończonej rezerwacji');
     });
 
     it('should cascade cancel pending deposits', async () => {
@@ -320,13 +324,13 @@ describe('ReservationService', () => {
       });
 
       await expect(service.archiveReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Reservation is already archived');
+        .rejects.toThrow('Rezerwacja jest już zarchiwizowana');
     });
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.archiveReservation('nonexistent', TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
   });
 
@@ -349,13 +353,13 @@ describe('ReservationService', () => {
 
     it('should throw when not archived', async () => {
       await expect(service.unarchiveReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Reservation is not archived');
+        .rejects.toThrow('Rezerwacja nie jest zarchiwizowana');
     });
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.unarchiveReservation('nonexistent', TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
   });
 });

@@ -3,6 +3,7 @@
  * 
  * Handles CRUD for PackageCategorySettings
  * Links packages to dish categories with min/max selection rules
+ * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
  */
 
 import { Request, Response } from 'express';
@@ -63,6 +64,7 @@ class PackageCategoryController {
         minSelect: toNumber(setting.minSelect),
         maxSelect: toNumber(setting.maxSelect),
         isRequired: setting.isRequired,
+        portionTarget: setting.portionTarget,
         customLabel: setting.customLabel || setting.category.name,
         displayOrder: setting.displayOrder,
         
@@ -129,7 +131,7 @@ class PackageCategoryController {
    */
   async create(req: Request, res: Response) {
     try {
-      const { packageId, categoryId, minSelect, maxSelect, isRequired, isEnabled, displayOrder, customLabel } = req.body;
+      const { packageId, categoryId, minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel } = req.body;
 
       // Validate required fields
       if (!packageId || !categoryId) {
@@ -139,6 +141,11 @@ class PackageCategoryController {
       // Validate min <= max
       if (minSelect > maxSelect) {
         return res.status(400).json({ error: 'Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna' });
+      }
+
+      // Validate portionTarget if provided
+      if (portionTarget && !['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'].includes(portionTarget)) {
+        return res.status(400).json({ error: 'portionTarget musi by\u0107: ALL, ADULTS_ONLY lub CHILDREN_ONLY' });
       }
 
       // Check if package exists
@@ -182,6 +189,7 @@ class PackageCategoryController {
           maxSelect: maxSelect || 1,
           isRequired: isRequired !== undefined ? isRequired : true,
           isEnabled: isEnabled !== undefined ? isEnabled : true,
+          portionTarget: portionTarget || 'ALL',
           displayOrder: displayOrder || 0,
           customLabel: customLabel || null,
         },
@@ -211,11 +219,16 @@ class PackageCategoryController {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { minSelect, maxSelect, isRequired, isEnabled, displayOrder, customLabel } = req.body;
+      const { minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel } = req.body;
 
       // Validate min <= max
       if (minSelect !== undefined && maxSelect !== undefined && minSelect > maxSelect) {
         return res.status(400).json({ error: 'Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna' });
+      }
+
+      // Validate portionTarget if provided
+      if (portionTarget !== undefined && !['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'].includes(portionTarget)) {
+        return res.status(400).json({ error: 'portionTarget musi by\u0107: ALL, ADULTS_ONLY lub CHILDREN_ONLY' });
       }
 
       // Check if setting exists
@@ -235,6 +248,7 @@ class PackageCategoryController {
           ...(maxSelect !== undefined && { maxSelect }),
           ...(isRequired !== undefined && { isRequired }),
           ...(isEnabled !== undefined && { isEnabled }),
+          ...(portionTarget !== undefined && { portionTarget }),
           ...(displayOrder !== undefined && { displayOrder }),
           ...(customLabel !== undefined && { customLabel }),
         },
@@ -304,6 +318,7 @@ class PackageCategoryController {
    *     maxSelect: number;
    *     isRequired: boolean;
    *     isEnabled: boolean;
+   *     portionTarget?: 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
    *     displayOrder: number;
    *     customLabel?: string;
    *   }>
@@ -322,7 +337,7 @@ class PackageCategoryController {
       if (!validation.success) {
         console.error('[PackageCategory] Validation failed:', validation.error.errors);
         return res.status(400).json({
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: validation.error.errors.map(err => ({
             path: err.path.join('.'),
             message: err.message
@@ -364,6 +379,7 @@ class PackageCategoryController {
                   maxSelect: setting.maxSelect,
                   isRequired: setting.isRequired !== undefined ? setting.isRequired : true,
                   isEnabled: setting.isEnabled !== undefined ? setting.isEnabled : true,
+                  portionTarget: setting.portionTarget || 'ALL',
                   displayOrder: setting.displayOrder || 0,
                   customLabel: setting.customLabel || null,
                 },

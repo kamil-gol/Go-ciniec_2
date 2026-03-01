@@ -5,10 +5,12 @@
  *   - line 226: duplicate option counting in getPopularOptions
  *   - line 239: duplicate package counting in getPopularPackages
  * NOTE: menuOption mock removed — MenuOption model no longer in Prisma
+ * FIX #166: added packageCategorySettings mock
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     menuPackage: { findUnique: jest.fn() },
+    packageCategorySettings: { findMany: jest.fn() },
     dish: { findMany: jest.fn() },
     dishCategory: { findMany: jest.fn() },
     reservationMenuSnapshot: {
@@ -27,6 +29,8 @@ let service: MenuSnapshotService;
 beforeEach(() => {
   jest.resetAllMocks();
   service = new MenuSnapshotService();
+  // #166: default mock — no category settings
+  mockPrisma.packageCategorySettings.findMany.mockResolvedValue([]);
 });
 
 describe('MenuSnapshotService — createSnapshot empty allDishIds (line 53)', () => {

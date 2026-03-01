@@ -177,7 +177,7 @@ describe('DepositService — markAsUnpaid branches (lines 488-491)', () => {
   it('should throw not found for unknown deposit', async () => {
     mockPrisma.deposit.findUnique.mockResolvedValue(null);
     await expect(depositService.markAsUnpaid('bad-id', 'u1'))
-      .rejects.toThrow('Deposit not found');
+      .rejects.toThrow('Nie znaleziono zaliczki');
   });
 });
 

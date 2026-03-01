@@ -50,11 +50,11 @@ describe('EventTypeService — branches', () => {
   // ═══ createEventType ═══
   describe('createEventType()', () => {
     it('should throw when name is empty', async () => {
-      await expect(svc.createEventType({ name: '' } as any, 'u-1')).rejects.toThrow('required');
+      await expect(svc.createEventType({ name: '' } as any, 'u-1')).rejects.toThrow(/wymagan/);
     });
 
     it('should throw when name is whitespace only', async () => {
-      await expect(svc.createEventType({ name: '   ' } as any, 'u-1')).rejects.toThrow('required');
+      await expect(svc.createEventType({ name: '   ' } as any, 'u-1')).rejects.toThrow(/wymagan/);
     });
 
     it('should throw when color is invalid', async () => {
@@ -72,7 +72,7 @@ describe('EventTypeService — branches', () => {
     it('should throw when name already exists', async () => {
       db.eventType.findFirst.mockResolvedValue({ id: 'existing' });
       await expect(svc.createEventType({ name: 'Wesele' } as any, 'u-1'))
-        .rejects.toThrow('already exists');
+        .rejects.toThrow('już istnieje');
     });
 
     it('should default description to null', async () => {
@@ -154,7 +154,7 @@ describe('EventTypeService — branches', () => {
   describe('updateEventType()', () => {
     it('should throw when not found', async () => {
       db.eventType.findUnique.mockResolvedValue(null);
-      await expect(svc.updateEventType('bad', { name: 'X' }, 'u-1')).rejects.toThrow('not found');
+      await expect(svc.updateEventType('bad', { name: 'X' }, 'u-1')).rejects.toThrow(/Nie znaleziono/i);
     });
 
     it('should throw when name is empty string', async () => {
@@ -180,7 +180,7 @@ describe('EventTypeService — branches', () => {
       db.eventType.findUnique.mockResolvedValue(makeET());
       db.eventType.findFirst.mockResolvedValue({ id: 'other' });
       await expect(svc.updateEventType('et-1', { name: 'Taken' }, 'u-1'))
-        .rejects.toThrow('already exists');
+        .rejects.toThrow('już istnieje');
     });
 
     it('should skip name check when same name', async () => {
@@ -271,7 +271,7 @@ describe('EventTypeService — branches', () => {
   describe('toggleActive()', () => {
     it('should throw when not found', async () => {
       db.eventType.findUnique.mockResolvedValue(null);
-      await expect(svc.toggleActive('bad', 'u-1')).rejects.toThrow('not found');
+      await expect(svc.toggleActive('bad', 'u-1')).rejects.toThrow(/Nie znaleziono/i);
     });
 
     it('should deactivate (Dezaktywowano)', async () => {
@@ -303,7 +303,7 @@ describe('EventTypeService — branches', () => {
   describe('deleteEventType()', () => {
     it('should throw when not found', async () => {
       db.eventType.findUnique.mockResolvedValue(null);
-      await expect(svc.deleteEventType('bad', 'u-1')).rejects.toThrow('not found');
+      await expect(svc.deleteEventType('bad', 'u-1')).rejects.toThrow(/Nie znaleziono/i);
     });
 
     it('should throw when has reservations', async () => {
@@ -333,7 +333,7 @@ describe('EventTypeService — branches', () => {
   describe('getEventTypeById()', () => {
     it('should throw when not found', async () => {
       db.eventType.findUnique.mockResolvedValue(null);
-      await expect(svc.getEventTypeById('bad')).rejects.toThrow('not found');
+      await expect(svc.getEventTypeById('bad')).rejects.toThrow(/Nie znaleziono/i);
     });
   });
 

@@ -3,6 +3,7 @@
  * Final uncovered lines:
  *   - 680-685: manual price recalculation (!isUsingMenuPackage && guestsChanged/priceChanged)
  *   - 711: detectedChanges history entry + audit log with diffObjects
+ * FIX: add missing overlapping mocks in beforeEach
  */
 jest.mock('../../../lib/prisma', () => {
   const mockPrisma: any = {
@@ -72,6 +73,11 @@ const baseExisting = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
+  // Overlapping checks — default: no conflicts
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findUnique.mockResolvedValue(baseExisting.hall);
   service = new ReservationService();
 });
 
@@ -143,7 +149,7 @@ describe('updateReservation — detectedChanges triggers history + audit', () =>
     mockDetectChanges.mockReturnValueOnce([
       { field: 'adults', oldValue: 50, newValue: 60 }
     ]);
-    mockFormatChanges.mockReturnValueOnce('adults: 50 \u2192 60');
+    mockFormatChanges.mockReturnValueOnce('adults: 50 → 60');
     mockDiffObjects.mockReturnValueOnce({ adults: { old: 50, new: 60 } });
 
     mockPrisma.reservation.findUnique.mockResolvedValue(baseExisting);

@@ -2,11 +2,16 @@
  * Package Category Settings Service
  * Business logic for managing category settings for menu packages
  * 🇵🇱 Spolonizowany — komunikaty po polsku
+ * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
  */
 
 import { DishCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { MENU_CRUD } from '../i18n/pl';
+
+// Valid portionTarget values
+export const PORTION_TARGETS = ['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'] as const;
+export type PortionTarget = typeof PORTION_TARGETS[number];
 
 export interface CreateCategorySettingInput {
   packageId: string;
@@ -15,6 +20,7 @@ export interface CreateCategorySettingInput {
   maxSelect?: number;
   isRequired?: boolean;
   isEnabled?: boolean;
+  portionTarget?: PortionTarget;
   displayOrder?: number;
   customLabel?: string | null;
 }
@@ -24,6 +30,7 @@ export interface UpdateCategorySettingInput {
   maxSelect?: number;
   isRequired?: boolean;
   isEnabled?: boolean;
+  portionTarget?: PortionTarget;
   displayOrder?: number;
   customLabel?: string | null;
 }
@@ -35,9 +42,22 @@ export interface BulkUpdateCategorySettingsInput {
     maxSelect?: number;
     isRequired?: boolean;
     isEnabled?: boolean;
+    portionTarget?: PortionTarget;
     displayOrder?: number;
     customLabel?: string | null;
   }>;
+}
+
+/**
+ * #166: Validate portionTarget value at runtime.
+ * Throws if value is provided but not in PORTION_TARGETS.
+ */
+function validatePortionTarget(value: string | undefined): void {
+  if (value !== undefined && !(PORTION_TARGETS as readonly string[]).includes(value)) {
+    throw new Error(
+      `Nieprawidłowa wartość portionTarget: "${value}". Dozwolone: ${PORTION_TARGETS.join(', ')}`
+    );
+  }
 }
 
 class PackageCategoryService {
@@ -53,6 +73,8 @@ class PackageCategoryService {
   }
 
   async create(data: CreateCategorySettingInput) {
+    validatePortionTarget(data.portionTarget);
+
     const existing = await prisma.packageCategorySettings.findUnique({
       where: { packageId_categoryId: { packageId: data.packageId, categoryId: data.category.id } }
     });
@@ -62,13 +84,16 @@ class PackageCategoryService {
       data: {
         packageId: data.packageId, categoryId: data.category.id, minSelect: data.minSelect ?? 1,
         maxSelect: data.maxSelect ?? 1, isRequired: data.isRequired ?? true,
-        isEnabled: data.isEnabled ?? true, displayOrder: data.displayOrder ?? 0,
+        isEnabled: data.isEnabled ?? true, portionTarget: data.portionTarget ?? 'ALL',
+        displayOrder: data.displayOrder ?? 0,
         customLabel: data.customLabel ?? null
       }
     });
   }
 
   async update(id: string, data: UpdateCategorySettingInput) {
+    validatePortionTarget(data.portionTarget);
+
     const existing = await prisma.packageCategorySettings.findUnique({ where: { id } });
     if (!existing) throw new Error('Nie znaleziono ustawień kategorii');
     return prisma.packageCategorySettings.update({ where: { id }, data });
@@ -77,6 +102,11 @@ class PackageCategoryService {
   async bulkUpdate(packageId: string, input: BulkUpdateCategorySettingsInput) {
     const pkg = await prisma.menuPackage.findUnique({ where: { id: packageId } });
     if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
+
+    // Validate all portionTarget values before any writes
+    for (const settingData of input.settings) {
+      validatePortionTarget(settingData.portionTarget);
+    }
 
     const results = [];
     for (const settingData of input.settings) {
@@ -89,6 +119,7 @@ class PackageCategoryService {
           data: {
             minSelect: settingData.minSelect, maxSelect: settingData.maxSelect,
             isRequired: settingData.isRequired, isEnabled: settingData.isEnabled,
+            portionTarget: settingData.portionTarget,
             displayOrder: settingData.displayOrder, customLabel: settingData.customLabel
           }
         });

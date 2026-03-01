@@ -86,7 +86,7 @@ export class MenuPackageController {
         data: pkg
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Package not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
@@ -114,7 +114,7 @@ export class MenuPackageController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
@@ -141,11 +141,11 @@ export class MenuPackageController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Package not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
@@ -169,13 +169,13 @@ export class MenuPackageController {
         message: 'Package deleted successfully'
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Cannot delete')) {
+      if (error instanceof Error && (error.message.includes('Nie można usunąć') || error.message.includes('Cannot delete'))) {
         return res.status(409).json({
           success: false,
           error: error.message
         });
       }
-      if (error instanceof Error && error.message === 'Package not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
@@ -200,7 +200,7 @@ export class MenuPackageController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }

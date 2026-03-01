@@ -140,7 +140,7 @@ describe('DiscountService — branches', () => {
       expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({
           details: expect.objectContaining({
-            description: expect.stringContaining('N/A'),
+            description: expect.stringContaining('Brak danych'),
           }),
         })
       );
@@ -244,7 +244,7 @@ describe('DiscountService — branches', () => {
       expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({
           details: expect.objectContaining({
-            description: expect.stringContaining('N/A'),
+            description: expect.stringContaining('Brak danych'),
           }),
         })
       );

@@ -230,7 +230,7 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(menuService.getPackageById('x')).rejects.toThrow('Nie znaleziono pakietu menu');
+      await expect(menuService.getPackageById('x')).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 
@@ -266,7 +266,7 @@ describe('MenuService', () => {
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
       await expect(menuService.updatePackage('x', { name: 'Y' }, userId))
-        .rejects.toThrow('Nie znaleziono pakietu menu');
+        .rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 

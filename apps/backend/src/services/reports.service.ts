@@ -8,6 +8,7 @@
  * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
  * Updated: menu preparations report (#160)
  * Updated: occupancy report — capacity utilization for multi-booking halls (#165)
+ * Updated: #166 — portionTarget support in menu preparations report
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
  * FIX: added portionSize from menuData.quantity to dish mapping
@@ -112,6 +113,42 @@ function getReservationDate(r: { date: string | null; startDateTime: Date | stri
     return new Date(r.startDateTime).toISOString().split('T')[0];
   }
   return '';
+}
+
+/**
+ * #166: Calculate adult/children portions based on portionTarget.
+ * Exported for unit testing.
+ */
+export function calculatePortions(
+  portionTarget: string,
+  adults: number,
+  children: number,
+  portionSize: number
+): { adultPortions: number; childrenPortions: number; totalPortions: number } {
+  let adultPortions = 0;
+  let childrenPortions = 0;
+
+  switch (portionTarget) {
+    case 'ADULTS_ONLY':
+      adultPortions = adults * portionSize;
+      childrenPortions = 0;
+      break;
+    case 'CHILDREN_ONLY':
+      adultPortions = 0;
+      childrenPortions = children * portionSize;
+      break;
+    case 'ALL':
+    default:
+      adultPortions = adults * portionSize;
+      childrenPortions = children * portionSize;
+      break;
+  }
+
+  return {
+    adultPortions,
+    childrenPortions,
+    totalPortions: adultPortions + childrenPortions,
+  };
 }
 
 class ReportsService {
@@ -428,7 +465,6 @@ class ReportsService {
     const hallsData = this.analyzeOccupancyByHall(reservations, totalDaysInPeriod);
     const peakHall = hallsData.sort((a, b) => b.reservations - a.reservations)[0] || null;
 
-    // #165: Average capacity utilization across all multi-booking halls
     const multiBookingHalls = hallsData.filter(h => h.allowMultipleBookings && h.avgCapacityUtilization !== null);
     const avgCapacityUtilization = multiBookingHalls.length > 0
       ? Math.round((multiBookingHalls.reduce((sum, h) => sum + (h.avgCapacityUtilization || 0), 0) / multiBookingHalls.length) * 10) / 10
@@ -507,14 +543,12 @@ class ReportsService {
       existing.dates.add(r.date);
       existing.reservations += 1;
       existing.totalGuests += r.guests || 0;
-      // #165: accumulate guests per date for capacity utilization
       const currentDateGuests = existing.guestsPerDate.get(r.date) || 0;
       existing.guestsPerDate.set(r.date, currentDateGuests + (r.guests || 0));
       hallData.set(r.hall.id, existing);
     });
     return Array.from(hallData.entries())
       .map(([hallId, data]) => {
-        // #165: Calculate average capacity utilization for multi-booking halls
         let avgCapacityUtilization: number | null = null;
         if (data.allowMultipleBookings && data.capacity && data.capacity > 0 && data.guestsPerDate.size > 0) {
           const dailyUtilizations = Array.from(data.guestsPerDate.values())
@@ -818,7 +852,7 @@ class ReportsService {
   }
 
   // ============================================
-  // MENU PREPARATIONS REPORTS #160
+  // MENU PREPARATIONS REPORTS #160 + #166
   // ============================================
 
   async getMenuPreparationsReport(filters: MenuPreparationsReportFilters): Promise<MenuPreparationsReport> {
@@ -895,6 +929,7 @@ class ReportsService {
           courses.push({
             courseName: catSel.categoryName || 'Nieznana kategoria',
             icon: catSel.categoryIcon || null,
+            portionTarget: catSel.portionTarget || 'ALL',
             dishes,
           });
         }
@@ -950,8 +985,7 @@ class ReportsService {
       }));
 
     // SUMMARY VIEW: aggregate per course -> per dish per day
-    // totalPortions = (adults + children) * portionSize — toddlers excluded
-    // toddlerPortions removed from response entirely
+    // #166: totalPortions now uses calculatePortions() with portionTarget
     let summaryDays: MenuPreparationSummaryDayGroup[] | undefined;
 
     if (view === 'summary') {
@@ -969,6 +1003,8 @@ class ReportsService {
           if (!courseMap.has(course.courseName)) courseMap.set(course.courseName, new Map());
           const dishMap = courseMap.get(course.courseName)!;
 
+          const portionTarget = (course as any).portionTarget || 'ALL';
+
           for (const dish of course.dishes) {
             if (!dishMap.has(dish.name)) {
               dishMap.set(dish.name, {
@@ -978,6 +1014,7 @@ class ReportsService {
                   totalPortions: 0,
                   adultPortions: 0,
                   childrenPortions: 0,
+                  portionTarget,
                   reservations: [],
                 },
               });
@@ -985,10 +1022,17 @@ class ReportsService {
 
             const entry = dishMap.get(dish.name)!;
             const pSize = dish.portionSize ?? 1;
-            // totalPortions = adults + children only (toddlers excluded from portions)
-            entry.dish.totalPortions += (item.guests.adults + item.guests.children) * pSize;
-            entry.dish.adultPortions += item.guests.adults * pSize;
-            entry.dish.childrenPortions += item.guests.children * pSize;
+
+            const portions = calculatePortions(
+              portionTarget,
+              item.guests.adults,
+              item.guests.children,
+              pSize
+            );
+
+            entry.dish.totalPortions += portions.totalPortions;
+            entry.dish.adultPortions += portions.adultPortions;
+            entry.dish.childrenPortions += portions.childrenPortions;
             entry.dish.reservations.push({
               id: item.reservationId,
               clientName: item.clientName,

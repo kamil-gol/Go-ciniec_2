@@ -53,7 +53,7 @@ describe('HallController — error paths', () => {
   });
 
   it('getHallById should call next(error) when service throws', async () => {
-    const error = new Error('Hall not found');
+    const error = new Error('Nie znaleziono sali');
     mockHallService.getHallById.mockRejectedValue(error);
 
     await hallController.getHallById(

@@ -5,6 +5,7 @@
  * FIX: formatMenuResponse now exposes menuTemplateId + packageId from DB columns
  * Updated: Phase 3 Audit — logChange() for menu selection, recalculation, removal
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
+ * Updated: #166 — portionTarget saved in menu snapshot per category
  *
  * NOTE: MenuOption model removed from Prisma.
  * Options are now passed via input data, no DB lookup for MenuOption.
@@ -275,6 +276,10 @@ class ReservationMenuService {
     if (errors.length > 0) throw new Error(`${MENU_SELECTION.VALIDATION_FAILED}: ${errors.join('; ')}`);
   }
 
+  /**
+   * Build menu snapshot data including dish selections and options.
+   * #166: Now includes portionTarget per category from PackageCategorySettings.
+   */
   private async buildMenuSnapshot(
     menuPackage: any, dishSelections: CategorySelectionDTO[],
     selectedOptions: any[], adults: number, children: number, toddlers: number
@@ -288,6 +293,7 @@ class ReservationMenuService {
         return {
           categoryId: catSelection.categoryId,
           categoryName: categorySetting.category.name,
+          portionTarget: categorySetting.portionTarget || 'ALL', // #166
           dishes: catSelection.dishes.map((dishSel: any) => {
             const dish = dishes.find(d => d.id === dishSel.dishId);
             return {

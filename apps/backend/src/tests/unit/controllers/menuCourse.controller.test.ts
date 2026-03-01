@@ -59,7 +59,7 @@ describe('MenuCourseController', () => {
     });
 
     it('should return 404', async () => {
-      svc.getById.mockRejectedValue(new Error('Course not found'));
+      svc.getById.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const response = res();
       await controller.getById(req({ params: { id: 'x' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -68,7 +68,7 @@ describe('MenuCourseController', () => {
 
   describe('create()', () => {
     it('should return 404 when package not found', async () => {
-      svc.create.mockRejectedValue(new Error('Package not found'));
+      svc.create.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const response = res();
       await controller.create(req({ body: { name: 'C', packageId: 'x' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -84,7 +84,7 @@ describe('MenuCourseController', () => {
 
   describe('update()', () => {
     it('should return 404', async () => {
-      svc.update.mockRejectedValue(new Error('Course not found'));
+      svc.update.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const response = res();
       await controller.update(req({ params: { id: 'x' }, body: { name: 'U' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -100,7 +100,7 @@ describe('MenuCourseController', () => {
 
   describe('delete()', () => {
     it('should return 404', async () => {
-      svc.delete.mockRejectedValue(new Error('Course not found'));
+      svc.delete.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
       const response = res();
       await controller.delete(req({ params: { id: 'x' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);

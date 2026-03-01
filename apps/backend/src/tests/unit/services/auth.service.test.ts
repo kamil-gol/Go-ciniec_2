@@ -115,21 +115,21 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.login({ email: 'nobody@test.pl', password: 'pass' }))
-        .rejects.toThrow('Invalid credentials');
+        .rejects.toThrow('Nieprawidłowe dane logowania');
     });
 
     it('should throw "Invalid credentials" for wrong password', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
 
       await expect(authService.login({ email: 'admin@test.pl', password: 'WrongPassword!' }))
-        .rejects.toThrow('Invalid credentials');
+        .rejects.toThrow('Nieprawidłowe dane logowania');
     });
 
     it('should throw "User account is inactive" for disabled account', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockInactiveUser);
 
       await expect(authService.login({ email: 'inactive@test.pl', password: 'Test1234!' }))
-        .rejects.toThrow('User account is inactive');
+        .rejects.toThrow('Konto użytkownika jest nieaktywne');
     });
 
     it('should return empty permissions array when user has no assigned role', async () => {
@@ -286,7 +286,7 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.getMe('nonexistent'))
-        .rejects.toThrow('User not found');
+        .rejects.toThrow('Nie znaleziono użytkownika');
     });
 
     it('should return empty permissions when user has no role', async () => {
