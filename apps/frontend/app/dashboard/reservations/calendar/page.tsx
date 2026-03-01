@@ -32,10 +32,10 @@ import {
   CalendarReservation,
 } from '@/lib/api/calendar-api'
 
-const DAYS_PL = ['Pn', 'Wt', '\u015ar', 'Cz', 'Pt', 'Sb', 'Nd']
+const DAYS_PL = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd']
 const MONTHS_PL = [
-  'Stycze\u0144', 'Luty', 'Marzec', 'Kwiecie\u0144', 'Maj', 'Czerwiec',
-  'Lipiec', 'Sierpie\u0144', 'Wrzesie\u0144', 'Pa\u017adziernik', 'Listopad', 'Grudzie\u0144',
+  'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+  'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień',
 ]
 
 const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: string }> = {
@@ -45,7 +45,7 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: 
     bgClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   },
   PENDING: {
-    label: 'Oczekuj\u0105ce',
+    label: 'Oczekujące',
     dotClass: 'bg-amber-500',
     bgClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   },
@@ -55,7 +55,7 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: 
     bgClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   },
   COMPLETED: {
-    label: 'Zako\u0144czone',
+    label: 'Zakończone',
     dotClass: 'bg-neutral-400',
     bgClass: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400',
   },
@@ -128,7 +128,7 @@ function buildPillTooltip(
       (r) => r.hall?.id === hall.id && r.status !== 'CANCELLED'
     )
     const totalGuests = sameHallActive.reduce((sum, r) => sum + (r.guests || 0), 0)
-    base += ` \u00b7 ${hall.name}: ${totalGuests}/${hall.capacity} os\u00f3b`
+    base += ` \u00b7 ${hall.name}: ${totalGuests}/${hall.capacity} osób`
   }
 
   return base
@@ -207,7 +207,7 @@ function CellCapacityBars({ reservations }: { reservations: CalendarReservation[
           <div
             key={bar.name}
             className="w-full h-[3px] bg-violet-100 dark:bg-violet-900/30 rounded-full overflow-hidden"
-            title={`${bar.name}: ${bar.totalGuests}/${bar.capacity} os\u00f3b (${pct}%)`}
+            title={`${bar.name}: ${bar.totalGuests}/${bar.capacity} osób (${pct}%)`}
           >
             <div
               className={cn(
@@ -295,7 +295,7 @@ function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
                       </span>
                       {isMulti && (
                         <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">
-                          {totalGuests}/{hall!.capacity} os\u00f3b \u2014 {activeRes.length} rez.
+                          {totalGuests}/{hall!.capacity} osób \u2014 {activeRes.length} rez.
                         </span>
                       )}
                     </div>
@@ -455,7 +455,7 @@ export default function CalendarPage() {
       <PageHero
         accent={accent}
         title="Rezerwacje"
-        subtitle="Zarz\u0105dzaj rezerwacjami sal weselnych"
+        subtitle="Zarządzaj rezerwacjami sal weselnych"
         icon={CalendarIcon}
         action={
           <Button
@@ -471,10 +471,10 @@ export default function CalendarPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="\u0141\u0105cznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
         <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekuj\u0105ce" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesi\u0105c" value={stats.thisMonth} subtitle="Wydarze\u0144 w tym miesi\u0105cu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
       </div>
 
       {/* Controls bar */}
@@ -505,7 +505,7 @@ export default function CalendarPage() {
               <ChevronRight className="h-4 w-4" />
             </button>
             <button onClick={goToToday} className="px-2.5 sm:px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
-              Dzi\u015b
+              Dziś
             </button>
           </div>
         </div>
@@ -526,7 +526,7 @@ export default function CalendarPage() {
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji</p>
+          <p className="text-sm text-red-700 dark:text-red-300">Nie udało się załadować rezerwacji</p>
         </div>
       )}
 
@@ -584,7 +584,7 @@ export default function CalendarPage() {
                         ))}
                         {dayReservations.length > MAX_PILLS && (
                           <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
-                            +{dayReservations.length - MAX_PILLS} wi\u0119cej
+                            +{dayReservations.length - MAX_PILLS} więcej
                           </div>
                         )}
                         {/* #165: Mini capacity bars for multi-booking halls */}
@@ -613,7 +613,7 @@ export default function CalendarPage() {
 
       {eventTypes.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-          <span className="font-semibold">Typy wydarze\u0144:</span>
+          <span className="font-semibold">Typy wydarzeń:</span>
           {eventTypes.map((et) => (
             <span key={et.name} className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: et.color }} />
