@@ -6,8 +6,8 @@
 // ═══ Mock Prisma ═══
 jest.mock('../../../lib/prisma', () => {
   const txMock = {
-    reservation: { update: jest.fn(), findFirst: jest.fn() },
-    deposit: { findMany: jest.fn(), updateMany: jest.fn() },
+    reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
+    deposit: { findMany: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
     reservationHistory: { create: jest.fn() },
   };
   const mock = {
@@ -92,6 +92,14 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  // txMock defaults for overlap/conflict checks
+  if (txMock.reservation?.findMany) txMock.reservation.findMany.mockResolvedValue([]);
+  if (txMock.reservation?.create) txMock.reservation.create.mockResolvedValue(RES_BASE || {});
+  if (txMock.hall?.findFirst) txMock.hall.findFirst.mockResolvedValue(null);
+  if (txMock.hall?.findUnique) txMock.hall.findUnique.mockResolvedValue(null);
+  if (txMock.deposit?.create) txMock.deposit.create.mockResolvedValue({});
+  if (txMock.activityLog?.create) txMock.activityLog.create.mockResolvedValue({});
   if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
   if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
   if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);

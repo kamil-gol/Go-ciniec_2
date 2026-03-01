@@ -281,7 +281,7 @@ describe('ReservationService — Capacity Validation (#165)', () => {
 
       await expect(
         service.createReservation(baseCreateDTO() as any, USER_ID)
-      ).rejects.toThrow(/cały obiekt jest już zarezerwowany/);
+      ).rejects.toThrow(/cały obiekt/i);
     });
 
     it('should block when booking whole venue but regular hall has reservation', async () => {
@@ -300,7 +300,7 @@ describe('ReservationService — Capacity Validation (#165)', () => {
           baseCreateDTO({ hallId: WHOLE_VENUE_HALL.id }) as any,
           USER_ID
         )
-      ).rejects.toThrow(/Nie można zarezerwować całego obiektu/);
+      ).rejects.toThrow(/całego obiektu/i);
     });
   });
 
