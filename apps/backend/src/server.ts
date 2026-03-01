@@ -30,6 +30,8 @@ import depositReminderService from '@/services/deposit-reminder.service';
 import authService from '@/services/auth.service';
 import archiveSchedulerService from '@/services/archive-scheduler.service';
 import emailService from '@/services/email.service';
+import { initStorageBuckets } from '@/services/storage';
+import { storageConfig } from '@/config/storage.config';
 
 // Validate environment variables early
 validateEnv();
@@ -117,6 +119,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    storage: storageConfig.driver,
   });
 });
 
@@ -189,9 +192,19 @@ export default app;
 // Start Server (skip in test mode)
 // ========================================
 if (process.env.NODE_ENV !== 'test') {
-  const server = app.listen(Number(PORT), HOST, () => {
+  const server = app.listen(Number(PORT), HOST, async () => {
     logger.info(`Server running on http://${HOST}:${PORT}`);
     logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+    logger.info(`Storage driver: ${storageConfig.driver}`);
+
+    // Initialize storage buckets (#146)
+    try {
+      await initStorageBuckets(
+        (await import('@/services/storage')).storageService
+      );
+    } catch (error) {
+      logger.error('[Storage] Bucket initialization failed — uploads may not work:', error);
+    }
 
     // Setup cron jobs
     setupAutoCancelCron();
