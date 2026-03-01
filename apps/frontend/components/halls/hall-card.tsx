@@ -1,9 +1,11 @@
 'use client'
 
-import { Hall, deleteHall } from '@/lib/api/halls'
+import { Hall, deleteHall, updateHall } from '@/lib/api/halls'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, MoreVertical, Eye, Edit, Trash2, CheckCircle2, Building2 } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Users, Calendar, MoreVertical, Eye, Edit, Trash2, CheckCircle2, Building2, UsersRound, UserCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +31,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [deleting, setDeleting] = useState(false)
+  const [togglingMultiple, setTogglingMultiple] = useState(false)
 
   const handleDelete = async () => {
     if (hall.isWholeVenue) {
@@ -62,6 +65,29 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
     }
   }
 
+  const handleToggleMultipleBookings = async () => {
+    try {
+      setTogglingMultiple(true)
+      await updateHall(hall.id, { allowMultipleBookings: !hall.allowMultipleBookings })
+      toast({
+        title: 'Zaktualizowano',
+        description: hall.allowMultipleBookings
+          ? `Sala "${hall.name}" — tryb wyłączności (jedna rezerwacja)`
+          : `Sala "${hall.name}" — tryb wielu rezerwacji`,
+      })
+      onUpdate()
+    } catch (error: any) {
+      console.error('Error toggling multiple bookings:', error)
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zmienić trybu rezerwacji',
+        variant: 'destructive',
+      })
+    } finally {
+      setTogglingMultiple(false)
+    }
+  }
+
   return (
     <div className="group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       {/* Header */}
@@ -87,7 +113,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
               )}>
                 {hall.name}
               </h3>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {hall.isWholeVenue && (
                   <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-0 shadow-none">
                     <Building2 className="h-3 w-3 mr-1" />
@@ -101,6 +127,18 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                   </Badge>
                 ) : (
                   <Badge variant="default" className="bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 shadow-none">Nieaktywna</Badge>
+                )}
+                {/* #165: Multiple bookings badge */}
+                {hall.allowMultipleBookings ? (
+                  <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-0 shadow-none">
+                    <UsersRound className="h-3 w-3 mr-1" />
+                    Wiele rezerwacji
+                  </Badge>
+                ) : (
+                  <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0 shadow-none">
+                    <UserCheck className="h-3 w-3 mr-1" />
+                    Wyłączność
+                  </Badge>
                 )}
               </div>
             </div>
@@ -178,6 +216,22 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Pojemność</div>
             <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{hall.capacity} osób</div>
           </div>
+        </div>
+
+        {/* #165: Multiple bookings toggle (inline) */}
+        <div className="flex items-center justify-between p-3 rounded-xl border border-neutral-200/50 dark:border-neutral-700/50 bg-neutral-50/50 dark:bg-neutral-800/50">
+          <div className="flex items-center gap-2">
+            <UsersRound className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            <Label htmlFor={`multi-${hall.id}`} className="text-sm font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer">
+              Wiele rezerwacji
+            </Label>
+          </div>
+          <Switch
+            id={`multi-${hall.id}`}
+            checked={hall.allowMultipleBookings}
+            onCheckedChange={handleToggleMultipleBookings}
+            disabled={togglingMultiple}
+          />
         </div>
 
         {/* Description */}
