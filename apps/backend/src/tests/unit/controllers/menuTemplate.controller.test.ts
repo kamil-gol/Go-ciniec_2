@@ -498,7 +498,7 @@ describe('MenuTemplateController', () => {
       await ctrl.downloadPdf(req({ params: { id: 't-1' } }), response);
       expect(response.status).toHaveBeenCalledWith(500);
       expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: 'PDF generation failed', details: 'something broke' })
+        expect.objectContaining({ error: 'Nie udało się wygenerować PDF', details: 'something broke' })
       );
     });
 

@@ -337,7 +337,7 @@ class PackageCategoryController {
       if (!validation.success) {
         console.error('[PackageCategory] Validation failed:', validation.error.errors);
         return res.status(400).json({
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: validation.error.errors.map(err => ({
             path: err.path.join('.'),
             message: err.message
