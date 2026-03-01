@@ -1,5 +1,6 @@
 /**
  * MenuCourseService — Branch Coverage (lines 144-150: getForSelection + reorderDishes)
+ * FIX: spolonizowane komunikaty błędów
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
@@ -52,7 +53,7 @@ describe('MenuCourseService — getForSelection', () => {
   it('should throw when course not found in getForSelection', async () => {
     mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
     await expect(menuCourseService.getForSelection('bad-id'))
-      .rejects.toThrow('Course not found');
+      .rejects.toThrow('Nie znaleziono kursu menu');
   });
 });
 
@@ -78,6 +79,6 @@ describe('MenuCourseService — reorderDishes', () => {
   it('should throw when course not found for reorder', async () => {
     mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
     await expect(menuCourseService.reorderDishes('bad', []))
-      .rejects.toThrow('Course not found');
+      .rejects.toThrow('Nie znaleziono kursu menu');
   });
 });

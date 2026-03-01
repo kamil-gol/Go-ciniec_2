@@ -2,6 +2,7 @@
  * Unit tests for middlewares/auth.ts
  * Covers: generateToken, verifyToken, extractToken, authMiddleware, requireRole
  * Issue: #96
+ * FIX: spolonizowane komunikaty błędów
  */
 import jwt from 'jsonwebtoken';
 
@@ -192,7 +193,7 @@ describe('Auth Middleware', () => {
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 403,
-          message: 'Insufficient permissions',
+          message: 'Niewystarczające uprawnienia',
         })
       );
     });
@@ -206,7 +207,7 @@ describe('Auth Middleware', () => {
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          message: 'User not authenticated',
+          message: 'Wymagane uwierzytelnienie',
         })
       );
     });
