@@ -9,6 +9,7 @@
  * Updated: Etap 5 — internalNotes field (excluded from PDF)
  * Updated: fix/recalculate-totalPrice — centralized price recalculation
  * Updated: #165 — capacity-based overlap logic (multiple reservations per hall)
+ * Updated: #172 — instant auto-archive on cancellation (no 30-day delay)
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -918,11 +919,12 @@ export class ReservationService {
       }
     }
 
+    // #172: Cancellation = instant archive (CANCELLED → ARCHIVED + archivedAt)
     if (data.status === ReservationStatus.CANCELLED) {
       const reservation = await prisma.$transaction(async (tx) => {
         const updatedReservation = await tx.reservation.update({
           where: { id },
-          data: { status: data.status },
+          data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
           include: RESERVATION_INCLUDE
         });
 
@@ -935,10 +937,23 @@ export class ReservationService {
             changeType: 'STATUS_CHANGED',
             fieldName: 'status',
             oldValue: existingReservation.status,
-            newValue: data.status,
+            newValue: 'CANCELLED',
             reason: data.reason
               ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
               : `Zmiana statusu${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
+          }
+        });
+
+        // #172: Auto-archive history entry
+        await tx.reservationHistory.create({
+          data: {
+            reservationId: id,
+            changedByUserId: userId,
+            changeType: 'AUTO_ARCHIVED',
+            fieldName: 'archivedAt',
+            oldValue: null,
+            newValue: new Date().toISOString(),
+            reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji'
           }
         });
 
@@ -951,9 +966,9 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Anulowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+          description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
           oldStatus: existingReservation.status,
-          newStatus: data.status,
+          newStatus: 'CANCELLED → ARCHIVED',
           reason: data.reason
         }
       });
@@ -985,6 +1000,7 @@ export class ReservationService {
     return reservation as any;
   }
 
+  // #172: Cancellation = instant archive
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
 
@@ -992,11 +1008,13 @@ export class ReservationService {
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.ALREADY_CANCELLED);
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_CANCEL_COMPLETED);
+    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.ALREADY_ARCHIVED);
 
     await prisma.$transaction(async (tx) => {
+      // #172: Instant archive — status ARCHIVED + archivedAt set
       await tx.reservation.update({
         where: { id },
-        data: { status: ReservationStatus.CANCELLED }
+        data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() }
       });
 
       const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
@@ -1008,10 +1026,23 @@ export class ReservationService {
           changeType: 'CANCELLED',
           fieldName: 'status',
           oldValue: existingReservation.status,
-          newValue: ReservationStatus.CANCELLED,
+          newValue: 'CANCELLED',
           reason: reason
             ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
             : `Rezerwacja anulowana${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
+        }
+      });
+
+      // #172: Auto-archive history entry
+      await tx.reservationHistory.create({
+        data: {
+          reservationId: id,
+          changedByUserId: userId,
+          changeType: 'AUTO_ARCHIVED',
+          fieldName: 'archivedAt',
+          oldValue: null,
+          newValue: new Date().toISOString(),
+          reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji'
         }
       });
     });
@@ -1022,7 +1053,7 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Anulowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+        description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
