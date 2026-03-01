@@ -1,7 +1,7 @@
 /**
  * MinIO Storage Service
  * Implementacja IStorageService z MinIO (S3-compatible object storage).
- * Używa oficjalnego SDK `minio`.
+ * Używa accessKey/secretKey z config (service account, nie root).
  */
 
 import { Client as MinioClient } from 'minio';
@@ -19,10 +19,13 @@ export class MinioStorageService implements IStorageService {
       endPoint: url.hostname,
       port: parseInt(url.port) || (url.protocol === 'https:' ? 443 : 9000),
       useSSL: url.protocol === 'https:',
-      accessKey: storageConfig.minio.rootUser,
-      secretKey: storageConfig.minio.rootPassword,
+      accessKey: storageConfig.minio.accessKey,
+      secretKey: storageConfig.minio.secretKey,
     });
-    logger.info(`[MinIO] Client initialized: ${storageConfig.minio.endpoint}`);
+
+    // Log which credentials are being used (without revealing secrets)
+    const usingServiceAccount = !!process.env.MINIO_ACCESS_KEY;
+    logger.info(`[MinIO] Client initialized: ${storageConfig.minio.endpoint} (${usingServiceAccount ? 'service account' : 'root credentials'})`);
   }
 
   async upload(bucket: string, key: string, data: Buffer | Readable, metadata?: Record<string, string>): Promise<UploadResult> {

@@ -9,6 +9,11 @@
 #   - Automatic restart on failure
 #   - No mounted volumes for code
 #   - Uses .env.prod for environment variables
+#
+# Security:
+#   - MinIO Console disabled (no --console-address)
+#   - Console port not exposed
+#   - Strong credentials required via .env.prod
 # ============================================
 
 services:
@@ -22,6 +27,16 @@ services:
 
   minio:
     restart: always
+    # H2: Console disabled in prod — API only
+    command: server /data
+    ports:
+      # Only S3 API port, no console
+      - '127.0.0.1:${MINIO_PORT:-9000}:9000'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.prod}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.prod}
+      # Explicitly disable browser/console access
+      MINIO_BROWSER: "off"
     volumes:
       - /data/minio:/data
     deploy:
@@ -56,6 +71,10 @@ services:
       RESTAURANT_NIP: ${RESTAURANT_NIP}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-minio}
       MINIO_ENDPOINT: http://minio:9000
+      # H1: Service account credentials (separate from root)
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env.prod}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env.prod}
+      # Root credentials for bucket management only
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.prod}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.prod}
       MINIO_BUCKET_ATTACHMENTS: ${MINIO_BUCKET_ATTACHMENTS:-attachments}
