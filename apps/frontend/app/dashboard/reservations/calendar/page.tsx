@@ -129,7 +129,6 @@ function ReservationPill({ reservation, onClick }: { reservation: CalendarReserv
   )
 }
 
-/* Mobile dots: colored dots for each reservation on small screens */
 function MobileDots({ reservations }: { reservations: CalendarReservation[] }) {
   if (reservations.length === 0) return null
   const maxDots = 4
@@ -167,11 +166,23 @@ function SkeletonGrid() {
   )
 }
 
+/* #165: DayDetailPanel — groups reservations by hall with capacity bars */
 function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
   date: Date; reservations: CalendarReservation[]; onClose: () => void; onReservationClick: (id: string) => void
 }) {
   const dayName = date.toLocaleDateString('pl-PL', { weekday: 'long' })
   const fullDate = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  const hallGroups = useMemo(() => {
+    const groups = new Map<string, { hall: CalendarReservation['hall']; reservations: CalendarReservation[] }>()
+    for (const r of reservations) {
+      const key = r.hall?.id || '__no_hall__'
+      if (!groups.has(key)) groups.set(key, { hall: r.hall, reservations: [] })
+      groups.get(key)!.reservations.push(r)
+    }
+    return Array.from(groups.values())
+  }, [reservations])
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
@@ -192,37 +203,88 @@ function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
           <p className="text-sm">Brak rezerwacji</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {reservations.map((r) => {
-            const color = r.eventType?.color || '#6366f1'
-            const status = STATUS_CONFIG[r.status]
+        <div className="space-y-4">
+          {hallGroups.map(({ hall, reservations: hallReservations }) => {
+            const isMulti = hall?.allowMultipleBookings && hall?.capacity && hall.capacity > 0
+            const activeRes = hallReservations.filter((r) => r.status !== 'CANCELLED')
+            const totalGuests = activeRes.reduce((sum, r) => sum + (r.guests || 0), 0)
+            const occupancyPct = isMulti ? Math.min(100, Math.round((totalGuests / hall!.capacity!) * 100)) : 0
+
             return (
-              <button key={r.id} onClick={() => onReservationClick(r.id)}
-                className="group w-full text-left rounded-xl p-3 border border-neutral-100 dark:border-neutral-700/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all cursor-pointer"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-full min-h-[40px] rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
-                        {r.eventType?.name || r.customEventType || 'Wydarzenie'}
+              <div key={hall?.id || '__no_hall__'}>
+                {/* Hall section header */}
+                {(hallGroups.length > 1 || isMulti) && (
+                  <div className="mb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="h-3.5 w-3.5 text-violet-500" />
+                      <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                        {hall?.name || 'Bez sali'}
                       </span>
-                      {status && (
-                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', status.bgClass)}>{status.label}</span>
+                      {isMulti && (
+                        <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">
+                          {totalGuests}/{hall!.capacity} os\u00f3b \u2014 {activeRes.length} rez.
+                        </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.client?.firstName} {r.client?.lastName}</span>
-                      {r.startTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
-                      {r.hall && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{r.hall.name}</span>}
-                    </div>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">{r.guests} os. \u2022 {formatCurrency(r.totalPrice)}</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    {isMulti && (
+                      <div className="w-full h-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all duration-500',
+                            occupancyPct >= 90 ? 'bg-red-500' : occupancyPct >= 70 ? 'bg-amber-500' : 'bg-violet-500'
+                          )}
+                          style={{ width: `${occupancyPct}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {/* Reservation cards */}
+                <div className="space-y-2">
+                  {hallReservations.map((r) => {
+                    const color = r.eventType?.color || '#6366f1'
+                    const status = STATUS_CONFIG[r.status]
+                    return (
+                      <button key={r.id} onClick={() => onReservationClick(r.id)}
+                        className="group w-full text-left rounded-xl p-3 border border-neutral-100 dark:border-neutral-700/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-1 h-full min-h-[40px] rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
+                                {r.eventType?.name || r.customEventType || 'Wydarzenie'}
+                              </span>
+                              {status && (
+                                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', status.bgClass)}>{status.label}</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                              <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.client?.firstName} {r.client?.lastName}</span>
+                              {r.startTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
+                              {hallGroups.length <= 1 && r.hall && (
+                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{r.hall.name}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                                {r.guests} os. \u2022 {formatCurrency(r.totalPrice)}
+                                {isMulti && hall?.capacity && (
+                                  <span className="text-violet-500 ml-1">
+                                    ({Math.round(((r.guests || 0) / hall.capacity) * 100)}% sali)
+                                  </span>
+                                )}
+                              </span>
+                              <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
@@ -320,7 +382,7 @@ export default function CalendarPage() {
       <PageHero
         accent={accent}
         title="Rezerwacje"
-        subtitle="Zarządzaj rezerwacjami sal weselnych"
+        subtitle="Zarz\u0105dzaj rezerwacjami sal weselnych"
         icon={CalendarIcon}
         action={
           <Button
@@ -336,16 +398,15 @@ export default function CalendarPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
+        <StatCard label="Wszystkie" value={stats.total} subtitle="\u0141\u0105cznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
         <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <StatCard label="Oczekuj\u0105ce" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+        <StatCard label="Ten miesi\u0105c" value={stats.thisMonth} subtitle="Wydarze\u0144 w tym miesi\u0105cu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
       </div>
 
-      {/* Controls bar — row 1: view toggle + month nav */}
+      {/* Controls bar */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* View Toggle */}
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
             <Link
               href="/dashboard/reservations/list"
@@ -360,7 +421,6 @@ export default function CalendarPage() {
             </span>
           </div>
 
-          {/* Month Navigation */}
           <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
             <button onClick={goToPrevMonth} className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors shadow-sm">
               <ChevronLeft className="h-4 w-4" />
@@ -372,12 +432,11 @@ export default function CalendarPage() {
               <ChevronRight className="h-4 w-4" />
             </button>
             <button onClick={goToToday} className="px-2.5 sm:px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
-              Dziś
+              Dzi\u015b
             </button>
           </div>
         </div>
 
-        {/* Row 2: Hall filter (if halls exist) */}
         {halls && halls.length > 0 && (
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
@@ -394,7 +453,7 @@ export default function CalendarPage() {
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">Nie udało się załadować rezerwacji</p>
+          <p className="text-sm text-red-700 dark:text-red-300">Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji</p>
         </div>
       )}
 
@@ -437,19 +496,17 @@ export default function CalendarPage() {
                         )}
                       </div>
 
-                      {/* Mobile: colored dots */}
                       <div className="sm:hidden">
                         <MobileDots reservations={dayReservations} />
                       </div>
 
-                      {/* Desktop: full pills */}
                       <div className="hidden sm:block space-y-0.5">
                         {dayReservations.slice(0, MAX_PILLS).map((r) => (
                           <ReservationPill key={r.id} reservation={r} onClick={() => router.push(`/dashboard/reservations/${r.id}`)} />
                         ))}
                         {dayReservations.length > MAX_PILLS && (
                           <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
-                            +{dayReservations.length - MAX_PILLS} więcej
+                            +{dayReservations.length - MAX_PILLS} wi\u0119cej
                           </div>
                         )}
                       </div>
@@ -476,7 +533,7 @@ export default function CalendarPage() {
 
       {eventTypes.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-          <span className="font-semibold">Typy wydarzeń:</span>
+          <span className="font-semibold">Typy wydarze\u0144:</span>
           {eventTypes.map((et) => (
             <span key={et.name} className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: et.color }} />
