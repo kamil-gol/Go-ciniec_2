@@ -48,6 +48,18 @@ export interface BulkUpdateCategorySettingsInput {
   }>;
 }
 
+/**
+ * #166: Validate portionTarget value at runtime.
+ * Throws if value is provided but not in PORTION_TARGETS.
+ */
+function validatePortionTarget(value: string | undefined): void {
+  if (value !== undefined && !(PORTION_TARGETS as readonly string[]).includes(value)) {
+    throw new Error(
+      `Nieprawidłowa wartość portionTarget: "${value}". Dozwolone: ${PORTION_TARGETS.join(', ')}`
+    );
+  }
+}
+
 class PackageCategoryService {
 
   async getByPackageId(packageId: string) {
@@ -61,6 +73,8 @@ class PackageCategoryService {
   }
 
   async create(data: CreateCategorySettingInput) {
+    validatePortionTarget(data.portionTarget);
+
     const existing = await prisma.packageCategorySettings.findUnique({
       where: { packageId_categoryId: { packageId: data.packageId, categoryId: data.category.id } }
     });
@@ -78,6 +92,8 @@ class PackageCategoryService {
   }
 
   async update(id: string, data: UpdateCategorySettingInput) {
+    validatePortionTarget(data.portionTarget);
+
     const existing = await prisma.packageCategorySettings.findUnique({ where: { id } });
     if (!existing) throw new Error('Nie znaleziono ustawień kategorii');
     return prisma.packageCategorySettings.update({ where: { id }, data });
@@ -86,6 +102,11 @@ class PackageCategoryService {
   async bulkUpdate(packageId: string, input: BulkUpdateCategorySettingsInput) {
     const pkg = await prisma.menuPackage.findUnique({ where: { id: packageId } });
     if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
+
+    // Validate all portionTarget values before any writes
+    for (const settingData of input.settings) {
+      validatePortionTarget(settingData.portionTarget);
+    }
 
     const results = [];
     for (const settingData of input.settings) {
