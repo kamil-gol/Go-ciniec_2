@@ -9,6 +9,7 @@
  * Updated: Phase 3 Audit — logChange() for all CRUD operations
  * Updated: #146 — storageService abstraction (local/MinIO)
  * Updated: #146 — presigned download URLs with TTL
+ * Updated: #146 — image compression (sharp) on upload
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
@@ -20,6 +21,7 @@ import { CreateAttachmentDTO, UpdateAttachmentDTO, AttachmentFilters } from '../
 import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../constants/attachmentCategories';
 import { storageService } from './storage';
 import { storageConfig } from '../config/storage.config';
+import { compressIfImage } from '../utils/image-compression';
 import logger from '../utils/logger';
 import fs from 'fs';
 
@@ -35,17 +37,26 @@ export interface DownloadUrlResult {
 class AttachmentService {
   /**
    * Upload file from staging to storage backend.
+   * Compresses images before upload (sharp: max 2000px, quality 80%).
    */
-  private async uploadToStorage(file: Express.Multer.File, entityType: EntityType): Promise<string> {
+  private async uploadToStorage(file: Express.Multer.File, entityType: EntityType): Promise<{ storageKey: string; finalSize: number }> {
     const subDir = STORAGE_DIRS[entityType] || 'other';
     const storageKey = `${subDir}/${file.filename}`;
     const bucket = storageConfig.buckets.attachments;
 
-    const fileBuffer = fs.readFileSync(file.path);
+    const rawBuffer = fs.readFileSync(file.path);
+
+    const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
+    const fileBuffer = compression.buffer;
+    const finalSize = compression.compressedSize;
 
     await storageService.upload(bucket, storageKey, fileBuffer, {
       'Content-Type': file.mimetype,
       'X-Original-Name': encodeURIComponent(file.originalname),
+      ...(compression.wasCompressed ? {
+        'X-Original-Size': String(compression.originalSize),
+        'X-Compressed': 'true',
+      } : {}),
     });
 
     if (fs.existsSync(file.path)) {
@@ -53,8 +64,8 @@ class AttachmentService {
       logger.debug(`Staging file removed: ${file.path}`);
     }
 
-    logger.info(`File uploaded to storage: ${bucket}/${storageKey}`);
-    return storageKey;
+    logger.info(`File uploaded to storage: ${bucket}/${storageKey} (${finalSize} bytes${compression.wasCompressed ? ', compressed' : ''})`);
+    return { storageKey, finalSize };
   }
 
   /**
@@ -128,7 +139,7 @@ class AttachmentService {
       finalEntityId = clientId;
     }
 
-    const storagePath = await this.uploadToStorage(file, finalEntityType);
+    const { storageKey: storagePath, finalSize } = await this.uploadToStorage(file, finalEntityType);
 
     const attachment = await prisma.attachment.create({
       data: {
@@ -140,7 +151,7 @@ class AttachmentService {
         originalName: file.originalname,
         storedName: file.filename,
         mimeType: file.mimetype,
-        sizeBytes: file.size,
+        sizeBytes: finalSize,
         storagePath,
         uploadedById,
       },
@@ -167,9 +178,11 @@ class AttachmentService {
         attachmentId: attachment.id,
         originalName: file.originalname,
         mimeType: file.mimetype,
-        sizeBytes: file.size,
+        sizeBytes: finalSize,
+        originalSizeBytes: file.size,
         category: dto.category,
         label: dto.label || null,
+        compressed: finalSize !== file.size,
         redirected: finalEntityType !== dto.entityType
           ? { from: `${dto.entityType}/${dto.entityId}`, to: `${finalEntityType}/${finalEntityId}` }
           : null,
@@ -293,8 +306,6 @@ class AttachmentService {
 
   /**
    * Get presigned download URL with TTL.
-   * Returns direct MinIO URL when MINIO_PUBLIC_ENDPOINT is configured,
-   * otherwise falls back to backend stream endpoint.
    */
   async getDownloadUrl(id: string, baseApiUrl?: string): Promise<DownloadUrlResult> {
     const attachment = await this.getAttachmentById(id);
@@ -328,13 +339,12 @@ class AttachmentService {
 
     const apiBase = baseApiUrl || '/api';
     const fallbackUrl = `${apiBase}/attachments/${id}/download`;
-    const ttl = 0;
 
     logger.debug(`Download URL for attachment ${id} (fallback to stream, direct: false)`);
 
     return {
       url: fallbackUrl,
-      expiresIn: ttl,
+      expiresIn: 0,
       direct: false,
       filename: attachment.originalName,
       mimeType: attachment.mimeType,
@@ -406,7 +416,7 @@ class AttachmentService {
   }
 
   /**
-   * Soft-delete attachment (set isArchived=true)
+   * Soft-delete attachment
    */
   async deleteAttachment(id: string, userId?: string) {
     const existing = await this.getAttachmentById(id);
@@ -435,7 +445,7 @@ class AttachmentService {
   }
 
   /**
-   * Hard-delete attachment (remove from storage + DB record)
+   * Hard-delete attachment
    */
   async hardDeleteAttachment(id: string, userId?: string) {
     const attachment = await this.getAttachmentById(id);
