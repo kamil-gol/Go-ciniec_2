@@ -23,7 +23,6 @@ describe('Reservations Multi-Booking — #165', () => {
   });
 
   afterEach(async () => {
-    // Delete ONLY reservations created during this test — no other data touched
     if (createdReservationIds.length > 0) {
       await prismaTest.reservation.deleteMany({
         where: { id: { in: createdReservationIds } },
@@ -44,18 +43,15 @@ describe('Reservations Multi-Booking — #165', () => {
     });
   }
 
-  /**
-   * Returns a date N months in the future.
-   * Uses months 24-29 to avoid conflicts with existing dev data.
-   */
+  /** Returns ISO date string for a day 15th, N months ahead */
   function futureDate(monthsAhead: number): string {
     const d = new Date();
     d.setMonth(d.getMonth() + monthsAhead);
-    d.setDate(15); // Fixed day to avoid month-end edge cases
+    d.setDate(15);
     return d.toISOString().split('T')[0];
   }
 
-  /** POST a reservation via API and track its ID for afterEach cleanup */
+  /** POST reservation via API, track created ID for afterEach cleanup */
   async function postReservation(body: Record<string, any>): Promise<any> {
     const res = await api
       .post('/api/reservations')
@@ -95,7 +91,6 @@ describe('Reservations Multi-Booking — #165', () => {
   it('should allow a second overlapping reservation on multi-booking hall when total guests ≤ capacity', async () => {
     const dateStr = futureDate(25);
 
-    // First reservation: 100 guests
     await postReservation({
       clientId: seed.client1.id,
       hallId: seed.hallMultiBooking.id,
@@ -110,7 +105,6 @@ describe('Reservations Multi-Booking — #165', () => {
       pricePerToddler: 0,
     });
 
-    // Second reservation: 100 guests — total 200 <= 300 capacity
     const res = await postReservation({
       clientId: seed.client2.id,
       hallId: seed.hallMultiBooking.id,
@@ -134,7 +128,6 @@ describe('Reservations Multi-Booking — #165', () => {
   it('should reject reservation when total guests would exceed multi-booking hall capacity', async () => {
     const dateStr = futureDate(26);
 
-    // First reservation: 250 guests
     await postReservation({
       clientId: seed.client1.id,
       hallId: seed.hallMultiBooking.id,
@@ -149,7 +142,6 @@ describe('Reservations Multi-Booking — #165', () => {
       pricePerToddler: 0,
     });
 
-    // Second reservation: 100 guests — total 350 > 300 capacity → must be rejected
     const res = await postReservation({
       clientId: seed.client2.id,
       hallId: seed.hallMultiBooking.id,
@@ -172,34 +164,41 @@ describe('Reservations Multi-Booking — #165', () => {
   // ========================================
   it('should return correct available capacity for multi-booking hall', async () => {
     const dateStr = futureDate(27);
+    const startDT = `${dateStr}T14:00:00.000Z`;
+    const endDT = `${dateStr}T22:00:00.000Z`;
 
-    // Seed a confirmed reservation for 100 guests directly in DB
+    // Create reservation directly in DB using startDateTime/endDateTime (used by capacity service)
     const reservation = await prismaTest.reservation.create({
       data: {
         clientId: seed.client1.id,
         createdById: seed.admin.id,
         hallId: seed.hallMultiBooking.id,
         eventTypeId: seed.eventType1.id,
-        date: dateStr,
-        startTime: '14:00',
-        endTime: '22:00',
+        startDateTime: new Date(startDT),
+        endDateTime: new Date(endDT),
+        adults: 90,
+        children: 10,
+        toddlers: 0,
         guests: 100,
         status: 'CONFIRMED',
-        totalPrice: 20000,
+        pricePerAdult: 200,
+        pricePerChild: 100,
+        pricePerToddler: 0,
+        totalPrice: 19000,
       },
     });
     createdReservationIds.push(reservation.id);
 
     const res = await api
       .get(`/api/halls/${seed.hallMultiBooking.id}/available-capacity`)
-      .query({
-        startDateTime: `${dateStr}T14:00:00`,
-        endDateTime: `${dateStr}T22:00:00`,
-      })
+      .query({ startDateTime: startDT, endDateTime: endDT })
       .set(adminAuth());
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({
+
+    // API wraps response in { success: true, data: { ... } }
+    const payload = res.body?.data ?? res.body;
+    expect(payload).toMatchObject({
       totalCapacity: 300,
       occupiedCapacity: 100,
       availableCapacity: 200,
@@ -212,7 +211,6 @@ describe('Reservations Multi-Booking — #165', () => {
   it('should free capacity after cancelling a reservation on multi-booking hall', async () => {
     const dateStr = futureDate(28);
 
-    // First reservation: 250 guests (leaves only 50 free)
     const firstRes = await postReservation({
       clientId: seed.client1.id,
       hallId: seed.hallMultiBooking.id,
@@ -230,7 +228,6 @@ describe('Reservations Multi-Booking — #165', () => {
     expect([200, 201]).toContain(firstRes.status);
     const firstId = firstRes.body?.id ?? firstRes.body?.data?.id;
 
-    // Cancel the first reservation
     if (firstId) {
       await api
         .patch(`/api/reservations/${firstId}/status`)
@@ -238,7 +235,6 @@ describe('Reservations Multi-Booking — #165', () => {
         .send({ status: 'CANCELLED', reason: 'Test #165: freeing capacity' });
     }
 
-    // Now 100-guest reservation should succeed (capacity fully freed)
     const res = await postReservation({
       clientId: seed.client2.id,
       hallId: seed.hallMultiBooking.id,
@@ -257,15 +253,14 @@ describe('Reservations Multi-Booking — #165', () => {
   });
 
   // ========================================
-  // Scenario 6: Normal single-booking hall still rejects overlapping reservations
+  // Scenario 6: hallSingleBooking (allowMultipleBookings=false) rejects overlapping reservations
   // ========================================
   it('should reject overlapping reservation on a standard (non-multi-booking) hall', async () => {
     const dateStr = futureDate(29);
 
-    // First reservation on normal hall
     await postReservation({
       clientId: seed.client1.id,
-      hallId: seed.hall1.id,
+      hallId: seed.hallSingleBooking.id,
       eventTypeId: seed.eventType1.id,
       startDateTime: `${dateStr}T14:00:00`,
       endDateTime: `${dateStr}T22:00:00`,
@@ -277,10 +272,9 @@ describe('Reservations Multi-Booking — #165', () => {
       pricePerToddler: 0,
     });
 
-    // Second overlapping reservation on same hall — must be rejected
     const res = await postReservation({
       clientId: seed.client2.id,
-      hallId: seed.hall1.id,
+      hallId: seed.hallSingleBooking.id,
       eventTypeId: seed.eventType2.id,
       startDateTime: `${dateStr}T16:00:00`,
       endDateTime: `${dateStr}T23:00:00`,

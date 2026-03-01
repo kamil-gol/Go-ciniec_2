@@ -25,6 +25,8 @@ export interface TestSeedData {
   hall2: any;
   /** #165: Hall with allowMultipleBookings=true and capacity=300 */
   hallMultiBooking: any;
+  /** #165: Hall with allowMultipleBookings=false — for testing single-booking rejection */
+  hallSingleBooking: any;
   eventType1: any;
   eventType2: any;
   client1: any;
@@ -40,18 +42,14 @@ async function findOrCreate<T>(
   findFn: () => Promise<T | null>,
   createFn: () => Promise<T>,
 ): Promise<T> {
-  // 1. Try to find existing (read-only, no locks)
   const existing = await findFn();
   if (existing) return existing;
 
-  // 2. Not found → try to create
   try {
     return await createFn();
   } catch (createError) {
-    // 3. Another worker created it concurrently → find again
     const retry = await findFn();
     if (retry) return retry;
-    // Re-throw original error for debugging
     throw createError;
   }
 }
@@ -127,7 +125,7 @@ export async function seedTestData(): Promise<TestSeedData> {
     }),
   );
 
-  // #165: Hall that allows multiple simultaneous reservations (allowMultipleBookings = schema field name)
+  // #165: Hall that allows multiple simultaneous reservations
   const hallMultiBooking = await findOrCreate(
     () => prismaTest.hall.findUnique({ where: { name: 'Sala Wielorezerwacyjna' } }),
     () => prismaTest.hall.create({
@@ -137,6 +135,20 @@ export async function seedTestData(): Promise<TestSeedData> {
         description: 'Sala umo\u017cliwiaj\u0105ca wiele rezerwacji w tym samym terminie',
         isActive: true,
         allowMultipleBookings: true,
+      },
+    }),
+  );
+
+  // #165: Hall that blocks overlapping reservations (single-booking mode)
+  const hallSingleBooking = await findOrCreate(
+    () => prismaTest.hall.findUnique({ where: { name: 'Sala Jednorezerwacyjna' } }),
+    () => prismaTest.hall.create({
+      data: {
+        name: 'Sala Jednorezerwacyjna',
+        capacity: 100,
+        description: 'Sala blokuj\u0105ca nakładające si\u0119 rezerwacje',
+        isActive: true,
+        allowMultipleBookings: false,
       },
     }),
   );
@@ -162,7 +174,7 @@ export async function seedTestData(): Promise<TestSeedData> {
     }),
   );
 
-  // ── Clients (no unique constraint on email, use findFirst) ──
+  // ── Clients ──
   const client1 = await findOrCreate(
     () => prismaTest.client.findFirst({ where: { email: 'jan.kowalski@test.pl' } }),
     () => prismaTest.client.create({
@@ -196,6 +208,7 @@ export async function seedTestData(): Promise<TestSeedData> {
     hall1,
     hall2,
     hallMultiBooking,
+    hallSingleBooking,
     eventType1,
     eventType2,
     client1,
@@ -205,7 +218,6 @@ export async function seedTestData(): Promise<TestSeedData> {
 
 /**
  * Quick seed: only users (for auth tests).
- * Also uses find-or-create pattern.
  */
 export async function seedUsersOnly() {
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
