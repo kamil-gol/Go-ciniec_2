@@ -10,15 +10,15 @@ import { toast } from 'sonner'
 interface EditableInternalNotesCardProps {
   reservationId: string
   internalNotes: string | null
-  onUpdated?: () => void
   disabled?: boolean
+  onUpdated?: () => void
 }
 
 export function EditableInternalNotesCard({
   reservationId,
   internalNotes: initialNotes,
+  disabled = false,
   onUpdated,
-  disabled,
 }: EditableInternalNotesCardProps) {
   const [notes, setNotes] = useState(initialNotes || '')
   const [isDirty, setIsDirty] = useState(false)
@@ -83,8 +83,8 @@ export function EditableInternalNotesCard({
         <textarea
           value={notes}
           onChange={(e) => handleChange(e.target.value)}
-          disabled={disabled}
-          className="w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none disabled:opacity-60 disabled:cursor-not-allowed"
+          readOnly={disabled}
+          className={`w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none${disabled ? ' opacity-60 cursor-not-allowed' : ''}`}
           rows={3}
           placeholder="Wewn\u0119trzne uwagi, preferencje klienta, info dla zespo\u0142u..."
         />

@@ -14,8 +14,8 @@ interface EditableNotesCardProps {
   notes: string | null
   confirmationDeadline: string | null
   startDateTime: string | null
-  onUpdated?: () => void
   disabled?: boolean
+  onUpdated?: () => void
 }
 
 export function EditableNotesCard({
@@ -23,8 +23,8 @@ export function EditableNotesCard({
   notes: initialNotes,
   confirmationDeadline: initialDeadline,
   startDateTime,
-  onUpdated,
   disabled,
+  onUpdated,
 }: EditableNotesCardProps) {
   const [notes, setNotes] = useState(initialNotes || '')
   const [deadline, setDeadline] = useState(
