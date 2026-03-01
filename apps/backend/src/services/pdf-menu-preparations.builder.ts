@@ -29,10 +29,10 @@ const PAGE_HEIGHT = 841.89;
 const LEFT = 40;
 const RIGHT = PAGE_WIDTH - 40;
 const W = RIGHT - LEFT;
-const FOOTER_HEIGHT = 50; // Space reserved for footer (separator + 2 lines of text)
-const FOOTER_START = PAGE_HEIGHT - FOOTER_HEIGHT; // 791.89
+const FOOTER_HEIGHT = 50;
+const FOOTER_START = PAGE_HEIGHT - FOOTER_HEIGHT;
 const TOP_MARGIN = 50;
-const DAY_HEADER_HEIGHT = 16 + 17; // Day header height + margin after
+const DAY_HEADER_HEIGHT = 16 + 17;
 
 const COL_GAP = 10;
 const COL_W = (W - COL_GAP) / 2;
@@ -54,6 +54,13 @@ function formatDateTime(date: Date): string {
   }).format(date);
 }
 
+/** #166: Translate portionTarget to Polish label for PDF */
+function portionTargetLabel(target: string | undefined): string {
+  if (target === 'ADULTS_ONLY') return ' (DORO\u015aLI)';
+  if (target === 'CHILDREN_ONLY') return ' (DZIECI)';
+  return '';
+}
+
 function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number): void {
   if (doc.y + minSpace > FOOTER_START) {
     doc.addPage();
@@ -71,7 +78,6 @@ function measureTextWidth(
   return doc.widthOfString(text);
 }
 
-// Calculate card height before rendering
 function calculateReservationCardHeight(
   ctx: PDFContext,
   res: any,
@@ -100,7 +106,7 @@ function calculateReservationCardHeight(
   let contentHeight = headerHeight + 2;
 
   for (const course of res.courses) {
-    contentHeight += 9 + 2; // Course header
+    contentHeight += 9 + 2;
 
     for (const dish of course.dishes) {
       doc.font(ctx.regularFont).fontSize(7.5);
@@ -159,9 +165,11 @@ function renderReservationCard(
   y += headerHeight + 2;
 
   for (const course of res.courses) {
+    // #166: portionTarget label next to course name
+    const ptLabel = portionTargetLabel((course as any).portionTarget);
     doc.rect(x + innerPad, y, 2, 9).fill(COLORS.accent);
     doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
-    doc.text(course.courseName.toUpperCase(), x + innerPad + 6, y + 1, { width: textWidth - 6 });
+    doc.text(`${course.courseName.toUpperCase()}${ptLabel}`, x + innerPad + 6, y + 1, { width: textWidth - 6 });
     y = doc.y + 2;
 
     for (const dish of course.dishes) {
@@ -267,30 +275,25 @@ export function buildMenuPreparationsReportPDF(
       const reservations = day.reservations;
       if (reservations.length === 0) continue;
 
-      // Calculate height of first pair to check if day header + first pair fit together
       const firstRes = reservations[0];
       const secondRes = reservations.length > 1 ? reservations[1] : null;
       const firstHeight = calculateReservationCardHeight(ctx, firstRes, COL_W);
       const secondHeight = secondRes ? calculateReservationCardHeight(ctx, secondRes, COL_W) : 0;
       const firstPairHeight = Math.max(firstHeight, secondHeight);
-      
-      // Ensure day header + first pair fit together on page
+
       const dayBlockHeight = DAY_HEADER_HEIGHT + firstPairHeight;
       ensureSpace(doc, dayBlockHeight);
 
-      // Render day header
       doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
       doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
       doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
       doc.y += 17;
 
-      // Render all reservation pairs
       for (let i = 0; i < reservations.length; i += 2) {
         const leftRes = reservations[i];
         const rightRes = reservations[i + 1];
 
-        // For subsequent pairs (not first), check space independently
         if (i > 0) {
           const leftHeight = calculateReservationCardHeight(ctx, leftRes, COL_W);
           const rightHeight = rightRes ? calculateReservationCardHeight(ctx, rightRes, COL_W) : 0;
@@ -321,13 +324,12 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // SUMMARY VIEW (5 columns: Danie, Porcje, Doros\u0142e, Dzieci\u0119ce, Klienci — no Maluchy)
+  // SUMMARY VIEW (5 columns: Danie, Porcje, Doros\u0142e, Dzieci\u0119ce, Klienci)
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
-      // Calculate minimum height needed for day header + first course section
       let minDayHeight = DAY_HEADER_HEIGHT;
       if (day.courses.length > 0) {
-        minDayHeight += 11 + 13 + 11 + 15; // course name + header + min row + buffer
+        minDayHeight += 11 + 13 + 11 + 15;
       }
       ensureSpace(doc, minDayHeight);
 
@@ -340,9 +342,12 @@ export function buildMenuPreparationsReportPDF(
       for (const course of day.courses) {
         ensureSpace(doc, 35);
 
+        // #166: portionTarget label from first dish
+        const ptLabel = (course as any).dishes?.length > 0 ? portionTargetLabel((course as any).dishes[0]?.portionTarget) : '';
+
         doc.rect(LEFT, doc.y, W, 11).fill(COLORS.bgLight);
         doc.font(ctx.boldFont).fontSize(6.5).fillColor(COLORS.accent);
-        doc.text(course.courseName.toUpperCase(), LEFT + 8, doc.y + 3);
+        doc.text(`${course.courseName.toUpperCase()}${ptLabel}`, LEFT + 8, doc.y + 3);
         doc.y += 13;
 
         const colPct = [0.26, 0.10, 0.10, 0.10, 0.44];
