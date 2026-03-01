@@ -1,11 +1,11 @@
 /**
  * Unit Tests — MinioStorageService
  * Mockuje SDK minio — testuje logikę serwisu bez prawdziwego MinIO.
+ * Używa { virtual: true } żeby nie wymagać fizycznego modułu minio w node_modules.
  */
 
 import { Readable } from 'stream';
 
-// Mock minio SDK BEFORE any imports that use it
 const mockPutObject = jest.fn();
 const mockGetObject = jest.fn();
 const mockRemoveObject = jest.fn();
@@ -26,9 +26,8 @@ jest.mock('minio', () => ({
     presignedGetObject: mockPresignedGetObject,
     listObjectsV2: mockListObjectsV2,
   })),
-}));
+}), { virtual: true });
 
-// Mock config
 jest.mock('../../../config/storage.config', () => ({
   storageConfig: {
     driver: 'minio',
@@ -45,7 +44,6 @@ jest.mock('../../../config/storage.config', () => ({
   },
 }));
 
-// Mock logger
 jest.mock('../../../utils/logger', () => ({
   __esModule: true,
   default: {
@@ -56,7 +54,6 @@ jest.mock('../../../utils/logger', () => ({
   },
 }));
 
-// Import AFTER all mocks are set up
 const { MinioStorageService } = require('../../../services/storage/minio.storage');
 
 describe('MinioStorageService', () => {
