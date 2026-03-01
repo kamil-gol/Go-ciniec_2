@@ -121,19 +121,19 @@ export default function CategorySettingsSection({
           <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
             <span className="text-2xl">{'\ud83c\udf7d\ufe0f'}</span>
           </div>
-          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kategorie da\u0144 w pakiecie</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kategorie dań w pakiecie</h2>
         </div>
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Wybierz kategorie da\u0144 dost\u0119pne w tym pakiecie i ustaw limity wyboru
+          Wybierz kategorie dań dostępne w tym pakiecie i ustaw limity wyboru
         </p>
       </div>
 
       {categories.length === 0 ? (
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600">
           <div className="text-4xl mb-3">{'\ud83d\udcc2'}</div>
-          <p className="text-neutral-500 dark:text-neutral-400 font-medium">Brak kategorii da\u0144</p>
+          <p className="text-neutral-500 dark:text-neutral-400 font-medium">Brak kategorii dań</p>
           <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
-            Dodaj kategorie da\u0144 w sekcji {'"'}Kategorie{'"'} aby m\u00f3c je przypisywa\u0107 do pakiet\u00f3w
+            Dodaj kategorie dań w sekcji {'"'}Kategorie{'"'} aby móc je przypisywać do pakietów
           </p>
         </div>
       ) : (
@@ -205,7 +205,7 @@ export default function CategorySettingsSection({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                          Min wybor\u00f3w
+                          Min wyborów
                         </label>
                         <input
                           type="number"
@@ -225,7 +225,7 @@ export default function CategorySettingsSection({
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                          Max wybor\u00f3w
+                          Max wyborów
                         </label>
                         <input
                           type="number"
@@ -248,7 +248,7 @@ export default function CategorySettingsSection({
                     {hasError && (
                       <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-4 py-2.5 rounded-lg">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <span className="font-medium">Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna</span>
+                        <span className="font-medium">Minimalna wartość nie może być większa niż maksymalna</span>
                       </div>
                     )}
 
@@ -285,10 +285,10 @@ export default function CategorySettingsSection({
                       </div>
                     </div>
 
-                    {/* W\u0142asna etykieta */}
+                    {/* Własna etykieta */}
                     <div>
                       <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                        W\u0142asna etykieta
+                        Własna etykieta
                       </label>
                       <input
                         type="text"

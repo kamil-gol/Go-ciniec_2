@@ -133,14 +133,14 @@ export function EditableEventCard({
 
   const handleSave = async (reason: string) => {
     if (!eventTypeId) throw new Error('Wybierz typ wydarzenia')
-    if (!startDate || !startTime) throw new Error('Wybierz dat\u0119 i czas rozpocz\u0119cia')
-    if (!endDate || !endTime) throw new Error('Wybierz dat\u0119 i czas zako\u0144czenia')
+    if (!startDate || !startTime) throw new Error('Wybierz datę i czas rozpoczęcia')
+    if (!endDate || !endTime) throw new Error('Wybierz datę i czas zakończenia')
 
     const startDT = `${startDate}T${startTime}:00`
     const endDT = `${endDate}T${endTime}:00`
 
     if (new Date(`${endDT}Z`) <= new Date(`${startDT}Z`)) {
-      throw new Error('Czas zako\u0144czenia musi by\u0107 po czasie rozpocz\u0119cia')
+      throw new Error('Czas zakończenia musi być po czasie rozpoczęcia')
     }
 
     await updateMutation.mutateAsync({
@@ -157,7 +157,7 @@ export function EditableEventCard({
       },
     })
 
-    toast.success('Szczeg\u00f3\u0142y wydarzenia zaktualizowane')
+    toast.success('Szczegóły wydarzenia zaktualizowane')
     onUpdated?.()
   }
 
@@ -181,7 +181,7 @@ export function EditableEventCard({
 
   return (
     <EditableCard
-      title="Szczeg\u00f3\u0142y wydarzenia"
+      title="Szczegóły wydarzenia"
       icon={<Sparkles className="h-5 w-5 text-white" />}
       iconGradient="from-green-500 to-emerald-500"
       onSave={handleSave}
@@ -247,7 +247,7 @@ export function EditableEventCard({
                   value={birthdayAge || ''}
                   onChange={(e) => setBirthdayAge(parseInt(e.target.value) || 0)}
                 />
-                <label className="text-xs text-muted-foreground">Kt\u00f3re urodziny</label>
+                <label className="text-xs text-muted-foreground">Które urodziny</label>
               </motion.div>
             )}
 
@@ -258,7 +258,7 @@ export function EditableEventCard({
                   value={customEventType}
                   onChange={(e) => setCustomEventType(e.target.value)}
                 />
-                <label className="text-xs text-muted-foreground">Typ wydarzenia (w\u0142asny)</label>
+                <label className="text-xs text-muted-foreground">Typ wydarzenia (własny)</label>
               </motion.div>
             )}
 
@@ -275,7 +275,7 @@ export function EditableEventCard({
                     value={anniversaryYear || ''}
                     onChange={(e) => setAnniversaryYear(parseInt(e.target.value) || 0)}
                   />
-                  <label className="text-xs text-muted-foreground">Kt\u00f3ra rocznica</label>
+                  <label className="text-xs text-muted-foreground">Która rocznica</label>
                 </div>
                 <div>
                   <Input
@@ -291,30 +291,30 @@ export function EditableEventCard({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Rozpocz\u0119cie
+                  <Calendar className="w-4 h-4" /> Rozpoczęcie
                 </p>
                 <DatePicker
                   value={startDate}
                   onChange={setStartDate}
                   label="Data"
-                  placeholder="Wybierz dat\u0119..."
+                  placeholder="Wybierz datę..."
                 />
                 <TimePicker
                   value={startTime}
                   onChange={setStartTime}
                   label="Godzina"
-                  placeholder="Wybierz godzin\u0119..."
+                  placeholder="Wybierz godzinę..."
                 />
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Zako\u0144czenie
+                  <Clock className="w-4 h-4" /> Zakończenie
                 </p>
                 <DatePicker
                   value={endDate}
                   onChange={setEndDate}
                   label="Data"
-                  placeholder="Wybierz dat\u0119..."
+                  placeholder="Wybierz datę..."
                   disabled={!startDate}
                   minDate={startDate ? new Date(startDate) : undefined}
                 />
@@ -322,7 +322,7 @@ export function EditableEventCard({
                   value={endTime}
                   onChange={setEndTime}
                   label="Godzina"
-                  placeholder="Wybierz godzin\u0119..."
+                  placeholder="Wybierz godzinę..."
                   disabled={!startDate || !startTime}
                 />
               </div>
@@ -343,7 +343,7 @@ export function EditableEventCard({
                   durationHours > STANDARD_HOURS ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'
                 }`}>
                   Czas trwania: {durationHours}h
-                  {extraHours > 0 && ` (${extraHours}h ponad standard \u2014 dop\u0142ata ${extraHours * EXTRA_HOUR_RATE} PLN)`}
+                  {extraHours > 0 && ` (${extraHours}h ponad standard \u2014 dopłata ${extraHours * EXTRA_HOUR_RATE} PLN)`}
                 </span>
               </motion.div>
             )}
@@ -351,7 +351,7 @@ export function EditableEventCard({
             {durationHours < 0 && (
               <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                Czas zako\u0144czenia musi by\u0107 po czasie rozpocz\u0119cia
+                Czas zakończenia musi być po czasie rozpoczęcia
               </p>
             )}
           </div>

@@ -111,11 +111,11 @@ export function EditableNotesCard({
                 value={deadline}
                 onChange={setDeadline}
                 label="Termin potwierdzenia (opcjonalnie)"
-                placeholder="Wybierz dat\u0119..."
+                placeholder="Wybierz datę..."
                 minDate={new Date()}
               />
               <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                Musi by\u0107 co najmniej 1 dzie\u0144 przed rozpocz\u0119ciem wydarzenia
+                Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
               </p>
             </div>
           </div>
