@@ -109,7 +109,40 @@ function isToday(date: Date): boolean {
   return date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
 }
 
-function ReservationPill({ reservation, onClick }: { reservation: CalendarReservation; onClick: () => void }) {
+/** #165: Build pill tooltip — includes capacity info for multi-booking halls */
+function buildPillTooltip(
+  reservation: CalendarReservation,
+  allDayReservations: CalendarReservation[]
+): string {
+  const eventName = reservation.eventType?.name || 'Wydarzenie'
+  const clientName = reservation.client
+    ? `${reservation.client.firstName} ${reservation.client.lastName}`
+    : 'Klient'
+  const time = reservation.startTime || ''
+
+  let base = `${eventName} \u2014 ${clientName}${time ? ` (${time})` : ''}`
+
+  const hall = reservation.hall
+  if (hall?.allowMultipleBookings && hall?.capacity && hall.capacity > 0) {
+    const sameHallActive = allDayReservations.filter(
+      (r) => r.hall?.id === hall.id && r.status !== 'CANCELLED'
+    )
+    const totalGuests = sameHallActive.reduce((sum, r) => sum + (r.guests || 0), 0)
+    base += ` \u00b7 ${hall.name}: ${totalGuests}/${hall.capacity} os\u00f3b`
+  }
+
+  return base
+}
+
+function ReservationPill({
+  reservation,
+  allDayReservations,
+  onClick,
+}: {
+  reservation: CalendarReservation
+  allDayReservations: CalendarReservation[]
+  onClick: () => void
+}) {
   const color = reservation.eventType?.color || '#6366f1'
   const status = STATUS_CONFIG[reservation.status]
   const name = reservation.client
@@ -120,7 +153,7 @@ function ReservationPill({ reservation, onClick }: { reservation: CalendarReserv
       onClick={(e) => { e.stopPropagation(); onClick() }}
       className="group w-full text-left rounded px-1.5 py-[3px] text-[11px] leading-tight font-medium truncate transition-all hover:shadow-sm cursor-pointer"
       style={{ backgroundColor: `${color}18`, color, borderLeft: `3px solid ${color}` }}
-      title={`${reservation.eventType?.name || 'Wydarzenie'} \u2014 ${reservation.client?.firstName} ${reservation.client?.lastName} (${reservation.startTime || ''})`}
+      title={buildPillTooltip(reservation, allDayReservations)}
     >
       <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-neutral-400')} />
       {reservation.startTime && <span className="opacity-70">{reservation.startTime} </span>}
@@ -502,7 +535,12 @@ export default function CalendarPage() {
 
                       <div className="hidden sm:block space-y-0.5">
                         {dayReservations.slice(0, MAX_PILLS).map((r) => (
-                          <ReservationPill key={r.id} reservation={r} onClick={() => router.push(`/dashboard/reservations/${r.id}`)} />
+                          <ReservationPill
+                            key={r.id}
+                            reservation={r}
+                            allDayReservations={dayReservations}
+                            onClick={() => router.push(`/dashboard/reservations/${r.id}`)}
+                          />
                         ))}
                         {dayReservations.length > MAX_PILLS && (
                           <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
