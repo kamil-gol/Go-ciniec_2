@@ -1,7 +1,11 @@
 /**
  * MinIO Storage Service
  * Implementacja IStorageService z MinIO (S3-compatible object storage).
- * Używa oficjalnego SDK `minio`.
+ * Używa accessKey/secretKey z config (service account, nie root).
+ *
+ * Presigned URL TTL (H6):
+ *   - getPresignedUrl() używa krótszych TTL dla RODO compliance
+ *   - Konfiguracja w storage.config.ts
  */
 
 import { Client as MinioClient } from 'minio';
@@ -19,10 +23,12 @@ export class MinioStorageService implements IStorageService {
       endPoint: url.hostname,
       port: parseInt(url.port) || (url.protocol === 'https:' ? 443 : 9000),
       useSSL: url.protocol === 'https:',
-      accessKey: storageConfig.minio.rootUser,
-      secretKey: storageConfig.minio.rootPassword,
+      accessKey: storageConfig.minio.accessKey,
+      secretKey: storageConfig.minio.secretKey,
     });
-    logger.info(`[MinIO] Client initialized: ${storageConfig.minio.endpoint}`);
+
+    const usingServiceAccount = !!process.env.MINIO_ACCESS_KEY;
+    logger.info(`[MinIO] Client initialized: ${storageConfig.minio.endpoint} (${usingServiceAccount ? 'service account' : 'root credentials'})`);
   }
 
   async upload(bucket: string, key: string, data: Buffer | Readable, metadata?: Record<string, string>): Promise<UploadResult> {
@@ -65,8 +71,14 @@ export class MinioStorageService implements IStorageService {
     }
   }
 
-  async getPresignedUrl(bucket: string, key: string, expirySeconds: number = 3600): Promise<string> {
-    return this.client.presignedGetObject(bucket, key, expirySeconds);
+  /**
+   * H6: Presigned URL z krótkim TTL.
+   * Domyślnie używa storageConfig.presignedTtl.standard (900s).
+   * Dla RODO-sensitive bucketów (attachments) użyj storageConfig.presignedTtl.sensitive (300s).
+   */
+  async getPresignedUrl(bucket: string, key: string, expirySeconds?: number): Promise<string> {
+    const ttl = expirySeconds ?? this.getDefaultTtl(bucket);
+    return this.client.presignedGetObject(bucket, key, ttl);
   }
 
   async getStats(bucket: string): Promise<StorageStats> {
@@ -103,5 +115,17 @@ export class MinioStorageService implements IStorageService {
       await this.client.makeBucket(bucket);
       logger.info(`[MinIO] Created bucket: ${bucket}`);
     }
+  }
+
+  /**
+   * H6: Automatyczny dobór TTL na podstawie bucketu.
+   * Bucket attachments = dane klientów (RODO) = krótki TTL.
+   */
+  private getDefaultTtl(bucket: string): number {
+    const sensitiveBuckets = [storageConfig.buckets.attachments];
+    if (sensitiveBuckets.includes(bucket)) {
+      return storageConfig.presignedTtl.sensitive; // 300s default
+    }
+    return storageConfig.presignedTtl.standard; // 900s default
   }
 }
