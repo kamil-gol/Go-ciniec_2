@@ -7,13 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { Readable } from 'stream';
-import { LocalStorageService } from '../../../services/storage/local.storage';
 
-// Override UPLOAD_BASE to temp directory
+// Set UPLOAD_BASE BEFORE importing the module
 const TEST_DIR = path.join(os.tmpdir(), `storage-test-${Date.now()}`);
-
-// Mock process.cwd() to redirect uploads to TEST_DIR
-jest.spyOn(process, 'cwd').mockReturnValue(TEST_DIR);
+process.env.UPLOAD_BASE = TEST_DIR;
 
 // Mock logger
 jest.mock('../../../utils/logger', () => ({
@@ -25,6 +22,8 @@ jest.mock('../../../utils/logger', () => ({
     error: jest.fn(),
   },
 }));
+
+import { LocalStorageService } from '../../../services/storage/local.storage';
 
 describe('LocalStorageService', () => {
   let storage: LocalStorageService;
@@ -39,12 +38,13 @@ describe('LocalStorageService', () => {
     if (fs.existsSync(TEST_DIR)) {
       fs.rmSync(TEST_DIR, { recursive: true, force: true });
     }
+    delete process.env.UPLOAD_BASE;
   });
 
   describe('ensureBucket', () => {
     it('should create directory for bucket', async () => {
       await storage.ensureBucket(BUCKET);
-      const dir = path.join(TEST_DIR, 'uploads', BUCKET);
+      const dir = path.join(TEST_DIR, BUCKET);
       expect(fs.existsSync(dir)).toBe(true);
     });
 
@@ -66,7 +66,7 @@ describe('LocalStorageService', () => {
     });
 
     it('should create file on disk', async () => {
-      const filePath = path.join(TEST_DIR, 'uploads', BUCKET, KEY);
+      const filePath = path.join(TEST_DIR, BUCKET, KEY);
       expect(fs.existsSync(filePath)).toBe(true);
       expect(fs.readFileSync(filePath).toString()).toBe('Hello MinIO test');
     });
@@ -94,7 +94,7 @@ describe('LocalStorageService', () => {
       const result = await storage.upload(BUCKET, key, content);
       expect(result.key).toBe(key);
 
-      const filePath = path.join(TEST_DIR, 'uploads', BUCKET, 'clients', 'abc', 'document.pdf');
+      const filePath = path.join(TEST_DIR, BUCKET, 'clients', 'abc', 'document.pdf');
       expect(fs.existsSync(filePath)).toBe(true);
     });
   });

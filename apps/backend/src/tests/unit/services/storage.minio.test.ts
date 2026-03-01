@@ -5,7 +5,7 @@
 
 import { Readable } from 'stream';
 
-// Mock minio SDK
+// Mock minio SDK BEFORE any imports that use it
 const mockPutObject = jest.fn();
 const mockGetObject = jest.fn();
 const mockRemoveObject = jest.fn();
@@ -56,10 +56,11 @@ jest.mock('../../../utils/logger', () => ({
   },
 }));
 
-import { MinioStorageService } from '../../../services/storage/minio.storage';
+// Import AFTER all mocks are set up
+const { MinioStorageService } = require('../../../services/storage/minio.storage');
 
 describe('MinioStorageService', () => {
-  let storage: MinioStorageService;
+  let storage: any;
 
   beforeAll(() => {
     storage = new MinioStorageService();
