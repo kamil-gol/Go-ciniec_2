@@ -1,7 +1,7 @@
 /**
  * Local Filesystem Storage
  * Implementacja IStorageService na lokalnym systemie plików.
- * Bucket = subdirectory w UPLOAD_BASE (process.cwd()/uploads/).
+ * Bucket = subdirectory w UPLOAD_BASE.
  * Używany jako fallback gdy STORAGE_DRIVER=local.
  */
 
@@ -11,7 +11,9 @@ import path from 'path';
 import { IStorageService, UploadResult, StorageStats, StorageObjectInfo } from './storage.interface';
 import logger from '../../utils/logger';
 
-const UPLOAD_BASE = path.join(process.cwd(), 'uploads');
+function getUploadBase(): string {
+  return process.env.UPLOAD_BASE || path.join(process.cwd(), 'uploads');
+}
 
 export class LocalStorageService implements IStorageService {
   async upload(bucket: string, key: string, data: Buffer | Readable, _metadata?: Record<string, string>): Promise<UploadResult> {
@@ -67,7 +69,7 @@ export class LocalStorageService implements IStorageService {
   }
 
   async getStats(bucket: string): Promise<StorageStats> {
-    const dir = path.join(UPLOAD_BASE, bucket);
+    const dir = path.join(getUploadBase(), bucket);
     if (!fs.existsSync(dir)) return { totalSize: 0, fileCount: 0 };
 
     const files = this.getAllFiles(dir);
@@ -78,7 +80,7 @@ export class LocalStorageService implements IStorageService {
   }
 
   async listObjects(bucket: string, prefix?: string): Promise<StorageObjectInfo[]> {
-    const dir = path.join(UPLOAD_BASE, bucket);
+    const dir = path.join(getUploadBase(), bucket);
     if (!fs.existsSync(dir)) return [];
 
     return this.getAllFiles(dir)
@@ -95,7 +97,7 @@ export class LocalStorageService implements IStorageService {
   }
 
   async ensureBucket(bucket: string): Promise<void> {
-    const dir = path.join(UPLOAD_BASE, bucket);
+    const dir = path.join(getUploadBase(), bucket);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
       logger.info(`[LocalStorage] Created directory: ${dir}`);
@@ -103,7 +105,7 @@ export class LocalStorageService implements IStorageService {
   }
 
   private resolvePath(bucket: string, key: string): string {
-    return path.join(UPLOAD_BASE, bucket, ...key.split('/'));
+    return path.join(getUploadBase(), bucket, ...key.split('/'));
   }
 
   private assertExists(filePath: string, bucket: string, key: string): void {
