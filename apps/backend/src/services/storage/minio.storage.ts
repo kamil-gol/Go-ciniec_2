@@ -3,9 +3,11 @@
  * Implementacja IStorageService z MinIO (S3-compatible object storage).
  * Używa accessKey/secretKey z config (service account, nie root).
  *
- * Presigned URL TTL (H6):
- *   - getPresignedUrl() używa krótszych TTL dla RODO compliance
- *   - Konfiguracja w storage.config.ts
+ * Presigned URL:
+ *   - getPresignedUrl() generuje URL z krótkim TTL
+ *   - Jeśli MINIO_PUBLIC_ENDPOINT jest ustawiony, URL jest rewritowany
+ *     na publiczny endpoint (do użycia z przeglądarki)
+ *   - Bez public endpoint: URL wskazuje na wewnętrzny Docker endpoint
  */
 
 import { Client as MinioClient } from 'minio';
@@ -29,6 +31,9 @@ export class MinioStorageService implements IStorageService {
 
     const usingServiceAccount = !!process.env.MINIO_ACCESS_KEY;
     logger.info(`[MinIO] Client initialized: ${storageConfig.minio.endpoint} (${usingServiceAccount ? 'service account' : 'root credentials'})`);
+    if (storageConfig.minio.publicEndpoint) {
+      logger.info(`[MinIO] Public endpoint: ${storageConfig.minio.publicEndpoint}`);
+    }
   }
 
   async upload(bucket: string, key: string, data: Buffer | Readable, metadata?: Record<string, string>): Promise<UploadResult> {
@@ -72,13 +77,26 @@ export class MinioStorageService implements IStorageService {
   }
 
   /**
-   * H6: Presigned URL z krótkim TTL.
-   * Domyślnie używa storageConfig.presignedTtl.standard (900s).
-   * Dla RODO-sensitive bucketów (attachments) użyj storageConfig.presignedTtl.sensitive (300s).
+   * Presigned URL z krótkim TTL.
+   * Jeśli MINIO_PUBLIC_ENDPOINT jest ustawiony, rewrituje URL na publiczny.
    */
   async getPresignedUrl(bucket: string, key: string, expirySeconds?: number): Promise<string> {
     const ttl = expirySeconds ?? this.getDefaultTtl(bucket);
-    return this.client.presignedGetObject(bucket, key, ttl);
+    const internalUrl = await this.client.presignedGetObject(bucket, key, ttl);
+
+    if (storageConfig.minio.publicEndpoint) {
+      return this.rewriteToPublicUrl(internalUrl);
+    }
+
+    return internalUrl;
+  }
+
+  /**
+   * Czy presigned URLs są dostępne z przeglądarki?
+   * True tylko gdy MINIO_PUBLIC_ENDPOINT jest ustawiony.
+   */
+  isPublicAccessible(): boolean {
+    return !!storageConfig.minio.publicEndpoint;
   }
 
   async getStats(bucket: string): Promise<StorageStats> {
@@ -117,15 +135,24 @@ export class MinioStorageService implements IStorageService {
     }
   }
 
-  /**
-   * H6: Automatyczny dobór TTL na podstawie bucketu.
-   * Bucket attachments = dane klientów (RODO) = krótki TTL.
-   */
   private getDefaultTtl(bucket: string): number {
     const sensitiveBuckets = [storageConfig.buckets.attachments];
     if (sensitiveBuckets.includes(bucket)) {
-      return storageConfig.presignedTtl.sensitive; // 300s default
+      return storageConfig.presignedTtl.sensitive;
     }
-    return storageConfig.presignedTtl.standard; // 900s default
+    return storageConfig.presignedTtl.standard;
+  }
+
+  /**
+   * Rewrite internal MinIO URL to public endpoint.
+   * http://minio:9000/bucket/key?... -> https://storage.example.com/bucket/key?...
+   */
+  private rewriteToPublicUrl(internalUrl: string): string {
+    const url = new URL(internalUrl);
+    const publicUrl = new URL(storageConfig.minio.publicEndpoint!);
+    url.protocol = publicUrl.protocol;
+    url.hostname = publicUrl.hostname;
+    url.port = publicUrl.port;
+    return url.toString();
   }
 }
