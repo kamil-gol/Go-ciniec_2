@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { 
   ChevronLeft, ChevronRight, AlertCircle, Check, 
   Info, UtensilsCrossed, CheckCircle2, Lock,
-  Users, User, Baby
+  Users, User, Baby, Ban
 } from 'lucide-react'
 import { usePackageCategories } from '@/hooks/use-menu'
 import type { PortionTarget } from '@/types/menu'
@@ -27,6 +27,8 @@ interface CategorySelection {
 
 interface DishSelectorProps {
   packageId: string
+  adults: number
+  children: number
   initialSelections?: CategorySelection[]
   onComplete: (selections: CategorySelection[]) => void
   onBack: () => void
@@ -52,8 +54,23 @@ function PortionTargetBadge({ target }: { target?: PortionTarget | string }) {
   );
 }
 
+/** #166: Check if category is inactive due to 0 relevant guests */
+function isCategoryInactive(portionTarget: string | undefined, adults: number, children: number): boolean {
+  if (portionTarget === 'ADULTS_ONLY' && adults === 0) return true;
+  if (portionTarget === 'CHILDREN_ONLY' && children === 0) return true;
+  return false;
+}
+
+function getInactiveReason(portionTarget: string | undefined): string {
+  if (portionTarget === 'ADULTS_ONLY') return 'Brak dorosłych w rezerwacji — kategoria nieaktywna';
+  if (portionTarget === 'CHILDREN_ONLY') return 'Brak dzieci w rezerwacji — kategoria nieaktywna';
+  return '';
+}
+
 export function DishSelector({ 
   packageId, 
+  adults,
+  children,
   initialSelections,
   onComplete, 
   onBack 
@@ -191,6 +208,9 @@ export function DishSelector({
     let isValid = true
 
     categories.forEach((category: any) => {
+      // Skip validation for inactive categories
+      if (isCategoryInactive(category.portionTarget, adults, children)) return;
+
       const total = getCategoryTotal(category.categoryId)
       const label = category.customLabel || category.categoryName
       
@@ -222,13 +242,16 @@ export function DishSelector({
       return
     }
 
-    const result: CategorySelection[] = categories.map((category: any) => ({
-      categoryId: category.categoryId,
-      dishes: Object.entries(selections[category.categoryId] || {}).map(([dishId, quantity]) => ({
-        dishId,
-        quantity
-      }))
-    })).filter((cat: CategorySelection) => cat.dishes.length > 0)
+    // Exclude inactive categories from result
+    const result: CategorySelection[] = categories
+      .filter((category: any) => !isCategoryInactive(category.portionTarget, adults, children))
+      .map((category: any) => ({
+        categoryId: category.categoryId,
+        dishes: Object.entries(selections[category.categoryId] || {}).map(([dishId, quantity]) => ({
+          dishId,
+          quantity
+        }))
+      })).filter((cat: CategorySelection) => cat.dishes.length > 0)
 
     onComplete(result)
   }
@@ -253,12 +276,15 @@ export function DishSelector({
           const hasError = errors[category.categoryId]
           const isAtMaxLimit = total >= category.maxSelect
           const portionTarget = category.portionTarget as PortionTarget | undefined
+          const inactive = isCategoryInactive(portionTarget, adults, children)
 
           return (
-            <Card key={category.categoryId} className="border shadow-sm">
+            <Card key={category.categoryId} className={`border shadow-sm ${
+              inactive ? 'opacity-50 grayscale' : ''
+            }`}>
               <CardContent className="p-4">
                 {/* Category Header */}
-                <div className="mb-3">
+                <div className={inactive ? 'mb-1' : 'mb-3'}>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{category.categoryIcon}</span>
@@ -269,56 +295,70 @@ export function DishSelector({
                           <PortionTargetBadge target={portionTarget} />
                         </div>
                         {/* #166: Subtitle for non-ALL targets */}
-                        {portionTarget && portionTarget !== 'ALL' && (
+                        {portionTarget && portionTarget !== 'ALL' && !inactive && (
                           <span className="text-xs text-muted-foreground">
                             Porcje liczone {portionTarget === 'ADULTS_ONLY' ? 'tylko dla dorosłych' : 'tylko dla dzieci'}
                           </span>
                         )}
-                        {isOptional && !portionTarget?.startsWith('ADULTS') && !portionTarget?.startsWith('CHILDREN') && (
+                        {isOptional && !inactive && !portionTarget?.startsWith('ADULTS') && !portionTarget?.startsWith('CHILDREN') && (
                           <span className="text-xs font-medium text-muted-foreground">Opcjonalna kategoria</span>
                         )}
-                        {isOptional && portionTarget && portionTarget !== 'ALL' && (
+                        {isOptional && !inactive && portionTarget && portionTarget !== 'ALL' && (
                           <span className="text-xs font-medium text-muted-foreground"> · Opcjonalna</span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!isAtMaxLimit && total > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          Pozostało: {remaining}
-                        </span>
-                      )}
-                      <Badge 
-                        variant={isValid ? "default" : "secondary"}
-                        className={`text-sm px-2.5 py-1 ${
-                          isValid 
-                            ? isOptional && total === 0
-                              ? 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
-                              : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                    {!inactive && (
+                      <div className="flex items-center gap-2">
+                        {!isAtMaxLimit && total > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            Pozostało: {remaining}
+                          </span>
+                        )}
+                        <Badge 
+                          variant={isValid ? "default" : "secondary"}
+                          className={`text-sm px-2.5 py-1 ${
+                            isValid 
+                              ? isOptional && total === 0
+                                ? 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
+                                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          }`}
+                        >
+                          {total} / {isOptional ? `0-${category.maxSelect}` : `${category.minSelect}-${category.maxSelect}`}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* #166: Inactive category banner */}
+                  {inactive && (
+                    <Alert className="mt-2 py-2 bg-neutral-100 border-neutral-300 dark:bg-neutral-900 dark:border-neutral-700">
+                      <Ban className="h-3.5 w-3.5 text-neutral-500" />
+                      <AlertDescription className="text-xs text-neutral-600 dark:text-neutral-400">
+                        {getInactiveReason(portionTarget)}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Progress Bar — only for active categories */}
+                  {!inactive && (
+                    <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          !isOptional && total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                          total > category.maxSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                          total === 0 ? '' :
+                          'bg-gradient-to-r from-green-500 to-emerald-500'
                         }`}
-                      >
-                        {total} / {isOptional ? `0-${category.maxSelect}` : `${category.minSelect}-${category.maxSelect}`}
-                      </Badge>
+                        style={{ 
+                          width: `${Math.min((total / category.maxSelect) * 100, 100)}%` 
+                        }}
+                      />
                     </div>
-                  </div>
+                  )}
                   
-                  {/* Progress Bar */}
-                  <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-300 ${
-                        !isOptional && total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                        total > category.maxSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                        total === 0 ? '' :
-                        'bg-gradient-to-r from-green-500 to-emerald-500'
-                      }`}
-                      style={{ 
-                        width: `${Math.min((total / category.maxSelect) * 100, 100)}%` 
-                      }}
-                    />
-                  </div>
-                  
-                  {isAtMaxLimit && (
+                  {!inactive && isAtMaxLimit && (
                     <Alert className="mt-2 py-2 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                       <Info className="h-3.5 w-3.5 text-blue-600" />
                       <AlertDescription className="text-xs text-blue-900 dark:text-blue-100">
@@ -335,111 +375,113 @@ export function DishSelector({
                   )}
                 </div>
 
-                {/* Dishes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {category.dishes.map((dish: any) => {
-                    const isSelected = !!selections[category.categoryId]?.[dish.id]
-                    const quantity = selections[category.categoryId]?.[dish.id] || 1
-                    const isDisabled = !isSelected && isAtMaxLimit
-                    const availableOptions = getAvailableQuantityOptions(category.categoryId, dish.id)
+                {/* Dishes Grid — hidden for inactive categories */}
+                {!inactive && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {category.dishes.map((dish: any) => {
+                      const isSelected = !!selections[category.categoryId]?.[dish.id]
+                      const quantity = selections[category.categoryId]?.[dish.id] || 1
+                      const isDisabled = !isSelected && isAtMaxLimit
+                      const availableOptions = getAvailableQuantityOptions(category.categoryId, dish.id)
 
-                    return (
-                      <div
-                        key={dish.id}
-                        className={`group relative p-3 border rounded-lg transition-all duration-200 ${
-                          isDisabled
-                            ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
-                            : isSelected 
-                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-md scale-[1.01] cursor-pointer' 
-                              : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-sm cursor-pointer'
-                        }`}
-                        onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
-                      >
-                        {isDisabled && (
-                          <div className="absolute top-2 right-2 w-5 h-5 bg-neutral-400 rounded-full flex items-center justify-center">
-                            <Lock className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-
-                        {isSelected && (
-                          <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
-                            <Check className="h-3.5 w-3.5 text-white font-bold" strokeWidth={3} />
-                          </div>
-                        )}
-
-                        <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                      return (
+                        <div
+                          key={dish.id}
+                          className={`group relative p-3 border rounded-lg transition-all duration-200 ${
                             isDisabled
-                              ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600'
-                              : isSelected
-                                ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-sm'
-                                : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-400 dark:border-neutral-500 group-hover:border-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30'
-                          }`}>
-                            {isSelected && (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-                            )}
-                          </div>
+                              ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
+                              : isSelected 
+                                ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-md scale-[1.01] cursor-pointer' 
+                                : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-sm cursor-pointer'
+                          }`}
+                          onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
+                        >
+                          {isDisabled && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-neutral-400 rounded-full flex items-center justify-center">
+                              <Lock className="h-3 w-3 text-white" />
+                            </div>
+                          )}
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className={`font-semibold text-sm ${
+                          {isSelected && (
+                            <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
+                              <Check className="h-3.5 w-3.5 text-white font-bold" strokeWidth={3} />
+                            </div>
+                          )}
+
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                               isDisabled
-                                ? 'text-neutral-400 dark:text-neutral-600'
-                                : isSelected 
-                                  ? 'text-blue-900 dark:text-blue-100' 
-                                  : 'text-neutral-900 dark:text-neutral-100'
+                                ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600'
+                                : isSelected
+                                  ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-sm'
+                                  : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-400 dark:border-neutral-500 group-hover:border-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30'
                             }`}>
-                              {dish.name}
-                            </h4>
-                            {dish.description && (
-                              <p className={`text-xs mt-0.5 line-clamp-2 ${
-                                isDisabled ? 'text-neutral-400' : 'text-muted-foreground'
-                              }`}>
-                                {dish.description}
-                              </p>
-                            )}
-                            
-                            {dish.allergens && dish.allergens.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {dish.allergens.map((allergen: string) => (
-                                  <Badge 
-                                    key={allergen} 
-                                    variant="outline" 
-                                    className="text-[10px] px-1.5 py-0 border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
-                                  >
-                                    {allergen}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
+                              {isSelected && (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+                              )}
+                            </div>
 
-                            {isSelected && (
-                              <div className="mt-2 p-2 bg-white dark:bg-neutral-800 rounded-md border border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
-                                <label className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1 block">
-                                  Ilość porcji:
-                                </label>
-                                <select
-                                  value={quantity}
-                                  onChange={(e) => updateQuantity(
-                                    category.categoryId, 
-                                    dish.id, 
-                                    parseFloat(e.target.value)
-                                  )}
-                                  className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-                                >
-                                  {availableOptions.map(opt => (
-                                    <option key={opt} value={opt}>
-                                      {opt === Math.floor(opt) ? opt : opt.toFixed(1)} {opt === 1 ? 'porcja' : opt > 1 && opt < 5 ? 'porcje' : 'porcji'}
-                                    </option>
+                            <div className="flex-1 min-w-0">
+                              <h4 className={`font-semibold text-sm ${
+                                isDisabled
+                                  ? 'text-neutral-400 dark:text-neutral-600'
+                                  : isSelected 
+                                    ? 'text-blue-900 dark:text-blue-100' 
+                                    : 'text-neutral-900 dark:text-neutral-100'
+                              }`}>
+                                {dish.name}
+                              </h4>
+                              {dish.description && (
+                                <p className={`text-xs mt-0.5 line-clamp-2 ${
+                                  isDisabled ? 'text-neutral-400' : 'text-muted-foreground'
+                                }`}>
+                                  {dish.description}
+                                </p>
+                              )}
+                              
+                              {dish.allergens && dish.allergens.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {dish.allergens.map((allergen: string) => (
+                                    <Badge 
+                                      key={allergen} 
+                                      variant="outline" 
+                                      className="text-[10px] px-1.5 py-0 border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
+                                    >
+                                      {allergen}
+                                    </Badge>
                                   ))}
-                                </select>
-                              </div>
-                            )}
+                                </div>
+                              )}
+
+                              {isSelected && (
+                                <div className="mt-2 p-2 bg-white dark:bg-neutral-800 rounded-md border border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
+                                  <label className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1 block">
+                                    Ilość porcji:
+                                  </label>
+                                  <select
+                                    value={quantity}
+                                    onChange={(e) => updateQuantity(
+                                      category.categoryId, 
+                                      dish.id, 
+                                      parseFloat(e.target.value)
+                                    )}
+                                    className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+                                  >
+                                    {availableOptions.map(opt => (
+                                      <option key={opt} value={opt}>
+                                        {opt === Math.floor(opt) ? opt : opt.toFixed(1)} {opt === 1 ? 'porcja' : opt > 1 && opt < 5 ? 'porcje' : 'porcji'}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
