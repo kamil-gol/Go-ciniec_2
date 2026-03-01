@@ -10,6 +10,7 @@
  * Updated: #146 — storageService abstraction (local/MinIO)
  * Updated: #146 — presigned download URLs with TTL
  * Updated: #146 — image compression (sharp) on upload
+ * Updated: #146 — SHA-256 file deduplication
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
@@ -22,6 +23,7 @@ import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../cons
 import { storageService } from './storage';
 import { storageConfig } from '../config/storage.config';
 import { compressIfImage } from '../utils/image-compression';
+import { computeFileHash } from '../utils/file-hash';
 import logger from '../utils/logger';
 import fs from 'fs';
 
@@ -39,7 +41,10 @@ class AttachmentService {
    * Upload file from staging to storage backend.
    * Compresses images before upload (sharp: max 2000px, quality 80%).
    */
-  private async uploadToStorage(file: Express.Multer.File, entityType: EntityType): Promise<{ storageKey: string; finalSize: number }> {
+  private async uploadToStorage(
+    file: Express.Multer.File,
+    entityType: EntityType,
+  ): Promise<{ storageKey: string; finalSize: number; fileHash: string }> {
     const subDir = STORAGE_DIRS[entityType] || 'other';
     const storageKey = `${subDir}/${file.filename}`;
     const bucket = storageConfig.buckets.attachments;
@@ -49,6 +54,8 @@ class AttachmentService {
     const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
     const fileBuffer = compression.buffer;
     const finalSize = compression.compressedSize;
+
+    const fileHash = computeFileHash(fileBuffer);
 
     await storageService.upload(bucket, storageKey, fileBuffer, {
       'Content-Type': file.mimetype,
@@ -64,8 +71,38 @@ class AttachmentService {
       logger.debug(`Staging file removed: ${file.path}`);
     }
 
-    logger.info(`File uploaded to storage: ${bucket}/${storageKey} (${finalSize} bytes${compression.wasCompressed ? ', compressed' : ''})`);
-    return { storageKey, finalSize };
+    logger.info(`File uploaded to storage: ${bucket}/${storageKey} (${finalSize} bytes, hash: ${fileHash.substring(0, 12)}...)`);
+    return { storageKey, finalSize, fileHash };
+  }
+
+  /**
+   * Check if an identical file (by SHA-256) already exists for the same entity.
+   * Returns the existing attachment if found (deduplication).
+   */
+  private async findDuplicate(
+    fileBuffer: Buffer,
+    entityType: EntityType,
+    entityId: string,
+    category: string,
+  ): Promise<{ hash: string; existing: any | null }> {
+    const fileHash = computeFileHash(fileBuffer);
+
+    const existing = await prisma.attachment.findFirst({
+      where: {
+        entityType,
+        entityId,
+        category,
+        fileHash,
+        isArchived: false,
+      },
+      include: {
+        uploadedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+    });
+
+    return { hash: fileHash, existing };
   }
 
   /**
@@ -102,6 +139,10 @@ class AttachmentService {
 
   /**
    * Create attachment record after file upload.
+   *
+   * Deduplication: If a file with the same SHA-256 hash already exists
+   * for the same entity+category (and is not archived), the existing
+   * attachment is returned instead of creating a duplicate.
    */
   async createAttachment(
     dto: CreateAttachmentDTO,
@@ -118,6 +159,7 @@ class AttachmentService {
 
     await this.validateEntityExists(dto.entityType, dto.entityId);
 
+    // RODO redirect
     let finalEntityType: EntityType = dto.entityType;
     let finalEntityId: string = dto.entityId;
 
@@ -131,15 +173,72 @@ class AttachmentService {
         );
       }
 
-      logger.info(
-        `RODO redirect: ${dto.entityType}/${dto.entityId} -> CLIENT/${clientId}`
-      );
-
+      logger.info(`RODO redirect: ${dto.entityType}/${dto.entityId} -> CLIENT/${clientId}`);
       finalEntityType = 'CLIENT';
       finalEntityId = clientId;
     }
 
-    const { storageKey: storagePath, finalSize } = await this.uploadToStorage(file, finalEntityType);
+    // ═══ DEDUPLICATION CHECK ═══
+    const rawBuffer = fs.readFileSync(file.path);
+    const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
+    const processedBuffer = compression.buffer;
+
+    const { hash: fileHash, existing: duplicate } = await this.findDuplicate(
+      processedBuffer,
+      finalEntityType,
+      finalEntityId,
+      dto.category,
+    );
+
+    if (duplicate) {
+      // Cleanup staging file — no upload needed
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+        logger.debug(`Staging file removed (dedup): ${file.path}`);
+      }
+
+      logger.info(
+        `Dedup hit: ${file.originalname} (hash: ${fileHash.substring(0, 12)}...) ` +
+        `matches existing attachment ${duplicate.id}`
+      );
+
+      await logChange({
+        userId: uploadedById,
+        action: 'ATTACHMENT_DEDUP',
+        entityType: finalEntityType,
+        entityId: finalEntityId,
+        details: {
+          description: `Duplikat wykryty: ${file.originalname} → istniejący załącznik ${duplicate.id}`,
+          existingAttachmentId: duplicate.id,
+          originalName: file.originalname,
+          fileHash,
+          category: dto.category,
+        },
+      });
+
+      return { ...duplicate, _deduplicated: true };
+    }
+
+    // ═══ UPLOAD (no duplicate found) ═══
+    const subDir = STORAGE_DIRS[finalEntityType] || 'other';
+    const storageKey = `${subDir}/${file.filename}`;
+    const bucket = storageConfig.buckets.attachments;
+    const finalSize = compression.compressedSize;
+
+    await storageService.upload(bucket, storageKey, processedBuffer, {
+      'Content-Type': file.mimetype,
+      'X-Original-Name': encodeURIComponent(file.originalname),
+      ...(compression.wasCompressed ? {
+        'X-Original-Size': String(compression.originalSize),
+        'X-Compressed': 'true',
+      } : {}),
+    });
+
+    // Cleanup staging file
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+      logger.debug(`Staging file removed: ${file.path}`);
+    }
 
     const attachment = await prisma.attachment.create({
       data: {
@@ -152,7 +251,8 @@ class AttachmentService {
         storedName: file.filename,
         mimeType: file.mimetype,
         sizeBytes: finalSize,
-        storagePath,
+        storagePath: storageKey,
+        fileHash,
         uploadedById,
       },
       include: {
@@ -164,7 +264,7 @@ class AttachmentService {
 
     logger.info(
       `Attachment created: ${attachment.id} (${finalEntityType}/${finalEntityId}, ` +
-      `category: ${dto.category}) by user ${uploadedById}` +
+      `category: ${dto.category}, hash: ${fileHash.substring(0, 12)}...) by user ${uploadedById}` +
       (finalEntityType !== dto.entityType ? ` [redirected from ${dto.entityType}/${dto.entityId}]` : '')
     );
 
@@ -180,6 +280,7 @@ class AttachmentService {
         mimeType: file.mimetype,
         sizeBytes: finalSize,
         originalSizeBytes: file.size,
+        fileHash,
         category: dto.category,
         label: dto.label || null,
         compressed: finalSize !== file.size,
