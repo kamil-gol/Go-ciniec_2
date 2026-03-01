@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft, Trash2, Clock, Archive, ArchiveRestore,
@@ -44,6 +44,11 @@ export default function ReservationDetailsPage() {
   const cancelMutation = useCancelReservation()
   const archiveMutation = useArchiveReservation()
   const unarchiveMutation = useUnarchiveReservation()
+
+  // Bug fix: scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [reservationId])
 
   const handleRefetch = () => {
     refetch()
@@ -203,7 +208,7 @@ export default function ReservationDetailsPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {isArchived && (
+                  {isArchived && reservation.status !== 'ARCHIVED' && (
                     <Badge className="bg-neutral-200 text-neutral-800 border-neutral-300">
                       <Archive className="h-3 w-3 mr-1" />
                       Zarchiwizowane
