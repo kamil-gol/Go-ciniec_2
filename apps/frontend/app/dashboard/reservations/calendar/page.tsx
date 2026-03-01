@@ -32,10 +32,10 @@ import {
   CalendarReservation,
 } from '@/lib/api/calendar-api'
 
-const DAYS_PL = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd']
+const DAYS_PL = ['Pn', 'Wt', '\u015ar', 'Cz', 'Pt', 'Sb', 'Nd']
 const MONTHS_PL = [
-  'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
-  'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień',
+  'Stycze\u0144', 'Luty', 'Marzec', 'Kwiecie\u0144', 'Maj', 'Czerwiec',
+  'Lipiec', 'Sierpie\u0144', 'Wrzesie\u0144', 'Pa\u017adziernik', 'Listopad', 'Grudzie\u0144',
 ]
 
 const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: string }> = {
@@ -45,7 +45,7 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: 
     bgClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   },
   PENDING: {
-    label: 'Oczekujące',
+    label: 'Oczekuj\u0105ce',
     dotClass: 'bg-amber-500',
     bgClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   },
@@ -55,7 +55,7 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bgClass: 
     bgClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   },
   COMPLETED: {
-    label: 'Zakończone',
+    label: 'Zako\u0144czone',
     dotClass: 'bg-neutral-400',
     bgClass: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400',
   },
@@ -109,7 +109,7 @@ function isToday(date: Date): boolean {
   return date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
 }
 
-/** #165: Build pill tooltip — includes capacity info for multi-booking halls */
+/** #165: Build pill tooltip \u2014 includes capacity info for multi-booking halls */
 function buildPillTooltip(
   reservation: CalendarReservation,
   allDayReservations: CalendarReservation[]
@@ -183,6 +183,46 @@ function MobileDots({ reservations }: { reservations: CalendarReservation[] }) {
   )
 }
 
+/** #165: Mini capacity bars for multi-booking halls in calendar grid cells */
+function CellCapacityBars({ reservations }: { reservations: CalendarReservation[] }) {
+  const hallBars = useMemo(() => {
+    const halls = new Map<string, { name: string; capacity: number; totalGuests: number }>()
+    for (const r of reservations) {
+      const h = r.hall
+      if (!h?.allowMultipleBookings || !h?.capacity || h.capacity <= 0) continue
+      if (r.status === 'CANCELLED') continue
+      if (!halls.has(h.id)) halls.set(h.id, { name: h.name, capacity: h.capacity, totalGuests: 0 })
+      halls.get(h.id)!.totalGuests += r.guests || 0
+    }
+    return Array.from(halls.values())
+  }, [reservations])
+
+  if (hallBars.length === 0) return null
+
+  return (
+    <div className="hidden md:flex flex-col gap-[2px] mt-1">
+      {hallBars.map((bar) => {
+        const pct = Math.min(100, Math.round((bar.totalGuests / bar.capacity) * 100))
+        return (
+          <div
+            key={bar.name}
+            className="w-full h-[3px] bg-violet-100 dark:bg-violet-900/30 rounded-full overflow-hidden"
+            title={`${bar.name}: ${bar.totalGuests}/${bar.capacity} os\u00f3b (${pct}%)`}
+          >
+            <div
+              className={cn(
+                'h-full rounded-full',
+                pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-violet-500'
+              )}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function SkeletonGrid() {
   return (
     <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-700 rounded-xl overflow-hidden">
@@ -199,7 +239,7 @@ function SkeletonGrid() {
   )
 }
 
-/* #165: DayDetailPanel — groups reservations by hall with capacity bars */
+/* #165: DayDetailPanel \u2014 groups reservations by hall with capacity bars */
 function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
   date: Date; reservations: CalendarReservation[]; onClose: () => void; onReservationClick: (id: string) => void
 }) {
@@ -547,6 +587,8 @@ export default function CalendarPage() {
                             +{dayReservations.length - MAX_PILLS} wi\u0119cej
                           </div>
                         )}
+                        {/* #165: Mini capacity bars for multi-booking halls */}
+                        <CellCapacityBars reservations={dayReservations} />
                       </div>
                     </div>
                   )
