@@ -109,7 +109,7 @@ function isToday(date: Date): boolean {
   return date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
 }
 
-/** #165: Build pill tooltip \u2014 includes capacity info for multi-booking halls */
+/** #165: Build pill tooltip — includes capacity info for multi-booking halls */
 function buildPillTooltip(
   reservation: CalendarReservation,
   allDayReservations: CalendarReservation[]
@@ -120,7 +120,7 @@ function buildPillTooltip(
     : 'Klient'
   const time = reservation.startTime || ''
 
-  let base = `${eventName} \u2014 ${clientName}${time ? ` (${time})` : ''}`
+  let base = `${eventName} — ${clientName}${time ? ` (${time})` : ''}`
 
   const hall = reservation.hall
   if (hall?.allowMultipleBookings && hall?.capacity && hall.capacity > 0) {
@@ -128,7 +128,7 @@ function buildPillTooltip(
       (r) => r.hall?.id === hall.id && r.status !== 'CANCELLED'
     )
     const totalGuests = sameHallActive.reduce((sum, r) => sum + (r.guests || 0), 0)
-    base += ` \u00b7 ${hall.name}: ${totalGuests}/${hall.capacity} osób`
+    base += ` · ${hall.name}: ${totalGuests}/${hall.capacity} osób`
   }
 
   return base
@@ -239,7 +239,7 @@ function SkeletonGrid() {
   )
 }
 
-/* #165: DayDetailPanel \u2014 groups reservations by hall with capacity bars */
+/* #165: DayDetailPanel — groups reservations by hall with capacity bars */
 function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
   date: Date; reservations: CalendarReservation[]; onClose: () => void; onReservationClick: (id: string) => void
 }) {
@@ -295,7 +295,7 @@ function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
                       </span>
                       {isMulti && (
                         <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">
-                          {totalGuests}/{hall!.capacity} osób \u2014 {activeRes.length} rez.
+                          {totalGuests}/{hall!.capacity} osób — {activeRes.length} rez.
                         </span>
                       )}
                     </div>
@@ -342,7 +342,7 @@ function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                                {r.guests} os. \u2022 {formatCurrency(r.totalPrice)}
+                                {r.guests} os. • {formatCurrency(r.totalPrice)}
                                 {isMulti && hall?.capacity && (
                                   <span className="text-violet-500 ml-1">
                                     ({Math.round(((r.guests || 0) / hall.capacity) * 100)}% sali)
