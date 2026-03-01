@@ -58,14 +58,28 @@ export const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ] as const;
 
 export type AllowedMimeType = typeof ALLOWED_MIME_TYPES[number];
 
 /**
- * Max file size in bytes (10 MB)
+ * Human-readable file type labels (for error messages)
  */
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const MIME_TYPE_LABELS: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'image/jpeg': 'JPEG',
+  'image/png': 'PNG',
+  'image/webp': 'WebP',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+};
+
+/**
+ * Max file size in bytes (25 MB)
+ */
+export const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 /**
  * Storage subdirectories per entity type
