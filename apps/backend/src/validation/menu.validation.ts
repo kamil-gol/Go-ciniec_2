@@ -6,6 +6,7 @@
  * FIX: updateMenuSelectionSchema removed (updateMenu now uses selectMenuSchema)
  * FIX: validFrom made optional for template creation
  * FIX: description made nullable in createMenuTemplateSchema for consistency
+ * Updated: #166 — portionTarget in categorySettingSchema
  */
 
 import { z } from 'zod';
@@ -142,12 +143,15 @@ export const reorderPackagesSchema = z.object({
 // CATEGORY SETTINGS VALIDATION
 // ══════════════════════════════════════════════════════════════════════════
 
+export const portionTargetEnum = z.enum(['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY']);
+
 export const categorySettingSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID'),
   minSelect: z.number().min(0, 'Min selection cannot be negative'),
   maxSelect: z.number().min(0, 'Max selection must be at least 0'),
   isRequired: z.boolean().optional().default(true),
   isEnabled: z.boolean().optional().default(true),
+  portionTarget: portionTargetEnum.optional().default('ALL'),
   displayOrder: z.number().int().min(0).optional().default(0),
   customLabel: z.string().max(100).optional().nullable()
 }).refine(
