@@ -23,7 +23,7 @@ export interface TestSeedData {
   readonlyUser: any;
   hall1: any;
   hall2: any;
-  /** #165: Hall with allowMultipleReservations=true and capacity=300 */
+  /** #165: Hall with allowMultipleBookings=true and capacity=300 */
   hallMultiBooking: any;
   eventType1: any;
   eventType2: any;
@@ -127,7 +127,7 @@ export async function seedTestData(): Promise<TestSeedData> {
     }),
   );
 
-  // #165: Hall that allows multiple simultaneous reservations
+  // #165: Hall that allows multiple simultaneous reservations (allowMultipleBookings = schema field name)
   const hallMultiBooking = await findOrCreate(
     () => prismaTest.hall.findUnique({ where: { name: 'Sala Wielorezerwacyjna' } }),
     () => prismaTest.hall.create({
@@ -136,7 +136,7 @@ export async function seedTestData(): Promise<TestSeedData> {
         capacity: 300,
         description: 'Sala umo\u017cliwiaj\u0105ca wiele rezerwacji w tym samym terminie',
         isActive: true,
-        allowMultipleReservations: true,
+        allowMultipleBookings: true,
       },
     }),
   );
