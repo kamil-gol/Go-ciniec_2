@@ -119,7 +119,7 @@ describe('DepositService — branches', () => {
     it('should throw when amount <= 0', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit());
       await expect(depositService.update('dep-1', { amount: 0 }, 'user-1'))
-        .rejects.toThrow('wieksza od 0');
+        .rejects.toThrow('większa od 0');
     });
 
     it('should throw when new amount exceeds total', async () => {
@@ -402,7 +402,7 @@ describe('DepositService — branches', () => {
       });
       await expect(depositService.create({
         reservationId: 'res-1', amount: 0, dueDate: '2027-06-15',
-      }, 'user-1')).rejects.toThrow('wieksza od 0');
+      }, 'user-1')).rejects.toThrow('większa od 0');
     });
 
     it('should throw when sum exceeds totalPrice', async () => {

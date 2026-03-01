@@ -56,6 +56,13 @@ const UID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
+  // Default mocks for overlapping check
+  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
+  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
+  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
@@ -190,7 +197,7 @@ describe('updateReservationMenu — on COMPLETED reservation (lines 677-682)', (
     });
     await expect(
       service.updateReservationMenu('res-1', { menuPackageId: 'pkg-1' } as any, UID)
-    ).rejects.toThrow('Cannot update menu for completed or cancelled reservations');
+    ).rejects.toThrow('Nie można zmienić menu dla zakończonej, anulowanej lub zarchiwizowanej rezerwacji');
   });
 
   it('should throw when reservation is CANCELLED', async () => {
@@ -200,7 +207,7 @@ describe('updateReservationMenu — on COMPLETED reservation (lines 677-682)', (
     });
     await expect(
       service.updateReservationMenu('res-1', { menuPackageId: 'pkg-1' } as any, UID)
-    ).rejects.toThrow('Cannot update menu for completed or cancelled reservations');
+    ).rejects.toThrow('Nie można zmienić menu dla zakończonej, anulowanej lub zarchiwizowanej rezerwacji');
   });
 });
 

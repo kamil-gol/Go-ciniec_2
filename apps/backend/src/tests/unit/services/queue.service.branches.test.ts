@@ -308,7 +308,7 @@ describe('QueueService — branch coverage', () => {
         makeReservation('res-001', 1, { status: 'CONFIRMED' })
       );
       await expect(service.updateQueueReservation('res-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Can only update RESERVED reservations');
+        .rejects.toThrow('Można edytować tylko rezerwacje ze statusem RESERVED');
     });
 
     it('should throw when client not found during update', async () => {

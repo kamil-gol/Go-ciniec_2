@@ -114,7 +114,7 @@ describe('QueueService', () => {
       await expect(service.addToQueue({
         reservationQueueDate: FUTURE_DATE,
         guests: 50,
-      } as any, TEST_USER_ID)).rejects.toThrow('Client, queue date, and guests are required');
+      } as any, TEST_USER_ID)).rejects.toThrow('Klient, data kolejki i liczba gości są wymagane');
     });
 
     it('should throw when guests is 0 (falsy — caught by required check)', async () => {
@@ -122,7 +122,7 @@ describe('QueueService', () => {
         clientId: TEST_CLIENT.id,
         reservationQueueDate: FUTURE_DATE,
         guests: 0,
-      } as any, TEST_USER_ID)).rejects.toThrow('Client, queue date, and guests are required');
+      } as any, TEST_USER_ID)).rejects.toThrow('Klient, data kolejki i liczba gości są wymagane');
     });
 
     it('should throw when guests < 1 (negative)', async () => {
@@ -203,7 +203,7 @@ describe('QueueService', () => {
       });
 
       await expect(service.updateQueueReservation('res-queue-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Can only update RESERVED reservations');
+        .rejects.toThrow('Można edytować tylko rezerwacje ze statusem RESERVED');
     });
 
     it('should recalculate position when date changes', async () => {
