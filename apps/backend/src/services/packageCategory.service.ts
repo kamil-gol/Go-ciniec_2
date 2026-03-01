@@ -2,11 +2,14 @@
  * Package Category Settings Service
  * Business logic for managing category settings for menu packages
  * 🇵🇱 Spolonizowany — komunikaty po polsku
+ * Updated: #166 — portionTarget field (ALL | ADULTS_ONLY | CHILDREN_ONLY)
  */
 
 import { DishCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { MENU_CRUD } from '../i18n/pl';
+
+export type PortionTarget = 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
 
 export interface CreateCategorySettingInput {
   packageId: string;
@@ -15,6 +18,7 @@ export interface CreateCategorySettingInput {
   maxSelect?: number;
   isRequired?: boolean;
   isEnabled?: boolean;
+  portionTarget?: PortionTarget;
   displayOrder?: number;
   customLabel?: string | null;
 }
@@ -24,6 +28,7 @@ export interface UpdateCategorySettingInput {
   maxSelect?: number;
   isRequired?: boolean;
   isEnabled?: boolean;
+  portionTarget?: PortionTarget;
   displayOrder?: number;
   customLabel?: string | null;
 }
@@ -35,6 +40,7 @@ export interface BulkUpdateCategorySettingsInput {
     maxSelect?: number;
     isRequired?: boolean;
     isEnabled?: boolean;
+    portionTarget?: PortionTarget;
     displayOrder?: number;
     customLabel?: string | null;
   }>;
@@ -62,7 +68,8 @@ class PackageCategoryService {
       data: {
         packageId: data.packageId, categoryId: data.category.id, minSelect: data.minSelect ?? 1,
         maxSelect: data.maxSelect ?? 1, isRequired: data.isRequired ?? true,
-        isEnabled: data.isEnabled ?? true, displayOrder: data.displayOrder ?? 0,
+        isEnabled: data.isEnabled ?? true, portionTarget: data.portionTarget ?? 'ALL',
+        displayOrder: data.displayOrder ?? 0,
         customLabel: data.customLabel ?? null
       }
     });
@@ -89,6 +96,7 @@ class PackageCategoryService {
           data: {
             minSelect: settingData.minSelect, maxSelect: settingData.maxSelect,
             isRequired: settingData.isRequired, isEnabled: settingData.isEnabled,
+            portionTarget: settingData.portionTarget,
             displayOrder: settingData.displayOrder, customLabel: settingData.customLabel
           }
         });
