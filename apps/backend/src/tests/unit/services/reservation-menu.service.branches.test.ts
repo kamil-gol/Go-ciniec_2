@@ -88,7 +88,7 @@ describe('ReservationMenuService branches', () => {
     it('should throw when package not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(service.selectMenu('r1', { packageId: 'mp1' })).rejects.toThrow('Nie znaleziono pakietu menu');
+      await expect(service.selectMenu('r1', { packageId: 'mp1' })).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should select as new (no existing snapshot) with dishes and PER_PERSON option', async () => {

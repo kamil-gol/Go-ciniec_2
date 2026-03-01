@@ -149,7 +149,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 404 when no active menu found', async () => {
-      svc.getActiveMenuForEventType.mockRejectedValue(new Error('No active menu found for type'));
+      svc.getActiveMenuForEventType.mockRejectedValue(new Error('Nie znaleziono aktywnego menu dla tego typu wydarzenia'));
       const response = res();
       await ctrl.getActive(req({ params: { eventTypeId: 'et-1' }, query: {} }), response, next);
       expect(response.status).toHaveBeenCalledWith(404);
@@ -246,7 +246,7 @@ describe('MenuTemplateController', () => {
     });
 
     it('should return 409 on Cannot delete', async () => {
-      svc.deleteMenuTemplate.mockRejectedValue(new Error('Cannot delete: template in use'));
+      svc.deleteMenuTemplate.mockRejectedValue(new Error('Nie można usunąć szablonu menu'));
       const response = res();
       await ctrl.delete(req({ params: { id: 't-1' } }), response, next);
       expect(response.status).toHaveBeenCalledWith(409);
@@ -508,7 +508,7 @@ describe('MenuTemplateController', () => {
       await ctrl.downloadPdf(req({ params: { id: 't-1' } }), response);
       expect(response.status).toHaveBeenCalledWith(500);
       expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ details: 'Unknown error' })
+        expect.objectContaining({ details: 'Nieznany błąd' })
       );
     });
   });

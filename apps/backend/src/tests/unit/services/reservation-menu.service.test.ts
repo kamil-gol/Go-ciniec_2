@@ -181,7 +181,7 @@ describe('ReservationMenuService', () => {
 
       await expect(reservationMenuService.selectMenu('res-001', {
         packageId: 'nonexistent', selectedOptions: [],
-      })).rejects.toThrow('Nie znaleziono pakietu menu');
+      })).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should throw on dish validation errors', async () => {

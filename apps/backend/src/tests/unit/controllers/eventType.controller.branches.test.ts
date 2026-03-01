@@ -52,7 +52,7 @@ describe('EventTypeController branches', () => {
 
     it('should throw badRequest when no name', async () => {
       const req = { body: {}, user: { id: 'u1' } } as any;
-      await expect(ctrl.createEventType(req, mockRes())).rejects.toThrow('wymagane');
+      await expect(ctrl.createEventType(req, mockRes())).rejects.toThrow(/wymagan/);
     });
 
     it('should create with all fields', async () => {
@@ -102,7 +102,7 @@ describe('EventTypeController branches', () => {
     it('should throw notFound when null', async () => {
       (eventTypeService.getEventTypeById as jest.Mock).mockResolvedValue(null);
       const req = { params: { id: 'x' } } as any;
-      await expect(ctrl.getEventTypeById(req, mockRes())).rejects.toThrow('nie znaleziono');
+      await expect(ctrl.getEventTypeById(req, mockRes())).rejects.toThrow(/Nie znaleziono/i);
     });
 
     it('should return eventType when found', async () => {

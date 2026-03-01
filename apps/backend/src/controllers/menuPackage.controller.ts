@@ -86,7 +86,7 @@ export class MenuPackageController {
         data: pkg
       });
     } catch (error) {
-      if (error instanceof Error && (error.message.includes('nie znaleziono') || error.message.includes('not found'))) {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
@@ -145,7 +145,7 @@ export class MenuPackageController {
           details: error.errors
         });
       }
-      if (error instanceof Error && (error.message.includes('nie znaleziono') || error.message.includes('not found'))) {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
@@ -175,7 +175,7 @@ export class MenuPackageController {
           error: error.message
         });
       }
-      if (error instanceof Error && (error.message.includes('nie znaleziono') || error.message.includes('not found'))) {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Package not found'
