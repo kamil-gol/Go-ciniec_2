@@ -49,6 +49,29 @@ const formatTime = (time: string | null | undefined): string => {
 };
 
 /**
+ * Badge for portionTarget — shows who the course serves (dorośli / dzieci).
+ * Renders nothing for ALL (default).
+ */
+function PortionTargetBadge({ target }: { target?: string }) {
+  if (!target || target === 'ALL') return null;
+  if (target === 'ADULTS_ONLY') {
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ml-1.5 normal-case tracking-normal">
+        👤 dorośli
+      </span>
+    );
+  }
+  if (target === 'CHILDREN_ONLY') {
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 ml-1.5 normal-case tracking-normal">
+        🧒 dzieci
+      </span>
+    );
+  }
+  return null;
+}
+
+/**
  * Helper: get Monday of the week containing the given date (ISO week, Monday-based).
  */
 function getMonday(d: Date): Date {
@@ -311,6 +334,7 @@ export default function ReportsPage() {
    Detailed: per-reservation cards with courses & dishes
    Summary: aggregated per course → per dish with portions
    FIX: added Maluchy column to summary table
+   FIX: added portionTarget badges to course names
    ============================================ */
 
 function MenuPreparationsTab({ query, view }: {
@@ -393,12 +417,13 @@ function MenuPreparationsTab({ query, view }: {
                       Pakiet: <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{res.package.name}</span>
                     </span>
                   </div>
-                  {/* Courses & dishes */}
+                  {/* Courses & dishes — with portionTarget badge */}
                   <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                     {res.courses.map((course, ci) => (
                       <div key={ci} className="px-4 py-2">
-                        <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">
+                        <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1 flex items-center">
                           {course.courseName}
+                          <PortionTargetBadge target={(course as any).portionTarget} />
                         </div>
                         <div className="space-y-0.5">
                           {course.dishes.map((dish, di) => (
@@ -429,7 +454,7 @@ function MenuPreparationsTab({ query, view }: {
         <ReportEmptyState message={"Brak danych menu dla wybranego okresu"} />
       )}
 
-      {/* SUMMARY VIEW — with Maluchy column */}
+      {/* SUMMARY VIEW — with Maluchy column + portionTarget badge */}
       {view === 'summary' && summaryDays && summaryDays.length > 0 && (
         <div className="space-y-4">
           {summaryDays.map((day) => (
@@ -445,8 +470,9 @@ function MenuPreparationsTab({ query, view }: {
               {day.courses.map((course, ci) => (
                 <div key={ci} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20">
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide inline-flex items-center">
                       {course.courseName}
+                      <PortionTargetBadge target={(course as any).portionTarget} />
                     </span>
                   </div>
                   <div className="overflow-x-auto">
