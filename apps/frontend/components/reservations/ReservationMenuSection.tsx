@@ -24,6 +24,7 @@ interface ReservationMenuSectionProps {
   children: number
   toddlers: number
   onMenuUpdated?: () => void
+  readOnly?: boolean
 }
 
 export function ReservationMenuSection({
@@ -33,7 +34,8 @@ export function ReservationMenuSection({
   adults,
   children,
   toddlers,
-  onMenuUpdated
+  onMenuUpdated,
+  readOnly = false
 }: ReservationMenuSectionProps) {
   const { toast } = useToast()
   const [showSelectionDialog, setShowSelectionDialog] = useState(false)
@@ -47,7 +49,7 @@ export function ReservationMenuSection({
   const isSaving = selectMenuMutation.isPending || updateMenuMutation.isPending
 
   const handleMenuSelected = async (selection: any) => {
-    if (isSaving) return
+    if (isSaving || readOnly) return
     try {
       if (hasMenu) {
         await updateMenuMutation.mutateAsync({ reservationId, selection })
@@ -64,6 +66,7 @@ export function ReservationMenuSection({
   }
 
   const handleDeleteMenu = async () => {
+    if (readOnly) return
     if (!confirm('Czy na pewno chcesz usunąć wybrane menu?')) return
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
@@ -142,16 +145,20 @@ export function ReservationMenuSection({
               <div>
                 <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj menu do rezerwacji aby zobaczyć szczegóły
+                  {readOnly
+                    ? 'Menu nie zostało przypisane do tej rezerwacji'
+                    : 'Dodaj menu do rezerwacji aby zobaczyć szczegóły'}
                 </p>
               </div>
-              <Button
-                onClick={() => setShowSelectionDialog(true)}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Dodaj menu
-              </Button>
+              {!readOnly && (
+                <Button
+                  onClick={() => setShowSelectionDialog(true)}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Dodaj menu
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -172,21 +179,23 @@ export function ReservationMenuSection({
                   <p className="text-sm text-muted-foreground">{packageName}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Zmień
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleDeleteMenu} 
-                  className="text-red-600 hover:text-red-700"
-                  disabled={deleteMenuMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Zmień
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDeleteMenu} 
+                    className="text-red-600 hover:text-red-700"
+                    disabled={deleteMenuMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Package info - compact */}
@@ -249,7 +258,7 @@ export function ReservationMenuSection({
                             >
                               <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
                               {dish.quantity > 1 && (
-                                <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
+                                <span className="text-orange-600 font-bold">{'\u00d7'}{dish.quantity}</span>
                               )}
                             </span>
                           ))}
@@ -286,23 +295,25 @@ export function ReservationMenuSection({
         </Card>
       )}
 
-      {/* Selection Dialog */}
-      <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
-          </DialogHeader>
-          <MenuSelectionFlow
-            eventTypeId={eventTypeId}
-            eventDate={eventDate}
-            adults={adults}
-            children={children}
-            toddlers={toddlers}
-            initialSelection={buildInitialSelection()}
-            onComplete={handleMenuSelected}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Selection Dialog — only render when not readOnly */}
+      {!readOnly && (
+        <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
+            </DialogHeader>
+            <MenuSelectionFlow
+              eventTypeId={eventTypeId}
+              eventDate={eventDate}
+              adults={adults}
+              children={children}
+              toddlers={toddlers}
+              initialSelection={buildInitialSelection()}
+              onComplete={handleMenuSelected}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }
