@@ -6,7 +6,7 @@
 // ═══ Mock Prisma ═══
 jest.mock('../../../lib/prisma', () => {
   const txMock = {
-    reservation: { update: jest.fn(), findFirst: jest.fn() },
+    reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     deposit: { findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
   };
@@ -109,6 +109,7 @@ beforeEach(() => {
   // Transaction mocks
   txMock.reservation.update.mockResolvedValue(EXISTING_RESERVATION);
   txMock.reservation.findFirst.mockResolvedValue(null);
+  txMock.reservation.findMany.mockResolvedValue([]);
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({ count: 0 });
   txMock.reservationHistory.create.mockResolvedValue({});

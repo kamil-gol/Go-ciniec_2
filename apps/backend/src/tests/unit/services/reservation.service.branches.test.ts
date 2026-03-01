@@ -8,7 +8,7 @@
 
 // ═══ Mock Prisma with $transaction ═══
 const txMock = {
-  reservation: { update: jest.fn(), findFirst: jest.fn() },
+  reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
   deposit: { findMany: jest.fn(), updateMany: jest.fn() },
   reservationHistory: { create: jest.fn() },
   reservationMenuSnapshot: { delete: jest.fn(), update: jest.fn(), create: jest.fn() },
@@ -109,6 +109,7 @@ beforeEach(() => {
 
   txMock.reservation.update.mockResolvedValue(RES_BASE);
   txMock.reservation.findFirst.mockResolvedValue(null);
+  txMock.reservation.findMany.mockResolvedValue([]);
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({});
   txMock.reservationHistory.create.mockResolvedValue({});
@@ -144,7 +145,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when guests above maxGuests', async () => {
       db.menuPackage.findUnique.mockResolvedValue({ ...MENU_PKG, maxGuests: 10 });
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maximum 10 guests/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maksimum 10 go/);
     });
 
     it('should process PER_PERSON option correctly', async () => {
@@ -171,7 +172,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when no prices and no menu package', async () => {
       const dto = { ...BASE_DTO, pricePerAdult: undefined, pricePerChild: undefined };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za osobę dorosłą/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za dorosłego/);
     });
   });
 
@@ -196,7 +197,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when exceeding maxQuantity', async () => {
       db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'D', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: true, maxQuantity: 3, category: 'X', description: '' }]);
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 10 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Maximum 3/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/aksimum 3/);
     });
 
     it('should throw when non-multiple option quantity > 1', async () => {
@@ -584,7 +585,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when completed', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
-      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('Cannot cancel completed');
+      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('Nie można anulować zakończonej');
     });
 
     it('should throw when not found', async () => {
@@ -673,7 +674,7 @@ describe('ReservationService — Branch Coverage', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'PENDING' });
       await svc.updateStatus('res-001', { status: ReservationStatus.CONFIRMED } as any, UID);
       const hist = db.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toBe('Status changed');
+      expect(hist.data.reason).toContain('Zmiana statusu');
     });
   });
 

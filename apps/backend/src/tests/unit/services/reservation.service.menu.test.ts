@@ -189,7 +189,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
-      }, TEST_USER_ID)).rejects.toThrow(/maximum 30 guests/);
+      }, TEST_USER_ID)).rejects.toThrow(/maksimum 30 go/);
     });
   });
 
@@ -278,7 +278,7 @@ describe('ReservationService', () => {
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
         selectedOptions: [{ optionId: 'opt-002', quantity: 10 }], // max is 5
-      }, TEST_USER_ID)).rejects.toThrow(/Maximum 5/);
+      }, TEST_USER_ID)).rejects.toThrow(/aksimum 5/);
     });
   });
 
