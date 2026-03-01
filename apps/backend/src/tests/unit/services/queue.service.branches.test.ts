@@ -139,26 +139,26 @@ describe('QueueService — branch coverage', () => {
     it('should throw when guests is less than 1', async () => {
       await expect(service.addToQueue({
         clientId: 'client-001', reservationQueueDate: '2026-09-15', guests: -1,
-      } as any, TEST_USER_ID)).rejects.toThrow('Number of guests must be at least 1');
+      } as any, TEST_USER_ID)).rejects.toThrow('Liczba gości musi wynosić co najmniej 1');
     });
 
     it('should throw on invalid queue date format', async () => {
       await expect(service.addToQueue({
         clientId: 'client-001', reservationQueueDate: 'not-a-date', guests: 10,
-      } as any, TEST_USER_ID)).rejects.toThrow('Invalid queue date format');
+      } as any, TEST_USER_ID)).rejects.toThrow('Nieprawidłowy format daty kolejki');
     });
 
     it('should throw when queue date is in the past', async () => {
       await expect(service.addToQueue({
         clientId: 'client-001', reservationQueueDate: '2020-01-01', guests: 10,
-      } as any, TEST_USER_ID)).rejects.toThrow('Queue date cannot be in the past');
+      } as any, TEST_USER_ID)).rejects.toThrow('Data kolejki nie może być w przeszłości');
     });
 
     it('should throw when client not found', async () => {
       mockPrisma.client.findUnique.mockResolvedValue(null);
       await expect(service.addToQueue({
         clientId: 'missing', reservationQueueDate: '2026-09-15', guests: 10,
-      } as any, TEST_USER_ID)).rejects.toThrow('Client not found');
+      } as any, TEST_USER_ID)).rejects.toThrow('Nie znaleziono klienta');
     });
   });
 
@@ -174,7 +174,7 @@ describe('QueueService — branch coverage', () => {
       );
 
       await expect(service.swapPositions('res-001', 'res-002', TEST_USER_ID))
-        .rejects.toThrow('Another user is modifying the queue');
+        .rejects.toThrow('Inny użytkownik modyfikuje kolejkę');
     });
 
     it('should throw user-friendly message on P2034 error', async () => {
@@ -186,7 +186,7 @@ describe('QueueService — branch coverage', () => {
       );
 
       await expect(service.swapPositions('res-001', 'res-002', TEST_USER_ID))
-        .rejects.toThrow('Another user is modifying the queue');
+        .rejects.toThrow('Inny użytkownik modyfikuje kolejkę');
     });
 
     it('should throw on P2002 error during swap', async () => {
@@ -247,7 +247,7 @@ describe('QueueService — branch coverage', () => {
       );
 
       await expect(service.moveToPosition('res-001', 3, TEST_USER_ID))
-        .rejects.toThrow('Another user is modifying the queue');
+        .rejects.toThrow('Inny użytkownik modyfikuje kolejkę');
     });
 
     it('should throw on P2002 error during move', async () => {
@@ -273,7 +273,7 @@ describe('QueueService — branch coverage', () => {
 
     it('should throw when reservationId is empty', async () => {
       await expect(service.moveToPosition('', 2, TEST_USER_ID))
-        .rejects.toThrow('Reservation ID is required');
+        .rejects.toThrow('Identyfikator rezerwacji jest wymagany');
     });
 
     it('should throw when reservation has no queue date', async () => {
@@ -281,7 +281,7 @@ describe('QueueService — branch coverage', () => {
         makeReservation('res-001', 1, { reservationQueueDate: null })
       );
       await expect(service.moveToPosition('res-001', 2, TEST_USER_ID))
-        .rejects.toThrow('Reservation has no queue date');
+        .rejects.toThrow('Rezerwacja nie ma przypisanej daty kolejki');
     });
 
     it('should return early when position is same as current', async () => {
@@ -300,7 +300,7 @@ describe('QueueService — branch coverage', () => {
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.updateQueueReservation('missing', {}, TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when reservation is not RESERVED', async () => {
@@ -308,32 +308,32 @@ describe('QueueService — branch coverage', () => {
         makeReservation('res-001', 1, { status: 'CONFIRMED' })
       );
       await expect(service.updateQueueReservation('res-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Can only update RESERVED reservations');
+        .rejects.toThrow('Można edytować tylko rezerwacje ze statusem RESERVED');
     });
 
     it('should throw when client not found during update', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       mockPrisma.client.findUnique.mockResolvedValue(null);
       await expect(service.updateQueueReservation('res-001', { clientId: 'missing' }, TEST_USER_ID))
-        .rejects.toThrow('Client not found');
+        .rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should throw when guests < 1 during update', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       await expect(service.updateQueueReservation('res-001', { guests: 0 } as any, TEST_USER_ID))
-        .rejects.toThrow('Number of guests must be at least 1');
+        .rejects.toThrow('Liczba gości musi wynosić co najmniej 1');
     });
 
     it('should throw on invalid queue date during update', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       await expect(service.updateQueueReservation('res-001', { reservationQueueDate: 'bad-date' } as any, TEST_USER_ID))
-        .rejects.toThrow('Invalid queue date format');
+        .rejects.toThrow('Nieprawidłowy format daty kolejki');
     });
 
     it('should throw when queue date is in the past during update', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
       await expect(service.updateQueueReservation('res-001', { reservationQueueDate: '2020-01-01' } as any, TEST_USER_ID))
-        .rejects.toThrow('Queue date cannot be in the past');
+        .rejects.toThrow('Data kolejki nie może być w przeszłości');
     });
 
     it('should reposition when date changes', async () => {
@@ -477,7 +477,7 @@ describe('QueueService — branch coverage', () => {
         hallId: 'h1', eventTypeId: 'e1',
         startDateTime: '2026-09-15T22:00:00Z', endDateTime: '2026-09-15T14:00:00Z',
         adults: 10, pricePerAdult: 100,
-      } as any, TEST_USER_ID)).rejects.toThrow('End time must be after start time');
+      } as any, TEST_USER_ID)).rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
     });
 
     it('should promote to CONFIRMED when status is CONFIRMED', async () => {

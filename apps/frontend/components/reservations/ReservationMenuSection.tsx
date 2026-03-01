@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   UtensilsCrossed, Plus, Edit, Trash2,
-  Users, Package, Sparkles, ShoppingCart, ChefHat
+  Users, Package, Sparkles, ShoppingCart, ChefHat,
+  User, Baby
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
 import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteReservationMenu } from '@/hooks/use-menu'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type { PortionTarget } from '@/types/menu'
+import { PORTION_TARGET_LABELS } from '@/types/menu'
 
 interface ReservationMenuSectionProps {
   reservationId: string
@@ -44,7 +47,7 @@ export function ReservationMenuSection({
   const isSaving = selectMenuMutation.isPending || updateMenuMutation.isPending
 
   const handleMenuSelected = async (selection: any) => {
-    if (isSaving) return // Prevent double-fire
+    if (isSaving) return
     try {
       if (hasMenu) {
         await updateMenuMutation.mutateAsync({ reservationId, selection })
@@ -217,27 +220,43 @@ export function ReservationMenuSection({
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {dishSelections.map((category: any) => (
-                    <div key={category.categoryId}>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <ChefHat className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{category.categoryName}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 ml-5">
-                        {category.dishes.map((dish: any) => (
-                          <span
-                            key={dish.dishId}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
-                          >
-                            <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
-                            {dish.quantity > 1 && (
-                              <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
-                            )}
+                  {dishSelections.map((category: any) => {
+                    const pt = category.portionTarget as PortionTarget | undefined;
+                    return (
+                      <div key={category.categoryId}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <ChefHat className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {category.categoryName}
                           </span>
-                        ))}
+                          {/* #166: Portion target badge */}
+                          {pt && pt !== 'ALL' && (
+                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0 rounded-full ${
+                              pt === 'ADULTS_ONLY'
+                                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'
+                                : 'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300'
+                            }`}>
+                              {pt === 'ADULTS_ONLY' ? <User className="w-2.5 h-2.5" /> : <Baby className="w-2.5 h-2.5" />}
+                              {PORTION_TARGET_LABELS[pt]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 ml-5">
+                          {category.dishes.map((dish: any) => (
+                            <span
+                              key={dish.dishId}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
+                            >
+                              <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
+                              {dish.quantity > 1 && (
+                                <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

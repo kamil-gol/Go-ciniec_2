@@ -6,6 +6,7 @@
  * FIX: updateMenuSelectionSchema removed (updateMenu now uses selectMenuSchema)
  * FIX: validFrom made optional for template creation
  * FIX: description made nullable in createMenuTemplateSchema for consistency
+ * Updated: #166 — Added portionTarget to categorySettingSchema
  */
 
 import { z } from 'zod';
@@ -148,6 +149,7 @@ export const categorySettingSchema = z.object({
   maxSelect: z.number().min(0, 'Max selection must be at least 0'),
   isRequired: z.boolean().optional().default(true),
   isEnabled: z.boolean().optional().default(true),
+  portionTarget: z.enum(['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY']).optional().default('ALL'),
   displayOrder: z.number().int().min(0).optional().default(0),
   customLabel: z.string().max(100).optional().nullable()
 }).refine(

@@ -40,7 +40,7 @@ export class MenuTemplateController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
@@ -59,7 +59,7 @@ export class MenuTemplateController {
         data: template
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Menu template not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found'
@@ -86,7 +86,7 @@ export class MenuTemplateController {
         data: template
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('No active menu found')) {
+      if (error instanceof Error && (error.message.includes('Nie znaleziono aktywnego menu') || error.message.includes('No active menu found'))) {
         return res.status(404).json({
           success: false,
           error: error.message
@@ -114,7 +114,7 @@ export class MenuTemplateController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
@@ -141,11 +141,11 @@ export class MenuTemplateController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Menu template not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found'
@@ -169,13 +169,13 @@ export class MenuTemplateController {
         message: 'Menu template deleted successfully'
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Cannot delete')) {
+      if (error instanceof Error && (error.message.includes('Nie można usunąć') || error.message.includes('Cannot delete'))) {
         return res.status(409).json({
           success: false,
           error: error.message
         });
       }
-      if (error instanceof Error && error.message === 'Menu template not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found'
@@ -209,11 +209,11 @@ export class MenuTemplateController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation error',
+          error: 'Błąd walidacji',
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Menu template not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found'
@@ -310,7 +310,7 @@ export class MenuTemplateController {
     } catch (error) {
       console.error('[MenuTemplate PDF] Error:', error);
 
-      if (error instanceof Error && error.message === 'Menu template not found') {
+      if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
           success: false,
           error: 'Menu template not found',
@@ -319,7 +319,7 @@ export class MenuTemplateController {
 
       return res.status(500).json({
         success: false,
-        error: 'PDF generation failed',
+        error: 'Nie udało się wygenerować PDF',
         details: error instanceof Error ? error.message : 'Unknown error',
       });
     }

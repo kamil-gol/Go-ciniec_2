@@ -3,6 +3,7 @@
  *
  * authController methods are wrapped in asyncHandler(fn),
  * which requires (req, res, next). Errors are forwarded to next().
+ * FIX: add missing validatePassword mock
  */
 
 jest.mock('../../../services/auth.service', () => ({
@@ -18,6 +19,7 @@ jest.mock('../../../utils/password', () => ({
   getPasswordRequirements: jest.fn(() => ({
     minLength: 8, requireUppercase: true, requireNumber: true,
   })),
+  validatePassword: jest.fn(() => ({ valid: true, errors: [] })),
 }));
 
 jest.mock('../../../utils/logger', () => ({

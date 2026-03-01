@@ -145,7 +145,7 @@ describe('MenuPackageController — branches', () => {
     });
 
     it('should return 404 when Package not found', async () => {
-      svc.getPackageById.mockRejectedValue(new Error('Package not found'));
+      svc.getPackageById.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const r = res();
       await menuPackageController.getById(req({ params: { id: 'bad' } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -204,7 +204,7 @@ describe('MenuPackageController — branches', () => {
     });
 
     it('should return 404 when Package not found', async () => {
-      svc.updatePackage.mockRejectedValue(new Error('Package not found'));
+      svc.updatePackage.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const r = res();
       await menuPackageController.update(req({ params: { id: 'bad' }, body: {} }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);
@@ -239,7 +239,7 @@ describe('MenuPackageController — branches', () => {
     });
 
     it('should return 404 when Package not found', async () => {
-      svc.deletePackage.mockRejectedValue(new Error('Package not found'));
+      svc.deletePackage.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
       const r = res();
       await menuPackageController.delete(req({ params: { id: 'bad' } }), r, next);
       expect(r.status).toHaveBeenCalledWith(404);

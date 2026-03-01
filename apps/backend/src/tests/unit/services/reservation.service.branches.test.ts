@@ -8,7 +8,7 @@
 
 // ═══ Mock Prisma with $transaction ═══
 const txMock = {
-  reservation: { update: jest.fn(), findFirst: jest.fn() },
+  reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
   deposit: { findMany: jest.fn(), updateMany: jest.fn() },
   reservationHistory: { create: jest.fn() },
   reservationMenuSnapshot: { delete: jest.fn(), update: jest.fn(), create: jest.fn() },
@@ -96,6 +96,7 @@ beforeEach(() => {
   db.eventType.findUnique.mockResolvedValue(EVENT);
   db.reservation.create.mockResolvedValue(RES_BASE);
   db.reservation.findFirst.mockResolvedValue(null);
+  db.reservation.findMany.mockResolvedValue([]);
   db.reservation.findUnique.mockResolvedValue(RES_BASE);
   db.reservation.update.mockResolvedValue(RES_BASE);
   db.reservationHistory.create.mockResolvedValue({});
@@ -109,6 +110,7 @@ beforeEach(() => {
 
   txMock.reservation.update.mockResolvedValue(RES_BASE);
   txMock.reservation.findFirst.mockResolvedValue(null);
+  txMock.reservation.findMany.mockResolvedValue([]);
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({});
   txMock.reservationHistory.create.mockResolvedValue({});
@@ -132,19 +134,19 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when menu package not found', async () => {
       const dto = { ...BASE_DTO, menuPackageId: 'bad-pkg' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('Selected menu package not found');
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('Nie znaleziono wybranego pakietu menu');
     });
 
     it('should throw when guests below minGuests', async () => {
       db.menuPackage.findUnique.mockResolvedValue({ ...MENU_PKG, minGuests: 100 });
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/at least 100 guests/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/minimum 100 gości/);
     });
 
     it('should throw when guests above maxGuests', async () => {
       db.menuPackage.findUnique.mockResolvedValue({ ...MENU_PKG, maxGuests: 10 });
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maximum 10 guests/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maksimum 10 go/);
     });
 
     it('should process PER_PERSON option correctly', async () => {
@@ -171,7 +173,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when no prices and no menu package', async () => {
       const dto = { ...BASE_DTO, pricePerAdult: undefined, pricePerChild: undefined };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Price per adult and per child/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za dorosłego/);
     });
   });
 
@@ -184,25 +186,25 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when option not found', async () => {
       db.menuOption.findMany.mockResolvedValue([]);
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'bad', quantity: 1 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/not found/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nie znaleziono/i);
     });
 
     it('should throw when option is inactive', async () => {
       db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'X', isActive: false, priceType: 'FLAT', priceAmount: 10, allowMultiple: false }]);
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1' }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/not active/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nieaktywna/);
     });
 
     it('should throw when exceeding maxQuantity', async () => {
       db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'D', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: true, maxQuantity: 3, category: 'X', description: '' }]);
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 10 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Maximum 3/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/aksimum 3/);
     });
 
     it('should throw when non-multiple option quantity > 1', async () => {
       db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'Solo', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: false, category: 'X', description: '' }]);
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 5 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/does not allow multiple/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nie pozwala na wielokrotny wybór/);
     });
 
     it('should default quantity to 1 when not specified', async () => {
@@ -232,17 +234,17 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when legacy date is in the past', async () => {
       await expect(svc.createReservation({ ...LEGACY, date: '2020-01-01' } as any, UID))
-        .rejects.toThrow('Reservation date must be in the future');
+        .rejects.toThrow('Data rezerwacji musi być w przyszłości');
     });
 
     it('should throw when startTime >= endTime', async () => {
       await expect(svc.createReservation({ ...LEGACY, startTime: '22:00', endTime: '14:00' } as any, UID))
-        .rejects.toThrow('End time must be after start time');
+        .rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
     });
 
     it('should throw on legacy time slot overlap', async () => {
       db.reservation.findFirst.mockResolvedValue({ id: 'existing' });
-      await expect(svc.createReservation(LEGACY as any, UID)).rejects.toThrow(/already booked/);
+      await expect(svc.createReservation(LEGACY as any, UID)).rejects.toThrow(/już zarezerwowana/);
     });
 
     it('should append next-year note for legacy format', async () => {
@@ -296,22 +298,22 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw on invalid confirmation deadline', async () => {
       const dto = { ...BASE_DTO, confirmationDeadline: FUTURE };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Confirmation deadline/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Termin potwierdzenia/);
     });
 
     it('should throw when endDateTime before startDateTime', async () => {
       const dto = { ...BASE_DTO, startDateTime: FUTURE_END, endDateTime: FUTURE };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('End time must be after start time');
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
     });
 
     it('should throw when client not found', async () => {
       db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Client not found');
+      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should throw when event type not found', async () => {
       db.eventType.findUnique.mockResolvedValue(null);
-      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Event type not found');
+      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Nie znaleziono typu wydarzenia');
     });
 
     it('should append next-year note for new format', async () => {
@@ -403,14 +405,14 @@ describe('ReservationService — Branch Coverage', () => {
     it('should remove menu (null menuPackageId) with existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: SNAP });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('removed');
+      expect(result.message).toContain('usunięt');
       expect(db.reservationMenuSnapshot.delete).toHaveBeenCalledTimes(1);
     });
 
     it('should remove menu with no existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: null });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('removed');
+      expect(result.message).toContain('usunięt');
       expect(db.reservationMenuSnapshot.delete).not.toHaveBeenCalled();
     });
 
@@ -430,28 +432,28 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw on COMPLETED reservation', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/completed or cancelled/);
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/zakończonej/);
     });
 
     it('should throw on CANCELLED reservation', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'CANCELLED' });
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/completed or cancelled/);
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/zakończonej/);
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.updateReservationMenu('bad', {} as any, UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.updateReservationMenu('bad', {} as any, UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when menu package not found', async () => {
       db.reservation.findUnique.mockResolvedValue(RES_BASE);
       db.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'bad' } as any, UID)).rejects.toThrow('Menu package not found');
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'bad' } as any, UID)).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should throw on invalid data (no menuPackageId key)', async () => {
       db.reservation.findUnique.mockResolvedValue(RES_BASE);
-      await expect(svc.updateReservationMenu('res-001', {} as any, UID)).rejects.toThrow('Invalid menu update data');
+      await expect(svc.updateReservationMenu('res-001', {} as any, UID)).rejects.toThrow('Nieprawidłowe dane aktualizacji menu');
     });
 
     it('should use custom adultsCount/childrenCount/toddlersCount', async () => {
@@ -483,19 +485,19 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when already archived', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date() });
-      await expect(svc.archiveReservation('res-001', UID)).rejects.toThrow('already archived');
+      await expect(svc.archiveReservation('res-001', UID)).rejects.toThrow('już zarchiwizowana');
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.archiveReservation('bad', UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.archiveReservation('bad', UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should use default reason when none provided', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: null });
       await svc.archiveReservation('res-001', UID);
       const histCall = db.reservationHistory.create.mock.calls[0][0];
-      expect(histCall.data.reason).toContain('archived');
+      expect(histCall.data.reason).toContain('zarchiwizowana');
     });
 
     it('should handle hall.name being null', async () => {
@@ -517,19 +519,19 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when not archived', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: null });
-      await expect(svc.unarchiveReservation('res-001', UID)).rejects.toThrow('not archived');
+      await expect(svc.unarchiveReservation('res-001', UID)).rejects.toThrow('nie jest zarchiwizowana');
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.unarchiveReservation('bad', UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.unarchiveReservation('bad', UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should use default reason when none provided', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date() });
       await svc.unarchiveReservation('res-001', UID);
       const histCall = db.reservationHistory.create.mock.calls[0][0];
-      expect(histCall.data.reason).toContain('restored');
+      expect(histCall.data.reason).toContain('przywrócona');
     });
   });
 
@@ -574,22 +576,22 @@ describe('ReservationService — Branch Coverage', () => {
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.cancelReservation('res-001', UID);
       const hist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toContain('Reservation cancelled');
+      expect(hist.data.reason).toContain('Rezerwacja anulowana');
     });
 
     it('should throw when already cancelled', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'CANCELLED' });
-      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('already cancelled');
+      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('już anulowana');
     });
 
     it('should throw when completed', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
-      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('Cannot cancel completed');
+      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('Nie można anulować zakończonej');
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.cancelReservation('bad', UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.cancelReservation('bad', UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
   });
 
@@ -641,18 +643,18 @@ describe('ReservationService — Branch Coverage', () => {
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.updateStatus('res-001', { status: ReservationStatus.CANCELLED } as any, UID);
       const hist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toContain('Status changed');
+      expect(hist.data.reason).toContain('Zmiana statusu');
     });
 
     it('should throw on invalid status transition', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
       await expect(svc.updateStatus('res-001', { status: ReservationStatus.PENDING } as any, UID))
-        .rejects.toThrow(/Cannot change status/);
+        .rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should throw when reservation not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.updateStatus('bad', { status: ReservationStatus.CONFIRMED } as any, UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.updateStatus('bad', { status: ReservationStatus.CONFIRMED } as any, UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should perform regular update for non-cancel status change', async () => {
@@ -673,7 +675,7 @@ describe('ReservationService — Branch Coverage', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'PENDING' });
       await svc.updateStatus('res-001', { status: ReservationStatus.CONFIRMED } as any, UID);
       const hist = db.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toBe('Status changed');
+      expect(hist.data.reason).toContain('Zmiana statusu');
     });
   });
 

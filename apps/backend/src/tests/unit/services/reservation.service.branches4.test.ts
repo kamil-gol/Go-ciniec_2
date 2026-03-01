@@ -56,6 +56,14 @@ const UID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
+  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
+  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
+  // Default mocks for overlapping check
+  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
+  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
+  db.reservation.findMany.mockResolvedValue([]);
+  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
@@ -101,7 +109,7 @@ describe('createReservation — legacy date format (lines 590-593)', () => {
       date: futureDate, startTime: '20:00', endTime: '14:00',
       adults: 50, children: 10, toddlers: 5,
       pricePerAdult: 200, pricePerChild: 100,
-    } as any, UID)).rejects.toThrow('End time must be after start time');
+    } as any, UID)).rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
   });
 
   it('should throw when legacy date has overlap', async () => {
@@ -190,7 +198,7 @@ describe('updateReservationMenu — on COMPLETED reservation (lines 677-682)', (
     });
     await expect(
       service.updateReservationMenu('res-1', { menuPackageId: 'pkg-1' } as any, UID)
-    ).rejects.toThrow('Cannot update menu for completed or cancelled reservations');
+    ).rejects.toThrow('Nie można zmienić menu dla zakończonej, anulowanej lub zarchiwizowanej rezerwacji');
   });
 
   it('should throw when reservation is CANCELLED', async () => {
@@ -200,7 +208,7 @@ describe('updateReservationMenu — on COMPLETED reservation (lines 677-682)', (
     });
     await expect(
       service.updateReservationMenu('res-1', { menuPackageId: 'pkg-1' } as any, UID)
-    ).rejects.toThrow('Cannot update menu for completed or cancelled reservations');
+    ).rejects.toThrow('Nie można zmienić menu dla zakończonej, anulowanej lub zarchiwizowanej rezerwacji');
   });
 });
 

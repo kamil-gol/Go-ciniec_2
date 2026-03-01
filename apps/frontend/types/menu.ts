@@ -2,6 +2,21 @@
 // MENU TYPES
 // =============================================================================
 
+/** #166: Portion target — who gets portions for this category */
+export type PortionTarget = 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
+
+export const PORTION_TARGET_LABELS: Record<PortionTarget, string> = {
+  ALL: 'Wszyscy',
+  ADULTS_ONLY: 'Tylko dorośli',
+  CHILDREN_ONLY: 'Tylko dzieci',
+};
+
+export const PORTION_TARGET_ICONS: Record<PortionTarget, string> = {
+  ALL: '👥',
+  ADULTS_ONLY: '🧑',
+  CHILDREN_ONLY: '👶',
+};
+
 export interface MenuTemplate {
   id: string;
   eventTypeId: string;
@@ -72,6 +87,7 @@ export interface CategorySetting {
   maxSelect: number;
   isRequired: boolean;
   isEnabled: boolean;
+  portionTarget: PortionTarget; // #166
   displayOrder: number;
   customLabel?: string;
   createdAt?: string;
@@ -121,6 +137,7 @@ export interface CategorySettingInput {
   maxSelect: number;
   isRequired: boolean;
   isEnabled: boolean;
+  portionTarget?: PortionTarget; // #166 — default: 'ALL'
   displayOrder: number;
   customLabel?: string;
 }

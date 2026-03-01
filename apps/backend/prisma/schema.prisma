@@ -640,6 +640,7 @@ model PackageCategorySettings {
   
   isRequired    Boolean       @default(true)
   isEnabled     Boolean       @default(true)
+  portionTarget String        @default("ALL") @db.VarChar(20)  // ALL | ADULTS_ONLY | CHILDREN_ONLY
   
   displayOrder  Int           @default(0) @db.SmallInt
   customLabel   String?       @db.VarChar(255)
