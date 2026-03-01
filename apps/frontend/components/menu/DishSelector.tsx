@@ -8,9 +8,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { 
   ChevronLeft, ChevronRight, AlertCircle, Check, 
-  Info, UtensilsCrossed, CheckCircle2, Lock
+  Info, UtensilsCrossed, CheckCircle2, Lock,
+  Users, User, Baby
 } from 'lucide-react'
 import { usePackageCategories } from '@/hooks/use-menu'
+import type { PortionTarget } from '@/types/menu'
+import { PORTION_TARGET_LABELS, PORTION_TARGET_ICONS } from '@/types/menu'
 
 interface DishSelection {
   dishId: string
@@ -29,6 +32,26 @@ interface DishSelectorProps {
   onBack: () => void
 }
 
+/** #166: Portion target badge for category header */
+function PortionTargetBadge({ target }: { target?: PortionTarget | string }) {
+  if (!target || target === 'ALL') return null;
+  
+  const isAdults = target === 'ADULTS_ONLY';
+  const Icon = isAdults ? User : Baby;
+  const label = PORTION_TARGET_LABELS[target as PortionTarget] || target;
+  
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+      isAdults
+        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+        : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
+    }`}>
+      <Icon className="w-3.5 h-3.5" />
+      {label}
+    </span>
+  );
+}
+
 export function DishSelector({ 
   packageId, 
   initialSelections,
@@ -41,7 +64,6 @@ export function DishSelector({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Initialize selections state from categoryData or initialSelections
   useEffect(() => {
     if (categoryData?.categories && !isInitialized) {
       const initialSelectionsData: Record<string, Record<string, number>> = {}
@@ -86,8 +108,6 @@ export function DishSelector({
 
   const categories = categoryData.categories
 
-  // ── Helpers ────────────────────────────────────────────
-
   const getCategoryTotal = (categoryId: string): number => {
     const categorySelections = selections[categoryId] || {}
     return Object.values(categorySelections).reduce((sum, qty) => sum + qty, 0)
@@ -103,7 +123,6 @@ export function DishSelector({
     return settings.maxSelect - getCategoryTotal(categoryId)
   }
 
-  // FIX 4a: Get available quantity options filtered by remaining capacity
   const getAvailableQuantityOptions = (categoryId: string, dishId: string): number[] => {
     const allOptions = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
     const currentDishQty = selections[categoryId]?.[dishId] || 0
@@ -111,7 +130,6 @@ export function DishSelector({
     return allOptions.filter(opt => opt <= maxForDish)
   }
 
-  // FIX 4a: Smart toggle with adaptive default quantity
   const toggleDish = (categoryId: string, dishId: string) => {
     const isCurrentlySelected = !!selections[categoryId]?.[dishId]
     
@@ -128,7 +146,6 @@ export function DishSelector({
         return
       }
 
-      // Smart default: if remaining < 1, use remaining rounded to nearest 0.5
       const defaultQuantity = remaining < 1 
         ? Math.round(remaining * 2) / 2 
         : 1
@@ -141,7 +158,6 @@ export function DishSelector({
         }
       }))
     } else {
-      // Remove dish
       setSelections(prev => {
         const newSelections = { ...prev }
         const categorySelections = { ...newSelections[categoryId] }
@@ -151,7 +167,6 @@ export function DishSelector({
       })
     }
     
-    // Clear error for this category
     if (errors[categoryId]) {
       setErrors(prev => {
         const newErrors = { ...prev }
@@ -161,7 +176,6 @@ export function DishSelector({
     }
   }
 
-  // Update dish quantity (dropdown already filtered, no need for max check)
   const updateQuantity = (categoryId: string, dishId: string, quantity: number) => {
     setSelections(prev => ({
       ...prev,
@@ -172,7 +186,6 @@ export function DishSelector({
     }))
   }
 
-  // FIX 4b + 4d: Validate with structured error messages
   const validateSelections = (): { isValid: boolean; errorMap: Record<string, string> } => {
     const newErrors: Record<string, string> = {}
     let isValid = true
@@ -181,7 +194,6 @@ export function DishSelector({
       const total = getCategoryTotal(category.categoryId)
       const label = category.customLabel || category.categoryName
       
-      // FIX 4d: Skip min validation when minSelect is 0 (optional category)
       if (category.minSelect > 0 && total < category.minSelect) {
         newErrors[category.categoryId] = `\u201e${label}\u201d: wybierz minimum ${category.minSelect} pozycji (masz ${total})`
         isValid = false
@@ -197,7 +209,6 @@ export function DishSelector({
     return { isValid, errorMap: newErrors }
   }
 
-  // FIX 4b: Show toast summary on validation failure
   const handleComplete = () => {
     const { isValid, errorMap } = validateSelections()
     
@@ -241,6 +252,7 @@ export function DishSelector({
           const isValid = total >= category.minSelect && total <= category.maxSelect
           const hasError = errors[category.categoryId]
           const isAtMaxLimit = total >= category.maxSelect
+          const portionTarget = category.portionTarget as PortionTarget | undefined
 
           return (
             <Card key={category.categoryId} className="border-2 shadow-lg">
@@ -251,15 +263,26 @@ export function DishSelector({
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">{category.categoryIcon}</span>
                       <div>
-                        <h3 className="text-2xl font-bold">{category.customLabel || category.categoryName}</h3>
-                        {/* FIX 4d: Show optional label */}
-                        {isOptional && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-2xl font-bold">{category.customLabel || category.categoryName}</h3>
+                          {/* #166: Portion target badge */}
+                          <PortionTargetBadge target={portionTarget} />
+                        </div>
+                        {/* #166: Subtitle for non-ALL targets */}
+                        {portionTarget && portionTarget !== 'ALL' && (
+                          <span className="text-xs text-muted-foreground">
+                            Porcje liczone {portionTarget === 'ADULTS_ONLY' ? 'tylko dla dorosłych' : 'tylko dla dzieci'}
+                          </span>
+                        )}
+                        {isOptional && !portionTarget?.startsWith('ADULTS') && !portionTarget?.startsWith('CHILDREN') && (
                           <span className="text-xs font-medium text-muted-foreground">Opcjonalna kategoria</span>
+                        )}
+                        {isOptional && portionTarget && portionTarget !== 'ALL' && (
+                          <span className="text-xs font-medium text-muted-foreground"> · Opcjonalna</span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {/* FIX 4a: Show remaining count */}
                       {!isAtMaxLimit && total > 0 && (
                         <span className="text-sm text-muted-foreground">
                           Pozostało: {remaining}
@@ -332,14 +355,12 @@ export function DishSelector({
                         }`}
                         onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
                       >
-                        {/* Disabled Indicator */}
                         {isDisabled && (
                           <div className="absolute top-3 right-3 w-7 h-7 bg-neutral-400 rounded-full flex items-center justify-center">
                             <Lock className="h-4 w-4 text-white" />
                           </div>
                         )}
 
-                        {/* Selection Indicator */}
                         {isSelected && (
                           <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
                             <Check className="h-5 w-5 text-white font-bold" strokeWidth={3} />
@@ -347,7 +368,6 @@ export function DishSelector({
                         )}
 
                         <div className="flex items-start gap-4">
-                          {/* Custom Checkbox */}
                           <div className={`flex-shrink-0 mt-1 w-7 h-7 rounded-lg border-3 flex items-center justify-center transition-all duration-200 ${
                             isDisabled
                               ? 'bg-neutral-300 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600'
@@ -378,7 +398,6 @@ export function DishSelector({
                               </p>
                             )}
                             
-                            {/* Allergens */}
                             {dish.allergens && dish.allergens.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-2">
                                 {dish.allergens.map((allergen: string) => (
@@ -393,7 +412,6 @@ export function DishSelector({
                               </div>
                             )}
 
-                            {/* Quantity Selector - FIX 4a: filtered options */}
                             {isSelected && (
                               <div className="mt-4 p-3 bg-white dark:bg-neutral-800 rounded-lg border-2 border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
                                 <label className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 block">
