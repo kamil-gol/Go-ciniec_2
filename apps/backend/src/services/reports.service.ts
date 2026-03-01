@@ -8,6 +8,7 @@
  * Updated: extras filter changed to blacklist (not CANCELLED) instead of whitelist
  * Updated: menu preparations report (#160)
  * Updated: occupancy report — capacity utilization for multi-booking halls (#165)
+ * Updated: #166 — portionTarget support in menu preparations report
  * FIX: query by both date AND startDateTime, remove Prisma `some` pre-filter
  * FIX: fallback startTime/endTime from startDateTime/endDateTime
  * FIX: added portionSize from menuData.quantity to dish mapping
@@ -112,6 +113,41 @@ function getReservationDate(r: { date: string | null; startDateTime: Date | stri
     return new Date(r.startDateTime).toISOString().split('T')[0];
   }
   return '';
+}
+
+/**
+ * #166: Calculate adult/children portions based on portionTarget
+ */
+function calculatePortions(
+  portionTarget: string,
+  adults: number,
+  children: number,
+  portionSize: number
+): { adultPortions: number; childrenPortions: number; totalPortions: number } {
+  let adultPortions = 0;
+  let childrenPortions = 0;
+
+  switch (portionTarget) {
+    case 'ADULTS_ONLY':
+      adultPortions = adults * portionSize;
+      childrenPortions = 0;
+      break;
+    case 'CHILDREN_ONLY':
+      adultPortions = 0;
+      childrenPortions = children * portionSize;
+      break;
+    case 'ALL':
+    default:
+      adultPortions = adults * portionSize;
+      childrenPortions = children * portionSize;
+      break;
+  }
+
+  return {
+    adultPortions,
+    childrenPortions,
+    totalPortions: adultPortions + childrenPortions,
+  };
 }
 
 class ReportsService {
@@ -818,7 +854,7 @@ class ReportsService {
   }
 
   // ============================================
-  // MENU PREPARATIONS REPORTS #160
+  // MENU PREPARATIONS REPORTS #160 + #166
   // ============================================
 
   async getMenuPreparationsReport(filters: MenuPreparationsReportFilters): Promise<MenuPreparationsReport> {
@@ -895,6 +931,8 @@ class ReportsService {
           courses.push({
             courseName: catSel.categoryName || 'Nieznana kategoria',
             icon: catSel.categoryIcon || null,
+            // #166: pass portionTarget from snapshot for report display
+            portionTarget: catSel.portionTarget || 'ALL',
             dishes,
           });
         }
@@ -950,8 +988,7 @@ class ReportsService {
       }));
 
     // SUMMARY VIEW: aggregate per course -> per dish per day
-    // totalPortions = (adults + children) * portionSize — toddlers excluded
-    // toddlerPortions removed from response entirely
+    // #166: totalPortions now uses calculatePortions() with portionTarget
     let summaryDays: MenuPreparationSummaryDayGroup[] | undefined;
 
     if (view === 'summary') {
@@ -969,6 +1006,9 @@ class ReportsService {
           if (!courseMap.has(course.courseName)) courseMap.set(course.courseName, new Map());
           const dishMap = courseMap.get(course.courseName)!;
 
+          // #166: Read portionTarget from course (set during snapshot or defaulting to ALL)
+          const portionTarget = (course as any).portionTarget || 'ALL';
+
           for (const dish of course.dishes) {
             if (!dishMap.has(dish.name)) {
               dishMap.set(dish.name, {
@@ -978,6 +1018,7 @@ class ReportsService {
                   totalPortions: 0,
                   adultPortions: 0,
                   childrenPortions: 0,
+                  portionTarget,
                   reservations: [],
                 },
               });
@@ -985,10 +1026,18 @@ class ReportsService {
 
             const entry = dishMap.get(dish.name)!;
             const pSize = dish.portionSize ?? 1;
-            // totalPortions = adults + children only (toddlers excluded from portions)
-            entry.dish.totalPortions += (item.guests.adults + item.guests.children) * pSize;
-            entry.dish.adultPortions += item.guests.adults * pSize;
-            entry.dish.childrenPortions += item.guests.children * pSize;
+
+            // #166: Use portionTarget to determine which guest types get portions
+            const portions = calculatePortions(
+              portionTarget,
+              item.guests.adults,
+              item.guests.children,
+              pSize
+            );
+
+            entry.dish.totalPortions += portions.totalPortions;
+            entry.dish.adultPortions += portions.adultPortions;
+            entry.dish.childrenPortions += portions.childrenPortions;
             entry.dish.reservations.push({
               id: item.reservationId,
               clientName: item.clientName,
