@@ -3,6 +3,7 @@
  * Covers: listByPackage, getById, create, update, delete,
  *         assignDishes, removeDish, getForSelection, reorderDishes
  * Issue: #98
+ * FIX: spolonizowane komunikaty błędów
  */
 
 const mockPrisma: any = {
@@ -71,7 +72,7 @@ describe('MenuCourseService', () => {
 
     it('should throw when course not found', async () => {
       mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
-      await expect(menuCourseService.getById('x')).rejects.toThrow('Course not found');
+      await expect(menuCourseService.getById('x')).rejects.toThrow('Nie znaleziono kursu menu');
     });
   });
 
@@ -86,7 +87,7 @@ describe('MenuCourseService', () => {
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
       await expect(menuCourseService.create({ packageId: 'x', name: 'Test' }))
-        .rejects.toThrow('Package not found');
+        .rejects.toThrow('Nie znaleziono pakietu menu');
     });
   });
 
@@ -100,7 +101,7 @@ describe('MenuCourseService', () => {
 
     it('should throw when course not found', async () => {
       mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
-      await expect(menuCourseService.update('x', { name: 'Y' })).rejects.toThrow('Course not found');
+      await expect(menuCourseService.update('x', { name: 'Y' })).rejects.toThrow('Nie znaleziono kursu menu');
     });
   });
 
@@ -136,7 +137,7 @@ describe('MenuCourseService', () => {
 
       await expect(menuCourseService.assignDishes('course-1', [
         { dishId: 'dish-1' }, { dishId: 'dish-missing' },
-      ])).rejects.toThrow(/Dishes not found.*dish-missing/);
+      ])).rejects.toThrow(/Nie znaleziono dań.*dish-missing/);
     });
   });
 
@@ -153,7 +154,7 @@ describe('MenuCourseService', () => {
       mockPrisma.menuCourse.findUnique.mockResolvedValue(mockCourse);
       mockPrisma.menuCourseOption.findFirst.mockResolvedValue(null);
       await expect(menuCourseService.removeDish('course-1', 'dish-x'))
-        .rejects.toThrow('Dish not assigned to this course');
+        .rejects.toThrow('Danie nie jest przypisane do tego kursu');
     });
   });
 
@@ -166,7 +167,7 @@ describe('MenuCourseService', () => {
 
     it('should throw when course not found', async () => {
       mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
-      await expect(menuCourseService.getForSelection('x')).rejects.toThrow('Course not found');
+      await expect(menuCourseService.getForSelection('x')).rejects.toThrow('Nie znaleziono kursu menu');
     });
   });
 
