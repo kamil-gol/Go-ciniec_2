@@ -30,7 +30,7 @@ router.post(
 );
 
 /**
- * GET /api/attachments?entityType=X&entityId=Y&category=Z
+ * GET /api/attachments
  * List attachments for an entity
  */
 router.get(
@@ -82,8 +82,23 @@ router.post(
 );
 
 /**
+ * GET /api/attachments/:id/download-url
+ * Get presigned download URL (direct MinIO or fallback to stream)
+ * Response: { url, expiresIn, direct, filename, mimeType, sizeBytes }
+ */
+router.get(
+  '/:id/download-url',
+  authMiddleware,
+  requireStaff,
+  validateUUID('id'),
+  asyncHandler(async (req, res, next) => {
+    await attachmentController.getDownloadUrl(req, res, next);
+  })
+);
+
+/**
  * GET /api/attachments/:id/download
- * Download/stream a file
+ * Download/stream a file (backend proxy)
  */
 router.get(
   '/:id/download',

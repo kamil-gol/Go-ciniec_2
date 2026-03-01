@@ -3,6 +3,7 @@
  * Handles HTTP requests for attachment CRUD operations
  * Updated: Phase 3 Audit — pass userId to mutating service methods
  * Updated: #146 — stream-based download (storageService)
+ * Updated: #146 — presigned download URLs
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -56,7 +57,6 @@ class AttachmentController {
         return res.status(400).json({ error: 'entityType i entityId są wymagane' });
       }
 
-      // If withClientRodo=true, use the cross-reference method
       if (withClientRodo === 'true' && entityType !== 'CLIENT') {
         const attachments = await attachmentService.getAttachmentsWithClientRodo(
           entityType as EntityType,
@@ -78,7 +78,7 @@ class AttachmentController {
   }
 
   /**
-   * Download attachment file
+   * Download attachment file (backend stream proxy)
    * GET /api/attachments/:id/download
    */
   async download(req: Request, res: Response, next: NextFunction) {
@@ -93,6 +93,29 @@ class AttachmentController {
       }
 
       (stream as NodeJS.ReadableStream).pipe(res);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get presigned download URL
+   * GET /api/attachments/:id/download-url
+   *
+   * Returns:
+   *   { url, expiresIn, direct, filename, mimeType, sizeBytes }
+   *
+   * direct=true  → URL points directly to MinIO (presigned, TTL-limited)
+   * direct=false → URL points to /api/attachments/:id/download (backend proxy)
+   */
+  async getDownloadUrl(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const baseApiUrl = `${req.protocol}://${req.get('host')}/api`;
+
+      const result = await attachmentService.getDownloadUrl(id, baseApiUrl);
+
+      return res.json({ data: result });
     } catch (error) {
       next(error);
     }

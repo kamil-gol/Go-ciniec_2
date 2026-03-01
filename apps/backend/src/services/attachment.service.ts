@@ -8,6 +8,7 @@
  * 
  * Updated: Phase 3 Audit — logChange() for all CRUD operations
  * Updated: #146 — storageService abstraction (local/MinIO)
+ * Updated: #146 — presigned download URLs with TTL
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
@@ -22,11 +23,18 @@ import { storageConfig } from '../config/storage.config';
 import logger from '../utils/logger';
 import fs from 'fs';
 
+export interface DownloadUrlResult {
+  url: string;
+  expiresIn: number;
+  direct: boolean;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
 class AttachmentService {
   /**
    * Upload file from staging to storage backend.
-   * Returns the storage key (relative path within the bucket).
-   * Removes the staging file after successful upload.
    */
   private async uploadToStorage(file: Express.Multer.File, entityType: EntityType): Promise<string> {
     const subDir = STORAGE_DIRS[entityType] || 'other';
@@ -40,7 +48,6 @@ class AttachmentService {
       'X-Original-Name': encodeURIComponent(file.originalname),
     });
 
-    // Cleanup staging file
     if (fs.existsSync(file.path)) {
       fs.unlinkSync(file.path);
       logger.debug(`Staging file removed: ${file.path}`);
@@ -52,7 +59,6 @@ class AttachmentService {
 
   /**
    * Resolve the clientId from a RESERVATION or DEPOSIT entity.
-   * Used for RODO redirect — always store RODO under CLIENT.
    */
   private async resolveClientId(entityType: EntityType, entityId: string): Promise<string | null> {
     try {
@@ -85,32 +91,22 @@ class AttachmentService {
 
   /**
    * Create attachment record after file upload.
-   * 
-   * RODO REDIRECT: If category is RODO and entityType is RESERVATION or DEPOSIT,
-   * the attachment is automatically redirected to entityType=CLIENT with the
-   * resolved clientId. This ensures RODO is always stored at the client level.
    */
   async createAttachment(
     dto: CreateAttachmentDTO,
     file: Express.Multer.File,
     uploadedById: string,
   ) {
-    // Validate entityType
     if (!ENTITY_TYPES.includes(dto.entityType)) {
       throw AppError.badRequest(`Nieprawidłowy entityType: ${dto.entityType}. Dozwolone: ${ENTITY_TYPES.join(', ')}`);
     }
 
-    // Validate category
     if (!isValidCategory(dto.entityType, dto.category)) {
       throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
     }
 
-    // Validate entity exists
     await this.validateEntityExists(dto.entityType, dto.entityId);
 
-    // ═══════════════════════════════════════════════════════════
-    // RODO REDIRECT: Always store RODO under CLIENT
-    // ═══════════════════════════════════════════════════════════
     let finalEntityType: EntityType = dto.entityType;
     let finalEntityId: string = dto.entityId;
 
@@ -132,7 +128,6 @@ class AttachmentService {
       finalEntityId = clientId;
     }
 
-    // Upload file to storage backend (uses FINAL entityType for key)
     const storagePath = await this.uploadToStorage(file, finalEntityType);
 
     const attachment = await prisma.attachment.create({
@@ -162,7 +157,6 @@ class AttachmentService {
       (finalEntityType !== dto.entityType ? ` [redirected from ${dto.entityType}/${dto.entityId}]` : '')
     );
 
-    // Audit log — ATTACHMENT_UPLOAD
     await logChange({
       userId: uploadedById,
       action: 'ATTACHMENT_UPLOAD',
@@ -218,26 +212,22 @@ class AttachmentService {
 
   /**
    * Get attachments for an entity + cross-referenced RODO from client.
-   * Used by RESERVATION and DEPOSIT views to show RODO stored at client level.
    */
   async getAttachmentsWithClientRodo(
     entityType: EntityType,
     entityId: string,
     includeArchived: boolean = false,
   ) {
-    // Get own attachments
     const ownAttachments = await this.getAttachments({
       entityType,
       entityId,
       includeArchived,
     });
 
-    // If already CLIENT, no cross-reference needed
     if (entityType === 'CLIENT') {
       return ownAttachments;
     }
 
-    // Resolve clientId and fetch client's RODO
     const clientId = await this.resolveClientId(entityType, entityId);
     if (!clientId) return ownAttachments;
 
@@ -256,7 +246,6 @@ class AttachmentService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Merge: own attachments + client RODO (marked with _fromClient flag)
     const mergedRodo = clientRodoAttachments.map(att => ({
       ...att,
       _fromClient: true,
@@ -286,8 +275,7 @@ class AttachmentService {
   }
 
   /**
-   * Get file stream for download.
-   * Returns a readable stream + attachment metadata.
+   * Get file stream for download (backend proxy).
    */
   async getFileStream(id: string): Promise<{ stream: NodeJS.ReadableStream; attachment: any }> {
     const attachment = await this.getAttachmentById(id);
@@ -304,17 +292,74 @@ class AttachmentService {
   }
 
   /**
+   * Get presigned download URL with TTL.
+   * Returns direct MinIO URL when MINIO_PUBLIC_ENDPOINT is configured,
+   * otherwise falls back to backend stream endpoint.
+   */
+  async getDownloadUrl(id: string, baseApiUrl?: string): Promise<DownloadUrlResult> {
+    const attachment = await this.getAttachmentById(id);
+    const bucket = storageConfig.buckets.attachments;
+
+    const fileExists = await storageService.exists(bucket, attachment.storagePath);
+    if (!fileExists) {
+      logger.error(`File not found in storage: ${bucket}/${attachment.storagePath} (attachment: ${id})`);
+      throw AppError.notFound('Plik nie istnieje w storage');
+    }
+
+    const isMinio = storageConfig.driver === 'minio';
+    const hasPublicEndpoint = !!storageConfig.minio.publicEndpoint;
+    const canDirect = isMinio && hasPublicEndpoint;
+
+    if (canDirect) {
+      const presignedUrl = await storageService.getPresignedUrl(bucket, attachment.storagePath);
+      const ttl = this.getPresignedTtl(bucket);
+
+      logger.debug(`Presigned URL generated for attachment ${id} (TTL: ${ttl}s, direct: true)`);
+
+      return {
+        url: presignedUrl,
+        expiresIn: ttl,
+        direct: true,
+        filename: attachment.originalName,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+      };
+    }
+
+    const apiBase = baseApiUrl || '/api';
+    const fallbackUrl = `${apiBase}/attachments/${id}/download`;
+    const ttl = 0;
+
+    logger.debug(`Download URL for attachment ${id} (fallback to stream, direct: false)`);
+
+    return {
+      url: fallbackUrl,
+      expiresIn: ttl,
+      direct: false,
+      filename: attachment.originalName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+    };
+  }
+
+  private getPresignedTtl(bucket: string): number {
+    const sensitiveBuckets = [storageConfig.buckets.attachments];
+    if (sensitiveBuckets.includes(bucket)) {
+      return storageConfig.presignedTtl.sensitive;
+    }
+    return storageConfig.presignedTtl.standard;
+  }
+
+  /**
    * Update attachment metadata
    */
   async updateAttachment(id: string, dto: UpdateAttachmentDTO, userId?: string) {
     const existing = await this.getAttachmentById(id);
 
-    // If changing category, validate it
     if (dto.category && !isValidCategory(existing.entityType as EntityType, dto.category)) {
       throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
     }
 
-    // Track changes for audit
     const changes: Record<string, { old: any; new: any }> = {};
     if (dto.label !== undefined && dto.label !== existing.label) {
       changes.label = { old: existing.label, new: dto.label };
@@ -342,7 +387,6 @@ class AttachmentService {
 
     logger.info(`Attachment updated: ${id}`);
 
-    // Audit log — ATTACHMENT_UPDATE
     if (Object.keys(changes).length > 0) {
       await logChange({
         userId: userId || null,
@@ -365,7 +409,7 @@ class AttachmentService {
    * Soft-delete attachment (set isArchived=true)
    */
   async deleteAttachment(id: string, userId?: string) {
-    const existing = await this.getAttachmentById(id); // Verify exists
+    const existing = await this.getAttachmentById(id);
 
     const archived = await prisma.attachment.update({
       where: { id },
@@ -374,7 +418,6 @@ class AttachmentService {
 
     logger.info(`Attachment archived: ${id}`);
 
-    // Audit log — ATTACHMENT_ARCHIVE
     await logChange({
       userId: userId || null,
       action: 'ATTACHMENT_ARCHIVE',
@@ -393,13 +436,11 @@ class AttachmentService {
 
   /**
    * Hard-delete attachment (remove from storage + DB record)
-   * Only for admin cleanup
    */
   async hardDeleteAttachment(id: string, userId?: string) {
     const attachment = await this.getAttachmentById(id);
     const bucket = storageConfig.buckets.attachments;
 
-    // Save info for audit before deletion
     const auditData = {
       originalName: attachment.originalName,
       category: attachment.category,
@@ -409,7 +450,6 @@ class AttachmentService {
       storagePath: attachment.storagePath,
     };
 
-    // Delete file from storage
     try {
       await storageService.delete(bucket, attachment.storagePath);
       logger.info(`File deleted from storage: ${bucket}/${attachment.storagePath}`);
@@ -417,12 +457,10 @@ class AttachmentService {
       logger.warn(`File not found in storage during hard delete: ${bucket}/${attachment.storagePath}`);
     }
 
-    // Delete DB record
     await prisma.attachment.delete({ where: { id } });
 
     logger.info(`Attachment hard-deleted: ${id}`);
 
-    // Audit log — ATTACHMENT_DELETE (permanent)
     await logChange({
       userId: userId || null,
       action: 'ATTACHMENT_DELETE',

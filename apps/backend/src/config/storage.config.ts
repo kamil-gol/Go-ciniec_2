@@ -6,6 +6,10 @@
  * MINIO_ACCESS_KEY / MINIO_SECRET_KEY — dedykowane credentials dla backendu.
  * Fallback: MINIO_ROOT_USER / MINIO_ROOT_PASSWORD (legacy/dev).
  *
+ * MINIO_PUBLIC_ENDPOINT — publiczny URL MinIO (np. https://storage.gosciniec.online)
+ * dla presigned URLs dostępnych z przeglądarki. Jeśli nie ustawiony,
+ * presigned URLs fallbackują do /api/attachments/:id/download.
+ *
  * Presigned URL TTL (H6):
  *   - RODO/sensitive: 300s (5 min)
  *   - Standard files: 900s (15 min)
@@ -16,6 +20,7 @@ export interface StorageConfig {
   driver: 'local' | 'minio';
   minio: {
     endpoint: string;
+    publicEndpoint: string | null;
     accessKey: string;
     secretKey: string;
     rootUser: string;
@@ -27,9 +32,7 @@ export interface StorageConfig {
     exports: string;
   };
   presignedTtl: {
-    /** TTL for RODO-sensitive files (client attachments). Default: 300s (5 min) */
     sensitive: number;
-    /** TTL for standard files (exports, pdfs). Default: 900s (15 min) */
     standard: number;
   };
 }
@@ -38,6 +41,7 @@ export const storageConfig: StorageConfig = {
   driver: (process.env.STORAGE_DRIVER as 'local' | 'minio') || 'local',
   minio: {
     endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
+    publicEndpoint: process.env.MINIO_PUBLIC_ENDPOINT || null,
     accessKey: process.env.MINIO_ACCESS_KEY || process.env.MINIO_ROOT_USER || 'minioadmin',
     secretKey: process.env.MINIO_SECRET_KEY || process.env.MINIO_ROOT_PASSWORD || 'minioadmin123',
     rootUser: process.env.MINIO_ROOT_USER || 'minioadmin',
