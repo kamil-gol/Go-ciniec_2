@@ -96,6 +96,7 @@ beforeEach(() => {
   db.eventType.findUnique.mockResolvedValue(EVENT);
   db.reservation.create.mockResolvedValue(RES_BASE);
   db.reservation.findFirst.mockResolvedValue(null);
+  db.reservation.findMany.mockResolvedValue([]);
   db.reservation.findUnique.mockResolvedValue(RES_BASE);
   db.reservation.update.mockResolvedValue(RES_BASE);
   db.reservationHistory.create.mockResolvedValue({});

@@ -114,6 +114,7 @@ beforeEach(() => {
   // Default mocks for overlapping check
   if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
   if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
+  db.reservation.findMany.mockResolvedValue([]);
   if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
