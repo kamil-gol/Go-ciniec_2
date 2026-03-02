@@ -33,6 +33,8 @@ export interface Hall {
 export interface EventType {
   id: string
   name: string
+  standardHours?: number   // Extra-hours feature: hours included in base price
+  extraHourRate?: number   // Extra-hours feature: PLN per extra hour (0 = no surcharge)
   createdAt: string
 }
 

@@ -53,6 +53,8 @@ export class EventTypeService {
         description: data.description?.trim() || null,
         color: data.color || null,
         isActive: data.isActive !== undefined ? data.isActive : true,
+        standardHours: data.standardHours ?? 6,
+        extraHourRate: data.extraHourRate ?? 500,
       }
     });
 
@@ -67,7 +69,9 @@ export class EventTypeService {
         data: {
           name: eventType.name,
           color: eventType.color,
-          isActive: eventType.isActive
+          isActive: eventType.isActive,
+          standardHours: eventType.standardHours,
+          extraHourRate: Number(eventType.extraHourRate),
         }
       }
     });
@@ -128,6 +132,8 @@ export class EventTypeService {
     if (data.description !== undefined) updateData.description = data.description?.trim() || null;
     if (data.color !== undefined) updateData.color = data.color;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.standardHours !== undefined) updateData.standardHours = data.standardHours;
+    if (data.extraHourRate !== undefined) updateData.extraHourRate = data.extraHourRate;
 
     const eventType = await prisma.eventType.update({
       where: { id },
@@ -233,6 +239,8 @@ export class EventTypeService {
       name: et.name,
       color: et.color,
       isActive: et.isActive,
+      standardHours: et.standardHours,
+      extraHourRate: Number(et.extraHourRate),
       reservationCount: et._count.reservations,
       menuTemplateCount: et._count.menuTemplates,
     }));

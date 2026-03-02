@@ -53,8 +53,8 @@ const STEPS: StepConfig[] = [
   { id: 'summary', title: 'Podsumowanie', icon: ClipboardCheck },
 ]
 
-const EXTRA_HOUR_RATE = 500
-const STANDARD_HOURS = 6
+const DEFAULT_EXTRA_HOUR_RATE = 500
+const DEFAULT_STANDARD_HOURS = 6
 
 // ═══ SCHEMA ═══
 
@@ -217,6 +217,14 @@ export function CreateReservationForm({
   const clientsArray = useMemo(() => Array.isArray(clientsData) ? clientsData : [], [clientsData])
   const eventTypesArray = useMemo(() => Array.isArray(eventTypes) ? eventTypes : [], [eventTypes])
 
+  const selectedEventType = useMemo(() => {
+    if (!selectedEventTypeId) return null
+    return (eventTypesArray as any[]).find((t) => t.id === selectedEventTypeId) || null
+  }, [selectedEventTypeId, eventTypesArray])
+
+  const standardHours = Number((selectedEventType as any)?.standardHours) || DEFAULT_STANDARD_HOURS
+  const extraHourRate = Number((selectedEventType as any)?.extraHourRate) || DEFAULT_EXTRA_HOUR_RATE
+
   // Menu templates filtered by event type
   const { data: menuTemplates, isLoading: menuTemplatesLoading } = useMenuTemplates(
     selectedEventTypeId ? { eventTypeId: selectedEventTypeId, isActive: true } : undefined
@@ -287,11 +295,11 @@ export function CreateReservationForm({
   }, [startDate, startTime, endDate, endTime])
 
   const extraHours = useMemo(() => {
-    if (durationHours > STANDARD_HOURS) return Math.ceil(durationHours - STANDARD_HOURS)
+    if (durationHours > standardHours) return Math.ceil(durationHours - standardHours)
     return 0
-  }, [durationHours])
+  }, [durationHours, standardHours])
 
-  const extraHoursCost = extraHours * EXTRA_HOUR_RATE
+  const extraHoursCost = extraHours * extraHourRate
 
   // Stage 3: Calculate total from selected service extras
   const extrasTotal = useMemo(() => {
@@ -345,11 +353,11 @@ export function CreateReservationForm({
   useEffect(() => {
     if (startDate && startTime && !watchAll.endDate && !watchAll.endTime) {
       const start = new Date(`${startDate}T${startTime}`)
-      const end = new Date(start.getTime() + 6 * 60 * 60 * 1000)
+      const end = new Date(start.getTime() + standardHours * 60 * 60 * 1000)
       setValue('endDate', end.toISOString().split('T')[0])
       setValue('endTime', end.toTimeString().slice(0, 5))
     }
-  }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue])
+  }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue, standardHours])
 
   // Set prices from selected package
   useEffect(() => {
@@ -627,7 +635,7 @@ export function CreateReservationForm({
             <div className="flex justify-between text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 -mx-4 px-4 py-2">
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
-                Dodatkowe godziny: {extraHours}h × {EXTRA_HOUR_RATE} PLN
+                Dodatkowe godziny: {extraHours}h × {extraHourRate} PLN
               </span>
               <span className="font-medium">{formatCurrency(extraHoursCost)}</span>
             </div>
@@ -665,7 +673,7 @@ export function CreateReservationForm({
         </div>
       </motion.div>
     )
-  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage, venueSurchargeAmount, venueSurcharge])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage, venueSurchargeAmount, venueSurcharge, extraHourRate])
 
   // ═════════════════════════════════════════════════════════
   // STEP RENDERERS
@@ -800,12 +808,12 @@ export function CreateReservationForm({
 
       {durationHours > 0 && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > STANDARD_HOURS ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'}`}
+          className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > standardHours ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'}`}
         >
-          {durationHours > STANDARD_HOURS && <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-          <span className={`text-sm ${durationHours > STANDARD_HOURS ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}`}>
+          {durationHours > standardHours && <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+          <span className={`text-sm ${durationHours > standardHours ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}`}>
             Czas trwania: {durationHours}h
-            {durationHours > STANDARD_HOURS && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
+            {durationHours > standardHours && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
           </span>
         </motion.div>
       )}
@@ -1312,8 +1320,8 @@ export function CreateReservationForm({
             </p>
           )}
           {durationHours > 0 && (
-            <p className={`text-xs ${durationHours > STANDARD_HOURS ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-neutral-500 dark:text-neutral-400'}`}>
-              {durationHours}h{durationHours > STANDARD_HOURS && ` (w tym ${extraHours}h dodatkowych)`}
+            <p className={`text-xs ${durationHours > standardHours ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-neutral-500 dark:text-neutral-400'}`}>
+              {durationHours}h{durationHours > standardHours && ` (w tym ${extraHours}h dodatkowych)`}
             </p>
           )}
           {venueSurchargeAmount > 0 && (
@@ -1347,7 +1355,8 @@ export function CreateReservationForm({
                 <>
                   <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.firstName} {selectedClient.lastName}</p>
                   <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
-                    {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                    {selectedClient.phone && <span>{selectedClient.phone}</span>
+                    }
                     {selectedClient.email && <span>{selectedClient.email}</span>}
                   </div>
                 </>

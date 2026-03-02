@@ -10,8 +10,8 @@ import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { calculateTotalPrice } from './reservation.utils';
 
-const STANDARD_HOURS = 6;
-const DEFAULT_EXTRA_HOUR_RATE = 500;
+export const STANDARD_HOURS = 6;
+export const DEFAULT_EXTRA_HOUR_RATE = 500;
 
 export interface ReservationPriceBreakdown {
   menuPrice: number;
@@ -26,19 +26,21 @@ export interface ReservationPriceBreakdown {
 
 /**
  * Calculate extra hours cost from event start/end times.
- * Standard included time is 6 hours; each extra hour costs extraHourRate.
+ * Standard included time comes from eventType.standardHours (default 6h);
+ * each extra hour costs eventType.extraHourRate (default 500 PLN).
  * Mirrors frontend logic in ReservationFinancialSummary.tsx.
  */
-function calculateExtraHoursCost(
+export function calculateExtraHoursCost(
   startDateTime: Date | null,
   endDateTime: Date | null,
-  extraHourRate: number = DEFAULT_EXTRA_HOUR_RATE
+  extraHourRate: number = DEFAULT_EXTRA_HOUR_RATE,
+  standardHours: number = STANDARD_HOURS
 ): number {
   if (!startDateTime || !endDateTime) return 0;
   const durationMs = endDateTime.getTime() - startDateTime.getTime();
   if (durationMs <= 0) return 0;
   const durationHours = durationMs / (1000 * 60 * 60);
-  const extraHours = Math.max(0, Math.ceil(durationHours - STANDARD_HOURS));
+  const extraHours = Math.max(0, Math.ceil(durationHours - standardHours));
   return extraHours * extraHourRate;
 }
 
@@ -53,6 +55,9 @@ export async function computeReservationBasePrice(
     where: { id: reservationId },
     include: {
       menuSnapshot: true,
+      eventType: {
+        select: { standardHours: true, extraHourRate: true },
+      },
       extras: {
         where: { status: { not: 'CANCELLED' } },
         include: {
@@ -90,10 +95,19 @@ export async function computeReservationBasePrice(
   // 3. Venue surcharge
   const surcharge = Number((reservation as any).venueSurcharge) || 0;
 
-  // 4. Extra hours cost
+  // 4. Extra hours cost — per-event-type overrides
+  const etStandardHours = reservation.eventType?.standardHours ?? STANDARD_HOURS;
+  const rawRate = reservation.eventType?.extraHourRate;
+  const etExtraHourRate =
+    rawRate === null || rawRate === undefined
+      ? DEFAULT_EXTRA_HOUR_RATE
+      : Number(rawRate);
+
   const extraHoursCost = calculateExtraHoursCost(
     reservation.startDateTime,
-    reservation.endDateTime
+    reservation.endDateTime,
+    etExtraHourRate,
+    etStandardHours
   );
 
   // 5. Base price before discount (includes extra hours)
@@ -150,6 +164,9 @@ export async function recalculateReservationTotalPrice(
   if (breakdown.hasDiscount) {
     updateData.priceBeforeDiscount = breakdown.basePrice;
     updateData.discountAmount = breakdown.discountAmount;
+  } else {
+    updateData.priceBeforeDiscount = null;
+    updateData.discountAmount = null;
   }
 
   await prisma.reservation.update({
