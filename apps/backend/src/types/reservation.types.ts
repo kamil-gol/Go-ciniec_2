@@ -103,6 +103,7 @@ export interface ReservationFilters {
   status?: ReservationStatus;
   hallId?: string;
   clientId?: string;
+  eventTypeId?: string;
   dateFrom?: string;
   dateTo?: string;
   archived?: boolean;
