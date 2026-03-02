@@ -191,7 +191,7 @@ describe('ReservationMenuService', () => {
         dishSelections: [
           { categoryId: 'cat-001', dishes: [] }, // 0 selected, min is 1
         ],
-      })).rejects.toThrow(/Menu selection validation failed.*requires minimum 1/);
+      })).rejects.toThrow(/Błąd walidacji wyboru menu.*minimum 1/);
     });
   });
 
