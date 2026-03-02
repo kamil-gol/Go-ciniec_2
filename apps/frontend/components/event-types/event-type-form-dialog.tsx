@@ -76,7 +76,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
     e.preventDefault()
 
     if (!name.trim()) {
-      toast({ title: 'B\u0142\u0105d', description: 'Nazwa typu jest wymagana', variant: 'destructive' })
+      toast({ title: 'Błąd', description: 'Nazwa typu jest wymagana', variant: 'destructive' })
       return
     }
 
@@ -93,7 +93,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           extraHourRate,
         }
         await updateEventType(eventType.id, payload)
-        toast({ title: 'Zaktualizowano', description: `Typ "${name}" zosta\u0142 zaktualizowany` })
+        toast({ title: 'Zaktualizowano', description: `Typ "${name}" został zaktualizowany` })
       } else {
         const payload: CreateEventTypeData = {
           name: name.trim(),
@@ -104,14 +104,14 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           extraHourRate,
         }
         await createEventType(payload)
-        toast({ title: 'Utworzono', description: `Typ "${name}" zosta\u0142 utworzony` })
+        toast({ title: 'Utworzono', description: `Typ "${name}" został utworzony` })
       }
 
       onOpenChange(false)
       onSuccess()
     } catch (error: any) {
-      const msg = error?.response?.data?.message || error?.message || 'Wyst\u0105pi\u0142 b\u0142\u0105d'
-      toast({ title: 'B\u0142\u0105d', description: msg, variant: 'destructive' })
+      const msg = error?.response?.data?.message || error?.message || 'Wystąpił błąd'
+      toast({ title: 'Błąd', description: msg, variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -125,8 +125,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
             <DialogTitle>{isEditing ? 'Edytuj typ wydarzenia' : 'Nowy typ wydarzenia'}</DialogTitle>
             <DialogDescription>
               {isEditing
-                ? 'Zmie\u0144 parametry typu wydarzenia'
-                : 'Utw\u00f3rz nowy typ wydarzenia dla systemu rezerwacji'
+                ? 'Zmień parametry typu wydarzenia'
+                : 'Utwórz nowy typ wydarzenia dla systemu rezerwacji'
               }
             </DialogDescription>
           </DialogHeader>
@@ -150,7 +150,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
               <Label htmlFor="description">Opis</Label>
               <Textarea
                 id="description"
-                placeholder="Kr\u00f3tki opis typu wydarzenia..."
+                placeholder="Krótki opis typu wydarzenia..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -197,13 +197,13 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
                 className="h-11"
               />
               <p className="text-xs text-neutral-500">
-                Ile godzin jest wliczonych w cen\u0119 podstawow\u0105 (domy\u015blnie 6h)
+                Ile godzin jest wliczonych w cenę podstawową (domyślnie 6h)
               </p>
             </div>
 
             {/* Extra Hour Rate */}
             <div className="space-y-2">
-              <Label htmlFor="extraHourRate">Stawka za dodatkow\u0105 godzin\u0119 (z\u0142)</Label>
+              <Label htmlFor="extraHourRate">Stawka za dodatkową godzinę (zł)</Label>
               <Input
                 id="extraHourRate"
                 type="number"
@@ -214,7 +214,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
                 className="h-11"
               />
               <p className="text-xs text-neutral-500">
-                Koszt ka\u017cdej godziny powy\u017cej standardu (domy\u015blnie 500 z\u0142/h)
+                Koszt każdej godziny powyżej standardu (domyślnie 500 zł/h)
               </p>
             </div>
 
@@ -223,7 +223,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
               <div className="space-y-0.5">
                 <Label htmlFor="isActive">Aktywny</Label>
                 <p className="text-sm text-neutral-500">
-                  Nieaktywne typy nie s\u0105 widoczne przy tworzeniu rezerwacji
+                  Nieaktywne typy nie są widoczne przy tworzeniu rezerwacji
                 </p>
               </div>
               <Switch
@@ -240,7 +240,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
             </Button>
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Zapisz zmiany' : 'Utw\u00f3rz typ'}
+              {isEditing ? 'Zapisz zmiany' : 'Utwórz typ'}
             </Button>
           </DialogFooter>
         </form>
