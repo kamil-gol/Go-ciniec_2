@@ -180,6 +180,11 @@ model EventType {
   description String?  @db.Text
   color       String?  @db.VarChar(20)
   isActive    Boolean  @default(true)
+
+  // Per-event-type extra hours pricing (null = use global defaults)
+  standardHours  Int?                          // null → global default (6h)
+  extraHourRate  Decimal?  @db.Decimal(10, 2)  // null → global default (500 zł), 0 → exempt
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
