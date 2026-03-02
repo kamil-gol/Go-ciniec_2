@@ -107,9 +107,9 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
-  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
-  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.serviceItem.findMany.mockResolvedValue([]);
   mockPrisma.reservationExtra.findMany.mockResolvedValue([]);
   service = new ReservationService();
@@ -216,7 +216,7 @@ describe('ReservationService', () => {
       expect(call.data.status).toBe('CONFIRMED');
     });
 
-    it('should transition PENDING → CANCELLED (via transaction)', async () => {
+    it('should transition PENDING → CANCELLED (via transaction, sets ARCHIVED)', async () => {
       await service.updateStatus('res-uuid-001', {
         status: ReservationStatus.CANCELLED,
         reason: 'Klient zrezygnował',
@@ -224,6 +224,10 @@ describe('ReservationService', () => {
 
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
       expect(txMock.reservation.update).toHaveBeenCalledTimes(1);
+      // #172: cancel sets status=ARCHIVED (instant archive)
+      const updateCall = txMock.reservation.update.mock.calls[0][0];
+      expect(updateCall.data.status).toBe('ARCHIVED');
+      expect(updateCall.data.archivedAt).toBeDefined();
     });
 
     it('should throw on invalid transition PENDING → COMPLETED', async () => {
@@ -275,14 +279,15 @@ describe('ReservationService', () => {
   // ══════════════════════════════════════════════════════════════
   describe('cancelReservation()', () => {
 
-    it('should cancel reservation and set archivedAt', async () => {
+    it('should cancel reservation and set archivedAt (instant archive #172)', async () => {
       await service.cancelReservation('res-uuid-001', TEST_USER_ID, 'Klient zrezygnował');
 
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
       expect(txMock.reservation.update).toHaveBeenCalledTimes(1);
 
       const updateCall = txMock.reservation.update.mock.calls[0][0];
-      expect(updateCall.data.status).toBe('CANCELLED');
+      // #172: cancelReservation sets status=ARCHIVED (instant archive)
+      expect(updateCall.data.status).toBe('ARCHIVED');
       expect(updateCall.data.archivedAt).toBeDefined();
     });
 
@@ -318,8 +323,8 @@ describe('ReservationService', () => {
       const updateCall = txMock.deposit.updateMany.mock.calls[0][0];
       expect(updateCall.data.status).toBe('CANCELLED');
 
-      // History entry for each deposit
-      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(3); // 1 cancel + 2 deposits
+      // #172: 1 CANCELLED entry + 2 DEPOSIT_CANCEL entries + 1 AUTO_ARCHIVED entry = 4 total
+      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(4);
     });
   });
 
