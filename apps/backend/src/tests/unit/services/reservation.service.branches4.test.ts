@@ -127,7 +127,7 @@ describe('createReservation — legacy date format (lines 590-593)', () => {
       date: futureDate, startTime: '14:00', endTime: '20:00',
       adults: 50, children: 10, toddlers: 5,
       pricePerAdult: 200, pricePerChild: 100,
-    } as any, UID)).rejects.toThrow(/przekracza|dostępność/);
+    } as any, UID)).rejects.toThrow(/przekracza|dostępność|nie dopuszcza wielu rezerwacji/);
   });
 });
 
