@@ -5,7 +5,7 @@
 
 import { apiClient } from '@/lib/api-client';
 
-// ─── Types ───────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────
 
 export interface EventType {
   id: string;
@@ -13,8 +13,8 @@ export interface EventType {
   description: string | null;
   color: string | null;
   isActive: boolean;
-  standardHours: number | null;
-  extraHourRate: number | null;
+  standardHours: number;
+  extraHourRate: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +31,8 @@ export interface EventTypeStats {
   name: string;
   color: string | null;
   isActive: boolean;
+  standardHours: number;
+  extraHourRate: number;
   reservationCount: number;
   menuTemplateCount: number;
 }
@@ -49,8 +51,8 @@ export interface UpdateEventTypeData {
   description?: string | null;
   color?: string | null;
   isActive?: boolean;
-  standardHours?: number | null;
-  extraHourRate?: number | null;
+  standardHours?: number;
+  extraHourRate?: number;
 }
 
 interface ApiResponse<T> {
@@ -60,7 +62,7 @@ interface ApiResponse<T> {
   count?: number;
 }
 
-// ─── API Functions ───────────────────────────────────────────
+// ─── API Functions ───────────────────────────────────────
 
 /**
  * Get all event types

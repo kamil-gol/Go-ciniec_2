@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Check, Clock } from 'lucide-react'
+import { Loader2, Check } from 'lucide-react'
 import {
   createEventType,
   updateEventType,
@@ -46,8 +46,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
   const [description, setDescription] = useState('')
   const [color, setColor] = useState<string | null>(null)
   const [isActive, setIsActive] = useState(true)
-  const [standardHours, setStandardHours] = useState<string>('')
-  const [extraHourRate, setExtraHourRate] = useState<string>('')
+  const [standardHours, setStandardHours] = useState(6)
+  const [extraHourRate, setExtraHourRate] = useState(500)
 
   const isEditing = !!eventType
 
@@ -58,15 +58,15 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
         setDescription(eventType.description || '')
         setColor(eventType.color)
         setIsActive(eventType.isActive)
-        setStandardHours(eventType.standardHours != null ? String(eventType.standardHours) : '')
-        setExtraHourRate(eventType.extraHourRate != null ? String(eventType.extraHourRate) : '')
+        setStandardHours(eventType.standardHours ?? 6)
+        setExtraHourRate(eventType.extraHourRate ?? 500)
       } else {
         setName('')
         setDescription('')
         setColor(null)
         setIsActive(true)
-        setStandardHours('')
-        setExtraHourRate('')
+        setStandardHours(6)
+        setExtraHourRate(500)
       }
       getPredefinedColors().then(setColors).catch(() => setColors(DEFAULT_COLORS))
     }
@@ -89,8 +89,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           description: description.trim() || null,
           color: color,
           isActive,
-          standardHours: standardHours !== '' ? Number(standardHours) : null,
-          extraHourRate: extraHourRate !== '' ? Number(extraHourRate) : null,
+          standardHours,
+          extraHourRate,
         }
         await updateEventType(eventType.id, payload)
         toast({ title: 'Zaktualizowano', description: `Typ "${name}" zosta\u0142 zaktualizowany` })
@@ -100,8 +100,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           description: description.trim() || undefined,
           color: color || undefined,
           isActive,
-          standardHours: standardHours !== '' ? Number(standardHours) : undefined,
-          extraHourRate: extraHourRate !== '' ? Number(extraHourRate) : undefined,
+          standardHours,
+          extraHourRate,
         }
         await createEventType(payload)
         toast({ title: 'Utworzono', description: `Typ "${name}" zosta\u0142 utworzony` })
@@ -183,43 +183,39 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
               )}
             </div>
 
-            {/* Extra Hours Settings */}
-            <div className="space-y-3 rounded-lg border p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-sm font-semibold">Dodatkowe godziny</Label>
-              </div>
-              <p className="text-xs text-muted-foreground -mt-1">
-                Puste = domy\u015blne (6h w cenie, 500 z\u0142/godz.). Stawka 0 = brak op\u0142at za dodatkowe godziny.
+            {/* Standard Hours */}
+            <div className="space-y-2">
+              <Label htmlFor="standardHours">Godziny w cenie (standard)</Label>
+              <Input
+                id="standardHours"
+                type="number"
+                min={1}
+                max={24}
+                step={1}
+                value={standardHours}
+                onChange={(e) => setStandardHours(Number(e.target.value) || 6)}
+                className="h-11"
+              />
+              <p className="text-xs text-neutral-500">
+                Ile godzin jest wliczonych w cen\u0119 podstawow\u0105 (domy\u015blnie 6h)
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="standardHours" className="text-xs">Godziny w cenie</Label>
-                  <Input
-                    id="standardHours"
-                    type="number"
-                    min={0}
-                    max={24}
-                    placeholder="6"
-                    value={standardHours}
-                    onChange={(e) => setStandardHours(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="extraHourRate" className="text-xs">Stawka z\u0142/godz.</Label>
-                  <Input
-                    id="extraHourRate"
-                    type="number"
-                    min={0}
-                    step={50}
-                    placeholder="500"
-                    value={extraHourRate}
-                    onChange={(e) => setExtraHourRate(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-              </div>
+            </div>
+
+            {/* Extra Hour Rate */}
+            <div className="space-y-2">
+              <Label htmlFor="extraHourRate">Stawka za dodatkow\u0105 godzin\u0119 (z\u0142)</Label>
+              <Input
+                id="extraHourRate"
+                type="number"
+                min={0}
+                step={50}
+                value={extraHourRate}
+                onChange={(e) => setExtraHourRate(Number(e.target.value) || 0)}
+                className="h-11"
+              />
+              <p className="text-xs text-neutral-500">
+                Koszt ka\u017cdej godziny powy\u017cej standardu (domy\u015blnie 500 z\u0142/h)
+              </p>
             </div>
 
             {/* Is Active */}

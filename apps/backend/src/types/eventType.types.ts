@@ -8,8 +8,8 @@ export interface CreateEventTypeDTO {
   description?: string;
   color?: string;
   isActive?: boolean;
-  standardHours?: number | null;
-  extraHourRate?: number | null;
+  standardHours?: number;
+  extraHourRate?: number;
 }
 
 export interface UpdateEventTypeDTO {
@@ -17,8 +17,8 @@ export interface UpdateEventTypeDTO {
   description?: string | null;
   color?: string | null;
   isActive?: boolean;
-  standardHours?: number | null;
-  extraHourRate?: number | null;
+  standardHours?: number;
+  extraHourRate?: number;
 }
 
 export interface EventTypeResponse {
@@ -27,8 +27,8 @@ export interface EventTypeResponse {
   description: string | null;
   color: string | null;
   isActive: boolean;
-  standardHours: number | null;
-  extraHourRate: number | null;
+  standardHours: number;
+  extraHourRate: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +38,8 @@ export interface EventTypeStatsResponse {
   name: string;
   color: string | null;
   isActive: boolean;
+  standardHours: number;
+  extraHourRate: number;
   reservationCount: number;
   menuTemplateCount: number;
 }
