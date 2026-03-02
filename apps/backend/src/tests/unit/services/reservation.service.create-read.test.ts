@@ -206,13 +206,13 @@ describe('ReservationService', () => {
       // Mock capacity check to return overlap
       mockPrisma.reservation.findMany.mockResolvedValue([{ id: 'existing-res', guests: 60 }]);
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow(/przekracza|dostępność|zarezerwowana/);
+        .rejects.toThrow(/przekracza|dostępność|nie dopuszcza wielu rezerwacji/);
     });
 
     it('should throw when all guest counts are zero', async () => {
       const dto = { ...VALID_CREATE_DTO, adults: 0, children: 0, toddlers: 0 };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow(/wymagana.*jedna osoba|At least one person/);
+        .rejects.toThrow(/co najmniej jedna osoba/);
     });
 
     it('should apply percentage discount correctly', async () => {
