@@ -10,7 +10,7 @@ import { CreateEventTypeDTO, UpdateEventTypeDTO } from '../types/eventType.types
 
 export class EventTypeController {
   async createEventType(req: Request, res: Response): Promise<void> {
-    const { name, description, color, isActive } = req.body;
+    const { name, description, color, isActive, standardHours, extraHourRate } = req.body;
     const userId = (req as any).user?.id;
 
     if (!userId) {
@@ -21,7 +21,7 @@ export class EventTypeController {
       throw AppError.badRequest('Event type name is required');
     }
 
-    const data: CreateEventTypeDTO = { name, description, color, isActive };
+    const data: CreateEventTypeDTO = { name, description, color, isActive, standardHours, extraHourRate };
     const eventType = await eventTypeService.createEventType(data, userId);
 
     res.status(201).json({
@@ -56,7 +56,7 @@ export class EventTypeController {
 
   async updateEventType(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const { name, description, color, isActive } = req.body;
+    const { name, description, color, isActive, standardHours, extraHourRate } = req.body;
     const userId = (req as any).user?.id;
 
     if (!userId) {
@@ -68,6 +68,8 @@ export class EventTypeController {
     if (description !== undefined) data.description = description;
     if (color !== undefined) data.color = color;
     if (isActive !== undefined) data.isActive = isActive;
+    if (standardHours !== undefined) data.standardHours = standardHours;
+    if (extraHourRate !== undefined) data.extraHourRate = extraHourRate;
 
     const eventType = await eventTypeService.updateEventType(id, data, userId);
 
