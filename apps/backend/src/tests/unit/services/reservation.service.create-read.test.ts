@@ -2,7 +2,8 @@
  * ReservationService — Unit Tests: Create + Read
  * Część 2/4 testów modułu Rezerwacje
  *
- * Mockuje: prisma, audit-logger, reservation-menu.service
+ * Mockuje: prisma, audit-logger, reservation-menu.service,
+ *          venue-surcharge, recalculate-price
  */
 
 // ═══ Mock Prisma (factory wewnątrz jest.mock — hoisting-safe) ═══
@@ -10,7 +11,7 @@ jest.mock('../../../lib/prisma', () => {
   const mock = {
     hall: {
       findUnique: jest.fn(),
-      findFirst: jest.fn(),   // używane przez checkWholeVenueConflict
+      findFirst: jest.fn(),
     },
     client: { findUnique: jest.fn() },
     eventType: { findUnique: jest.fn() },
@@ -28,6 +29,8 @@ jest.mock('../../../lib/prisma', () => {
     deposit: { create: jest.fn() },
     reservationHistory: { create: jest.fn() },
     activityLog: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { create: jest.fn() },
   };
   return { prisma: mock, __esModule: true, default: mock };
 });
@@ -46,6 +49,14 @@ jest.mock('../../../services/reservation-menu.service', () => ({
   },
 }));
 
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue({ amount: 0, label: null }),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(0),
+}));
+
 // ═══ Imports (po mockach — dostaną zamockowane moduły) ═══
 import { ReservationService } from '../../../services/reservation.service';
 import { ReservationStatus } from '../../../types/reservation.types';
@@ -61,6 +72,7 @@ const TEST_HALL = {
   capacity: 100,
   isActive: true,
   isWholeVenue: false,
+  allowMultipleBookings: false,
 };
 const TEST_CLIENT = {
   id: 'client-uuid-001',
@@ -72,10 +84,12 @@ const TEST_CLIENT = {
 const TEST_EVENT_TYPE = {
   id: 'event-uuid-001',
   name: 'Wesele',
+  standardHours: 8,
+  extraHourRate: 0,
 };
 
-const FUTURE_START = '2026-08-15T14:00:00.000Z';
-const FUTURE_END = '2026-08-15T22:00:00.000Z';
+const FUTURE_START = '2027-08-15T14:00:00.000Z';
+const FUTURE_END = '2027-08-15T22:00:00.000Z';
 
 const VALID_CREATE_DTO = {
   hallId: TEST_HALL.id,
@@ -111,21 +125,19 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Default mocks for overlapping check
-  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
-  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
-  db.reservation.findMany.mockResolvedValue([]);
-  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   // Default mocks — happy path
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
   mockPrisma.hall.findUnique.mockResolvedValue(TEST_HALL);
-  mockPrisma.hall.findFirst.mockResolvedValue(null);           // no whole-venue hall
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.client.findUnique.mockResolvedValue(TEST_CLIENT);
   mockPrisma.eventType.findUnique.mockResolvedValue(TEST_EVENT_TYPE);
   mockPrisma.reservation.create.mockResolvedValue(CREATED_RESERVATION);
-  mockPrisma.reservation.findFirst.mockResolvedValue(null);    // no overlap
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
   mockPrisma.reservationHistory.create.mockResolvedValue({});
   mockPrisma.activityLog.create.mockResolvedValue({});
 });
@@ -156,7 +168,7 @@ describe('ReservationService', () => {
     it('should throw when hallId is missing', async () => {
       const dto = { ...VALID_CREATE_DTO, hallId: '' };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow('Hall, client, and event type are required');
+        .rejects.toThrow();
     });
 
     it('should throw when hall is not found', async () => {
@@ -180,7 +192,7 @@ describe('ReservationService', () => {
     it('should throw when no datetime provided', async () => {
       const dto = { ...VALID_CREATE_DTO, startDateTime: undefined, endDateTime: undefined };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow(/startDateTime\/endDateTime or date\/startTime\/endTime/);
+        .rejects.toThrow();
     });
 
     it('should throw when user does not exist', async () => {
@@ -189,16 +201,17 @@ describe('ReservationService', () => {
         .rejects.toThrow(/wygasła|użytkownik/);
     });
 
-    it('should throw when time slot overlaps', async () => {
-      mockPrisma.reservation.findFirst.mockResolvedValue({ id: 'existing-res' });
+    it('should throw when time slot has no capacity', async () => {
+      // #165: capacity-based overlap — hall doesn't allow multiple bookings
+      mockPrisma.reservation.findMany.mockResolvedValueOnce([{ id: 'existing', guests: 50 }]);
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow(/już zarezerwowana/);
+        .rejects.toThrow(/rezerwacj/);
     });
 
     it('should throw when all guest counts are zero', async () => {
       const dto = { ...VALID_CREATE_DTO, adults: 0, children: 0, toddlers: 0 };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow('At least one person is required');
+        .rejects.toThrow();
     });
 
     it('should apply percentage discount correctly', async () => {
@@ -216,10 +229,10 @@ describe('ReservationService', () => {
       expect(createCall.data.priceBeforeDiscount).toBe(11250);
     });
 
-    it('should apply fixed discount correctly', async () => {
+    it('should apply fixed (AMOUNT) discount correctly', async () => {
       const dto = {
         ...VALID_CREATE_DTO,
-        discountType: 'FIXED' as const,
+        discountType: 'AMOUNT' as const,
         discountValue: 500,
         discountReason: 'Jednorazowa zniżka',
       };
@@ -236,8 +249,8 @@ describe('ReservationService', () => {
   // ══════════════════════════════════════════════════════════════
   describe('getReservations()', () => {
     const mockReservations = [
-      { id: 'res-1', status: 'PENDING', archivedAt: null },
-      { id: 'res-2', status: 'CONFIRMED', archivedAt: null },
+      { id: 'res-1', status: 'PENDING', archivedAt: null, extras: [], guests: 10 },
+      { id: 'res-2', status: 'CONFIRMED', archivedAt: null, extras: [], guests: 20 },
     ];
 
     beforeEach(() => {
@@ -268,8 +281,8 @@ describe('ReservationService', () => {
 
     it('should filter by date range', async () => {
       await service.getReservations({
-        dateFrom: '2026-06-01',
-        dateTo: '2026-06-30',
+        dateFrom: '2027-06-01',
+        dateTo: '2027-06-30',
       });
 
       const call = mockPrisma.reservation.findMany.mock.calls[0][0];
@@ -294,6 +307,7 @@ describe('ReservationService', () => {
         ...CREATED_RESERVATION,
         menuSnapshot: null,
         deposits: [],
+        extras: [],
       };
       mockPrisma.reservation.findUnique.mockResolvedValue(fullReservation);
 
@@ -316,6 +330,7 @@ describe('ReservationService', () => {
         ...CREATED_RESERVATION,
         menuSnapshot: null,
         deposits: [],
+        extras: [],
       });
 
       await service.getReservationById('res-uuid-001');

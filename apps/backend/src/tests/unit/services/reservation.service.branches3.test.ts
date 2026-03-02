@@ -28,6 +28,8 @@ jest.mock('../../../lib/prisma', () => {
     },
     deposit: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { create: jest.fn() },
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
   };
   return { prisma: mockPrisma };
@@ -51,6 +53,14 @@ jest.mock('../../../services/reservation-menu.service', () => ({
   default: { recalculateForGuestChange: jest.fn() },
 }));
 
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue({ amount: 0, label: null }),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(0),
+}));
+
 import { ReservationService } from '../../../services/reservation.service';
 import { prisma } from '../../../lib/prisma';
 
@@ -60,14 +70,9 @@ const UID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
-  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
-  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
-  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
-  // Default mocks for overlapping check
-  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
-  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
-  db.reservation.findMany.mockResolvedValue([]);
-  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
@@ -99,9 +104,9 @@ describe('ReservationService — client not found', () => {
 
 describe('ReservationService — menuPackage guest limits', () => {
   const setup = () => {
-    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 500 });
+    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 500, isWholeVenue: false, allowMultipleBookings: false });
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1' });
-    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wedding' });
+    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wedding', standardHours: 8, extraHourRate: 0 });
     mockPrisma.reservation.findFirst.mockResolvedValue(null);
     mockPrisma.hall.findFirst.mockResolvedValue(null);
   };
@@ -135,9 +140,9 @@ describe('ReservationService — menuPackage guest limits', () => {
 
 describe('ReservationService — discount edge cases', () => {
   const setup = () => {
-    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200 });
+    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false, allowMultipleBookings: false });
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'Jan', lastName: 'K' });
-    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wedding' });
+    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wedding', standardHours: 8, extraHourRate: 0 });
     mockPrisma.reservation.findFirst.mockResolvedValue(null);
     mockPrisma.hall.findFirst.mockResolvedValue(null);
   };

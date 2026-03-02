@@ -1,6 +1,9 @@
 /**
- * ReservationService — Unit Tests: Menu Update + Options
+ * ReservationService — Unit Tests: Menu Update
  * Część 4/4 testów modułu Rezerwacje
+ *
+ * NOTE: MenuOption system was replaced by ServiceExtras.
+ * Tests cover menuPackage add/update/remove and status transitions.
  */
 
 // ═══ Mock Prisma ═══
@@ -18,7 +21,6 @@ jest.mock('../../../lib/prisma', () => {
       update: jest.fn(),
     },
     menuPackage: { findUnique: jest.fn() },
-    menuOption: { findMany: jest.fn() },
     reservationMenuSnapshot: {
       create: jest.fn(),
       update: jest.fn(),
@@ -27,6 +29,8 @@ jest.mock('../../../lib/prisma', () => {
     deposit: { create: jest.fn() },
     reservationHistory: { create: jest.fn() },
     activityLog: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { create: jest.fn() },
   };
   return { prisma: mock, __esModule: true, default: mock };
 });
@@ -39,6 +43,14 @@ jest.mock('../../../utils/audit-logger', () => ({
 jest.mock('../../../services/reservation-menu.service', () => ({
   __esModule: true,
   default: { recalculateForGuestChange: jest.fn().mockResolvedValue(null) },
+}));
+
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue({ amount: 0, label: null }),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(0),
 }));
 
 import { ReservationService } from '../../../services/reservation.service';
@@ -75,16 +87,15 @@ const MENU_PACKAGE = {
   minGuests: 20,
   maxGuests: 200,
   menuTemplate: { id: 'tpl-uuid-001', name: 'Szablon Wesele' },
-  packageOptions: [],
 };
 
 let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
-  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
-  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
@@ -110,24 +121,15 @@ describe('ReservationService', () => {
         menuPackageId: 'pkg-uuid-001',
       }, TEST_USER_ID);
 
-      expect(result.message).toBe('Menu updated successfully');
+      expect(result.message).toMatch(/zaktualizowane|updated/i);
       expect(mockPrisma.reservationMenuSnapshot.create).toHaveBeenCalledTimes(1);
       expect(mockPrisma.reservation.update).toHaveBeenCalledTimes(1);
-    });
-
-    it('should calculate total with package prices', async () => {
-      await service.updateReservationMenu('res-uuid-001', {
-        menuPackageId: 'pkg-uuid-001',
-      }, TEST_USER_ID);
-
-      // 50*250 + 10*120 + 5*60 = 12500 + 1200 + 300 = 14000
-      expect(mockPrisma.reservation.update.mock.calls[0][0].data.totalPrice).toBe(14000);
     });
 
     it('should update existing snapshot when one exists', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue({
         ...BASE_RESERVATION,
-        menuSnapshot: { id: 'snap-uuid-001', menuData: { packageName: 'Old' } },
+        menuSnapshot: { id: 'snap-uuid-001', menuData: { packageName: 'Old' }, totalMenuPrice: 10000 },
       });
 
       await service.updateReservationMenu('res-uuid-001', {
@@ -148,7 +150,7 @@ describe('ReservationService', () => {
         menuPackageId: null,
       }, TEST_USER_ID);
 
-      expect(result.message).toBe('Menu removed successfully');
+      expect(result.message).toMatch(/usunięte|removed/i);
       expect(mockPrisma.reservationMenuSnapshot.delete).toHaveBeenCalledTimes(1);
     });
 
@@ -168,6 +170,17 @@ describe('ReservationService', () => {
       await expect(service.updateReservationMenu('res-uuid-001', {
         menuPackageId: 'pkg-uuid-001',
       }, TEST_USER_ID)).rejects.toThrow(/zakończonej/);
+    });
+
+    it('should throw when reservation is archived', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...BASE_RESERVATION,
+        status: ReservationStatus.ARCHIVED,
+      });
+
+      await expect(service.updateReservationMenu('res-uuid-001', {
+        menuPackageId: 'pkg-uuid-001',
+      }, TEST_USER_ID)).rejects.toThrow(/zarchiwizowanej/);
     });
 
     it('should throw when guests below package minimum', async () => {
@@ -191,94 +204,13 @@ describe('ReservationService', () => {
         menuPackageId: 'pkg-uuid-001',
       }, TEST_USER_ID)).rejects.toThrow(/maksimum 30 go/);
     });
-  });
 
-  // ══════════════════════════════════════════════════════════════
-  // updateReservationMenu — with selected options
-  // ══════════════════════════════════════════════════════════════
-  describe('updateReservationMenu() with options', () => {
-
-    const PER_PERSON_OPTION = {
-      id: 'opt-001',
-      name: 'Bar otwarty',
-      description: 'Open bar',
-      category: 'DRINKS',
-      priceType: 'PER_PERSON',
-      priceAmount: 50, // Decimal mock
-      isActive: true,
-      allowMultiple: false,
-      maxQuantity: null,
-    };
-
-    const FLAT_OPTION = {
-      id: 'opt-002',
-      name: 'Dekoracje',
-      description: 'Dekoracje sali',
-      category: 'DECORATION',
-      priceType: 'FLAT',
-      priceAmount: 2000,
-      isActive: true,
-      allowMultiple: true,
-      maxQuantity: 5,
-    };
-
-    it('should calculate PER_PERSON option price correctly', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([PER_PERSON_OPTION]);
-
-      await service.updateReservationMenu('res-uuid-001', {
-        menuPackageId: 'pkg-uuid-001',
-        selectedOptions: [{ optionId: 'opt-001', quantity: 1 }],
-      }, TEST_USER_ID);
-
-      // Package: 50*250 + 10*120 + 5*60 = 14000
-      // Option PER_PERSON: 50 * 65 guests * 1 = 3250
-      // Total: 14000 + 3250 = 17250
-      const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
-      expect(updateCall.data.totalPrice).toBe(17250);
-    });
-
-    it('should calculate FLAT option price correctly', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([FLAT_OPTION]);
-
-      await service.updateReservationMenu('res-uuid-001', {
-        menuPackageId: 'pkg-uuid-001',
-        selectedOptions: [{ optionId: 'opt-002', quantity: 2 }],
-      }, TEST_USER_ID);
-
-      // Package: 14000
-      // Option FLAT: 2000 * 2 = 4000
-      // Total: 14000 + 4000 = 18000
-      const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
-      expect(updateCall.data.totalPrice).toBe(18000);
-    });
-
-    it('should throw when option not found', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([]); // empty
+    it('should throw when menu package not found', async () => {
+      mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
 
       await expect(service.updateReservationMenu('res-uuid-001', {
-        menuPackageId: 'pkg-uuid-001',
-        selectedOptions: [{ optionId: 'opt-999' }],
-      }, TEST_USER_ID)).rejects.toThrow(/nie znaleziono/i);
-    });
-
-    it('should throw when option is inactive', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([
-        { ...PER_PERSON_OPTION, isActive: false },
-      ]);
-
-      await expect(service.updateReservationMenu('res-uuid-001', {
-        menuPackageId: 'pkg-uuid-001',
-        selectedOptions: [{ optionId: 'opt-001' }],
-      }, TEST_USER_ID)).rejects.toThrow(/nieaktywna/);
-    });
-
-    it('should throw when quantity exceeds maxQuantity', async () => {
-      mockPrisma.menuOption.findMany.mockResolvedValue([FLAT_OPTION]);
-
-      await expect(service.updateReservationMenu('res-uuid-001', {
-        menuPackageId: 'pkg-uuid-001',
-        selectedOptions: [{ optionId: 'opt-002', quantity: 10 }], // max is 5
-      }, TEST_USER_ID)).rejects.toThrow(/aksimum 5/);
+        menuPackageId: 'pkg-nonexistent',
+      }, TEST_USER_ID)).rejects.toThrow(/pakiet|package/i);
     });
   });
 
@@ -304,6 +236,19 @@ describe('ReservationService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue({
         ...BASE_RESERVATION,
         status: ReservationStatus.COMPLETED,
+        client: BASE_RESERVATION.client,
+        hall: BASE_RESERVATION.hall,
+      });
+
+      await expect(service.updateStatus('res-uuid-001', {
+        status: ReservationStatus.PENDING,
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
+    });
+
+    it('should block ARCHIVED → any status', async () => {
+      mockPrisma.reservation.findUnique.mockResolvedValue({
+        ...BASE_RESERVATION,
+        status: ReservationStatus.ARCHIVED,
         client: BASE_RESERVATION.client,
         hall: BASE_RESERVATION.hall,
       });

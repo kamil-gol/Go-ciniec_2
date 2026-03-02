@@ -1,11 +1,11 @@
 /**
  * ReservationService — Branch coverage phase 4
  * Covers:
- *   - createReservation with legacy date format (lines 590-593)
- *   - createReservation with confirmationDeadline (lines 617-619)
- *   - createReservation with depositAmount/depositDueDate shorthand (lines 629-631)
- *   - updateReservationMenu on COMPLETED reservation (lines 677-682)
- *   - updateReservation date change triggers checkWholeVenueConflict with excludeId (line 1022)
+ *   - createReservation with legacy date format
+ *   - createReservation with confirmationDeadline
+ *   - createReservation with depositAmount/depositDueDate shorthand
+ *   - updateReservationMenu on COMPLETED reservation
+ *   - updateReservation date change triggers checkWholeVenueConflict with excludeId
  */
 jest.mock('../../../lib/prisma', () => {
   const mockPrisma: any = {
@@ -24,6 +24,8 @@ jest.mock('../../../lib/prisma', () => {
     },
     deposit: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { create: jest.fn() },
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
   };
   return { prisma: mockPrisma };
@@ -47,6 +49,14 @@ jest.mock('../../../services/reservation-menu.service', () => ({
   default: { recalculateForGuestChange: jest.fn() },
 }));
 
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue({ amount: 0, label: null }),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(0),
+}));
+
 import { ReservationService } from '../../../services/reservation.service';
 import { prisma } from '../../../lib/prisma';
 
@@ -56,14 +66,9 @@ const UID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
-  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
-  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
-  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
-  // Default mocks for overlapping check
-  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
-  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
-  db.reservation.findMany.mockResolvedValue([]);
-  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
@@ -74,11 +79,11 @@ const futureDate = (() => {
   return d.toISOString().split('T')[0]; // YYYY-MM-DD
 })();
 
-describe('createReservation — legacy date format (lines 590-593)', () => {
+describe('createReservation — legacy date format', () => {
   const setupCommon = () => {
-    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false });
+    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false, allowMultipleBookings: false });
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'Jan', lastName: 'K' });
-    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wedding' });
+    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Wedding', standardHours: 8, extraHourRate: 0 });
     mockPrisma.reservation.findFirst.mockResolvedValue(null);
     mockPrisma.hall.findFirst.mockResolvedValue(null); // no whole-venue hall
     mockPrisma.reservationHistory.create.mockResolvedValue({});
@@ -112,28 +117,28 @@ describe('createReservation — legacy date format (lines 590-593)', () => {
     } as any, UID)).rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
   });
 
-  it('should throw when legacy date has overlap', async () => {
+  it('should throw when legacy date has capacity conflict', async () => {
     setupCommon();
-    // First call = checkOverlap finds conflict
-    mockPrisma.reservation.findFirst.mockResolvedValueOnce({ id: 'existing' });
+    // #165: capacity-based — hall doesn't allow multiple bookings, overlap exists
+    mockPrisma.reservation.findMany.mockResolvedValueOnce([{ id: 'existing', guests: 50 }]);
     await expect(service.createReservation({
       hallId: 'h1', clientId: 'c1', eventTypeId: 'e1',
       date: futureDate, startTime: '14:00', endTime: '20:00',
       adults: 50, children: 10, toddlers: 5,
       pricePerAdult: 200, pricePerChild: 100,
-    } as any, UID)).rejects.toThrow('already booked');
+    } as any, UID)).rejects.toThrow(/rezerwacj/);
   });
 });
 
-describe('createReservation — confirmationDeadline (lines 617-619)', () => {
+describe('createReservation — confirmationDeadline', () => {
   it('should pass with valid confirmationDeadline', async () => {
     const future = new Date(Date.now() + 86400000 * 30).toISOString();
     const futureEnd = new Date(Date.now() + 86400000 * 30 + 3600000 * 4).toISOString();
     const deadline = new Date(Date.now() + 86400000 * 28).toISOString();
 
-    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false });
+    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false, allowMultipleBookings: false });
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'J', lastName: 'K' });
-    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Party' });
+    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Party', standardHours: 4, extraHourRate: 0 });
     mockPrisma.reservation.findFirst.mockResolvedValue(null);
     mockPrisma.hall.findFirst.mockResolvedValue(null);
     mockPrisma.reservationHistory.create.mockResolvedValue({});
@@ -155,15 +160,15 @@ describe('createReservation — confirmationDeadline (lines 617-619)', () => {
   });
 });
 
-describe('createReservation — depositAmount/depositDueDate shorthand (lines 629-631)', () => {
+describe('createReservation — depositAmount/depositDueDate shorthand', () => {
   it('should create deposit via shorthand fields', async () => {
     const future = new Date(Date.now() + 86400000 * 30).toISOString();
     const futureEnd = new Date(Date.now() + 86400000 * 30 + 3600000 * 4).toISOString();
     const depDue = new Date(Date.now() + 86400000 * 14).toISOString();
 
-    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false });
+    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200, isWholeVenue: false, allowMultipleBookings: false });
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'J', lastName: 'K' });
-    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Party' });
+    mockPrisma.eventType.findUnique.mockResolvedValue({ id: 'e1', name: 'Party', standardHours: 4, extraHourRate: 0 });
     mockPrisma.reservation.findFirst.mockResolvedValue(null);
     mockPrisma.hall.findFirst.mockResolvedValue(null);
     mockPrisma.reservationHistory.create.mockResolvedValue({});
@@ -190,7 +195,7 @@ describe('createReservation — depositAmount/depositDueDate shorthand (lines 62
   });
 });
 
-describe('updateReservationMenu — on COMPLETED reservation (lines 677-682)', () => {
+describe('updateReservationMenu — on COMPLETED reservation', () => {
   it('should throw when reservation is COMPLETED', async () => {
     mockPrisma.reservation.findUnique.mockResolvedValue({
       id: 'res-1', status: 'COMPLETED', adults: 50, children: 10, toddlers: 5,
@@ -212,7 +217,7 @@ describe('updateReservationMenu — on COMPLETED reservation (lines 677-682)', (
   });
 });
 
-describe('updateReservation — date change with excludeId (line 1022)', () => {
+describe('updateReservation — date change with excludeId', () => {
   it('should check overlap and wholeVenue with excludeId when changing dates', async () => {
     const future = new Date(Date.now() + 86400000 * 30);
     const futureEnd = new Date(Date.now() + 86400000 * 30 + 3600000 * 4);
@@ -225,12 +230,12 @@ describe('updateReservation — date change with excludeId (line 1022)', () => {
       adults: 50, children: 10, toddlers: 5,
       pricePerAdult: 200, pricePerChild: 100, pricePerToddler: 0,
       totalPrice: 11000, menuSnapshot: null,
-      hall: { id: 'h1', name: 'Sala A', capacity: 200, isWholeVenue: false },
-      eventType: { id: 'e1', name: 'Wedding' },
+      hall: { id: 'h1', name: 'Sala A', capacity: 200, isWholeVenue: false, allowMultipleBookings: false },
+      eventType: { id: 'e1', name: 'Wedding', standardHours: 8, extraHourRate: 0 },
       client: { id: 'c1', firstName: 'J', lastName: 'K' },
     });
     mockPrisma.reservation.findFirst.mockResolvedValue(null); // no overlap
-    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isWholeVenue: false });
+    mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isWholeVenue: false, allowMultipleBookings: false, capacity: 200 });
     mockPrisma.hall.findFirst.mockResolvedValue(null); // no whole-venue hall
     mockPrisma.reservation.update.mockResolvedValue({
       id: 'res-1', status: 'PENDING',
@@ -243,8 +248,6 @@ describe('updateReservation — date change with excludeId (line 1022)', () => {
       startDateTime: newFuture, endDateTime: newFutureEnd,
     } as any, UID);
 
-    // Should call findFirst for overlap check with excludeId
-    expect(mockPrisma.reservation.findFirst).toHaveBeenCalled();
     expect(mockPrisma.reservation.update).toHaveBeenCalled();
   });
 });
