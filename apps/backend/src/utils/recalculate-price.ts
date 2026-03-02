@@ -2,22 +2,44 @@
  * Recalculate Reservation Total Price
  * Single source of truth for reservation price computation.
  *
- * Formula: totalPrice = menuPrice + extrasTotal + venueSurcharge - discountAmount
+ * Formula: totalPrice = menuPrice + extrasTotal + venueSurcharge + extraHoursCost - discountAmount
  *
- * Call after any change to: menu, extras, surcharge, or discount.
+ * Call after any change to: menu, extras, surcharge, time, or discount.
  */
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { calculateTotalPrice } from './reservation.utils';
 
+const STANDARD_HOURS = 6;
+const DEFAULT_EXTRA_HOUR_RATE = 500;
+
 export interface ReservationPriceBreakdown {
   menuPrice: number;
   extrasTotal: number;
   surcharge: number;
+  extraHoursCost: number;
   basePrice: number;
   discountAmount: number;
   totalPrice: number;
   hasDiscount: boolean;
+}
+
+/**
+ * Calculate extra hours cost from event start/end times.
+ * Standard included time is 6 hours; each extra hour costs extraHourRate.
+ * Mirrors frontend logic in ReservationFinancialSummary.tsx.
+ */
+function calculateExtraHoursCost(
+  startDateTime: Date | null,
+  endDateTime: Date | null,
+  extraHourRate: number = DEFAULT_EXTRA_HOUR_RATE
+): number {
+  if (!startDateTime || !endDateTime) return 0;
+  const durationMs = endDateTime.getTime() - startDateTime.getTime();
+  if (durationMs <= 0) return 0;
+  const durationHours = durationMs / (1000 * 60 * 60);
+  const extraHours = Math.max(0, Math.ceil(durationHours - STANDARD_HOURS));
+  return extraHours * extraHourRate;
 }
 
 /**
@@ -68,11 +90,17 @@ export async function computeReservationBasePrice(
   // 3. Venue surcharge
   const surcharge = Number((reservation as any).venueSurcharge) || 0;
 
-  // 4. Base price before discount
-  const basePrice =
-    Math.round((menuPrice + extrasTotal + surcharge) * 100) / 100;
+  // 4. Extra hours cost
+  const extraHoursCost = calculateExtraHoursCost(
+    reservation.startDateTime,
+    reservation.endDateTime
+  );
 
-  // 5. Discount
+  // 5. Base price before discount (includes extra hours)
+  const basePrice =
+    Math.round((menuPrice + extrasTotal + surcharge + extraHoursCost) * 100) / 100;
+
+  // 6. Discount
   const hasDiscount = !!(
     reservation.discountType &&
     reservation.discountValue &&
@@ -96,6 +124,7 @@ export async function computeReservationBasePrice(
     menuPrice,
     extrasTotal,
     surcharge,
+    extraHoursCost,
     basePrice,
     discountAmount,
     totalPrice,
@@ -115,6 +144,7 @@ export async function recalculateReservationTotalPrice(
   const updateData: any = {
     totalPrice: breakdown.totalPrice,
     extrasTotalPrice: new Decimal(breakdown.extrasTotal),
+    extraHoursCost: new Decimal(breakdown.extraHoursCost),
   };
 
   if (breakdown.hasDiscount) {
