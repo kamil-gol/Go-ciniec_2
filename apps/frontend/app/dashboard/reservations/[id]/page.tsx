@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
-import { getEventTypeById, type EventTypeWithCounts } from '@/lib/api/event-types-api'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -31,10 +30,6 @@ import {
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 
-// Legacy defaults used when EventType pricing config is unavailable
-const FALLBACK_STANDARD_HOURS = 6
-const FALLBACK_EXTRA_HOUR_RATE = 500
-
 type TabType = 'details' | 'history'
 
 export default function ReservationDetailsPage() {
@@ -43,8 +38,6 @@ export default function ReservationDetailsPage() {
   const { toast } = useToast()
   const [downloading, setDownloading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
-  const [hydratedEventType, setHydratedEventType] = useState<EventTypeWithCounts | null>(null)
-  const [hydrationFailed, setHydrationFailed] = useState(false)
 
   const reservationId = params.id as string
 
@@ -57,46 +50,6 @@ export default function ReservationDetailsPage() {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [reservationId])
-
-  // Ensure event type pricing config is available for consistent calculations in details view.
-  // Some API responses return eventType with only {id,name,...} which would fallback to legacy defaults (6h / 500 PLN).
-  useEffect(() => {
-    let cancelled = false
-
-    async function hydrateEventTypeIfNeeded() {
-      const eventTypeId = reservation?.eventType?.id
-      if (!eventTypeId) return
-
-      if (hydratedEventType?.id === eventTypeId) return
-
-      const hasStandardHours = typeof reservation?.eventType?.standardHours === 'number'
-      const hasExtraHourRate = reservation?.eventType?.extraHourRate != null && reservation?.eventType?.extraHourRate !== ''
-
-      if (hasStandardHours && hasExtraHourRate) {
-        // Data already present from the reservation API — no hydration needed
-        setHydrationFailed(false)
-        return
-      }
-
-      try {
-        const fullEventType = await getEventTypeById(eventTypeId)
-        if (!cancelled) {
-          setHydratedEventType(fullEventType)
-          setHydrationFailed(false)
-        }
-      } catch {
-        // Hydration failed — use legacy fallback defaults so UI is never stuck on spinner
-        console.warn(`[ReservationDetails] Could not hydrate EventType ${eventTypeId}, using fallback defaults`)
-        if (!cancelled) setHydrationFailed(true)
-      }
-    }
-
-    hydrateEventTypeIfNeeded()
-
-    return () => {
-      cancelled = true
-    }
-  }, [reservation?.eventType?.id, reservation?.eventType?.standardHours, reservation?.eventType?.extraHourRate, hydratedEventType?.id])
 
   const handleRefetch = () => {
     refetch()
@@ -230,24 +183,17 @@ export default function ReservationDetailsPage() {
   const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
   const isArchived = !!reservation.archivedAt
 
-  // Resolve pricing config: reservation.eventType → hydrated → fallback defaults
+  // Pricing config — read directly from reservation.eventType (backend includes standardHours & extraHourRate).
+  // Fallback to legacy defaults (6h / 500 PLN) only if eventType somehow lacks the fields.
   const resolvedStandardHours =
-    (typeof reservation.eventType?.standardHours === 'number'
+    typeof reservation.eventType?.standardHours === 'number'
       ? reservation.eventType.standardHours
-      : hydratedEventType?.standardHours
-        ?? (hydrationFailed ? FALLBACK_STANDARD_HOURS : undefined))
+      : 6
 
   const resolvedExtraHourRate =
-    (reservation.eventType?.extraHourRate != null && reservation.eventType?.extraHourRate !== ''
+    reservation.eventType?.extraHourRate != null && reservation.eventType?.extraHourRate !== ''
       ? Number(reservation.eventType.extraHourRate)
-      : hydratedEventType?.extraHourRate
-        ?? (hydrationFailed ? FALLBACK_EXTRA_HOUR_RATE : undefined))
-
-  // Ready when: no eventType, OR both values resolved, OR hydration explicitly failed (use fallbacks)
-  const isPricingConfigReady =
-    !reservation.eventType?.id ||
-    (typeof resolvedStandardHours === 'number' && Number.isFinite(resolvedStandardHours) &&
-      typeof resolvedExtraHourRate === 'number' && Number.isFinite(resolvedExtraHourRate))
+      : 500
 
   // Banner message for read-only mode
   const readOnlyBannerMessage = reservation.status === 'CANCELLED'
@@ -495,44 +441,30 @@ export default function ReservationDetailsPage() {
                 disabled={isReadOnly}
               />
 
-              {/* Financial Summary */}
-              {isPricingConfigReady ? (
-                <ReservationFinancialSummary
-                  reservationId={reservation.id}
-                  adults={reservation.adults || 0}
-                  children={reservation.children || 0}
-                  toddlers={reservation.toddlers || 0}
-                  pricePerAdult={Number(reservation.pricePerAdult) || 0}
-                  pricePerChild={Number(reservation.pricePerChild) || 0}
-                  pricePerToddler={Number(reservation.pricePerToddler) || 0}
-                  totalPrice={Number(reservation.totalPrice) || 0}
-                  startDateTime={reservation.startDateTime}
-                  endDateTime={reservation.endDateTime}
-                  standardHours={resolvedStandardHours}
-                  extraHourRate={resolvedExtraHourRate}
-                  status={reservation.status}
-                  discountType={reservation.discountType}
-                  discountValue={reservation.discountValue}
-                  discountAmount={reservation.discountAmount}
-                  discountReason={reservation.discountReason}
-                  priceBeforeDiscount={reservation.priceBeforeDiscount}
-                  venueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
-                  venueSurchargeLabel={reservation.venueSurchargeLabel}
-                  readOnly={isReadOnly}
-                />
-              ) : (
-                <Card className="border-0 shadow-xl overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                      <div>
-                        <p className="text-sm font-semibold">Wczytywanie podsumowania finansowego…</p>
-                        <p className="text-xs text-muted-foreground">Uzupełniam dane typu wydarzenia (standardHours, extraHourRate).</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              )}
+              {/* Financial Summary — always renders immediately, no hydration needed */}
+              <ReservationFinancialSummary
+                reservationId={reservation.id}
+                adults={reservation.adults || 0}
+                children={reservation.children || 0}
+                toddlers={reservation.toddlers || 0}
+                pricePerAdult={Number(reservation.pricePerAdult) || 0}
+                pricePerChild={Number(reservation.pricePerChild) || 0}
+                pricePerToddler={Number(reservation.pricePerToddler) || 0}
+                totalPrice={Number(reservation.totalPrice) || 0}
+                startDateTime={reservation.startDateTime}
+                endDateTime={reservation.endDateTime}
+                standardHours={resolvedStandardHours}
+                extraHourRate={resolvedExtraHourRate}
+                status={reservation.status}
+                discountType={reservation.discountType}
+                discountValue={reservation.discountValue}
+                discountAmount={reservation.discountAmount}
+                discountReason={reservation.discountReason}
+                priceBeforeDiscount={reservation.priceBeforeDiscount}
+                venueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
+                venueSurchargeLabel={reservation.venueSurchargeLabel}
+                readOnly={isReadOnly}
+              />
 
               {/* Quick Actions */}
               <Card className="border-0 shadow-xl">
