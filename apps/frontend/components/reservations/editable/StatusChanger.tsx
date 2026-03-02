@@ -91,12 +91,15 @@ interface StatusChangerProps {
   reservationId: string
   currentStatus: ReservationStatus
   onStatusChanged?: () => void
+  /** When true, hides the edit button to prevent status changes */
+  disabled?: boolean
 }
 
 export function StatusChanger({
   reservationId,
   currentStatus,
   onStatusChanged,
+  disabled = false,
 }: StatusChangerProps) {
   const [editing, setEditing] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<StatusKey | ''>(currentStatus as StatusKey)
@@ -110,13 +113,14 @@ export function StatusChanger({
   const config = STATUS_CONFIG[statusKey]
   const StatusIcon = config?.icon || Clock
   const allowedTransitions = STATUS_TRANSITIONS[statusKey] || []
-  const isTerminal = allowedTransitions.length === 0
+  const isTerminal = allowedTransitions.length === 0 || disabled
 
   const handleStatusSelect = useCallback((value: string) => {
     setSelectedStatus(value as StatusKey)
   }, [])
 
   const handleStartChange = useCallback(() => {
+    if (disabled) return
     if (!selectedStatus || selectedStatus === currentStatus) return
 
     if (reason.trim().length < 10) {
@@ -132,9 +136,10 @@ export function StatusChanger({
     } else {
       executeStatusChange()
     }
-  }, [selectedStatus, currentStatus, reason])
+  }, [selectedStatus, currentStatus, reason, disabled])
 
   const executeStatusChange = useCallback(async () => {
+    if (disabled) return
     if (!selectedStatus || selectedStatus === currentStatus) return
 
     const oldLabel = STATUS_CONFIG[statusKey]?.label || currentStatus
@@ -156,7 +161,7 @@ export function StatusChanger({
       const msg = error?.response?.data?.error || error?.message || 'Błąd zmiany statusu'
       toast.error(msg)
     }
-  }, [selectedStatus, currentStatus, statusKey, reason, reservationId, updateStatusMutation, onStatusChanged])
+  }, [selectedStatus, currentStatus, statusKey, reason, reservationId, updateStatusMutation, onStatusChanged, disabled])
 
   const handleCancel = useCallback(() => {
     setEditing(false)
