@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '../lib/prisma';
-import { recalculateReservationTotal } from '../utils/recalculate-total';
+import { computeReservationBasePrice, recalculateReservationTotalPrice } from '../utils/recalculate-price';
 
 async function main() {
   console.log('[Migration] Starting recalculation of all active reservations...\n');
@@ -24,6 +24,8 @@ async function main() {
       extrasTotalPrice: true,
       priceBeforeDiscount: true,
       discountAmount: true,
+      startDateTime: true,
+      endDateTime: true,
       client: { select: { firstName: true, lastName: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -42,22 +44,23 @@ async function main() {
     const oldTotal = Number(r.totalPrice);
 
     try {
-      const result = await recalculateReservationTotal(r.id);
-      const changed = result.totalPrice !== oldTotal;
+      const breakdown = await computeReservationBasePrice(r.id);
+      const changed = breakdown.totalPrice !== oldTotal;
 
       if (changed) {
+        await recalculateReservationTotalPrice(r.id);
         console.log(
-          `  OK ${r.id.slice(0, 8)} (${clientName}): ` +
-          `${oldTotal} -> ${result.totalPrice} ` +
-          `(base=${result.basePricing} + extras=${result.extrasTotal} + surcharge=${result.venueSurcharge} + hours=${result.extraHoursCost} - discount=${result.discountAmount})`
+          `  ✓ ${r.id.slice(0, 8)} (${clientName}): ` +
+          `${oldTotal} → ${breakdown.totalPrice} ` +
+          `(menu=${breakdown.menuPrice} + extras=${breakdown.extrasTotal} + surcharge=${breakdown.surcharge} + hours=${breakdown.extraHoursCost} - discount=${breakdown.discountAmount})`
         );
         updated++;
       } else {
-        console.log(`  -- ${r.id.slice(0, 8)} (${clientName}): unchanged (${oldTotal})`);
+        console.log(`  — ${r.id.slice(0, 8)} (${clientName}): unchanged (${oldTotal})`);
         unchanged++;
       }
     } catch (err: any) {
-      console.error(`  ERR ${r.id.slice(0, 8)} (${clientName}): ${err.message}`);
+      console.error(`  ✗ ${r.id.slice(0, 8)} (${clientName}): ${err.message}`);
       errors++;
     }
   }
