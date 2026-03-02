@@ -11,7 +11,7 @@
  * Updated: #165 — capacity-based overlap logic (multiple reservations per hall)
  * Updated: #172 — instant auto-archive on cancellation (no 30-day delay)
  * Updated: fix/pricing-and-encoding — recalculate totalPrice at end of create/update
- * Updated: #176 — persist eventTypeId change in updateReservation
+ * Updated: #176 — eventTypeId is immutable after creation (cascading side-effects)
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -709,6 +709,13 @@ export class ReservationService {
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.CANNOT_UPDATE_CANCELLED);
     if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.CANNOT_UPDATE_ARCHIVED);
 
+    // #176: eventTypeId is immutable after creation — silently ignore if sent
+    // Changing eventType would invalidate menu (scoped per eventType), orphan custom fields,
+    // and require cascading recalculations. Admin should cancel + recreate instead.
+    if (data.eventTypeId !== undefined && data.eventTypeId !== existingReservation.eventTypeId) {
+      console.warn(`[Reservation] Ignored eventTypeId change attempt on ${id}: ${existingReservation.eventTypeId} → ${data.eventTypeId}`);
+    }
+
     if (data.menuPackageId !== undefined) {
       if (data.menuPackageId === null) {
         await this.updateReservationMenu(id, { menuPackageId: null }, userId);
@@ -729,28 +736,12 @@ export class ReservationService {
       }
     }
 
-    // ══ #176: EventType change — validate new eventType exists ══
-    let effectiveEventType = existingReservation.eventType;
-    const eventTypeChanged = data.eventTypeId !== undefined && data.eventTypeId !== existingReservation.eventTypeId;
-
-    if (eventTypeChanged) {
-      const newEventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId! } });
-      if (!newEventType) throw new Error(EVENT_TYPE.NOT_FOUND);
-      effectiveEventType = newEventType as any;
-    }
-
-    // Use effective (possibly new) eventType for custom field validation
-    if (effectiveEventType) {
-      const customValidation = validateCustomEventFields(effectiveEventType.name, data);
+    if (existingReservation.eventType) {
+      const customValidation = validateCustomEventFields(existingReservation.eventType.name, data);
       if (!customValidation.valid) throw new Error(customValidation.error);
     }
 
     const updateData: any = {};
-
-    // ══ #176: Persist eventTypeId change ══
-    if (eventTypeChanged) {
-      updateData.eventTypeId = data.eventTypeId;
-    }
 
     // ══ #137: Hall change — validate new hall + recalculate surcharge ══
     let effectiveHall = existingReservation.hall;

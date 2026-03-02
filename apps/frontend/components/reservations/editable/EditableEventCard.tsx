@@ -5,14 +5,7 @@ import { motion } from 'framer-motion'
 import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Sparkles, Calendar, Clock, AlertCircle } from 'lucide-react'
+import { Sparkles, Calendar, Clock, AlertCircle, Lock } from 'lucide-react'
 import { EditableCard } from './EditableCard'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { useUpdateReservation } from '@/lib/api/reservations'
@@ -23,7 +16,7 @@ import { pl } from 'date-fns/locale'
 const STANDARD_HOURS = 6
 const EXTRA_HOUR_RATE = 500
 
-// \u2500\u2500 UTC helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// ── UTC helpers ──────────────────────────────────────────────────────
 function utcTime(dt: string | Date): string {
   const d = typeof dt === 'string' ? new Date(dt) : dt
   return d.toISOString().slice(11, 16)
@@ -38,7 +31,7 @@ function utcDateForDisplay(dt: string | Date): Date {
   const d = typeof dt === 'string' ? new Date(dt) : dt
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
-// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// ────────────────────────────────────────────────────────────────────
 
 interface EditableEventCardProps {
   reservationId: string
@@ -70,7 +63,6 @@ export function EditableEventCard({
   const initStart = initialStart ? new Date(initialStart) : null
   const initEnd = initialEnd ? new Date(initialEnd) : null
 
-  const [eventTypeId, setEventTypeId] = useState(initialEventTypeId)
   const [startDate, setStartDate] = useState(initStart ? utcDate(initStart) : '')
   const [startTime, setStartTime] = useState(initStart ? utcTime(initStart) : '')
   const [endDate, setEndDate] = useState(initEnd ? utcDate(initEnd) : '')
@@ -80,19 +72,12 @@ export function EditableEventCard({
   const [anniversaryYear, setAnniversaryYear] = useState(initialAnniversaryYear || 0)
   const [anniversaryOccasion, setAnniversaryOccasion] = useState(initialAnniversaryOccasion || '')
 
-  const { data: eventTypesData } = useEventTypes()
   const updateMutation = useUpdateReservation()
 
-  const eventTypesArray = useMemo(() => Array.isArray(eventTypesData) ? eventTypesData : [], [eventTypesData])
-
-  const selectedEventTypeName = useMemo(() => {
-    const t = eventTypesArray.find((t) => t.id === eventTypeId)
-    return t?.name || ''
-  }, [eventTypeId, eventTypesArray])
-
-  const isBirthday = selectedEventTypeName === 'Urodziny'
-  const isAnniversary = selectedEventTypeName === 'Rocznica' || selectedEventTypeName === 'Rocznica/Jubileusz'
-  const isCustom = selectedEventTypeName === 'Inne'
+  // Event type is read-only — use initial name for conditional fields
+  const isBirthday = initialEventTypeName === 'Urodziny'
+  const isAnniversary = initialEventTypeName === 'Rocznica' || initialEventTypeName === 'Rocznica/Jubileusz'
+  const isCustom = initialEventTypeName === 'Inne'
 
   const durationHours = useMemo(() => {
     if (startDate && startTime && endDate && endTime) {
@@ -116,7 +101,6 @@ export function EditableEventCard({
   }, [startDate, startTime, endDate, endTime])
 
   useEffect(() => {
-    setEventTypeId(initialEventTypeId)
     if (initialStart) {
       setStartDate(utcDate(initialStart))
       setStartTime(utcTime(initialStart))
@@ -129,10 +113,9 @@ export function EditableEventCard({
     setBirthdayAge(initialBirthdayAge || 0)
     setAnniversaryYear(initialAnniversaryYear || 0)
     setAnniversaryOccasion(initialAnniversaryOccasion || '')
-  }, [initialEventTypeId, initialStart, initialEnd, initialCustom, initialBirthdayAge, initialAnniversaryYear, initialAnniversaryOccasion])
+  }, [initialStart, initialEnd, initialCustom, initialBirthdayAge, initialAnniversaryYear, initialAnniversaryOccasion])
 
   const handleSave = async (reason: string) => {
-    if (!eventTypeId) throw new Error('Wybierz typ wydarzenia')
     if (!startDate || !startTime) throw new Error('Wybierz datę i czas rozpoczęcia')
     if (!endDate || !endTime) throw new Error('Wybierz datę i czas zakończenia')
 
@@ -143,10 +126,10 @@ export function EditableEventCard({
       throw new Error('Czas zakończenia musi być po czasie rozpoczęcia')
     }
 
+    // eventTypeId is NOT sent — it's immutable after creation
     await updateMutation.mutateAsync({
       id: reservationId,
       input: {
-        eventTypeId,
         startDateTime: startDT,
         endDateTime: endDT,
         customEventType: isCustom ? customEventType : undefined,
@@ -162,7 +145,6 @@ export function EditableEventCard({
   }
 
   const handleCancel = () => {
-    setEventTypeId(initialEventTypeId)
     if (initialStart) {
       setStartDate(utcDate(initialStart))
       setStartTime(utcTime(initialStart))
@@ -225,18 +207,16 @@ export function EditableEventCard({
 
         return (
           <div className="space-y-5">
+            {/* Event type — read-only in edit mode */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ wydarzenia</label>
-              <Select value={eventTypeId} onValueChange={setEventTypeId}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Wybierz typ wydarzenia..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {eventTypesArray.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 h-11 px-3 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+                <Lock className="w-4 h-4 text-neutral-400" />
+                <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">{initialEventTypeName}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Typ wydarzenia nie może być zmieniony. Aby zmienić typ, anuluj rezerwację i utwórz nową.
+              </p>
             </div>
 
             {isBirthday && (
