@@ -56,14 +56,9 @@ const UID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
-  if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
-  if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
-  if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
-  // Default mocks for overlapping check
-  if (db.reservation?.findMany) db.reservation.findMany.mockResolvedValue([]);
-  if (db.reservation?.findFirst) db.reservation.findFirst.mockResolvedValue(null);
-  db.reservation.findMany.mockResolvedValue([]);
-  if (db.hall?.findFirst) db.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
@@ -121,7 +116,7 @@ describe('createReservation — legacy date format (lines 590-593)', () => {
       date: futureDate, startTime: '14:00', endTime: '20:00',
       adults: 50, children: 10, toddlers: 5,
       pricePerAdult: 200, pricePerChild: 100,
-    } as any, UID)).rejects.toThrow('already booked');
+    } as any, UID)).rejects.toThrow(/już zarezerwowana/);
   });
 });
 
