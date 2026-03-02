@@ -30,6 +30,12 @@ jest.mock('../../../lib/prisma', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    menuPackage: {
+      findUnique: jest.fn(),
+    },
+    menuOption: {
+      findMany: jest.fn(),
+    },
     reservationMenuSnapshot: {
       create: jest.fn(),
     },
@@ -39,6 +45,25 @@ jest.mock('../../../lib/prisma', () => {
     user: {
       findUnique: jest.fn(),
     },
+    deposit: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    activityLog: {
+      create: jest.fn(),
+    },
+    serviceItem: {
+      findMany: jest.fn(),
+    },
+    reservationExtra: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mock) : Promise.all(fn))),
   };
   return { prisma: mock, __esModule: true, default: mock };
 });
@@ -49,11 +74,16 @@ jest.mock('../../../utils/audit-logger', () => ({
 }));
 
 jest.mock('../../../utils/venue-surcharge', () => ({
-  calculateVenueSurcharge: jest.fn().mockReturnValue({ amount: 0, label: null }),
+  calculateVenueSurcharge: jest.fn().mockReturnValue(0),
 }));
 
 jest.mock('../../../utils/recalculate-price', () => ({
-  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(1000),
+  recalculateReservationTotalPrice: jest.fn().mockReturnValue(1000),
+}));
+
+jest.mock('../../../services/reservation-menu.service', () => ({
+  __esModule: true,
+  default: { recalculateForGuestChange: jest.fn().mockResolvedValue(null) },
 }));
 
 import { ReservationService } from '../../../services/reservation.service';
@@ -141,6 +171,12 @@ beforeEach(() => {
   mockPrisma.reservation.findFirst.mockResolvedValue(null); // no whole-venue conflict
   mockPrisma.reservation.create.mockResolvedValue(CREATED_RESERVATION);
   mockPrisma.reservationHistory.create.mockResolvedValue({});
+  mockPrisma.activityLog.create.mockResolvedValue({});
+  mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
+  mockPrisma.menuOption.findMany.mockResolvedValue([]);
+  mockPrisma.deposit.create.mockResolvedValue({});
+  mockPrisma.serviceItem.findMany.mockResolvedValue([]);
+  mockPrisma.reservationExtra.findMany.mockResolvedValue([]);
 });
 
 describe('ReservationService — Capacity Validation (#165)', () => {
