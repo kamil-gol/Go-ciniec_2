@@ -10,8 +10,8 @@ import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { calculateTotalPrice } from './reservation.utils';
 
-const STANDARD_HOURS = 6;
-const DEFAULT_EXTRA_HOUR_RATE = 500;
+export const STANDARD_HOURS = 6;
+export const DEFAULT_EXTRA_HOUR_RATE = 500;
 
 export interface ReservationPriceBreakdown {
   menuPrice: number;
@@ -30,7 +30,7 @@ export interface ReservationPriceBreakdown {
  * each extra hour costs eventType.extraHourRate (default 500 PLN).
  * Mirrors frontend logic in ReservationFinancialSummary.tsx.
  */
-function calculateExtraHoursCost(
+export function calculateExtraHoursCost(
   startDateTime: Date | null,
   endDateTime: Date | null,
   extraHourRate: number = DEFAULT_EXTRA_HOUR_RATE,
