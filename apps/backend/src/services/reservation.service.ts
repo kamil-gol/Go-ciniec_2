@@ -11,6 +11,7 @@
  * Updated: #165 — capacity-based overlap logic (multiple reservations per hall)
  * Updated: #172 — instant auto-archive on cancellation (no 30-day delay)
  * Updated: fix/pricing-and-encoding — recalculate totalPrice at end of create/update
+ * Updated: #176 — persist eventTypeId change in updateReservation
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -728,12 +729,28 @@ export class ReservationService {
       }
     }
 
-    if (existingReservation.eventType) {
-      const customValidation = validateCustomEventFields(existingReservation.eventType.name, data);
+    // ══ #176: EventType change — validate new eventType exists ══
+    let effectiveEventType = existingReservation.eventType;
+    const eventTypeChanged = data.eventTypeId !== undefined && data.eventTypeId !== existingReservation.eventTypeId;
+
+    if (eventTypeChanged) {
+      const newEventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId! } });
+      if (!newEventType) throw new Error(EVENT_TYPE.NOT_FOUND);
+      effectiveEventType = newEventType as any;
+    }
+
+    // Use effective (possibly new) eventType for custom field validation
+    if (effectiveEventType) {
+      const customValidation = validateCustomEventFields(effectiveEventType.name, data);
       if (!customValidation.valid) throw new Error(customValidation.error);
     }
 
     const updateData: any = {};
+
+    // ══ #176: Persist eventTypeId change ══
+    if (eventTypeChanged) {
+      updateData.eventTypeId = data.eventTypeId;
+    }
 
     // ══ #137: Hall change — validate new hall + recalculate surcharge ══
     let effectiveHall = existingReservation.hall;
