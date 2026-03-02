@@ -191,7 +191,7 @@ export default function ReservationDetailsPage() {
       : 6
 
   const resolvedExtraHourRate =
-    reservation.eventType?.extraHourRate != null && reservation.eventType?.extraHourRate !== ''
+    reservation.eventType?.extraHourRate != null
       ? Number(reservation.eventType.extraHourRate)
       : 500
 
