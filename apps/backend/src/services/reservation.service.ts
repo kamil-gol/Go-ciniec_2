@@ -50,7 +50,7 @@ function sanitizeString(value: any): string | null {
 const RESERVATION_INCLUDE = {
   hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true, allowMultipleBookings: true } },
   client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-  eventType: { select: { id: true, name: true } },
+  eventType: { select: { id: true, name: true, standardHours: true, extraHourRate: true } },
   createdBy: { select: { id: true, email: true } },
 } as const;
 
