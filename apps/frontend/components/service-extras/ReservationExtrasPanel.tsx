@@ -203,7 +203,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
     }
   };
 
-  // \u2500\u2500 Inline note editing \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // ── Inline note editing ──────────────────────────────────────────────────────────
 
   const startEditingNote = (extraId: string, currentNote: string | null | undefined) => {
     if (readOnly) return;
@@ -249,7 +249,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
     }
   };
 
-  // \u2500\u2500 Reset add form \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // ── Reset add form ─────────────────────────────────────────────────────────────
 
   const resetAddForm = () => {
     setAddDialogOpen(false);
@@ -270,13 +270,13 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
     if (pt === 'FREE') return 'Gratis';
 
     if (pt === 'PER_UNIT' && qty > 1) {
-      return `${unit} zł/szt. \u00d7 ${qty} szt. = ${total} zł`;
+      return `${unit} zł/szt. × ${qty} szt. = ${total} zł`;
     }
     if (pt === 'PER_PERSON' && qty > 1) {
-      return `${unit} zł/os. \u00d7 ${qty} = ${total} zł`;
+      return `${unit} zł/os. × ${qty} = ${total} zł`;
     }
     if (pt === 'FLAT' && qty > 1) {
-      return `${unit} zł \u00d7 ${qty} = ${total} zł`;
+      return `${unit} zł × ${qty} = ${total} zł`;
     }
 
     return `${total} zł`;
@@ -300,7 +300,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                       {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
                       {totalPrice > 0 && (
                         <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          \u2014 {totalPrice.toLocaleString('pl-PL')} zł
+                          — {totalPrice.toLocaleString('pl-PL')} zł
                         </span>
                       )}
                     </p>
@@ -331,7 +331,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                 <Gift className="mb-2 h-8 w-8 text-violet-300 dark:text-violet-700" />
                 <p>Brak usług dodatkowych</p>
                 {!readOnly && (
-                  <p className="text-xs mt-1">Kliknij \u201eDodaj\u201d aby przypisać tort, muzykę, dekoracje...</p>
+                  <p className="text-xs mt-1">Kliknij „Dodaj” aby przypisać tort, muzykę, dekoracje...</p>
                 )}
               </div>
             ) : (
@@ -356,7 +356,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-lg flex-shrink-0">
-                            {extra.serviceItem?.icon || '\ud83d\udce6'}
+                            {extra.serviceItem?.icon || '📦'}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
@@ -511,7 +511,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
         </div>
       </Card>
 
-      {/* Add Extra Dialog \u2014 only render when not readOnly */}
+      {/* Add Extra Dialog — only render when not readOnly */}
       {!readOnly && (
         <Dialog open={addDialogOpen} onOpenChange={resetAddForm}>
           <DialogContent className="sm:max-w-[500px]">
@@ -567,15 +567,15 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                       {availableItems.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           <div className="flex items-center gap-2">
-                            <span>{item.icon || '\ud83d\udce6'}</span>
+                            <span>{item.icon || '📦'}</span>
                             <span>{item.name}</span>
                             {item.priceType !== 'FREE' && (
                               <span className="text-muted-foreground">
-                                \u2014 {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
+                                — {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
                               </span>
                             )}
                             {item.priceType === 'FREE' && (
-                              <span className="text-green-600">\u2014 Gratis</span>
+                              <span className="text-green-600">— Gratis</span>
                             )}
                           </div>
                         </SelectItem>
