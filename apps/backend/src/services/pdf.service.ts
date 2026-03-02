@@ -1269,7 +1269,9 @@ export class PDFService {
       .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     const venueSurchargeAmount = Number(r.venueSurcharge) || 0;
     const extraHoursCostAmt = Number(r.extraHoursCost) || 0;
-    const displayTotal = Number(r.totalPrice) + extrasTotalCalc;
+    // totalPrice from DB already includes extras, surcharge, extraHours, and discount
+    // (see recalculate-price.ts formula). Do NOT add extras again.
+    const displayTotal = Number(r.totalPrice);
 
     /* istanbul ignore next */
     const deposit = r.deposits && r.deposits.length > 0
