@@ -306,6 +306,8 @@ model Reservation {
 
   venueSurcharge      Decimal?  @db.Decimal(10, 2)
   venueSurchargeLabel String?   @db.VarChar(255)
+
+  extraHoursCost      Decimal  @default(0) @db.Decimal(10, 2)
   
   status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime?
@@ -709,7 +711,7 @@ model Attachment {
   mimeType      String   @db.VarChar(100)
   sizeBytes     Int
   storagePath   String   @db.Text
-  fileHash      String?  @db.VarChar(64)   // SHA-256 hash for deduplication
+  fileHash      String?  @db.VarChar(64)
 
   uploadedById  String   @db.Uuid
   description   String?  @db.Text

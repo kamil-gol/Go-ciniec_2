@@ -10,6 +10,7 @@
  * Updated: fix/recalculate-totalPrice — centralized price recalculation
  * Updated: #165 — capacity-based overlap logic (multiple reservations per hall)
  * Updated: #172 — instant auto-archive on cancellation (no 30-day delay)
+ * Updated: fix/pricing-and-encoding — recalculate totalPrice at end of create/update
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -386,6 +387,9 @@ export class ReservationService {
         }
       }
     });
+
+    // Recalculate totalPrice with all components (including extra hours for long events)
+    await recalculateReservationTotalPrice(reservation.id);
 
     return reservation as any;
   }
@@ -896,6 +900,9 @@ export class ReservationService {
         }
       });
     }
+
+    // Ensure totalPrice reflects all components (menu + extras + surcharge + extraHours - discount)
+    await recalculateReservationTotalPrice(id);
 
     return reservation as any;
   }

@@ -208,11 +208,11 @@ export function ReservationFinancialSummary({
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
   }, [startDateTime, endDateTime, extraHourRate])
 
-  // \u2500\u2500 DISCOUNT: compute early so we can restore the pre-discount base \u2500\u2500
+  // ── DISCOUNT: compute early so we can restore the pre-discount base ──
   const activeDiscountAmount = Number(discountAmount) || 0
   const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
 
-  // \u2500\u2500 EFFECTIVE TOTAL: base + extra hours + service extras + venue surcharge \u2500\u2500
+  // ── EFFECTIVE TOTAL: base + extra hours + service extras + venue surcharge ──
   const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
     : (hasActiveDiscount && priceBeforeDiscount != null && Number(priceBeforeDiscount) > 0)
@@ -266,7 +266,7 @@ export function ReservationFinancialSummary({
     loadDeposits()
   }, [loadDeposits])
 
-  // Calculations \u2014 use finalTotalPrice (after discount) for balance
+  // Calculations — use finalTotalPrice (after discount) for balance
   const financials = useMemo(() => {
     const activeDeposits = deposits.filter(d => d.status !== 'CANCELLED')
     const totalPaid = activeDeposits.reduce((sum, d) => sum + Number(d.paidAmount || 0), 0)
@@ -407,19 +407,19 @@ export function ReservationFinancialSummary({
                   <div className="space-y-2">
                     {adults > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dorośli ({adults} \u00d7 {formatPLN(effectivePricePerAdult)} zł)</span>
+                        <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
                         <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
                     {children > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dzieci ({children} \u00d7 {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
                         <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Maluchy ({toddlers} \u00d7 {formatPLN(effectivePricePerToddler)} zł)</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
                         <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
                       </div>
                     )}
@@ -448,7 +448,7 @@ export function ReservationFinancialSummary({
                       {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} \u00d7 ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
+                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
                           </span>
                           <span className="font-semibold">{formatPLN(opt.total)} zł</span>
                         </div>
@@ -475,7 +475,7 @@ export function ReservationFinancialSummary({
                           <span className="text-muted-foreground flex items-center gap-1.5">
                             <span>{extra.serviceItem?.icon || '\ud83d\udce6'}</span>
                             {extra.serviceItem?.name || 'Pozycja'}
-                            {extra.quantity > 1 && ` (\u00d7${extra.quantity})`}
+                            {extra.quantity > 1 && ` (×${extra.quantity})`}
                           </span>
                           <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
                         </div>
@@ -530,7 +530,7 @@ export function ReservationFinancialSummary({
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Dodatkowe godziny ({extraHoursInfo.extraHours} \u00d7 {formatPLN(extraHourRate)} zł/h)
+                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
                         </span>
                         <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
                       </div>
@@ -540,7 +540,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* DISCOUNT SECTION (Sprint 7) \u2014 uses effectiveTotalPrice as base */}
+            {/* DISCOUNT SECTION (Sprint 7) — uses effectiveTotalPrice as base */}
             {status && (
               <div className="mb-3">
                 <DiscountSection
@@ -559,7 +559,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* TOTAL \u2014 uses finalTotalPrice (after discount) */}
+            {/* TOTAL — uses finalTotalPrice (after discount) */}
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -595,7 +595,7 @@ export function ReservationFinancialSummary({
             </div>
           </div>
 
-          {/* DEPOSITS + BALANCE \u2014 uses finalTotalPrice */}
+          {/* DEPOSITS + BALANCE — uses finalTotalPrice */}
           <div className="px-6 pb-6">
             {/* Balance bar */}
             <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
@@ -714,7 +714,7 @@ export function ReservationFinancialSummary({
                               </span>
                               {deposit.title && (
                                 <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                  \u2014 {deposit.title}
+                                  — {deposit.title}
                                 </span>
                               )}
                             </div>
@@ -739,7 +739,7 @@ export function ReservationFinancialSummary({
                           </div>
 
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* Opłać \u2014 only when not readOnly */}
+                            {/* Opłać — only when not readOnly */}
                             {isPending && !readOnly && (
                               <button onClick={() => handleOpenPay(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50 transition-colors">
@@ -748,7 +748,7 @@ export function ReservationFinancialSummary({
                             )}
                             {isPaid && (
                               <>
-                                {/* PDF + Email \u2014 always available (read-only operations) */}
+                                {/* PDF + Email — always available (read-only operations) */}
                                 <button onClick={() => handleDownloadPdf(deposit)} disabled={pdfLoading === deposit.id}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800 dark:hover:bg-rose-900/50 transition-colors">
                                   {pdfLoading === deposit.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />} PDF
@@ -757,7 +757,7 @@ export function ReservationFinancialSummary({
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors">
                                   {isActioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />} Email
                                 </button>
-                                {/* Cofnij \u2014 only when not readOnly */}
+                                {/* Cofnij — only when not readOnly */}
                                 {!readOnly && (
                                   <button onClick={() => handleMarkUnpaid(deposit)} disabled={isActioning}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50 transition-colors">
@@ -766,7 +766,7 @@ export function ReservationFinancialSummary({
                                 )}
                               </>
                             )}
-                            {/* Anuluj zaliczkę \u2014 only when not readOnly */}
+                            {/* Anuluj zaliczkę — only when not readOnly */}
                             {!isCancelled && !isPaid && !readOnly && (
                               <button onClick={() => handleCancel(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors">
@@ -780,7 +780,7 @@ export function ReservationFinancialSummary({
                   </div>
                 )}
 
-                {/* Dodaj zaliczkę \u2014 only when not readOnly */}
+                {/* Dodaj zaliczkę — only when not readOnly */}
                 {!readOnly && (
                   <Button
                     size="sm"
@@ -806,7 +806,7 @@ export function ReservationFinancialSummary({
         </div>
       </Card>
 
-      {/* Create Deposit Modal \u2014 only render when not readOnly */}
+      {/* Create Deposit Modal — only render when not readOnly */}
       {!readOnly && (
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogContent className="sm:max-w-md">
@@ -852,7 +852,7 @@ export function ReservationFinancialSummary({
         </Dialog>
       )}
 
-      {/* Mark as Paid Modal \u2014 only render when not readOnly */}
+      {/* Mark as Paid Modal — only render when not readOnly */}
       {!readOnly && (
         <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
           <DialogContent className="sm:max-w-md">
