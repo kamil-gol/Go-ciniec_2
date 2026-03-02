@@ -9,6 +9,8 @@ jest.mock('../../../lib/prisma', () => {
     reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     deposit: { findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { findMany: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
   };
   const mock = {
     hall: { findUnique: jest.fn(), findFirst: jest.fn() },
@@ -32,6 +34,8 @@ jest.mock('../../../lib/prisma', () => {
     deposit: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
     activityLog: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
     $transaction: jest.fn((fn: any) => fn(txMock)),
     __txMock: txMock,
   };
@@ -41,6 +45,17 @@ jest.mock('../../../lib/prisma', () => {
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
   diffObjects: jest.fn().mockReturnValue({}),
+}));
+
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue(0),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockImplementation(
+    (adults: number, children: number, toddlers: number, ppa: number, ppc: number, ppt: number) =>
+      adults * ppa + children * ppc + toddlers * (ppt || 0)
+  ),
 }));
 
 jest.mock('../../../services/reservation-menu.service', () => ({
@@ -68,10 +83,10 @@ const EXISTING_RESERVATION = {
   children: 10,
   toddlers: 5,
   guests: 65,
-  pricePerAdult: '200',
-  pricePerChild: '100',
-  pricePerToddler: '50',
-  totalPrice: '11250',
+  pricePerAdult: 200,
+  pricePerChild: 100,
+  pricePerToddler: 50,
+  totalPrice: 11250,
   status: ReservationStatus.PENDING,
   notes: null,
   confirmationDeadline: null,
@@ -82,7 +97,7 @@ const EXISTING_RESERVATION = {
   archivedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  hall: { id: 'hall-uuid-001', name: 'Sala Główna', capacity: 100, isWholeVenue: false },
+  hall: { id: 'hall-uuid-001', name: 'Sala Główna', capacity: 100, isWholeVenue: false, allowMultipleBookings: false },
   client: { id: 'client-uuid-001', firstName: 'Jan', lastName: 'Kowalski', email: 'jan@test.pl', phone: null },
   eventType: { id: 'event-uuid-001', name: 'Wesele' },
   menuSnapshot: null,
@@ -95,6 +110,8 @@ beforeEach(() => {
   if (mockPrisma.reservation?.findMany) mockPrisma.reservation.findMany.mockResolvedValue([]);
   if (mockPrisma.reservation?.findFirst) mockPrisma.reservation.findFirst.mockResolvedValue(null);
   if (mockPrisma.hall?.findFirst) mockPrisma.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.serviceItem.findMany.mockResolvedValue([]);
+  mockPrisma.reservationExtra.findMany.mockResolvedValue([]);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
@@ -113,6 +130,8 @@ beforeEach(() => {
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({ count: 0 });
   txMock.reservationHistory.create.mockResolvedValue({});
+  txMock.serviceItem.findMany.mockResolvedValue([]);
+  txMock.reservationExtra.findMany.mockResolvedValue([]);
 });
 
 describe('ReservationService', () => {
@@ -156,7 +175,7 @@ describe('ReservationService', () => {
       await expect(service.updateReservation('res-uuid-001', {
         adults: 60,
         reason: 'short',
-      }, TEST_USER_ID)).rejects.toThrow(/Reason is required/);
+      }, TEST_USER_ID)).rejects.toThrow(/Powód zmian jest wymagany/);
     });
 
     it('should recalculate total price on guest change (no menu)', async () => {
