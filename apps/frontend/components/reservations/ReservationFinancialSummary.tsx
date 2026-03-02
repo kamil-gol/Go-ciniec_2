@@ -45,7 +45,7 @@ interface ReservationFinancialSummaryProps {
   endDateTime?: string
   /** Hours included in base price (default: 6h, from eventType.standardHours) */
   standardHours?: number
-  /** Cost per extra hour beyond standardHours (default: 500 PLN, from eventType.extraHourRate) */
+  /** Cost per extra hour beyond standardHours (default: 500 PLN, from eventType.extraHourRate; 0 = exempt) */
   extraHourRate?: number
   /** Reservation status (needed for discount section) */
   status?: string
@@ -210,6 +210,9 @@ export function ReservationFinancialSummary({
     const extraCost = extraHours * extraHourRate
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
   }, [startDateTime, endDateTime, standardHours, extraHourRate])
+
+  // Whether extra hour charges are exempt for this event type (rate = 0)
+  const isExtraHoursExempt = extraHourRate === 0
 
   // ── DISCOUNT: compute early so we can restore the pre-discount base ──
   const activeDiscountAmount = Number(discountAmount) || 0
@@ -531,12 +534,21 @@ export function ReservationFinancialSummary({
                         <span className="font-medium text-emerald-600">{standardHours}h</span>
                       </div>
                       <Separator className="my-2" />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
-                        </span>
-                        <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
-                      </div>
+                      {isExtraHoursExempt ? (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Dodatkowe godziny ({extraHoursInfo.extraHours}h)
+                          </span>
+                          <span className="font-semibold text-emerald-600">w cenie</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
+                          </span>
+                          <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -589,7 +601,7 @@ export function ReservationFinancialSummary({
                   <span>+{formatPLN(extrasTotalPrice)} zł</span>
                 </div>
               )}
-              {extraHoursInfo && extraHoursInfo.extraHours > 0 && (
+              {extraHoursInfo && extraHoursInfo.extraCost > 0 && (
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
                   <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
                   <span>+{formatPLN(extraHoursInfo.extraCost)} zł</span>
