@@ -53,8 +53,8 @@ export class EventTypeService {
         description: data.description?.trim() || null,
         color: data.color || null,
         isActive: data.isActive !== undefined ? data.isActive : true,
-        standardHours: data.standardHours ?? null,
-        extraHourRate: data.extraHourRate ?? null,
+        standardHours: data.standardHours ?? 6,
+        extraHourRate: data.extraHourRate ?? 500,
       }
     });
 
@@ -71,7 +71,7 @@ export class EventTypeService {
           color: eventType.color,
           isActive: eventType.isActive,
           standardHours: eventType.standardHours,
-          extraHourRate: eventType.extraHourRate,
+          extraHourRate: Number(eventType.extraHourRate),
         }
       }
     });
@@ -239,6 +239,8 @@ export class EventTypeService {
       name: et.name,
       color: et.color,
       isActive: et.isActive,
+      standardHours: et.standardHours,
+      extraHourRate: Number(et.extraHourRate),
       reservationCount: et._count.reservations,
       menuTemplateCount: et._count.menuTemplates,
     }));
