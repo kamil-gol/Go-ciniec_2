@@ -11,6 +11,7 @@
  * Updated: #165 — capacity-based overlap logic (multiple reservations per hall)
  * Updated: #172 — instant auto-archive on cancellation (no 30-day delay)
  * Updated: fix/pricing-and-encoding — recalculate totalPrice at end of create/update
+ * Updated: #176 — eventTypeId is immutable after creation (cascading side-effects)
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -50,7 +51,7 @@ function sanitizeString(value: any): string | null {
 const RESERVATION_INCLUDE = {
   hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true, allowMultipleBookings: true } },
   client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-  eventType: { select: { id: true, name: true } },
+  eventType: { select: { id: true, name: true, standardHours: true, extraHourRate: true } },
   createdBy: { select: { id: true, email: true } },
 } as const;
 
@@ -707,6 +708,13 @@ export class ReservationService {
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_UPDATE_COMPLETED);
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.CANNOT_UPDATE_CANCELLED);
     if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.CANNOT_UPDATE_ARCHIVED);
+
+    // #176: eventTypeId is immutable after creation — silently ignore if sent
+    // Changing eventType would invalidate menu (scoped per eventType), orphan custom fields,
+    // and require cascading recalculations. Admin should cancel + recreate instead.
+    if (data.eventTypeId !== undefined && data.eventTypeId !== existingReservation.eventTypeId) {
+      console.warn(`[Reservation] Ignored eventTypeId change attempt on ${id}: ${existingReservation.eventTypeId} → ${data.eventTypeId}`);
+    }
 
     if (data.menuPackageId !== undefined) {
       if (data.menuPackageId === null) {

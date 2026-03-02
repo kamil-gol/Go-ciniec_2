@@ -13,6 +13,8 @@ export interface EventType {
   description: string | null;
   color: string | null;
   isActive: boolean;
+  standardHours: number;
+  extraHourRate: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +31,8 @@ export interface EventTypeStats {
   name: string;
   color: string | null;
   isActive: boolean;
+  standardHours: number;
+  extraHourRate: number;
   reservationCount: number;
   menuTemplateCount: number;
 }
@@ -38,6 +42,8 @@ export interface CreateEventTypeData {
   description?: string;
   color?: string;
   isActive?: boolean;
+  standardHours?: number;
+  extraHourRate?: number;
 }
 
 export interface UpdateEventTypeData {
@@ -45,6 +51,8 @@ export interface UpdateEventTypeData {
   description?: string | null;
   color?: string | null;
   isActive?: boolean;
+  standardHours?: number;
+  extraHourRate?: number;
 }
 
 interface ApiResponse<T> {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { 
+import {
   ArrowLeft, Trash2, Clock, Archive, ArchiveRestore,
   Calendar, Users, User, Mail, Phone,
   Download, CheckCircle2, XCircle, History,
@@ -57,7 +57,7 @@ export default function ReservationDetailsPage() {
 
   const handleDownloadPDF = async () => {
     if (!reservation) return
-    
+
     try {
       setDownloading(true)
       await downloadReservationPDF(reservation.id)
@@ -78,13 +78,13 @@ export default function ReservationDetailsPage() {
 
   const handleArchive = async () => {
     if (!reservation) return
-    
+
     if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
 
     try {
-      await archiveMutation.mutateAsync({ 
-        id: reservation.id, 
-        reason: 'Zarchiwizowano przez użytkownika' 
+      await archiveMutation.mutateAsync({
+        id: reservation.id,
+        reason: 'Zarchiwizowano przez użytkownika'
       })
       toast({
         title: 'Sukces',
@@ -104,9 +104,9 @@ export default function ReservationDetailsPage() {
     if (!reservation) return
 
     try {
-      await unarchiveMutation.mutateAsync({ 
-        id: reservation.id, 
-        reason: 'Przywrócono z archiwum' 
+      await unarchiveMutation.mutateAsync({
+        id: reservation.id,
+        reason: 'Przywrócono z archiwum'
       })
       toast({
         title: 'Sukces',
@@ -124,7 +124,7 @@ export default function ReservationDetailsPage() {
 
   const handleCancel = async () => {
     if (!reservation) return
-    
+
     const reason = prompt('Podaj powód anulowania rezerwacji:')
     if (!reason) return
 
@@ -171,11 +171,11 @@ export default function ReservationDetailsPage() {
     )
   }
 
-  const eventDate = reservation.startDateTime 
-    ? new Date(reservation.startDateTime) 
-    : reservation.date 
-    ? new Date(reservation.date) 
-    : null
+  const eventDate = reservation.startDateTime
+    ? new Date(reservation.startDateTime)
+    : reservation.date
+      ? new Date(reservation.date)
+      : null
 
   const isCancellable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
   const isEditable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED' && reservation.status !== 'ARCHIVED'
@@ -183,14 +183,26 @@ export default function ReservationDetailsPage() {
   const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
   const isArchived = !!reservation.archivedAt
 
+  // Pricing config — read directly from reservation.eventType (backend includes standardHours & extraHourRate).
+  // Fallback to legacy defaults (6h / 500 PLN) only if eventType somehow lacks the fields.
+  const resolvedStandardHours =
+    typeof reservation.eventType?.standardHours === 'number'
+      ? reservation.eventType.standardHours
+      : 6
+
+  const resolvedExtraHourRate =
+    reservation.eventType?.extraHourRate != null && reservation.eventType?.extraHourRate !== ''
+      ? Number(reservation.eventType.extraHourRate)
+      : 500
+
   // Banner message for read-only mode
   const readOnlyBannerMessage = reservation.status === 'CANCELLED'
     ? 'Ta rezerwacja została anulowana. Dane są dostępne tylko do odczytu.'
     : reservation.status === 'ARCHIVED'
-    ? 'Ta rezerwacja jest zarchiwizowana. Dane są dostępne tylko do odczytu.'
-    : reservation.status === 'COMPLETED'
-    ? 'Ta rezerwacja została zrealizowana. Dane są dostępne tylko do odczytu.'
-    : null
+      ? 'Ta rezerwacja jest zarchiwizowana. Dane są dostępne tylko do odczytu.'
+      : reservation.status === 'COMPLETED'
+        ? 'Ta rezerwacja została zrealizowana. Dane są dostępne tylko do odczytu.'
+        : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -206,7 +218,7 @@ export default function ReservationDetailsPage() {
         {/* Premium Hero Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 p-5 sm:p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-          
+
           <div className="relative z-10 space-y-4 sm:space-y-6">
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
@@ -249,8 +261,8 @@ export default function ReservationDetailsPage() {
               </div>
 
               <div className="flex gap-2 sm:gap-3">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={handleDownloadPDF}
                   disabled={downloading}
                   className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
@@ -397,7 +409,7 @@ export default function ReservationDetailsPage() {
                 disabled={isReadOnly}
               />
 
-              {/* Notatka wewnętrzna (Etap 5) \u2014 nie trafia do PDF */}
+              {/* Notatka wewnętrzna (Etap 5) — nie trafia do PDF */}
               <EditableInternalNotesCard
                 reservationId={reservation.id}
                 internalNotes={reservation.internalNotes ?? null}
@@ -429,7 +441,7 @@ export default function ReservationDetailsPage() {
                 disabled={isReadOnly}
               />
 
-              {/* Financial Summary */}
+              {/* Financial Summary — always renders immediately, no hydration needed */}
               <ReservationFinancialSummary
                 reservationId={reservation.id}
                 adults={reservation.adults || 0}
@@ -441,6 +453,8 @@ export default function ReservationDetailsPage() {
                 totalPrice={Number(reservation.totalPrice) || 0}
                 startDateTime={reservation.startDateTime}
                 endDateTime={reservation.endDateTime}
+                standardHours={resolvedStandardHours}
+                extraHourRate={resolvedExtraHourRate}
                 status={reservation.status}
                 discountType={reservation.discountType}
                 discountValue={reservation.discountValue}
@@ -457,9 +471,9 @@ export default function ReservationDetailsPage() {
                 <div className="p-5 sm:p-6">
                   <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
                   <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start" 
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
                       size="lg"
                       onClick={handleDownloadPDF}
                       disabled={downloading}
@@ -467,11 +481,11 @@ export default function ReservationDetailsPage() {
                       <Download className="mr-2 h-4 w-4" />
                       {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
                     </Button>
-                    
+
                     {!isArchived ? (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start text-neutral-600 hover:text-neutral-700" 
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-neutral-600 hover:text-neutral-700"
                         size="lg"
                         disabled={archiveMutation.isPending || isReadOnly}
                         onClick={handleArchive}
@@ -480,9 +494,9 @@ export default function ReservationDetailsPage() {
                         {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
                       </Button>
                     ) : (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start text-green-600 hover:text-green-700" 
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-green-600 hover:text-green-700"
                         size="lg"
                         disabled={unarchiveMutation.isPending}
                         onClick={handleUnarchive}
@@ -491,10 +505,10 @@ export default function ReservationDetailsPage() {
                         {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
                       </Button>
                     )}
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start text-red-600 hover:text-red-700" 
+
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-red-600 hover:text-red-700"
                       size="lg"
                       disabled={!isCancellable || cancelMutation.isPending || isReadOnly}
                       onClick={handleCancel}
