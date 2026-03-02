@@ -43,7 +43,9 @@ interface ReservationFinancialSummaryProps {
   startDateTime?: string
   /** ISO datetime string for event end */
   endDateTime?: string
-  /** Cost per extra hour beyond standard 6h (default: 500 PLN) */
+  /** Hours included in base price (default: 6h, from eventType.standardHours) */
+  standardHours?: number
+  /** Cost per extra hour beyond standardHours (default: 500 PLN, from eventType.extraHourRate) */
   extraHourRate?: number
   /** Reservation status (needed for discount section) */
   status?: string
@@ -158,6 +160,7 @@ export function ReservationFinancialSummary({
   totalPrice,
   startDateTime,
   endDateTime,
+  standardHours = STANDARD_HOURS,
   extraHourRate = DEFAULT_EXTRA_HOUR_RATE,
   status,
   discountType,
@@ -195,7 +198,7 @@ export function ReservationFinancialSummary({
     ? priceBreakdown.packageCost.toddlers.priceEach
     : pricePerToddler
 
-  // Extra hours calculation
+  // Extra hours calculation — uses per-event-type standardHours & extraHourRate
   const extraHoursInfo = useMemo(() => {
     if (!startDateTime || !endDateTime) return null
     const start = new Date(startDateTime)
@@ -203,10 +206,10 @@ export function ReservationFinancialSummary({
     const durationMs = end.getTime() - start.getTime()
     if (durationMs <= 0) return null
     const durationHours = durationMs / (1000 * 60 * 60)
-    const extraHours = Math.max(0, Math.ceil(durationHours - STANDARD_HOURS))
+    const extraHours = Math.max(0, Math.ceil(durationHours - standardHours))
     const extraCost = extraHours * extraHourRate
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
-  }, [startDateTime, endDateTime, extraHourRate])
+  }, [startDateTime, endDateTime, standardHours, extraHourRate])
 
   // ── DISCOUNT: compute early so we can restore the pre-discount base ──
   const activeDiscountAmount = Number(discountAmount) || 0
@@ -523,9 +526,9 @@ export function ReservationFinancialSummary({
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Czas w cenie (standard)
+                          Czas w cenie ({standardHours !== STANDARD_HOURS ? 'typ wydarzenia' : 'standard'})
                         </span>
-                        <span className="font-medium text-emerald-600">{STANDARD_HOURS}h</span>
+                        <span className="font-medium text-emerald-600">{standardHours}h</span>
                       </div>
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm">
@@ -739,7 +742,6 @@ export function ReservationFinancialSummary({
                           </div>
 
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* Opłać — only when not readOnly */}
                             {isPending && !readOnly && (
                               <button onClick={() => handleOpenPay(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50 transition-colors">
@@ -748,7 +750,6 @@ export function ReservationFinancialSummary({
                             )}
                             {isPaid && (
                               <>
-                                {/* PDF + Email — always available (read-only operations) */}
                                 <button onClick={() => handleDownloadPdf(deposit)} disabled={pdfLoading === deposit.id}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800 dark:hover:bg-rose-900/50 transition-colors">
                                   {pdfLoading === deposit.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />} PDF
@@ -757,7 +758,6 @@ export function ReservationFinancialSummary({
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors">
                                   {isActioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />} Email
                                 </button>
-                                {/* Cofnij — only when not readOnly */}
                                 {!readOnly && (
                                   <button onClick={() => handleMarkUnpaid(deposit)} disabled={isActioning}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50 transition-colors">
@@ -766,7 +766,6 @@ export function ReservationFinancialSummary({
                                 )}
                               </>
                             )}
-                            {/* Anuluj zaliczkę — only when not readOnly */}
                             {!isCancelled && !isPaid && !readOnly && (
                               <button onClick={() => handleCancel(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors">
@@ -780,7 +779,6 @@ export function ReservationFinancialSummary({
                   </div>
                 )}
 
-                {/* Dodaj zaliczkę — only when not readOnly */}
                 {!readOnly && (
                   <Button
                     size="sm"
@@ -806,7 +804,7 @@ export function ReservationFinancialSummary({
         </div>
       </Card>
 
-      {/* Create Deposit Modal — only render when not readOnly */}
+      {/* Create Deposit Modal */}
       {!readOnly && (
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogContent className="sm:max-w-md">
@@ -852,7 +850,7 @@ export function ReservationFinancialSummary({
         </Dialog>
       )}
 
-      {/* Mark as Paid Modal — only render when not readOnly */}
+      {/* Mark as Paid Modal */}
       {!readOnly && (
         <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
           <DialogContent className="sm:max-w-md">
