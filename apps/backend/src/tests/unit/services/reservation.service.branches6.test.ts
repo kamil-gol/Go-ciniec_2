@@ -22,6 +22,9 @@ jest.mock('../../../lib/prisma', () => {
     },
     deposit: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
+    activityLog: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
   };
   return { prisma: mockPrisma };
@@ -32,9 +35,20 @@ jest.mock('../../../utils/audit-logger', () => ({
   diffObjects: jest.fn().mockReturnValue({}),
 }));
 
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue(0),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockImplementation(
+    (adults: number, children: number, toddlers: number, ppa: number, ppc: number, ppt: number) =>
+      adults * ppa + children * ppc + toddlers * (ppt || 0)
+  ),
+}));
+
 jest.mock('../../../utils/reservation.utils', () => ({
   calculateTotalGuests: jest.fn((a: number, c: number, t: number) => a + c + t),
-  calculateTotalPrice: jest.fn((...args: number[]) => args[0] * args[2] + args[1] * args[3]),
+  calculateTotalPrice: jest.fn((a: number, c: number, t: number, pa: number, pc: number, pt: number) => a * pa + c * pc + t * (pt || 0)),
   validateConfirmationDeadline: jest.fn().mockReturnValue(true),
   validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
   detectReservationChanges: jest.fn().mockReturnValue([]),
@@ -65,7 +79,7 @@ const baseExisting = {
   adults: 50, children: 10, toddlers: 5,
   pricePerAdult: 200, pricePerChild: 100, pricePerToddler: 0,
   totalPrice: 11000, menuSnapshot: null,
-  hall: { id: 'h1', name: 'Sala A', capacity: 300, isWholeVenue: false },
+  hall: { id: 'h1', name: 'Sala A', capacity: 300, isWholeVenue: false, allowMultipleBookings: false },
   eventType: { id: 'e1', name: 'Wedding' },
   client: { id: 'c1', firstName: 'J', lastName: 'K' },
 };
@@ -78,6 +92,8 @@ beforeEach(() => {
   mockPrisma.reservation.findFirst.mockResolvedValue(null);
   mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.hall.findUnique.mockResolvedValue(baseExisting.hall);
+  mockPrisma.serviceItem.findMany.mockResolvedValue([]);
+  mockPrisma.reservationExtra.findMany.mockResolvedValue([]);
   service = new ReservationService();
 });
 
