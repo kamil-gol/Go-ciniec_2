@@ -66,6 +66,8 @@ interface ReservationPDFData {
   };
   eventType?: {
     name: string;
+    standardHours?: number | null;
+    extraHourRate?: number | null;
   };
   customEventType?: string;
   date?: string;
@@ -82,6 +84,7 @@ interface ReservationPDFData {
   pricePerToddler: number;
   totalPrice: number;
   extrasTotalPrice?: number;
+  extraHoursCost?: number | null;
   // #137: Venue surcharge fields
   venueSurcharge?: number | null;
   venueSurchargeLabel?: string | null;
@@ -1076,6 +1079,20 @@ export class PDFService {
       dateStr && timeStr ? `${dateStr}  ${timeStr}` : dateStr || timeStr,
       guestLine,
     ];
+
+    // #176: Duration with extra hours info
+    if (r.startDateTime && r.endDateTime) {
+      const durationMs = new Date(r.endDateTime).getTime() - new Date(r.startDateTime).getTime();
+      const durationHours = Math.round(durationMs / (1000 * 60 * 60) * 10) / 10;
+      const standardHours = r.eventType?.standardHours;
+      if (standardHours && durationHours > standardHours) {
+        const extraHours = Math.round((durationHours - standardHours) * 10) / 10;
+        eventDetails.push(`Czas: ${durationHours}h (${standardHours}h + ${extraHours}h extra)`);
+      } else {
+        eventDetails.push(`Czas trwania: ${durationHours}h`);
+      }
+    }
+
     /* istanbul ignore next */
     if (r.birthdayAge) eventDetails.push(`Wiek jubilata: ${r.birthdayAge} lat`);
     /* istanbul ignore next */
@@ -1251,6 +1268,7 @@ export class PDFService {
     const extrasTotalCalc = (r.reservationExtras || [])
       .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     const venueSurchargeAmount = Number(r.venueSurcharge) || 0;
+    const extraHoursCostAmt = Number(r.extraHoursCost) || 0;
     const displayTotal = Number(r.totalPrice) + extrasTotalCalc;
 
     /* istanbul ignore next */
@@ -1264,6 +1282,7 @@ export class PDFService {
     if (r.toddlers > 0 && r.pricePerToddler > 0) rowCount++;
     if (extrasTotalCalc > 0) rowCount++;
     if (venueSurchargeAmount > 0) rowCount++;
+    if (extraHoursCostAmt > 0) rowCount++;
     rowCount++; // RAZEM
     if (deposit) rowCount += 2; // deposit + DO ZAPŁATY
     const boxHeight = 22 + rowCount * 13 + (deposit ? 14 : 0);
@@ -1314,6 +1333,18 @@ export class PDFService {
       const surchargeLabel = r.venueSurchargeLabel || 'Dopłata za cały obiekt';
       doc.text(surchargeLabel, labelX, y);
       doc.text(this.formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
+      y += 13;
+    }
+    if (extraHoursCostAmt > 0) {
+      const extraHourRate = Number(r.eventType?.extraHourRate) || 0;
+      const extraHoursCount = extraHourRate > 0
+        ? Math.round(extraHoursCostAmt / extraHourRate * 10) / 10
+        : 0;
+      const extraLabel = extraHourRate > 0
+        ? `Dodatkowe godziny: ${extraHoursCount}h \u00d7 ${this.formatCurrency(extraHourRate)}/h`
+        : 'Dodatkowe godziny';
+      doc.text(extraLabel, labelX, y);
+      doc.text(this.formatCurrency(extraHoursCostAmt), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
 
