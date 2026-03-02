@@ -31,6 +31,10 @@ import {
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 
+// Legacy defaults used when EventType pricing config is unavailable
+const FALLBACK_STANDARD_HOURS = 6
+const FALLBACK_EXTRA_HOUR_RATE = 500
+
 type TabType = 'details' | 'history'
 
 export default function ReservationDetailsPage() {
@@ -40,6 +44,7 @@ export default function ReservationDetailsPage() {
   const [downloading, setDownloading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
   const [hydratedEventType, setHydratedEventType] = useState<EventTypeWithCounts | null>(null)
+  const [hydrationFailed, setHydrationFailed] = useState(false)
 
   const reservationId = params.id as string
 
@@ -67,14 +72,22 @@ export default function ReservationDetailsPage() {
       const hasStandardHours = typeof reservation?.eventType?.standardHours === 'number'
       const hasExtraHourRate = reservation?.eventType?.extraHourRate != null && reservation?.eventType?.extraHourRate !== ''
 
-      if (hasStandardHours && hasExtraHourRate) return
+      if (hasStandardHours && hasExtraHourRate) {
+        // Data already present from the reservation API — no hydration needed
+        setHydrationFailed(false)
+        return
+      }
 
       try {
         const fullEventType = await getEventTypeById(eventTypeId)
-        if (!cancelled) setHydratedEventType(fullEventType)
+        if (!cancelled) {
+          setHydratedEventType(fullEventType)
+          setHydrationFailed(false)
+        }
       } catch {
-        // If hydration fails, leave null; UI will fall back to showing a loading card for financial summary.
-        if (!cancelled) setHydratedEventType(null)
+        // Hydration failed — use legacy fallback defaults so UI is never stuck on spinner
+        console.warn(`[ReservationDetails] Could not hydrate EventType ${eventTypeId}, using fallback defaults`)
+        if (!cancelled) setHydrationFailed(true)
       }
     }
 
@@ -217,16 +230,20 @@ export default function ReservationDetailsPage() {
   const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
   const isArchived = !!reservation.archivedAt
 
+  // Resolve pricing config: reservation.eventType → hydrated → fallback defaults
   const resolvedStandardHours =
     (typeof reservation.eventType?.standardHours === 'number'
       ? reservation.eventType.standardHours
-      : hydratedEventType?.standardHours)
+      : hydratedEventType?.standardHours
+        ?? (hydrationFailed ? FALLBACK_STANDARD_HOURS : undefined))
 
   const resolvedExtraHourRate =
     (reservation.eventType?.extraHourRate != null && reservation.eventType?.extraHourRate !== ''
       ? Number(reservation.eventType.extraHourRate)
-      : hydratedEventType?.extraHourRate)
+      : hydratedEventType?.extraHourRate
+        ?? (hydrationFailed ? FALLBACK_EXTRA_HOUR_RATE : undefined))
 
+  // Ready when: no eventType, OR both values resolved, OR hydration explicitly failed (use fallbacks)
   const isPricingConfigReady =
     !reservation.eventType?.id ||
     (typeof resolvedStandardHours === 'number' && Number.isFinite(resolvedStandardHours) &&
