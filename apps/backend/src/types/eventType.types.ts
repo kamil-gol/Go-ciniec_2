@@ -8,6 +8,8 @@ export interface CreateEventTypeDTO {
   description?: string;
   color?: string;
   isActive?: boolean;
+  standardHours?: number | null;
+  extraHourRate?: number | null;
 }
 
 export interface UpdateEventTypeDTO {
@@ -15,6 +17,8 @@ export interface UpdateEventTypeDTO {
   description?: string | null;
   color?: string | null;
   isActive?: boolean;
+  standardHours?: number | null;
+  extraHourRate?: number | null;
 }
 
 export interface EventTypeResponse {
@@ -23,6 +27,8 @@ export interface EventTypeResponse {
   description: string | null;
   color: string | null;
   isActive: boolean;
+  standardHours: number | null;
+  extraHourRate: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
