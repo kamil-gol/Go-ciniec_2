@@ -48,7 +48,7 @@ jest.mock('../../../utils/AppError', () => {
     }
     static unauthorized(msg?: string) { return new MockAppError(msg || 'Unauthorized', 401); }
     static badRequest(msg: string) { return new MockAppError(msg, 400); }
-    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
+    static notFound(entity: string) { return new MockAppError(`Nie znaleziono: ${entity}`, 404); }
   }
   return { AppError: MockAppError };
 });
