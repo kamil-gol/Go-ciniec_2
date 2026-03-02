@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Power, Palette } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Power, Palette, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,8 +40,8 @@ export default function EventTypeDetailPage() {
     } catch (error: any) {
       console.error('Error loading event type:', error)
       toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować typu wydarzenia',
+        title: 'B\u0142\u0105d',
+        description: 'Nie uda\u0142o si\u0119 za\u0142adowa\u0107 typu wydarzenia',
         variant: 'destructive',
       })
       router.push('/dashboard/event-types')
@@ -57,11 +57,11 @@ export default function EventTypeDetailPage() {
       await updateEventType(eventType.id, { isActive: checked })
       toast({
         title: checked ? 'Aktywowany' : 'Dezaktywowany',
-        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
+        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'zosta\u0142 dezaktywowany'}`,
       })
       loadEventType()
     } catch (error: any) {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
+      toast({ title: 'B\u0142\u0105d', description: 'Nie uda\u0142o si\u0119 zmieni\u0107 statusu', variant: 'destructive' })
     } finally {
       setToggling(false)
     }
@@ -98,6 +98,9 @@ export default function EventTypeDetailPage() {
     year: 'numeric',
   })
 
+  const effectiveStandardHours = eventType.standardHours ?? 6
+  const effectiveExtraHourRate = eventType.extraHourRate ?? 500
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
@@ -110,7 +113,7 @@ export default function EventTypeDetailPage() {
             <Link href="/dashboard/event-types">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+                Powr\u00f3t do listy
               </Button>
             </Link>
 
@@ -152,7 +155,7 @@ export default function EventTypeDetailPage() {
                   </Badge>
                   <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
                     <FileText className="h-3 w-3 mr-1" />
-                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablonów'} menu
+                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablon\u00f3w'} menu
                   </Badge>
                 </div>
               </div>
@@ -165,7 +168,7 @@ export default function EventTypeDetailPage() {
                   onClick={() => setDeleteOpen(true)}
                 >
                   <Trash2 className="mr-2 h-5 w-5" />
-                  Usuń
+                  Usu\u0144
                 </Button>
                 <Button
                   size="lg"
@@ -240,67 +243,131 @@ export default function EventTypeDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Relations Card */}
+          {/* Pricing / Extra Hours Card */}
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                  <Timer className="h-5 w-5 text-white" />
+                </div>
+                Czas &amp; dodatkowe godziny
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Standard hours */}
+                <div className="rounded-xl bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border border-blue-100 dark:border-blue-900/30 p-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                        <Clock className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="font-semibold">Godziny w cenie</span>
+                    </div>
+                    <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{effectiveStandardHours}h</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Ilo\u015b\u0107 godzin wliczonych w cen\u0119 podstawow\u0105 rezerwacji
+                  </p>
+                </div>
+
+                {/* Extra hour rate */}
+                <div className="rounded-xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-100 dark:border-emerald-900/30 p-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+                        <Timer className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="font-semibold">Stawka za dodatkow\u0105 godzin\u0119</span>
+                    </div>
+                    <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{effectiveExtraHourRate} z\u0142</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Koszt ka\u017cdej godziny powy\u017cej {effectiveStandardHours}h wliczonych w cen\u0119
+                  </p>
+                </div>
+
+                {/* Example calculation */}
+                <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Przyk\u0142ad kalkulacji</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Wydarzenie {effectiveStandardHours + 2}h</span>
+                      <span className="font-medium">2 dodatkowe godziny</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Dop\u0142ata</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">+{effectiveExtraHourRate * 2} z\u0142</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Relations Card */}
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
-                Powiązania
+                Powi\u0105zania
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Reservations */}
-              <div className="rounded-xl bg-gradient-to-br from-violet-500/5 to-purple-500/5 border border-violet-100 dark:border-violet-900/30 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
-                      <Calendar className="h-4 w-4 text-white" />
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Reservations */}
+                <div className="rounded-xl bg-gradient-to-br from-violet-500/5 to-purple-500/5 border border-violet-100 dark:border-violet-900/30 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
+                        <Calendar className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="font-semibold">Rezerwacje</span>
                     </div>
-                    <span className="font-semibold">Rezerwacje</span>
+                    <span className="text-3xl font-bold text-violet-600 dark:text-violet-400">{reservationCount}</span>
                   </div>
-                  <span className="text-3xl font-bold text-violet-600 dark:text-violet-400">{reservationCount}</span>
+                  {reservationCount > 0 ? (
+                    <Link href={`/dashboard/reservations?eventType=${eventType.id}`}>
+                      <Button variant="outline" size="sm" className="w-full border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950/50">
+                        Zobacz rezerwacje
+                      </Button>
+                    </Link>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center">Brak powi\u0105zanych rezerwacji</p>
+                  )}
                 </div>
-                {reservationCount > 0 ? (
-                  <Link href={`/dashboard/reservations?eventType=${eventType.id}`}>
-                    <Button variant="outline" size="sm" className="w-full border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950/50">
-                      Zobacz rezerwacje
-                    </Button>
-                  </Link>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center">Brak powiązanych rezerwacji</p>
-                )}
-              </div>
 
-              {/* Menu Templates */}
-              <div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-100 dark:border-amber-900/30 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
-                      <FileText className="h-4 w-4 text-white" />
+                {/* Menu Templates */}
+                <div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-100 dark:border-amber-900/30 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+                        <FileText className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="font-semibold">Szablony menu</span>
                     </div>
-                    <span className="font-semibold">Szablony menu</span>
+                    <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">{templateCount}</span>
                   </div>
-                  <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">{templateCount}</span>
+                  {templateCount > 0 ? (
+                    <Link href={`/dashboard/menu?eventType=${eventType.id}`}>
+                      <Button variant="outline" size="sm" className="w-full border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/50">
+                        Zobacz szablony
+                      </Button>
+                    </Link>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center">Brak powi\u0105zanych szablon\u00f3w</p>
+                  )}
                 </div>
-                {templateCount > 0 ? (
-                  <Link href={`/dashboard/menu?eventType=${eventType.id}`}>
-                    <Button variant="outline" size="sm" className="w-full border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/50">
-                      Zobacz szablony
-                    </Button>
-                  </Link>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center">Brak powiązanych szablonów</p>
-                )}
               </div>
 
               {reservationCount === 0 && templateCount === 0 && (
-                <div className="text-center py-4">
+                <div className="text-center py-4 mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Ten typ nie ma jeszcze żadnych powiązań.
+                    Ten typ nie ma jeszcze \u017cadnych powi\u0105za\u0144.
                     <br />
-                    Zostanie użyty przy tworzeniu rezerwacji lub szablonów menu.
+                    Zostanie u\u017cyty przy tworzeniu rezerwacji lub szablon\u00f3w menu.
                   </p>
                 </div>
               )}
