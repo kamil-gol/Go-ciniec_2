@@ -3,7 +3,15 @@
  * Tests: validation branches for discount application
  */
 
-jest.mock('../../../lib/prisma');
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
+    reservation: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+  },
+}));
+
 jest.mock('../../../utils/recalculate-price', () => ({
   computeReservationBasePrice: jest.fn().mockResolvedValue({
     basePrice: 1000,
@@ -15,6 +23,7 @@ jest.mock('../../../utils/recalculate-price', () => ({
   }),
   recalculateReservationPrice: jest.fn().mockResolvedValue(undefined),
 }));
+
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
 }));
@@ -32,14 +41,11 @@ const RESERVATION = {
   discountAmount: null,
   discountType: null,
   priceBeforeDiscount: null,
+  client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski' },
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
-  db.reservation = {
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  };
   (computeReservationBasePrice as jest.Mock).mockResolvedValue({
     basePrice: 1000,
     breakdown: {},

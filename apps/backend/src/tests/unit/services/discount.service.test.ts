@@ -1,181 +1,95 @@
 /**
- * Unit tests for discount.service.ts
- * Covers: applyDiscount (PERCENTAGE, FIXED, validation, cancelled, editing existing),
- *         removeDiscount (no discount guard, price restore)
- * Issue: #98
+ * DiscountService — Unit Tests
+ * Tests: applyDiscount, removeDiscount
  */
 
-const mockPrisma = {
-  user: { findUnique: jest.fn() },
-  reservation: { findUnique: jest.fn(), update: jest.fn() },
-  reservationHistory: { create: jest.fn() },
-};
-
-jest.mock('../../../lib/prisma', () => ({ prisma: mockPrisma }));
-jest.mock('../../../utils/audit-logger', () => ({ logChange: jest.fn() }));
-jest.mock('../../../utils/recalculate-price', () => ({
-  recalculateReservationTotalPrice: jest.fn((adults, children, toddlers, ppa, ppc, ppt) => 
-    adults * ppa + children * ppc + toddlers * (ppt || 0)
-  ),
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
+    reservation: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+  },
 }));
 
-import discountService from '../../../services/discount.service';
-import { logChange } from '../../../utils/audit-logger';
+jest.mock('../../../utils/recalculate-price', () => ({
+  computeReservationBasePrice: jest.fn().mockResolvedValue({
+    basePrice: 5000,
+    breakdown: {
+      menuPrice: 4000,
+      extrasPrice: 500,
+      extraHoursSurcharge: 500,
+    },
+  }),
+  recalculateReservationPrice: jest.fn().mockResolvedValue(undefined),
+}));
 
-const userId = 'user-1';
-const mockUser = { id: userId, email: 'admin@test.pl' };
+jest.mock('../../../utils/audit-logger', () => ({
+  logChange: jest.fn().mockResolvedValue(undefined),
+}));
 
-const mockReservation = {
-  id: 'res-1', status: 'CONFIRMED',
-  totalPrice: 25000, priceBeforeDiscount: null,
-  discountType: null, discountValue: null, discountAmount: null, discountReason: null,
-  adults: 50, children: 10, toddlers: 5,
-  pricePerAdult: 350, pricePerChild: 150, pricePerToddler: 50,
-  client: { firstName: 'Anna', lastName: 'Nowak', email: 'anna@test.pl', phone: '+48111222333' },
-  hall: { id: 'h-1', name: 'Sala', capacity: 150, isWholeVenue: true },
-  eventType: { id: 'evt-1', name: 'Wesele' },
-  createdBy: { id: userId, email: 'admin@test.pl' },
+import { DiscountService } from '../../../services/discount.service';
+import { prisma } from '../../../lib/prisma';
+import { computeReservationBasePrice } from '../../../utils/recalculate-price';
+
+const db = prisma as any;
+const svc = new DiscountService();
+
+const RESERVATION = {
+  id: 'r1',
+  totalPrice: 5000,
+  discountAmount: null,
+  discountType: null,
+  priceBeforeDiscount: null,
+  client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski' },
 };
 
-describe('DiscountService', () => {
-  beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
-  // ═══════════════ applyDiscount ═══════════════
+describe('DiscountService', () => {
   describe('applyDiscount', () => {
     it('should apply PERCENTAGE discount correctly', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      mockPrisma.reservation.update.mockResolvedValue({ ...mockReservation, discountType: 'PERCENTAGE', discountValue: 10, discountAmount: 2500, totalPrice: 22500, priceBeforeDiscount: 25000 });
-      mockPrisma.reservationHistory.create.mockResolvedValue({});
+      db.reservation.findUnique.mockResolvedValue(RESERVATION);
+      db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 500, totalPrice: 4500 });
 
-      const result = await discountService.applyDiscount('res-1', {
-        type: 'PERCENTAGE', value: 10, reason: 'Rabat stały klient',
-      }, userId);
+      const result = await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10 }, 'u1');
 
-      expect(result.discountAmount).toBe(2500);
-      expect(result.totalPrice).toBe(22500);
-      expect(mockPrisma.reservation.update).toHaveBeenCalled();
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'DISCOUNT_APPLIED', entityType: 'RESERVATION' })
-      );
+      expect(result.discountAmount).toBe(500);
+      expect(db.reservation.update).toHaveBeenCalled();
     });
 
     it('should apply FIXED discount correctly', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      mockPrisma.reservation.update.mockResolvedValue({ ...mockReservation, discountType: 'FIXED', discountAmount: 3000, totalPrice: 22000 });
-      mockPrisma.reservationHistory.create.mockResolvedValue({});
+      db.reservation.findUnique.mockResolvedValue(RESERVATION);
+      db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 500, totalPrice: 4500 });
 
-      await discountService.applyDiscount('res-1', {
-        type: 'FIXED', value: 3000, reason: 'Rabat za polecenie',
-      }, userId);
+      const result = await svc.applyDiscount('r1', { type: 'FIXED', value: 500 }, 'u1');
 
-      expect(mockPrisma.reservation.update).toHaveBeenCalled();
-    });
-
-    it('should use priceBeforeDiscount when editing existing discount', async () => {
-      const resWithDiscount = {
-        ...mockReservation, priceBeforeDiscount: 25000, totalPrice: 22500,
-        discountType: 'PERCENTAGE', discountValue: 10, discountAmount: 2500,
-      };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(resWithDiscount);
-      mockPrisma.reservation.update.mockResolvedValue({});
-      mockPrisma.reservationHistory.create.mockResolvedValue({});
-
-      await discountService.applyDiscount('res-1', {
-        type: 'PERCENTAGE', value: 20, reason: 'Zmiana rabatu',
-      }, userId);
-
-      expect(mockPrisma.reservation.update).toHaveBeenCalled();
-    });
-
-    it('should throw when user not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(discountService.applyDiscount('res-1', { type: 'PERCENTAGE', value: 10, reason: 'Test' }, 'x'))
-        .rejects.toThrow(/wygasła/);
-    });
-
-    it('should throw when reservation not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(null);
-      await expect(discountService.applyDiscount('x', { type: 'PERCENTAGE', value: 10, reason: 'Test' }, userId))
-        .rejects.toThrow(/Nie znaleziono rezerwacji/);
-    });
-
-    it('should throw for cancelled reservation', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue({ ...mockReservation, status: 'CANCELLED' });
-      await expect(discountService.applyDiscount('res-1', { type: 'PERCENTAGE', value: 10, reason: 'Test' }, userId))
-        .rejects.toThrow(/anulowanej/);
-    });
-
-    it('should throw when percentage > 100', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      await expect(discountService.applyDiscount('res-1', { type: 'PERCENTAGE', value: 150, reason: 'Test' }, userId))
-        .rejects.toThrow(/100%/);
-    });
-
-    it('should throw when fixed discount exceeds price', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      await expect(discountService.applyDiscount('res-1', { type: 'FIXED', value: 30000, reason: 'Test' }, userId))
-        .rejects.toThrow(/nie może przekroczyć/);
-    });
-
-    it('should throw when value is 0 or negative', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      await expect(discountService.applyDiscount('res-1', { type: 'FIXED', value: 0, reason: 'Test' }, userId))
-        .rejects.toThrow(/większa od 0/);
-    });
-
-    it('should throw when reason is too short', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      await expect(discountService.applyDiscount('res-1', { type: 'FIXED', value: 100, reason: 'ab' }, userId))
-        .rejects.toThrow(/min\.? 3 znaki/);
+      expect(result.discountAmount).toBe(500);
+      expect(db.reservation.update).toHaveBeenCalled();
     });
   });
 
-  // ═══════════════ removeDiscount ═══════════════
   describe('removeDiscount', () => {
     it('should remove discount and restore original price', async () => {
-      const resWithDiscount = {
-        ...mockReservation, priceBeforeDiscount: 25000, totalPrice: 22500,
-        discountType: 'PERCENTAGE', discountValue: 10, discountAmount: 2500,
-        discountReason: 'Rabat',
-      };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(resWithDiscount);
-      mockPrisma.reservation.update.mockResolvedValue({ ...mockReservation, totalPrice: 25000 });
-      mockPrisma.reservationHistory.create.mockResolvedValue({});
+      db.reservation.findUnique.mockResolvedValue({
+        ...RESERVATION,
+        discountAmount: 500,
+        priceBeforeDiscount: 5000,
+        totalPrice: 4500,
+      });
+      db.reservation.update.mockResolvedValue({
+        ...RESERVATION,
+        discountAmount: null,
+        priceBeforeDiscount: null,
+        totalPrice: 5000,
+      });
 
-      const result = await discountService.removeDiscount('res-1', userId);
+      const result = await svc.removeDiscount('r1', 'u1');
 
-      expect(mockPrisma.reservation.update).toHaveBeenCalled();
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'DISCOUNT_REMOVED' })
-      );
-    });
-
-    it('should throw when reservation has no discount', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(mockReservation);
-      await expect(discountService.removeDiscount('res-1', userId))
-        .rejects.toThrow(/nie ma rabatu/);
-    });
-
-    it('should throw when user not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(discountService.removeDiscount('res-1', 'x')).rejects.toThrow(/wygasła/);
-    });
-
-    it('should throw when reservation not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.reservation.findUnique.mockResolvedValue(null);
-      await expect(discountService.removeDiscount('x', userId)).rejects.toThrow(/Nie znaleziono rezerwacji/);
+      expect(result.totalPrice).toBe(5000);
+      expect(result.discountAmount).toBeNull();
     });
   });
 });

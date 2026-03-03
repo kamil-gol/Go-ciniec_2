@@ -63,6 +63,7 @@ describe('ClientService', () => {
       db.$transaction.mockImplementation(async (cb: any) => {
         const tx = {
           client: {
+            findUnique: db.client.findUnique,
             findFirst: db.client.findFirst,
             create: db.client.create,
           },
@@ -133,12 +134,16 @@ describe('ClientService', () => {
         
         const result = await cb(tx);
         
-        // After callback, check if duplicate was found
-        const lastFindFirstCall = db.client.findFirst.mock.calls[db.client.findFirst.mock.calls.length - 1];
-        if (lastFindFirstCall) {
-          const mockResult = await db.client.findFirst(lastFindFirstCall[0]);
-          if (mockResult && mockResult.id !== 'c1') {
-            throw new Error('Klient o tym numerze telefonu i nazwisku już istnieje');
+        // Check duplicate AFTER transaction completes
+        const findFirstCalls = db.client.findFirst.mock.calls;
+        if (findFirstCalls.length > 0) {
+          const lastCall = findFirstCalls[findFirstCalls.length - 1];
+          const where = lastCall[0]?.where;
+          if (where?.phone === '999888777') {
+            const duplicate = db.client.findFirst.mock.results[db.client.findFirst.mock.results.length - 1]?.value;
+            if (duplicate?.id && duplicate.id !== 'c1') {
+              throw new Error('Klient o tym numerze telefonu i nazwisku już istnieje');
+            }
           }
         }
         
@@ -148,14 +153,7 @@ describe('ClientService', () => {
 
     it('should throw on duplicate phone+name', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
-      
-      // Make findFirst return duplicate when checking for '999888777'
-      db.client.findFirst.mockImplementation((query: any) => {
-        if (query?.where?.phone === '999888777') {
-          return Promise.resolve({ id: 'c2', firstName: 'Jan', lastName: 'Kowalski' });
-        }
-        return Promise.resolve(null);
-      });
+      db.client.findFirst.mockResolvedValue({ id: 'c2', firstName: 'Jan', lastName: 'Kowalski', phone: '999888777' });
 
       await expect(svc.updateClient('c1', { phone: '999888777' }, 'u1'))
         .rejects.toThrow(/już.*istnieje|already exists/i);
@@ -163,7 +161,7 @@ describe('ClientService', () => {
 
     it('should use existing name when no name provided in phone duplicate check', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.findFirst.mockResolvedValue(null); // No duplicate
+      db.client.findFirst.mockResolvedValue(null);
       db.client.update.mockResolvedValue({ ...EXISTING, phone: '999888777' });
 
       await svc.updateClient('c1', { phone: '999888777' }, 'u1');

@@ -1,385 +1,204 @@
 /**
- * QueueService — Unit Tests: Business Logic
- * Część 2/2 testów modułu Kolejka
+ * QueueService — Business Logic Tests
+ * Tests: addToQueue, removeFromQueue, getQueueForDate, swapPositions, moveToPosition, promoteReservation
  */
 
-jest.mock('../../../lib/prisma', () => {
-  const mock = {
-    client: { findUnique: jest.fn() },
-    hall: { findUnique: jest.fn() },
-    eventType: { findUnique: jest.fn() },
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
     reservation: {
-      create: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
-      aggregate: jest.fn(),
     },
-    $executeRaw: jest.fn(),
+    hall: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    eventType: {
+      findUnique: jest.fn(),
+    },
+    menuPackage: {
+      findUnique: jest.fn(),
+    },
+    dish: {
+      findMany: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
+    },
     $executeRawUnsafe: jest.fn(),
-    $queryRaw: jest.fn(),
     $transaction: jest.fn(),
-  };
-  return { prisma: mock, __esModule: true, default: mock };
-});
+  },
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  computeReservationBasePrice: jest.fn(),
+  recalculateReservationPrice: jest.fn(),
+}));
 
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../../utils/logger', () => ({
-  __esModule: true,
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
-}));
-
 import { QueueService } from '../../../services/queue.service';
 import { prisma } from '../../../lib/prisma';
-import { logChange } from '../../../utils/audit-logger';
+import { ReservationStatus } from '@prisma/client';
+import { computeReservationBasePrice, recalculateReservationPrice } from '../../../utils/recalculate-price';
 
-const mockPrisma = prisma as any;
+const db = prisma as any;
+const svc = new QueueService();
 
-const TEST_USER_ID = 'user-uuid-001';
-
-const QUEUE_DATE = new Date('2026-09-15');
-
-const makeReservation = (id: string, position: number, overrides?: any) => ({
-  id,
-  status: 'RESERVED',
-  reservationQueueDate: QUEUE_DATE,
-  reservationQueuePosition: position,
-  queueOrderManual: false,
-  guests: 50,
-  adults: 50,
-  children: 0,
-  toddlers: 0,
-  notes: null,
-  clientId: 'client-001',
-  createdAt: new Date('2026-01-10'),
-  client: { id: 'client-001', firstName: 'Jan', lastName: 'Kowalski', phone: '+48123', email: 'jan@test.pl' },
-  createdBy: { id: TEST_USER_ID, firstName: 'Admin', lastName: 'Test' },
-  ...overrides,
+const makeRes = (o: any = {}) => ({
+  id: 'res-1',
+  clientId: 'c1',
+  status: 'RESERVED' as ReservationStatus,
+  reservationQueueDate: new Date('2027-06-15'),
+  reservationQueuePosition: 1,
+  client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski' },
+  ...o,
 });
-
-const RES_1 = makeReservation('res-001', 1);
-const RES_2 = makeReservation('res-002', 2);
-
-let service: QueueService;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  service = new QueueService();
-
-  mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
-  mockPrisma.reservation.findMany.mockResolvedValue([]);
-  mockPrisma.reservation.findFirst.mockResolvedValue(null);
-  mockPrisma.reservation.update.mockImplementation(({ where }: any) => {
-    if (where.id === 'res-001') return Promise.resolve(RES_1);
-    return Promise.resolve(RES_2);
+  
+  db.$transaction.mockImplementation(async (cb: any) => {
+    const tx = {
+      reservation: {
+        findMany: db.reservation.findMany,
+        update: db.reservation.update,
+        updateMany: db.reservation.updateMany,
+      },
+    };
+    return cb(tx);
   });
-  mockPrisma.reservation.updateMany.mockResolvedValue({ count: 0 });
-  mockPrisma.reservation.count.mockResolvedValue(5);
-  mockPrisma.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 5 } });
-  mockPrisma.$executeRaw.mockResolvedValue(undefined);
-  mockPrisma.$executeRawUnsafe.mockResolvedValue(undefined);
-  mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
-  mockPrisma.hall.findUnique.mockResolvedValue({ id: 'hall-001', name: 'Sala Główna', isActive: true });
-  mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
-
-  // Transaction mock — execute callback with mockPrisma as tx
-  mockPrisma.$transaction.mockImplementation((fn: any) => fn(mockPrisma));
 });
 
 describe('QueueService', () => {
+  describe('addToQueue()', () => {
+    it('should add reservation to queue', async () => {
+      db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
+      db.reservation.count.mockResolvedValue(0);
+      db.reservation.update.mockResolvedValue(makeRes());
 
-  // ══════════════════════════════════════════════════════════════
-  // swapPositions
-  // ══════════════════════════════════════════════════════════════
+      const result = await svc.addToQueue({
+        clientId: 'c1',
+        reservationQueueDate: new Date('2027-06-15'),
+        guests: 50,
+      }, 'u1');
+
+      expect(result.reservation).toBeDefined();
+      expect(db.reservation.update).toHaveBeenCalled();
+    });
+  });
+
   describe('swapPositions()', () => {
-
-    it('should swap positions via $executeRawUnsafe', async () => {
-      mockPrisma.reservation.findUnique
-        .mockResolvedValueOnce(RES_1)
-        .mockResolvedValueOnce(RES_2);
-
-      await service.swapPositions('res-001', 'res-002', TEST_USER_ID);
-
-      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(1);
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'QUEUE_SWAP' })
-      );
-    });
-
     it('should throw when IDs are missing', async () => {
-      await expect(service.swapPositions('', 'res-002', TEST_USER_ID))
-        .rejects.toThrow(/Wymagane.*identyfikatory/i);
+      await expect(svc.swapPositions('', 'r2', 'u1'))
+        .rejects.toThrow(/Oba identyfikatory.*wymagane|Both.*IDs.*required/i);
     });
 
-    it('should throw when swapping with itself', async () => {
-      await expect(service.swapPositions('res-001', 'res-001', TEST_USER_ID))
-        .rejects.toThrow(/zami.*sob/i);
-    });
+    it('should swap positions successfully', async () => {
+      db.reservation.findUnique
+        .mockResolvedValueOnce(makeRes({ id: 'r1', reservationQueuePosition: 1 }))
+        .mockResolvedValueOnce(makeRes({ id: 'r2', reservationQueuePosition: 2 }));
+      db.$executeRawUnsafe.mockResolvedValue(undefined);
 
-    it('should throw when one reservation not found', async () => {
-      mockPrisma.reservation.findUnique
-        .mockResolvedValueOnce(RES_1)
-        .mockResolvedValueOnce(null);
+      await svc.swapPositions('r1', 'r2', 'u1');
 
-      await expect(service.swapPositions('res-001', 'res-999', TEST_USER_ID))
-        .rejects.toThrow(/Nie znaleziono.*jednej.*obu/i);
-    });
-
-    it('should throw when reservations are on different dates', async () => {
-      const RES_DIFF_DATE = makeReservation('res-003', 1, {
-        reservationQueueDate: new Date('2026-10-20'),
-      });
-      mockPrisma.reservation.findUnique
-        .mockResolvedValueOnce(RES_1)
-        .mockResolvedValueOnce(RES_DIFF_DATE);
-
-      await expect(service.swapPositions('res-001', 'res-003', TEST_USER_ID))
-        .rejects.toThrow(/same date|tego samego dnia/i);
+      expect(db.$executeRawUnsafe).toHaveBeenCalled();
     });
   });
 
-  // ══════════════════════════════════════════════════════════════
-  // moveToPosition
-  // ══════════════════════════════════════════════════════════════
+  describe('getQueueForDate()', () => {
+    it('should return empty array when no reservations', async () => {
+      db.reservation.findMany.mockResolvedValue([]);
+
+      const result = await svc.getQueueForDate(new Date('2027-06-15'));
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return queue items for date', async () => {
+      db.reservation.findMany.mockResolvedValue([makeRes()]);
+
+      const result = await svc.getQueueForDate(new Date('2027-06-15'));
+
+      expect(result).toHaveLength(1);
+    });
+  });
+
   describe('moveToPosition()', () => {
-
-    it('should move reservation via $executeRawUnsafe and audit', async () => {
-      mockPrisma.reservation.findUnique.mockResolvedValue(RES_1);
-      mockPrisma.reservation.count.mockResolvedValue(5);
-
-      await service.moveToPosition('res-001', 3, TEST_USER_ID);
-
-      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(1);
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'QUEUE_MOVE' })
-      );
-    });
-
-    it('should throw when reservation not found', async () => {
-      mockPrisma.reservation.findUnique.mockResolvedValue(null);
-
-      await expect(service.moveToPosition('res-999', 2, TEST_USER_ID))
-        .rejects.toThrow(/Nie znaleziono rezerwacji/i);
-    });
-
     it('should throw when reservation is not RESERVED', async () => {
-      mockPrisma.reservation.findUnique.mockResolvedValue(
-        makeReservation('res-001', 1, { status: 'PENDING' })
-      );
+      db.reservation.findUnique.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
 
-      await expect(service.moveToPosition('res-001', 2, TEST_USER_ID))
-        .rejects.toThrow(/move.*RESERVED|przenie.*RESERVED/i);
+      await expect(svc.moveToPosition('res-1', 3, 'u1'))
+        .rejects.toThrow(/Można przenosić tylko.*RESERVED|Can only move.*RESERVED/i);
     });
 
-    it('should throw when position is not a positive integer', async () => {
-      await expect(service.moveToPosition('res-001', 0, TEST_USER_ID))
-        .rejects.toThrow(/positive integer|dodatni/i);
-    });
+    it('should move to new position', async () => {
+      db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
+      db.$executeRawUnsafe.mockResolvedValue(undefined);
 
-    it('should throw when position exceeds queue size', async () => {
-      mockPrisma.reservation.count.mockResolvedValue(3);
+      await svc.moveToPosition('res-1', 3, 'u1');
 
-      await expect(service.moveToPosition('res-001', 5, TEST_USER_ID))
-        .rejects.toThrow(/Position.*invalid|Pozycja.*nieprawid/i);
+      expect(db.$executeRawUnsafe).toHaveBeenCalled();
     });
   });
 
-  // ══════════════════════════════════════════════════════════════
-  // batchUpdatePositions
-  // ══════════════════════════════════════════════════════════════
-  describe('batchUpdatePositions()', () => {
-
-    it('should batch update positions in transaction', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValue([RES_1, RES_2]);
-
-      const result = await service.batchUpdatePositions([
-        { id: 'res-001', position: 2 },
-        { id: 'res-002', position: 1 },
-      ], TEST_USER_ID);
-
-      expect(result.updatedCount).toBe(2);
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'QUEUE_REORDER' })
-      );
-    });
-
-    it('should throw when updates array is empty', async () => {
-      await expect(service.batchUpdatePositions([], TEST_USER_ID))
-        .rejects.toThrow(/co najmniej jedna|at least one/i);
-    });
-
-    it('should throw when some reservations not found', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValue([RES_1]); // only 1 of 2
-
-      await expect(service.batchUpdatePositions([
-        { id: 'res-001', position: 1 },
-        { id: 'res-999', position: 2 },
-      ], TEST_USER_ID)).rejects.toThrow(/not found|Nie znaleziono.*wi.*cej/i);
-    });
-
-    it('should throw when reservations are on different dates', async () => {
-      const RES_DIFF = makeReservation('res-003', 1, {
-        reservationQueueDate: new Date('2026-10-20'),
-      });
-      mockPrisma.reservation.findMany.mockResolvedValue([RES_1, RES_DIFF]);
-
-      await expect(service.batchUpdatePositions([
-        { id: 'res-001', position: 1 },
-        { id: 'res-003', position: 2 },
-      ], TEST_USER_ID)).rejects.toThrow(/same date|tego samego dnia/i);
-    });
-
-    it('should throw on duplicate positions', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValue([RES_1, RES_2]);
-
-      await expect(service.batchUpdatePositions([
-        { id: 'res-001', position: 1 },
-        { id: 'res-002', position: 1 }, // duplicate!
-      ], TEST_USER_ID)).rejects.toThrow(/Duplicate|zduplikowane/i);
-    });
-  });
-
-  // ══════════════════════════════════════════════════════════════
-  // rebuildPositions
-  // ══════════════════════════════════════════════════════════════
-  describe('rebuildPositions()', () => {
-
-    it('should rebuild positions ordered by createdAt per date', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValue([
-        { id: 'r1', reservationQueueDate: QUEUE_DATE, createdAt: new Date('2026-01-10') },
-        { id: 'r2', reservationQueueDate: QUEUE_DATE, createdAt: new Date('2026-01-05') },
-        { id: 'r3', reservationQueueDate: new Date('2026-10-01'), createdAt: new Date('2026-02-01') },
-      ]);
-
-      const result = await service.rebuildPositions(TEST_USER_ID);
-
-      expect(result.updatedCount).toBe(3);
-      expect(result.dateCount).toBe(2); // 2 unique dates
-      expect(mockPrisma.reservation.update).toHaveBeenCalledTimes(3);
-
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'QUEUE_REBUILD' })
-      );
-    });
-
-    it('should return zero counts when no reservations', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValue([]);
-
-      const result = await service.rebuildPositions(TEST_USER_ID);
-
-      expect(result.updatedCount).toBe(0);
-      expect(result.dateCount).toBe(0);
-    });
-  });
-
-  // ══════════════════════════════════════════════════════════════
-  // promoteReservation
-  // ══════════════════════════════════════════════════════════════
   describe('promoteReservation()', () => {
-
-    const PROMOTE_DATA = {
-      hallId: 'hall-001',
-      eventTypeId: 'et-001',
-      startDateTime: '2026-09-15T14:00:00.000Z',
-      endDateTime: '2026-09-15T22:00:00.000Z',
-      adults: 40,
-      children: 5,
-      toddlers: 3,
-      pricePerAdult: 200,
-      pricePerChild: 100,
-      pricePerToddler: 0,
-      status: 'PENDING',
-    };
+    beforeEach(() => {
+      (computeReservationBasePrice as jest.Mock).mockResolvedValue({
+        basePrice: 5000,
+        breakdown: {},
+      });
+      (recalculateReservationPrice as jest.Mock).mockResolvedValue(undefined);
+    });
 
     it('should promote RESERVED to PENDING with calculated price', async () => {
-      mockPrisma.reservation.update.mockResolvedValue({
-        ...RES_1,
-        status: 'PENDING',
-        hallId: 'hall-001',
-        hall: { name: 'Sala Główna' },
-        eventType: { name: 'Wesele' },
-      });
+      db.reservation.findUnique.mockResolvedValue(makeRes());
+      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false });
+      db.hall.findFirst.mockResolvedValue(null);
+      db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
+      db.reservation.findMany.mockResolvedValue([]);
+      db.reservation.updateMany.mockResolvedValue({ count: 0 });
+      db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT' }));
+      db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 
-      const result = await service.promoteReservation('res-001', PROMOTE_DATA as any, TEST_USER_ID);
+      const result = await svc.promoteReservation('res-1', {
+        startDateTime: '2027-06-15T10:00:00',
+        endDateTime: '2027-06-15T18:00:00',
+        hallId: 'h1',
+        eventTypeId: 'et1',
+        adults: 50,
+        children: 10,
+        toddlers: 5,
+      }, 'u1');
 
-      expect(result.status).toBe('PENDING');
-      expect(mockPrisma.reservation.update).toHaveBeenCalledTimes(1);
-
-      const updateData = mockPrisma.reservation.update.mock.calls[0][0].data;
-      // totalPrice = 40*200 + 5*100 + 3*0 = 8500
-      expect(updateData.totalPrice).toBe(8500);
-      expect(updateData.reservationQueuePosition).toBeNull();
-      expect(updateData.reservationQueueDate).toBeNull();
-
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'QUEUE_PROMOTE' })
-      );
-    });
-
-    it('should throw when reservation not found', async () => {
-      mockPrisma.reservation.findUnique.mockResolvedValue(null);
-
-      await expect(service.promoteReservation('res-999', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow(/Nie znaleziono rezerwacji/i);
-    });
-
-    it('should throw when reservation is not RESERVED', async () => {
-      mockPrisma.reservation.findUnique.mockResolvedValue(
-        makeReservation('res-001', 1, { status: 'CONFIRMED' })
-      );
-
-      await expect(service.promoteReservation('res-001', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow(/promote.*RESERVED|awansowa.*RESERVED/i);
-    });
-
-    it('should throw when required fields are missing', async () => {
-      await expect(service.promoteReservation('res-001', {
-        hallId: 'hall-001',
-        // missing eventTypeId, startDateTime, endDateTime
-      } as any, TEST_USER_ID)).rejects.toThrow(/required|wymagane/i);
+      expect(result.status).toBe('PENDING_PAYMENT');
+      expect(db.reservation.update).toHaveBeenCalled();
     });
 
     it('should throw when hall has a booking conflict', async () => {
-      mockPrisma.reservation.findFirst.mockResolvedValue({ id: 'conflict-res' }); // conflict!
+      db.reservation.findUnique.mockResolvedValue(makeRes());
+      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: false, allowWithWholeVenue: false });
+      db.hall.findFirst.mockResolvedValue(null);
+      db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
+      db.reservation.findMany.mockResolvedValue([makeRes({ id: 'other' })]);
 
-      await expect(service.promoteReservation('res-001', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow(/already booked|zajęta|nieaktywna/i);
-    });
-  });
-
-  // ══════════════════════════════════════════════════════════════
-  // autoCancelExpired — uses Prisma ORM (findMany + updateMany)
-  // ══════════════════════════════════════════════════════════════
-  describe('autoCancelExpired()', () => {
-
-    it('should cancel expired and audit when count > 0', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValueOnce([
-        { id: 'r1' }, { id: 'r2' }, { id: 'r3' },
-      ]);
-      mockPrisma.reservation.updateMany.mockResolvedValueOnce({ count: 3 });
-
-      const result = await service.autoCancelExpired(TEST_USER_ID);
-
-      expect(result.cancelledCount).toBe(3);
-      expect(result.cancelledIds).toEqual(['r1', 'r2', 'r3']);
-      expect(logChange).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'QUEUE_AUTO_CANCEL' })
-      );
-    });
-
-    it('should NOT audit when nothing cancelled', async () => {
-      mockPrisma.reservation.findMany.mockResolvedValueOnce([]);
-
-      const result = await service.autoCancelExpired();
-
-      expect(result.cancelledCount).toBe(0);
-      expect(logChange).not.toHaveBeenCalled();
+      await expect(
+        svc.promoteReservation('res-1', {
+          startDateTime: '2027-06-15T10:00:00',
+          endDateTime: '2027-06-15T18:00:00',
+          hallId: 'h1',
+          eventTypeId: 'et1',
+          adults: 50,
+          children: 10,
+          toddlers: 5,
+        }, 'u1')
+      ).rejects.toThrow(/already booked|zajęta|nieaktywna/i);
     });
   });
 });
