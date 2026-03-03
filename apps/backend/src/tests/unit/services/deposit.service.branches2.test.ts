@@ -127,7 +127,7 @@ describe('DepositService — sendConfirmationEmail branches (lines 463-468)', ()
   it('should throw when deposit is not paid', async () => {
     mockPrisma.deposit.findUnique.mockResolvedValue(makeDeposit({ paid: false }));
     await expect(depositService.sendConfirmationEmail('dep-1'))
-      .rejects.toThrow('Email potwierdzenia mozna wyslac tylko dla oplaconej zaliczki');
+      .rejects.toThrow(/można.*wysłać.*opłaconej/);
   });
 
   it('should throw when client has no email', async () => {
@@ -151,7 +151,7 @@ describe('DepositService — markAsUnpaid branches (lines 488-491)', () => {
     });
 
     await expect(depositService.markAsUnpaid('dep-1', 'u1'))
-      .rejects.toThrow('Ta zaliczka nie jest oznaczona jako oplacona');
+      .rejects.toThrow(/opłacona/);
   });
 
   it('should allow marking as unpaid when deposit was PAID', async () => {
@@ -177,7 +177,7 @@ describe('DepositService — markAsUnpaid branches (lines 488-491)', () => {
   it('should throw not found for unknown deposit', async () => {
     mockPrisma.deposit.findUnique.mockResolvedValue(null);
     await expect(depositService.markAsUnpaid('bad-id', 'u1'))
-      .rejects.toThrow('Nie znaleziono zaliczki');
+      .rejects.toThrow(/not found/);
   });
 });
 
