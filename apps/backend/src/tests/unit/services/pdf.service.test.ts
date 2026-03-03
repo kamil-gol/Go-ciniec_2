@@ -14,7 +14,8 @@ function createMockDoc() {
   const methods = [
     'fontSize', 'font', 'text', 'fillColor', 'moveDown', 'registerFont',
     'strokeColor', 'lineWidth', 'moveTo', 'lineTo', 'stroke',
-    'rect', 'fillAndStroke', 'end', 'addPage',
+    'rect', 'fill', 'fillAndStroke', 'circle', 'roundedRect',
+    'end', 'addPage',
   ];
   const doc: any = {
     page: { width: 595.28, height: 841.89 },
@@ -31,6 +32,12 @@ function createMockDoc() {
         if (events['data']) events['data'].forEach(cb => cb(Buffer.from('chunk1')));
         if (events['end']) events['end'].forEach(cb => cb());
       }, 5);
+    }),
+    heightOfString: jest.fn((text: string, options?: any) => {
+      // Simple estimation: ~12px per line
+      const width = options?.width || 500;
+      const lines = Math.ceil(text.length / (width / 6));
+      return lines * 12;
     }),
   };
   methods.forEach(m => {
