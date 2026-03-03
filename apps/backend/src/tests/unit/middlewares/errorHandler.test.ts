@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { errorHandler } from '@/middlewares/errorHandler';
-import { AppError } from '@/utils/appError';
+import { errorHandler } from '../../../middlewares/errorHandler';
+import { AppError } from '../../../utils/AppError';
 
 const mockRes = () => {
   const res = {} as Response;
