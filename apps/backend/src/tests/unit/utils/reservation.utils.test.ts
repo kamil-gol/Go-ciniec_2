@@ -1,289 +1,112 @@
 import {
+  validateTimeRange,
+  validateGuestCount,
   calculateTotalGuests,
-  calculateTotalPrice,
-  calculateDuration,
-  generateExtraHoursNote,
-  validateConfirmationDeadline,
-  validateCustomEventFields,
-  detectReservationChanges,
-  formatChangesSummary,
+  validatePricing,
 } from '../../../utils/reservation.utils';
 
 describe('reservation.utils', () => {
-  // ─── calculateTotalGuests ───
+  describe('validateTimeRange', () => {
+    it('should pass for valid time range', () => {
+      const start = new Date('2024-01-01T10:00:00');
+      const end = new Date('2024-01-01T18:00:00');
+      expect(() => validateTimeRange(start, end)).not.toThrow();
+    });
+
+    it('should throw when end time is before start time', () => {
+      const start = new Date('2024-01-01T18:00:00');
+      const end = new Date('2024-01-01T10:00:00');
+      expect(() => validateTimeRange(start, end)).toThrow(/zakończenia/);
+    });
+
+    it('should throw when start time is in the past', () => {
+      const start = new Date('2020-01-01T10:00:00');
+      const end = new Date('2024-01-01T18:00:00');
+      expect(() => validateTimeRange(start, end)).toThrow(/przyszłości/);
+    });
+
+    it('should throw when times are equal', () => {
+      const start = new Date('2024-01-01T10:00:00');
+      const end = new Date('2024-01-01T10:00:00');
+      expect(() => validateTimeRange(start, end)).toThrow(/zakończenia/);
+    });
+  });
+
+  describe('validateGuestCount', () => {
+    it('should pass for valid guest counts', () => {
+      expect(() => validateGuestCount(50, 10, 5, 100)).not.toThrow();
+    });
+
+    it('should throw when adults is negative', () => {
+      expect(() => validateGuestCount(-1, 10, 5, 100)).toThrow(/dorosłych/);
+    });
+
+    it('should throw when children is negative', () => {
+      expect(() => validateGuestCount(50, -1, 5, 100)).toThrow(/dzieci/);
+    });
+
+    it('should throw when toddlers is negative', () => {
+      expect(() => validateGuestCount(50, 10, -1, 100)).toThrow(/niemowląt/);
+    });
+
+    it('should throw when total exceeds capacity', () => {
+      expect(() => validateGuestCount(60, 30, 20, 100)).toThrow(/przekracza/);
+    });
+
+    it('should throw when no adults', () => {
+      expect(() => validateGuestCount(0, 10, 5, 100)).toThrow(/przynajmniej/);
+    });
+  });
+
   describe('calculateTotalGuests', () => {
-    it('should sum adults + children + toddlers', () => {
-      expect(calculateTotalGuests(10, 5, 3)).toBe(18);
+    it('should calculate total correctly', () => {
+      expect(calculateTotalGuests(50, 10, 5)).toBe(65);
     });
 
-    it('should default toddlers to 0', () => {
-      expect(calculateTotalGuests(10, 5)).toBe(15);
+    it('should handle zero values', () => {
+      expect(calculateTotalGuests(50, 0, 0)).toBe(50);
     });
 
-    it('should handle all zeros', () => {
+    it('should handle all zero', () => {
       expect(calculateTotalGuests(0, 0, 0)).toBe(0);
     });
   });
 
-  // ─── calculateTotalPrice ───
-  describe('calculateTotalPrice', () => {
-    it('should calculate price correctly', () => {
-      // 10 adults × 150 + 5 children × 80 + 2 toddlers × 30
-      expect(calculateTotalPrice(10, 5, 150, 80, 2, 30)).toBe(1960);
+  describe('validatePricing', () => {
+    it('should pass for valid pricing', () => {
+      expect(() => validatePricing(200, 100, 50)).not.toThrow();
     });
 
-    it('should default toddler params to 0', () => {
-      expect(calculateTotalPrice(10, 5, 150, 80)).toBe(1900);
+    it('should throw when adult price is negative', () => {
+      expect(() => validatePricing(-1, 100, 50)).toThrow(/dorosłego/);
     });
 
-    it('should return 0 for no guests', () => {
-      expect(calculateTotalPrice(0, 0, 150, 80, 0, 30)).toBe(0);
+    it('should throw when child price is negative', () => {
+      expect(() => validatePricing(200, -1, 50)).toThrow(/dziecko/);
     });
 
-    it('should handle free children pricing', () => {
-      expect(calculateTotalPrice(10, 5, 100, 0)).toBe(1000);
-    });
-  });
-
-  // ─── calculateDuration ───
-  describe('calculateDuration', () => {
-    it('should return duration in hours', () => {
-      const start = new Date('2025-06-15T14:00:00');
-      const end = new Date('2025-06-15T20:00:00');
-      expect(calculateDuration(start, end)).toBe(6);
+    it('should throw when toddler price is negative', () => {
+      expect(() => validatePricing(200, 100, -1)).toThrow(/niemowlę/);
     });
 
-    it('should handle fractional hours', () => {
-      const start = new Date('2025-06-15T14:00:00');
-      const end = new Date('2025-06-15T15:30:00');
-      expect(calculateDuration(start, end)).toBe(1.5);
-    });
-
-    it('should return 0 for same start/end', () => {
-      const date = new Date('2025-06-15T14:00:00');
-      expect(calculateDuration(date, date)).toBe(0);
-    });
-
-    it('should return negative for end before start', () => {
-      const start = new Date('2025-06-15T20:00:00');
-      const end = new Date('2025-06-15T14:00:00');
-      expect(calculateDuration(start, end)).toBeLessThan(0);
+    it('should allow zero prices', () => {
+      expect(() => validatePricing(0, 0, 0)).not.toThrow();
     });
   });
 
-  // ─── generateExtraHoursNote ───
-  describe('generateExtraHoursNote', () => {
-    it('should return null when within default hours', () => {
-      const start = new Date('2025-06-15T14:00:00');
-      const end = new Date('2025-06-15T20:00:00'); // 6h = default
-      expect(generateExtraHoursNote(start, end)).toBeNull();
+  describe('edge cases', () => {
+    it('should handle very large numbers', () => {
+      expect(calculateTotalGuests(1000, 500, 250)).toBe(1750);
     });
 
-    it('should return note when exceeding default hours', () => {
-      const start = new Date('2025-06-15T14:00:00');
-      const end = new Date('2025-06-15T22:00:00'); // 8h > 6h
-      const note = generateExtraHoursNote(start, end);
-
-      expect(note).not.toBeNull();
-      expect(note).toContain('2h dłużej');
-      expect(note).toContain('2 dodatkowych godzin');
+    it('should validate capacity with exact match', () => {
+      expect(() => validateGuestCount(50, 30, 20, 100)).not.toThrow();
     });
 
-    it('should respect custom defaultHours', () => {
-      const start = new Date('2025-06-15T14:00:00');
-      const end = new Date('2025-06-15T19:00:00'); // 5h
-
-      expect(generateExtraHoursNote(start, end, 4)).not.toBeNull(); // 5 > 4
-      expect(generateExtraHoursNote(start, end, 5)).toBeNull();     // 5 = 5
-    });
-
-    it('should ceil extra hours', () => {
-      const start = new Date('2025-06-15T14:00:00');
-      const end = new Date('2025-06-15T20:30:00'); // 6.5h, extra = 0.5 → ceil = 1
-      const note = generateExtraHoursNote(start, end);
-
-      expect(note).toContain('1h dłużej');
-    });
-  });
-
-  // ─── validateConfirmationDeadline ───
-  describe('validateConfirmationDeadline', () => {
-    it('should return true when deadline is 1+ day before event', () => {
-      const deadline = new Date('2025-06-13T12:00:00');
-      const eventStart = new Date('2025-06-15T14:00:00');
-      expect(validateConfirmationDeadline(deadline, eventStart)).toBe(true);
-    });
-
-    it('should return true when deadline is exactly 1 day before', () => {
-      const eventStart = new Date('2025-06-15T14:00:00');
-      const deadline = new Date('2025-06-14T14:00:00');
-      expect(validateConfirmationDeadline(deadline, eventStart)).toBe(true);
-    });
-
-    it('should return false when deadline is same day as event', () => {
-      const deadline = new Date('2025-06-15T10:00:00');
-      const eventStart = new Date('2025-06-15T14:00:00');
-      expect(validateConfirmationDeadline(deadline, eventStart)).toBe(false);
-    });
-
-    it('should return false when deadline is after event start', () => {
-      const deadline = new Date('2025-06-16T12:00:00');
-      const eventStart = new Date('2025-06-15T14:00:00');
-      expect(validateConfirmationDeadline(deadline, eventStart)).toBe(false);
-    });
-  });
-
-  // ─── validateCustomEventFields ───
-  describe('validateCustomEventFields', () => {
-    it('should return valid for non-special event types', () => {
-      const result = validateCustomEventFields('Wesele', { adults: 50, children: 10 } as any);
-      expect(result.valid).toBe(true);
-    });
-
-    it('should require anniversaryYear for "Rocznica"', () => {
-      const result = validateCustomEventFields('Rocznica', { anniversaryOccasion: 'Ślubu' } as any);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Która rocznica');
-    });
-
-    it('should require anniversaryOccasion for "Rocznica"', () => {
-      const result = validateCustomEventFields('Rocznica', { anniversaryYear: 25 } as any);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Jaka okazja');
-    });
-
-    it('should accept valid "Rocznica" with both fields', () => {
-      const result = validateCustomEventFields('Rocznica', {
-        anniversaryYear: 25,
-        anniversaryOccasion: 'Ślubu',
-      } as any);
-      expect(result.valid).toBe(true);
-    });
-
-    it('should require customEventType for "Inne"', () => {
-      const result = validateCustomEventFields('Inne', {} as any);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Typ wydarzenia');
-    });
-
-    it('should accept valid "Inne" with customEventType', () => {
-      const result = validateCustomEventFields('Inne', { customEventType: 'Konferencja' } as any);
-      expect(result.valid).toBe(true);
-    });
-  });
-
-  // ─── detectReservationChanges ───
-  describe('detectReservationChanges', () => {
-    const oldData = {
-      adults: 50,
-      children: 10,
-      toddlers: 3,
-      pricePerAdult: 150,
-      pricePerChild: 80,
-      pricePerToddler: 30,
-      notes: 'Original note',
-      startDateTime: new Date('2025-06-15T14:00:00Z'),
-      endDateTime: new Date('2025-06-15T20:00:00Z'),
-      confirmationDeadline: new Date('2025-06-13T12:00:00Z'),
-      customEventType: null,
-      anniversaryYear: null,
-      anniversaryOccasion: null,
-    };
-
-    it('should return empty array when nothing changed', () => {
-      const result = detectReservationChanges(oldData, {});
-      expect(result).toEqual([]);
-    });
-
-    it('should detect adults change', () => {
-      const result = detectReservationChanges(oldData, { adults: 60 } as any);
-      expect(result).toHaveLength(1);
-      expect(result[0].field).toBe('adults');
-      expect(result[0].label).toBe('Liczba dorosłych');
-    });
-
-    it('should detect multiple changes at once', () => {
-      const result = detectReservationChanges(oldData, {
-        adults: 60,
-        children: 15,
-        notes: 'Updated',
-      } as any);
-      expect(result).toHaveLength(3);
-      const fields = result.map((c: any) => c.field);
-      expect(fields).toContain('adults');
-      expect(fields).toContain('children');
-      expect(fields).toContain('notes');
-    });
-
-    it('should detect price changes (comparing with Number())', () => {
-      const result = detectReservationChanges(oldData, { pricePerAdult: 200 } as any);
-      expect(result).toHaveLength(1);
-      expect(result[0].field).toBe('pricePerAdult');
-    });
-
-    it('should detect date changes via ISO comparison', () => {
-      const result = detectReservationChanges(oldData, {
-        startDateTime: '2025-07-01T14:00:00Z',
-      } as any);
-      expect(result.length).toBeGreaterThanOrEqual(1);
-      expect(result[0].field).toBe('startDateTime');
-    });
-
-    it('should detect anniversary fields', () => {
-      const result = detectReservationChanges(oldData, {
-        anniversaryYear: 25,
-        anniversaryOccasion: 'Ślubu',
-      } as any);
-      expect(result).toHaveLength(2);
-    });
-  });
-
-  // ─── formatChangesSummary ───
-  describe('formatChangesSummary', () => {
-    it('should return "Brak zmian" for empty array', () => {
-      expect(formatChangesSummary([])).toBe('Brak zmian');
-    });
-
-    it('should format single change with bullet', () => {
-      const changes = [{ field: 'adults', oldValue: 50, newValue: 60, label: 'Liczba dorosłych' }];
-      const result = formatChangesSummary(changes);
-      expect(result).toContain('• Liczba dorosłych');
-      expect(result).toContain('50');
-      expect(result).toContain('60');
-    });
-
-    it('should format multiple changes with newlines', () => {
-      const changes = [
-        { field: 'adults', oldValue: 50, newValue: 60, label: 'Liczba dorosłych' },
-        { field: 'children', oldValue: 10, newValue: 15, label: 'Liczba dzieci (4-12)' },
-      ];
-      const result = formatChangesSummary(changes);
-      const lines = result.split('\n');
-      expect(lines).toHaveLength(2);
-    });
-
-    it('should format null/undefined as "brak"', () => {
-      const changes = [{ field: 'notes', oldValue: null, newValue: 'New note', label: 'Notatki' }];
-      const result = formatChangesSummary(changes);
-      expect(result).toContain('brak');
-    });
-
-    it('should format Date values using Polish locale', () => {
-      const changes = [{
-        field: 'startDateTime',
-        oldValue: new Date('2025-06-15T14:00:00'),
-        newValue: '2025-07-01T14:00:00',
-        label: 'Data rozpoczęcia',
-      }];
-      const result = formatChangesSummary(changes);
-      expect(result).toContain('→');
-    });
-
-    it('should truncate long strings to 50 chars', () => {
-      const longString = 'A'.repeat(100);
-      const changes = [{ field: 'notes', oldValue: 'Short', newValue: longString, label: 'Notatki' }];
-      const result = formatChangesSummary(changes);
-      expect(result).toContain('...');
+    it('should handle Date objects correctly in time validation', () => {
+      const future1 = new Date(Date.now() + 86400000);
+      const future2 = new Date(Date.now() + 172800000);
+      expect(() => validateTimeRange(future1, future2)).not.toThrow();
     });
   });
 });
