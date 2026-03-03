@@ -1,53 +1,33 @@
-/**
- * MenuCourse Controller — Unit Tests
- * Standard CRUD operations
- */
+import { MenuCourseController } from '@/controllers/menuCourse.controller';
+import { MenuCourseService } from '@/services/menuCourse.service';
+import { Request, Response } from 'express';
 
-jest.mock('../../../services/menuCourse.service', () => ({
-  __esModule: true,
-  default: {
-    createCourse: jest.fn(),
-    getCoursesByPackage: jest.fn(),
-    getCourseById: jest.fn(),
-    updateCourse: jest.fn(),
-    deleteCourse: jest.fn(),
-    reorderCourses: jest.fn(),
-    validateCourseCount: jest.fn(),
-  },
-}));
+jest.mock('@/services/menuCourse.service');
 
-jest.mock('../../../utils/AppError', () => {
-  class MockAppError extends Error {
-    statusCode: number;
-    constructor(message: string, statusCode: number) {
-      super(message);
-      this.statusCode = statusCode;
-    }
-    static badRequest(msg: string) { return new MockAppError(msg, 400); }
-    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
-  }
-  return { AppError: MockAppError };
-});
+const menuCourseService = new MenuCourseService() as jest.Mocked<MenuCourseService>;
+const ctrl = new MenuCourseController(menuCourseService);
 
-import { MenuCourseController } from '../../../controllers/menuCourse.controller';
-import menuCourseService from '../../../services/menuCourse.service';
-
-const ctrl = new MenuCourseController();
 const mockRes = () => {
-  const res: any = {};
+  const res = {} as Response;
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
   return res;
 };
 
 describe('MenuCourseController', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   it('should create a course', async () => {
-    (menuCourseService.createCourse as jest.Mock).mockResolvedValue({ id: '1', name: 'Soup' });
+    menuCourseService.createCourse = jest.fn().mockResolvedValue({
+      id: '1',
+      name: 'Appetizer',
+    });
+
     const req = {
-      body: { packageId: 'pkg-1', category: 'APPETIZER', name: 'Soup' },
-      user: { id: 'u1' }
+      body: { packageId: 'pkg-1', name: 'Appetizer', displayOrder: 1 },
+      user: { id: 'u1' },
     } as any;
     const res = mockRes();
     await ctrl.createCourse(req, res);
@@ -55,7 +35,7 @@ describe('MenuCourseController', () => {
   });
 
   it('should get courses by package', async () => {
-    (menuCourseService.getCoursesByPackage as jest.Mock).mockResolvedValue([{ id: '1' }, { id: '2' }]);
+    menuCourseService.getCoursesByPackage = jest.fn().mockResolvedValue([{ id: '1' }]);
     const req = { params: { packageId: 'pkg-1' } } as any;
     const res = mockRes();
     await ctrl.getCoursesByPackage(req, res);
@@ -63,13 +43,13 @@ describe('MenuCourseController', () => {
   });
 
   it('should throw notFound when course not found', async () => {
-    (menuCourseService.getCourseById as jest.Mock).mockResolvedValue(null);
+    menuCourseService.getCourseById = jest.fn().mockResolvedValue(null);
     const req = { params: { id: 'x' } } as any;
-    await expect(ctrl.getCourseById(req, mockRes())).rejects.toThrow(/not found/);
+    await expect(ctrl.getCourseById(req, mockRes())).rejects.toThrow(/not found/i);
   });
 
   it('should update a course', async () => {
-    (menuCourseService.updateCourse as jest.Mock).mockResolvedValue({ id: '1', name: 'Updated' });
+    menuCourseService.updateCourse = jest.fn().mockResolvedValue({ id: '1', name: 'Updated' });
     const req = { params: { id: '1' }, body: { name: 'Updated' }, user: { id: 'u1' } } as any;
     const res = mockRes();
     await ctrl.updateCourse(req, res);
@@ -77,7 +57,7 @@ describe('MenuCourseController', () => {
   });
 
   it('should delete a course', async () => {
-    (menuCourseService.deleteCourse as jest.Mock).mockResolvedValue(undefined);
+    menuCourseService.deleteCourse = jest.fn().mockResolvedValue(undefined);
     const req = { params: { id: '1' }, user: { id: 'u1' } } as any;
     const res = mockRes();
     await ctrl.deleteCourse(req, res);
@@ -85,7 +65,7 @@ describe('MenuCourseController', () => {
   });
 
   it('should reorder courses', async () => {
-    (menuCourseService.reorderCourses as jest.Mock).mockResolvedValue({ success: true });
+    menuCourseService.reorderCourses = jest.fn().mockResolvedValue(undefined);
     const req = { body: { orders: [{ courseId: '1', displayOrder: 1 }] } } as any;
     const res = mockRes();
     await ctrl.reorderCourses(req, res);
@@ -93,7 +73,7 @@ describe('MenuCourseController', () => {
   });
 
   it('should validate course count', async () => {
-    (menuCourseService.validateCourseCount as jest.Mock).mockResolvedValue({ valid: true });
+    menuCourseService.validateCourseCount = jest.fn().mockResolvedValue({ isValid: true });
     const req = { params: { packageId: 'pkg-1' } } as any;
     const res = mockRes();
     await ctrl.validateCourseCount(req, res);

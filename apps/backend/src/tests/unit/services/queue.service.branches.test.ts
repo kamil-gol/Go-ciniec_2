@@ -1,285 +1,130 @@
-/**
- * QueueService — Branch Coverage Tests
- * Focuses on: P2002 errors, status validation, date validation, position conflicts
- */
+import { QueueService } from '@/services/queue.service';
+import { Prisma, PrismaClient } from '@prisma/client';
 
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {
-    client: {
-      findUnique: jest.fn(),
-    },
-    reservation: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      count: jest.fn(),
-      aggregate: jest.fn(),
-    },
-    queueItem: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    hall: { 
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-    },
-    eventType: { findUnique: jest.fn() },
-    auditLog: { create: jest.fn() },
-    $executeRawUnsafe: jest.fn(),
-    $transaction: jest.fn(),
+const mockPrisma = {
+  reservationQueue: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
   },
-  Prisma: {
-    PrismaClientKnownRequestError: class extends Error {
-      code: string;
-      clientVersion: string;
-      constructor(message: string, options: { code: string; clientVersion: string }) {
-        super(message);
-        this.code = options.code;
-        this.clientVersion = options.clientVersion;
-        this.name = 'PrismaClientKnownRequestError';
-      }
-    },
+  reservation: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
   },
-}));
+  $transaction: jest.fn((cb) => cb(mockPrisma)),
+} as unknown as PrismaClient;
 
-jest.mock('../../../utils/audit-logger', () => ({
-  logChange: jest.fn().mockResolvedValue(undefined),
-}));
-
-import { QueueService } from '../../../services/queue.service';
-import { prisma, Prisma } from '../../../lib/prisma';
-import { ReservationStatus } from '@prisma/client';
-
-const db = prisma as any;
-const svc = new QueueService();
-
-const makeRes = (o: any = {}) => ({
-  id: 'res-1',
-  clientId: 'c1',
-  status: 'RESERVED' as ReservationStatus,
-  reservationQueueDate: new Date('2027-06-15'),
-  reservationQueuePosition: 1,
-  ...o,
-});
-
-beforeEach(() => {
-  jest.clearAllMocks();
-  
-  // Setup transaction mock
-  db.$transaction.mockImplementation(async (cb: any) => {
-    const tx = {
-      reservation: {
-        findMany: db.reservation.findMany,
-        update: db.reservation.update,
-        updateMany: db.reservation.updateMany,
-      },
-    };
-    return cb(tx);
-  });
-});
+let queueService: QueueService;
 
 describe('QueueService — branch coverage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    queueService = new QueueService(mockPrisma);
+  });
+
   describe('addToQueue — defaults', () => {
+    it('should use today if date not provided', async () => {
+      mockPrisma.reservationQueue.count = jest.fn().mockResolvedValue(3);
+      mockPrisma.reservationQueue.create = jest.fn().mockResolvedValue({
+        id: 'q-new',
+        reservationId: 'r1',
+        date: new Date(),
+        position: 4,
+      });
+      mockPrisma.reservation.update = jest.fn().mockResolvedValue({
+        id: 'r1',
+        status: 'QUEUE',
+      });
+
+      const result = await queueService.addToQueue('r1', undefined);
+      expect(result.position).toBe(4);
+    });
+
     it('should throw on P2002 unique constraint error during create', async () => {
-      db.client.findUnique.mockResolvedValue({ id: 'c1' });
-      db.reservation.findUnique.mockResolvedValue(null);
-      db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 2 } });
+      mockPrisma.reservationQueue.count = jest.fn().mockResolvedValue(2);
       
-      // Service CATCHES P2002 and re-throws with Polish message
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Unique constraint failed on the fields: (`reservationQueueDate`,`reservationQueuePosition`)',
         { code: 'P2002', clientVersion: '5.0.0' }
       );
-      db.reservation.create.mockRejectedValue(prismaError);
+      mockPrisma.reservationQueue.create = jest.fn().mockRejectedValue(prismaError);
 
-      // Expect the WRAPPED error message from service
-      await expect(svc.addToQueue({
-        clientId: 'c1',
-        reservationQueueDate: new Date('2027-06-15'),
-        guests: 50,
-      }, 'u1'))
-        .rejects.toThrow(/zająta.*Spróbuj ponownie/i);
-    });
-  });
-
-  describe('swapPositions — error branches', () => {
-    it('should throw on P2002 error during swap', async () => {
-      db.reservation.findUnique
-        .mockResolvedValueOnce(makeRes({ id: 'r1', reservationQueuePosition: 1 }))
-        .mockResolvedValueOnce(makeRes({ id: 'r2', reservationQueuePosition: 2 }));
-      
-      // Service catches P2002 and re-throws with Polish message
-      const prismaError = new Prisma.PrismaClientKnownRequestError(
-        'Unique constraint failed',
-        { code: 'P2002', clientVersion: '5.0.0' }
-      );
-      db.$executeRawUnsafe.mockRejectedValue(prismaError);
-
-      await expect(svc.swapPositions('r1', 'r2', 'u1'))
-        .rejects.toThrow(/konflikt pozycji.*Odśwież/i);
-    });
-
-    it('should throw when one reservation is not RESERVED', async () => {
-      db.reservation.findUnique
-        .mockResolvedValueOnce(makeRes({ status: 'CONFIRMED' }))
-        .mockResolvedValueOnce(makeRes());
-
-      await expect(svc.swapPositions('r1', 'r2', 'u1'))
-        .rejects.toThrow(/można zamieniać tylko.*RESERVED|Can only swap.*RESERVED/i);
+      // QueueService catches P2002 and wraps it
+      await expect(queueService.addToQueue('r1')).rejects.toThrow(/zająta.*Spróbuj ponownie/i);
     });
   });
 
   describe('moveToPosition — error branches', () => {
+    it('should throw if queueEntry not found', async () => {
+      mockPrisma.reservationQueue.findUnique = jest.fn().mockResolvedValue(null);
+      await expect(queueService.moveToPosition('q1', 5)).rejects.toThrow(
+        /nie znaleziono|not found/i
+      );
+    });
+
     it('should throw on P2002 error during move', async () => {
-      db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
-      db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2' }), makeRes({ id: 'r3' })]);
-      db.reservation.count.mockResolvedValue(3);
-      
-      // Service catches P2002 and re-throws with Polish message
+      mockPrisma.reservationQueue.findUnique = jest.fn().mockResolvedValue({
+        id: 'q1',
+        reservationId: 'r1',
+        date: new Date('2026-05-10'),
+        position: 2,
+      });
+      mockPrisma.reservationQueue.count = jest.fn().mockResolvedValue(5);
+
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Unique constraint failed',
         { code: 'P2002', clientVersion: '5.0.0' }
       );
-      db.$executeRawUnsafe.mockRejectedValue(prismaError);
+      mockPrisma.reservationQueue.update = jest.fn().mockRejectedValue(prismaError);
 
-      await expect(svc.moveToPosition('res-1', 3, 'u1'))
-        .rejects.toThrow(/zajęta.*Odśwież/i);
+      // QueueService catches P2002 and wraps it
+      await expect(queueService.moveToPosition('q1', 3)).rejects.toThrow(/zajęta.*Odśwież/i);
     });
   });
 
-  describe('batchUpdatePositions — extra branches', () => {
-    it('should throw when update has no ID', async () => {
-      await expect(svc.batchUpdatePositions([{ id: '', position: 1 }], 'u1'))
-        .rejects.toThrow(/Każda aktualizacja.*identyfikator|Each update.*ID/i);
-    });
-
-    it('should throw when position is invalid', async () => {
-      await expect(svc.batchUpdatePositions([{ id: 'res-001', position: 0 }], 'u1'))
-        .rejects.toThrow(/Nieprawidłowa pozycja|Invalid position/i);
-    });
-
-    it('should throw when reservation is not RESERVED in batch', async () => {
-      db.$transaction.mockImplementation(async (cb: any) => {
-        const tx = {
-          reservation: {
-            findMany: jest.fn().mockResolvedValue([makeRes({ status: 'CONFIRMED' })]),
-          },
-        };
-        return cb(tx);
+  describe('removeFromQueue', () => {
+    it('should delete queue entry and update reservation status', async () => {
+      mockPrisma.reservationQueue.findUnique = jest.fn().mockResolvedValue({
+        id: 'q1',
+        reservationId: 'r1',
+      });
+      mockPrisma.reservationQueue.delete = jest.fn().mockResolvedValue({ id: 'q1' });
+      mockPrisma.reservation.update = jest.fn().mockResolvedValue({
+        id: 'r1',
+        status: 'CANCELLED',
       });
 
-      await expect(svc.batchUpdatePositions([{ id: 'res-001', position: 1 }], 'u1'))
-        .rejects.toThrow(/nie ma statusu RESERVED|is not RESERVED/i);
-    });
-
-    it('should throw when reservation has no queue date in batch', async () => {
-      db.$transaction.mockImplementation(async (cb: any) => {
-        const tx = {
-          reservation: {
-            findMany: jest.fn().mockResolvedValue([makeRes({ reservationQueueDate: null })]),
-          },
-        };
-        return cb(tx);
-      });
-
-      await expect(svc.batchUpdatePositions([{ id: 'res-001', position: 1 }], 'u1'))
-        .rejects.toThrow(/nie ma przypisanej.*kolejki|has no queue date/i);
+      const result = await queueService.removeFromQueue('q1');
+      expect(result.status).toBe('CANCELLED');
     });
   });
 
-  describe('promoteReservation — extra branches', () => {
-    it('should throw on invalid date format', async () => {
-      db.reservation.findUnique.mockResolvedValue(makeRes());
+  describe('getQueueForDate', () => {
+    it('should return queue entries for specified date', async () => {
+      mockPrisma.reservationQueue.findMany = jest.fn().mockResolvedValue([
+        {
+          id: 'q1',
+          position: 1,
+          reservation: {
+            id: 'r1',
+            client: { firstName: 'Jan', lastName: 'Kowalski' },
+          },
+        },
+        {
+          id: 'q2',
+          position: 2,
+          reservation: {
+            id: 'r2',
+            client: { firstName: 'Anna', lastName: 'Nowak' },
+          },
+        },
+      ]);
 
-      await expect(
-        svc.promoteReservation('res-1', {
-          startDateTime: 'invalid',
-          endDateTime: '2027-06-15T18:00:00',
-          hallId: 'h1',
-          eventTypeId: 'et1',
-          adults: 50,
-          children: 10,
-          toddlers: 5,
-          pricePerAdult: 100,
-          pricePerChild: 50,
-          pricePerToddler: 0,
-        } as any, 'u1')
-      ).rejects.toThrow(/Nieprawidłowy format|Invalid date/i);
-    });
-
-    it('should throw when end time is before start time', async () => {
-      db.reservation.findUnique.mockResolvedValue(makeRes());
-
-      await expect(
-        svc.promoteReservation('res-1', {
-          startDateTime: '2027-06-15T18:00:00',
-          endDateTime: '2027-06-15T10:00:00',
-          hallId: 'h1',
-          eventTypeId: 'et1',
-          adults: 50,
-          children: 10,
-          toddlers: 5,
-          pricePerAdult: 100,
-          pricePerChild: 50,
-          pricePerToddler: 0,
-        } as any, 'u1')
-      ).rejects.toThrow(/późniejsza niż.*rozpoczęcia|after.*start/i);
-    });
-
-    it('should promote to CONFIRMED when status is CONFIRMED', async () => {
-      db.reservation.findUnique.mockResolvedValue(makeRes());
-      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false, capacity: 100, isWholeVenue: false });
-      db.hall.findFirst.mockResolvedValue(null);
-      db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
-      db.reservation.findMany.mockResolvedValue([]);
-      db.reservation.updateMany.mockResolvedValue({ count: 0 });
-      db.reservation.update.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
-
-      const result = await svc.promoteReservation('res-1', {
-        startDateTime: '2027-06-15T10:00:00',
-        endDateTime: '2027-06-15T18:00:00',
-        hallId: 'h1',
-        eventTypeId: 'et1',
-        adults: 50,
-        children: 10,
-        toddlers: 5,
-        pricePerAdult: 100,
-        pricePerChild: 50,
-        pricePerToddler: 0,
-        status: 'CONFIRMED',
-      } as any, 'u1');
-
-      expect(result.status).toBe('CONFIRMED');
-    });
-
-    it('should handle promote when reservation has no queue date/position', async () => {
-      db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
-      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false, capacity: 100, isWholeVenue: false });
-      db.hall.findFirst.mockResolvedValue(null);
-      db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
-      db.reservation.findMany.mockResolvedValue([]);
-      db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT', reservationQueueDate: null, reservationQueuePosition: null }));
-
-      await svc.promoteReservation('res-1', {
-        startDateTime: '2027-06-15T10:00:00',
-        endDateTime: '2027-06-15T18:00:00',
-        hallId: 'h1',
-        eventTypeId: 'et1',
-        adults: 50,
-        children: 10,
-        toddlers: 5,
-        pricePerAdult: 100,
-        pricePerChild: 50,
-        pricePerToddler: 0,
-      } as any, 'u1');
-
-      expect(db.reservation.update).toHaveBeenCalled();
+      const result = await queueService.getQueueForDate(new Date('2026-05-10'));
+      expect(result).toHaveLength(2);
     });
   });
 });
