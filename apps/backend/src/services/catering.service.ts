@@ -46,6 +46,7 @@ export interface UpdateCateringPackageDto {
   shortDescription?: string | null;
   priceType?: CateringPriceType;
   basePrice?: number;
+  /** null = clear the field (maps to Prisma.JsonNull internally) */
   tieredPricing?: Record<string, unknown> | null;
   badgeText?: string | null;
   isPopular?: boolean;
@@ -199,7 +200,7 @@ export async function createCateringPackage(templateId: string, data: CreateCate
     data: {
       ...data,
       templateId,
-      tieredPricing: data.tieredPricing ?? Prisma.JsonNull,
+      tieredPricing: (data.tieredPricing ?? Prisma.JsonNull) as Prisma.InputJsonValue,
     },
     include: {
       sections: {
@@ -214,16 +215,16 @@ export async function updateCateringPackage(id: string, data: UpdateCateringPack
 
   const { tieredPricing, ...rest } = data;
 
-  const updateData: Prisma.CateringPackageUpdateInput = {
-    ...rest,
-    ...(tieredPricing !== undefined
-      ? { tieredPricing: tieredPricing === null ? Prisma.JsonNull : tieredPricing }
-      : {}),
-  };
-
   return prisma.cateringPackage.update({
     where: { id },
-    data: updateData,
+    data: {
+      ...rest,
+      ...(tieredPricing !== undefined && {
+        tieredPricing: (
+          tieredPricing === null ? Prisma.JsonNull : tieredPricing
+        ) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
+      }),
+    },
     include: {
       sections: {
         include: { category: true, options: { include: { dish: true } } },
