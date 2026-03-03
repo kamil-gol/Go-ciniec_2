@@ -12,6 +12,9 @@ jest.mock('../../../lib/prisma', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    reservationHistory: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -25,6 +28,7 @@ jest.mock('../../../utils/recalculate-price', () => ({
     },
   }),
   recalculateReservationPrice: jest.fn().mockResolvedValue(undefined),
+  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(5000),
 }));
 
 jest.mock('../../../utils/audit-logger', () => ({
@@ -50,6 +54,7 @@ const RESERVATION = {
 beforeEach(() => {
   jest.clearAllMocks();
   db.user.findUnique.mockResolvedValue({ id: 'u1' });
+  db.reservationHistory.create.mockResolvedValue({ id: 'hist-1' });
 });
 
 describe('DiscountService', () => {

@@ -17,7 +17,7 @@ jest.mock('multer', () => ({
   default: mockMulter,
 }));
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
 beforeEach(() => {
   jest.clearAllMocks();

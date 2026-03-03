@@ -12,6 +12,9 @@ jest.mock('../../../lib/prisma', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    reservationHistory: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -50,6 +53,7 @@ const RESERVATION = {
 beforeEach(() => {
   jest.clearAllMocks();
   db.user.findUnique.mockResolvedValue({ id: 'u1' });
+  db.reservationHistory.create.mockResolvedValue({ id: 'hist-1' });
   (computeReservationBasePrice as jest.Mock).mockResolvedValue({
     basePrice: 1000,
     breakdown: {},

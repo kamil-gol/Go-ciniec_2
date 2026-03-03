@@ -9,6 +9,7 @@ jest.mock('../../../lib/prisma', () => ({
       findUnique: jest.fn(),
     },
     reservation: {
+      create: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -86,9 +87,9 @@ describe('QueueService', () => {
   describe('addToQueue()', () => {
     it('should add reservation to queue', async () => {
       db.client.findUnique.mockResolvedValue({ id: 'c1' });
-      db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
+      db.reservation.findUnique.mockResolvedValue(null);
       db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: null } });
-      db.reservation.update.mockResolvedValue(makeRes());
+      db.reservation.create.mockResolvedValue(makeRes());
 
       const result = await svc.addToQueue({
         clientId: 'c1',
@@ -97,7 +98,7 @@ describe('QueueService', () => {
       }, 'u1');
 
       expect(result.reservation).toBeDefined();
-      expect(db.reservation.update).toHaveBeenCalled();
+      expect(db.reservation.create).toHaveBeenCalled();
     });
   });
 
