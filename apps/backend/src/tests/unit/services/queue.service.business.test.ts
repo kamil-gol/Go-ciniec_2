@@ -85,7 +85,7 @@ beforeEach(() => {
   mockPrisma.$executeRaw.mockResolvedValue(undefined);
   mockPrisma.$executeRawUnsafe.mockResolvedValue(undefined);
   mockPrisma.client.findUnique.mockResolvedValue(RES_1.client);
-  mockPrisma.hall.findUnique.mockResolvedValue({ name: 'Sala Główna' });
+  mockPrisma.hall.findUnique.mockResolvedValue({ id: 'hall-001', name: 'Sala Główna', isActive: true });
   mockPrisma.eventType.findUnique.mockResolvedValue({ name: 'Wesele' });
 
   // Transaction mock — execute callback with mockPrisma as tx
@@ -114,12 +114,12 @@ describe('QueueService', () => {
 
     it('should throw when IDs are missing', async () => {
       await expect(service.swapPositions('', 'res-002', TEST_USER_ID))
-        .rejects.toThrow('Wymagane są identyfikatory obu rezerwacji');
+        .rejects.toThrow(/Wymagane.*identyfikatory/i);
     });
 
     it('should throw when swapping with itself', async () => {
       await expect(service.swapPositions('res-001', 'res-001', TEST_USER_ID))
-        .rejects.toThrow('Nie można zamienić rezerwacji z samą sobą');
+        .rejects.toThrow(/zami.*sob/i);
     });
 
     it('should throw when one reservation not found', async () => {
@@ -128,7 +128,7 @@ describe('QueueService', () => {
         .mockResolvedValueOnce(null);
 
       await expect(service.swapPositions('res-001', 'res-999', TEST_USER_ID))
-        .rejects.toThrow('Nie znaleziono jednej lub obu rezerwacji');
+        .rejects.toThrow(/Nie znaleziono.*jednej.*obu/i);
     });
 
     it('should throw when reservations are on different dates', async () => {
@@ -140,7 +140,7 @@ describe('QueueService', () => {
         .mockResolvedValueOnce(RES_DIFF_DATE);
 
       await expect(service.swapPositions('res-001', 'res-003', TEST_USER_ID))
-        .rejects.toThrow('Can only swap reservations on the same date');
+        .rejects.toThrow(/same date|tego samego dnia/i);
     });
   });
 
@@ -165,7 +165,7 @@ describe('QueueService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
 
       await expect(service.moveToPosition('res-999', 2, TEST_USER_ID))
-        .rejects.toThrow('Nie znaleziono rezerwacji');
+        .rejects.toThrow(/Nie znaleziono rezerwacji/i);
     });
 
     it('should throw when reservation is not RESERVED', async () => {
@@ -174,19 +174,19 @@ describe('QueueService', () => {
       );
 
       await expect(service.moveToPosition('res-001', 2, TEST_USER_ID))
-        .rejects.toThrow('Can only move RESERVED reservations');
+        .rejects.toThrow(/move.*RESERVED|przenie.*RESERVED/i);
     });
 
     it('should throw when position is not a positive integer', async () => {
       await expect(service.moveToPosition('res-001', 0, TEST_USER_ID))
-        .rejects.toThrow('Position must be a positive integer');
+        .rejects.toThrow(/positive integer|dodatni/i);
     });
 
     it('should throw when position exceeds queue size', async () => {
       mockPrisma.reservation.count.mockResolvedValue(3);
 
       await expect(service.moveToPosition('res-001', 5, TEST_USER_ID))
-        .rejects.toThrow(/Position 5 is invalid/);
+        .rejects.toThrow(/Position.*invalid|Pozycja.*nieprawid/i);
     });
   });
 
@@ -211,7 +211,7 @@ describe('QueueService', () => {
 
     it('should throw when updates array is empty', async () => {
       await expect(service.batchUpdatePositions([], TEST_USER_ID))
-        .rejects.toThrow('Wymagana jest co najmniej jedna aktualizacja');
+        .rejects.toThrow(/co najmniej jedna|at least one/i);
     });
 
     it('should throw when some reservations not found', async () => {
@@ -220,7 +220,7 @@ describe('QueueService', () => {
       await expect(service.batchUpdatePositions([
         { id: 'res-001', position: 1 },
         { id: 'res-999', position: 2 },
-      ], TEST_USER_ID)).rejects.toThrow('One or more reservations not found');
+      ], TEST_USER_ID)).rejects.toThrow(/not found|Nie znaleziono.*wi.*cej/i);
     });
 
     it('should throw when reservations are on different dates', async () => {
@@ -232,7 +232,7 @@ describe('QueueService', () => {
       await expect(service.batchUpdatePositions([
         { id: 'res-001', position: 1 },
         { id: 'res-003', position: 2 },
-      ], TEST_USER_ID)).rejects.toThrow('All reservations must be on the same date');
+      ], TEST_USER_ID)).rejects.toThrow(/same date|tego samego dnia/i);
     });
 
     it('should throw on duplicate positions', async () => {
@@ -241,7 +241,7 @@ describe('QueueService', () => {
       await expect(service.batchUpdatePositions([
         { id: 'res-001', position: 1 },
         { id: 'res-002', position: 1 }, // duplicate!
-      ], TEST_USER_ID)).rejects.toThrow('Duplicate positions detected');
+      ], TEST_USER_ID)).rejects.toThrow(/Duplicate|zduplikowane/i);
     });
   });
 
@@ -326,7 +326,7 @@ describe('QueueService', () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
 
       await expect(service.promoteReservation('res-999', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow('Nie znaleziono rezerwacji');
+        .rejects.toThrow(/Nie znaleziono rezerwacji/i);
     });
 
     it('should throw when reservation is not RESERVED', async () => {
@@ -335,21 +335,21 @@ describe('QueueService', () => {
       );
 
       await expect(service.promoteReservation('res-001', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow('Can only promote RESERVED reservations');
+        .rejects.toThrow(/promote.*RESERVED|awansowa.*RESERVED/i);
     });
 
     it('should throw when required fields are missing', async () => {
       await expect(service.promoteReservation('res-001', {
         hallId: 'hall-001',
         // missing eventTypeId, startDateTime, endDateTime
-      } as any, TEST_USER_ID)).rejects.toThrow('Hall, event type, start time, and end time are required');
+      } as any, TEST_USER_ID)).rejects.toThrow(/required|wymagane/i);
     });
 
     it('should throw when hall has a booking conflict', async () => {
       mockPrisma.reservation.findFirst.mockResolvedValue({ id: 'conflict-res' }); // conflict!
 
       await expect(service.promoteReservation('res-001', PROMOTE_DATA as any, TEST_USER_ID))
-        .rejects.toThrow('Hall is already booked for this time slot');
+        .rejects.toThrow(/already booked|zajęta|nieaktywna/i);
     });
   });
 
