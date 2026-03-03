@@ -1,42 +1,46 @@
 /**
  * attachmentCategories constants — Unit Tests
- * Tests: ATTACHMENT_CATEGORIES, MAX_FILE_SIZE
+ * Tests: ATTACHMENT_CATEGORIES object structure, MAX_FILE_SIZE
  */
 
 import { ATTACHMENT_CATEGORIES, MAX_FILE_SIZE } from '../../../constants/attachmentCategories';
 
 describe('attachmentCategories constants', () => {
   describe('ATTACHMENT_CATEGORIES', () => {
-    it('should contain all required categories', () => {
-      const expectedCategories = [
-        'CONTRACT',
-        'INVOICE',
-        'MENU',
-        'FLOOR_PLAN',
-        'PHOTO',
-        'OTHER',
-      ];
-
-      expectedCategories.forEach((category) => {
-        expect(ATTACHMENT_CATEGORIES).toContain(category);
-      });
+    it('should have required entity types', () => {
+      expect(ATTACHMENT_CATEGORIES).toHaveProperty('CLIENT');
+      expect(ATTACHMENT_CATEGORIES).toHaveProperty('DEPOSIT');
+      expect(ATTACHMENT_CATEGORIES).toHaveProperty('RESERVATION');
     });
 
-    it('should have CONTRACT as first category', () => {
-      expect(ATTACHMENT_CATEGORIES[0]).toBe('CONTRACT');
+    it('should have array values for each entity type', () => {
+      expect(Array.isArray(ATTACHMENT_CATEGORIES.CLIENT)).toBe(true);
+      expect(Array.isArray(ATTACHMENT_CATEGORIES.DEPOSIT)).toBe(true);
+      expect(Array.isArray(ATTACHMENT_CATEGORIES.RESERVATION)).toBe(true);
     });
 
-    it('should have OTHER as last category', () => {
-      expect(ATTACHMENT_CATEGORIES[ATTACHMENT_CATEGORIES.length - 1]).toBe('OTHER');
+    it('should have RODO category in CLIENT', () => {
+      const rodo = ATTACHMENT_CATEGORIES.CLIENT.find(c => c.value === 'RODO');
+      expect(rodo).toBeDefined();
+      expect(rodo?.label).toBe('Zgoda RODO');
     });
 
-    it('should not contain duplicates', () => {
-      const uniqueCategories = [...new Set(ATTACHMENT_CATEGORIES)];
-      expect(uniqueCategories.length).toBe(ATTACHMENT_CATEGORIES.length);
+    it('should have CONTRACT category in RESERVATION', () => {
+      const contract = ATTACHMENT_CATEGORIES.RESERVATION.find(c => c.value === 'CONTRACT');
+      expect(contract).toBeDefined();
+      expect(contract?.label).toBe('Umowa');
     });
 
-    it('should contain exactly 6 categories', () => {
-      expect(ATTACHMENT_CATEGORIES).toHaveLength(6);
+    it('should have PAYMENT_PROOF in DEPOSIT', () => {
+      const proof = ATTACHMENT_CATEGORIES.DEPOSIT.find(c => c.value === 'PAYMENT_PROOF');
+      expect(proof).toBeDefined();
+      expect(proof?.label).toBe('Potwierdzenie przelewu');
+    });
+
+    it('should have OTHER in all entity types', () => {
+      expect(ATTACHMENT_CATEGORIES.CLIENT.some(c => c.value === 'OTHER')).toBe(true);
+      expect(ATTACHMENT_CATEGORIES.DEPOSIT.some(c => c.value === 'OTHER')).toBe(true);
+      expect(ATTACHMENT_CATEGORIES.RESERVATION.some(c => c.value === 'OTHER')).toBe(true);
     });
   });
 
@@ -54,51 +58,33 @@ describe('attachmentCategories constants', () => {
     });
   });
 
-  describe('category validation', () => {
-    it('should validate CONTRACT category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('CONTRACT')).toBe(true);
-    });
+  describe('category structure', () => {
+    it('each category should have value, label, description', () => {
+      const allCategories = [
+        ...ATTACHMENT_CATEGORIES.CLIENT,
+        ...ATTACHMENT_CATEGORIES.DEPOSIT,
+        ...ATTACHMENT_CATEGORIES.RESERVATION,
+      ];
 
-    it('should validate INVOICE category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('INVOICE')).toBe(true);
-    });
-
-    it('should validate MENU category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('MENU')).toBe(true);
-    });
-
-    it('should validate FLOOR_PLAN category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('FLOOR_PLAN')).toBe(true);
-    });
-
-    it('should validate PHOTO category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('PHOTO')).toBe(true);
-    });
-
-    it('should validate OTHER category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('OTHER')).toBe(true);
-    });
-
-    it('should reject invalid category', () => {
-      expect(ATTACHMENT_CATEGORIES.includes('INVALID_CATEGORY' as any)).toBe(false);
-    });
-  });
-
-  describe('type safety', () => {
-    it('should be a readonly array', () => {
-      expect(Array.isArray(ATTACHMENT_CATEGORIES)).toBe(true);
-    });
-
-    it('should contain only string values', () => {
-      ATTACHMENT_CATEGORIES.forEach((category) => {
-        expect(typeof category).toBe('string');
+      allCategories.forEach(cat => {
+        expect(cat).toHaveProperty('value');
+        expect(cat).toHaveProperty('label');
+        expect(cat).toHaveProperty('description');
+        expect(typeof cat.value).toBe('string');
+        expect(typeof cat.label).toBe('string');
+        expect(typeof cat.description).toBe('string');
       });
     });
 
-    it('should have all uppercase values', () => {
-      ATTACHMENT_CATEGORIES.forEach((category) => {
-        expect(category).toBe(category.toUpperCase());
-      });
+    it('should not have duplicate values within entity types', () => {
+      const checkDuplicates = (arr: any[]) => {
+        const values = arr.map(c => c.value);
+        return values.length === new Set(values).size;
+      };
+
+      expect(checkDuplicates(ATTACHMENT_CATEGORIES.CLIENT)).toBe(true);
+      expect(checkDuplicates(ATTACHMENT_CATEGORIES.DEPOSIT)).toBe(true);
+      expect(checkDuplicates(ATTACHMENT_CATEGORIES.RESERVATION)).toBe(true);
     });
   });
 });

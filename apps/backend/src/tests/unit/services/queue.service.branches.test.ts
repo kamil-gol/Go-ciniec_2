@@ -9,6 +9,7 @@ jest.mock('../../../lib/prisma', () => ({
       findUnique: jest.fn(),
     },
     reservation: {
+      create: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
@@ -80,21 +81,14 @@ describe('QueueService — branch coverage', () => {
   describe('addToQueue — defaults', () => {
     it('should throw on P2002 unique constraint error during create', async () => {
       db.client.findUnique.mockResolvedValue({ id: 'c1' });
-      db.reservation.findUnique.mockResolvedValue(
-        makeRes({ 
-          id: 'res-1',
-          clientId: 'c1',
-          reservationQueueDate: null, 
-          reservationQueuePosition: null 
-        })
-      );
+      db.reservation.findUnique.mockResolvedValue(null);
       db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 2 } });
       
       const prismaError = Object.assign(
         new Error('Unique constraint'),
         { code: 'P2002' }
       );
-      db.reservation.update.mockRejectedValue(prismaError);
+      db.reservation.create.mockRejectedValue(prismaError);
 
       await expect(svc.addToQueue({
         clientId: 'c1',

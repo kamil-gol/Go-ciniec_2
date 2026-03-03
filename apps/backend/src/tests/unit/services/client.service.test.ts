@@ -132,10 +132,7 @@ describe('ClientService', () => {
           },
         };
         
-        // Execute callback
-        const result = await cb(tx);
-        
-        // Check for duplicate AFTER callback
+        // Check for duplicate BEFORE executing callback
         const duplicateResult = db.client.findFirst.mock.results
           .find(r => r.value?.phone === '999888777');
         
@@ -143,7 +140,7 @@ describe('ClientService', () => {
           throw new Error('Klient o tym numerze telefonu i nazwisku już istnieje');
         }
         
-        return result;
+        return cb(tx);
       });
     });
 
