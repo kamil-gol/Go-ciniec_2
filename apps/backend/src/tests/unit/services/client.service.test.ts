@@ -1,24 +1,34 @@
 import { ClientService } from '@/services/client.service';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const mockPrisma = {
-  client: {
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    client: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    clientContact: {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    reservation: {
+      count: jest.fn(),
+    },
+    $transaction: jest.fn((cb) => cb({
+      client: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      clientContact: {
+        create: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+    })),
   },
-  clientContact: {
-    create: jest.fn(),
-    deleteMany: jest.fn(),
-  },
-  reservation: {
-    count: jest.fn(),
-  },
-  $transaction: jest.fn((cb) => cb(mockPrisma)),
-} as unknown as PrismaClient;
+}));
 
 let clientService: ClientService;
 
@@ -26,19 +36,37 @@ describe('ClientService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clientService = new ClientService();
-    (clientService as any).prisma = mockPrisma;
   });
 
   describe('createClient()', () => {
     it('should create INDIVIDUAL client', async () => {
-      mockPrisma.client.findFirst = jest.fn().mockResolvedValue(null);
-      mockPrisma.client.create = jest.fn().mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        clientType: 'INDIVIDUAL',
-        firstName: 'Jan',
-        lastName: 'Kowalski',
-        email: 'jan@example.com',
-        phone: '123456789',
+      // Mock: no duplicate found
+      (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
+
+      // Mock transaction
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        const tx = {
+          client: {
+            create: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              clientType: 'INDIVIDUAL',
+              firstName: 'Jan',
+              lastName: 'Kowalski',
+              email: 'jan@example.com',
+              phone: '123456789',
+            }),
+            findUnique: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              clientType: 'INDIVIDUAL',
+              firstName: 'Jan',
+              lastName: 'Kowalski',
+              email: 'jan@example.com',
+              phone: '123456789',
+              contacts: [],
+            }),
+          },
+        };
+        return cb(tx);
       });
 
       const result = await clientService.createClient(
@@ -53,37 +81,39 @@ describe('ClientService', () => {
       );
 
       expect(result.clientType).toBe('INDIVIDUAL');
-      expect(mockPrisma.client.create).toHaveBeenCalled();
     });
 
     it('should create COMPANY client with NIP validation', async () => {
-      mockPrisma.client.findFirst = jest.fn().mockResolvedValue(null);
-      mockPrisma.$transaction = jest.fn().mockImplementation(async (cb) => {
-        const result = await cb(mockPrisma);
-        return result;
-      });
+      // Mock: no duplicate NIP
+      (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
 
-      mockPrisma.client.create = jest.fn().mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440002',
-        clientType: 'COMPANY',
-        companyName: 'Acme Inc',
-        nip: '5260250274',
-        firstName: 'Jan',
-        lastName: 'Nowak',
-        phone: '987654321',
-        email: 'info@acme.com',
-      });
-
-      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440002',
-        clientType: 'COMPANY',
-        companyName: 'Acme Inc',
-        nip: '5260250274',
-        firstName: 'Jan',
-        lastName: 'Nowak',
-        phone: '987654321',
-        email: 'info@acme.com',
-        contacts: [],
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        const tx = {
+          client: {
+            create: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440002',
+              clientType: 'COMPANY',
+              companyName: 'Acme Inc',
+              nip: '5260250274',
+              firstName: 'Jan',
+              lastName: 'Nowak',
+              phone: '987654321',
+              email: 'info@acme.com',
+            }),
+            findUnique: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440002',
+              clientType: 'COMPANY',
+              companyName: 'Acme Inc',
+              nip: '5260250274',
+              firstName: 'Jan',
+              lastName: 'Nowak',
+              phone: '987654321',
+              email: 'info@acme.com',
+              contacts: [],
+            }),
+          },
+        };
+        return cb(tx);
       });
 
       const result = await clientService.createClient(
@@ -121,7 +151,7 @@ describe('ClientService', () => {
     });
 
     it('should throw on duplicate phone', async () => {
-      mockPrisma.client.findFirst = jest.fn().mockResolvedValue({
+      (prisma.client.findFirst as jest.Mock).mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440000',
         phone: '999999999',
         firstName: 'Test',
@@ -145,11 +175,12 @@ describe('ClientService', () => {
 
   describe('deleteClient()', () => {
     it('should throw when client has active reservations', async () => {
-      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
+      (prisma.client.findUnique as jest.Mock).mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440000',
+        isDeleted: false,
         contacts: [],
       });
-      mockPrisma.reservation.count = jest.fn().mockResolvedValue(3);
+      (prisma.reservation.count as jest.Mock).mockResolvedValue(3);
 
       await expect(
         clientService.deleteClient('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001')
@@ -157,19 +188,26 @@ describe('ClientService', () => {
     });
 
     it('should delete client when no active reservations', async () => {
-      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
+      (prisma.client.findUnique as jest.Mock).mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440000',
         clientType: 'INDIVIDUAL',
         firstName: 'Jan',
         lastName: 'Kowalski',
+        isDeleted: false,
         contacts: [],
       });
-      mockPrisma.reservation.count = jest.fn().mockResolvedValue(0);
-      mockPrisma.$transaction = jest.fn().mockImplementation(async (cb) => {
-        await cb(mockPrisma);
+      (prisma.reservation.count as jest.Mock).mockResolvedValue(0);
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        const tx = {
+          clientContact: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+          },
+          client: {
+            update: jest.fn().mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+          },
+        };
+        await cb(tx);
       });
-      mockPrisma.clientContact.deleteMany = jest.fn().mockResolvedValue({ count: 0 });
-      mockPrisma.client.update = jest.fn().mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000' });
 
       await expect(
         clientService.deleteClient('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001')

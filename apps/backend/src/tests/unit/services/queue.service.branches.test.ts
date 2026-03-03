@@ -1,29 +1,36 @@
 import { QueueService } from '@/services/queue.service';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const mockPrisma = {
-  client: {
-    findUnique: jest.fn(),
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    client: {
+      findUnique: jest.fn(),
+    },
+    reservation: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+      aggregate: jest.fn(),
+    },
+    $transaction: jest.fn((cb) => cb({
+      client: { findUnique: jest.fn() },
+      reservation: {
+        create: jest.fn(),
+        findMany: jest.fn(),
+        aggregate: jest.fn(),
+      },
+    })),
   },
-  reservation: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-    updateMany: jest.fn(),
-    aggregate: jest.fn(),
-  },
-  $transaction: jest.fn((cb) => cb(mockPrisma)),
-} as unknown as PrismaClient;
+}));
 
 let queueService: QueueService;
 
 describe('QueueService — branch coverage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Inject mocked Prisma into service
     queueService = new QueueService();
-    (queueService as any).prisma = mockPrisma;
   });
 
   describe('addToQueue — defaults', () => {
@@ -31,17 +38,17 @@ describe('QueueService — branch coverage', () => {
       const clientId = '550e8400-e29b-41d4-a716-446655440000';
       const createdById = '550e8400-e29b-41d4-a716-446655440001';
 
-      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
+      (prisma.client.findUnique as jest.Mock).mockResolvedValue({
         id: clientId,
         firstName: 'Jan',
         lastName: 'Kowalski',
       });
 
-      mockPrisma.reservation.aggregate = jest.fn().mockResolvedValue({
+      (prisma.reservation.aggregate as jest.Mock).mockResolvedValue({
         _max: { reservationQueuePosition: 3 },
       });
 
-      mockPrisma.reservation.create = jest.fn().mockResolvedValue({
+      (prisma.reservation.create as jest.Mock).mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440002',
         clientId,
         createdById,
@@ -76,12 +83,13 @@ describe('QueueService — branch coverage', () => {
       );
 
       expect(result.position).toBe(4);
+      expect(prisma.client.findUnique).toHaveBeenCalledWith({ where: { id: clientId } });
     });
   });
 
   describe('getQueueForDate', () => {
     it('should return queue entries for specified date', async () => {
-      mockPrisma.reservation.findMany = jest.fn().mockResolvedValue([
+      (prisma.reservation.findMany as jest.Mock).mockResolvedValue([
         {
           id: '550e8400-e29b-41d4-a716-446655440003',
           reservationQueuePosition: 1,
