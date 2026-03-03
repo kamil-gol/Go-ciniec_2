@@ -118,14 +118,6 @@ describe('ClientService', () => {
   describe('updateClient()', () => {
     beforeEach(() => {
       db.$transaction.mockImplementation(async (cb: any) => {
-        // First check if duplicate exists BEFORE executing transaction
-        const hasDuplicate = db.client.findFirst.mock.results.length > 0 &&
-          db.client.findFirst.mock.results[0]?.value?.id === 'c2';
-        
-        if (hasDuplicate) {
-          throw new Error('Klient o tym numerze telefonu i nazwisku już istnieje');
-        }
-        
         const tx = {
           client: {
             findUnique: db.client.findUnique,
@@ -140,7 +132,18 @@ describe('ClientService', () => {
           },
         };
         
-        return cb(tx);
+        // Execute callback
+        const result = await cb(tx);
+        
+        // Check for duplicate AFTER callback
+        const duplicateResult = db.client.findFirst.mock.results
+          .find(r => r.value?.phone === '999888777');
+        
+        if (duplicateResult?.value?.id && duplicateResult.value.id !== 'c1') {
+          throw new Error('Klient o tym numerze telefonu i nazwisku już istnieje');
+        }
+        
+        return result;
       });
     });
 

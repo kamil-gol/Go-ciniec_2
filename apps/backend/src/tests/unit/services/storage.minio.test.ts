@@ -12,6 +12,14 @@ jest.mock('../../../config/storage.config', () => ({
       useSSL: false,
     },
     bucket: 'test-bucket',
+    buckets: {
+      attachments: 'attachments',
+      documents: 'documents',
+    },
+    presignedTtl: {
+      sensitive: 3600,
+      default: 7200,
+    },
   },
 }));
 
@@ -43,7 +51,7 @@ describe('MinioStorageService', () => {
     it('should upload file to bucket', async () => {
       const buffer = Buffer.from('test content');
       
-      await service.uploadFile('test.txt', buffer, 'text/plain');
+      await service.upload('test.txt', buffer, 'text/plain');
 
       expect(client.putObject).toHaveBeenCalledWith(
         'test-bucket',
@@ -58,7 +66,7 @@ describe('MinioStorageService', () => {
       client.putObject.mockRejectedValue(new Error('Upload failed'));
       const buffer = Buffer.from('test');
 
-      await expect(service.uploadFile('test.txt', buffer, 'text/plain'))
+      await expect(service.upload('test.txt', buffer, 'text/plain'))
         .rejects.toThrow('Upload failed');
     });
   });
@@ -71,7 +79,7 @@ describe('MinioStorageService', () => {
       
       client.getObject.mockResolvedValue(mockStream);
 
-      const result = await service.downloadFile('test.txt');
+      const result = await service.download('test.txt');
 
       expect(result).toBeInstanceOf(Buffer);
     });
@@ -79,14 +87,14 @@ describe('MinioStorageService', () => {
     it('should handle download errors', async () => {
       client.getObject.mockRejectedValue(new Error('Download failed'));
 
-      await expect(service.downloadFile('test.txt'))
+      await expect(service.download('test.txt'))
         .rejects.toThrow('Download failed');
     });
   });
 
   describe('deleteFile', () => {
     it('should delete file from bucket', async () => {
-      await service.deleteFile('test.txt');
+      await service.delete('test.txt');
 
       expect(client.removeObject).toHaveBeenCalledWith('test-bucket', 'test.txt');
     });
@@ -97,7 +105,7 @@ describe('MinioStorageService', () => {
       const url = await service.getPresignedUrl('test.txt');
 
       expect(url).toBe('http://presigned-url');
-      expect(client.presignedGetObject).toHaveBeenCalledWith('test-bucket', 'test.txt', 3600);
+      expect(client.presignedGetObject).toHaveBeenCalledWith('test-bucket', 'test.txt', 7200);
     });
   });
 });

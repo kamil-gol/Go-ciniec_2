@@ -62,7 +62,7 @@ describe('DiscountService — branches', () => {
       db.reservation.findUnique.mockResolvedValue(RESERVATION);
 
       await expect(
-        svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 150 }, 'u1')
+        svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 150, reason: 'Test' }, 'u1')
       ).rejects.toThrow(/100%/);
     });
 
@@ -70,7 +70,7 @@ describe('DiscountService — branches', () => {
       db.reservation.findUnique.mockResolvedValue(RESERVATION);
 
       await expect(
-        svc.applyDiscount('r1', { type: 'FIXED', value: 2000 }, 'u1')
+        svc.applyDiscount('r1', { type: 'FIXED', value: 2000, reason: 'Test' }, 'u1')
       ).rejects.toThrow(/przekroczyć/);
     });
 
@@ -78,7 +78,7 @@ describe('DiscountService — branches', () => {
       db.reservation.findUnique.mockResolvedValue(RESERVATION);
       db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 100 });
 
-      await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10 }, 'u1');
+      await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10, reason: 'Test discount' }, 'u1');
       expect(db.reservation.update).toHaveBeenCalled();
     });
 
@@ -86,7 +86,7 @@ describe('DiscountService — branches', () => {
       db.reservation.findUnique.mockResolvedValue(RESERVATION);
       db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 100 });
 
-      await svc.applyDiscount('r1', { type: 'FIXED', value: 100 }, 'u1');
+      await svc.applyDiscount('r1', { type: 'FIXED', value: 100, reason: 'Fixed discount' }, 'u1');
       expect(db.reservation.update).toHaveBeenCalled();
     });
 
@@ -98,7 +98,7 @@ describe('DiscountService — branches', () => {
       });
       db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 200 });
 
-      await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 20 }, 'u1');
+      await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 20, reason: 'Updated discount' }, 'u1');
       expect(db.reservation.update).toHaveBeenCalled();
     });
 
@@ -106,7 +106,7 @@ describe('DiscountService — branches', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RESERVATION, client: null });
       db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 100 });
 
-      await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10 }, 'u1');
+      await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10, reason: 'Discount' }, 'u1');
       expect(db.reservation.update).toHaveBeenCalled();
     });
   });
