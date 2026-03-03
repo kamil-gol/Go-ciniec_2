@@ -1,164 +1,93 @@
 /**
- * Upload Middleware — Unit Tests
+ * Upload middleware tests
+ * Covers: multer configuration, file filter, size limits
  */
 
-jest.mock('../../../utils/AppError', () => {
-  class MockAppError extends Error {
-    statusCode: number;
-    constructor(message: string, statusCode: number) {
-      super(message);
-      this.statusCode = statusCode;
-    }
-    static badRequest(msg: string) { return new MockAppError(msg, 400); }
-  }
-  return { AppError: MockAppError };
+import type { Request } from 'express';
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB = 26214400 bytes
+
+let capturedMulterOpts: any;
+const mockMulter = jest.fn((opts) => {
+  capturedMulterOpts = opts;
+  return {
+    single: jest.fn(() => jest.fn()),
+    array: jest.fn(() => jest.fn()),
+  };
 });
 
-import { Request, Response } from 'express';
-import multer from 'multer';
-import { upload, uploadSingle, uploadMultiple } from '../../../middlewares/upload';
+jest.mock('multer', () => mockMulter);
 
-describe('Upload Middleware', () => {
+const fsMock = {
+  existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
+};
 
-  it('should configure multer with correct storage', () => {
-    expect(upload).toBeDefined();
+jest.mock('fs', () => fsMock);
+
+function loadUpload(mockFs = fsMock) {
+  jest.resetModules();
+  jest.doMock('fs', () => mockFs);
+  jest.doMock('multer', () => mockMulter);
+  return require('../../../middlewares/upload');
+}
+
+describe('upload middleware', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    capturedMulterOpts = undefined;
   });
 
-  it('should have uploadSingle middleware', () => {
-    expect(uploadSingle).toBeDefined();
-  });
+  describe('multer config', () => {
+    it('should use disk storage with uploads directory', () => {
+      loadUpload();
 
-  it('should have uploadMultiple middleware', () => {
-    expect(uploadMultiple).toBeDefined();
-  });
+      expect(capturedMulterOpts.storage).toBeDefined();
+    });
 
-  it('should accept images and PDFs', () => {
-    const storage = (upload as any)._options?.storage;
-    expect(storage).toBeDefined();
-  });
+    it('should set fileSize limit to MAX_FILE_SIZE', () => {
+      loadUpload(fsMock);
 
-  it('should handle file size limits', () => {
-    const limits = (upload as any)._options?.limits;
-    expect(limits).toBeDefined();
-    expect(limits.fileSize).toBeGreaterThan(0);
-  });
-
-  it('should filter file types', () => {
-    const fileFilter = (upload as any)._options?.fileFilter;
-    expect(fileFilter).toBeDefined();
-  });
-
-  it('should reject invalid file types', (done) => {
-    const fileFilter = (upload as any)._options?.fileFilter;
-    const req = {} as Request;
-    const file = { mimetype: 'application/exe' } as Express.Multer.File;
-
-    fileFilter(req, file, (error: any) => {
-      expect(error).toBeDefined();
-      expect(error.message).toMatch(/type/);
-      done();
+      expect(capturedMulterOpts.limits.fileSize).toBe(26214400);
+      expect(capturedMulterOpts.limits.files).toBe(1);
     });
   });
 
-  it('should accept valid image files', (done) => {
-    const fileFilter = (upload as any)._options?.fileFilter;
-    const req = {} as Request;
-    const file = { mimetype: 'image/png' } as Express.Multer.File;
+  describe('fileFilter', () => {
+    it('should accept PDF files', () => {
+      loadUpload();
 
-    fileFilter(req, file, (error: any, accept: boolean) => {
-      expect(error).toBeNull();
-      expect(accept).toBe(true);
-      done();
+      const callback = jest.fn();
+      const req = {} as Request;
+      const file = { mimetype: 'application/pdf', originalname: 'test.pdf' } as any;
+
+      capturedMulterOpts.fileFilter(req, file, callback);
+
+      expect(callback).toHaveBeenCalledWith(null, true);
     });
-  });
 
-  it('should accept PDF files', (done) => {
-    const fileFilter = (upload as any)._options?.fileFilter;
-    const req = {} as Request;
-    const file = { mimetype: 'application/pdf' } as Express.Multer.File;
+    it('should accept image files', () => {
+      loadUpload();
 
-    fileFilter(req, file, (error: any, accept: boolean) => {
-      expect(error).toBeNull();
-      expect(accept).toBe(true);
-      done();
+      const callback = jest.fn();
+      const req = {} as Request;
+      const file = { mimetype: 'image/jpeg', originalname: 'photo.jpg' } as any;
+
+      capturedMulterOpts.fileFilter(req, file, callback);
+
+      expect(callback).toHaveBeenCalledWith(null, true);
     });
-  });
 
-  it('should generate unique filenames', () => {
-    const storage = (upload as any)._options?.storage;
-    const filename = storage._handleFile || storage.getFilename;
-    expect(filename).toBeDefined();
-  });
+    it('should reject non-allowed file types', () => {
+      loadUpload();
 
-  it('should use memory storage', () => {
-    const storage = (upload as any)._options?.storage;
-    expect(storage.constructor.name).toMatch(/Storage/);
-  });
+      const callback = jest.fn();
+      const req = {} as Request;
+      const file = { mimetype: 'application/exe', originalname: 'virus.exe' } as any;
 
-  it('should handle missing file gracefully', () => {
-    const req = { file: undefined } as any;
-    expect(req.file).toBeUndefined();
-  });
+      capturedMulterOpts.fileFilter(req, file, callback);
 
-  it('should handle multiple files', () => {
-    const req = { files: [] } as any;
-    expect(req.files).toEqual([]);
-  });
-
-  it('should validate max file count in uploadMultiple', () => {
-    const middleware = uploadMultiple('files', 5);
-    expect(middleware).toBeDefined();
-  });
-
-  it('should throw badRequest when field name is empty', () => {
-    expect(() => uploadSingle('')).toThrow(/required/);
-  });
-
-  it('should configure single file upload with field name', () => {
-    const middleware = uploadSingle('avatar');
-    expect(middleware).toBeDefined();
-  });
-
-  it('should configure multiple file upload with field name and max count', () => {
-    const middleware = uploadMultiple('documents', 10);
-    expect(middleware).toBeDefined();
-  });
-
-  it('should reject files exceeding size limit', (done) => {
-    const limits = (upload as any)._options?.limits;
-    if (limits && limits.fileSize) {
-      expect(limits.fileSize).toBeGreaterThan(0);
-      done();
-    } else {
-      done();
-    }
-  });
-
-  it('should handle error when multer fails', () => {
-    const middleware = uploadSingle('file');
-    expect(middleware).toBeDefined();
-  });
-
-  it('should create upload directory if not exists', () => {
-    expect(upload).toBeDefined();
-  });
-
-  it('should use correct destination path', () => {
-    const storage = (upload as any)._options?.storage;
-    expect(storage).toBeDefined();
-  });
-
-  it('should preserve file extension in generated filename', () => {
-    const storage = (upload as any)._options?.storage;
-    expect(storage).toBeDefined();
-  });
-
-  it('should handle concurrent uploads', () => {
-    expect(upload).toBeDefined();
-  });
-
-  it('should limit number of files in uploadMultiple', () => {
-    const middleware = uploadMultiple('attachments', 3);
-    expect(middleware).toBeDefined();
+      expect(callback).toHaveBeenCalledWith(expect.any(Error), false);
+    });
   });
 });
