@@ -6,6 +6,7 @@
 import { menuService } from '../../../services/menu.service';
 
 jest.mock('../../../services/menu.service', () => ({
+  __esModule: true,
   menuService: {
     getMenuTemplates: jest.fn(),
     getMenuTemplateById: jest.fn(),
