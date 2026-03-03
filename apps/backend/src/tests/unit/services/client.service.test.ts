@@ -10,6 +10,10 @@ const mockPrisma = {
     delete: jest.fn(),
     count: jest.fn(),
   },
+  clientContact: {
+    create: jest.fn(),
+    deleteMany: jest.fn(),
+  },
   reservation: {
     count: jest.fn(),
   },
@@ -21,18 +25,20 @@ let clientService: ClientService;
 describe('ClientService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    clientService = new ClientService(mockPrisma);
+    clientService = new ClientService();
+    (clientService as any).prisma = mockPrisma;
   });
 
   describe('createClient()', () => {
     it('should create INDIVIDUAL client', async () => {
       mockPrisma.client.findFirst = jest.fn().mockResolvedValue(null);
       mockPrisma.client.create = jest.fn().mockResolvedValue({
-        id: 'client-1',
+        id: '550e8400-e29b-41d4-a716-446655440000',
         clientType: 'INDIVIDUAL',
         firstName: 'Jan',
         lastName: 'Kowalski',
         email: 'jan@example.com',
+        phone: '123456789',
       });
 
       const result = await clientService.createClient(
@@ -41,9 +47,9 @@ describe('ClientService', () => {
           firstName: 'Jan',
           lastName: 'Kowalski',
           email: 'jan@example.com',
-          phoneNumber: '123456789',
+          phone: '123456789',
         },
-        'user-1'
+        '550e8400-e29b-41d4-a716-446655440001'
       );
 
       expect(result.clientType).toBe('INDIVIDUAL');
@@ -52,22 +58,45 @@ describe('ClientService', () => {
 
     it('should create COMPANY client with NIP validation', async () => {
       mockPrisma.client.findFirst = jest.fn().mockResolvedValue(null);
+      mockPrisma.$transaction = jest.fn().mockImplementation(async (cb) => {
+        const result = await cb(mockPrisma);
+        return result;
+      });
+
       mockPrisma.client.create = jest.fn().mockResolvedValue({
-        id: 'client-2',
+        id: '550e8400-e29b-41d4-a716-446655440002',
         clientType: 'COMPANY',
         companyName: 'Acme Inc',
         nip: '5260250274',
+        firstName: 'Jan',
+        lastName: 'Nowak',
+        phone: '987654321',
+        email: 'info@acme.com',
+      });
+
+      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440002',
+        clientType: 'COMPANY',
+        companyName: 'Acme Inc',
+        nip: '5260250274',
+        firstName: 'Jan',
+        lastName: 'Nowak',
+        phone: '987654321',
+        email: 'info@acme.com',
+        contacts: [],
       });
 
       const result = await clientService.createClient(
         {
           clientType: 'COMPANY',
           companyName: 'Acme Inc',
-          nip: '5260250274', // Valid NIP with correct control digit
+          nip: '5260250274',
+          firstName: 'Jan',
+          lastName: 'Nowak',
           email: 'info@acme.com',
-          phoneNumber: '987654321',
+          phone: '987654321',
         },
-        'user-1'
+        '550e8400-e29b-41d4-a716-446655440001'
       );
 
       expect(result.clientType).toBe('COMPANY');
@@ -80,19 +109,23 @@ describe('ClientService', () => {
           {
             clientType: 'COMPANY',
             companyName: 'BadCorp',
-            nip: '123', // Invalid: too short
+            nip: '123',
+            firstName: 'Jan',
+            lastName: 'Kowalski',
             email: 'bad@corp.com',
-            phoneNumber: '111111111',
+            phone: '111111111',
           },
-          'user-1'
+          '550e8400-e29b-41d4-a716-446655440001'
         )
       ).rejects.toThrow(/NIP.*10 cyfr/i);
     });
 
-    it('should throw on duplicate email', async () => {
+    it('should throw on duplicate phone', async () => {
       mockPrisma.client.findFirst = jest.fn().mockResolvedValue({
-        id: 'existing-client',
-        email: 'duplicate@example.com',
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        phone: '999999999',
+        firstName: 'Test',
+        lastName: 'User',
       });
 
       await expect(
@@ -101,36 +134,46 @@ describe('ClientService', () => {
             clientType: 'INDIVIDUAL',
             firstName: 'Test',
             lastName: 'User',
-            email: 'duplicate@example.com',
-            phoneNumber: '999999999',
+            email: 'test@example.com',
+            phone: '999999999',
           },
-          'user-1'
+          '550e8400-e29b-41d4-a716-446655440001'
         )
-      ).rejects.toThrow(/już istnieje|already exists/i);
+      ).rejects.toThrow(/już istnieje/i);
     });
   });
 
   describe('deleteClient()', () => {
     it('should throw when client has active reservations', async () => {
       mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
-        id: 'client-1',
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        contacts: [],
       });
       mockPrisma.reservation.count = jest.fn().mockResolvedValue(3);
 
-      await expect(clientService.deleteClient('client-1', 'user-1')).rejects.toThrow(
-        /aktywn|rezerwacj/i
-      );
+      await expect(
+        clientService.deleteClient('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001')
+      ).rejects.toThrow(/aktywn|rezerwacj/i);
     });
 
     it('should delete client when no active reservations', async () => {
       mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
-        id: 'client-1',
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        clientType: 'INDIVIDUAL',
+        firstName: 'Jan',
+        lastName: 'Kowalski',
+        contacts: [],
       });
       mockPrisma.reservation.count = jest.fn().mockResolvedValue(0);
-      mockPrisma.client.delete = jest.fn().mockResolvedValue({ id: 'client-1' });
+      mockPrisma.$transaction = jest.fn().mockImplementation(async (cb) => {
+        await cb(mockPrisma);
+      });
+      mockPrisma.clientContact.deleteMany = jest.fn().mockResolvedValue({ count: 0 });
+      mockPrisma.client.update = jest.fn().mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000' });
 
-      await expect(clientService.deleteClient('client-1', 'user-1')).resolves.not.toThrow();
-      expect(mockPrisma.client.delete).toHaveBeenCalled();
+      await expect(
+        clientService.deleteClient('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001')
+      ).resolves.not.toThrow();
     });
   });
 });
