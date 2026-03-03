@@ -5,10 +5,8 @@
 
 jest.mock('../../../services/packageCategory.service');
 
-import { PackageCategoryController } from '../../../controllers/packageCategory.controller';
+import { packageCategoryController } from '../../../controllers/packageCategory.controller';
 import packageCategoryService from '../../../services/packageCategory.service';
-
-const packageCategoryController = new PackageCategoryController();
 
 const mockRes = () => {
   const res: any = {};
