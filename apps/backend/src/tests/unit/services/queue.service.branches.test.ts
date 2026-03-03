@@ -21,6 +21,8 @@ jest.mock('../../../lib/prisma', () => ({
     },
     hall: { findUnique: jest.fn() },
     eventType: { findUnique: jest.fn() },
+    $executeRawUnsafe: jest.fn(),
+    $transaction: jest.fn(),
   },
   Prisma: {
     PrismaClientKnownRequestError: class extends Error {
@@ -50,6 +52,18 @@ const makeRes = (o: any = {}) => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  
+  // Setup transaction mock
+  db.$transaction.mockImplementation(async (cb: any) => {
+    const tx = {
+      reservation: {
+        findMany: db.reservation.findMany,
+        update: db.reservation.update,
+        updateMany: db.reservation.updateMany,
+      },
+    };
+    return cb(tx);
+  });
 });
 
 describe('QueueService — branch coverage', () => {
@@ -61,7 +75,11 @@ describe('QueueService — branch coverage', () => {
         new (Prisma as any).PrismaClientKnownRequestError('Unique constraint', 'P2002')
       );
 
-      await expect(svc.addToQueue('res-1', { date: '2027-06-15' }, 'u1'))
+      await expect(svc.addToQueue('res-1', { 
+        clientId: 'c1',
+        reservationQueueDate: new Date('2027-06-15'),
+        guests: 50,
+      }, 'u1'))
         .rejects.toThrow(/Pozycja.*już zajęta|Position.*already.*taken/i);
     });
   });
@@ -71,7 +89,7 @@ describe('QueueService — branch coverage', () => {
       db.reservation.findUnique
         .mockResolvedValueOnce(makeRes({ id: 'r1', reservationQueuePosition: 1 }))
         .mockResolvedValueOnce(makeRes({ id: 'r2', reservationQueuePosition: 2 }));
-      db.reservation.update.mockRejectedValue(
+      db.$executeRawUnsafe.mockRejectedValue(
         new (Prisma as any).PrismaClientKnownRequestError('Unique', 'P2002')
       );
 
@@ -92,7 +110,7 @@ describe('QueueService — branch coverage', () => {
   describe('moveToPosition — error branches', () => {
     it('should throw on P2002 error during move', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
-      db.reservation.update.mockRejectedValue(
+      db.$executeRawUnsafe.mockRejectedValue(
         new (Prisma as any).PrismaClientKnownRequestError('Unique', 'P2002')
       );
 
@@ -162,8 +180,9 @@ describe('QueueService — branch coverage', () => {
 
     it('should promote to CONFIRMED when status is CONFIRMED', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes());
-      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true });
+      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true });
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
+      db.reservation.findMany.mockResolvedValue([]); // No overlapping
       db.reservation.update.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
 
       await svc.promoteReservation('res-1', {
@@ -186,8 +205,9 @@ describe('QueueService — branch coverage', () => {
 
     it('should handle promote when reservation has no queue date/position', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
-      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true });
+      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true });
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
+      db.reservation.findMany.mockResolvedValue([]); // No overlapping
       db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT' }));
 
       await svc.promoteReservation('res-1', {
