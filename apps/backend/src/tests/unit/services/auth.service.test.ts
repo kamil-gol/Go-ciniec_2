@@ -15,6 +15,9 @@ const mockPrisma = {
   role: {
     findUnique: jest.fn(),
   },
+  refreshToken: {
+    create: jest.fn(),
+  },
 };
 
 jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
@@ -81,6 +84,7 @@ const mockInactiveUser = {
 describe('authService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' });
   });
 
   // ════════════════════════════════════════════════════════
@@ -218,7 +222,7 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
 
       await expect(authService.register(registerData))
-        .rejects.toThrow('User with this email already exists');
+        .rejects.toThrow(/email już istnieje/);
     });
 
     it('should use default employee role when no roleId provided', async () => {
