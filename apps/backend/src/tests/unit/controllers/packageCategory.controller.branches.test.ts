@@ -6,6 +6,7 @@
 import { packageCategoryService } from '../../../services/packageCategory.service';
 
 jest.mock('../../../services/packageCategory.service', () => ({
+  __esModule: true,
   packageCategoryService: {
     getByPackageId: jest.fn(),
     getById: jest.fn(),
