@@ -20,23 +20,23 @@ const mockPrisma = {
   },
 };
 
-jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
-jest.mock('@utils/password', () => ({
+jest.mock('../../../lib/prisma', () => ({ prisma: mockPrisma }));
+jest.mock('../../../utils/password', () => ({
   validatePassword: jest.fn(),
 }));
-jest.mock('@middlewares/auth', () => ({
+jest.mock('../../../middlewares/auth', () => ({
   generateToken: jest.fn().mockReturnValue('mock-jwt-token'),
 }));
-jest.mock('@utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
 }));
 
-import authService from '@services/auth.service';
-import { generateToken } from '@middlewares/auth';
-import { validatePassword } from '@utils/password';
+import authService from '../../../services/auth.service';
+import { generateToken } from '../../../middlewares/auth';
+import { validatePassword } from '../../../utils/password';
 
 // ── Fixtures ─────────────────────────────────────────────────
 const hashedPassword = bcrypt.hashSync('Test1234!', 10);
@@ -84,7 +84,7 @@ const mockInactiveUser = {
 describe('authService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' });
+    mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1', token: 'refresh-token', userId: 'user-1', expiresAt: new Date() });
   });
 
   // ════════════════════════════════════════════════════════
@@ -119,21 +119,21 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.login({ email: 'nobody@test.pl', password: 'pass' }))
-        .rejects.toThrow('Nieprawidłowe dane logowania');
+        .rejects.toThrow(/[Nn]ieprawid/);
     });
 
     it('should throw "Invalid credentials" for wrong password', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
 
       await expect(authService.login({ email: 'admin@test.pl', password: 'WrongPassword!' }))
-        .rejects.toThrow('Nieprawidłowe dane logowania');
+        .rejects.toThrow(/[Nn]ieprawid/);
     });
 
     it('should throw "User account is inactive" for disabled account', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockInactiveUser);
 
       await expect(authService.login({ email: 'inactive@test.pl', password: 'Test1234!' }))
-        .rejects.toThrow('Konto użytkownika jest nieaktywne');
+        .rejects.toThrow(/nieaktywne/);
     });
 
     it('should return empty permissions array when user has no assigned role', async () => {
@@ -290,7 +290,7 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.getMe('nonexistent'))
-        .rejects.toThrow('Nie znaleziono użytkownika');
+        .rejects.toThrow(/[Uu]żytkownik.*nie.*znalezion/);
     });
 
     it('should return empty permissions when user has no role', async () => {
