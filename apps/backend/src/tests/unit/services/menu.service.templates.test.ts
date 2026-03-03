@@ -148,7 +148,7 @@ describe('MenuService', () => {
 
     it('should throw when no active menu found', async () => {
       mockPrisma.menuTemplate.findFirst.mockResolvedValue(null);
-      await expect(service.getActiveMenuForEventType('et-999')).rejects.toThrow(/No active menu found/);
+      await expect(service.getActiveMenuForEventType('et-999')).rejects.toThrow(/aktywnego menu/);
     });
   });
 
@@ -207,7 +207,7 @@ describe('MenuService', () => {
 
     it('should throw when template is used in reservations', async () => {
       mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(3);
-      await expect(service.deleteMenuTemplate('tpl-001', TEST_USER)).rejects.toThrow(/Cannot delete.*3 reservation/);
+      await expect(service.deleteMenuTemplate('tpl-001', TEST_USER)).rejects.toThrow(/usunąć.*3.*rezerwacj/);
     });
   });
 
@@ -290,7 +290,7 @@ describe('MenuService', () => {
 
     it('should throw when package is used in reservations', async () => {
       mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(5);
-      await expect(service.deletePackage('pkg-001', TEST_USER)).rejects.toThrow(/Cannot delete.*5 reservation/);
+      await expect(service.deletePackage('pkg-001', TEST_USER)).rejects.toThrow(/usunąć.*5.*rezerwacj/);
     });
   });
 
