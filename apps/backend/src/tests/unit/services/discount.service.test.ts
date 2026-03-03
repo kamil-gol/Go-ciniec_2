@@ -1,8 +1,8 @@
-import { DiscountService } from '@/services/discount.service';
+import { DiscountService } from '../../../services/discount.service';
 import { PrismaClient } from '@prisma/client';
-import { recalculateReservationTotalPrice } from '@/utils/recalculate-total';
+import { recalculateReservationTotalPrice } from '../../../utils/recalculate-total';
 
-jest.mock('@/utils/recalculate-total');
+jest.mock('../../../utils/recalculate-total');
 
 const mockPrisma = {
   reservation: {
