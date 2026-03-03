@@ -203,8 +203,11 @@ describe('DocumentTemplateService — create()', () => {
       db.documentTemplate.aggregate.mockResolvedValue({ _max: { displayOrder: 0 } });
       db.documentTemplate.create.mockResolvedValue(TEMPLATE);
 
+      // replace _ with - so slugs like "reservation-pdf" pass the slug regex
+      const slug = `slug-${cat.toLowerCase().replace(/_/g, '-')}`;
+
       await expect(
-        svc.create({ slug: `slug-${cat.toLowerCase()}`, name: 'X', category: cat, content: 'X' }, 'u1')
+        svc.create({ slug, name: 'X', category: cat, content: 'X' }, 'u1')
       ).resolves.toBeDefined();
     }
   });
