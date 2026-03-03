@@ -24,6 +24,7 @@ import reportsRoutes from '@/routes/reports.routes';
 import settingsRoutes from '@/routes/settings.routes';
 import serviceExtraRoutes from '@/routes/serviceExtra.routes';
 import documentTemplateRoutes from '@/routes/document-template.routes';
+import cateringRoutes from '@/routes/catering.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -140,6 +141,7 @@ app.use('/api/audit-log', auditLogRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/document-templates', documentTemplateRoutes);
+app.use('/api/catering', cateringRoutes);
 
 /**
  * Menu System Routes
