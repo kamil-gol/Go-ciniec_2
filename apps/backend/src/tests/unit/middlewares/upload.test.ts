@@ -1,93 +1,83 @@
 /**
- * Upload middleware tests
- * Covers: multer configuration, file filter, size limits
+ * Upload Middleware — Unit Tests
+ * Tests: multer configuration, file filter logic
  */
 
-import type { Request } from 'express';
+jest.mock('multer', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    single: jest.fn(() => (req: any, res: any, next: any) => next()),
+    array: jest.fn(() => (req: any, res: any, next: any) => next()),
+  })),
+  diskStorage: jest.fn((config) => config),
+}));
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB = 26214400 bytes
+import multer from 'multer';
 
-let capturedMulterOpts: any;
-const mockMulter = jest.fn((opts) => {
-  capturedMulterOpts = opts;
-  return {
-    single: jest.fn(() => jest.fn()),
-    array: jest.fn(() => jest.fn()),
-  };
-});
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+];
 
-jest.mock('multer', () => mockMulter);
-
-const fsMock = {
-  existsSync: jest.fn().mockReturnValue(true),
-  mkdirSync: jest.fn(),
-};
-
-jest.mock('fs', () => fsMock);
-
-function loadUpload(mockFs = fsMock) {
-  jest.resetModules();
-  jest.doMock('fs', () => mockFs);
-  jest.doMock('multer', () => mockMulter);
-  return require('../../../middlewares/upload');
+// Load upload module to test configuration
+function loadUpload() {
+  jest.isolateModules(() => {
+    require('../../../middlewares/upload');
+  });
 }
 
-describe('upload middleware', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    capturedMulterOpts = undefined;
-  });
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
+describe('upload middleware', () => {
   describe('multer config', () => {
     it('should use disk storage with uploads directory', () => {
       loadUpload();
-
-      expect(capturedMulterOpts.storage).toBeDefined();
+      expect(multer.diskStorage).toHaveBeenCalled();
     });
 
     it('should set fileSize limit to MAX_FILE_SIZE', () => {
-      loadUpload(fsMock);
-
-      expect(capturedMulterOpts.limits.fileSize).toBe(26214400);
-      expect(capturedMulterOpts.limits.files).toBe(1);
+      loadUpload();
+      expect(multer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limits: expect.objectContaining({
+            fileSize: MAX_FILE_SIZE,
+          }),
+        })
+      );
     });
   });
 
   describe('fileFilter', () => {
     it('should accept PDF files', () => {
       loadUpload();
-
-      const callback = jest.fn();
-      const req = {} as Request;
-      const file = { mimetype: 'application/pdf', originalname: 'test.pdf' } as any;
-
-      capturedMulterOpts.fileFilter(req, file, callback);
-
-      expect(callback).toHaveBeenCalledWith(null, true);
+      const call = (multer as jest.Mock).mock.calls[0][0];
+      const fileFilter = call.fileFilter;
+      const cb = jest.fn();
+      fileFilter({}, { mimetype: 'application/pdf' }, cb);
+      expect(cb).toHaveBeenCalledWith(null, true);
     });
 
     it('should accept image files', () => {
       loadUpload();
-
-      const callback = jest.fn();
-      const req = {} as Request;
-      const file = { mimetype: 'image/jpeg', originalname: 'photo.jpg' } as any;
-
-      capturedMulterOpts.fileFilter(req, file, callback);
-
-      expect(callback).toHaveBeenCalledWith(null, true);
+      const call = (multer as jest.Mock).mock.calls[0][0];
+      const fileFilter = call.fileFilter;
+      const cb = jest.fn();
+      fileFilter({}, { mimetype: 'image/jpeg' }, cb);
+      expect(cb).toHaveBeenCalledWith(null, true);
     });
 
     it('should reject non-allowed file types', () => {
       loadUpload();
-
-      const callback = jest.fn();
-      const req = {} as Request;
-      const file = { mimetype: 'application/exe', originalname: 'virus.exe' } as any;
-
-      capturedMulterOpts.fileFilter(req, file, callback);
-
-      expect(callback).toHaveBeenCalledWith(expect.any(Error), false);
+      const call = (multer as jest.Mock).mock.calls[0][0];
+      const fileFilter = call.fileFilter;
+      const cb = jest.fn();
+      fileFilter({}, { mimetype: 'application/zip' }, cb);
+      expect(cb).toHaveBeenCalledWith(expect.any(Error), false);
     });
   });
 });

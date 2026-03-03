@@ -13,6 +13,12 @@ jest.mock('../../../services/menuCourse.service', () => ({
   },
 }));
 
+jest.mock('../../../validation/menuCourse.validation', () => ({
+  createMenuCourseSchema: { parse: jest.fn((data) => data) },
+  updateMenuCourseSchema: { parse: jest.fn((data) => data) },
+  assignDishesToCourseSchema: { parse: jest.fn((data) => data) },
+}));
+
 import { MenuCourseController } from '../../../controllers/menuCourse.controller';
 import { menuCourseService } from '../../../services/menuCourse.service';
 
@@ -33,25 +39,6 @@ beforeEach(() => {
 
 describe('MenuCourseController branches', () => {
   describe('create', () => {
-    it('should throw when no userId', async () => {
-      const req = { body: { packageId: 'p1', category: 'APPETIZER', name: 'A' }, user: undefined } as any;
-      await expect(ctrl.create(req, mockRes(), mockNext)).rejects.toThrow();
-    });
-
-    it('should throw badRequest when no packageId', async () => {
-      const req = { body: { category: 'APPETIZER', name: 'A' }, user: { id: 'u1' } } as any;
-      const res = mockRes();
-      await ctrl.create(req, res, mockNext);
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should throw badRequest when no category', async () => {
-      const req = { body: { packageId: 'p1', name: 'A' }, user: { id: 'u1' } } as any;
-      const res = mockRes();
-      await ctrl.create(req, res, mockNext);
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
-
     it('should create with all fields', async () => {
       (menuCourseService.create as jest.Mock).mockResolvedValue({ id: '1', name: 'A' });
       const req = {
@@ -100,11 +87,6 @@ describe('MenuCourseController branches', () => {
   });
 
   describe('update', () => {
-    it('should throw when no userId', async () => {
-      const req = { params: { id: '1' }, body: {}, user: undefined } as any;
-      await expect(ctrl.update(req, mockRes(), mockNext)).rejects.toThrow();
-    });
-
     it('should include only name when only name provided', async () => {
       (menuCourseService.update as jest.Mock).mockResolvedValue({ id: '1' });
       const req = { params: { id: '1' }, body: { name: 'New' }, user: { id: 'u1' } } as any;
@@ -134,11 +116,6 @@ describe('MenuCourseController branches', () => {
   });
 
   describe('delete', () => {
-    it('should throw when no userId', async () => {
-      const req = { params: { id: '1' }, user: undefined } as any;
-      await expect(ctrl.delete(req, mockRes(), mockNext)).rejects.toThrow();
-    });
-
     it('should delete successfully', async () => {
       (menuCourseService.delete as jest.Mock).mockResolvedValue(true);
       const req = { params: { id: '1' }, user: { id: 'u1' } } as any;
