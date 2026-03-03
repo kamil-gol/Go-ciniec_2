@@ -586,8 +586,9 @@ model DishCategory {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
-  dishes        Dish[]
+  dishes           Dish[]
   categorySettings PackageCategorySettings[]
+  cateringSections CateringPackageSection[]
   
   @@index([slug])
   @@index([isActive])
@@ -609,8 +610,9 @@ model Dish {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
-  category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  courseOptions  MenuCourseOption[]
+  category        DishCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  courseOptions   MenuCourseOption[]
+  cateringOptions CateringSectionOption[]
   
   @@index([categoryId])
   @@index([isActive])
@@ -859,4 +861,109 @@ model DocumentTemplateHistory {
   @@index([templateId])
   @@index([changedById])
   @@index([version])
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 🍱 CATERING MODULE — Faza 1: Szablony i Pakiety (#150)
+// ═════════════════════════════════════════════════════════════════
+
+enum CateringPriceType {
+  PER_PERSON
+  FLAT
+  TIERED
+}
+
+model CateringTemplate {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+  slug          String   @unique @db.VarChar(100)
+  imageUrl      String?  @db.Text
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0) @db.SmallInt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  packages      CateringPackage[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([displayOrder])
+}
+
+model CateringPackage {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  templateId        String            @db.Uuid
+
+  name              String            @db.VarChar(255)
+  description       String?           @db.Text
+  shortDescription  String?           @db.VarChar(500)
+
+  priceType         CateringPriceType @default(PER_PERSON)
+  basePrice         Decimal           @default(0) @db.Decimal(10, 2)
+  // tieredPricing JSON: [{minGuests,maxGuests,pricePerPerson}]
+  tieredPricing     Json?
+
+  badgeText         String?           @db.VarChar(50)
+  isPopular         Boolean           @default(false)
+  displayOrder      Int               @default(0) @db.SmallInt
+  isActive          Boolean           @default(true)
+
+  minGuests         Int?              @db.SmallInt
+  maxGuests         Int?              @db.SmallInt
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  template          CateringTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  sections          CateringPackageSection[]
+
+  @@index([templateId])
+  @@index([displayOrder])
+  @@index([isActive])
+}
+
+model CateringPackageSection {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packageId     String          @db.Uuid
+  categoryId    String          @db.Uuid
+
+  name          String?         @db.VarChar(255)
+  description   String?         @db.Text
+  minSelect     Int             @default(1) @db.SmallInt
+  maxSelect     Int             @default(1) @db.SmallInt
+  isRequired    Boolean         @default(true)
+  displayOrder  Int             @default(0) @db.SmallInt
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  package       CateringPackage   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  category      DishCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  options       CateringSectionOption[]
+
+  @@unique([packageId, categoryId])
+  @@index([packageId])
+  @@index([categoryId])
+  @@index([displayOrder])
+}
+
+model CateringSectionOption {
+  id            String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sectionId     String                 @db.Uuid
+  dishId        String                 @db.Uuid
+
+  customPrice   Decimal?               @db.Decimal(10, 2)
+  isDefault     Boolean                @default(false)
+  displayOrder  Int                    @default(0) @db.SmallInt
+
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  section       CateringPackageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  dish          Dish                   @relation(fields: [dishId], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, dishId])
+  @@index([sectionId])
+  @@index([dishId])
 }
