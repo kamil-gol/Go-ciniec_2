@@ -21,8 +21,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Clear require cache to force fresh module load
-  delete require.cache[require.resolve('../../../middlewares/upload')];
+  jest.resetModules();
 });
 
 describe('upload middleware', () => {

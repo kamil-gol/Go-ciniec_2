@@ -58,7 +58,7 @@ describe('DiscountService', () => {
       db.reservation.findUnique.mockResolvedValue(RESERVATION);
       db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 500, totalPrice: 4500 });
 
-      const result = await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10 }, 'u1');
+      const result = await svc.applyDiscount('r1', { type: 'PERCENTAGE', value: 10, reason: 'Test discount' }, 'u1');
 
       expect(result.discountAmount).toBe(500);
       expect(db.reservation.update).toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe('DiscountService', () => {
       db.reservation.findUnique.mockResolvedValue(RESERVATION);
       db.reservation.update.mockResolvedValue({ ...RESERVATION, discountAmount: 500, totalPrice: 4500 });
 
-      const result = await svc.applyDiscount('r1', { type: 'FIXED', value: 500 }, 'u1');
+      const result = await svc.applyDiscount('r1', { type: 'FIXED', value: 500, reason: 'Fixed discount' }, 'u1');
 
       expect(result.discountAmount).toBe(500);
       expect(db.reservation.update).toHaveBeenCalled();
@@ -79,6 +79,7 @@ describe('DiscountService', () => {
     it('should remove discount and restore original price', async () => {
       db.reservation.findUnique.mockResolvedValue({
         ...RESERVATION,
+        discountType: 'PERCENTAGE',
         discountAmount: 500,
         priceBeforeDiscount: 5000,
         totalPrice: 4500,

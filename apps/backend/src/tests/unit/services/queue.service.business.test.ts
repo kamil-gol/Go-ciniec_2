@@ -15,6 +15,7 @@ jest.mock('../../../lib/prisma', () => ({
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
+      aggregate: jest.fn(),
     },
     hall: {
       findUnique: jest.fn(),
@@ -86,7 +87,7 @@ describe('QueueService', () => {
     it('should add reservation to queue', async () => {
       db.client.findUnique.mockResolvedValue({ id: 'c1' });
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
-      db.reservation.count.mockResolvedValue(0);
+      db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: null } });
       db.reservation.update.mockResolvedValue(makeRes());
 
       const result = await svc.addToQueue({
@@ -146,7 +147,7 @@ describe('QueueService', () => {
 
     it('should move to new position', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
-      db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2' }), makeRes({ id: 'r3' })]);
+      db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2', reservationQueuePosition: 2 }), makeRes({ id: 'r3', reservationQueuePosition: 3 })]);
       db.$executeRawUnsafe.mockResolvedValue(undefined);
 
       await svc.moveToPosition('res-1', 3, 'u1');

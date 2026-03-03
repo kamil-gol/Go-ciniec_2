@@ -14,6 +14,7 @@ jest.mock('../../../lib/prisma', () => ({
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
+      aggregate: jest.fn(),
     },
     queueItem: {
       findMany: jest.fn(),
@@ -87,7 +88,7 @@ describe('QueueService — branch coverage', () => {
           reservationQueuePosition: null 
         })
       );
-      db.reservation.count.mockResolvedValue(3);
+      db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 2 } });
       
       const prismaError = Object.assign(
         new Error('Unique constraint'),
