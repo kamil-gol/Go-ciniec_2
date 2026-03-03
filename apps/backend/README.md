@@ -17,6 +17,29 @@ Backend API for **Gościniec Rodzinny** reservation system. Built with Express.j
 
 ---
 
+## 🎯 Current Status (March 3, 2026)
+
+### Test Coverage
+- ✅ **Tests Passing**: 1903/1904 (99.9%)
+- ✅ **Test Suites**: 130/131 passing
+- 📊 **Coverage**:
+  - Statements: 96.45%
+  - **Branches: 91.03%** (Target: 95%+ - 🛠️ Phase 1 in progress)
+  - Functions: 96.97%
+  - Lines: 97.06%
+
+### Documentation
+- 📚 `docs/TESTING_PATTERNS.md` - Testing patterns and best practices (12.4 KB)
+- 📈 `docs/BRANCH_COVERAGE_DETAILED.md` - Branch coverage analysis (8.3 KB)
+- ⚡ `docs/TESTING_QUICKSTART.md` - Quick start guide for developers (6.8 KB)
+
+### Current Focus
+- 🛠️ **Issue #102**: Branch Coverage Improvement (91.03% → 95%+)
+- 📝 **Phase 1**: pdf.service + menu.service branch tests
+- 🎯 **Target**: +70 branches covered by end of Week 1
+
+---
+
 ## Project Structure
 
 ```
@@ -24,15 +47,26 @@ apps/backend/
 ├── src/
 │   ├── controllers/        # Request handlers
 │   ├── services/           # Business logic
+│   │   └── __tests__/
+│   │       ├── unit/           # Unit tests
+│   │       ├── integration/    # Integration tests
+│   │       └── branches/       # Branch coverage tests 🆕
 │   ├── routes/             # API routes
 │   ├── middlewares/        # Express middlewares
 │   ├── utils/              # Utility functions
 │   ├── types/              # TypeScript types
 │   ├── tests/              # Test setup
 │   └── server.ts           # Express app entry point
+├── docs/                   # Project documentation 🆕
+│   ├── TESTING_PATTERNS.md
+│   ├── BRANCH_COVERAGE_DETAILED.md
+│   └── TESTING_QUICKSTART.md
 ├── prisma/
 │   ├── schema.prisma       # Database schema
 │   └── migrations/         # Database migrations
+├── coverage/               # Test coverage reports
+│   ├── lcov-report/        # HTML coverage report
+│   └── lcov.info           # Coverage data
 ├── Dockerfile              # Multi-stage Docker build
 ├── jest.config.js          # Jest configuration
 ├── tsconfig.json           # TypeScript configuration
@@ -102,13 +136,41 @@ npm run seed                 # Seed database with initial data
 ```bash
 npm run test             # Run all tests
 npm run test:watch       # Run tests in watch mode
+npm run test:coverage    # Run tests with coverage report
 npm run test:integration # Run integration tests only
+
+# Docker environment testing
+docker exec rezerwacje-api-dev npm test
+docker exec rezerwacje-api-dev npm test -- --coverage
 ```
 
 ### Code Quality
 ```bash
 npm run lint             # Run ESLint
 npm run format           # Format code with Prettier
+```
+
+---
+
+## Testing Documentation
+
+### Quick Start
+New to the project? Start here: [`docs/TESTING_QUICKSTART.md`](docs/TESTING_QUICKSTART.md)
+
+### Testing Patterns
+Learn testing patterns and best practices: [`docs/TESTING_PATTERNS.md`](docs/TESTING_PATTERNS.md)
+
+### Branch Coverage Analysis
+Detailed breakdown of uncovered branches: [`docs/BRANCH_COVERAGE_DETAILED.md`](docs/BRANCH_COVERAGE_DETAILED.md)
+
+### Coverage Reports
+After running tests with coverage, view HTML report:
+```bash
+# Generate coverage
+npm test -- --coverage
+
+# Open HTML report in browser
+open coverage/lcov-report/index.html
 ```
 
 ---
@@ -438,7 +500,19 @@ npm run test:watch
 npm run test -- --coverage
 ```
 
-**Coverage Target**: 80% across all files
+**Coverage Targets**:
+- ✅ Statements: 95%+ (Current: 96.45%)
+- 🛠️ Branches: 95%+ (Current: 91.03% - improving)
+- ✅ Functions: 95%+ (Current: 96.97%)
+- ✅ Lines: 95%+ (Current: 97.06%)
+
+### Test Organization
+```
+src/services/__tests__/
+├── unit/           # Unit tests for individual functions
+├── integration/    # Integration tests with database
+└── branches/       # Branch coverage tests for complex logic
+```
 
 ---
 
@@ -578,11 +652,20 @@ npm run prisma:generate
 
 ---
 
-## Next Steps (Sprint 2)
+## Roadmap
 
+### ✅ Completed
+- Sprint 1: Authentication & User Management
+- Sprint 2: Menu System & Dish Categories
+- High test coverage (96%+ statements)
+
+### 🛠️ In Progress
+- **Issue #102**: Branch Coverage Improvement (91% → 95%+)
+- Phase 1: pdf.service + menu.service branch tests
+
+### ⏳ Next Steps
 - [ ] Reservation CRUD endpoints
 - [ ] Price calculator service
-- [ ] Reservation validation rules
 - [ ] Hall management endpoints
 - [ ] Client management endpoints
 
@@ -594,5 +677,5 @@ PROPRIETARY - Gościniec Rodzinny
 
 ---
 
-**Status**: 🔜 Sprint 2 - Menu System & Categories
-**Last Updated**: 10.02.2026
+**Status**: 🛠️ Active Development - Branch Coverage Phase 1  
+**Last Updated**: March 3, 2026, 19:30 CET
