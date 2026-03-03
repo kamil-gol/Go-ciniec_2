@@ -5,7 +5,7 @@
  */
 import bcrypt from 'bcryptjs';
 
-// ── Mocks ────────────────────────────────────────────────────
+// ── Mocks ────────────────────────────────────────────────────────────────────────────────────────
 const mockPrisma = {
   user: {
     findUnique: jest.fn(),
@@ -37,7 +37,7 @@ jest.mock('../../../utils/logger', () => ({
 import authService from '../../../services/auth.service';
 import { validatePassword } from '../../../utils/password';
 
-// ── Fixtures ─────────────────────────────────────────────────
+// ── Fixtures ─────────────────────────────────────────────────────────────────────────────────────
 const hashedPassword = bcrypt.hashSync('Test1234!', 10);
 
 const mockUserWithRole = {
@@ -79,7 +79,7 @@ const mockInactiveUser = {
   isActive: false,
 };
 
-// ── Tests ────────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────────────────────────────────────────
 describe('authService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -92,9 +92,9 @@ describe('authService', () => {
     mockPrisma.changeLog.create.mockResolvedValue({ id: 'log-1' });
   });
 
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   // LOGIN
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   describe('login', () => {
     it('should login with valid credentials and return token + user + permissions', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
@@ -104,7 +104,7 @@ describe('authService', () => {
 
       expect(result.token).toBeTruthy(); // JWT token exists
       expect(result.accessToken).toBeTruthy();
-      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.refreshToken).toBeTruthy(); // Random hex token
       expect(result.user.email).toBe('admin@test.pl');
       expect(result.user.permissions).toEqual([
         'reservations:read',
@@ -177,9 +177,9 @@ describe('authService', () => {
     });
   });
 
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   // REGISTER
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   describe('register', () => {
     const registerData = {
       email: 'new@test.pl',
@@ -204,7 +204,7 @@ describe('authService', () => {
 
       expect(result.token).toBeTruthy();
       expect(result.accessToken).toBeTruthy();
-      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.refreshToken).toBeTruthy(); // Random hex token
       expect(result.user.email).toBe('new@test.pl');
       expect(mockPrisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -262,9 +262,9 @@ describe('authService', () => {
     });
   });
 
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   // GET ME
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   describe('getMe', () => {
     it('should return current user with permissions', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
