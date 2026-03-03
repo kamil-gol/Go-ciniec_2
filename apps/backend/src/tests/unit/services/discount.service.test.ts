@@ -13,6 +13,11 @@ const mockPrisma = {
 
 jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
 jest.mock('@utils/audit-logger', () => ({ logChange: jest.fn() }));
+jest.mock('@utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn((adults, children, toddlers, ppa, ppc, ppt) => 
+    adults * ppa + children * ppc + toddlers * (ppt || 0)
+  ),
+}));
 
 import discountService from '@services/discount.service';
 import { logChange } from '@utils/audit-logger';
@@ -24,6 +29,8 @@ const mockReservation = {
   id: 'res-1', status: 'CONFIRMED',
   totalPrice: 25000, priceBeforeDiscount: null,
   discountType: null, discountValue: null, discountAmount: null, discountReason: null,
+  adults: 50, children: 10, toddlers: 5,
+  pricePerAdult: 350, pricePerChild: 150, pricePerToddler: 50,
   client: { firstName: 'Anna', lastName: 'Nowak', email: 'anna@test.pl', phone: '+48111222333' },
   hall: { id: 'h-1', name: 'Sala', capacity: 150, isWholeVenue: true },
   eventType: { id: 'evt-1', name: 'Wesele' },
