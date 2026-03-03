@@ -1,5 +1,5 @@
-import { PrismaClient, CateringPriceType } from '@prisma/client';
-import { AppError } from '../utils/errors';
+import { PrismaClient, CateringPriceType, Prisma } from '@prisma/client';
+import { AppError } from '../utils/AppError';
 
 const prisma = new PrismaClient();
 
@@ -31,7 +31,7 @@ export interface CreateCateringPackageDto {
   shortDescription?: string;
   priceType?: CateringPriceType;
   basePrice: number;
-  tieredPricing?: object;
+  tieredPricing?: Prisma.InputJsonValue;
   badgeText?: string;
   isPopular?: boolean;
   displayOrder?: number;
@@ -46,7 +46,7 @@ export interface UpdateCateringPackageDto {
   shortDescription?: string;
   priceType?: CateringPriceType;
   basePrice?: number;
-  tieredPricing?: object | null;
+  tieredPricing?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
   badgeText?: string | null;
   isPopular?: boolean;
   displayOrder?: number;
@@ -199,7 +199,6 @@ export async function createCateringPackage(templateId: string, data: CreateCate
     data: {
       ...data,
       templateId,
-      basePrice: data.basePrice,
     },
     include: {
       sections: {
@@ -211,9 +210,20 @@ export async function createCateringPackage(templateId: string, data: CreateCate
 
 export async function updateCateringPackage(id: string, data: UpdateCateringPackageDto) {
   await getCateringPackageById(id);
+
+  const updateData: Prisma.CateringPackageUpdateInput = {
+    ...data,
+    // Prisma requires Prisma.JsonNull to explicitly set JSONB field to null
+    ...(data.tieredPricing === Prisma.JsonNull
+      ? { tieredPricing: Prisma.JsonNull }
+      : data.tieredPricing !== undefined
+      ? { tieredPricing: data.tieredPricing }
+      : {}),
+  };
+
   return prisma.cateringPackage.update({
     where: { id },
-    data,
+    data: updateData,
     include: {
       sections: {
         include: { category: true, options: { include: { dish: true } } },
