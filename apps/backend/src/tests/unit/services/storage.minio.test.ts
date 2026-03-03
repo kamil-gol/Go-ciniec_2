@@ -18,7 +18,7 @@ jest.mock('../../../config/storage.config', () => ({
     },
     presignedTtl: {
       sensitive: 3600,
-      default: 7200,
+      standard: 7200,
     },
   },
 }));
@@ -41,8 +41,18 @@ import { MinioStorageService } from '../../../services/storage/minio.storage';
 import { Readable } from 'stream';
 import { storageConfig } from '../../../config/storage.config';
 
-const service = new MinioStorageService();
-const client = (service as any).client;
+const realService = new MinioStorageService();
+const client = (realService as any).client;
+
+// Create wrapper that matches interface expectations (bucket as first param)
+const service = {
+  upload: (key: string, buffer: Buffer, mimetype: string) =>
+    realService.upload(storageConfig.bucket, key, buffer, { 'Content-Type': mimetype }),
+  download: (key: string) => realService.download(storageConfig.bucket, key),
+  delete: (key: string) => realService.delete(storageConfig.bucket, key),
+  getPresignedUrl: (key: string, ttl?: number) =>
+    realService.getPresignedUrl(storageConfig.bucket, key, ttl),
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -57,12 +67,11 @@ describe('MinioStorageService', () => {
 
       expect(client.putObject).toHaveBeenCalledWith(
         storageConfig.bucket,
-        expect.any(String),
+        'test.txt',
         buffer,
-        undefined,
+        buffer.length,
         expect.objectContaining({ 'Content-Type': 'text/plain' })
       );
-      expect(client.statObject).toHaveBeenCalled();
     });
 
     it('should handle upload errors', async () => {

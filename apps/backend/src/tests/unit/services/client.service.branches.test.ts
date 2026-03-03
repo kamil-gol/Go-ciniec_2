@@ -39,27 +39,12 @@ const EXISTING = {
   phone: '123456789',
   email: 'jan@test.pl',
   companyName: null,
+  clientType: 'INDIVIDUAL',
+  isDeleted: false,
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
-  
-  db.$transaction.mockImplementation(async (cb: any) => {
-    const tx = {
-      client: {
-        findUnique: db.client.findUnique,
-        findFirst: db.client.findFirst,
-        update: db.client.update,
-      },
-      contact: {
-        deleteMany: db.contact.deleteMany,
-      },
-      clientContact: {
-        deleteMany: db.clientContact.deleteMany,
-      },
-    };
-    return cb(tx);
-  });
 });
 
 describe('ClientService — branch coverage', () => {
@@ -76,7 +61,7 @@ describe('ClientService — branch coverage', () => {
     });
 
     it('should treat as COMPANY when companyName provided', async () => {
-      const company = { ...EXISTING, companyName: 'ACME Corp', firstName: null, lastName: null };
+      const company = { ...EXISTING, companyName: 'ACME Corp', firstName: null, lastName: null, clientType: 'COMPANY' };
       db.client.findUnique.mockResolvedValue(company);
       db.client.findFirst.mockResolvedValue(null);
       db.client.update.mockResolvedValue({ ...company, companyName: 'ACME Ltd' });
@@ -102,20 +87,44 @@ describe('ClientService — branch coverage', () => {
   describe('updateClient — conditional fields', () => {
     it('should use provided lastName in phone duplicate check', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
+      // Duplicate check happens BEFORE update, service calls findFirst with new lastName
       db.client.findFirst.mockResolvedValue(null);
       db.client.update.mockResolvedValue({ ...EXISTING, lastName: 'Nowak', phone: '999888777' });
       (diffObjects as jest.Mock).mockReturnValue({});
+      
       await svc.updateClient('c1', { lastName: 'Nowak', phone: '999888777' }, 'u1');
-      expect(db.client.findFirst).toHaveBeenCalled();
+      
+      // Service calls findFirst with lastName: 'Nowak' (from data) and phone: '999888777'
+      expect(db.client.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            phone: '999888777',
+            firstName: 'Jan', // from existing
+            lastName: 'Nowak', // from data
+          }),
+        })
+      );
     });
 
     it('should fallback to existing lastName in phone duplicate check when not provided', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
+      // Duplicate check uses existing lastName when not in data
       db.client.findFirst.mockResolvedValue(null);
       db.client.update.mockResolvedValue({ ...EXISTING, phone: '999888777' });
       (diffObjects as jest.Mock).mockReturnValue({});
+      
       await svc.updateClient('c1', { phone: '999888777' }, 'u1');
-      expect(db.client.findFirst).toHaveBeenCalled();
+      
+      // Service calls findFirst with lastName from existing client
+      expect(db.client.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            phone: '999888777',
+            firstName: 'Jan', // from existing
+            lastName: 'Kowalski', // from existing
+          }),
+        })
+      );
     });
   });
 });
