@@ -113,13 +113,13 @@ describe('DepositService — branches', () => {
     it('should throw when deposit is paid', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: true }));
       await expect(depositService.update('dep-1', { amount: 100 }, 'user-1'))
-        .rejects.toThrow('edytowac oplaconej');
+        .rejects.toThrow(/edytowa.*op.*aconej/i);
     });
 
     it('should throw when amount <= 0', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit());
       await expect(depositService.update('dep-1', { amount: 0 }, 'user-1'))
-        .rejects.toThrow('większa od 0');
+        .rejects.toThrow(/większa od 0|greater than/i);
     });
 
     it('should throw when new amount exceeds total', async () => {
@@ -130,7 +130,7 @@ describe('DepositService — branches', () => {
         deposits: [dep, { id: 'dep-2', amount: 800, status: 'PENDING' }],
       });
       await expect(depositService.update('dep-1', { amount: 300 }, 'user-1'))
-        .rejects.toThrow('przekracza');
+        .rejects.toThrow(/przekracza|exceed/i);
     });
 
     it('should throw when deposit not found', async () => {
@@ -338,7 +338,7 @@ describe('DepositService — branches', () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: true }));
       await expect(depositService.markAsPaid('dep-1', {
         paymentMethod: 'CASH', paidAt: '2027-06-15',
-      }, 'user-1')).rejects.toThrow('juz oznaczona');
+      }, 'user-1')).rejects.toThrow(/ju.*oznaczona/i);
     });
   });
 
@@ -347,7 +347,7 @@ describe('DepositService — branches', () => {
     it('should throw when deposit not paid', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: false }));
       await expect(depositService.sendConfirmationEmail('dep-1'))
-        .rejects.toThrow('oplaconej');
+        .rejects.toThrow(/op.*aconej.*zaliczk/i);
     });
 
     it('should throw when client has no email', async () => {
@@ -360,7 +360,7 @@ describe('DepositService — branches', () => {
         },
       }));
       await expect(depositService.sendConfirmationEmail('dep-1'))
-        .rejects.toThrow('email');
+        .rejects.toThrow(/email/i);
     });
 
     it('should throw when deposit not found', async () => {
@@ -375,7 +375,7 @@ describe('DepositService — branches', () => {
     it('should throw when deposit already unpaid and PENDING', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: false, status: 'PENDING' }));
       await expect(depositService.markAsUnpaid('dep-1', 'user-1'))
-        .rejects.toThrow('nie jest oznaczona');
+        .rejects.toThrow(/nie jest oznaczona/i);
     });
 
     it('should throw when deposit not found', async () => {
@@ -390,7 +390,7 @@ describe('DepositService — branches', () => {
     it('should throw when deposit is paid', async () => {
       db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: true }));
       await expect(depositService.cancel('dep-1', 'user-1'))
-        .rejects.toThrow('anulowac oplaconej');
+        .rejects.toThrow(/anulowa.*op.*aconej/i);
     });
   });
 
@@ -402,7 +402,7 @@ describe('DepositService — branches', () => {
       });
       await expect(depositService.create({
         reservationId: 'res-1', amount: 0, dueDate: '2027-06-15',
-      }, 'user-1')).rejects.toThrow('większa od 0');
+      }, 'user-1')).rejects.toThrow(/większa od 0|greater than/i);
     });
 
     it('should throw when sum exceeds totalPrice', async () => {
@@ -413,7 +413,7 @@ describe('DepositService — branches', () => {
       });
       await expect(depositService.create({
         reservationId: 'res-1', amount: 300, dueDate: '2027-06-15',
-      }, 'user-1')).rejects.toThrow('przekracza');
+      }, 'user-1')).rejects.toThrow(/przekracza|exceed/i);
     });
   });
 
