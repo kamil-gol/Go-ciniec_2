@@ -1,14 +1,15 @@
-import { logChange } from '@/utils/audit-logger';
-import db from '@/utils/db';
+import { logChange } from '../../../utils/audit-logger';
+import { prisma } from '../../../lib/prisma';
 
-jest.mock('@/utils/db', () => ({
-  __esModule: true,
-  default: {
-    auditLog: {
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
+    activityLog: {
       create: jest.fn(),
     },
   },
 }));
+
+const mockPrisma = prisma as any;
 
 describe('audit-logger', () => {
   beforeEach(() => {
@@ -17,7 +18,7 @@ describe('audit-logger', () => {
 
   describe('logChange', () => {
     it('should log a change', async () => {
-      (db.auditLog.create as jest.Mock).mockResolvedValue({
+      mockPrisma.activityLog.create.mockResolvedValue({
         id: 'audit-1',
         userId: 'user-123',
         action: 'UPDATE',
@@ -28,13 +29,15 @@ describe('audit-logger', () => {
         action: 'UPDATE',
         entityType: 'RESERVATION',
         entityId: 'res-456',
-        changes: {
-          status: { old: 'PENDING', new: 'CONFIRMED' },
+        details: {
+          changes: {
+            status: { old: 'PENDING', new: 'CONFIRMED' },
+          },
+          description: 'Status changed',
         },
-        description: 'Status changed',
       });
 
-      expect(db.auditLog.create).toHaveBeenCalledWith({
+      expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
         data: {
           userId: 'user-123',
           action: 'UPDATE',
@@ -53,7 +56,7 @@ describe('audit-logger', () => {
     });
 
     it('should handle missing userId (system action)', async () => {
-      (db.auditLog.create as jest.Mock).mockResolvedValue({
+      mockPrisma.activityLog.create.mockResolvedValue({
         id: 'audit-2',
         userId: null,
         action: 'CREATE',
@@ -66,11 +69,11 @@ describe('audit-logger', () => {
         entityId: 'res-789',
       });
 
-      expect(db.auditLog.create).toHaveBeenCalled();
+      expect(mockPrisma.activityLog.create).toHaveBeenCalled();
     });
 
     it('should not throw when database fails', async () => {
-      (db.auditLog.create as jest.Mock).mockRejectedValue(new Error('DB error'));
+      mockPrisma.activityLog.create.mockRejectedValue(new Error('DB error'));
 
       await expect(
         logChange({
