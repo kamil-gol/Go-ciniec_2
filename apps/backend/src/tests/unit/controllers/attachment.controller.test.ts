@@ -6,6 +6,7 @@
 import attachmentService from '../../../services/attachment.service';
 
 jest.mock('../../../services/attachment.service', () => ({
+  __esModule: true,
   default: {
     createAttachment: jest.fn(),
     getAttachments: jest.fn(),

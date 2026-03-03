@@ -6,6 +6,7 @@
 import discountService from '../../../services/discount.service';
 
 jest.mock('../../../services/discount.service', () => ({
+  __esModule: true,
   default: {
     applyDiscount: jest.fn(),
     removeDiscount: jest.fn(),
