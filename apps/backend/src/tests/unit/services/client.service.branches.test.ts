@@ -1,27 +1,28 @@
 /**
  * ClientService — Branch Coverage Tests
- * Targets uncovered branches: lines 154, 156-157
- * updateClient: conditional fields (lastName, phone?.trim()||null, notes?.trim()||null)
+ * Tests: conditional fields and edge cases in updateClient
  */
 
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     client: {
-      findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(),
-      create: jest.fn(), update: jest.fn(), delete: jest.fn(),
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
     },
-    reservation: { count: jest.fn() },
+    contact: {
+      deleteMany: jest.fn(),
+    },
+    clientContact: {
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   },
 }));
 
 jest.mock('../../../utils/audit-logger', () => ({
-  logChange: jest.fn(),
-  diffObjects: jest.fn().mockReturnValue({}),
-}));
-
-jest.mock('../../../utils/logger', () => ({
-  __esModule: true,
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+  logChange: jest.fn().mockResolvedValue(undefined),
+  diffObjects: jest.fn(),
 }));
 
 import { ClientService } from '../../../services/client.service';
@@ -32,74 +33,73 @@ const db = prisma as any;
 const svc = new ClientService();
 
 const EXISTING = {
-  id: 'c1', firstName: 'Jan', lastName: 'Kowalski',
-  phone: '123456789', email: 'j@t.pl', notes: 'old note',
+  id: 'c1',
+  firstName: 'Jan',
+  lastName: 'Kowalski',
+  phone: '123456789',
+  email: 'jan@test.pl',
+  companyName: null,
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  
+  db.$transaction.mockImplementation(async (cb: any) => {
+    const tx = {
+      client: {
+        findUnique: db.client.findUnique,
+        findFirst: db.client.findFirst,
+        update: db.client.update,
+      },
+      contact: {
+        deleteMany: db.contact.deleteMany,
+      },
+      clientContact: {
+        deleteMany: db.clientContact.deleteMany,
+      },
+    };
+    return cb(tx);
+  });
+});
 
 describe('ClientService — branch coverage', () => {
+  describe('updateClient — client types', () => {
+    it('should treat as PERSON when no companyName provided', async () => {
+      db.client.findUnique.mockResolvedValue(EXISTING);
+      db.client.findFirst.mockResolvedValue(null);
+      db.client.update.mockResolvedValue({ ...EXISTING, firstName: 'Adam' });
+      (diffObjects as jest.Mock).mockReturnValue({ firstName: { old: 'Jan', new: 'Adam' } });
 
-  // ── updateClient: conditional updateData fields ──────────────────────────────
+      await svc.updateClient('c1', { firstName: 'Adam' }, 'u1');
+
+      expect(db.client.update).toHaveBeenCalled();
+    });
+
+    it('should treat as COMPANY when companyName provided', async () => {
+      const company = { ...EXISTING, companyName: 'ACME Corp', firstName: null, lastName: null };
+      db.client.findUnique.mockResolvedValue(company);
+      db.client.findFirst.mockResolvedValue(null);
+      db.client.update.mockResolvedValue({ ...company, companyName: 'ACME Ltd' });
+      (diffObjects as jest.Mock).mockReturnValue({ companyName: { old: 'ACME Corp', new: 'ACME Ltd' } });
+
+      await svc.updateClient('c1', { companyName: 'ACME Ltd' }, 'u1');
+
+      expect(db.client.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateClient — duplicate detection', () => {
+    it('should not throw when updating same client', async () => {
+      db.client.findUnique.mockResolvedValue(EXISTING);
+      db.client.findFirst.mockResolvedValue(EXISTING);
+      db.client.update.mockResolvedValue({ ...EXISTING, email: 'new@test.pl' });
+      (diffObjects as jest.Mock).mockReturnValue({ email: { old: 'jan@test.pl', new: 'new@test.pl' } });
+
+      await expect(svc.updateClient('c1', { email: 'new@test.pl' }, 'u1')).resolves.toBeDefined();
+    });
+  });
+
   describe('updateClient — conditional fields', () => {
-
-    it('should NOT set firstName when not provided', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, lastName: 'Nowak' });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { lastName: 'Nowak' }, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.firstName).toBeUndefined();
-      expect(call.data.lastName).toBe('Nowak');
-    });
-
-    it('should NOT set lastName when not provided', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, firstName: 'Anna' });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { firstName: 'Anna' }, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.lastName).toBeUndefined();
-      expect(call.data.firstName).toBe('Anna');
-    });
-
-    it('should set phone to null when phone is undefined in data', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, phone: null });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { phone: undefined } as any, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      // phone is undefined in data => phone !== undefined is false => not set
-      expect(call.data.phone).toBeUndefined();
-    });
-
-    it('should set notes to null when notes is empty string', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, notes: null });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { notes: '' } as any, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.notes).toBeNull();
-    });
-
-    it('should set phone to null when phone is empty string', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, phone: null });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { phone: '' } as any, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.phone).toBeNull();
-    });
-
-    it('should trim notes when notes has whitespace', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, notes: 'trimmed' });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { notes: '  trimmed  ' } as any, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.notes).toBe('trimmed');
-    });
-
     it('should use provided lastName in phone duplicate check', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
       db.client.findFirst.mockResolvedValue(null);

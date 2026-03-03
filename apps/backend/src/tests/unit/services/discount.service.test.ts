@@ -92,6 +92,7 @@ describe('DiscountService', () => {
       db.reservation.update.mockResolvedValue({
         ...RESERVATION,
         discountAmount: null,
+        discountType: null,
         priceBeforeDiscount: null,
         totalPrice: 5000,
       });

@@ -29,6 +29,7 @@ jest.mock('minio', () => {
       bucketExists: jest.fn().mockResolvedValue(true),
       makeBucket: jest.fn().mockResolvedValue(undefined),
       putObject: jest.fn().mockResolvedValue({ etag: 'test-etag' }),
+      statObject: jest.fn().mockResolvedValue({ size: 1024 }),
       getObject: jest.fn(),
       removeObject: jest.fn().mockResolvedValue(undefined),
       presignedGetObject: jest.fn().mockResolvedValue('http://presigned-url'),
@@ -38,6 +39,7 @@ jest.mock('minio', () => {
 
 import { MinioStorageService } from '../../../services/storage/minio.storage';
 import { Readable } from 'stream';
+import { storageConfig } from '../../../config/storage.config';
 
 const service = new MinioStorageService();
 const client = (service as any).client;
@@ -54,12 +56,13 @@ describe('MinioStorageService', () => {
       await service.upload('test.txt', buffer, 'text/plain');
 
       expect(client.putObject).toHaveBeenCalledWith(
-        'test-bucket',
+        storageConfig.bucket,
         expect.any(String),
         buffer,
-        buffer.length,
+        undefined,
         expect.objectContaining({ 'Content-Type': 'text/plain' })
       );
+      expect(client.statObject).toHaveBeenCalled();
     });
 
     it('should handle upload errors', async () => {
@@ -96,7 +99,7 @@ describe('MinioStorageService', () => {
     it('should delete file from bucket', async () => {
       await service.delete('test.txt');
 
-      expect(client.removeObject).toHaveBeenCalledWith('test-bucket', 'test.txt');
+      expect(client.removeObject).toHaveBeenCalledWith(storageConfig.bucket, 'test.txt');
     });
   });
 
@@ -105,7 +108,7 @@ describe('MinioStorageService', () => {
       const url = await service.getPresignedUrl('test.txt');
 
       expect(url).toBe('http://presigned-url');
-      expect(client.presignedGetObject).toHaveBeenCalledWith('test-bucket', 'test.txt', 7200);
+      expect(client.presignedGetObject).toHaveBeenCalledWith(storageConfig.bucket, 'test.txt', 7200);
     });
   });
 });

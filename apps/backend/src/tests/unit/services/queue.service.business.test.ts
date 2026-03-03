@@ -89,7 +89,8 @@ describe('QueueService', () => {
       db.client.findUnique.mockResolvedValue({ id: 'c1' });
       db.reservation.findUnique.mockResolvedValue(null);
       db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: null } });
-      db.reservation.create.mockResolvedValue(makeRes());
+      const newRes = makeRes();
+      db.reservation.create.mockResolvedValue(newRes);
 
       const result = await svc.addToQueue({
         clientId: 'c1',
@@ -97,7 +98,7 @@ describe('QueueService', () => {
         guests: 50,
       }, 'u1');
 
-      expect(result.reservation).toBeDefined();
+      expect(result.reservation).toEqual(newRes);
       expect(db.reservation.create).toHaveBeenCalled();
     });
   });

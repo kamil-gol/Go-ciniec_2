@@ -37,9 +37,12 @@ jest.mock('../../../lib/prisma', () => ({
   Prisma: {
     PrismaClientKnownRequestError: class extends Error {
       code: string;
-      constructor(message: string, code: string) {
+      clientVersion: string;
+      constructor(message: string, options: { code: string; clientVersion: string }) {
         super(message);
-        this.code = code;
+        this.code = options.code;
+        this.clientVersion = options.clientVersion;
+        this.name = 'PrismaClientKnownRequestError';
       }
     },
   },
@@ -84,9 +87,9 @@ describe('QueueService — branch coverage', () => {
       db.reservation.findUnique.mockResolvedValue(null);
       db.reservation.aggregate.mockResolvedValue({ _max: { reservationQueuePosition: 2 } });
       
-      const prismaError = Object.assign(
-        new Error('Unique constraint'),
-        { code: 'P2002' }
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed on the fields: (`reservationQueueDate`,`reservationQueuePosition`)',
+        { code: 'P2002', clientVersion: '5.0.0' }
       );
       db.reservation.create.mockRejectedValue(prismaError);
 
@@ -105,9 +108,9 @@ describe('QueueService — branch coverage', () => {
         .mockResolvedValueOnce(makeRes({ id: 'r1', reservationQueuePosition: 1 }))
         .mockResolvedValueOnce(makeRes({ id: 'r2', reservationQueuePosition: 2 }));
       
-      const prismaError = Object.assign(
-        new Error('Unique'),
-        { code: 'P2002' }
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        { code: 'P2002', clientVersion: '5.0.0' }
       );
       db.$executeRawUnsafe.mockRejectedValue(prismaError);
 
@@ -130,9 +133,9 @@ describe('QueueService — branch coverage', () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
       db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2' }), makeRes({ id: 'r3' })]);
       
-      const prismaError = Object.assign(
-        new Error('Position conflict'),
-        { code: 'P2002' }
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        { code: 'P2002', clientVersion: '5.0.0' }
       );
       db.$executeRawUnsafe.mockRejectedValue(prismaError);
 
