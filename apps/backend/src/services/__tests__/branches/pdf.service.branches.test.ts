@@ -326,7 +326,7 @@ describe('PDF Service - Branch Coverage', () => {
     });
   });
 
-  describe('generateMenuCardPDF', () => {
+  describe('generateMenuCardPDF - Basic Tests', () => {
     it('should handle minimal menu', async () => {
       const data: MenuCardPDFData = {
         templateName: 'Menu Weselne', eventTypeName: 'Wesele',
@@ -363,7 +363,90 @@ describe('PDF Service - Branch Coverage', () => {
     });
   });
 
-  describe('generateRevenueReportPDF', () => {
+  describe('generateMenuCardPDF - Edge Cases for Branch Coverage', () => {
+    it('should handle package WITHOUT badgeText', async () => {
+      const data: MenuCardPDFData = {
+        templateName: 'Menu bez badge',
+        eventTypeName: 'Wesele',
+        packages: [{
+          name: 'Standard',
+          pricePerAdult: 150,
+          pricePerChild: 75,
+          pricePerToddler: 0,
+          courses: [],
+          options: [],
+        }],
+      };
+      const buffer = await pdfService.generateMenuCardPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle package WITHOUT includedItems', async () => {
+      const data: MenuCardPDFData = {
+        templateName: 'Menu bez included',
+        eventTypeName: 'Chrzciny',
+        packages: [{
+          name: 'Minimalist',
+          pricePerAdult: 100,
+          pricePerChild: 50,
+          pricePerToddler: 0,
+          courses: [],
+          options: [],
+        }],
+      };
+      const buffer = await pdfService.generateMenuCardPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle course WITHOUT description', async () => {
+      const data: MenuCardPDFData = {
+        templateName: 'Menu bez opisu',
+        eventTypeName: 'Urodziny',
+        packages: [{
+          name: 'Pakiet A',
+          pricePerAdult: 120,
+          pricePerChild: 60,
+          pricePerToddler: 0,
+          courses: [{
+            name: 'Dania główne',
+            minSelect: 1,
+            maxSelect: 2,
+            dishes: [
+              { name: 'Schabowy', description: 'Z ziemniakami' },
+              { name: 'Kurczak', description: 'Pieczony' },
+            ],
+          }],
+          options: [],
+        }],
+      };
+      const buffer = await pdfService.generateMenuCardPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle EMPTY allergen map', async () => {
+      const data: MenuCardPDFData = {
+        templateName: 'Menu bez alergenów',
+        eventTypeName: 'Komunia',
+        packages: [{
+          name: 'Bezpieczny',
+          pricePerAdult: 140,
+          pricePerChild: 70,
+          pricePerToddler: 0,
+          courses: [{
+            name: 'Przystawki',
+            minSelect: 1,
+            maxSelect: 1,
+            dishes: [{ name: 'Sałatka grecka' }],
+          }],
+          options: [],
+        }],
+      };
+      const buffer = await pdfService.generateMenuCardPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+  });
+
+  describe('generateRevenueReportPDF - Basic Tests', () => {
     it('should handle full report', async () => {
       const data: RevenueReportPDFData = {
         filters: { dateFrom: '2026-01-01', dateTo: '2026-03-31', groupBy: 'month' },
@@ -396,7 +479,71 @@ describe('PDF Service - Branch Coverage', () => {
     });
   });
 
-  describe('generateOccupancyReportPDF', () => {
+  describe('generateRevenueReportPDF - Edge Cases for Branch Coverage', () => {
+    it('should handle report WITHOUT groupBy filter', async () => {
+      const data: RevenueReportPDFData = {
+        filters: { dateFrom: '2026-01-01', dateTo: '2026-01-31' },
+        summary: {
+          totalRevenue: 50000, avgRevenuePerReservation: 2500,
+          totalReservations: 20, completedReservations: 18,
+          pendingRevenue: 5000, growthPercent: 12.5,
+        },
+        breakdown: [], byHall: [], byEventType: [],
+      };
+      const buffer = await pdfService.generateRevenueReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle report WITHOUT extrasRevenue', async () => {
+      const data: RevenueReportPDFData = {
+        filters: { dateFrom: '2026-02-01', dateTo: '2026-02-28', groupBy: 'week' },
+        summary: {
+          totalRevenue: 30000, avgRevenuePerReservation: 3000,
+          totalReservations: 10, completedReservations: 9,
+          pendingRevenue: 3000, growthPercent: -5.2,
+        },
+        breakdown: [
+          { period: 'Tydzień 1', revenue: 15000, count: 5, avgRevenue: 3000 },
+        ],
+        byHall: [{ hallName: 'Sala A', revenue: 20000, count: 6, avgRevenue: 3333 }],
+        byEventType: [{ eventTypeName: 'Wesele', revenue: 25000, count: 8, avgRevenue: 3125 }],
+      };
+      const buffer = await pdfService.generateRevenueReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle report with extrasRevenue = 0', async () => {
+      const data: RevenueReportPDFData = {
+        filters: { dateFrom: '2026-03-01', dateTo: '2026-03-15' },
+        summary: {
+          totalRevenue: 20000, avgRevenuePerReservation: 2000,
+          totalReservations: 10, completedReservations: 10,
+          pendingRevenue: 0, growthPercent: 0, extrasRevenue: 0,
+        },
+        breakdown: [], byHall: [], byEventType: [],
+      };
+      const buffer = await pdfService.generateRevenueReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle report WITHOUT byServiceItem', async () => {
+      const data: RevenueReportPDFData = {
+        filters: { dateFrom: '2026-01-01', dateTo: '2026-12-31', groupBy: 'month' },
+        summary: {
+          totalRevenue: 100000, avgRevenuePerReservation: 2500,
+          totalReservations: 40, completedReservations: 38,
+          pendingRevenue: 5000, growthPercent: 20, extrasRevenue: 15000,
+        },
+        breakdown: [{ period: 'Styczeń', revenue: 25000, count: 10, avgRevenue: 2500 }],
+        byHall: [{ hallName: 'Sala Główna', revenue: 60000, count: 25, avgRevenue: 2400 }],
+        byEventType: [{ eventTypeName: 'Wesele', revenue: 80000, count: 32, avgRevenue: 2500 }],
+      };
+      const buffer = await pdfService.generateRevenueReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+  });
+
+  describe('generateOccupancyReportPDF - Basic Tests', () => {
     it('should handle full report', async () => {
       const data: OccupancyReportPDFData = {
         filters: { dateFrom: '2026-01-01', dateTo: '2026-03-31' },
@@ -421,6 +568,51 @@ describe('PDF Service - Branch Coverage', () => {
         },
         halls: [], peakHours: [],
         peakDaysOfWeek: [{ dayOfWeek: 'Saturday', count: 5 }],
+      };
+      const buffer = await pdfService.generateOccupancyReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+  });
+
+  describe('generateOccupancyReportPDF - Edge Cases for Branch Coverage', () => {
+    it('should handle report with peakHall = null', async () => {
+      const data: OccupancyReportPDFData = {
+        filters: { dateFrom: '2026-01-01', dateTo: '2026-01-31' },
+        summary: {
+          avgOccupancy: 45.5, peakDay: 'Saturday', peakHall: null,
+          totalReservations: 15, totalDaysInPeriod: 31,
+        },
+        halls: [], peakHours: [], peakDaysOfWeek: [],
+      };
+      const buffer = await pdfService.generateOccupancyReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle report with peakHall undefined', async () => {
+      const data: OccupancyReportPDFData = {
+        filters: { dateFrom: '2026-02-01', dateTo: '2026-02-28' },
+        summary: {
+          avgOccupancy: 60, peakDay: 'Friday',
+          totalReservations: 20, totalDaysInPeriod: 28,
+        },
+        halls: [
+          { hallName: 'Sala A', occupancy: 70, reservations: 12, avgGuestsPerReservation: 80 },
+        ],
+        peakHours: [{ hour: 18, count: 8 }],
+        peakDaysOfWeek: [{ dayOfWeek: 'Saturday', count: 10 }],
+      };
+      const buffer = await pdfService.generateOccupancyReportPDF(data);
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle EMPTY halls/peakHours/peakDaysOfWeek', async () => {
+      const data: OccupancyReportPDFData = {
+        filters: { dateFrom: '2026-03-01', dateTo: '2026-03-15' },
+        summary: {
+          avgOccupancy: 0, peakDay: 'Monday', peakHall: 'Brak danych',
+          totalReservations: 0, totalDaysInPeriod: 15,
+        },
+        halls: [], peakHours: [], peakDaysOfWeek: [],
       };
       const buffer = await pdfService.generateOccupancyReportPDF(data);
       expect(buffer).toBeInstanceOf(Buffer);
