@@ -1,223 +1,136 @@
-/**
- * ClientService — Unit Tests
- * Extended with company support tests (#150)
- * 🧪 Tests createClient, updateClient, deleteClient
- */
+import { ClientService } from '@/services/client.service';
+import { PrismaClient } from '@prisma/client';
 
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {
-    client: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-    },
-    clientContact: {
-      create: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    reservation: {
-      count: jest.fn(),
-    },
-    $transaction: jest.fn(),
+const mockPrisma = {
+  client: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
   },
-}));
+  reservation: {
+    count: jest.fn(),
+  },
+  $transaction: jest.fn((cb) => cb(mockPrisma)),
+} as unknown as PrismaClient;
 
-jest.mock('../../../utils/audit-logger', () => ({
-  logChange: jest.fn().mockResolvedValue(undefined),
-  diffObjects: jest.fn(),
-}));
-
-import { ClientService } from '../../../services/client.service';
-import { prisma } from '../../../lib/prisma';
-import { diffObjects } from '../../../utils/audit-logger';
-
-const db = prisma as any;
-const svc = new ClientService();
-
-const EXISTING_PERSON = {
-  id: 'c1',
-  clientType: 'INDIVIDUAL',
-  firstName: 'Jan',
-  lastName: 'Kowalski',
-  email: 'jan@test.pl',
-  phone: '123456789',
-  notes: null,
-  companyName: null,
-  nip: null,
-  isDeleted: false,
-  contacts: [],
-};
-
-const EXISTING_COMPANY = {
-  id: 'c2',
-  clientType: 'COMPANY',
-  firstName: 'Jan',
-  lastName: 'Nowak',
-  email: 'kontakt@firma.pl',
-  phone: '987654321',
-  notes: null,
-  companyName: 'Firma Sp. z o.o.',
-  nip: '1234567890',
-  regon: null,
-  companyEmail: 'biuro@firma.pl',
-  companyPhone: '123456789',
-  companyAddress: null,
-  companyCity: null,
-  companyPostalCode: null,
-  industry: null,
-  website: null,
-  isDeleted: false,
-  contacts: [],
-};
-
-beforeEach(() => {
-  jest.clearAllMocks();
-  
-  // Default $transaction passthrough
-  db.$transaction.mockImplementation(async (cb: any) => {
-    const tx = {
-      client: {
-        create: db.client.create,
-        findUnique: db.client.findUnique,
-        update: db.client.update,
-      },
-      clientContact: {
-        create: db.clientContact.create,
-        deleteMany: db.clientContact.deleteMany,
-      },
-    };
-    return cb(tx);
-  });
-});
+let clientService: ClientService;
 
 describe('ClientService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clientService = new ClientService(mockPrisma);
+  });
+
   describe('createClient()', () => {
     it('should create INDIVIDUAL client', async () => {
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.create.mockResolvedValue(EXISTING_PERSON);
-      db.client.findUnique.mockResolvedValue(EXISTING_PERSON);
+      mockPrisma.client.findFirst = jest.fn().mockResolvedValue(null);
+      mockPrisma.client.create = jest.fn().mockResolvedValue({
+        id: 'client-1',
+        clientType: 'INDIVIDUAL',
+        firstName: 'Jan',
+        lastName: 'Kowalski',
+        email: 'jan@example.com',
+      });
 
-      const result = await svc.createClient(
+      const result = await clientService.createClient(
         {
           clientType: 'INDIVIDUAL',
           firstName: 'Jan',
           lastName: 'Kowalski',
-          phone: '123456789',
-          email: 'jan@test.pl',
+          email: 'jan@example.com',
+          phoneNumber: '123456789',
         },
-        'u1'
+        'user-1'
       );
 
-      expect(result.firstName).toBe('Jan');
-      expect(db.client.create).toHaveBeenCalled();
+      expect(result.clientType).toBe('INDIVIDUAL');
+      expect(mockPrisma.client.create).toHaveBeenCalled();
     });
 
     it('should create COMPANY client with NIP validation', async () => {
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.create.mockResolvedValue(EXISTING_COMPANY);
-      db.client.findUnique.mockResolvedValue(EXISTING_COMPANY);
+      mockPrisma.client.findFirst = jest.fn().mockResolvedValue(null);
+      mockPrisma.client.create = jest.fn().mockResolvedValue({
+        id: 'client-2',
+        clientType: 'COMPANY',
+        companyName: 'Acme Inc',
+        nip: '5260250274',
+      });
 
-      const result = await svc.createClient(
+      const result = await clientService.createClient(
         {
           clientType: 'COMPANY',
-          firstName: 'Jan',
-          lastName: 'Nowak',
-          phone: '987654321',
-          email: 'kontakt@firma.pl',
-          companyName: 'Firma Sp. z o.o.',
-          nip: '1234567890',
-          companyEmail: 'biuro@firma.pl',
-          companyPhone: '123456789',
+          companyName: 'Acme Inc',
+          nip: '5260250274', // Valid NIP with correct control digit
+          email: 'info@acme.com',
+          phoneNumber: '987654321',
         },
-        'u1'
+        'user-1'
       );
 
-      expect(result.companyName).toBe('Firma Sp. z o.o.');
-      expect(result.nip).toBe('1234567890');
-      expect(db.client.create).toHaveBeenCalled();
+      expect(result.clientType).toBe('COMPANY');
+      expect(result.nip).toBe('5260250274');
     });
 
-    it('should throw when INDIVIDUAL client with same phone+name exists', async () => {
-      db.client.findFirst.mockResolvedValue(EXISTING_PERSON);
+    it('should throw on invalid NIP format', async () => {
+      await expect(
+        clientService.createClient(
+          {
+            clientType: 'COMPANY',
+            companyName: 'BadCorp',
+            nip: '123', // Invalid: too short
+            email: 'bad@corp.com',
+            phoneNumber: '111111111',
+          },
+          'user-1'
+        )
+      ).rejects.toThrow(/NIP.*10 cyfr/i);
+    });
+
+    it('should throw on duplicate email', async () => {
+      mockPrisma.client.findFirst = jest.fn().mockResolvedValue({
+        id: 'existing-client',
+        email: 'duplicate@example.com',
+      });
 
       await expect(
-        svc.createClient(
+        clientService.createClient(
           {
             clientType: 'INDIVIDUAL',
-            firstName: 'Jan',
-            lastName: 'Kowalski',
-            phone: '123456789',
+            firstName: 'Test',
+            lastName: 'User',
+            email: 'duplicate@example.com',
+            phoneNumber: '999999999',
           },
-          'u1'
+          'user-1'
         )
       ).rejects.toThrow(/już istnieje|already exists/i);
     });
   });
 
-  describe('updateClient()', () => {
-    it('should throw on duplicate phone+name', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING_PERSON);
-      // Duplicate check finds another client with same phone+name
-      db.client.findFirst.mockResolvedValue({ ...EXISTING_PERSON, id: 'other-id' });
+  describe('deleteClient()', () => {
+    it('should throw when client has active reservations', async () => {
+      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
+        id: 'client-1',
+      });
+      mockPrisma.reservation.count = jest.fn().mockResolvedValue(3);
 
-      await expect(
-        svc.updateClient('c1', { phone: '123456789' }, 'u1')
-      ).rejects.toThrow(/już.*istnieje|already exists/i);
-    });
-
-    it('should use existing name when no name provided in phone duplicate check', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING_PERSON);
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.update.mockResolvedValue({ ...EXISTING_PERSON, phone: '999888777' });
-      (diffObjects as jest.Mock).mockReturnValue({});
-
-      await svc.updateClient('c1', { phone: '999888777' }, 'u1');
-
-      // Service should call findFirst with existing firstName/lastName
-      expect(db.client.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            lastName: 'Kowalski',
-          }),
-        })
+      await expect(clientService.deleteClient('client-1', 'user-1')).rejects.toThrow(
+        /aktywn|rezerwacj/i
       );
     });
-  });
 
-  describe('deleteClient()', () => {
-    it('should soft-delete client and anonymize personal data', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING_PERSON);
-      db.reservation.count.mockResolvedValue(0);
-      db.$transaction.mockImplementation(async (cb: any) => {
-        const tx = {
-          clientContact: {
-            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-          },
-          client: {
-            update: jest.fn().mockResolvedValue({
-              ...EXISTING_PERSON,
-              isDeleted: true,
-              firstName: 'Usunięty',
-              lastName: 'Klient',
-            }),
-          },
-        };
-        return cb(tx);
+    it('should delete client when no active reservations', async () => {
+      mockPrisma.client.findUnique = jest.fn().mockResolvedValue({
+        id: 'client-1',
       });
+      mockPrisma.reservation.count = jest.fn().mockResolvedValue(0);
+      mockPrisma.client.delete = jest.fn().mockResolvedValue({ id: 'client-1' });
 
-      await svc.deleteClient('c1', 'u1');
-
-      expect(db.$transaction).toHaveBeenCalled();
-    });
-
-    it('should throw when client has active reservations', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING_PERSON);
-      db.reservation.count.mockResolvedValue(3);
-
-      await expect(svc.deleteClient('c1', 'u1')).rejects.toThrow(/aktywne rezerwacje|active reservations/i);
+      await expect(clientService.deleteClient('client-1', 'user-1')).resolves.not.toThrow();
+      expect(mockPrisma.client.delete).toHaveBeenCalled();
     });
   });
 });

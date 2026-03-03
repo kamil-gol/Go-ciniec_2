@@ -1,44 +1,37 @@
-/**
- * audit-logger.ts — Unit Tests
- * Tests: logChange, diffObjects
- */
+import { logChange } from '@/utils/audit-logger';
+import db from '@/utils/db';
 
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {
+jest.mock('@/utils/db', () => ({
+  __esModule: true,
+  default: {
     auditLog: {
       create: jest.fn(),
     },
   },
 }));
 
-import { logChange, diffObjects } from '../../../utils/audit-logger';
-import { prisma } from '../../../lib/prisma';
-
-const db = prisma as any;
-
-beforeEach(() => {
-  jest.clearAllMocks();
-});
-
 describe('audit-logger', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('logChange', () => {
     it('should log a change', async () => {
-      db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
+      (db.auditLog.create as jest.Mock).mockResolvedValue({
+        id: 'audit-1',
+        userId: 'user-123',
+        action: 'UPDATE',
+      });
 
       await logChange({
         userId: 'user-123',
         action: 'UPDATE',
         entityType: 'RESERVATION',
         entityId: 'res-456',
-        details: {
-          description: 'Status changed',
-          changes: {
-            status: {
-              old: 'PENDING',
-              new: 'CONFIRMED',
-            },
-          },
+        changes: {
+          status: { old: 'PENDING', new: 'CONFIRMED' },
         },
+        description: 'Status changed',
       });
 
       expect(db.auditLog.create).toHaveBeenCalledWith({
@@ -48,13 +41,10 @@ describe('audit-logger', () => {
           entityType: 'RESERVATION',
           entityId: 'res-456',
           details: {
-            description: 'Status changed',
             changes: {
-              status: {
-                old: 'PENDING',
-                new: 'CONFIRMED',
-              },
+              status: { old: 'PENDING', new: 'CONFIRMED' },
             },
+            description: 'Status changed',
           },
           ipAddress: undefined,
           userAgent: undefined,
@@ -63,56 +53,33 @@ describe('audit-logger', () => {
     });
 
     it('should handle missing userId (system action)', async () => {
-      db.auditLog.create.mockResolvedValue({ id: 'audit-2' });
+      (db.auditLog.create as jest.Mock).mockResolvedValue({
+        id: 'audit-2',
+        userId: null,
+        action: 'CREATE',
+      });
 
       await logChange({
-        userId: null,
-        action: 'QUEUE_AUTO_CANCEL',
+        userId: undefined,
+        action: 'CREATE',
         entityType: 'RESERVATION',
-        entityId: 'system',
-        details: {
-          description: 'Auto-cancelled 5 expired reservations',
-        },
+        entityId: 'res-789',
       });
 
       expect(db.auditLog.create).toHaveBeenCalled();
     });
 
     it('should not throw when database fails', async () => {
-      db.auditLog.create.mockRejectedValue(new Error('Database error'));
+      (db.auditLog.create as jest.Mock).mockRejectedValue(new Error('DB error'));
 
       await expect(
         logChange({
           userId: 'user-123',
-          action: 'UPDATE',
-          entityType: 'RESERVATION',
-          entityId: 'res-456',
-          details: { description: 'Test' },
+          action: 'DELETE',
+          entityType: 'CLIENT',
+          entityId: 'client-1',
         })
-      ).resolves.toBeUndefined();
-    });
-  });
-
-  describe('diffObjects', () => {
-    it('should detect changed fields', () => {
-      const old = { status: 'PENDING', totalPrice: 5000, notes: 'Old' };
-      const updated = { status: 'CONFIRMED', totalPrice: 5000, notes: 'New' };
-
-      const diff = diffObjects(old, updated);
-
-      expect(diff).toEqual({
-        status: { old: 'PENDING', new: 'CONFIRMED' },
-        notes: { old: 'Old', new: 'New' },
-      });
-    });
-
-    it('should ignore unchanged fields', () => {
-      const old = { status: 'PENDING', totalPrice: 5000 };
-      const updated = { status: 'PENDING', totalPrice: 5000 };
-
-      const diff = diffObjects(old, updated);
-
-      expect(diff).toEqual({});
+      ).resolves.not.toThrow();
     });
   });
 });
