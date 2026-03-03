@@ -17,6 +17,7 @@ export const MODULE_LABELS: Record<string, string> = {
   clients: 'Klienci',
   halls: 'Sale',
   menu: 'Menu',
+  catering: 'Catering',
   queue: 'Kolejka',
   deposits: 'Zaliczki',
   event_types: 'Typy wydarzeń',
@@ -46,8 +47,10 @@ export const ACTION_LABELS: Record<string, string> = {
   manage_users: 'Zarządzanie użytkownikami',
   manage_roles: 'Zarządzanie rolami',
   manage_company: 'Ustawienia firmy',
-  preview: 'Podgląd zmiennych',
+  preview: 'Pogląd zmiennych',
   history: 'Historia zmian',
+  manage_catering_templates: 'Szablony cateringu',
+  manage_catering_packages: 'Pakiety cateringu',
 };
 
 // ================================================================
@@ -57,76 +60,81 @@ export const ACTION_LABELS: Record<string, string> = {
 export type PermissionTuple = [string, string, string, string, string];
 
 export const PERMISSION_DEFINITIONS: PermissionTuple[] = [
-  // ═══ Dashboard ═══
-  ['dashboard:read', 'dashboard', 'read', 'Dashboard — podgląd', 'Dostęp do strony głównej i statystyk'],
+  // ╣╗╗ Dashboard ╣╗╗
+  ['dashboard:read', 'dashboard', 'read', 'Dashboard — pogląd', 'Dostęp do strony głównej i statystyk'],
 
-  // ═══ Reservations ═══
-  ['reservations:read',             'reservations', 'read',             'Rezerwacje — przeglądanie',   'Podgląd listy i szczegółów rezerwacji'],
+  // ╣╗╗ Reservations ╣╗╗
+  ['reservations:read',             'reservations', 'read',             'Rezerwacje — przeglądanie',   'Pogląd listy i szczegółów rezerwacji'],
   ['reservations:create',           'reservations', 'create',           'Rezerwacje — tworzenie',      'Tworzenie nowych rezerwacji'],
   ['reservations:update',           'reservations', 'update',           'Rezerwacje — edycja',         'Edycja istniejących rezerwacji'],
   ['reservations:delete',           'reservations', 'delete',           'Rezerwacje — usuwanie',       'Usuwanie rezerwacji'],
   ['reservations:export_pdf',       'reservations', 'export_pdf',       'Rezerwacje — eksport PDF',    'Generowanie PDF z rezerwacji'],
   ['reservations:manage_discount',  'reservations', 'manage_discount',  'Rezerwacje — rabaty',         'Nadawanie i edycja rabatów'],
 
-  // ═══ Clients ═══
-  ['clients:read',   'clients', 'read',   'Klienci — przeglądanie', 'Podgląd listy i danych klientów'],
+  // ╣╗╗ Clients ╣╗╗
+  ['clients:read',   'clients', 'read',   'Klienci — przeglądanie', 'Pogląd listy i danych klientów'],
   ['clients:create', 'clients', 'create', 'Klienci — tworzenie',    'Dodawanie nowych klientów'],
   ['clients:update', 'clients', 'update', 'Klienci — edycja',       'Edycja danych klientów'],
   ['clients:delete', 'clients', 'delete', 'Klienci — usuwanie',     'Usuwanie klientów'],
 
-  // ═══ Halls ═══
-  ['halls:read',   'halls', 'read',   'Sale — przeglądanie', 'Podgląd sal i ich konfiguracji'],
+  // ╣╗╗ Halls ╣╗╗
+  ['halls:read',   'halls', 'read',   'Sale — przeglądanie', 'Pogląd sal i ich konfiguracji'],
   ['halls:create', 'halls', 'create', 'Sale — tworzenie',    'Dodawanie nowych sal'],
   ['halls:update', 'halls', 'update', 'Sale — edycja',       'Edycja danych sal'],
   ['halls:delete', 'halls', 'delete', 'Sale — usuwanie',     'Usuwanie sal'],
 
-  // ═══ Menu ═══
-  ['menu:read',                'menu', 'read',                'Menu — przeglądanie',       'Podgląd szablonów, pakietów i dań'],
+  // ╣╗╗ Menu ╣╗╗
+  ['menu:read',                'menu', 'read',                'Menu — przeglądanie',       'Pogląd szablonów, pakietów i dań'],
   ['menu:manage_templates',    'menu', 'manage_templates',    'Menu — szablony',           'Tworzenie i edycja szablonów menu'],
   ['menu:manage_packages',     'menu', 'manage_packages',     'Menu — pakiety',            'Tworzenie i edycja pakietów menu'],
   ['menu:manage_dishes',       'menu', 'manage_dishes',       'Menu — dania',              'Tworzenie i edycja dań'],
   ['menu:manage_categories',   'menu', 'manage_categories',   'Menu — kategorie dań',     'Zarządzanie kategoriami dań'],
   ['menu:manage_addon_groups', 'menu', 'manage_addon_groups', 'Menu — grupy dodatków',     'Zarządzanie grupami dodatków'],
 
-  // ═══ Queue ═══
-  ['queue:read',   'queue', 'read',   'Kolejka — przeglądanie',  'Podgląd kolejki rezerwacji'],
+  // ╣╗╗ Catering ╣╗╗
+  ['catering:read',                     'catering', 'read',                     'Catering — przeglądanie',        'Pogląd szablonów i pakietów cateringu'],
+  ['catering:manage_catering_templates','catering', 'manage_catering_templates', 'Catering — szablony',            'Tworzenie i edycja szablonów cateringu'],
+  ['catering:manage_catering_packages', 'catering', 'manage_catering_packages',  'Catering — pakiety',             'Tworzenie i edycja pakietów cateringu'],
+
+  // ╣╗╗ Queue ╣╗╗
+  ['queue:read',   'queue', 'read',   'Kolejka — przeglądanie',  'Pogląd kolejki rezerwacji'],
   ['queue:manage', 'queue', 'manage', 'Kolejka — zarządzanie',   'Potwierdzanie, odrzucanie rezerwacji w kolejce'],
 
-  // ═══ Deposits ═══
-  ['deposits:read',      'deposits', 'read',      'Zaliczki — przeglądanie',       'Podgląd zaliczek'],
+  // ╣╗╗ Deposits ╣╗╗
+  ['deposits:read',      'deposits', 'read',      'Zaliczki — przeglądanie',       'Pogląd zaliczek'],
   ['deposits:create',    'deposits', 'create',    'Zaliczki — tworzenie',          'Tworzenie nowych zaliczek'],
   ['deposits:update',    'deposits', 'update',    'Zaliczki — edycja',             'Edycja zaliczek'],
   ['deposits:delete',    'deposits', 'delete',    'Zaliczki — usuwanie',           'Usuwanie zaliczek'],
   ['deposits:mark_paid', 'deposits', 'mark_paid', 'Zaliczki — oznacz opłacone',    'Oznaczanie zaliczek jako opłacone'],
 
-  // ═══ Event Types ═══
-  ['event_types:read',   'event_types', 'read',   'Typy wydarzeń — przeglądanie', 'Podgląd typów wydarzeń'],
+  // ╣╗╗ Event Types ╣╗╗
+  ['event_types:read',   'event_types', 'read',   'Typy wydarzeń — przeglądanie', 'Pogląd typów wydarzeń'],
   ['event_types:create', 'event_types', 'create', 'Typy wydarzeń — tworzenie',    'Dodawanie nowych typów'],
   ['event_types:update', 'event_types', 'update', 'Typy wydarzeń — edycja',       'Edycja typów wydarzeń'],
   ['event_types:delete', 'event_types', 'delete', 'Typy wydarzeń — usuwanie',     'Usuwanie typów wydarzeń'],
 
-  // ═══ Attachments ═══
-  ['attachments:read',   'attachments', 'read',   'Załączniki — przeglądanie', 'Podgląd załączników'],
+  // ╣╗╗ Attachments ╣╗╗
+  ['attachments:read',   'attachments', 'read',   'Załączniki — przeglądanie', 'Pogląd załączników'],
   ['attachments:upload', 'attachments', 'upload', 'Załączniki — przesyłanie',  'Przesyłanie nowych załączników'],
   ['attachments:delete', 'attachments', 'delete', 'Załączniki — usuwanie',     'Usuwanie załączników'],
 
-  // ═══ Reports ═══
+  // ╣╗╗ Reports ╣╗╗
   ['reports:read',   'reports', 'read',   'Raporty — przeglądanie',    'Przeglądanie raportów'],
   ['reports:export', 'reports', 'export', 'Raporty — eksportowanie',   'Eksport raportów do CSV/Excel'],
 
-  // ═══ Audit Log ═══
-  ['audit_log:read', 'audit_log', 'read', 'Dziennik audytu — przeglądanie', 'Podgląd historii zmian w systemie'],
+  // ╣╗╗ Audit Log ╣╗╗
+  ['audit_log:read', 'audit_log', 'read', 'Dziennik audytu — przeglądanie', 'Pogląd historii zmian w systemie'],
 
-  // ═══ Settings ═══
-  ['settings:read',            'settings', 'read',            'Ustawienia — przeglądanie',     'Podgląd ustawień systemu'],
+  // ╣╗╗ Settings ╣╗╗
+  ['settings:read',            'settings', 'read',            'Ustawienia — przeglądanie',     'Pogląd ustawień systemu'],
   ['settings:manage_users',    'settings', 'manage_users',    'Ustawienia — użytkownicy',      'Zarządzanie kontami użytkowników'],
   ['settings:manage_roles',    'settings', 'manage_roles',    'Ustawienia — role i uprawnienia', 'Zarządzanie rolami i uprawnieniami'],
   ['settings:manage_company',  'settings', 'manage_company',  'Ustawienia — dane firmy',       'Edycja danych firmy i konfiguracji'],
 
-  // ═══ Document Templates ═══
-  ['templates:read',    'templates', 'read',    'Szablony — przeglądanie',    'Podgląd szablonów dokumentów'],
+  // ╣╗╗ Document Templates ╣╗╗
+  ['templates:read',    'templates', 'read',    'Szablony — przeglądanie',    'Pogląd szablonów dokumentów'],
   ['templates:update',  'templates', 'update',  'Szablony — edycja',          'Edycja treści szablonów dokumentów'],
-  ['templates:preview', 'templates', 'preview', 'Szablony — podgląd',         'Podgląd szablonów z podstawionymi zmiennymi'],
+  ['templates:preview', 'templates', 'preview', 'Szablony — pogląd',         'Pogląd szablonów z podstawionymi zmiennymi'],
   ['templates:history', 'templates', 'history', 'Szablony — historia zmian',  'Przeglądanie historii zmian szablonów'],
 ];
 
@@ -171,6 +179,8 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       // Menu — full
       'menu:read', 'menu:manage_templates', 'menu:manage_packages',
       'menu:manage_dishes', 'menu:manage_categories', 'menu:manage_addon_groups',
+      // Catering — full
+      'catering:read', 'catering:manage_catering_templates', 'catering:manage_catering_packages',
       // Queue
       'queue:read', 'queue:manage',
       // Deposits — full
@@ -194,7 +204,7 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
   employee: {
     name: 'Pracownik',
     slug: 'employee',
-    description: 'Obsługa rezerwacji i klientów, podgląd menu',
+    description: 'Obsługa rezerwacji i klientów, pogląd menu',
     color: '#059669',  // emerald-600
     isSystem: true,
     permissions: [
@@ -208,6 +218,8 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'halls:read',
       // Menu — read
       'menu:read',
+      // Catering — read
+      'catering:read',
       // Queue — read
       'queue:read',
       // Deposits — create + mark paid
@@ -222,9 +234,9 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
   },
 
   viewer: {
-    name: 'Podgląd',
+    name: 'Pogląd',
     slug: 'viewer',
-    description: 'Tylko podgląd — bez możliwości edycji',
+    description: 'Tylko pogląd — bez możliwości edycji',
     color: '#6B7280',  // gray-500
     isSystem: true,
     permissions: [
@@ -233,6 +245,7 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'clients:read',
       'halls:read',
       'menu:read',
+      'catering:read',
       'queue:read',
       'deposits:read',
       'event_types:read',
