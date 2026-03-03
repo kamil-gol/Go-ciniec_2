@@ -41,7 +41,14 @@ describe('MenuCourseController', () => {
     (menuCourseService.create as jest.Mock).mockResolvedValue({ id: '1', name: 'Appetizer' });
 
     const req = {
-      body: { packageId: 'pkg-1', name: 'Appetizer', displayOrder: 1 },
+      body: {
+        packageId: 'pkg-1',
+        name: 'Appetizer',
+        displayOrder: 1,
+        courseName: 'Przystawki',
+        minDishes: 1,
+        maxDishes: 5,
+      },
     } as any;
     const res = mockRes();
     await ctrl.create(req, res, mockNext);
@@ -68,7 +75,12 @@ describe('MenuCourseController', () => {
     (menuCourseService.assignDishes as jest.Mock).mockResolvedValue({ id: '1' });
     const req = {
       params: { id: '1' },
-      body: { dishes: [{ dishId: 'd1', displayOrder: 1 }] },
+      body: {
+        dishes: [
+          { dishId: 'd1', displayOrder: 1 },
+          { dishId: 'd2', displayOrder: 2 },
+        ],
+      },
     } as any;
     const res = mockRes();
     await ctrl.assignDishes(req, res, mockNext);
