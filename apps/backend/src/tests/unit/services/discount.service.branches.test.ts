@@ -5,6 +5,9 @@
 
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
+    user: {
+      findUnique: jest.fn(),
+    },
     reservation: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -46,6 +49,7 @@ const RESERVATION = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  db.user.findUnique.mockResolvedValue({ id: 'u1' });
   (computeReservationBasePrice as jest.Mock).mockResolvedValue({
     basePrice: 1000,
     breakdown: {},

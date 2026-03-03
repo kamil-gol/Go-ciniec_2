@@ -4,7 +4,8 @@
  */
 
 jest.mock('../../../services/eventType.service', () => ({
-  eventTypeService: {
+  __esModule: true,
+  default: {
     createEventType: jest.fn(),
     getEventTypeById: jest.fn(),
     updateEventType: jest.fn(),
@@ -13,7 +14,7 @@ jest.mock('../../../services/eventType.service', () => ({
 }));
 
 import { EventTypeController } from '../../../controllers/eventType.controller';
-import { eventTypeService } from '../../../services/eventType.service';
+import eventTypeService from '../../../services/eventType.service';
 
 const ctrl = new EventTypeController();
 

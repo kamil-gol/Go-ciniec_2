@@ -5,6 +5,9 @@
 
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
+    client: {
+      findUnique: jest.fn(),
+    },
     reservation: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
@@ -75,6 +78,7 @@ beforeEach(() => {
 describe('QueueService — branch coverage', () => {
   describe('addToQueue — defaults', () => {
     it('should throw on P2002 unique constraint error during create', async () => {
+      db.client.findUnique.mockResolvedValue({ id: 'c1' });
       db.reservation.findUnique.mockResolvedValue(
         makeRes({ 
           id: 'res-1',
@@ -129,6 +133,7 @@ describe('QueueService — branch coverage', () => {
   describe('moveToPosition — error branches', () => {
     it('should throw on P2002 error during move', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
+      db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2' }), makeRes({ id: 'r3' })]);
       
       const prismaError = Object.assign(
         new Error('Position conflict'),
