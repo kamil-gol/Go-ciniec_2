@@ -9,6 +9,7 @@ jest.mock('../../../lib/prisma', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       count: jest.fn(),
     },
     queueItem: {
@@ -24,6 +25,7 @@ jest.mock('../../../lib/prisma', () => ({
       findFirst: jest.fn(),
     },
     eventType: { findUnique: jest.fn() },
+    auditLog: { create: jest.fn() },
     $executeRawUnsafe: jest.fn(),
     $transaction: jest.fn(),
   },
@@ -47,6 +49,7 @@ const svc = new QueueService();
 
 const makeRes = (o: any = {}) => ({
   id: 'res-1',
+  clientId: 'c1',
   status: 'RESERVED' as ReservationStatus,
   reservationQueueDate: new Date('2027-06-15'),
   reservationQueuePosition: 1,
@@ -72,7 +75,15 @@ beforeEach(() => {
 describe('QueueService — branch coverage', () => {
   describe('addToQueue — defaults', () => {
     it('should throw on P2002 unique constraint error during create', async () => {
-      db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
+      // Return reservation that already has queue data - will try to update
+      db.reservation.findUnique.mockResolvedValue(
+        makeRes({ 
+          id: 'res-1',
+          clientId: 'c1',
+          reservationQueueDate: null, 
+          reservationQueuePosition: null 
+        })
+      );
       db.reservation.count.mockResolvedValue(3);
       
       const prismaError = Object.assign(
@@ -196,7 +207,9 @@ describe('QueueService — branch coverage', () => {
       db.hall.findFirst.mockResolvedValue(null); // No whole venue hall
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
       db.reservation.findMany.mockResolvedValue([]); // No overlapping
+      db.reservation.updateMany.mockResolvedValue({ count: 0 }); // No queue reordering needed
       db.reservation.update.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
+      db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 
       await svc.promoteReservation('res-1', {
         startDateTime: '2027-06-15T10:00:00',
@@ -222,7 +235,8 @@ describe('QueueService — branch coverage', () => {
       db.hall.findFirst.mockResolvedValue(null); // No whole venue hall
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
       db.reservation.findMany.mockResolvedValue([]); // No overlapping
-      db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT' }));
+      db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT', reservationQueueDate: null, reservationQueuePosition: null }));
+      db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 
       await svc.promoteReservation('res-1', {
         startDateTime: '2027-06-15T10:00:00',

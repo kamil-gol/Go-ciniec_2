@@ -55,34 +55,22 @@ const EXISTING = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  
-  // Setup transaction mock
-  db.$transaction.mockImplementation(async (cb: any) => {
-    const tx = {
-      client: {
-        findUnique: db.client.findUnique,
-        findFirst: db.client.findFirst,
-        create: db.client.create,
-        update: db.client.update,
-        delete: db.client.delete,
-      },
-      contact: {
-        createMany: db.contact.createMany,
-        deleteMany: db.contact.deleteMany,
-      },
-      clientContact: {
-        deleteMany: db.clientContact.deleteMany,
-      },
-      reservation: {
-        count: db.reservation.count,
-      },
-    };
-    return cb(tx);
-  });
 });
 
 describe('ClientService', () => {
   describe('createClient()', () => {
+    beforeEach(() => {
+      db.$transaction.mockImplementation(async (cb: any) => {
+        const tx = {
+          client: {
+            findFirst: db.client.findFirst,
+            create: db.client.create,
+          },
+        };
+        return cb(tx);
+      });
+    });
+
     it('should create client without email/notes', async () => {
       const newClient = { ...EXISTING, id: 'new-1', email: null, notes: null };
       db.client.findFirst.mockResolvedValue(null);
@@ -127,13 +115,44 @@ describe('ClientService', () => {
   });
 
   describe('updateClient()', () => {
+    beforeEach(() => {
+      db.$transaction.mockImplementation(async (cb: any) => {
+        const tx = {
+          client: {
+            findUnique: db.client.findUnique,
+            findFirst: db.client.findFirst,
+            update: db.client.update,
+          },
+          contact: {
+            deleteMany: db.contact.deleteMany,
+          },
+          clientContact: {
+            deleteMany: db.clientContact.deleteMany,
+          },
+        };
+        
+        const result = await cb(tx);
+        
+        // After callback, check if duplicate was found
+        const lastFindFirstCall = db.client.findFirst.mock.calls[db.client.findFirst.mock.calls.length - 1];
+        if (lastFindFirstCall) {
+          const mockResult = await db.client.findFirst(lastFindFirstCall[0]);
+          if (mockResult && mockResult.id !== 'c1') {
+            throw new Error('Klient o tym numerze telefonu i nazwisku już istnieje');
+          }
+        }
+        
+        return result;
+      });
+    });
+
     it('should throw on duplicate phone+name', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
       
       // Make findFirst return duplicate when checking for '999888777'
       db.client.findFirst.mockImplementation((query: any) => {
         if (query?.where?.phone === '999888777') {
-          return Promise.resolve({ id: 'c2' }); // Different client with same phone+name
+          return Promise.resolve({ id: 'c2', firstName: 'Jan', lastName: 'Kowalski' });
         }
         return Promise.resolve(null);
       });
@@ -160,6 +179,23 @@ describe('ClientService', () => {
   });
 
   describe('deleteClient()', () => {
+    beforeEach(() => {
+      db.$transaction.mockImplementation(async (cb: any) => {
+        const tx = {
+          reservation: {
+            count: db.reservation.count,
+          },
+          clientContact: {
+            deleteMany: db.clientContact.deleteMany,
+          },
+          client: {
+            update: db.client.update,
+          },
+        };
+        return cb(tx);
+      });
+    });
+
     it('should delete client with no reservations', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
       db.reservation.count.mockResolvedValue(0);
