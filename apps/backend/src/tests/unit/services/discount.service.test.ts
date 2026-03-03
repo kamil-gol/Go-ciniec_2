@@ -28,7 +28,13 @@ jest.mock('../../../utils/recalculate-price', () => ({
     },
   }),
   recalculateReservationPrice: jest.fn().mockResolvedValue(undefined),
-  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(5000),
+  recalculateReservationTotalPrice: jest.fn().mockImplementation((reservation) => {
+    // When discountAmount is null, return priceBeforeDiscount or basePrice
+    if (reservation.discountAmount === null) {
+      return reservation.priceBeforeDiscount || 5000;
+    }
+    return reservation.totalPrice;
+  }),
 }));
 
 jest.mock('../../../utils/audit-logger', () => ({
@@ -89,13 +95,16 @@ describe('DiscountService', () => {
         priceBeforeDiscount: 5000,
         totalPrice: 4500,
       });
-      db.reservation.update.mockResolvedValue({
+      
+      // After update, discount is removed so recalculateReservationTotalPrice returns 5000
+      const updatedReservation = {
         ...RESERVATION,
         discountAmount: null,
         discountType: null,
         priceBeforeDiscount: null,
         totalPrice: 5000,
-      });
+      };
+      db.reservation.update.mockResolvedValue(updatedReservation);
 
       const result = await svc.removeDiscount('r1', 'u1');
 

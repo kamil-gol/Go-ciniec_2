@@ -62,9 +62,12 @@ const makeRes = (o: any = {}) => ({
   status: 'RESERVED' as ReservationStatus,
   reservationQueueDate: new Date('2027-06-15'),
   reservationQueuePosition: 1,
-  client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski' },
-  createdBy: { id: 'u1', firstName: 'Admin', lastName: 'User' },
+  guests: 50,
+  queueOrderManual: false,
+  notes: null,
   createdAt: new Date(),
+  client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski', phone: '123456789', email: 'jan@test.pl' },
+  createdBy: { id: 'u1', firstName: 'Admin', lastName: 'User' },
   ...o,
 });
 
@@ -98,7 +101,10 @@ describe('QueueService', () => {
         guests: 50,
       }, 'u1');
 
-      expect(result.reservation).toEqual(newRes);
+      // Service returns formatQueueItem(reservation)
+      expect(result).toBeDefined();
+      expect(result.id).toBe('res-1');
+      expect(result.position).toBe(1);
       expect(db.reservation.create).toHaveBeenCalled();
     });
   });
@@ -150,6 +156,7 @@ describe('QueueService', () => {
     it('should move to new position', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
       db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2', reservationQueuePosition: 2 }), makeRes({ id: 'r3', reservationQueuePosition: 3 })]);
+      db.reservation.count.mockResolvedValue(3);
       db.$executeRawUnsafe.mockResolvedValue(undefined);
 
       await svc.moveToPosition('res-1', 3, 'u1');
@@ -169,13 +176,12 @@ describe('QueueService', () => {
 
     it('should promote RESERVED to PENDING with calculated price', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes());
-      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false });
+      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false, capacity: 100, isWholeVenue: false });
       db.hall.findFirst.mockResolvedValue(null);
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
       db.reservation.findMany.mockResolvedValue([]);
       db.reservation.updateMany.mockResolvedValue({ count: 0 });
       db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT' }));
-      db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 
       const result = await svc.promoteReservation('res-1', {
         startDateTime: '2027-06-15T10:00:00',
@@ -185,7 +191,10 @@ describe('QueueService', () => {
         adults: 50,
         children: 10,
         toddlers: 5,
-      }, 'u1');
+        pricePerAdult: 100,
+        pricePerChild: 50,
+        pricePerToddler: 0,
+      } as any, 'u1');
 
       expect(result.status).toBe('PENDING_PAYMENT');
       expect(db.reservation.update).toHaveBeenCalled();
@@ -193,7 +202,7 @@ describe('QueueService', () => {
 
     it('should throw when hall has a booking conflict', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes());
-      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: false, allowWithWholeVenue: false });
+      db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: false, allowWithWholeVenue: false, capacity: 100, isWholeVenue: false });
       db.hall.findFirst.mockResolvedValue(null);
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
       db.reservation.findMany.mockResolvedValue([makeRes({ id: 'other' })]);
@@ -207,7 +216,10 @@ describe('QueueService', () => {
           adults: 50,
           children: 10,
           toddlers: 5,
-        }, 'u1')
+          pricePerAdult: 100,
+          pricePerChild: 50,
+          pricePerToddler: 0,
+        } as any, 'u1')
       ).rejects.toThrow(/nie dopuszcza wielu rezerwacji|not allow multiple bookings/i);
     });
   });
