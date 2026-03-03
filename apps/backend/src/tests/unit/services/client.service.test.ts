@@ -16,6 +16,9 @@ jest.mock('../../../lib/prisma', () => ({
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    clientContact: {
+      deleteMany: jest.fn(),
+    },
     reservation: {
       count: jest.fn(),
     },
@@ -25,6 +28,7 @@ jest.mock('../../../lib/prisma', () => ({
 
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
+  diffObjects: jest.fn().mockReturnValue({}),
 }));
 
 import { ClientService } from '../../../services/client.service';
@@ -65,6 +69,9 @@ beforeEach(() => {
       contact: {
         createMany: db.contact.createMany,
         deleteMany: db.contact.deleteMany,
+      },
+      clientContact: {
+        deleteMany: db.clientContact.deleteMany,
       },
       reservation: {
         count: db.reservation.count,
@@ -149,6 +156,7 @@ describe('ClientService', () => {
     it('should delete client with no reservations', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
       db.reservation.count.mockResolvedValue(0);
+      db.clientContact.deleteMany.mockResolvedValue({ count: 0 });
       db.client.update.mockResolvedValue({ ...EXISTING, isDeleted: true });
 
       await svc.deleteClient('c1', 'u1');
