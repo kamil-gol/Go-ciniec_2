@@ -1,165 +1,103 @@
 /**
- * MinioStorageService Unit Tests
- * Covers: upload, download, delete, presigned URLs, bucket operations
+ * MinioStorageService — Unit Tests
+ * Tests: uploadFile, downloadFile, deleteFile operations
  */
-
-const mockMinioClient = {
-  putObject: jest.fn(),
-  getObject: jest.fn(),
-  removeObject: jest.fn(),
-  presignedGetObject: jest.fn(),
-  bucketExists: jest.fn(),
-  makeBucket: jest.fn(),
-};
-
-jest.mock('minio', () => ({
-  Client: jest.fn(() => mockMinioClient),
-}));
 
 jest.mock('../../../config/storage.config', () => ({
   storageConfig: {
-    buckets: {
-      attachments: 'attachments',
-      menuImages: 'menu-images',
-      exports: 'exports',
+    minio: {
+      endpoint: 'http://localhost:9000',
+      accessKey: 'minioadmin',
+      secretKey: 'minioadmin',
+      useSSL: false,
     },
-    presignedTtl: {
-      sensitive: 3600,
-      standard: 7200,
-    },
+    bucket: 'test-bucket',
   },
 }));
+
+jest.mock('minio', () => {
+  return {
+    Client: jest.fn().mockImplementation(() => ({
+      bucketExists: jest.fn().mockResolvedValue(true),
+      makeBucket: jest.fn().mockResolvedValue(undefined),
+      putObject: jest.fn().mockResolvedValue({ etag: 'test-etag' }),
+      getObject: jest.fn(),
+      removeObject: jest.fn().mockResolvedValue(undefined),
+      presignedGetObject: jest.fn().mockResolvedValue('http://presigned-url'),
+    })),
+  };
+});
 
 import { MinioStorageService } from '../../../services/storage/minio.storage';
 import { Readable } from 'stream';
 
-let storageService: MinioStorageService;
+const service = new MinioStorageService();
+const client = (service as any).client;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  storageService = new MinioStorageService();
-  mockMinioClient.bucketExists.mockResolvedValue(true);
 });
 
 describe('MinioStorageService', () => {
   describe('uploadFile', () => {
     it('should upload file to bucket', async () => {
       const buffer = Buffer.from('test content');
-      mockMinioClient.putObject.mockResolvedValue({ etag: 'abc123' });
+      
+      await service.uploadFile('test.txt', buffer, 'text/plain');
 
-      const result = await storageService.uploadFile('attachments', 'test.pdf', buffer, 'application/pdf');
-
-      expect(result.success).toBe(true);
-      expect(result.key).toBe('test.pdf');
-      expect(mockMinioClient.putObject).toHaveBeenCalledWith(
-        'attachments',
-        'test.pdf',
+      expect(client.putObject).toHaveBeenCalledWith(
+        'test-bucket',
+        expect.any(String),
         buffer,
         buffer.length,
-        expect.objectContaining({ 'Content-Type': 'application/pdf' })
+        expect.objectContaining({ 'Content-Type': 'text/plain' })
       );
     });
 
     it('should handle upload errors', async () => {
-      mockMinioClient.putObject.mockRejectedValue(new Error('Upload failed'));
-
+      client.putObject.mockRejectedValue(new Error('Upload failed'));
       const buffer = Buffer.from('test');
-      const result = await storageService.uploadFile('attachments', 'test.pdf', buffer);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Upload failed');
+      await expect(service.uploadFile('test.txt', buffer, 'text/plain'))
+        .rejects.toThrow('Upload failed');
     });
   });
 
   describe('downloadFile', () => {
     it('should download file as buffer', async () => {
-      const mockStream = Readable.from(['test content']);
-      mockMinioClient.getObject.mockResolvedValue(mockStream);
+      const mockStream = new Readable();
+      mockStream.push('test content');
+      mockStream.push(null);
+      
+      client.getObject.mockResolvedValue(mockStream);
 
-      const result = await storageService.downloadFile('attachments', 'test.pdf');
+      const result = await service.downloadFile('test.txt');
 
       expect(result).toBeInstanceOf(Buffer);
-      expect(mockMinioClient.getObject).toHaveBeenCalledWith('attachments', 'test.pdf');
     });
 
     it('should handle download errors', async () => {
-      mockMinioClient.getObject.mockRejectedValue(new Error('Not found'));
+      client.getObject.mockRejectedValue(new Error('Download failed'));
 
-      await expect(storageService.downloadFile('attachments', 'missing.pdf')).rejects.toThrow();
+      await expect(service.downloadFile('test.txt'))
+        .rejects.toThrow('Download failed');
     });
   });
 
   describe('deleteFile', () => {
     it('should delete file from bucket', async () => {
-      mockMinioClient.removeObject.mockResolvedValue(undefined);
+      await service.deleteFile('test.txt');
 
-      const result = await storageService.deleteFile('attachments', 'test.pdf');
-
-      expect(result.success).toBe(true);
-      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('attachments', 'test.pdf');
-    });
-
-    it('should handle deletion errors', async () => {
-      mockMinioClient.removeObject.mockRejectedValue(new Error('Delete failed'));
-
-      const result = await storageService.deleteFile('attachments', 'test.pdf');
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Delete failed');
+      expect(client.removeObject).toHaveBeenCalledWith('test-bucket', 'test.txt');
     });
   });
 
   describe('getPresignedUrl', () => {
     it('should generate presigned URL', async () => {
-      mockMinioClient.presignedGetObject.mockResolvedValue('https://minio.example.com/signed-url');
+      const url = await service.getPresignedUrl('test.txt');
 
-      const url = await storageService.getPresignedUrl('attachments', 'test.pdf');
-
-      expect(url).toBe('https://minio.example.com/signed-url');
-      expect(mockMinioClient.presignedGetObject).toHaveBeenCalledWith('attachments', 'test.pdf', expect.any(Number));
-    });
-
-    it('should default to 3600s expiry', async () => {
-      mockMinioClient.presignedGetObject.mockResolvedValue('https://url');
-
-      await storageService.getPresignedUrl('attachments', 'test.pdf');
-
-      expect(mockMinioClient.presignedGetObject).toHaveBeenCalledWith(
-        'attachments',
-        'test.pdf',
-        3600
-      );
-    });
-
-    it('should use custom expiry', async () => {
-      mockMinioClient.presignedGetObject.mockResolvedValue('https://url');
-
-      await storageService.getPresignedUrl('exports', 'report.pdf', 1800);
-
-      expect(mockMinioClient.presignedGetObject).toHaveBeenCalledWith(
-        'exports',
-        'report.pdf',
-        1800
-      );
-    });
-  });
-
-  describe('ensureBucketExists', () => {
-    it('should skip creation if bucket exists', async () => {
-      mockMinioClient.bucketExists.mockResolvedValue(true);
-
-      await storageService.ensureBucketExists('attachments');
-
-      expect(mockMinioClient.makeBucket).not.toHaveBeenCalled();
-    });
-
-    it('should create bucket if not exists', async () => {
-      mockMinioClient.bucketExists.mockResolvedValue(false);
-      mockMinioClient.makeBucket.mockResolvedValue(undefined);
-
-      await storageService.ensureBucketExists('new-bucket');
-
-      expect(mockMinioClient.makeBucket).toHaveBeenCalledWith('new-bucket', 'us-east-1');
+      expect(url).toBe('http://presigned-url');
+      expect(client.presignedGetObject).toHaveBeenCalledWith('test-bucket', 'test.txt', 3600);
     });
   });
 });

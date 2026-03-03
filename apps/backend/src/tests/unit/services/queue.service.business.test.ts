@@ -5,6 +5,9 @@
 
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
+    client: {
+      findUnique: jest.fn(),
+    },
     reservation: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
@@ -58,6 +61,8 @@ const makeRes = (o: any = {}) => ({
   reservationQueueDate: new Date('2027-06-15'),
   reservationQueuePosition: 1,
   client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski' },
+  createdBy: { id: 'u1', firstName: 'Admin', lastName: 'User' },
+  createdAt: new Date(),
   ...o,
 });
 
@@ -79,6 +84,7 @@ beforeEach(() => {
 describe('QueueService', () => {
   describe('addToQueue()', () => {
     it('should add reservation to queue', async () => {
+      db.client.findUnique.mockResolvedValue({ id: 'c1' });
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
       db.reservation.count.mockResolvedValue(0);
       db.reservation.update.mockResolvedValue(makeRes());
@@ -140,6 +146,7 @@ describe('QueueService', () => {
 
     it('should move to new position', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueuePosition: 1 }));
+      db.reservation.findMany.mockResolvedValue([makeRes(), makeRes({ id: 'r2' }), makeRes({ id: 'r3' })]);
       db.$executeRawUnsafe.mockResolvedValue(undefined);
 
       await svc.moveToPosition('res-1', 3, 'u1');
@@ -198,7 +205,7 @@ describe('QueueService', () => {
           children: 10,
           toddlers: 5,
         }, 'u1')
-      ).rejects.toThrow(/already booked|zajęta|nieaktywna/i);
+      ).rejects.toThrow(/nie dopuszcza wielu rezerwacji|not allow multiple bookings/i);
     });
   });
 });
