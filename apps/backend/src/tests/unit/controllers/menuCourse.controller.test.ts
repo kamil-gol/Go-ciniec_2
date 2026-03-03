@@ -38,16 +38,17 @@ describe('MenuCourseController', () => {
   });
 
   it('should create a course', async () => {
-    (menuCourseService.create as jest.Mock).mockResolvedValue({ id: '1', name: 'Appetizer' });
+    (menuCourseService.create as jest.Mock).mockResolvedValue({ id: '1', name: 'Przystawki' });
 
     const req = {
       body: {
-        packageId: 'pkg-1',
-        name: 'Appetizer',
+        packageId: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Przystawki',
+        description: 'Różnorodne przekąski',
+        minSelect: 1,
+        maxSelect: 3,
+        isRequired: true,
         displayOrder: 1,
-        courseName: 'Przystawki',
-        minDishes: 1,
-        maxDishes: 5,
       },
     } as any;
     const res = mockRes();
@@ -77,8 +78,18 @@ describe('MenuCourseController', () => {
       params: { id: '1' },
       body: {
         dishes: [
-          { dishId: 'd1', displayOrder: 1 },
-          { dishId: 'd2', displayOrder: 2 },
+          {
+            dishId: '550e8400-e29b-41d4-a716-446655440001',
+            displayOrder: 1,
+            isDefault: false,
+            isRecommended: false,
+          },
+          {
+            dishId: '550e8400-e29b-41d4-a716-446655440002',
+            displayOrder: 2,
+            isDefault: false,
+            isRecommended: true,
+          },
         ],
       },
     } as any;
