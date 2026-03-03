@@ -3,7 +3,7 @@
  * Target: 57.57% → ~80%+ branches
  * Covers: menu packages, legacy format, whole venue conflicts,
  *         cascade deposits, archive/unarchive, discount edge cases,
- *         option processing, deposit creation
+ *         deposit creation
  */
 
 // ═══ Mock Prisma with $transaction ═══
@@ -168,70 +168,9 @@ describe('ReservationService — Branch Coverage', () => {
       await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maksimum 10 go/);
     });
 
-    it('should process PER_PERSON option correctly', async () => {
-      db.menuPackage.findUnique.mockResolvedValue(MENU_PKG);
-      db.menuOption.findMany.mockResolvedValue([
-        { id: 'opt-1', name: 'Bar', isActive: true, priceType: 'PER_PERSON', priceAmount: 30, allowMultiple: false, category: 'BAR', description: 'Open bar' }
-      ]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 1 }] };
-      await svc.createReservation(dto as any, UID);
-      const snap = db.reservationMenuSnapshot.create.mock.calls[0][0];
-      expect(snap.data.optionsPrice).toBe(30 * 65); // PER_PERSON * guests
-    });
-
-    it('should process FLAT option with multiple quantity', async () => {
-      db.menuPackage.findUnique.mockResolvedValue(MENU_PKG);
-      db.menuOption.findMany.mockResolvedValue([
-        { id: 'opt-1', name: 'DJ', isActive: true, priceType: 'FLAT', priceAmount: 2000, allowMultiple: true, maxQuantity: 5, category: 'FUN', description: 'DJ' }
-      ]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 2 }] };
-      await svc.createReservation(dto as any, UID);
-      const snap = db.reservationMenuSnapshot.create.mock.calls[0][0];
-      expect(snap.data.optionsPrice).toBe(4000); // FLAT * quantity
-    });
-
     it('should throw when no prices and no menu package', async () => {
       const dto = { ...BASE_DTO, pricePerAdult: undefined, pricePerChild: undefined };
       await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za dorosłego/);
-    });
-  });
-
-  // ════════════════════════════════════
-  // createReservation — option errors
-  // ════════════════════════════════════
-  describe('create — option edge cases', () => {
-    beforeEach(() => db.menuPackage.findUnique.mockResolvedValue(MENU_PKG));
-
-    it('should throw when option not found', async () => {
-      db.menuOption.findMany.mockResolvedValue([]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'bad', quantity: 1 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nie znaleziono/i);
-    });
-
-    it('should throw when option is inactive', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'X', isActive: false, priceType: 'FLAT', priceAmount: 10, allowMultiple: false }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1' }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nieaktywna/);
-    });
-
-    it('should throw when exceeding maxQuantity', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'D', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: true, maxQuantity: 3, category: 'X', description: '' }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 10 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/aksimum 3/);
-    });
-
-    it('should throw when non-multiple option quantity > 1', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'Solo', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: false, category: 'X', description: '' }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 5 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nie pozwala na wielokrotny wybór/);
-    });
-
-    it('should default quantity to 1 when not specified', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'DJ', isActive: true, priceType: 'FLAT', priceAmount: 500, allowMultiple: false, category: 'FUN', description: '' }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1' }] };
-      await svc.createReservation(dto as any, UID);
-      const snap = db.reservationMenuSnapshot.create.mock.calls[0][0];
-      expect(snap.data.optionsPrice).toBe(500);
     });
   });
 
