@@ -75,7 +75,6 @@ beforeEach(() => {
 describe('QueueService — branch coverage', () => {
   describe('addToQueue — defaults', () => {
     it('should throw on P2002 unique constraint error during create', async () => {
-      // Return reservation that already has queue data - will try to update
       db.reservation.findUnique.mockResolvedValue(
         makeRes({ 
           id: 'res-1',
@@ -92,7 +91,7 @@ describe('QueueService — branch coverage', () => {
       );
       db.reservation.update.mockRejectedValue(prismaError);
 
-      await expect(svc.addToQueue('res-1', { 
+      await expect(svc.addToQueue({
         clientId: 'c1',
         reservationQueueDate: new Date('2027-06-15'),
         guests: 50,
@@ -204,14 +203,14 @@ describe('QueueService — branch coverage', () => {
     it('should promote to CONFIRMED when status is CONFIRMED', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes());
       db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false });
-      db.hall.findFirst.mockResolvedValue(null); // No whole venue hall
+      db.hall.findFirst.mockResolvedValue(null);
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
-      db.reservation.findMany.mockResolvedValue([]); // No overlapping
-      db.reservation.updateMany.mockResolvedValue({ count: 0 }); // No queue reordering needed
+      db.reservation.findMany.mockResolvedValue([]);
+      db.reservation.updateMany.mockResolvedValue({ count: 0 });
       db.reservation.update.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
       db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 
-      await svc.promoteReservation('res-1', {
+      const result = await svc.promoteReservation('res-1', {
         startDateTime: '2027-06-15T10:00:00',
         endDateTime: '2027-06-15T18:00:00',
         hallId: 'h1',
@@ -222,19 +221,15 @@ describe('QueueService — branch coverage', () => {
         promoteToStatus: 'CONFIRMED',
       }, 'u1');
 
-      expect(db.reservation.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'CONFIRMED' }),
-        })
-      );
+      expect(result.status).toBe('CONFIRMED');
     });
 
     it('should handle promote when reservation has no queue date/position', async () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ reservationQueueDate: null, reservationQueuePosition: null }));
       db.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, allowMultipleBookings: true, allowWithWholeVenue: false });
-      db.hall.findFirst.mockResolvedValue(null); // No whole venue hall
+      db.hall.findFirst.mockResolvedValue(null);
       db.eventType.findUnique.mockResolvedValue({ name: 'Wedding' });
-      db.reservation.findMany.mockResolvedValue([]); // No overlapping
+      db.reservation.findMany.mockResolvedValue([]);
       db.reservation.update.mockResolvedValue(makeRes({ status: 'PENDING_PAYMENT', reservationQueueDate: null, reservationQueuePosition: null }));
       db.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 

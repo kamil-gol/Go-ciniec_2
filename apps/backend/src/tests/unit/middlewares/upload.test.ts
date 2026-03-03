@@ -3,31 +3,21 @@
  * Tests: multer configuration, file filter logic
  */
 
+const mockDiskStorage = jest.fn((config) => config);
+const mockSingle = jest.fn();
+const mockArray = jest.fn();
+const mockMulter = jest.fn(() => ({
+  single: mockSingle,
+  array: mockArray,
+}));
+mockMulter.diskStorage = mockDiskStorage;
+
 jest.mock('multer', () => ({
   __esModule: true,
-  default: jest.fn(() => ({
-    single: jest.fn(() => (req: any, res: any, next: any) => next()),
-    array: jest.fn(() => (req: any, res: any, next: any) => next()),
-  })),
-  diskStorage: jest.fn((config) => config),
+  default: mockMulter,
 }));
 
-import multer from 'multer';
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_MIME_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-];
-
-// Load upload module to test configuration
-function loadUpload() {
-  jest.isolateModules(() => {
-    require('../../../middlewares/upload');
-  });
-}
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -36,13 +26,13 @@ beforeEach(() => {
 describe('upload middleware', () => {
   describe('multer config', () => {
     it('should use disk storage with uploads directory', () => {
-      loadUpload();
-      expect(multer.diskStorage).toHaveBeenCalled();
+      require('../../../middlewares/upload');
+      expect(mockDiskStorage).toHaveBeenCalled();
     });
 
     it('should set fileSize limit to MAX_FILE_SIZE', () => {
-      loadUpload();
-      expect(multer).toHaveBeenCalledWith(
+      require('../../../middlewares/upload');
+      expect(mockMulter).toHaveBeenCalledWith(
         expect.objectContaining({
           limits: expect.objectContaining({
             fileSize: MAX_FILE_SIZE,
@@ -54,8 +44,8 @@ describe('upload middleware', () => {
 
   describe('fileFilter', () => {
     it('should accept PDF files', () => {
-      loadUpload();
-      const call = (multer as jest.Mock).mock.calls[0][0];
+      require('../../../middlewares/upload');
+      const call = mockMulter.mock.calls[0][0];
       const fileFilter = call.fileFilter;
       const cb = jest.fn();
       fileFilter({}, { mimetype: 'application/pdf' }, cb);
@@ -63,8 +53,8 @@ describe('upload middleware', () => {
     });
 
     it('should accept image files', () => {
-      loadUpload();
-      const call = (multer as jest.Mock).mock.calls[0][0];
+      require('../../../middlewares/upload');
+      const call = mockMulter.mock.calls[0][0];
       const fileFilter = call.fileFilter;
       const cb = jest.fn();
       fileFilter({}, { mimetype: 'image/jpeg' }, cb);
@@ -72,8 +62,8 @@ describe('upload middleware', () => {
     });
 
     it('should reject non-allowed file types', () => {
-      loadUpload();
-      const call = (multer as jest.Mock).mock.calls[0][0];
+      require('../../../middlewares/upload');
+      const call = mockMulter.mock.calls[0][0];
       const fileFilter = call.fileFilter;
       const cb = jest.fn();
       fileFilter({}, { mimetype: 'application/zip' }, cb);
