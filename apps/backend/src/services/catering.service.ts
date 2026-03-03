@@ -18,9 +18,9 @@ export interface CreateCateringTemplateDto {
 
 export interface UpdateCateringTemplateDto {
   name?: string;
-  description?: string;
+  description?: string | null;
   slug?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   isActive?: boolean;
   displayOrder?: number;
 }
@@ -31,7 +31,7 @@ export interface CreateCateringPackageDto {
   shortDescription?: string;
   priceType?: CateringPriceType;
   basePrice: number;
-  tieredPricing?: Prisma.InputJsonValue;
+  tieredPricing?: Record<string, unknown>;
   badgeText?: string;
   isPopular?: boolean;
   displayOrder?: number;
@@ -42,11 +42,11 @@ export interface CreateCateringPackageDto {
 
 export interface UpdateCateringPackageDto {
   name?: string;
-  description?: string;
-  shortDescription?: string;
+  description?: string | null;
+  shortDescription?: string | null;
   priceType?: CateringPriceType;
   basePrice?: number;
-  tieredPricing?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+  tieredPricing?: Record<string, unknown> | null;
   badgeText?: string | null;
   isPopular?: boolean;
   displayOrder?: number;
@@ -199,6 +199,7 @@ export async function createCateringPackage(templateId: string, data: CreateCate
     data: {
       ...data,
       templateId,
+      tieredPricing: data.tieredPricing ?? Prisma.JsonNull,
     },
     include: {
       sections: {
@@ -211,13 +212,12 @@ export async function createCateringPackage(templateId: string, data: CreateCate
 export async function updateCateringPackage(id: string, data: UpdateCateringPackageDto) {
   await getCateringPackageById(id);
 
+  const { tieredPricing, ...rest } = data;
+
   const updateData: Prisma.CateringPackageUpdateInput = {
-    ...data,
-    // Prisma requires Prisma.JsonNull to explicitly set JSONB field to null
-    ...(data.tieredPricing === Prisma.JsonNull
-      ? { tieredPricing: Prisma.JsonNull }
-      : data.tieredPricing !== undefined
-      ? { tieredPricing: data.tieredPricing }
+    ...rest,
+    ...(tieredPricing !== undefined
+      ? { tieredPricing: tieredPricing === null ? Prisma.JsonNull : tieredPricing }
       : {}),
   };
 
