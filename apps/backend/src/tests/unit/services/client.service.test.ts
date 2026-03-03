@@ -28,7 +28,7 @@ jest.mock('../../../lib/prisma', () => ({
 
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
-  diffObjects: jest.fn().mockReturnValue({}),
+  diffObjects: jest.fn().mockReturnValue({ phone: { old: '123456789', new: '999888777' } }),
 }));
 
 import { ClientService } from '../../../services/client.service';
@@ -129,7 +129,14 @@ describe('ClientService', () => {
   describe('updateClient()', () => {
     it('should throw on duplicate phone+name', async () => {
       db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.findFirst.mockResolvedValue({ id: 'c2' }); // Duplicate found
+      
+      // Make findFirst return duplicate when checking for '999888777'
+      db.client.findFirst.mockImplementation((query: any) => {
+        if (query?.where?.phone === '999888777') {
+          return Promise.resolve({ id: 'c2' }); // Different client with same phone+name
+        }
+        return Promise.resolve(null);
+      });
 
       await expect(svc.updateClient('c1', { phone: '999888777' }, 'u1'))
         .rejects.toThrow(/już.*istnieje|already exists/i);
