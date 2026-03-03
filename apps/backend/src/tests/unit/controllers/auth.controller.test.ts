@@ -6,6 +6,7 @@
 import authService from '../../../services/auth.service';
 
 jest.mock('../../../services/auth.service', () => ({
+  __esModule: true,
   default: {
     register: jest.fn(),
     login: jest.fn(),

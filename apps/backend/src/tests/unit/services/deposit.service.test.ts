@@ -6,6 +6,7 @@
 import depositService from '../../../services/deposit.service';
 
 jest.mock('../../../services/deposit.service', () => ({
+  __esModule: true,
   default: {
     create: jest.fn(),
     getById: jest.fn(),
