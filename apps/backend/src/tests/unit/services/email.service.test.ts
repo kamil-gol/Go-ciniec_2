@@ -6,6 +6,10 @@
  * Strategy: The module reads process.env at runtime in send()/getTransporter(),
  * so we mock env vars directly and reset the cached transporter between tests
  * by re-requiring the module.
+ *
+ * Note: After jest.resetModules() + require(), dotenv may re-load .env file
+ * through module dependency chain. We force-clear SMTP vars after loadService()
+ * to guarantee test isolation on environments with real .env files.
  */
 
 const mockSendMail = jest.fn();
@@ -23,6 +27,13 @@ jest.mock('@utils/logger', () => ({
   },
 }));
 
+const SMTP_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'] as const;
+
+/** Clear all SMTP env vars (guards against dotenv re-load in module require chain) */
+function clearSmtpEnv() {
+  SMTP_KEYS.forEach(k => delete process.env[k]);
+}
+
 function loadService(env: Record<string, string> = {}) {
   jest.resetModules();
   jest.mock('nodemailer', () => ({
@@ -35,8 +46,7 @@ function loadService(env: Record<string, string> = {}) {
 
   // Save and override env
   const saved: Record<string, string | undefined> = {};
-  const smtpKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'];
-  for (const key of smtpKeys) {
+  for (const key of SMTP_KEYS) {
     saved[key] = process.env[key];
     delete process.env[key];
   }
@@ -46,10 +56,15 @@ function loadService(env: Record<string, string> = {}) {
 
   const mod = require('../../../services/email.service');
 
-  // Restore env immediately after module loads (transporter is lazy)
-  // BUT keep env active for runtime calls — we'll restore in afterEach
+  // After require(), dotenv may have re-loaded .env (via module dependency chain).
+  // Re-apply the intended env state to guarantee isolation.
+  clearSmtpEnv();
+  for (const [k, v] of Object.entries(env)) {
+    process.env[k] = v;
+  }
+
   return { svc: mod.default, restore: () => {
-    for (const key of smtpKeys) {
+    for (const key of SMTP_KEYS) {
       if (saved[key] !== undefined) process.env[key] = saved[key];
       else delete process.env[key];
     }
@@ -104,6 +119,8 @@ describe('emailService', () => {
         SMTP_HOST: 'smtp.test', SMTP_USER: 'user@test.pl', SMTP_PASS: 'pass',
       });
       restoreFn = restore;
+      // loadService already re-applies env after require(), but double-guard here
+      delete process.env.SMTP_FROM;
       mockSendMail.mockResolvedValue({ messageId: 'msg-2' });
       await svc.send({ to: 'a@b.com', subject: 'Test', html: '<p>hi</p>' });
       expect(mockSendMail).toHaveBeenCalledWith(
@@ -239,6 +256,9 @@ describe('emailService', () => {
     it('should return false when not configured', async () => {
       const { svc, restore } = loadService({});
       restoreFn = restore;
+      // loadService() already clears + re-applies env after require(),
+      // but force-clear one more time to guarantee transporter stays null
+      clearSmtpEnv();
       expect(await svc.verify()).toBe(false);
     });
 
