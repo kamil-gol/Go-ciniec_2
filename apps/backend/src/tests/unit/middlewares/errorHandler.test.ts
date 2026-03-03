@@ -247,7 +247,7 @@ describe('errorHandler', () => {
 
       errorHandler(error, req as Request, res as Response, next as NextFunction);
 
-      expect(console.error).toHaveBeenCalledWith('[ERROR]', error);
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('ERROR'), expect.anything(), error);
     });
 
     it('should return fallback message when error has no message', () => {
