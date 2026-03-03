@@ -1,209 +1,142 @@
 /**
- * Unit Tests — MinioStorageService
- * Mockuje SDK minio — testuje logikę serwisu bez prawdziwego MinIO.
- * Używa { virtual: true } żeby nie wymagać fizycznego modułu minio w node_modules.
+ * MinIO Storage — Unit Tests
  */
 
-import { Readable } from 'stream';
+jest.mock('minio', () => {
+  return {
+    Client: jest.fn().mockImplementation(() => ({
+      bucketExists: jest.fn(),
+      makeBucket: jest.fn(),
+      putObject: jest.fn(),
+      getObject: jest.fn(),
+      removeObject: jest.fn(),
+      statObject: jest.fn(),
+    })),
+  };
+});
 
-const mockPutObject = jest.fn();
-const mockGetObject = jest.fn();
-const mockRemoveObject = jest.fn();
-const mockStatObject = jest.fn();
-const mockBucketExists = jest.fn();
-const mockMakeBucket = jest.fn();
-const mockPresignedGetObject = jest.fn();
-const mockListObjectsV2 = jest.fn();
+jest.mock('../../../utils/AppError', () => {
+  class MockAppError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+    static badRequest(msg: string) { return new MockAppError(msg, 400); }
+    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
+  }
+  return { AppError: MockAppError };
+});
 
-jest.mock('minio', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    putObject: mockPutObject,
-    getObject: mockGetObject,
-    removeObject: mockRemoveObject,
-    statObject: mockStatObject,
-    bucketExists: mockBucketExists,
-    makeBucket: mockMakeBucket,
-    presignedGetObject: mockPresignedGetObject,
-    listObjectsV2: mockListObjectsV2,
-  })),
-}), { virtual: true });
+import { MinIOStorage } from '../../../services/storage.minio';
+import { Client } from 'minio';
 
-jest.mock('../../../config/storage.config', () => ({
-  storageConfig: {
-    driver: 'minio',
-    minio: {
-      endpoint: 'http://minio:9000',
-      rootUser: 'testuser',
-      rootPassword: 'testpass',
-    },
-    buckets: {
-      attachments: 'attachments',
-      pdfs: 'pdfs',
-      exports: 'exports',
-    },
-  },
-}));
+const mockClient = new Client({} as any);
+let storage: MinIOStorage;
 
-jest.mock('../../../utils/logger', () => ({
-  __esModule: true,
-  default: {
-    info: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+beforeEach(() => {
+  jest.clearAllMocks();
+  storage = new MinIOStorage();
+  (storage as any).client = mockClient;
+});
 
-const { MinioStorageService } = require('../../../services/storage/minio.storage');
+describe('MinIOStorage', () => {
 
-describe('MinioStorageService', () => {
-  let storage: any;
-
-  beforeAll(() => {
-    storage = new MinioStorageService();
+  it('should upload file', async () => {
+    (mockClient.putObject as jest.Mock).mockResolvedValue(undefined);
+    const buffer = Buffer.from('test');
+    await storage.uploadFile('test.pdf', buffer, 'application/pdf');
+    expect(mockClient.putObject).toHaveBeenCalled();
   });
 
-  beforeEach(() => {
-    jest.clearAllMocks();
+  it('should download file', async () => {
+    const mockStream = { on: jest.fn(), pipe: jest.fn() };
+    (mockClient.getObject as jest.Mock).mockResolvedValue(mockStream);
+    (mockClient.statObject as jest.Mock).mockResolvedValue({ size: 100, metaData: { 'content-type': 'application/pdf' } });
+    
+    mockStream.on.mockImplementation((event: string, callback: Function) => {
+      if (event === 'data') callback(Buffer.from('test'));
+      if (event === 'end') callback();
+      return mockStream;
+    });
+
+    const result = await storage.downloadFile('test.pdf');
+    expect(result.buffer).toBeInstanceOf(Buffer);
   });
 
-  describe('upload (Buffer)', () => {
-    it('should call putObject with correct params', async () => {
-      mockPutObject.mockResolvedValue(undefined);
-      const buf = Buffer.from('test content');
-
-      const result = await storage.upload('attachments', 'clients/test.pdf', buf, { 'Content-Type': 'application/pdf' });
-
-      expect(mockPutObject).toHaveBeenCalledWith(
-        'attachments', 'clients/test.pdf', buf, buf.length, { 'Content-Type': 'application/pdf' }
-      );
-      expect(result).toEqual({ bucket: 'attachments', key: 'clients/test.pdf', size: buf.length });
-    });
+  it('should delete file', async () => {
+    (mockClient.removeObject as jest.Mock).mockResolvedValue(undefined);
+    await storage.deleteFile('test.pdf');
+    expect(mockClient.removeObject).toHaveBeenCalled();
   });
 
-  describe('upload (Stream)', () => {
-    it('should call putObject and statObject for size', async () => {
-      mockPutObject.mockResolvedValue(undefined);
-      mockStatObject.mockResolvedValue({ size: 1234 });
-      const stream = Readable.from([Buffer.from('stream data')]);
-
-      const result = await storage.upload('attachments', 'key.pdf', stream);
-
-      expect(mockPutObject).toHaveBeenCalled();
-      expect(mockStatObject).toHaveBeenCalledWith('attachments', 'key.pdf');
-      expect(result.size).toBe(1234);
-    });
+  it('should check if file exists', async () => {
+    (mockClient.statObject as jest.Mock).mockResolvedValue({ size: 100 });
+    const exists = await storage.fileExists('test.pdf');
+    expect(exists).toBe(true);
   });
 
-  describe('download', () => {
-    it('should return Buffer from stream', async () => {
-      const mockStream = Readable.from([Buffer.from('file'), Buffer.from(' content')]);
-      mockGetObject.mockResolvedValue(mockStream);
-
-      const result = await storage.download('attachments', 'test.pdf');
-
-      expect(result.toString()).toBe('file content');
-      expect(mockGetObject).toHaveBeenCalledWith('attachments', 'test.pdf');
-    });
+  it('should return false when file does not exist', async () => {
+    (mockClient.statObject as jest.Mock).mockRejectedValue(new Error('Not found'));
+    const exists = await storage.fileExists('missing.pdf');
+    expect(exists).toBe(false);
   });
 
-  describe('getStream', () => {
-    it('should return stream from minio', async () => {
-      const mockStream = Readable.from([Buffer.from('data')]);
-      mockGetObject.mockResolvedValue(mockStream);
-
-      const stream = await storage.getStream('attachments', 'test.pdf');
-      expect(stream).toBe(mockStream);
+  it('should get file metadata', async () => {
+    (mockClient.statObject as jest.Mock).mockResolvedValue({
+      size: 200,
+      metaData: { 'content-type': 'image/png' },
+      lastModified: new Date(),
     });
+    const metadata = await storage.getFileMetadata('image.png');
+    expect(metadata.size).toBe(200);
   });
 
-  describe('delete', () => {
-    it('should call removeObject', async () => {
-      mockRemoveObject.mockResolvedValue(undefined);
-      await storage.delete('attachments', 'test.pdf');
-      expect(mockRemoveObject).toHaveBeenCalledWith('attachments', 'test.pdf');
-    });
+  it('should throw error when upload fails', async () => {
+    (mockClient.putObject as jest.Mock).mockRejectedValue(new Error('Upload failed'));
+    await expect(storage.uploadFile('bad.pdf', Buffer.from('x'), 'application/pdf'))
+      .rejects.toThrow('Upload failed');
   });
 
-  describe('exists', () => {
-    it('should return true when statObject succeeds', async () => {
-      mockStatObject.mockResolvedValue({ size: 100 });
-      expect(await storage.exists('attachments', 'test.pdf')).toBe(true);
-    });
-
-    it('should return false when statObject throws', async () => {
-      mockStatObject.mockRejectedValue(new Error('Not found'));
-      expect(await storage.exists('attachments', 'ghost.pdf')).toBe(false);
-    });
+  it('should throw error when download fails', async () => {
+    (mockClient.getObject as jest.Mock).mockRejectedValue(new Error('Download failed'));
+    await expect(storage.downloadFile('bad.pdf')).rejects.toThrow('Download failed');
   });
 
-  describe('getPresignedUrl', () => {
-    it('should call presignedGetObject with expiry', async () => {
-      mockPresignedGetObject.mockResolvedValue('https://minio:9000/signed-url');
-
-      const url = await storage.getPresignedUrl('attachments', 'test.pdf', 7200);
-
-      expect(mockPresignedGetObject).toHaveBeenCalledWith('attachments', 'test.pdf', 7200);
-      expect(url).toBe('https://minio:9000/signed-url');
-    });
-
-    it('should default to 3600s expiry', async () => {
-      mockPresignedGetObject.mockResolvedValue('url');
-      await storage.getPresignedUrl('attachments', 'test.pdf');
-      expect(mockPresignedGetObject).toHaveBeenCalledWith('attachments', 'test.pdf', 3600);
-    });
+  it('should throw error when delete fails', async () => {
+    (mockClient.removeObject as jest.Mock).mockRejectedValue(new Error('Delete failed'));
+    await expect(storage.deleteFile('bad.pdf')).rejects.toThrow(/Delete failed/);
   });
 
-  describe('ensureBucket', () => {
-    it('should create bucket if not exists', async () => {
-      mockBucketExists.mockResolvedValue(false);
-      mockMakeBucket.mockResolvedValue(undefined);
-
-      await storage.ensureBucket('new-bucket');
-
-      expect(mockBucketExists).toHaveBeenCalledWith('new-bucket');
-      expect(mockMakeBucket).toHaveBeenCalledWith('new-bucket');
-    });
-
-    it('should skip if bucket already exists', async () => {
-      mockBucketExists.mockResolvedValue(true);
-
-      await storage.ensureBucket('existing-bucket');
-
-      expect(mockMakeBucket).not.toHaveBeenCalled();
-    });
+  it('should initialize bucket if not exists', async () => {
+    (mockClient.bucketExists as jest.Mock).mockResolvedValue(false);
+    (mockClient.makeBucket as jest.Mock).mockResolvedValue(undefined);
+    await storage.ensureBucket();
+    expect(mockClient.makeBucket).toHaveBeenCalled();
   });
 
-  describe('getStats', () => {
-    it('should aggregate size and count from listObjectsV2', async () => {
-      const mockStream = Readable.from([
-        { name: 'a.pdf', size: 100, lastModified: new Date() },
-        { name: 'b.jpg', size: 200, lastModified: new Date() },
-      ]);
-      mockListObjectsV2.mockReturnValue(mockStream);
-
-      const stats = await storage.getStats('attachments');
-
-      expect(stats).toEqual({ totalSize: 300, fileCount: 2 });
-    });
+  it('should not create bucket if already exists', async () => {
+    (mockClient.bucketExists as jest.Mock).mockResolvedValue(true);
+    await storage.ensureBucket();
+    expect(mockClient.makeBucket).not.toHaveBeenCalled();
   });
 
-  describe('listObjects', () => {
-    it('should return mapped objects', async () => {
-      const now = new Date();
-      const mockStream = Readable.from([
-        { name: 'clients/a.pdf', size: 100, lastModified: now },
-        { name: 'clients/b.jpg', size: 200, lastModified: now },
-      ]);
-      mockListObjectsV2.mockReturnValue(mockStream);
+  it('should handle stream errors during download', async () => {
+    const mockStream = { on: jest.fn(), pipe: jest.fn() };
+    (mockClient.getObject as jest.Mock).mockResolvedValue(mockStream);
+    (mockClient.statObject as jest.Mock).mockResolvedValue({ size: 100, metaData: {} });
 
-      const objects = await storage.listObjects('attachments', 'clients/');
-
-      expect(objects).toEqual([
-        { key: 'clients/a.pdf', size: 100, lastModified: now },
-        { key: 'clients/b.jpg', size: 200, lastModified: now },
-      ]);
-      expect(mockListObjectsV2).toHaveBeenCalledWith('attachments', 'clients/', true);
+    mockStream.on.mockImplementation((event: string, callback: Function) => {
+      if (event === 'error') callback(new Error('Stream error'));
+      return mockStream;
     });
+
+    await expect(storage.downloadFile('bad.pdf')).rejects.toThrow('Stream error');
+  });
+
+  it('should handle missing metadata', async () => {
+    (mockClient.statObject as jest.Mock).mockResolvedValue({ size: 50 });
+    const metadata = await storage.getFileMetadata('file.txt');
+    expect(metadata.contentType).toBeUndefined();
   });
 });

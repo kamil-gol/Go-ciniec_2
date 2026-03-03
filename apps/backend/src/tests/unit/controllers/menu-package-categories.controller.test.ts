@@ -1,125 +1,99 @@
-jest.mock('@prisma/client', () => {
-  const _mockFindUnique = jest.fn();
-  return {
-    PrismaClient: jest.fn(() => ({
-      menuPackage: { findUnique: _mockFindUnique },
-    })),
-    __mockFindUnique: _mockFindUnique,
-  };
+/**
+ * MenuPackageCategorySettings Controller — Unit Tests
+ */
+
+jest.mock('../../../services/menu-package-categories.service', () => ({
+  __esModule: true,
+  default: {
+    createOrUpdateSettings: jest.fn(),
+    getSettingsByPackage: jest.fn(),
+    deleteSettings: jest.fn(),
+  },
+}));
+
+jest.mock('../../../utils/AppError', () => {
+  class MockAppError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+    static badRequest(msg: string) { return new MockAppError(msg, 400); }
+    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
+  }
+  return { AppError: MockAppError };
 });
 
-import { getPackageCategories } from '../../../controllers/menu-package-categories.controller';
+import { MenuPackageCategorySettingsController } from '../../../controllers/menu-package-categories.controller';
+import menuPackageCategoriesService from '../../../services/menu-package-categories.service';
 
-const { __mockFindUnique: mockFindUnique } = jest.requireMock<any>('@prisma/client');
-
-function mockReq(params: any = {}): any {
-  return { params };
-}
-
-function mockRes(): any {
+const ctrl = new MenuPackageCategorySettingsController();
+const mockRes = () => {
   const res: any = {};
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
   return res;
-}
+};
 
-beforeEach(() => {
-  jest.clearAllMocks();
-  jest.spyOn(console, 'log').mockImplementation(() => {});
-  jest.spyOn(console, 'error').mockImplementation(() => {});
-});
+describe('MenuPackageCategorySettingsController', () => {
+  beforeEach(() => jest.clearAllMocks());
 
-describe('menu-package-categories.controller', () => {
-  describe('getPackageCategories', () => {
-    it('should return 404 when package not found', async () => {
-      mockFindUnique.mockResolvedValue(null);
-      const req = mockReq({ packageId: 'abc' });
-      const res = mockRes();
-      await getPackageCategories(req, res);
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Nie znaleziono pakietu menu' });
-    });
+  it('should throw badRequest when no packageId', async () => {
+    const req = { body: { category: 'MAIN' }, user: { id: 'u1' } } as any;
+    await expect(ctrl.createOrUpdateSettings(req, mockRes())).rejects.toThrow(/required/);
+  });
 
-    it('should return categories with dishes', async () => {
-      mockFindUnique.mockResolvedValue({
-        id: 'pkg-1',
-        name: 'Pakiet A',
-        categorySettings: [
-          {
-            id: 's-1',
-            categoryId: 'cat-1',
-            category: {
-              name: 'Zupy',
-              slug: 'ZUPY',
-              icon: null,
-              color: null,
-              dishes: [
-                { id: 'd-1', name: 'Pomidorowa', description: null, allergens: [], displayOrder: 0 },
-              ],
-            },
-            minSelect: '1.0',
-            maxSelect: '3.0',
-            isRequired: true,
-            customLabel: null,
-            displayOrder: 0,
-          },
-        ],
-      });
-      const req = mockReq({ packageId: 'pkg-1' });
-      const res = mockRes();
-      await getPackageCategories(req, res);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          packageId: 'pkg-1',
-          packageName: 'Pakiet A',
-          categories: expect.arrayContaining([
-            expect.objectContaining({
-              categoryName: 'Zupy',
-              minSelect: 1,
-              maxSelect: 3,
-              dishes: expect.arrayContaining([
-                expect.objectContaining({ name: 'Pomidorowa' }),
-              ]),
-            }),
-          ]),
-        }),
-      }));
-    });
+  it('should create or update settings', async () => {
+    (menuPackageCategoriesService.createOrUpdateSettings as jest.Mock).mockResolvedValue({ id: '1' });
+    const req = {
+      body: { packageId: 'p1', category: 'MAIN', maxCourses: 3 },
+      user: { id: 'u1' }
+    } as any;
+    const res = mockRes();
+    await ctrl.createOrUpdateSettings(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
 
-    it('should return 500 on error', async () => {
-      mockFindUnique.mockRejectedValue(new Error('DB down'));
-      const req = mockReq({ packageId: 'x' });
-      const res = mockRes();
-      await getPackageCategories(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'DB down' });
-    });
+  it('should get settings by package', async () => {
+    (menuPackageCategoriesService.getSettingsByPackage as jest.Mock).mockResolvedValue([{ id: '1' }]);
+    const req = { params: { packageId: 'p1' } } as any;
+    const res = mockRes();
+    await ctrl.getSettingsByPackage(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
 
-    it('should return 500 with fallback message when error has no message', async () => {
-      mockFindUnique.mockRejectedValue({});
-      const req = mockReq({ packageId: 'x' });
-      const res = mockRes();
-      await getPackageCategories(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Wewnętrzny błąd serwera' });
-    });
+  it('should delete settings when found', async () => {
+    (menuPackageCategoriesService.deleteSettings as jest.Mock).mockResolvedValue(true);
+    const req = { params: { id: '1' }, user: { id: 'u1' } } as any;
+    const res = mockRes();
+    await ctrl.deleteSettings(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
 
-    it('should handle package with empty categorySettings', async () => {
-      mockFindUnique.mockResolvedValue({
-        id: 'pkg-2',
-        name: 'Pakiet Empty',
-        categorySettings: [],
-      });
-      const req = mockReq({ packageId: 'pkg-2' });
-      const res = mockRes();
-      await getPackageCategories(req, res);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          categories: [],
-        }),
-      }));
-    });
+  it('should return 200 when settings not found (already deleted)', async () => {
+    (menuPackageCategoriesService.deleteSettings as jest.Mock).mockResolvedValue(false);
+    const req = { params: { id: 'x' }, user: { id: 'u1' } } as any;
+    const res = mockRes();
+    await ctrl.deleteSettings(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('should throw badRequest when category missing in createOrUpdate', async () => {
+    const req = { body: { packageId: 'p1', maxCourses: 3 }, user: { id: 'u1' } } as any;
+    await expect(ctrl.createOrUpdateSettings(req, mockRes())).rejects.toThrow(/required/);
+  });
+
+  it('should get empty array when no settings', async () => {
+    (menuPackageCategoriesService.getSettingsByPackage as jest.Mock).mockResolvedValue([]);
+    const req = { params: { packageId: 'p-new' } } as any;
+    const res = mockRes();
+    await ctrl.getSettingsByPackage(req, res);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: [] });
+  });
+
+  it('should throw notFound when getSettingsByPackage returns null (coverage line ~105)', async () => {
+    (menuPackageCategoriesService.getSettingsByPackage as jest.Mock).mockResolvedValue(null);
+    const req = { params: { packageId: 'bad' } } as any;
+    await expect(ctrl.getSettingsByPackage(req, mockRes())).rejects.toThrow(/not found/);
   });
 });

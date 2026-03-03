@@ -1,147 +1,102 @@
 /**
- * MenuCourseController — Unit Tests
+ * MenuCourse Controller — Unit Tests
+ * Standard CRUD operations
  */
+
 jest.mock('../../../services/menuCourse.service', () => ({
-  menuCourseService: {
-    listByPackage: jest.fn(),
-    getById: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    assignDishes: jest.fn(),
-    removeDish: jest.fn(),
+  __esModule: true,
+  default: {
+    createCourse: jest.fn(),
+    getCoursesByPackage: jest.fn(),
+    getCourseById: jest.fn(),
+    updateCourse: jest.fn(),
+    deleteCourse: jest.fn(),
+    reorderCourses: jest.fn(),
+    validateCourseCount: jest.fn(),
   },
 }));
 
-jest.mock('../../../validation/menuCourse.validation', () => ({
-  createMenuCourseSchema: { parse: jest.fn((d: any) => d) },
-  updateMenuCourseSchema: { parse: jest.fn((d: any) => d) },
-  assignDishesToCourseSchema: { parse: jest.fn((d: any) => d) },
-}));
+jest.mock('../../../utils/AppError', () => {
+  class MockAppError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+    static badRequest(msg: string) { return new MockAppError(msg, 400); }
+    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
+  }
+  return { AppError: MockAppError };
+});
 
 import { MenuCourseController } from '../../../controllers/menuCourse.controller';
-import { menuCourseService } from '../../../services/menuCourse.service';
+import menuCourseService from '../../../services/menuCourse.service';
 
-const controller = new MenuCourseController();
-const svc = menuCourseService as any;
-
-const req = (overrides: any = {}): any => ({
-  body: {}, params: {}, query: {},
-  ...overrides,
-});
-const res = () => {
-  const r: any = {};
-  r.status = jest.fn().mockReturnValue(r);
-  r.json = jest.fn().mockReturnValue(r);
-  return r;
+const ctrl = new MenuCourseController();
+const mockRes = () => {
+  const res: any = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
 };
-const next = jest.fn();
-
-beforeEach(() => jest.clearAllMocks());
 
 describe('MenuCourseController', () => {
-  describe('listByPackage()', () => {
-    it('should return 200 with courses', async () => {
-      svc.listByPackage.mockResolvedValue([{ id: 'c-1' }]);
-      const response = res();
-      await controller.listByPackage(req({ params: { packageId: 'p-1' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(200);
-      expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ count: 1 }));
-    });
+  beforeEach(() => jest.clearAllMocks());
+
+  it('should create a course', async () => {
+    (menuCourseService.createCourse as jest.Mock).mockResolvedValue({ id: '1', name: 'Soup' });
+    const req = {
+      body: { packageId: 'pkg-1', category: 'APPETIZER', name: 'Soup' },
+      user: { id: 'u1' }
+    } as any;
+    const res = mockRes();
+    await ctrl.createCourse(req, res);
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 
-  describe('getById()', () => {
-    it('should return 200', async () => {
-      svc.getById.mockResolvedValue({ id: 'c-1', name: 'Zupa' });
-      const response = res();
-      await controller.getById(req({ params: { id: 'c-1' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should return 404', async () => {
-      svc.getById.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const response = res();
-      await controller.getById(req({ params: { id: 'x' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(404);
-    });
+  it('should get courses by package', async () => {
+    (menuCourseService.getCoursesByPackage as jest.Mock).mockResolvedValue([{ id: '1' }, { id: '2' }]);
+    const req = { params: { packageId: 'pkg-1' } } as any;
+    const res = mockRes();
+    await ctrl.getCoursesByPackage(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  describe('create()', () => {
-    it('should return 404 when package not found', async () => {
-      svc.create.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
-      const response = res();
-      await controller.create(req({ body: { name: 'C', packageId: 'x' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 201 on success', async () => {
-      svc.create.mockResolvedValue({ id: 'c-new', name: 'Zupa' });
-      const response = res();
-      await controller.create(req({ body: { name: 'Zupa', packageId: 'p-1' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(201);
-    });
+  it('should throw notFound when course not found', async () => {
+    (menuCourseService.getCourseById as jest.Mock).mockResolvedValue(null);
+    const req = { params: { id: 'x' } } as any;
+    await expect(ctrl.getCourseById(req, mockRes())).rejects.toThrow(/not found/);
   });
 
-  describe('update()', () => {
-    it('should return 404', async () => {
-      svc.update.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const response = res();
-      await controller.update(req({ params: { id: 'x' }, body: { name: 'U' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 200', async () => {
-      svc.update.mockResolvedValue({ id: 'c-1' });
-      const response = res();
-      await controller.update(req({ params: { id: 'c-1' }, body: { name: 'Updated' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(200);
-    });
+  it('should update a course', async () => {
+    (menuCourseService.updateCourse as jest.Mock).mockResolvedValue({ id: '1', name: 'Updated' });
+    const req = { params: { id: '1' }, body: { name: 'Updated' }, user: { id: 'u1' } } as any;
+    const res = mockRes();
+    await ctrl.updateCourse(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  describe('delete()', () => {
-    it('should return 404', async () => {
-      svc.delete.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const response = res();
-      await controller.delete(req({ params: { id: 'x' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 200', async () => {
-      svc.delete.mockResolvedValue(undefined);
-      const response = res();
-      await controller.delete(req({ params: { id: 'c-1' } }), response, next);
-      expect(response.status).toHaveBeenCalledWith(200);
-    });
+  it('should delete a course', async () => {
+    (menuCourseService.deleteCourse as jest.Mock).mockResolvedValue(undefined);
+    const req = { params: { id: '1' }, user: { id: 'u1' } } as any;
+    const res = mockRes();
+    await ctrl.deleteCourse(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  describe('assignDishes()', () => {
-    it('should return 200', async () => {
-      svc.assignDishes.mockResolvedValue({ id: 'c-1', dishes: [] });
-      const response = res();
-      await controller.assignDishes(
-        req({ params: { id: 'c-1' }, body: { dishes: [{ dishId: 'd-1' }] } }), response, next
-      );
-      expect(response.status).toHaveBeenCalledWith(200);
-    });
+  it('should reorder courses', async () => {
+    (menuCourseService.reorderCourses as jest.Mock).mockResolvedValue({ success: true });
+    const req = { body: { orders: [{ courseId: '1', displayOrder: 1 }] } } as any;
+    const res = mockRes();
+    await ctrl.reorderCourses(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  describe('removeDish()', () => {
-    it('should return 404 when not assigned', async () => {
-      svc.removeDish.mockRejectedValue(new Error('Dish not assigned to this course'));
-      const response = res();
-      await controller.removeDish(
-        req({ params: { courseId: 'c-1', dishId: 'd-x' } }), response, next
-      );
-      expect(response.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 200', async () => {
-      svc.removeDish.mockResolvedValue(undefined);
-      const response = res();
-      await controller.removeDish(
-        req({ params: { courseId: 'c-1', dishId: 'd-1' } }), response, next
-      );
-      expect(response.status).toHaveBeenCalledWith(200);
-    });
+  it('should validate course count', async () => {
+    (menuCourseService.validateCourseCount as jest.Mock).mockResolvedValue({ valid: true });
+    const req = { params: { packageId: 'pkg-1' } } as any;
+    const res = mockRes();
+    await ctrl.validateCourseCount(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 });

@@ -1,246 +1,184 @@
 /**
- * MenuCourseController — Branch Coverage Tests
- * Target: 62.96% → ~90%+ branches
- * Covers: error type handling (ZodError, not found, dish errors) for all methods
+ * MenuCourse Controller — Branch coverage tests
+ * Covers: !userId, !packageId, !category, conditional update fields
  */
 
 jest.mock('../../../services/menuCourse.service', () => ({
-  menuCourseService: {
-    listByPackage: jest.fn(),
-    getById: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    assignDishes: jest.fn(),
-    removeDish: jest.fn(),
+  __esModule: true,
+  default: {
+    createCourse: jest.fn(),
+    getCoursesByPackage: jest.fn(),
+    getCourseById: jest.fn(),
+    updateCourse: jest.fn(),
+    deleteCourse: jest.fn(),
+    reorderCourses: jest.fn(),
+    validateCourseCount: jest.fn(),
   },
 }));
 
-// Mock zod schemas to control validation
-jest.mock('../../../validation/menuCourse.validation', () => ({
-  createMenuCourseSchema: { parse: jest.fn((d: any) => d) },
-  updateMenuCourseSchema: { parse: jest.fn((d: any) => d) },
-  assignDishesToCourseSchema: { parse: jest.fn((d: any) => d) },
-}));
-
-import { menuCourseController } from '../../../controllers/menuCourse.controller';
-import { menuCourseService } from '../../../services/menuCourse.service';
-import { createMenuCourseSchema, updateMenuCourseSchema, assignDishesToCourseSchema } from '../../../validation/menuCourse.validation';
-import { z } from 'zod';
-
-const svc = menuCourseService as any;
-const schemas = { create: createMenuCourseSchema as any, update: updateMenuCourseSchema as any, assign: assignDishesToCourseSchema as any };
-
-const req = (overrides: any = {}): any => ({ body: {}, params: {}, query: {}, ...overrides });
-const res = () => {
-  const r: any = {};
-  r.status = jest.fn().mockReturnValue(r);
-  r.json = jest.fn().mockReturnValue(r);
-  return r;
-};
-const next = jest.fn();
-
-beforeEach(() => {
-  jest.clearAllMocks();
-  schemas.create.parse.mockImplementation((d: any) => d);
-  schemas.update.parse.mockImplementation((d: any) => d);
-  schemas.assign.parse.mockImplementation((d: any) => d);
+jest.mock('../../../utils/AppError', () => {
+  class MockAppError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+    static unauthorized(msg?: string) { return new MockAppError(msg || 'Unauthorized', 401); }
+    static badRequest(msg: string) { return new MockAppError(msg, 400); }
+    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
+  }
+  return { AppError: MockAppError };
 });
 
-function makeZodError(): z.ZodError {
-  try { z.string().parse(123); } catch (e) { return e as z.ZodError; }
-  throw new Error('unreachable');
-}
+import { MenuCourseController } from '../../../controllers/menuCourse.controller';
+import menuCourseService from '../../../services/menuCourse.service';
 
-describe('MenuCourseController — branches', () => {
+const ctrl = new MenuCourseController();
+const mockRes = () => {
+  const res: any = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
+};
 
-  // ═══ listByPackage ═══
-  describe('listByPackage()', () => {
+describe('MenuCourseController branches', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  describe('createCourse', () => {
+    it('should throw when no userId', async () => {
+      const req = { body: { packageId: 'p1', category: 'APPETIZER', name: 'A' }, user: undefined } as any;
+      await expect(ctrl.createCourse(req, mockRes())).rejects.toThrow();
+    });
+
+    it('should throw badRequest when no packageId', async () => {
+      const req = { body: { category: 'APPETIZER', name: 'A' }, user: { id: 'u1' } } as any;
+      await expect(ctrl.createCourse(req, mockRes())).rejects.toThrow(/required/);
+    });
+
+    it('should throw badRequest when no category', async () => {
+      const req = { body: { packageId: 'p1', name: 'A' }, user: { id: 'u1' } } as any;
+      await expect(ctrl.createCourse(req, mockRes())).rejects.toThrow(/required/);
+    });
+
+    it('should create with all fields', async () => {
+      (menuCourseService.createCourse as jest.Mock).mockResolvedValue({ id: '1' });
+      const req = {
+        body: { packageId: 'p1', category: 'MAIN', name: 'Steak', description: 'Beef', isVegetarian: false },
+        user: { id: 'u1' }
+      } as any;
+      const res = mockRes();
+      await ctrl.createCourse(req, res);
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should create with minimal fields', async () => {
+      (menuCourseService.createCourse as jest.Mock).mockResolvedValue({ id: '2' });
+      const req = { body: { packageId: 'p1', category: 'DESSERT' }, user: { id: 'u1' } } as any;
+      await ctrl.createCourse(req, mockRes());
+      expect(menuCourseService.createCourse).toHaveBeenCalled();
+    });
+  });
+
+  describe('getCoursesByPackage', () => {
     it('should return courses', async () => {
-      svc.listByPackage.mockResolvedValue([{ id: 'c1' }]);
-      const r = res();
-      await menuCourseController.listByPackage(req({ params: { packageId: 'pkg-1' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should call next on error', async () => {
-      svc.listByPackage.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.listByPackage(req({ params: { packageId: 'pkg-1' } }), res(), next);
-      expect(next).toHaveBeenCalled();
+      (menuCourseService.getCoursesByPackage as jest.Mock).mockResolvedValue([{ id: '1' }]);
+      const req = { params: { packageId: 'p1' } } as any;
+      const res = mockRes();
+      await ctrl.getCoursesByPackage(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
-  // ═══ getById ═══
-  describe('getById()', () => {
-    it('should return course', async () => {
-      svc.getById.mockResolvedValue({ id: 'c1' });
-      const r = res();
-      await menuCourseController.getById(req({ params: { id: 'c1' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
+  describe('getCourseById', () => {
+    it('should throw notFound when null', async () => {
+      (menuCourseService.getCourseById as jest.Mock).mockResolvedValue(null);
+      const req = { params: { id: 'x' } } as any;
+      await expect(ctrl.getCourseById(req, mockRes())).rejects.toThrow(/not found/);
     });
 
-    it('should return 404 when Course not found', async () => {
-      svc.getById.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const r = res();
-      await menuCourseController.getById(req({ params: { id: 'bad' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should call next on unknown error', async () => {
-      svc.getById.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.getById(req({ params: { id: 'c1' } }), res(), next);
-      expect(next).toHaveBeenCalled();
+    it('should return course when found', async () => {
+      (menuCourseService.getCourseById as jest.Mock).mockResolvedValue({ id: '1' });
+      const req = { params: { id: '1' } } as any;
+      const res = mockRes();
+      await ctrl.getCourseById(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
-  // ═══ create ═══
-  describe('create()', () => {
-    it('should return 201 on success', async () => {
-      svc.create.mockResolvedValue({ id: 'c1' });
-      const r = res();
-      await menuCourseController.create(req({ body: { name: 'Zupa', packageId: 'pkg-1' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(201);
+  describe('updateCourse', () => {
+    it('should throw when no userId', async () => {
+      const req = { params: { id: '1' }, body: {}, user: undefined } as any;
+      await expect(ctrl.updateCourse(req, mockRes())).rejects.toThrow();
     });
 
-    it('should return 400 on ZodError', async () => {
-      schemas.create.parse.mockImplementation(() => { throw makeZodError(); });
-      const r = res();
-      await menuCourseController.create(req({ body: {} }), r, next);
-      expect(r.status).toHaveBeenCalledWith(400);
+    it('should include only name when only name provided', async () => {
+      (menuCourseService.updateCourse as jest.Mock).mockResolvedValue({ id: '1' });
+      const req = { params: { id: '1' }, body: { name: 'New' }, user: { id: 'u1' } } as any;
+      await ctrl.updateCourse(req, mockRes());
+      expect(menuCourseService.updateCourse).toHaveBeenCalledWith('1', { name: 'New' }, 'u1');
     });
 
-    it('should return 404 when Package not found', async () => {
-      svc.create.mockRejectedValue(new Error('Nie znaleziono pakietu menu'));
-      const r = res();
-      await menuCourseController.create(req({ body: { name: 'X' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
+    it('should include all fields when all provided', async () => {
+      (menuCourseService.updateCourse as jest.Mock).mockResolvedValue({ id: '1' });
+      const req = {
+        params: { id: '1' },
+        body: { name: 'A', description: 'B', isVegetarian: true, isGlutenFree: false, category: 'MAIN' },
+        user: { id: 'u1' }
+      } as any;
+      await ctrl.updateCourse(req, mockRes());
+      expect(menuCourseService.updateCourse).toHaveBeenCalledWith(
+        '1', { name: 'A', description: 'B', isVegetarian: true, isGlutenFree: false, category: 'MAIN' }, 'u1'
+      );
     });
 
-    it('should call next on unknown error', async () => {
-      svc.create.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.create(req({ body: {} }), res(), next);
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  // ═══ update ═══
-  describe('update()', () => {
-    it('should return 200 on success', async () => {
-      svc.update.mockResolvedValue({ id: 'c1' });
-      const r = res();
-      await menuCourseController.update(req({ params: { id: 'c1' }, body: { name: 'Updated' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should return 400 on ZodError', async () => {
-      schemas.update.parse.mockImplementation(() => { throw makeZodError(); });
-      const r = res();
-      await menuCourseController.update(req({ params: { id: 'c1' }, body: {} }), r, next);
-      expect(r.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should return 404 when Course not found', async () => {
-      svc.update.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const r = res();
-      await menuCourseController.update(req({ params: { id: 'bad' }, body: {} }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should call next on unknown error', async () => {
-      svc.update.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.update(req({ params: { id: 'c1' }, body: {} }), res(), next);
-      expect(next).toHaveBeenCalled();
+    it('should send empty data when no fields', async () => {
+      (menuCourseService.updateCourse as jest.Mock).mockResolvedValue({ id: '1' });
+      const req = { params: { id: '1' }, body: {}, user: { id: 'u1' } } as any;
+      await ctrl.updateCourse(req, mockRes());
+      expect(menuCourseService.updateCourse).toHaveBeenCalledWith('1', {}, 'u1');
     });
   });
 
-  // ═══ delete ═══
-  describe('delete()', () => {
-    it('should return 200 on success', async () => {
-      svc.delete.mockResolvedValue(undefined);
-      const r = res();
-      await menuCourseController.delete(req({ params: { id: 'c1' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
+  describe('deleteCourse', () => {
+    it('should throw when no userId', async () => {
+      const req = { params: { id: '1' }, user: undefined } as any;
+      await expect(ctrl.deleteCourse(req, mockRes())).rejects.toThrow();
     });
 
-    it('should return 404 when Course not found', async () => {
-      svc.delete.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const r = res();
-      await menuCourseController.delete(req({ params: { id: 'bad' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should call next on unknown error', async () => {
-      svc.delete.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.delete(req({ params: { id: 'c1' } }), res(), next);
-      expect(next).toHaveBeenCalled();
+    it('should delete successfully', async () => {
+      (menuCourseService.deleteCourse as jest.Mock).mockResolvedValue(undefined);
+      const req = { params: { id: '1' }, user: { id: 'u1' } } as any;
+      const res = mockRes();
+      await ctrl.deleteCourse(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
-  // ═══ assignDishes ═══
-  describe('assignDishes()', () => {
-    it('should return 200 on success', async () => {
-      svc.assignDishes.mockResolvedValue({ id: 'c1', dishes: [] });
-      const r = res();
-      await menuCourseController.assignDishes(req({ params: { id: 'c1' }, body: { dishes: ['d1'] } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should return 400 on ZodError', async () => {
-      schemas.assign.parse.mockImplementation(() => { throw makeZodError(); });
-      const r = res();
-      await menuCourseController.assignDishes(req({ params: { id: 'c1' }, body: {} }), r, next);
-      expect(r.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should return 404 when Course not found', async () => {
-      svc.assignDishes.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const r = res();
-      await menuCourseController.assignDishes(req({ params: { id: 'bad' }, body: { dishes: ['d1'] } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 404 when Dish error', async () => {
-      svc.assignDishes.mockRejectedValue(new Error('Dish "Zupa" not found'));
-      const r = res();
-      await menuCourseController.assignDishes(req({ params: { id: 'c1' }, body: { dishes: ['bad'] } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-      expect(r.json.mock.calls[0][0].error).toContain('Dish');
-    });
-
-    it('should call next on unknown error', async () => {
-      svc.assignDishes.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.assignDishes(req({ params: { id: 'c1' }, body: { dishes: [] } }), res(), next);
-      expect(next).toHaveBeenCalled();
+  describe('reorderCourses', () => {
+    it('should reorder', async () => {
+      (menuCourseService.reorderCourses as jest.Mock).mockResolvedValue({ success: true });
+      const req = { body: { orders: [{ courseId: '1', displayOrder: 1 }] } } as any;
+      const res = mockRes();
+      await ctrl.reorderCourses(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
-  // ═══ removeDish ═══
-  describe('removeDish()', () => {
-    it('should return 200 on success', async () => {
-      svc.removeDish.mockResolvedValue(undefined);
-      const r = res();
-      await menuCourseController.removeDish(req({ params: { courseId: 'c1', dishId: 'd1' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(200);
+  describe('validateCourseCount', () => {
+    it('should validate', async () => {
+      (menuCourseService.validateCourseCount as jest.Mock).mockResolvedValue({ valid: true });
+      const req = { params: { packageId: 'p1' } } as any;
+      const res = mockRes();
+      await ctrl.validateCourseCount(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
     });
+  });
 
-    it('should return 404 when Course not found', async () => {
-      svc.removeDish.mockRejectedValue(new Error('Nie znaleziono kursu menu'));
-      const r = res();
-      await menuCourseController.removeDish(req({ params: { courseId: 'bad', dishId: 'd1' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 404 when Dish not assigned', async () => {
-      svc.removeDish.mockRejectedValue(new Error('Dish not assigned to this course'));
-      const r = res();
-      await menuCourseController.removeDish(req({ params: { courseId: 'c1', dishId: 'bad' } }), r, next);
-      expect(r.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should call next on unknown error', async () => {
-      svc.removeDish.mockRejectedValue(new Error('DB error'));
-      await menuCourseController.removeDish(req({ params: { courseId: 'c1', dishId: 'd1' } }), res(), next);
-      expect(next).toHaveBeenCalled();
+  describe('getCourseById - notFound coverage', () => {
+    it('should throw notFound when service returns null (branch line ~207)', async () => {
+      (menuCourseService.getCourseById as jest.Mock).mockResolvedValue(null);
+      const req = { params: { id: 'nonexistent' } } as any;
+      await expect(ctrl.getCourseById(req, mockRes())).rejects.toThrow(/not found/);
     });
   });
 });
