@@ -67,6 +67,7 @@ describe('errorHandler', () => {
     it('should format validation error details', () => {
       const error = {
         name: 'ValidationError',
+        message: '',
         errors: [
           { field: 'email', message: 'Invalid email format' },
           { field: 'password', message: 'Password too short' },
@@ -75,7 +76,7 @@ describe('errorHandler', () => {
       const req = { method: 'POST', path: '/api/users' } as Request;
       const res = mockRes();
 
-      errorHandler(error, req as Request, res as Response, mockNext as NextFunction);
+      errorHandler(error as unknown as Error, req as Request, res as Response, mockNext as NextFunction);
 
       // ValidationError should be treated as generic error (500) unless explicitly handled
       expect(res.status).toHaveBeenCalledWith(500);
