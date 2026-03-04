@@ -23,8 +23,9 @@ import type {
   CreateOrderExtraInput,
 } from '@/types/catering-order.types';
 import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
+import { PackageCards } from './PackageCards';
 
-// ─── Typy stanu formularza ─────────────────────────────────────
+// ─── Typy stanu formularza ────────────────────────────────
 
 interface WizardState {
   // Krok 1 — klient
@@ -134,7 +135,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
   };
 
   const selectedTemplate = templates?.find(t => t.id === state.templateId);
-  // Narrowed: packages jest defined i niepuste
   const templatePackages =
     selectedTemplate && Array.isArray(selectedTemplate.packages) && selectedTemplate.packages.length > 0
       ? selectedTemplate.packages as { id: string; name: string; basePrice: number }[]
@@ -261,7 +261,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
           {/* KROK 2 — Szablon / Pakiet */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="space-y-1.5">
                 <Label>Szablon cateringu (opcjonalnie)</Label>
                 <Select
@@ -281,25 +281,26 @@ export function NewOrderWizard({ onSuccess }: Props) {
               </div>
 
               {templatePackages && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Pakiet (opcjonalnie)</Label>
-                  <Select
-                    value={state.packageId || 'NONE'}
-                    onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wybierz pakiet" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NONE">— Bez pakietu —</SelectItem>
-                      {templatePackages.map(p => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} — {new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(p.basePrice)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <PackageCards
+                    packages={templatePackages}
+                    selectedId={state.packageId}
+                    onSelect={id => set({ packageId: id })}
+                  />
                 </div>
+              )}
+
+              {!templatePackages && state.templateId && (
+                <p className="text-sm text-muted-foreground">
+                  Wybrany szablon nie ma zdefiniowanych pakietów.
+                </p>
+              )}
+
+              {!state.templateId && (
+                <p className="text-sm text-muted-foreground">
+                  Wybierz szablon, aby zobaczyć dostępne pakiety.
+                </p>
               )}
             </div>
           )}
