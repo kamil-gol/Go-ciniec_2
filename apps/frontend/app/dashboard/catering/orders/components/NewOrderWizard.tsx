@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCreateCateringOrder } from '@/hooks/use-catering-orders';
 import { useCateringTemplates } from '@/hooks/use-catering';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Stepper, StepNavigation } from '@/components/ui/stepper';
+import type { StepConfig } from '@/components/ui/stepper';
 import {
   Select,
   SelectContent,
@@ -14,14 +18,80 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, ChevronRight, ChevronLeft, Check, Plus, Trash2 } from 'lucide-react';
+import {
+  User,
+  CalendarDays,
+  BookOpen,
+  Package,
+  Truck,
+  ClipboardCheck,
+  Loader2,
+  Plus,
+  Trash2,
+  Check,
+} from 'lucide-react';
 import type {
   CateringDeliveryType,
   CreateOrderItemInput,
   CreateOrderExtraInput,
 } from '@/types/catering-order.types';
 import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
+
+// ═══ STEP CONFIGURATION ═══
+
+const STEPS: StepConfig[] = [
+  { id: 'client',   title: 'Klient',           icon: User },
+  { id: 'event',    title: 'Szczegóły',         icon: CalendarDays },
+  { id: 'template', title: 'Szablon / Pakiet',  icon: BookOpen },
+  { id: 'items',    title: 'Dania i Extras',    icon: Package },
+  { id: 'logistics',title: 'Logistyka',         icon: Truck },
+  { id: 'summary',  title: 'Podsumowanie',      icon: ClipboardCheck },
+];
+
+// ═══ STEP HEADERS ═══
+
+const STEP_META = [
+  {
+    gradient: 'from-indigo-500 to-violet-500',
+    title: 'Wybierz klienta',
+    subtitle: 'Wyszukaj istniejącego klienta lub dodaj nowego',
+  },
+  {
+    gradient: 'from-orange-500 to-amber-500',
+    title: 'Szczegóły zamówienia',
+    subtitle: 'Podaj okazję, datę, miejsce i liczbę gości',
+  },
+  {
+    gradient: 'from-blue-500 to-cyan-500',
+    title: 'Szablon i pakiet',
+    subtitle: 'Opcjonalnie wybierz gotowy szablon cateringu',
+  },
+  {
+    gradient: 'from-green-500 to-emerald-500',
+    title: 'Dania i usługi dodatkowe',
+    subtitle: 'Dodaj pozycje menu i extra usługi do zamówienia',
+  },
+  {
+    gradient: 'from-rose-500 to-pink-500',
+    title: 'Logistyka dostawy',
+    subtitle: 'Określ sposób dostarczenia zamówienia',
+  },
+  {
+    gradient: 'from-teal-500 to-green-500',
+    title: 'Sprawdź i utwórz',
+    subtitle: 'Uzupełnij dane kontaktowe i przejrzyj zamówienie',
+  },
+];
+
+// ═══ ANIMATION VARIANTS ═══
+
+const stepVariants = {
+  enter: { opacity: 0, x: 30 },
+  center: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -30 },
+};
+
+// ═══ STATE ═══
 
 interface WizardState {
   clientId: string;
@@ -71,14 +141,17 @@ const INITIAL: WizardState = {
   specialRequirements: '',
 };
 
-const STEPS = ['Klient', 'Wydarzenie', 'Szablon / Pakiet', 'Dania i Extras', 'Logistyka', 'Podsumowanie'];
+// ═══ PROPS ═══
 
 interface Props {
   onSuccess: (id: string) => void;
 }
 
+// ═══ COMPONENT ═══
+
 export function NewOrderWizard({ onSuccess }: Props) {
   const [step, setStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [state, setState] = useState<WizardState>(INITIAL);
   const [clientSearch, setClientSearch] = useState('');
   const [clients, setClients] = useState<{ id: string; label: string }[]>([]);
@@ -87,7 +160,10 @@ export function NewOrderWizard({ onSuccess }: Props) {
   const { data: templates } = useCateringTemplates(false);
   const createOrder = useCreateCateringOrder();
 
-  const set = (partial: Partial<WizardState>) => setState(prev => ({ ...prev, ...partial }));
+  const set = useCallback((partial: Partial<WizardState>) =>
+    setState(prev => ({ ...prev, ...partial })), []);
+
+  // ─── Client search ───
 
   const searchClients = async () => {
     if (!clientSearch.trim()) return;
@@ -99,7 +175,10 @@ export function NewOrderWizard({ onSuccess }: Props) {
       setClients(
         data.map((c: { id: string; firstName: string; lastName: string; companyName?: string; clientType: string }) => ({
           id: c.id,
-          label: c.clientType === 'COMPANY' && c.companyName ? c.companyName : `${c.firstName} ${c.lastName}`,
+          label:
+            c.clientType === 'COMPANY' && c.companyName
+              ? c.companyName
+              : `${c.firstName} ${c.lastName}`,
         }))
       );
     } finally {
@@ -107,11 +186,36 @@ export function NewOrderWizard({ onSuccess }: Props) {
     }
   };
 
+  // ─── Templates / Packages ───
+
   const selectedTemplate = templates?.find(t => t.id === state.templateId);
   const templatePackages =
-    selectedTemplate && Array.isArray(selectedTemplate.packages) && selectedTemplate.packages.length > 0
-      ? selectedTemplate.packages as { id: string; name: string; basePrice: number }[]
+    selectedTemplate &&
+    Array.isArray(selectedTemplate.packages) &&
+    selectedTemplate.packages.length > 0
+      ? (selectedTemplate.packages as { id: string; name: string; basePrice: number }[])
       : null;
+
+  // ─── Navigation ───
+
+  const goToNextStep = useCallback(() => {
+    setCompletedSteps(prev => new Set([...prev, step]));
+    setStep(s => Math.min(s + 1, STEPS.length - 1));
+  }, [step]);
+
+  const goToPrevStep = useCallback(() => {
+    setStep(s => Math.max(s - 1, 0));
+  }, []);
+
+  const goToStep = useCallback((index: number) => {
+    if (index <= step || completedSteps.has(index - 1)) {
+      setStep(index);
+    }
+  }, [step, completedSteps]);
+
+  const isNextDisabled = step === 0 && !state.clientId;
+
+  // ─── Submit ───
 
   const handleSubmit = async () => {
     const order = await createOrder.mutateAsync({
@@ -139,238 +243,560 @@ export function NewOrderWizard({ onSuccess }: Props) {
     onSuccess(order.id);
   };
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-1">
-        {STEPS.map((label, i) => (
-          <div key={i} className="flex items-center gap-1">
-            <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold transition-colors ${
-              i < step ? 'bg-primary text-primary-foreground' : i === step ? 'bg-primary text-primary-foreground ring-2 ring-primary/30' : 'bg-muted text-muted-foreground'
-            }`}>
-              {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
-            </div>
-            {i < STEPS.length - 1 && <div className={`h-0.5 w-8 ${i < step ? 'bg-primary' : 'bg-muted'}`} />}
-          </div>
-        ))}
-        <span className="ml-3 text-sm font-medium">{STEPS[step]}</span>
+  // ═════════════════════════════════════════════
+  // STEP RENDERERS
+  // ═════════════════════════════════════════════
+
+  const renderStepHeader = (stepIndex: number) => {
+    const meta = STEP_META[stepIndex];
+    const StepIcon = STEPS[stepIndex].icon;
+    return (
+      <div className="text-center mb-6">
+        <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br ${meta.gradient} text-white mb-3`}>
+          <StepIcon className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{meta.title}</h2>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{meta.subtitle}</p>
       </div>
+    );
+  };
 
-      <Card>
-        <CardContent className="pt-6">
-          {step === 0 && (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Szukaj klienta (imię, nazwisko, firma)..."
-                  value={clientSearch}
-                  onChange={e => setClientSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && searchClients()}
-                />
-                <Button variant="outline" onClick={searchClients} disabled={clientSearching}>
-                  {clientSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Szukaj'}
-                </Button>
-              </div>
-              {clients.length > 0 && (
-                <div className="border rounded-md divide-y">
-                  {clients.map(c => (
-                    <button
-                      key={c.id}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors ${state.clientId === c.id ? 'bg-primary/10 font-medium' : ''}`}
-                      onClick={() => set({ clientId: c.id, clientName: c.label })}
-                    >
-                      {c.label}
-                      {state.clientId === c.id && <Check className="inline ml-2 h-3.5 w-3.5 text-primary" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {state.clientName && <p className="text-sm text-green-600 font-medium">Wybrany: {state.clientName}</p>}
-            </div>
-          )}
+  // ─── Step 0: Klient ───
 
-          {step === 1 && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-1.5">
-                <Label>Nazwa wydarzenia</Label>
-                <Input value={state.eventName} onChange={e => set({ eventName: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Data</Label>
-                <Input type="date" value={state.eventDate} onChange={e => set({ eventDate: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Godzina</Label>
-                <Input type="time" value={state.eventTime} onChange={e => set({ eventTime: e.target.value })} />
-              </div>
-              <div className="col-span-2 space-y-1.5">
-                <Label>Miejsce</Label>
-                <Input value={state.eventLocation} onChange={e => set({ eventLocation: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Liczba gości</Label>
-                <Input type="number" min={0} value={state.guestsCount} onChange={e => set({ guestsCount: e.target.value })} />
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Szablon cateringu (opcjonalnie)</Label>
-                <Select value={state.templateId || 'NONE'} onValueChange={v => set({ templateId: v === 'NONE' ? '' : v, packageId: '' })}>
-                  <SelectTrigger><SelectValue placeholder="Wybierz szablon" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">— Bez szablonu —</SelectItem>
-                    {templates?.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {templatePackages && (
-                <div className="space-y-1.5">
-                  <Label>Pakiet (opcjonalnie)</Label>
-                  <Select value={state.packageId || 'NONE'} onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}>
-                    <SelectTrigger><SelectValue placeholder="Wybierz pakiet" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NONE">— Bez pakietu —</SelectItem>
-                      {templatePackages.map(p => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} — {new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(p.basePrice)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base">Dania</Label>
-                  <Button size="sm" variant="outline" onClick={() => set({ items: [...state.items, { dishId: '', quantity: 1, unitPrice: 0 }] })}>
-                    <Plus className="mr-1 h-3 w-3" /> Dodaj danie
-                  </Button>
-                </div>
-                {state.items.map((item, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <Input placeholder="UUID dania" value={item.dishId} onChange={e => { const items = [...state.items]; items[i] = { ...items[i], dishId: e.target.value }; set({ items }); }} className="flex-1" />
-                    <Input type="number" min={1} placeholder="Ilość" value={item.quantity} onChange={e => { const items = [...state.items]; items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ items }); }} className="w-20" />
-                    <Input type="number" min={0} step="0.01" placeholder="Cena" value={item.unitPrice} onChange={e => { const items = [...state.items]; items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ items }); }} className="w-28" />
-                    <Button size="icon" variant="ghost" onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                ))}
-                {state.items.length === 0 && <p className="text-sm text-muted-foreground">Brak dań — możesz dodać je później</p>}
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base">Usługi dodatkowe</Label>
-                  <Button size="sm" variant="outline" onClick={() => set({ extras: [...state.extras, { name: '', quantity: 1, unitPrice: 0 }] })}>
-                    <Plus className="mr-1 h-3 w-3" /> Dodaj
-                  </Button>
-                </div>
-                {state.extras.map((extra, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <Input placeholder="Nazwa usługi" value={extra.name} onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], name: e.target.value }; set({ extras }); }} className="flex-1" />
-                    <Input type="number" min={1} placeholder="Ilość" value={extra.quantity} onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ extras }); }} className="w-20" />
-                    <Input type="number" min={0} step="0.01" placeholder="Cena" value={extra.unitPrice} onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ extras }); }} className="w-28" />
-                    <Button size="icon" variant="ghost" onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-1.5">
-                <Label>Typ dostawy</Label>
-                <Select value={state.deliveryType} onValueChange={v => set({ deliveryType: v as CateringDeliveryType })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.entries(DELIVERY_TYPE_LABEL) as [CateringDeliveryType, string][]).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {state.deliveryType === 'DELIVERY' && (
-                <>
-                  <div className="col-span-2 space-y-1.5">
-                    <Label>Adres dostawy</Label>
-                    <Textarea value={state.deliveryAddress} onChange={e => set({ deliveryAddress: e.target.value })} rows={2} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Data dostawy</Label>
-                    <Input type="date" value={state.deliveryDate} onChange={e => set({ deliveryDate: e.target.value })} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Godzina dostawy</Label>
-                    <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} />
-                  </div>
-                </>
-              )}
-              <div className="col-span-2 space-y-1.5">
-                <Label>Uwagi do logistyki</Label>
-                <Textarea value={state.deliveryNotes} onChange={e => set({ deliveryNotes: e.target.value })} rows={2} />
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Osoba kontaktowa</Label>
-                  <Input placeholder="Imię i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Telefon kontaktowy</Label>
-                  <Input placeholder="+48..." value={state.contactPhone} onChange={e => set({ contactPhone: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>E-mail kontaktowy</Label>
-                  <Input type="email" value={state.contactEmail} onChange={e => set({ contactEmail: e.target.value })} />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Uwagi</Label>
-                  <Textarea rows={3} value={state.notes} onChange={e => set({ notes: e.target.value })} />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Specjalne wymagania</Label>
-                  <Textarea rows={2} value={state.specialRequirements} onChange={e => set({ specialRequirements: e.target.value })} />
-                </div>
-              </div>
-              <div className="border rounded-md p-4 space-y-2 bg-muted/30">
-                <p className="font-semibold">Podsumowanie</p>
-                <p><span className="text-muted-foreground">Klient:</span> {state.clientName || '—'}</p>
-                <p><span className="text-muted-foreground">Wydarzenie:</span> {state.eventName || '—'} {state.eventDate && `(${state.eventDate})`}</p>
-                <p><span className="text-muted-foreground">Goście:</span> {state.guestsCount}</p>
-                <p><span className="text-muted-foreground">Typ dostawy:</span> {DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
-                <p><span className="text-muted-foreground">Dania:</span> {state.items.length} pozycji</p>
-                <p><span className="text-muted-foreground">Extras:</span> {state.extras.length} pozycji</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
-          <ChevronLeft className="mr-1 h-4 w-4" /> Wstecz
-        </Button>
-        {step < STEPS.length - 1 ? (
-          <Button onClick={() => setStep(s => s + 1)} disabled={step === 0 && !state.clientId}>
-            Dalej <ChevronRight className="ml-1 h-4 w-4" />
+  const renderStep0 = () => (
+    <div className="space-y-6">
+      {renderStepHeader(0)}
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Szukaj klienta (imię, nazwisko, firma)..."
+            value={clientSearch}
+            onChange={e => setClientSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && searchClients()}
+            className="h-11"
+          />
+          <Button variant="outline" onClick={searchClients} disabled={clientSearching} className="h-11 px-4">
+            {clientSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Szukaj'}
           </Button>
-        ) : (
-          <Button onClick={handleSubmit} disabled={createOrder.isPending || !state.clientId}>
-            {createOrder.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Utwórz zamówienie
-          </Button>
+        </div>
+
+        {clients.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-800"
+          >
+            {clients.map(c => (
+              <button
+                key={c.id}
+                className={`w-full text-left px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between ${
+                  state.clientId === c.id
+                    ? 'bg-primary-50 dark:bg-primary-900/20 font-medium text-primary-700 dark:text-primary-300'
+                    : 'text-neutral-700 dark:text-neutral-300'
+                }`}
+                onClick={() => set({ clientId: c.id, clientName: c.label })}
+              >
+                <span>{c.label}</span>
+                {state.clientId === c.id && <Check className="h-4 w-4 text-primary-600 dark:text-primary-400" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+
+        {state.clientName && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3"
+          >
+            <div className="w-9 h-9 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center">
+              <User className="w-4 h-4 text-green-700 dark:text-green-300" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-green-900 dark:text-green-100">{state.clientName}</p>
+              <p className="text-xs text-green-700 dark:text-green-300">Klient wybrany</p>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
+  );
+
+  // ─── Step 1: Szczegóły ───
+
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      {renderStepHeader(1)}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2 space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Okazja / cel zamówienia</Label>
+          <Input
+            placeholder="np. Komunia, impreza firmowa, urodziny..."
+            value={state.eventName}
+            onChange={e => set({ eventName: e.target.value })}
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data</Label>
+          <Input
+            type="date"
+            value={state.eventDate}
+            onChange={e => set({ eventDate: e.target.value })}
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Godzina</Label>
+          <Input
+            type="time"
+            value={state.eventTime}
+            onChange={e => set({ eventTime: e.target.value })}
+            className="h-11"
+          />
+        </div>
+        <div className="md:col-span-2 space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Miejsce</Label>
+          <Input
+            placeholder="Adres lub nazwa miejsca..."
+            value={state.eventLocation}
+            onChange={e => set({ eventLocation: e.target.value })}
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Liczba gości</Label>
+          <Input
+            type="number"
+            min={0}
+            value={state.guestsCount}
+            onChange={e => set({ guestsCount: e.target.value })}
+            className="h-11"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── Step 2: Szablon / Pakiet ───
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      {renderStepHeader(2)}
+
+      <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">1</div>
+          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Szablon cateringu</Label>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">(opcjonalnie)</span>
+        </div>
+        <Select
+          value={state.templateId || 'NONE'}
+          onValueChange={v => set({ templateId: v === 'NONE' ? '' : v, packageId: '' })}
+        >
+          <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+            <SelectValue placeholder="Wybierz szablon" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="NONE">— Bez szablonu —</SelectItem>
+            {templates?.map(t => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {templatePackages && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">2</div>
+            <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Pakiet cenowy</Label>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">(opcjonalnie)</span>
+          </div>
+          <Select
+            value={state.packageId || 'NONE'}
+            onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}
+          >
+            <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+              <SelectValue placeholder="Wybierz pakiet" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NONE">— Bez pakietu —</SelectItem>
+              {templatePackages.map(p => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name} —{' '}
+                  {new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(p.basePrice)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </motion.div>
+      )}
+
+      {!state.templateId && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
+          Możesz pominąć ten krok — szablon i pakiet nie są wymagane.
+        </p>
+      )}
+    </div>
+  );
+
+  // ─── Step 3: Dania i Extras ───
+
+  const renderStep3 = () => (
+    <div className="space-y-6">
+      {renderStepHeader(3)}
+
+      {/* Dania */}
+      <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dania</Label>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => set({ items: [...state.items, { dishId: '', quantity: 1, unitPrice: 0 }] })}
+          >
+            <Plus className="mr-1 h-3 w-3" /> Dodaj danie
+          </Button>
+        </div>
+        {state.items.map((item, i) => (
+          <div key={i} className="flex gap-2 items-start">
+            <Input
+              placeholder="UUID dania"
+              value={item.dishId}
+              onChange={e => {
+                const items = [...state.items];
+                items[i] = { ...items[i], dishId: e.target.value };
+                set({ items });
+              }}
+              className="flex-1 h-9"
+            />
+            <Input
+              type="number" min={1} placeholder="Ilość"
+              value={item.quantity}
+              onChange={e => {
+                const items = [...state.items];
+                items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
+                set({ items });
+              }}
+              className="w-20 h-9"
+            />
+            <Input
+              type="number" min={0} step="0.01" placeholder="Cena"
+              value={item.unitPrice}
+              onChange={e => {
+                const items = [...state.items];
+                items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
+                set({ items });
+              }}
+              className="w-28 h-9"
+            />
+            <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ))}
+        {state.items.length === 0 && (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak dań — możesz dodać je później</p>
+        )}
+      </div>
+
+      {/* Extras */}
+      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</Label>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => set({ extras: [...state.extras, { name: '', quantity: 1, unitPrice: 0 }] })}
+          >
+            <Plus className="mr-1 h-3 w-3" /> Dodaj
+          </Button>
+        </div>
+        {state.extras.map((extra, i) => (
+          <div key={i} className="flex gap-2 items-start">
+            <Input
+              placeholder="Nazwa usługi"
+              value={extra.name}
+              onChange={e => {
+                const extras = [...state.extras];
+                extras[i] = { ...extras[i], name: e.target.value };
+                set({ extras });
+              }}
+              className="flex-1 h-9"
+            />
+            <Input
+              type="number" min={1} placeholder="Ilość"
+              value={extra.quantity}
+              onChange={e => {
+                const extras = [...state.extras];
+                extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
+                set({ extras });
+              }}
+              className="w-20 h-9"
+            />
+            <Input
+              type="number" min={0} step="0.01" placeholder="Cena"
+              value={extra.unitPrice}
+              onChange={e => {
+                const extras = [...state.extras];
+                extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
+                set({ extras });
+              }}
+              className="w-28 h-9"
+            />
+            <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ))}
+        {state.extras.length === 0 && (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak usług dodatkowych</p>
+        )}
+      </div>
+    </div>
+  );
+
+  // ─── Step 4: Logistyka ───
+
+  const renderStep4 = () => (
+    <div className="space-y-6">
+      {renderStepHeader(4)}
+
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ dostawy</Label>
+        <Select
+          value={state.deliveryType}
+          onValueChange={v => set({ deliveryType: v as CateringDeliveryType })}
+        >
+          <SelectTrigger className="h-11">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.entries(DELIVERY_TYPE_LABEL) as [CateringDeliveryType, string][]).map(([v, l]) => (
+              <SelectItem key={v} value={v}>{l}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {state.deliveryType === 'DELIVERY' && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+          className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-4"
+        >
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Adres dostawy</Label>
+            <Textarea
+              value={state.deliveryAddress}
+              onChange={e => set({ deliveryAddress: e.target.value })}
+              rows={2}
+              placeholder="Ulica, nr, miasto..."
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data dostawy</Label>
+              <Input type="date" value={state.deliveryDate} onChange={e => set({ deliveryDate: e.target.value })} className="h-11" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Godzina dostawy</Label>
+              <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11" />
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Uwagi do logistyki</Label>
+        <Textarea
+          value={state.deliveryNotes}
+          onChange={e => set({ deliveryNotes: e.target.value })}
+          rows={2}
+          placeholder="Dodatkowe instrukcje..."
+        />
+      </div>
+    </div>
+  );
+
+  // ─── Step 5: Podsumowanie ───
+
+  const renderStep5 = () => (
+    <div className="space-y-6">
+      {renderStepHeader(5)}
+
+      {/* Dane kontaktowe */}
+      <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
+        <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2 space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Osoba kontaktowa</Label>
+            <Input
+              placeholder="Imię i nazwisko"
+              value={state.contactName}
+              onChange={e => set({ contactName: e.target.value })}
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Telefon kontaktowy</Label>
+            <Input
+              placeholder="+48..."
+              value={state.contactPhone}
+              onChange={e => set({ contactPhone: e.target.value })}
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">E-mail kontaktowy</Label>
+            <Input
+              type="email"
+              value={state.contactEmail}
+              onChange={e => set({ contactEmail: e.target.value })}
+              className="h-11"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Uwagi */}
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Uwagi</Label>
+          <Textarea rows={3} value={state.notes} onChange={e => set({ notes: e.target.value })} placeholder="Dodatkowe informacje..." />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Specjalne wymagania</Label>
+          <Textarea rows={2} value={state.specialRequirements} onChange={e => set({ specialRequirements: e.target.value })} placeholder="np. alergie, dieta bezglutenowa..." />
+        </div>
+      </div>
+
+      {/* Karta podsumowania */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
+          onClick={() => goToStep(0)}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Klient</span>
+          </div>
+          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.clientName || '—'}</p>
+        </div>
+
+        <div
+          className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 dark:hover:border-orange-600 transition-colors"
+          onClick={() => goToStep(1)}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <CalendarDays className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase">Szczegóły</span>
+          </div>
+          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '—'}</p>
+          {state.eventDate && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {new Date(state.eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {state.eventTime && ` · ${state.eventTime}`}
+            </p>
+          )}
+          {state.guestsCount && parseInt(state.guestsCount) > 0 && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} gości</p>
+          )}
+        </div>
+
+        <div
+          className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors"
+          onClick={() => goToStep(3)}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase">Menu</span>
+          </div>
+          <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+            {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'dań'}
+          </p>
+          {state.extras.length > 0 && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} usług dodatkowych</p>
+          )}
+        </div>
+
+        <div
+          className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 transition-colors"
+          onClick={() => goToStep(4)}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
+          </div>
+          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
+          {state.deliveryAddress && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{state.deliveryAddress}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const stepRenderers = [
+    renderStep0,
+    renderStep1,
+    renderStep2,
+    renderStep3,
+    renderStep4,
+    renderStep5,
+  ];
+
+  // ═══ RENDER ═══
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-b border-neutral-200 dark:border-neutral-700">
+          <CardTitle className="text-xl">Nowe zamówienie cateringowe</CardTitle>
+        </CardHeader>
+
+        <CardContent className="pt-6">
+          <Stepper
+            steps={STEPS}
+            currentStep={step}
+            completedSteps={completedSteps}
+            onStepClick={goToStep}
+            className="mb-8"
+          />
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`step-${step}`}
+              variants={stepVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+            >
+              {stepRenderers[step]()}
+            </motion.div>
+          </AnimatePresence>
+
+          <StepNavigation
+            currentStep={step}
+            totalSteps={STEPS.length}
+            onNext={goToNextStep}
+            onPrev={goToPrevStep}
+            onSubmit={handleSubmit}
+            isNextDisabled={isNextDisabled}
+            isSubmitting={createOrder.isPending}
+            submitLabel="Utwórz zamówienie"
+            className="mt-8"
+          />
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
