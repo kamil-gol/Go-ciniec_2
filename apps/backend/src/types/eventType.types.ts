@@ -1,6 +1,7 @@
 /**
  * EventType Types
  * Types and interfaces for event type management
+ * Updated: fix/ts-errors — standardHours/extraHourRate nullable (Prisma Decimal | null)
  */
 
 export interface CreateEventTypeDTO {
@@ -27,8 +28,8 @@ export interface EventTypeResponse {
   description: string | null;
   color: string | null;
   isActive: boolean;
-  standardHours: number;
-  extraHourRate: number;
+  standardHours: number | null;  // fix: Prisma returns number | null
+  extraHourRate: number | null;  // fix: Prisma returns Decimal | null → serialized as number | null
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,8 +39,8 @@ export interface EventTypeStatsResponse {
   name: string;
   color: string | null;
   isActive: boolean;
-  standardHours: number;
-  extraHourRate: number;
+  standardHours: number | null;  // fix: Prisma returns number | null
+  extraHourRate: number | null;  // fix: Prisma returns Decimal | null → serialized as number | null
   reservationCount: number;
   menuTemplateCount: number;
 }

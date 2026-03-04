@@ -5,6 +5,7 @@
  * Updated: #137 — Venue surcharge fields
  * Updated: #144 — ARCHIVED status support
  * Updated: Etap 5 — internalNotes field (excluded from PDF)
+ * Updated: fix/ts-errors — eventTypeId in ReservationFilters, menuPackageId in UpdateReservationDTO
  */
 
 export enum ReservationStatus {
@@ -86,6 +87,7 @@ export interface UpdateReservationDTO {
   internalNotes?: string;  // Etap 5: Notatka wewnętrzna — NIE pojawia się w PDF
   confirmationDeadline?: string;
   reason?: string;
+  menuPackageId?: string | null;  // fix: used in updateReservation to delegate to updateReservationMenu
   // Discount fields (Sprint 7)
   discountType?: string;
   discountValue?: number;
@@ -103,6 +105,7 @@ export interface ReservationFilters {
   status?: ReservationStatus;
   hallId?: string;
   clientId?: string;
+  eventTypeId?: string;  // fix: used in getReservations + controller filter
   dateFrom?: string;
   dateTo?: string;
   archived?: boolean;
