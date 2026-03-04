@@ -29,7 +29,7 @@ import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 interface WizardState {
   // Krok 1 — klient
   clientId: string;
-  clientName: string; // tylko do wyświetlenia
+  clientName: string;
   // Krok 2 — wydarzenie
   eventName: string;
   eventDate: string;
@@ -39,7 +39,7 @@ interface WizardState {
   // Krok 3 — szablon / pakiet
   templateId: string;
   packageId: string;
-  // Krok 4 — dania (uproszczony ręczny wpis)
+  // Krok 4 — dania
   items: CreateOrderItemInput[];
   extras: CreateOrderExtraInput[];
   // Krok 5 — logistyka
@@ -89,8 +89,6 @@ const STEPS = [
   'Podsumowanie',
 ];
 
-// ─── Komponent główny ─────────────────────────────────────────
-
 interface Props {
   onSuccess: (id: string) => void;
 }
@@ -108,7 +106,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
   const set = (partial: Partial<WizardState>) =>
     setState(prev => ({ ...prev, ...partial }));
 
-  // Wyszukiwanie klientów przez API
   const searchClients = async () => {
     if (!clientSearch.trim()) return;
     setClientSearching(true);
@@ -136,10 +133,13 @@ export function NewOrderWizard({ onSuccess }: Props) {
     }
   };
 
-  // Wybrany szablon → dostępne pakiety
   const selectedTemplate = templates?.find(t => t.id === state.templateId);
+  // Narrowed: packages jest defined i niepuste
+  const templatePackages =
+    selectedTemplate && Array.isArray(selectedTemplate.packages) && selectedTemplate.packages.length > 0
+      ? selectedTemplate.packages as { id: string; name: string; basePrice: number }[]
+      : null;
 
-  // ─── Submit ───────────────────────────────────────────────────
   const handleSubmit = async () => {
     const order = await createOrder.mutateAsync({
       clientId: state.clientId,
@@ -166,7 +166,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
     onSuccess(order.id);
   };
 
-  // ─── Render ───────────────────────────────────────────────────
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Stepper */}
@@ -194,7 +193,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
         <span className="ml-3 text-sm font-medium">{STEPS[step]}</span>
       </div>
 
-      {/* Kroki */}
       <Card>
         <CardContent className="pt-6">
           {/* KROK 0 — Klient */}
@@ -282,7 +280,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 </Select>
               </div>
 
-              {selectedTemplate && selectedTemplate.packages?.length > 0 && (
+              {templatePackages && (
                 <div className="space-y-1.5">
                   <Label>Pakiet (opcjonalnie)</Label>
                   <Select
@@ -294,7 +292,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="NONE">— Bez pakietu —</SelectItem>
-                      {selectedTemplate.packages.map((p: { id: string; name: string; basePrice: number }) => (
+                      {templatePackages.map(p => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name} — {new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(p.basePrice)}
                         </SelectItem>
@@ -309,7 +307,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
           {/* KROK 3 — Dania i Extras */}
           {step === 3 && (
             <div className="space-y-6">
-              {/* Dania — ręczny wpis */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base">Dania</Label>
@@ -374,7 +371,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 )}
               </div>
 
-              {/* Extras */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base">Usługi dodatkowe</Label>
@@ -533,8 +529,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   />
                 </div>
               </div>
-
-              {/* Podsumowanie stanu */}
               <div className="border rounded-md p-4 space-y-2 bg-muted/30">
                 <p className="font-semibold">Podsumowanie</p>
                 <p><span className="text-muted-foreground">Klient:</span> {state.clientName || '—'}</p>
@@ -549,7 +543,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </CardContent>
       </Card>
 
-      {/* Nawigacja kroków */}
       <div className="flex justify-between">
         <Button
           variant="outline"
