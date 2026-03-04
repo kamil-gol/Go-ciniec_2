@@ -26,7 +26,9 @@ import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
 import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 
 function formatPrice(value: number | string) {
-  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
+  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(
+    Number(value),
+  );
 }
 
 export default function CateringOrderDetailPage() {
@@ -53,7 +55,7 @@ export default function CateringOrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">Zamówienie nie istnieje</p>
       </div>
     );
@@ -67,38 +69,45 @@ export default function CateringOrderDetailPage() {
   const canDelete = order.status === 'DRAFT' || order.status === 'CANCELLED';
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/catering/orders')}>
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* ── Header ────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => router.push('/dashboard/catering/orders')}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold font-mono">{order.orderNumber}</h1>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold font-mono">{order.orderNumber}</h1>
               <OrderStatusBadge status={order.status} />
             </div>
-            <p className="text-muted-foreground text-sm mt-0.5">{clientName}</p>
+            <p className="text-muted-foreground text-sm mt-0.5 truncate">{clientName}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setStatusDialogOpen(true)}
           >
             Zmień status
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={() => router.push(`/dashboard/catering/orders/${id}/edit`)}
           >
-            <Edit className="mr-2 h-4 w-4" /> Edytuj
+            <Edit className="mr-1.5 h-3.5 w-3.5" /> Edytuj
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -116,14 +125,18 @@ export default function CateringOrderDetailPage() {
         </div>
       </div>
 
+      {/* ── Siatka treści ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
         {/* Lewa kolumna — dane zamówienia */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Wydarzenie */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Wydarzenie</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Wydarzenie</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Nazwa</p>
                 <p className="font-medium">{order.eventName ?? '—'}</p>
@@ -131,7 +144,8 @@ export default function CateringOrderDetailPage() {
               <div>
                 <p className="text-muted-foreground">Data i godzina</p>
                 <p className="font-medium">
-                  {order.eventDate ?? '—'} {order.eventTime ? `· ${order.eventTime}` : ''}
+                  {order.eventDate ?? '—'}{' '}
+                  {order.eventTime ? `· ${order.eventTime}` : ''}
                 </p>
               </div>
               <div>
@@ -147,8 +161,10 @@ export default function CateringOrderDetailPage() {
 
           {/* Dostawa */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Dostawa</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Dostawa</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Typ</p>
                 <p className="font-medium">{DELIVERY_TYPE_LABEL[order.deliveryType]}</p>
@@ -161,12 +177,15 @@ export default function CateringOrderDetailPage() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Data dostawy</p>
-                    <p className="font-medium">{order.deliveryDate ?? '—'} {order.deliveryTime ? `· ${order.deliveryTime}` : ''}</p>
+                    <p className="font-medium">
+                      {order.deliveryDate ?? '—'}{' '}
+                      {order.deliveryTime ? `· ${order.deliveryTime}` : ''}
+                    </p>
                   </div>
                 </>
               )}
               {order.deliveryNotes && (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-muted-foreground">Uwagi do dostawy</p>
                   <p className="font-medium">{order.deliveryNotes}</p>
                 </div>
@@ -177,31 +196,41 @@ export default function CateringOrderDetailPage() {
           {/* Dania */}
           {order.items.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Dania</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">Dania</CardTitle>
+              </CardHeader>
               <CardContent>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left pb-2 font-medium text-muted-foreground">Danie</th>
-                      <th className="text-right pb-2 font-medium text-muted-foreground">Ilość</th>
-                      <th className="text-right pb-2 font-medium text-muted-foreground">Cena</th>
-                      <th className="text-right pb-2 font-medium text-muted-foreground">Razem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {order.items.map(item => (
-                      <tr key={item.id} className="border-b last:border-0">
-                        <td className="py-2">
-                          {item.dishNameSnapshot}
-                          {item.note && <span className="block text-xs text-muted-foreground">{item.note}</span>}
-                        </td>
-                        <td className="text-right py-2">{item.quantity}</td>
-                        <td className="text-right py-2">{formatPrice(item.unitPrice)}</td>
-                        <td className="text-right py-2 font-medium">{formatPrice(item.totalPrice)}</td>
+                <div className="overflow-x-auto -mx-2 px-2">
+                  <table className="w-full text-sm min-w-[400px]">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left pb-2 font-medium text-muted-foreground">Danie</th>
+                        <th className="text-right pb-2 font-medium text-muted-foreground">Ilość</th>
+                        <th className="text-right pb-2 font-medium text-muted-foreground">Cena</th>
+                        <th className="text-right pb-2 font-medium text-muted-foreground">Razem</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {order.items.map(item => (
+                        <tr key={item.id} className="border-b last:border-0">
+                          <td className="py-2">
+                            {item.dishNameSnapshot}
+                            {item.note && (
+                              <span className="block text-xs text-muted-foreground">
+                                {item.note}
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-right py-2">{item.quantity}</td>
+                          <td className="text-right py-2">{formatPrice(item.unitPrice)}</td>
+                          <td className="text-right py-2 font-medium">
+                            {formatPrice(item.totalPrice)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -209,31 +238,43 @@ export default function CateringOrderDetailPage() {
           {/* Extras */}
           {order.extras.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Usługi dodatkowe</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">Usługi dodatkowe</CardTitle>
+              </CardHeader>
               <CardContent>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left pb-2 font-medium text-muted-foreground">Usługa</th>
-                      <th className="text-right pb-2 font-medium text-muted-foreground">Ilość</th>
-                      <th className="text-right pb-2 font-medium text-muted-foreground">Cena</th>
-                      <th className="text-right pb-2 font-medium text-muted-foreground">Razem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {order.extras.map(extra => (
-                      <tr key={extra.id} className="border-b last:border-0">
-                        <td className="py-2">
-                          {extra.name}
-                          {extra.description && <span className="block text-xs text-muted-foreground">{extra.description}</span>}
-                        </td>
-                        <td className="text-right py-2">{extra.quantity}</td>
-                        <td className="text-right py-2">{formatPrice(extra.unitPrice)}</td>
-                        <td className="text-right py-2 font-medium">{formatPrice(extra.totalPrice)}</td>
+                <div className="overflow-x-auto -mx-2 px-2">
+                  <table className="w-full text-sm min-w-[400px]">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left pb-2 font-medium text-muted-foreground">
+                          Usługa
+                        </th>
+                        <th className="text-right pb-2 font-medium text-muted-foreground">Ilość</th>
+                        <th className="text-right pb-2 font-medium text-muted-foreground">Cena</th>
+                        <th className="text-right pb-2 font-medium text-muted-foreground">Razem</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {order.extras.map(extra => (
+                        <tr key={extra.id} className="border-b last:border-0">
+                          <td className="py-2">
+                            {extra.name}
+                            {extra.description && (
+                              <span className="block text-xs text-muted-foreground">
+                                {extra.description}
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-right py-2">{extra.quantity}</td>
+                          <td className="text-right py-2">{formatPrice(extra.unitPrice)}</td>
+                          <td className="text-right py-2 font-medium">
+                            {formatPrice(extra.totalPrice)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -244,17 +285,29 @@ export default function CateringOrderDetailPage() {
 
           {/* Klient i kontakt */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Klient</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Klient</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p className="font-medium">{clientName}</p>
-              {order.client.email && <p className="text-muted-foreground">{order.client.email}</p>}
-              {order.client.phone && <p className="text-muted-foreground">{order.client.phone}</p>}
+              {order.client.email && (
+                <p className="text-muted-foreground">{order.client.email}</p>
+              )}
+              {order.client.phone && (
+                <p className="text-muted-foreground">{order.client.phone}</p>
+              )}
               {(order.contactName || order.contactPhone || order.contactEmail) && (
                 <div className="pt-2 border-t">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Kontakt do zamówienia</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    Kontakt do zamówienia
+                  </p>
                   {order.contactName && <p>{order.contactName}</p>}
-                  {order.contactPhone && <p className="text-muted-foreground">{order.contactPhone}</p>}
-                  {order.contactEmail && <p className="text-muted-foreground">{order.contactEmail}</p>}
+                  {order.contactPhone && (
+                    <p className="text-muted-foreground">{order.contactPhone}</p>
+                  )}
+                  {order.contactEmail && (
+                    <p className="text-muted-foreground">{order.contactEmail}</p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -262,7 +315,9 @@ export default function CateringOrderDetailPage() {
 
           {/* Cennik */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Podsumowanie finansowe</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Podsumowanie finansowe</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Dania</span>
@@ -276,7 +331,8 @@ export default function CateringOrderDetailPage() {
               )}
               {order.discountAmount && Number(order.discountAmount) > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Rabat
+                  <span>
+                    Rabat
                     {order.discountType === 'PERCENTAGE' && order.discountValue
                       ? ` (${order.discountValue}%)`
                       : ''}
@@ -311,7 +367,9 @@ export default function CateringOrderDetailPage() {
           {/* Uwagi */}
           {(order.notes || order.specialRequirements) && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Uwagi</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">Uwagi</CardTitle>
+              </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {order.notes && (
                   <div>
@@ -321,7 +379,9 @@ export default function CateringOrderDetailPage() {
                 )}
                 {order.specialRequirements && (
                   <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">Specjalne wymagania</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Specjalne wymagania
+                    </p>
                     <p>{order.specialRequirements}</p>
                   </div>
                 )}
