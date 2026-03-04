@@ -51,6 +51,8 @@ export const ACTION_LABELS: Record<string, string> = {
   history: 'Historia zmian',
   manage_catering_templates: 'Szablony cateringu',
   manage_catering_packages: 'Pakiety cateringu',
+  manage_orders: 'Zamówienia cateringowe',
+  manage_deposits: 'Depozyty zamówień cateringowych',
 };
 
 // ================================================================
@@ -95,6 +97,8 @@ export const PERMISSION_DEFINITIONS: PermissionTuple[] = [
   ['catering:read',                     'catering', 'read',                     'Catering — przeglądanie',        'Pogląd szablonów i pakietów cateringu'],
   ['catering:manage_catering_templates','catering', 'manage_catering_templates', 'Catering — szablony',            'Tworzenie i edycja szablonów cateringu'],
   ['catering:manage_catering_packages', 'catering', 'manage_catering_packages',  'Catering — pakiety',             'Tworzenie i edycja pakietów cateringu'],
+  ['catering:manage_orders',            'catering', 'manage_orders',             'Catering — zamówienia',          'Tworzenie i zarządzanie zamówieniami cateringowymi'],
+  ['catering:manage_deposits',          'catering', 'manage_deposits',           'Catering — depozyty',            'Zarządzanie depozytami zamówień cateringowych'],
 
   // ╣╗╗ Queue ╣╗╗
   ['queue:read',   'queue', 'read',   'Kolejka — przeglądanie',  'Pogląd kolejki rezerwacji'],
@@ -181,6 +185,7 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'menu:manage_dishes', 'menu:manage_categories', 'menu:manage_addon_groups',
       // Catering — full
       'catering:read', 'catering:manage_catering_templates', 'catering:manage_catering_packages',
+      'catering:manage_orders', 'catering:manage_deposits',
       // Queue
       'queue:read', 'queue:manage',
       // Deposits — full
@@ -218,8 +223,8 @@ export const ROLE_DEFINITIONS: Record<string, RoleDefinition> = {
       'halls:read',
       // Menu — read
       'menu:read',
-      // Catering — read
-      'catering:read',
+      // Catering — read + manage orders
+      'catering:read', 'catering:manage_orders',
       // Queue — read
       'queue:read',
       // Deposits — create + mark paid
