@@ -110,6 +110,8 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   refreshTokens        RefreshToken[]
   documentTemplateChanges DocumentTemplateHistory[]
+  createdCateringOrders   CateringOrder[]        @relation("CateringOrderCreatedBy")
+  cateringOrderHistories  CateringOrderHistory[] @relation("CateringOrderChangedBy")
 
   @@index([email])
   @@index([roleId])
@@ -232,8 +234,9 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  reservations Reservation[]
-  contacts     ClientContact[]
+  reservations   Reservation[]
+  contacts       ClientContact[]
+  cateringOrders CateringOrder[]
 
   @@index([email])
   @@index([phone])
@@ -613,6 +616,7 @@ model Dish {
   category        DishCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   courseOptions   MenuCourseOption[]
   cateringOptions CateringSectionOption[]
+  orderItems      CateringOrderItem[]
   
   @@index([categoryId])
   @@index([isActive])
@@ -917,6 +921,7 @@ model CateringPackage {
 
   template          CateringTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
   sections          CateringPackageSection[]
+  orders            CateringOrder[]
 
   @@index([templateId])
   @@index([displayOrder])
@@ -966,4 +971,199 @@ model CateringSectionOption {
   @@unique([sectionId, dishId])
   @@index([sectionId])
   @@index([dishId])
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 🍱 CATERING MODULE — Faza 2: Zamówienia (#150)
+// ═════════════════════════════════════════════════════════════════
+
+enum CateringOrderStatus {
+  DRAFT
+  INQUIRY
+  QUOTED
+  CONFIRMED
+  IN_PREPARATION
+  READY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum CateringDeliveryType {
+  PICKUP
+  DELIVERY
+  ON_SITE
+}
+
+enum CateringDiscountType {
+  PERCENTAGE
+  AMOUNT
+}
+
+model CateringOrder {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // Auto-numbering: CAT-YYYY-XXXXX
+  orderNumber     String               @unique @db.VarChar(20)
+
+  clientId        String               @db.Uuid
+  createdById     String               @db.Uuid
+
+  // Powiązanie z szablonem i pakietem cateringowym
+  templateId      String?              @db.Uuid
+  packageId       String?              @db.Uuid
+
+  status          CateringOrderStatus  @default(DRAFT)
+  deliveryType    CateringDeliveryType @default(ON_SITE)
+
+  // Informacje o wydarzeniu
+  eventName       String?              @db.VarChar(255)
+  eventDate       String?              @db.VarChar(10)   // YYYY-MM-DD
+  eventTime       String?              @db.VarChar(5)    // HH:MM
+  eventLocation   String?              @db.VarChar(255)
+
+  // Goście
+  guestsCount     Int                  @default(0) @db.SmallInt
+
+  // Logistyka dostawy
+  deliveryAddress String?              @db.Text
+  deliveryNotes   String?              @db.Text
+  deliveryDate    String?              @db.VarChar(10)   // YYYY-MM-DD
+  deliveryTime    String?              @db.VarChar(5)    // HH:MM
+
+  // Cennik
+  subtotal        Decimal              @default(0) @db.Decimal(10, 2)
+  extrasTotalPrice Decimal             @default(0) @db.Decimal(10, 2)
+  discountType    CateringDiscountType?
+  discountValue   Decimal?             @db.Decimal(10, 2)
+  discountAmount  Decimal?             @db.Decimal(10, 2)
+  discountReason  String?              @db.Text
+  totalPrice      Decimal              @default(0) @db.Decimal(10, 2)
+
+  // Kontakt
+  contactName     String?              @db.VarChar(200)
+  contactPhone    String?              @db.VarChar(20)
+  contactEmail    String?              @db.VarChar(255)
+
+  // Uwagi
+  notes           String?              @db.Text
+  internalNotes   String?              @db.Text
+  specialRequirements String?          @db.Text
+
+  // Termin ważności oferty (QUOTED → CONFIRMED)
+  quoteExpiresAt  DateTime?
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  client          Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy       User                 @relation("CateringOrderCreatedBy", fields: [createdById], references: [id])
+  template        CateringTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  package         CateringPackage?     @relation(fields: [packageId], references: [id], onDelete: SetNull)
+
+  items           CateringOrderItem[]
+  extras          CateringOrderExtra[]
+  history         CateringOrderHistory[]
+  deposits        CateringDeposit[]
+
+  @@index([orderNumber])
+  @@index([clientId])
+  @@index([createdById])
+  @@index([status])
+  @@index([deliveryType])
+  @@index([eventDate])
+  @@index([createdAt])
+  @@index([templateId])
+  @@index([packageId])
+}
+
+model CateringOrderItem {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String        @db.Uuid
+  dishId      String        @db.Uuid
+
+  quantity    Int           @default(1) @db.SmallInt
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  totalPrice  Decimal       @db.Decimal(10, 2)
+  note        String?       @db.Text
+
+  // Snapshot nazwy dania w momencie zamówienia
+  dishNameSnapshot  String  @db.VarChar(255)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dish        Dish          @relation(fields: [dishId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([dishId])
+}
+
+model CateringOrderExtra {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String        @db.Uuid
+
+  name        String        @db.VarChar(255)
+  description String?       @db.Text
+  quantity    Int           @default(1) @db.SmallInt
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  totalPrice  Decimal       @db.Decimal(10, 2)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model CateringOrderHistory {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String        @db.Uuid
+  changedById String        @db.Uuid
+
+  changeType  String        @db.VarChar(30)
+  fieldName   String?       @db.VarChar(100)
+  oldValue    String?       @db.Text
+  newValue    String?       @db.Text
+  reason      String?       @db.Text
+
+  createdAt   DateTime      @default(now())
+
+  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy   User          @relation("CateringOrderChangedBy", fields: [changedById], references: [id])
+
+  @@index([orderId])
+  @@index([changedById])
+  @@index([createdAt])
+}
+
+model CateringDeposit {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId         String        @db.Uuid
+
+  amount          Decimal       @db.Decimal(10, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(10, 2)
+  remainingAmount Decimal       @db.Decimal(10, 2)
+  dueDate         String        @db.VarChar(10)   // YYYY-MM-DD
+  status          String        @default("PENDING") @db.VarChar(20)
+  paid            Boolean       @default(false)
+  paidAt          DateTime?
+  paymentMethod   String?       @db.VarChar(50)
+
+  title           String?       @db.VarChar(255)
+  description     String?       @db.Text
+  internalNotes   String?       @db.Text
+  receiptNumber   String?       @unique @db.VarChar(50)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order           CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([paid])
 }
