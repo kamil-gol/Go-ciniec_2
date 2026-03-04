@@ -20,7 +20,7 @@ import {
   ORDER_STATUS_COLOR,
   DELIVERY_TYPE_LABEL,
 } from '@/types/catering-order.types';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronRight as Arrow } from 'lucide-react';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -42,6 +42,41 @@ function clientName(order: CateringOrderListItem) {
   return `${order.client.firstName} ${order.client.lastName}`;
 }
 
+function Pagination({
+  meta,
+  onPageChange,
+}: {
+  meta: NonNullable<Props['meta']>;
+  onPageChange: (p: number) => void;
+}) {
+  if (meta.totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <span>
+        Strona {meta.page} z {meta.totalPages} ({meta.total} wyników)
+      </span>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={meta.page <= 1}
+          onClick={() => onPageChange(meta.page - 1)}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={meta.page >= meta.totalPages}
+          onClick={() => onPageChange(meta.page + 1)}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
   if (orders.length === 0) {
     return (
@@ -53,7 +88,42 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      {/* ── Widok mobilny: karty (ukryty od sm) ────────────────── */}
+      <div className="sm:hidden space-y-2">
+        {orders.map(order => (
+          <button
+            key={order.id}
+            type="button"
+            onClick={() => onRowClick(order.id)}
+            className="w-full text-left border rounded-xl p-4 hover:bg-muted/50 active:bg-muted transition-colors space-y-2"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-mono text-sm font-semibold">{order.orderNumber}</span>
+              <Badge
+                className={`text-xs shrink-0 ${ORDER_STATUS_COLOR[order.status as CateringOrderStatus]}`}
+                variant="outline"
+              >
+                {ORDER_STATUS_LABEL[order.status as CateringOrderStatus]}
+              </Badge>
+            </div>
+            <p className="font-medium text-sm leading-tight">{clientName(order)}</p>
+            {order.eventName && (
+              <p className="text-sm text-muted-foreground truncate">{order.eventName}</p>
+            )}
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-muted-foreground">
+                {order.eventDate ?? '—'}
+                {' · '}
+                {DELIVERY_TYPE_LABEL[order.deliveryType]}
+              </span>
+              <span className="text-sm font-semibold">{formatPrice(order.totalPrice)}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Widok desktopowy: tabela (ukryta poniżej sm) ────────── */}
+      <div className="hidden sm:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -78,10 +148,14 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                 </TableCell>
                 <TableCell>{clientName(order)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">
-                  {order.eventName ?? <span className="text-muted-foreground">—</span>}
+                  {order.eventName ?? (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
-                  {order.eventDate ?? <span className="text-muted-foreground">—</span>}
+                  {order.eventDate ?? (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-muted-foreground">
@@ -105,32 +179,8 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
         </Table>
       </div>
 
-      {/* Paginacja */}
-      {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Strona {meta.page} z {meta.totalPages} ({meta.total} wyników)
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={meta.page <= 1}
-              onClick={() => onPageChange(meta.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={meta.page >= meta.totalPages}
-              onClick={() => onPageChange(meta.page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Paginacja (wspólna) */}
+      {meta && <Pagination meta={meta} onPageChange={onPageChange} />}
     </div>
   );
 }
