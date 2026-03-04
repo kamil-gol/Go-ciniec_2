@@ -21,6 +21,7 @@
  * FIX: Removed Wartość column — preparations report is for staff ops, prices in reservation form.
  * FIX: Applied footer pagination fix (mirrors #160 menu report fix).
  * FIX: Fixed measureText crash — doc._font is Font object, not string.
+ * FIX: Cast doc as any for _fragment (pdfkit internal method not in @types/pdfkit).
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
@@ -271,14 +272,15 @@ export function buildPreparationsReportPDF(
     const line1W = measureTextWidth(doc, footerLine1, 7, ctx.regularFont);
     doc.fillColor(COLORS.textMuted);
     const line1X = left + (pageWidth - line1W) / 2;
-    doc._fragment(footerLine1, line1X, footerY, { lineBreak: false });
+    // _fragment is pdfkit internal: renders text at exact x/y without cursor movement
+    (doc as any)._fragment(footerLine1, line1X, footerY, { lineBreak: false });
 
     // Footer line 2
     const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
     const line2W = measureTextWidth(doc, footerLine2, 6, ctx.regularFont);
     doc.fillColor(COLORS.textLight);
     const line2X = left + (pageWidth - line2W) / 2;
-    doc._fragment(footerLine2, line2X, footerY + 12, { lineBreak: false });
+    (doc as any)._fragment(footerLine2, line2X, footerY + 12, { lineBreak: false });
   }
 }
 
