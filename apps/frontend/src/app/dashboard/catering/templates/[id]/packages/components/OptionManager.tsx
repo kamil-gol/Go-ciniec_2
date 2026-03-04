@@ -8,7 +8,7 @@ import {
   useUpdateSectionOption,
   useRemoveSectionOption,
 } from '@/hooks/use-catering';
-import { useDishes } from '@/hooks/use-menu';
+import { useDishesByCategory } from '@/hooks/use-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,9 @@ export function OptionManager({ section, templateId }: Props) {
   const [customPrice, setCustomPrice] = useState('');
   const [adding, setAdding] = useState(false);
 
-  const { data: allDishes, isLoading: dishesLoading } = useDishes();
+  const { data: dishes, isLoading: dishesLoading } = useDishesByCategory(
+    section.categoryId,
+  );
   const addOption = useAddSectionOption(section.id, templateId);
   const updateOption = useUpdateSectionOption(templateId);
   const removeOption = useRemoveSectionOption(templateId);
@@ -42,12 +44,8 @@ export function OptionManager({ section, templateId }: Props) {
 
   const alreadyAddedDishIds = new Set(options.map((o) => o.dishId));
 
-  // Filter by categoryId if present in API response, otherwise show all active dishes
-  const availableDishes = (allDishes ?? []).filter(
-    (d) =>
-      (!d.categoryId || d.categoryId === section.categoryId) &&
-      !alreadyAddedDishIds.has(d.id) &&
-      d.isActive,
+  const availableDishes = (dishes ?? []).filter(
+    (d) => d.isActive && !alreadyAddedDishIds.has(d.id),
   );
 
   const handleAdd = async () => {
@@ -66,7 +64,10 @@ export function OptionManager({ section, templateId }: Props) {
     }
   };
 
-  const handleToggleDefault = async (optionId: string, currentValue: boolean) => {
+  const handleToggleDefault = async (
+    optionId: string,
+    currentValue: boolean,
+  ) => {
     await updateOption.mutateAsync({
       optionId,
       data: { isDefault: !currentValue },
@@ -113,7 +114,11 @@ export function OptionManager({ section, templateId }: Props) {
                       : '–'}
                 </span>
                 <button
-                  title={opt.isDefault ? 'Usuń jako domyślne' : 'Ustaw jako domyślne'}
+                  title={
+                    opt.isDefault
+                      ? 'Usuń jako domyślne'
+                      : 'Ustaw jako domyślne'
+                  }
                   className="text-amber-500 hover:text-amber-600 transition-colors"
                   onClick={() => handleToggleDefault(opt.id, opt.isDefault)}
                 >
