@@ -889,6 +889,7 @@ model CateringTemplate {
   updatedAt     DateTime @updatedAt
 
   packages      CateringPackage[]
+  orders        CateringOrder[]
 
   @@index([slug])
   @@index([isActive])
