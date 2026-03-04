@@ -308,13 +308,13 @@ describe('PDF Service - Ultra-Targeted Branch Coverage', () => {
       expect(buffer).toBeInstanceOf(Buffer);
     });
 
-    it('should render package WITHOUT includedItems null (line ~1199 skipped)', async () => {
+    it('should render package WITHOUT includedItems undefined (line ~1199 skipped)', async () => {
       const data: MenuCardPDFData = {
         templateName: 'Test',
         eventTypeName: 'Test',
         packages: [{
           name: 'Pkg',
-          includedItems: null, // Force FALSE branch (null)
+          includedItems: undefined, // Force FALSE branch
           pricePerAdult: 100,
           pricePerChild: 50,
           pricePerToddler: 0,
@@ -326,13 +326,13 @@ describe('PDF Service - Ultra-Targeted Branch Coverage', () => {
       expect(buffer).toBeInstanceOf(Buffer);
     });
 
-    it('should render package WITHOUT includedItems undefined (line ~1199 skipped)', async () => {
+    it('should render package WITHOUT includedItems (line ~1199 skipped)', async () => {
       const data: MenuCardPDFData = {
         templateName: 'Test',
         eventTypeName: 'Test',
         packages: [{
           name: 'Pkg',
-          includedItems: undefined, // Force FALSE branch (undefined)
+          includedItems: undefined, // Force FALSE branch
           pricePerAdult: 100,
           pricePerChild: 50,
           pricePerToddler: 0,
@@ -404,7 +404,7 @@ describe('PDF Service - Ultra-Targeted Branch Coverage', () => {
           name: 'Minimal Package',
           badgeText: null, // FALSE: line 1175
           description: null, // FALSE: line 1193
-          includedItems: null, // FALSE: line 1199
+          includedItems: undefined, // FALSE: line 1199
           pricePerAdult: 100,
           pricePerChild: 50,
           pricePerToddler: 0,
@@ -435,7 +435,7 @@ describe('PDF Service - Ultra-Targeted Branch Coverage', () => {
           name: 'Mixed Package',
           badgeText: null, // FALSE
           description: 'Has desc', // TRUE
-          includedItems: null, // FALSE
+          includedItems: undefined, // FALSE
           pricePerAdult: 100,
           pricePerChild: 50,
           pricePerToddler: 0,
