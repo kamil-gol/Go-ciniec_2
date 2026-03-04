@@ -579,7 +579,7 @@ describe('PDF Service - Branch Coverage', () => {
       const data: OccupancyReportPDFData = {
         filters: { dateFrom: '2026-01-01', dateTo: '2026-01-31' },
         summary: {
-          avgOccupancy: 45.5, peakDay: 'Saturday', peakHall: null,
+          avgOccupancy: 45.5, peakDay: 'Saturday', peakHall: undefined,
           totalReservations: 15, totalDaysInPeriod: 31,
         },
         halls: [], peakHours: [], peakDaysOfWeek: [],
