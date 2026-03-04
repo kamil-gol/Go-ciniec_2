@@ -121,6 +121,8 @@ export interface Dish {
   description: string | null;
   price: number | null;
   isActive: boolean;
+  /** Present in full API response — used for client-side filtering in package builder */
+  categoryId?: string;
 }
 
 export interface CateringSectionOption {
