@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PackageCards } from '../components/PackageCards';
 import type {
   CateringDeliveryType,
   CateringDiscountType,
@@ -263,7 +264,7 @@ export default function EditOrderPage() {
             <CardHeader>
               <CardTitle className="text-base">Szablon i pakiet</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Szablon</Label>
                 <Select
@@ -285,27 +286,15 @@ export default function EditOrderPage() {
                   </SelectContent>
                 </Select>
               </div>
+
               {templatePackages && templatePackages.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Pakiet</Label>
-                  <Select
-                    value={form.packageId || 'NONE'}
-                    onValueChange={v =>
-                      set({ packageId: v === 'NONE' ? '' : v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="— Bez pakietu —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NONE">— Bez pakietu —</SelectItem>
-                      {templatePackages.map(p => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} — {fmt(p.basePrice)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <PackageCards
+                    packages={templatePackages}
+                    selectedId={form.packageId}
+                    onSelect={id => set({ packageId: id })}
+                  />
                 </div>
               )}
             </CardContent>
