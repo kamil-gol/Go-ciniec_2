@@ -268,7 +268,7 @@ describe('PDF Service - Final Branch Coverage', () => {
         packages: [{
           name: 'Pakiet Ekonomiczny',
           badgeText: 'NOWOŚĆ',
-          includedItems: null,
+          includedItems: undefined,
           pricePerAdult: 100, pricePerChild: 50, pricePerToddler: 0,
           courses: [], options: [],
         }],
@@ -284,7 +284,7 @@ describe('PDF Service - Final Branch Coverage', () => {
         packages: [{
           name: 'Pakiet Prosty',
           badgeText: null,
-          includedItems: null,
+          includedItems: undefined,
           pricePerAdult: 80, pricePerChild: 40, pricePerToddler: 0,
           courses: [], options: [],
         }],
