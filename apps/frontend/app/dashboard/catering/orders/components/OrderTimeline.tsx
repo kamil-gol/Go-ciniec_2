@@ -1,7 +1,7 @@
 'use client';
 
 import { useCateringOrderHistory } from '@/hooks/use-catering-orders';
-import { Loader2, CircleCheck, RefreshCw, PenLine, CircleDot } from 'lucide-react';
+import { Loader2, CheckCircle2, RefreshCw, PenLine, Circle } from 'lucide-react';
 import type { CateringOrderHistoryEntry } from '@/types/catering-order.types';
 import { ORDER_STATUS_LABEL } from '@/types/catering-order.types';
 
@@ -47,29 +47,25 @@ function getEntryConfig(changeType: string) {
       return {
         iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
         iconColor: 'text-emerald-600 dark:text-emerald-400',
-        dotBg: 'bg-emerald-500',
-        Icon: CircleCheck,
+        Icon: CheckCircle2,
       };
     case 'STATUS_CHANGE':
       return {
         iconBg: 'bg-blue-100 dark:bg-blue-900/40',
         iconColor: 'text-blue-600 dark:text-blue-400',
-        dotBg: 'bg-blue-500',
         Icon: RefreshCw,
       };
     case 'UPDATED':
       return {
         iconBg: 'bg-amber-100 dark:bg-amber-900/40',
         iconColor: 'text-amber-600 dark:text-amber-400',
-        dotBg: 'bg-amber-500',
         Icon: PenLine,
       };
     default:
       return {
         iconBg: 'bg-neutral-100 dark:bg-neutral-800',
         iconColor: 'text-neutral-500 dark:text-neutral-400',
-        dotBg: 'bg-neutral-400',
-        Icon: CircleDot,
+        Icon: Circle,
       };
   }
 }
@@ -90,7 +86,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-6 text-center">
         <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-2">
-          <CircleDot className="w-5 h-5 text-neutral-300 dark:text-neutral-600" />
+          <Circle className="w-5 h-5 text-neutral-300 dark:text-neutral-600" />
         </div>
         <p className="text-sm text-neutral-400 dark:text-neutral-500">Brak wpisów w historii</p>
       </div>
