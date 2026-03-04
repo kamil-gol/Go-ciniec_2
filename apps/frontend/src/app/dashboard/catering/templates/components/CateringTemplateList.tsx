@@ -2,13 +2,25 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Pencil, Trash2, Package, BadgeCheck, BadgeX, ChevronDown, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Package,
+  BadgeCheck,
+  BadgeX,
+  ChevronDown,
+  ChevronRight,
+  Settings2,
+} from 'lucide-react';
 import { useDeleteCateringTemplate } from '@/hooks/use-catering';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -31,6 +43,7 @@ interface Props {
 }
 
 export function CateringTemplateList({ templates, onEdit }: Props) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const deleteMutation = useDeleteCateringTemplate();
@@ -98,9 +111,20 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/catering/templates/${template.id}/packages`,
+                      )
+                    }
+                  >
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Zarządzaj pakietami
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onEdit(template)}>
                     <Pencil className="mr-2 h-4 w-4" />
-                    Edytuj
+                    Edytuj szablon
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
@@ -113,7 +137,7 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
               </DropdownMenu>
             </div>
 
-            {/* Packages */}
+            {/* Packages preview */}
             {expanded.includes(template.id) && (
               <div className="border-t px-4 pb-4 pt-3">
                 {template.packages && template.packages.length > 0 ? (
@@ -128,7 +152,17 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
                 ) : (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                     <Package className="h-4 w-4" />
-                    Brak pakietów — dodaj pierwszy pakiet w widoku szczegółów
+                    Brak pakietów —{' '}
+                    <button
+                      className="underline hover:text-foreground transition-colors"
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/catering/templates/${template.id}/packages`,
+                        )
+                      }
+                    >
+                      dodaj pierwszy pakiet
+                    </button>
                   </div>
                 )}
               </div>
