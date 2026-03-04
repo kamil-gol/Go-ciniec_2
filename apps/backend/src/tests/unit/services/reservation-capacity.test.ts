@@ -12,7 +12,7 @@
  */
 
 jest.mock('../../../lib/prisma', () => {
-  const mock = {
+  const mock: Record<string, any> = {
     hall: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
@@ -63,7 +63,7 @@ jest.mock('../../../lib/prisma', () => {
       delete: jest.fn(),
       deleteMany: jest.fn(),
     },
-    $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mock) : Promise.all(fn))),
+    $transaction: jest.fn((fn: any): any => (typeof fn === 'function' ? fn(mock) : Promise.all(fn))),
   };
   return { prisma: mock, __esModule: true, default: mock };
 });
@@ -167,8 +167,8 @@ beforeEach(() => {
   mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.client.findUnique.mockResolvedValue(CLIENT);
   mockPrisma.eventType.findUnique.mockResolvedValue(EVENT_TYPE);
-  mockPrisma.reservation.findMany.mockResolvedValue([]); // no overlapping
-  mockPrisma.reservation.findFirst.mockResolvedValue(null); // no whole-venue conflict
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
   mockPrisma.reservation.create.mockResolvedValue(CREATED_RESERVATION);
   mockPrisma.reservationHistory.create.mockResolvedValue({});
   mockPrisma.activityLog.create.mockResolvedValue({});
@@ -196,7 +196,7 @@ describe('ReservationService — Capacity Validation (#165)', () => {
   // ─── Case 2: allowMultipleBookings=false + overlap → block ───
   describe('allowMultipleBookings=false + overlap', () => {
     it('should throw MULTIPLE_BOOKINGS_DISABLED when hall does not allow multiple bookings and overlap exists', async () => {
-      mockPrisma.hall.findUnique.mockResolvedValue(BASE_HALL); // allowMultipleBookings=false
+      mockPrisma.hall.findUnique.mockResolvedValue(BASE_HALL);
       mockPrisma.reservation.findMany.mockResolvedValue([
         { id: 'res-existing', guests: 40 },
       ]);
@@ -211,7 +211,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
   describe('allowMultipleBookings=true + within capacity', () => {
     it('should create reservation when aggregate guests fit within capacity', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(MULTI_HALL);
-      // Existing: 80 guests, new: 50 guests, capacity: 200 → 130 ≤ 200 ✓
       mockPrisma.reservation.findMany.mockResolvedValue([
         { id: 'res-a', guests: 50 },
         { id: 'res-b', guests: 30 },
@@ -233,7 +232,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
 
     it('should allow when exactly at capacity', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(MULTI_HALL);
-      // Existing: 150 guests, new: 50, capacity: 200 → 200 = 200 ✓
       mockPrisma.reservation.findMany.mockResolvedValue([
         { id: 'res-a', guests: 150 },
       ]);
@@ -256,7 +254,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
   describe('allowMultipleBookings=true + capacity exceeded', () => {
     it('should throw CAPACITY_EXCEEDED when aggregate guests exceed capacity', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(MULTI_HALL);
-      // Existing: 160 guests, new: 50, capacity: 200 → 210 > 200 ✗
       mockPrisma.reservation.findMany.mockResolvedValue([
         { id: 'res-a', guests: 100 },
         { id: 'res-b', guests: 60 },
@@ -272,7 +269,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
 
     it('should include available/total in error message', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(MULTI_HALL);
-      // Existing: 170, new: 50, capacity: 200 → available = 30
       mockPrisma.reservation.findMany.mockResolvedValue([
         { id: 'res-a', guests: 170 },
       ]);
@@ -289,7 +285,7 @@ describe('ReservationService — Capacity Validation (#165)', () => {
   // ─── Case 5: Single-reservation guests > hall.capacity ───
   describe('guests exceed hall capacity (single reservation)', () => {
     it('should throw GUESTS_EXCEED_CAPACITY when guests alone exceed capacity', async () => {
-      mockPrisma.hall.findUnique.mockResolvedValue(BASE_HALL); // capacity: 100
+      mockPrisma.hall.findUnique.mockResolvedValue(BASE_HALL);
 
       await expect(
         service.createReservation(
@@ -305,9 +301,8 @@ describe('ReservationService — Capacity Validation (#165)', () => {
     it('should block when whole venue is booked and regular hall reservation attempted', async () => {
       const regularHall = { ...BASE_HALL, allowWithWholeVenue: false };
       mockPrisma.hall.findUnique.mockResolvedValue(regularHall);
-      mockPrisma.reservation.findMany.mockResolvedValue([]); // no direct overlap
+      mockPrisma.reservation.findMany.mockResolvedValue([]);
 
-      // Whole venue has a reservation in the same time
       mockPrisma.hall.findFirst.mockResolvedValue(WHOLE_VENUE_HALL);
       mockPrisma.reservation.findFirst.mockResolvedValue({
         id: 'res-wv',
@@ -322,7 +317,7 @@ describe('ReservationService — Capacity Validation (#165)', () => {
 
     it('should block when booking whole venue but regular hall has reservation', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(WHOLE_VENUE_HALL);
-      mockPrisma.reservation.findMany.mockResolvedValue([]); // no capacity overlap
+      mockPrisma.reservation.findMany.mockResolvedValue([]);
 
       mockPrisma.reservation.findFirst.mockResolvedValue({
         id: 'res-regular',
@@ -359,7 +354,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
 
       const findManyCall = mockPrisma.reservation.findMany.mock.calls[0][0];
       expect(findManyCall.where.AND).toHaveLength(2);
-      // startDateTime < endDateTime AND endDateTime > startDateTime
       expect(findManyCall.where.AND[0]).toHaveProperty('startDateTime.lt');
       expect(findManyCall.where.AND[1]).toHaveProperty('endDateTime.gt');
     });
@@ -399,7 +393,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
       const zeroCapHall = { ...MULTI_HALL, capacity: 0 };
       mockPrisma.hall.findUnique.mockResolvedValue(zeroCapHall);
 
-      // guests (50) > capacity (0) → single-reservation guard
       await expect(
         service.createReservation(
           baseCreateDTO({ hallId: zeroCapHall.id }) as any,
@@ -422,7 +415,6 @@ describe('ReservationService — Capacity Validation (#165)', () => {
         hall: { ...smallHall },
       });
 
-      // 3 existing + 1 new = 4 ≤ 5 ✓
       const result = await service.createReservation(
         baseCreateDTO({ hallId: smallHall.id, adults: 1 }) as any,
         USER_ID
