@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCateringOrder } from '@/hooks/use-catering-orders';
 import { useCateringTemplates } from '@/hooks/use-catering';
 import { useClients } from '@/hooks/use-clients';
+import { useDishes } from '@/hooks/use-dishes';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,6 +35,7 @@ import {
   Clock,
   MapPin,
   ShoppingBag,
+  Info,
 } from 'lucide-react';
 import { CreateClientModal } from '@/components/clients/create-client-modal';
 import type {
@@ -47,7 +49,7 @@ import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 
 const STEPS: StepConfig[] = [
   { id: 'client',    title: 'Klient',           icon: User },
-  { id: 'event',     title: 'Szczegóły',         icon: CalendarDays },
+  { id: 'event',     title: 'Szczeg\u00f3\u0142y',         icon: CalendarDays },
   { id: 'template',  title: 'Szablon / Pakiet',  icon: BookOpen },
   { id: 'items',     title: 'Dania i Extras',    icon: Package },
   { id: 'logistics', title: 'Logistyka',         icon: Truck },
@@ -58,12 +60,12 @@ const STEP_META = [
   {
     gradient: 'from-indigo-500 to-violet-500',
     title: 'Wybierz klienta',
-    subtitle: 'Wyszukaj istniejącego klienta lub dodaj nowego',
+    subtitle: 'Wyszukaj istniej\u0105cego klienta lub dodaj nowego',
   },
   {
     gradient: 'from-orange-500 to-amber-500',
-    title: 'Szczegóły zamówienia',
-    subtitle: 'Podaj okazję, datę, miejsce i liczbę gości',
+    title: 'Szczeg\u00f3\u0142y zam\u00f3wienia',
+    subtitle: 'Podaj okazj\u0119, dat\u0119 realizacji i liczb\u0119 os\u00f3b',
   },
   {
     gradient: 'from-blue-500 to-cyan-500',
@@ -72,18 +74,18 @@ const STEP_META = [
   },
   {
     gradient: 'from-green-500 to-emerald-500',
-    title: 'Dania i usługi dodatkowe',
-    subtitle: 'Dodaj pozycje menu i extra usługi do zamówienia',
+    title: 'Dania i us\u0142ugi dodatkowe',
+    subtitle: 'Dodaj pozycje menu i extra us\u0142ugi do zam\u00f3wienia',
   },
   {
     gradient: 'from-rose-500 to-pink-500',
     title: 'Logistyka dostawy',
-    subtitle: 'Określ sposób dostarczenia zamówienia',
+    subtitle: 'Okre\u015bl spos\u00f3b dostarczenia zam\u00f3wienia',
   },
   {
     gradient: 'from-teal-500 to-green-500',
-    title: 'Sprawdź i utwórz',
-    subtitle: 'Uzupełnij dane kontaktowe i przejrzyj zamówienie',
+    title: 'Sprawd\u017a i utw\u00f3rz',
+    subtitle: 'Uzupe\u0142nij dane kontaktowe i przejrzyj zam\u00f3wienie',
   },
 ];
 
@@ -99,9 +101,7 @@ interface WizardState {
   clientId: string;
   clientName: string;
   eventName: string;
-  eventDate: string;
-  eventTime: string;
-  eventLocation: string;
+  eventDate: string;     // = data realizacji (używana też jako deliveryDate)
   guestsCount: string;
   templateId: string;
   packageId: string;
@@ -109,7 +109,6 @@ interface WizardState {
   extras: CreateOrderExtraInput[];
   deliveryType: CateringDeliveryType;
   deliveryAddress: string;
-  deliveryDate: string;
   deliveryTime: string;
   deliveryNotes: string;
   contactName: string;
@@ -124,8 +123,6 @@ const INITIAL: WizardState = {
   clientName: '',
   eventName: '',
   eventDate: '',
-  eventTime: '',
-  eventLocation: '',
   guestsCount: '0',
   templateId: '',
   packageId: '',
@@ -133,7 +130,6 @@ const INITIAL: WizardState = {
   extras: [],
   deliveryType: 'ON_SITE',
   deliveryAddress: '',
-  deliveryDate: '',
   deliveryTime: '',
   deliveryNotes: '',
   contactName: '',
@@ -147,6 +143,16 @@ interface Props {
   onSuccess: (id: string) => void;
 }
 
+// ═══ HELPERS ═══
+
+function formatPln(value: number) {
+  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value);
+}
+
+function formatDatePl(iso: string) {
+  return new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 // ═══ COMPONENT ═══
 
 export function NewOrderWizard({ onSuccess }: Props) {
@@ -158,6 +164,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
   const { data: clientsData, isLoading: clientsLoading } = useClients();
   const { data: templates } = useCateringTemplates(false);
+  const { data: dishes } = useDishes({ isActive: true });
   const createOrder = useCreateCateringOrder();
 
   const set = useCallback((partial: Partial<WizardState>) =>
@@ -173,13 +180,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
   const clientComboboxOptions = useMemo(() =>
     clientsArray.map((client: any) => {
       const isCompany = client.clientType === 'COMPANY';
-      const companyName = client.companyName;
-      const nip = client.nip;
-      if (isCompany && companyName) {
+      if (isCompany && client.companyName) {
         return {
           value: client.id,
-          label: `🏢 ${companyName} · ${client.firstName} ${client.lastName}`,
-          description: nip ? `NIP: ${nip}` : client.email || undefined,
+          label: `\uD83C\uDFE2 ${client.companyName} \u00B7 ${client.firstName} ${client.lastName}`,
+          description: client.nip ? `NIP: ${client.nip}` : client.email || undefined,
           secondaryLabel: client.phone || undefined,
         };
       }
@@ -245,6 +250,20 @@ export function NewOrderWizard({ onSuccess }: Props) {
       ? (selectedTemplate.packages as { id: string; name: string; basePrice: number }[])
       : null;
 
+  // ─── Dishes ───
+
+  const dishesArray = useMemo(() => Array.isArray(dishes) ? dishes : [], [dishes]);
+
+  const dishOptions = useMemo(() =>
+    dishesArray.map((d: any) => ({
+      value: d.id,
+      label: d.name,
+      description: d.description || undefined,
+      secondaryLabel: d.price != null ? formatPln(d.price) : undefined,
+    })),
+    [dishesArray]
+  );
+
   // ─── Navigation ───
 
   const goToNextStep = useCallback(() => {
@@ -257,14 +276,13 @@ export function NewOrderWizard({ onSuccess }: Props) {
   }, []);
 
   const goToStep = useCallback((index: number) => {
-    if (index <= step || completedSteps.has(index - 1)) {
-      setStep(index);
-    }
+    if (index <= step || completedSteps.has(index - 1)) setStep(index);
   }, [step, completedSteps]);
 
   const isNextDisabled = step === 0 && !state.clientId;
 
   // ─── Submit ───
+  // deliveryDate jest zawsze r\u00f3wna eventDate
 
   const handleSubmit = async () => {
     const order = await createOrder.mutateAsync({
@@ -274,11 +292,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
       deliveryType: state.deliveryType,
       eventName: state.eventName || null,
       eventDate: state.eventDate || null,
-      eventTime: state.eventTime || null,
-      eventLocation: state.eventLocation || null,
+      eventTime: null,
+      eventLocation: null,
       guestsCount: parseInt(state.guestsCount, 10) || 0,
       deliveryAddress: state.deliveryAddress || null,
-      deliveryDate: state.deliveryDate || null,
+      deliveryDate: state.eventDate || null,   // auto: data dostawy = data realizacji
       deliveryTime: state.deliveryTime || null,
       deliveryNotes: state.deliveryNotes || null,
       contactName: state.contactName || null,
@@ -314,7 +332,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
   const renderStep0 = () => {
     const isCompany = selectedClient?.clientType === 'COMPANY';
-    const companyName = selectedClient?.companyName;
     const nip = selectedClient?.nip;
     const primaryContact = (selectedClient?.contacts as any[])?.find((c: any) => c.isPrimary);
 
@@ -325,10 +342,10 @@ export function NewOrderWizard({ onSuccess }: Props) {
           <Combobox
             options={clientComboboxOptions}
             value={state.clientId}
-            onChange={(val) => set({ clientId: val })}
+            onChange={val => set({ clientId: val })}
             label="Klient"
             placeholder="Wyszukaj po nazwisku, firmie lub NIP..."
-            searchPlaceholder="Wpisz imię, nazwisko, firmę lub NIP..."
+            searchPlaceholder="Wpisz imi\u0119, nazwisko, firm\u0119 lub NIP..."
             emptyMessage="Nie znaleziono klienta."
             disabled={clientsLoading}
           />
@@ -357,18 +374,15 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   : <User className="w-5 h-5 text-green-700 dark:text-green-300" />}
               </div>
               <div className="flex-1 min-w-0">
-                {isCompany && companyName ? (
+                {isCompany && selectedClient.companyName ? (
                   <>
-                    <p className="font-semibold text-green-900 dark:text-green-100">{companyName}</p>
+                    <p className="font-semibold text-green-900 dark:text-green-100">{selectedClient.companyName}</p>
                     {nip && <p className="text-xs text-green-700 dark:text-green-300">NIP: {nip}</p>}
                     <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300 mt-1">
                       <User className="w-3.5 h-3.5 shrink-0" />
                       <span>{selectedClient.firstName} {selectedClient.lastName}</span>
                       {primaryContact && primaryContact.firstName !== selectedClient.firstName && (
-                        <span className="text-xs">
-                          · {primaryContact.firstName} {primaryContact.lastName}
-                          {primaryContact.role ? ` (${primaryContact.role})` : ''}
-                        </span>
+                        <span className="text-xs">\u00B7 {primaryContact.firstName} {primaryContact.lastName}{primaryContact.role ? ` (${primaryContact.role})` : ''}</span>
                       )}
                     </div>
                   </>
@@ -391,14 +405,16 @@ export function NewOrderWizard({ onSuccess }: Props) {
     );
   };
 
-  // ─── Step 1: Szczegóły ───
+  // ─── Step 1: Szczeg\u00f3\u0142y ───
+  // Usuni\u0119te: eventTime, eventLocation (przeniesione do Logistyki lub niepotrzebne)
+  // Zmiana: "Go\u015bci" \u2192 "Os\u00f3b"
 
   const renderStep1 = () => (
     <div className="space-y-6">
       {renderStepHeader(1)}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2 space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Okazja / cel zamówienia</Label>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Okazja / cel zam\u00f3wienia</Label>
           <Input
             placeholder="np. Komunia, impreza firmowa, urodziny..."
             value={state.eventName}
@@ -407,25 +423,26 @@ export function NewOrderWizard({ onSuccess }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data</Label>
-          <Input type="date" value={state.eventDate} onChange={e => set({ eventDate: e.target.value })} className="h-11" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Godzina</Label>
-          <Input type="time" value={state.eventTime} onChange={e => set({ eventTime: e.target.value })} className="h-11" />
-        </div>
-        <div className="md:col-span-2 space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Miejsce</Label>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data realizacji</Label>
           <Input
-            placeholder="Adres lub nazwa miejsca..."
-            value={state.eventLocation}
-            onChange={e => set({ eventLocation: e.target.value })}
+            type="date"
+            value={state.eventDate}
+            onChange={e => set({ eventDate: e.target.value })}
             className="h-11"
           />
+          <p className="text-xs text-neutral-400 dark:text-neutral-500">
+            Ta data b\u0119dzie u\u017cyta r\u00f3wnie\u017c jako data dostawy
+          </p>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Liczba gości</Label>
-          <Input type="number" min={0} value={state.guestsCount} onChange={e => set({ guestsCount: e.target.value })} className="h-11" />
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Liczba os\u00f3b</Label>
+          <Input
+            type="number"
+            min={0}
+            value={state.guestsCount}
+            onChange={e => set({ guestsCount: e.target.value })}
+            className="h-11"
+          />
         </div>
       </div>
     </div>
@@ -448,7 +465,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
         >
           <SelectTrigger className="h-11 bg-white dark:bg-neutral-900"><SelectValue placeholder="Wybierz szablon" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="NONE">— Bez szablonu —</SelectItem>
+            <SelectItem value="NONE">\u2014 Bez szablonu \u2014</SelectItem>
             {templates?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -465,10 +482,10 @@ export function NewOrderWizard({ onSuccess }: Props) {
           <Select value={state.packageId || 'NONE'} onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}>
             <SelectTrigger className="h-11 bg-white dark:bg-neutral-900"><SelectValue placeholder="Wybierz pakiet" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="NONE">— Bez pakietu —</SelectItem>
+              <SelectItem value="NONE">\u2014 Bez pakietu \u2014</SelectItem>
               {templatePackages.map(p => (
                 <SelectItem key={p.id} value={p.id}>
-                  {p.name} — {new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(p.basePrice)}
+                  {p.name} \u2014 {formatPln(p.basePrice)} / os.
                 </SelectItem>
               ))}
             </SelectContent>
@@ -477,74 +494,191 @@ export function NewOrderWizard({ onSuccess }: Props) {
       )}
       {!state.templateId && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
-          Możesz pominąć ten krok — szablon i pakiet nie są wymagane.
+          Mo\u017cesz pomin\u0105\u0107 ten krok \u2014 szablon i pakiet nie s\u0105 wymagane.
         </p>
       )}
     </div>
   );
 
-  // ─── Step 3: Dania i Extras ───
+  // ─── Step 3: Dania i Extras (5b) ───
 
   const renderStep3 = () => (
     <div className="space-y-6">
       {renderStepHeader(3)}
+
+      {/* Dania */}
       <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dania</Label>
-          <button type="button" onClick={() => set({ items: [...state.items, { dishId: '', quantity: 1, unitPrice: 0 }] })}
+          <button
+            type="button"
+            onClick={() => set({ items: [...state.items, { dishId: '', quantity: 1, unitPrice: 0 }] })}
             className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <Plus className="h-3 w-3" /> Dodaj danie
           </button>
         </div>
+
+        {/* Nag\u0142\u00f3wki kolumn */}
+        {state.items.length > 0 && (
+          <div className="flex gap-2 items-center px-1">
+            <span className="flex-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">Danie</span>
+            <span className="w-20 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Ilo\u015b\u0107</span>
+            <span className="w-28 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Cena jedn.</span>
+            <span className="w-9" />
+          </div>
+        )}
+
         {state.items.map((item, i) => (
-          <div key={i} className="flex gap-2 items-start">
-            <Input placeholder="UUID dania" value={item.dishId} onChange={e => { const items = [...state.items]; items[i] = { ...items[i], dishId: e.target.value }; set({ items }); }} className="flex-1 h-9" />
-            <Input type="number" min={1} placeholder="Ilość" value={item.quantity} onChange={e => { const items = [...state.items]; items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ items }); }} className="w-20 h-9" />
-            <Input type="number" min={0} step="0.01" placeholder="Cena" value={item.unitPrice} onChange={e => { const items = [...state.items]; items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ items }); }} className="w-28 h-9" />
-            <button type="button" className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}>
+          <div key={i} className="flex gap-2 items-center">
+            {/* Combobox z wyszukiwaniem da\u0144 */}
+            <div className="flex-1">
+              <Combobox
+                options={dishOptions}
+                value={item.dishId}
+                onChange={dishId => {
+                  const dish = dishesArray.find((d: any) => d.id === dishId);
+                  const items = [...state.items];
+                  items[i] = {
+                    ...items[i],
+                    dishId,
+                    unitPrice: dish?.price ?? items[i].unitPrice,
+                  };
+                  set({ items });
+                }}
+                placeholder="Wybierz danie..."
+                searchPlaceholder="Szukaj dania..."
+                emptyMessage="Nie znaleziono dania"
+              />
+            </div>
+            <Input
+              type="number"
+              min={1}
+              value={item.quantity}
+              onChange={e => {
+                const items = [...state.items];
+                items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
+                set({ items });
+              }}
+              className="w-20 h-9 text-center"
+            />
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={item.unitPrice}
+              onChange={e => {
+                const items = [...state.items];
+                items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
+                set({ items });
+              }}
+              className="w-28 h-9"
+            />
+            <button
+              type="button"
+              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+              onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}
+            >
               <Trash2 className="h-4 w-4 text-red-500" />
             </button>
           </div>
         ))}
-        {state.items.length === 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak dań — możesz dodać je później</p>}
+
+        {state.items.length === 0 && (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak da\u0144 \u2014 mo\u017cesz doda\u0107 je p\u00f3\u017aniej</p>
+        )}
       </div>
+
+      {/* Us\u0142ugi dodatkowe */}
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</Label>
-          <button type="button" onClick={() => set({ extras: [...state.extras, { name: '', quantity: 1, unitPrice: 0 }] })}
+          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Us\u0142ugi dodatkowe</Label>
+          <button
+            type="button"
+            onClick={() => set({ extras: [...state.extras, { name: '', quantity: 1, unitPrice: 0 }] })}
             className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <Plus className="h-3 w-3" /> Dodaj
           </button>
         </div>
+
+        {/* Nag\u0142\u00f3wki kolumn */}
+        {state.extras.length > 0 && (
+          <div className="flex gap-2 items-center px-1">
+            <span className="flex-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">Nazwa us\u0142ugi</span>
+            <span className="w-20 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Ilo\u015b\u0107</span>
+            <span className="w-28 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Cena jedn.</span>
+            <span className="w-9" />
+          </div>
+        )}
+
         {state.extras.map((extra, i) => (
-          <div key={i} className="flex gap-2 items-start">
-            <Input placeholder="Nazwa usługi" value={extra.name} onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], name: e.target.value }; set({ extras }); }} className="flex-1 h-9" />
-            <Input type="number" min={1} placeholder="Ilość" value={extra.quantity} onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ extras }); }} className="w-20 h-9" />
-            <Input type="number" min={0} step="0.01" placeholder="Cena" value={extra.unitPrice} onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ extras }); }} className="w-28 h-9" />
-            <button type="button" className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}>
+          <div key={i} className="flex gap-2 items-center">
+            <Input
+              placeholder="np. obs\u0142uga kelnerska, wynajem sprz\u0119tu..."
+              value={extra.name}
+              onChange={e => {
+                const extras = [...state.extras];
+                extras[i] = { ...extras[i], name: e.target.value };
+                set({ extras });
+              }}
+              className="flex-1 h-9"
+            />
+            <Input
+              type="number"
+              min={1}
+              value={extra.quantity}
+              onChange={e => {
+                const extras = [...state.extras];
+                extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
+                set({ extras });
+              }}
+              className="w-20 h-9 text-center"
+            />
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={extra.unitPrice}
+              onChange={e => {
+                const extras = [...state.extras];
+                extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
+                set({ extras });
+              }}
+              className="w-28 h-9"
+            />
+            <button
+              type="button"
+              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+              onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}
+            >
               <Trash2 className="h-4 w-4 text-red-500" />
             </button>
           </div>
         ))}
-        {state.extras.length === 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak usług dodatkowych</p>}
+
+        {state.extras.length === 0 && (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak us\u0142ug dodatkowych</p>
+        )}
       </div>
     </div>
   );
 
-  // ─── Step 4: Logistyka ───
+  // ─── Step 4: Logistyka (5c) ───
+  // Usuni\u0119te: deliveryDate (= eventDate, ustawiamy automatycznie)
+  // PICKUP: tylko godzina
+  // ON_SITE: godzina + adres
+  // DELIVERY: adres + godzina + info o dacie
 
   const renderStep4 = () => (
     <div className="space-y-6">
       {renderStepHeader(4)}
 
-      {/* Typ dostawy — selector */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ realizacji</Label>
         <Select
           value={state.deliveryType}
-          onValueChange={v => set({ deliveryType: v as CateringDeliveryType, deliveryAddress: '', deliveryTime: '', deliveryDate: '' })}
+          onValueChange={v => set({ deliveryType: v as CateringDeliveryType, deliveryAddress: '', deliveryTime: '' })}
         >
           <SelectTrigger className="h-11">
             <SelectValue />
@@ -557,58 +691,48 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </Select>
       </div>
 
-      {/* PICKUP — Odbiór osobisty: tylko godzina */}
+      {/* PICKUP */}
       {state.deliveryType === 'PICKUP' && (
         <motion.div
           key="pickup"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
           className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl space-y-4"
         >
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Odbiór osobisty</span>
+            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Odbi\u00f3r osobisty</span>
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" /> Godzina odbioru
             </Label>
-            <Input
-              type="time"
-              value={state.deliveryTime}
-              onChange={e => set({ deliveryTime: e.target.value })}
-              className="h-11 max-w-[160px]"
-            />
+            <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11 max-w-[160px]" />
           </div>
+          {state.eventDate && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <Info className="w-3 h-3 shrink-0" />
+              Data odbioru: <strong>{formatDatePl(state.eventDate)}</strong>
+            </p>
+          )}
         </motion.div>
       )}
 
-      {/* ON_SITE — U klienta: godzina + adres */}
+      {/* ON_SITE */}
       {state.deliveryType === 'ON_SITE' && (
         <motion.div
           key="on-site"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
           className="p-5 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl space-y-4"
         >
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-violet-600 dark:text-violet-400" />
             <span className="text-sm font-semibold text-violet-800 dark:text-violet-200">U klienta</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> Godzina
-              </Label>
-              <Input
-                type="time"
-                value={state.deliveryTime}
-                onChange={e => set({ deliveryTime: e.target.value })}
-                className="h-11"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Godzina przyjazdu
+            </Label>
+            <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11 max-w-[160px]" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
@@ -621,22 +745,34 @@ export function NewOrderWizard({ onSuccess }: Props) {
               placeholder="Ulica, numer, miasto..."
             />
           </div>
+          {state.eventDate && (
+            <p className="text-xs text-violet-600 dark:text-violet-400 flex items-center gap-1.5">
+              <Info className="w-3 h-3 shrink-0" />
+              Data przyjazdu: <strong>{formatDatePl(state.eventDate)}</strong>
+            </p>
+          )}
         </motion.div>
       )}
 
-      {/* DELIVERY — Dostawa: adres + data + godzina */}
+      {/* DELIVERY */}
       {state.deliveryType === 'DELIVERY' && (
         <motion.div
           key="delivery"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
           className="p-5 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-4"
         >
           <div className="flex items-center gap-2">
             <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span className="text-sm font-semibold text-rose-800 dark:text-rose-200">Dostawa</span>
           </div>
+          {state.eventDate && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-rose-100 dark:bg-rose-900/40 rounded-lg">
+              <Info className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+              <p className="text-xs text-rose-700 dark:text-rose-300">
+                Data dostawy: <strong>{formatDatePl(state.eventDate)}</strong> (z kroku Szczeg\u00f3\u0142y)
+              </p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5" /> Adres dostawy
@@ -648,29 +784,22 @@ export function NewOrderWizard({ onSuccess }: Props) {
               placeholder="Ulica, nr, miasto..."
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data dostawy</Label>
-              <Input type="date" value={state.deliveryDate} onChange={e => set({ deliveryDate: e.target.value })} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> Godzina dostawy
-              </Label>
-              <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11" />
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Godzina dostawy
+            </Label>
+            <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11 max-w-[160px]" />
           </div>
         </motion.div>
       )}
 
-      {/* Uwagi — zawsze widoczne */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Uwagi do logistyki</Label>
         <Textarea
           value={state.deliveryNotes}
           onChange={e => set({ deliveryNotes: e.target.value })}
           rows={2}
-          placeholder="Dodatkowe instrukcje, dostęp do obiektu..."
+          placeholder="Dodatkowe instrukcje, dost\u0119p do obiektu..."
         />
       </div>
     </div>
@@ -685,14 +814,12 @@ export function NewOrderWizard({ onSuccess }: Props) {
       <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
         <div>
           <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
-          <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">
-            Wypełnione automatycznie z profilu klienta — możesz zmienić.
-          </p>
+          <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">Wype\u0142nione automatycznie z profilu klienta \u2014 mo\u017cesz zmieni\u0107.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2 space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Osoba kontaktowa</Label>
-            <Input placeholder="Imię i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} className="h-11" />
+            <Input placeholder="Imi\u0119 i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} className="h-11" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Telefon kontaktowy</Label>
@@ -716,69 +843,67 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </div>
       </div>
 
+      {/* Karty podsumowuj\u0105ce */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors" onClick={() => goToStep(0)}>
+
+        {/* Klient */}
+        <div className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 transition-colors" onClick={() => goToStep(0)}>
           <div className="flex items-center gap-2 mb-2">
-            {selectedClient?.clientType === 'COMPANY' ? <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> : <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-            <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Klient</span>
-            {selectedClient?.clientType === 'COMPANY' && (
-              <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-medium">Firma</span>
-            )}
+            {selectedClient?.clientType === 'COMPANY' ? <Building2 className="w-4 h-4 text-indigo-600" /> : <User className="w-4 h-4 text-indigo-600" />}
+            <span className="text-xs font-medium text-indigo-600 uppercase">Klient</span>
           </div>
           {selectedClient ? (
-            <div>
-              {selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
-                <>
-                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.companyName}</p>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{selectedClient.firstName} {selectedClient.lastName}{selectedClient.nip ? ` · NIP: ${selectedClient.nip}` : ''}</p>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.firstName} {selectedClient.lastName}</p>
-                  <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
-                    {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                    {selectedClient.email && <span>{selectedClient.email}</span>}
-                  </div>
-                </>
-              )}
-            </div>
-          ) : <p className="text-neutral-500 dark:text-neutral-400">—</p>}
+            selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
+              <>
+                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.companyName}</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">{selectedClient.firstName} {selectedClient.lastName}</p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.firstName} {selectedClient.lastName}</p>
+                <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
+                  {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                  {selectedClient.email && <span>{selectedClient.email}</span>}
+                </div>
+              </>
+            )
+          ) : <p className="text-neutral-500">\u2014</p>}
         </div>
 
-        <div className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 dark:hover:border-orange-600 transition-colors" onClick={() => goToStep(1)}>
+        {/* Szczeg\u00f3\u0142y */}
+        <div className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 transition-colors" onClick={() => goToStep(1)}>
           <div className="flex items-center gap-2 mb-2">
-            <CalendarDays className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-            <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase">Szczegóły</span>
+            <CalendarDays className="w-4 h-4 text-orange-600" />
+            <span className="text-xs font-medium text-orange-600 uppercase">Szczeg\u00f3\u0142y</span>
           </div>
-          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '—'}</p>
+          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '\u2014'}</p>
           {state.eventDate && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {new Date(state.eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}
-              {state.eventTime && ` · ${state.eventTime}`}
-            </p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>
           )}
-          {state.guestsCount && parseInt(state.guestsCount) > 0 && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} gości</p>
+          {parseInt(state.guestsCount) > 0 && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} os\u00f3b</p>
           )}
         </div>
 
-        <div className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors" onClick={() => goToStep(3)}>
+        {/* Menu */}
+        <div className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 transition-colors" onClick={() => goToStep(3)}>
           <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
-            <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase">Menu</span>
+            <Package className="w-4 h-4 text-green-600" />
+            <span className="text-xs font-medium text-green-600 uppercase">Menu</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">
-            {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'dań'}
+            {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'da\u0144'}
           </p>
           {state.extras.length > 0 && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} usług dodatkowych</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} us\u0142ug dodatkowych</p>
           )}
         </div>
 
-        <div className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 transition-colors" onClick={() => goToStep(4)}>
+        {/* Logistyka */}
+        <div className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 transition-colors" onClick={() => goToStep(4)}>
           <div className="flex items-center gap-2 mb-2">
-            <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
+            <Truck className="w-4 h-4 text-rose-600" />
+            <span className="text-xs font-medium text-rose-600 uppercase">Logistyka</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
           {(state.deliveryType === 'DELIVERY' || state.deliveryType === 'ON_SITE') && state.deliveryAddress && (
@@ -786,11 +911,16 @@ export function NewOrderWizard({ onSuccess }: Props) {
           )}
           {state.deliveryTime && (
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}
-              {state.deliveryType === 'DELIVERY' && state.deliveryDate && ` · ${new Date(state.deliveryDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}`}
+              {state.deliveryType === 'PICKUP' ? 'Odbi\u00f3r:' : 'Godzina:'} {state.deliveryTime}
+            </p>
+          )}
+          {state.eventDate && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {formatDatePl(state.eventDate)}
             </p>
           )}
         </div>
+
       </div>
     </div>
   );
@@ -815,7 +945,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
       >
         <Card className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-b border-neutral-200 dark:border-neutral-700">
-            <CardTitle className="text-xl">Nowe zamówienie cateringowe</CardTitle>
+            <CardTitle className="text-xl">Nowe zam\u00f3wienie cateringowe</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <Stepper
@@ -845,7 +975,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
               onSubmit={handleSubmit}
               isNextDisabled={isNextDisabled}
               isSubmitting={createOrder.isPending}
-              submitLabel="Utwórz zamówienie"
+              submitLabel="Utw\u00f3rz zam\u00f3wienie"
               className="mt-8"
             />
           </CardContent>
