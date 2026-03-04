@@ -63,6 +63,7 @@ describe('audit-logger', () => {
       });
 
       await logChange({
+        userId: undefined as any,
         action: 'CREATE',
         entityType: 'RESERVATION',
         entityId: 'res-789',
