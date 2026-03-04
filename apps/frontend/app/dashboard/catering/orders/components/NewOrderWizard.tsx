@@ -48,24 +48,24 @@ import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 // ═══ STEP CONFIGURATION ═══
 
 const STEPS: StepConfig[] = [
-  { id: 'client',    title: 'Klient',           icon: User },
-  { id: 'event',     title: 'Szczeg\u00f3\u0142y',         icon: CalendarDays },
-  { id: 'template',  title: 'Szablon / Pakiet',  icon: BookOpen },
-  { id: 'items',     title: 'Dania i Extras',    icon: Package },
-  { id: 'logistics', title: 'Logistyka',         icon: Truck },
-  { id: 'summary',   title: 'Podsumowanie',      icon: ClipboardCheck },
+  { id: 'client',    title: 'Klient',          icon: User },
+  { id: 'event',     title: 'Szczegóły',        icon: CalendarDays },
+  { id: 'template',  title: 'Szablon / Pakiet', icon: BookOpen },
+  { id: 'items',     title: 'Dania i Extras',   icon: Package },
+  { id: 'logistics', title: 'Logistyka',        icon: Truck },
+  { id: 'summary',   title: 'Podsumowanie',     icon: ClipboardCheck },
 ];
 
 const STEP_META = [
   {
     gradient: 'from-indigo-500 to-violet-500',
     title: 'Wybierz klienta',
-    subtitle: 'Wyszukaj istniej\u0105cego klienta lub dodaj nowego',
+    subtitle: 'Wyszukaj istniejącego klienta lub dodaj nowego',
   },
   {
     gradient: 'from-orange-500 to-amber-500',
-    title: 'Szczeg\u00f3\u0142y zam\u00f3wienia',
-    subtitle: 'Podaj okazj\u0119, dat\u0119 realizacji i liczb\u0119 os\u00f3b',
+    title: 'Szczegóły zamówienia',
+    subtitle: 'Podaj okazję, datę realizacji i liczbę osób',
   },
   {
     gradient: 'from-blue-500 to-cyan-500',
@@ -74,18 +74,18 @@ const STEP_META = [
   },
   {
     gradient: 'from-green-500 to-emerald-500',
-    title: 'Dania i us\u0142ugi dodatkowe',
-    subtitle: 'Dodaj pozycje menu i extra us\u0142ugi do zam\u00f3wienia',
+    title: 'Dania i usługi dodatkowe',
+    subtitle: 'Dodaj pozycje menu i extra usługi do zamówienia',
   },
   {
     gradient: 'from-rose-500 to-pink-500',
     title: 'Logistyka dostawy',
-    subtitle: 'Okre\u015bl spos\u00f3b dostarczenia zam\u00f3wienia',
+    subtitle: 'Określ sposób dostarczenia zamówienia',
   },
   {
     gradient: 'from-teal-500 to-green-500',
-    title: 'Sprawd\u017a i utw\u00f3rz',
-    subtitle: 'Uzupe\u0142nij dane kontaktowe i przejrzyj zam\u00f3wienie',
+    title: 'Sprawdź i utwórz',
+    subtitle: 'Uzupełnij dane kontaktowe i przejrzyj zamówienie',
   },
 ];
 
@@ -101,7 +101,7 @@ interface WizardState {
   clientId: string;
   clientName: string;
   eventName: string;
-  eventDate: string;     // = data realizacji (używana też jako deliveryDate)
+  eventDate: string;
   guestsCount: string;
   templateId: string;
   packageId: string;
@@ -150,7 +150,11 @@ function formatPln(value: number) {
 }
 
 function formatDatePl(iso: string) {
-  return new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+  try {
+    return new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return iso;
+  }
 }
 
 // ═══ COMPONENT ═══
@@ -158,6 +162,7 @@ function formatDatePl(iso: string) {
 export function NewOrderWizard({ onSuccess }: Props) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+  const [maxStep, setMaxStep] = useState(0);           // najwyższy krok osiągnięty
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [state, setState] = useState<WizardState>(INITIAL);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
@@ -183,7 +188,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
       if (isCompany && client.companyName) {
         return {
           value: client.id,
-          label: `\uD83C\uDFE2 ${client.companyName} \u00B7 ${client.firstName} ${client.lastName}`,
+          label: `🏢 ${client.companyName} · ${client.firstName} ${client.lastName}`,
           description: client.nip ? `NIP: ${client.nip}` : client.email || undefined,
           secondaryLabel: client.phone || undefined,
         };
@@ -264,11 +269,24 @@ export function NewOrderWizard({ onSuccess }: Props) {
     [dishesArray]
   );
 
+  // ─── Step 4 validation ───
+  // Godzina zawsze wymagana. Adres wymagany dla ON_SITE i DELIVERY.
+
+  const isStep4Valid = useMemo(() => {
+    const hasTime = !!state.deliveryTime;
+    if (state.deliveryType === 'PICKUP') return hasTime;
+    return hasTime && !!state.deliveryAddress.trim();
+  }, [state.deliveryType, state.deliveryTime, state.deliveryAddress]);
+
   // ─── Navigation ───
+  // maxStep śledzi najwyższy krok, na którym byliśmy — pozwala swobodnie
+  // klikać między wcześniej odwiedzonymi krokami.
 
   const goToNextStep = useCallback(() => {
     setCompletedSteps(prev => new Set([...prev, step]));
-    setStep(s => Math.min(s + 1, STEPS.length - 1));
+    const next = Math.min(step + 1, STEPS.length - 1);
+    setStep(next);
+    setMaxStep(prev => Math.max(prev, next));
   }, [step]);
 
   const goToPrevStep = useCallback(() => {
@@ -276,15 +294,21 @@ export function NewOrderWizard({ onSuccess }: Props) {
   }, []);
 
   const goToStep = useCallback((index: number) => {
-    if (index <= step || completedSteps.has(index - 1)) setStep(index);
-  }, [step, completedSteps]);
+    if (index <= maxStep) setStep(index);
+  }, [maxStep]);
 
-  const isNextDisabled = step === 0 && !state.clientId;
+  const isNextDisabled =
+    (step === 0 && !state.clientId) ||
+    (step === 4 && !isStep4Valid);
 
   // ─── Submit ───
-  // deliveryDate jest zawsze r\u00f3wna eventDate
+  // deliveryDate = eventDate (automatycznie)
+  // Filtrujemy puste dania i usługi przed wysłaniem do API
 
   const handleSubmit = async () => {
+    const validItems = state.items.filter(item => item.dishId.trim() !== '');
+    const validExtras = state.extras.filter(extra => extra.name.trim() !== '');
+
     const order = await createOrder.mutateAsync({
       clientId: state.clientId,
       templateId: state.templateId || null,
@@ -292,11 +316,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
       deliveryType: state.deliveryType,
       eventName: state.eventName || null,
       eventDate: state.eventDate || null,
-      eventTime: null,
-      eventLocation: null,
       guestsCount: parseInt(state.guestsCount, 10) || 0,
       deliveryAddress: state.deliveryAddress || null,
-      deliveryDate: state.eventDate || null,   // auto: data dostawy = data realizacji
+      deliveryDate: state.eventDate || null,
       deliveryTime: state.deliveryTime || null,
       deliveryNotes: state.deliveryNotes || null,
       contactName: state.contactName || null,
@@ -304,8 +326,8 @@ export function NewOrderWizard({ onSuccess }: Props) {
       contactEmail: state.contactEmail || null,
       notes: state.notes || null,
       specialRequirements: state.specialRequirements || null,
-      items: state.items.length > 0 ? state.items : undefined,
-      extras: state.extras.length > 0 ? state.extras : undefined,
+      items: validItems.length > 0 ? validItems : undefined,
+      extras: validExtras.length > 0 ? validExtras : undefined,
     });
     onSuccess(order.id);
   };
@@ -345,7 +367,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
             onChange={val => set({ clientId: val })}
             label="Klient"
             placeholder="Wyszukaj po nazwisku, firmie lub NIP..."
-            searchPlaceholder="Wpisz imi\u0119, nazwisko, firm\u0119 lub NIP..."
+            searchPlaceholder="Wpisz imię, nazwisko, firmę lub NIP..."
             emptyMessage="Nie znaleziono klienta."
             disabled={clientsLoading}
           />
@@ -382,7 +404,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                       <User className="w-3.5 h-3.5 shrink-0" />
                       <span>{selectedClient.firstName} {selectedClient.lastName}</span>
                       {primaryContact && primaryContact.firstName !== selectedClient.firstName && (
-                        <span className="text-xs">\u00B7 {primaryContact.firstName} {primaryContact.lastName}{primaryContact.role ? ` (${primaryContact.role})` : ''}</span>
+                        <span className="text-xs">· {primaryContact.firstName} {primaryContact.lastName}{primaryContact.role ? ` (${primaryContact.role})` : ''}</span>
                       )}
                     </div>
                   </>
@@ -405,16 +427,14 @@ export function NewOrderWizard({ onSuccess }: Props) {
     );
   };
 
-  // ─── Step 1: Szczeg\u00f3\u0142y ───
-  // Usuni\u0119te: eventTime, eventLocation (przeniesione do Logistyki lub niepotrzebne)
-  // Zmiana: "Go\u015bci" \u2192 "Os\u00f3b"
+  // ─── Step 1: Szczegóły ───
 
   const renderStep1 = () => (
     <div className="space-y-6">
       {renderStepHeader(1)}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2 space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Okazja / cel zam\u00f3wienia</Label>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Okazja / cel zamówienia</Label>
           <Input
             placeholder="np. Komunia, impreza firmowa, urodziny..."
             value={state.eventName}
@@ -431,11 +451,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
             className="h-11"
           />
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            Ta data b\u0119dzie u\u017cyta r\u00f3wnie\u017c jako data dostawy
+            Ta data będzie użyta również jako data dostawy
           </p>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Liczba os\u00f3b</Label>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Liczba osób</Label>
           <Input
             type="number"
             min={0}
@@ -463,15 +483,20 @@ export function NewOrderWizard({ onSuccess }: Props) {
           value={state.templateId || 'NONE'}
           onValueChange={v => set({ templateId: v === 'NONE' ? '' : v, packageId: '' })}
         >
-          <SelectTrigger className="h-11 bg-white dark:bg-neutral-900"><SelectValue placeholder="Wybierz szablon" /></SelectTrigger>
+          <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+            <SelectValue placeholder="Wybierz szablon" />
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="NONE">\u2014 Bez szablonu \u2014</SelectItem>
+            <SelectItem value="NONE">— Bez szablonu —</SelectItem>
             {templates?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
+
       {templatePackages && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-3"
         >
           <div className="flex items-center gap-2">
@@ -479,28 +504,35 @@ export function NewOrderWizard({ onSuccess }: Props) {
             <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Pakiet cenowy</Label>
             <span className="text-xs text-neutral-500 dark:text-neutral-400">(opcjonalnie)</span>
           </div>
-          <Select value={state.packageId || 'NONE'} onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}>
-            <SelectTrigger className="h-11 bg-white dark:bg-neutral-900"><SelectValue placeholder="Wybierz pakiet" /></SelectTrigger>
+          <Select
+            value={state.packageId || 'NONE'}
+            onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}
+          >
+            <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+              <SelectValue placeholder="Wybierz pakiet" />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="NONE">\u2014 Bez pakietu \u2014</SelectItem>
+              <SelectItem value="NONE">— Bez pakietu —</SelectItem>
               {templatePackages.map(p => (
                 <SelectItem key={p.id} value={p.id}>
-                  {p.name} \u2014 {formatPln(p.basePrice)} / os.
+                  {p.name} — {formatPln(p.basePrice)} / os.
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </motion.div>
       )}
+
       {!state.templateId && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
-          Mo\u017cesz pomin\u0105\u0107 ten krok \u2014 szablon i pakiet nie s\u0105 wymagane.
+          Możesz pominąć ten krok — szablon i pakiet nie są wymagane.
         </p>
       )}
     </div>
   );
 
-  // ─── Step 3: Dania i Extras (5b) ───
+  // ─── Step 3: Dania i Extras ───
+  // Każde danie jako osobna karta — Combobox pełna szerokość, potem ilość i cena.
 
   const renderStep3 = () => (
     <div className="space-y-6">
@@ -519,80 +551,94 @@ export function NewOrderWizard({ onSuccess }: Props) {
           </button>
         </div>
 
-        {/* Nag\u0142\u00f3wki kolumn */}
-        {state.items.length > 0 && (
-          <div className="flex gap-2 items-center px-1">
-            <span className="flex-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">Danie</span>
-            <span className="w-20 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Ilo\u015b\u0107</span>
-            <span className="w-28 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Cena jedn.</span>
-            <span className="w-9" />
-          </div>
-        )}
-
-        {state.items.map((item, i) => (
-          <div key={i} className="flex gap-2 items-center">
-            {/* Combobox z wyszukiwaniem da\u0144 */}
-            <div className="flex-1">
-              <Combobox
-                options={dishOptions}
-                value={item.dishId}
-                onChange={dishId => {
-                  const dish = dishesArray.find((d: any) => d.id === dishId);
-                  const items = [...state.items];
-                  items[i] = {
-                    ...items[i],
-                    dishId,
-                    unitPrice: dish?.price ?? items[i].unitPrice,
-                  };
-                  set({ items });
-                }}
-                placeholder="Wybierz danie..."
-                searchPlaceholder="Szukaj dania..."
-                emptyMessage="Nie znaleziono dania"
-              />
-            </div>
-            <Input
-              type="number"
-              min={1}
-              value={item.quantity}
-              onChange={e => {
-                const items = [...state.items];
-                items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
-                set({ items });
-              }}
-              className="w-20 h-9 text-center"
-            />
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={item.unitPrice}
-              onChange={e => {
-                const items = [...state.items];
-                items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
-                set({ items });
-              }}
-              className="w-28 h-9"
-            />
-            <button
-              type="button"
-              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-              onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}
+        <div className="space-y-2">
+          {state.items.map((item, i) => (
+            <div
+              key={i}
+              className="p-3 bg-white dark:bg-neutral-900 border border-green-200 dark:border-green-700 rounded-xl space-y-2"
             >
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </button>
-          </div>
-        ))}
+              {/* Wiersz 1: Combobox dania + usuń */}
+              <div className="flex gap-2 items-start">
+                <div className="flex-1">
+                  <Combobox
+                    options={dishOptions}
+                    value={item.dishId}
+                    onChange={dishId => {
+                      const dish = dishesArray.find((d: any) => d.id === dishId);
+                      const items = [...state.items];
+                      items[i] = {
+                        ...items[i],
+                        dishId,
+                        unitPrice: dish?.price ?? items[i].unitPrice,
+                      };
+                      set({ items });
+                    }}
+                    placeholder="Wybierz danie..."
+                    searchPlaceholder="Szukaj po nazwie..."
+                    emptyMessage="Nie znaleziono dania"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="mt-1 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                  onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </button>
+              </div>
+
+              {/* Wiersz 2: Ilość + cena */}
+              <div className="flex gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Ilość</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={e => {
+                      const items = [...state.items];
+                      items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
+                      set({ items });
+                    }}
+                    className="w-20 h-8 text-center"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Cena jedn.</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={item.unitPrice}
+                    onChange={e => {
+                      const items = [...state.items];
+                      items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
+                      set({ items });
+                    }}
+                    className="flex-1 h-8"
+                  />
+                </div>
+                {item.quantity > 0 && item.unitPrice > 0 && (
+                  <span className="text-xs font-semibold text-green-700 dark:text-green-300 shrink-0">
+                    = {formatPln(item.quantity * item.unitPrice)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {state.items.length === 0 && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak da\u0144 \u2014 mo\u017cesz doda\u0107 je p\u00f3\u017aniej</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
+            Brak dań — możesz dodać je później
+          </p>
         )}
       </div>
 
-      {/* Us\u0142ugi dodatkowe */}
+      {/* Usługi dodatkowe */}
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Us\u0142ugi dodatkowe</Label>
+          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</Label>
           <button
             type="button"
             onClick={() => set({ extras: [...state.extras, { name: '', quantity: 1, unitPrice: 0 }] })}
@@ -602,73 +648,86 @@ export function NewOrderWizard({ onSuccess }: Props) {
           </button>
         </div>
 
-        {/* Nag\u0142\u00f3wki kolumn */}
-        {state.extras.length > 0 && (
-          <div className="flex gap-2 items-center px-1">
-            <span className="flex-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">Nazwa us\u0142ugi</span>
-            <span className="w-20 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Ilo\u015b\u0107</span>
-            <span className="w-28 text-xs font-medium text-neutral-500 dark:text-neutral-400 text-center">Cena jedn.</span>
-            <span className="w-9" />
-          </div>
-        )}
-
-        {state.extras.map((extra, i) => (
-          <div key={i} className="flex gap-2 items-center">
-            <Input
-              placeholder="np. obs\u0142uga kelnerska, wynajem sprz\u0119tu..."
-              value={extra.name}
-              onChange={e => {
-                const extras = [...state.extras];
-                extras[i] = { ...extras[i], name: e.target.value };
-                set({ extras });
-              }}
-              className="flex-1 h-9"
-            />
-            <Input
-              type="number"
-              min={1}
-              value={extra.quantity}
-              onChange={e => {
-                const extras = [...state.extras];
-                extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
-                set({ extras });
-              }}
-              className="w-20 h-9 text-center"
-            />
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={extra.unitPrice}
-              onChange={e => {
-                const extras = [...state.extras];
-                extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
-                set({ extras });
-              }}
-              className="w-28 h-9"
-            />
-            <button
-              type="button"
-              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-              onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}
+        <div className="space-y-2">
+          {state.extras.map((extra, i) => (
+            <div
+              key={i}
+              className="p-3 bg-white dark:bg-neutral-900 border border-amber-200 dark:border-amber-700 rounded-xl space-y-2"
             >
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </button>
-          </div>
-        ))}
+              {/* Wiersz 1: Nazwa usługi + usuń */}
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="np. obsługa kelnerska, wynajem sprzętu..."
+                  value={extra.name}
+                  onChange={e => {
+                    const extras = [...state.extras];
+                    extras[i] = { ...extras[i], name: e.target.value };
+                    set({ extras });
+                  }}
+                  className="flex-1 h-9"
+                />
+                <button
+                  type="button"
+                  className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                  onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </button>
+              </div>
+
+              {/* Wiersz 2: Ilość + cena */}
+              <div className="flex gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Ilość</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={extra.quantity}
+                    onChange={e => {
+                      const extras = [...state.extras];
+                      extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
+                      set({ extras });
+                    }}
+                    className="w-20 h-8 text-center"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Cena jedn.</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={extra.unitPrice}
+                    onChange={e => {
+                      const extras = [...state.extras];
+                      extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
+                      set({ extras });
+                    }}
+                    className="flex-1 h-8"
+                  />
+                </div>
+                {extra.quantity > 0 && extra.unitPrice > 0 && (
+                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 shrink-0">
+                    = {formatPln(extra.quantity * extra.unitPrice)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {state.extras.length === 0 && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak us\u0142ug dodatkowych</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
+            Brak usług dodatkowych
+          </p>
         )}
       </div>
     </div>
   );
 
-  // ─── Step 4: Logistyka (5c) ───
-  // Usuni\u0119te: deliveryDate (= eventDate, ustawiamy automatycznie)
-  // PICKUP: tylko godzina
-  // ON_SITE: godzina + adres
-  // DELIVERY: adres + godzina + info o dacie
+  // ─── Step 4: Logistyka ───
+  // Godzina wymagana zawsze. Adres wymagany dla ON_SITE i DELIVERY.
+  // deliveryDate = eventDate (automatycznie, bez pola).
 
   const renderStep4 = () => (
     <div className="space-y-6">
@@ -678,7 +737,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
         <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ realizacji</Label>
         <Select
           value={state.deliveryType}
-          onValueChange={v => set({ deliveryType: v as CateringDeliveryType, deliveryAddress: '', deliveryTime: '' })}
+          onValueChange={v => set({
+            deliveryType: v as CateringDeliveryType,
+            deliveryAddress: '',
+            deliveryTime: '',
+          })}
         >
           <SelectTrigger className="h-11">
             <SelectValue />
@@ -700,13 +763,20 @@ export function NewOrderWizard({ onSuccess }: Props) {
         >
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Odbi\u00f3r osobisty</span>
+            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Odbiór osobisty</span>
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> Godzina odbioru
+              <Clock className="w-3.5 h-3.5" />
+              Godzina odbioru
+              <span className="text-red-500">*</span>
             </Label>
-            <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11 max-w-[160px]" />
+            <Input
+              type="time"
+              value={state.deliveryTime}
+              onChange={e => set({ deliveryTime: e.target.value })}
+              className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`}
+            />
           </div>
           {state.eventDate && (
             <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
@@ -728,22 +798,34 @@ export function NewOrderWizard({ onSuccess }: Props) {
             <MapPin className="w-4 h-4 text-violet-600 dark:text-violet-400" />
             <span className="text-sm font-semibold text-violet-800 dark:text-violet-200">U klienta</span>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> Godzina przyjazdu
-            </Label>
-            <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11 max-w-[160px]" />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" /> Adres klienta
-            </Label>
-            <Textarea
-              value={state.deliveryAddress}
-              onChange={e => set({ deliveryAddress: e.target.value })}
-              rows={2}
-              placeholder="Ulica, numer, miasto..."
-            />
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                Godzina przyjazdu
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="time"
+                value={state.deliveryTime}
+                onChange={e => set({ deliveryTime: e.target.value })}
+                className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                Adres klienta
+                <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                value={state.deliveryAddress}
+                onChange={e => set({ deliveryAddress: e.target.value })}
+                rows={2}
+                placeholder="Ulica, numer, miasto..."
+                className={!state.deliveryAddress.trim() ? 'border-red-300 dark:border-red-700' : ''}
+              />
+            </div>
           </div>
           {state.eventDate && (
             <p className="text-xs text-violet-600 dark:text-violet-400 flex items-center gap-1.5">
@@ -769,28 +851,48 @@ export function NewOrderWizard({ onSuccess }: Props) {
             <div className="flex items-center gap-2 px-3 py-2 bg-rose-100 dark:bg-rose-900/40 rounded-lg">
               <Info className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
               <p className="text-xs text-rose-700 dark:text-rose-300">
-                Data dostawy: <strong>{formatDatePl(state.eventDate)}</strong> (z kroku Szczeg\u00f3\u0142y)
+                Data dostawy: <strong>{formatDatePl(state.eventDate)}</strong> (z kroku Szczegóły)
               </p>
             </div>
           )}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" /> Adres dostawy
+              <MapPin className="w-3.5 h-3.5" />
+              Adres dostawy
+              <span className="text-red-500">*</span>
             </Label>
             <Textarea
               value={state.deliveryAddress}
               onChange={e => set({ deliveryAddress: e.target.value })}
               rows={2}
               placeholder="Ulica, nr, miasto..."
+              className={!state.deliveryAddress.trim() ? 'border-red-300 dark:border-red-700' : ''}
             />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> Godzina dostawy
+              <Clock className="w-3.5 h-3.5" />
+              Godzina dostawy
+              <span className="text-red-500">*</span>
             </Label>
-            <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11 max-w-[160px]" />
+            <Input
+              type="time"
+              value={state.deliveryTime}
+              onChange={e => set({ deliveryTime: e.target.value })}
+              className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`}
+            />
           </div>
         </motion.div>
+      )}
+
+      {/* Walidacja — komunikat gdy pola puste */}
+      {!isStep4Valid && (
+        <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1.5">
+          <Info className="w-4 h-4 shrink-0" />
+          {state.deliveryType === 'PICKUP'
+            ? 'Podaj godzinę odbioru'
+            : 'Podaj godzinę oraz adres, aby przejść dalej'}
+        </p>
       )}
 
       <div className="space-y-1.5">
@@ -799,7 +901,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
           value={state.deliveryNotes}
           onChange={e => set({ deliveryNotes: e.target.value })}
           rows={2}
-          placeholder="Dodatkowe instrukcje, dost\u0119p do obiektu..."
+          placeholder="Dodatkowe instrukcje, dostęp do obiektu..."
         />
       </div>
     </div>
@@ -814,12 +916,14 @@ export function NewOrderWizard({ onSuccess }: Props) {
       <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
         <div>
           <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
-          <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">Wype\u0142nione automatycznie z profilu klienta \u2014 mo\u017cesz zmieni\u0107.</p>
+          <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">
+            Wypełnione automatycznie z profilu klienta — możesz zmienić.
+          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2 space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Osoba kontaktowa</Label>
-            <Input placeholder="Imi\u0119 i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} className="h-11" />
+            <Input placeholder="Imię i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} className="h-11" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Telefon kontaktowy</Label>
@@ -843,14 +947,17 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </div>
       </div>
 
-      {/* Karty podsumowuj\u0105ce */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
         {/* Klient */}
-        <div className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 transition-colors" onClick={() => goToStep(0)}>
+        <div
+          className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
+          onClick={() => goToStep(0)}
+        >
           <div className="flex items-center gap-2 mb-2">
-            {selectedClient?.clientType === 'COMPANY' ? <Building2 className="w-4 h-4 text-indigo-600" /> : <User className="w-4 h-4 text-indigo-600" />}
-            <span className="text-xs font-medium text-indigo-600 uppercase">Klient</span>
+            {selectedClient?.clientType === 'COMPANY'
+              ? <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              : <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+            <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Klient</span>
           </div>
           {selectedClient ? (
             selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
@@ -863,64 +970,69 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.firstName} {selectedClient.lastName}</p>
                 <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
                   {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                  {selectedClient.email && <span>{selectedClient.email}</span>}
                 </div>
               </>
             )
-          ) : <p className="text-neutral-500">\u2014</p>}
+          ) : <p className="text-neutral-500">—</p>}
         </div>
 
-        {/* Szczeg\u00f3\u0142y */}
-        <div className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 transition-colors" onClick={() => goToStep(1)}>
+        {/* Szczegóły */}
+        <div
+          className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 dark:hover:border-orange-600 transition-colors"
+          onClick={() => goToStep(1)}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <CalendarDays className="w-4 h-4 text-orange-600" />
-            <span className="text-xs font-medium text-orange-600 uppercase">Szczeg\u00f3\u0142y</span>
+            <CalendarDays className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase">Szczegóły</span>
           </div>
-          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '\u2014'}</p>
+          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '—'}</p>
           {state.eventDate && (
             <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>
           )}
           {parseInt(state.guestsCount) > 0 && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} os\u00f3b</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} osób</p>
           )}
         </div>
 
         {/* Menu */}
-        <div className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 transition-colors" onClick={() => goToStep(3)}>
+        <div
+          className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors"
+          onClick={() => goToStep(3)}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-600 uppercase">Menu</span>
+            <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase">Menu</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">
-            {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'da\u0144'}
+            {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'dań'}
           </p>
           {state.extras.length > 0 && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} us\u0142ug dodatkowych</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} usług dodatkowych</p>
           )}
         </div>
 
         {/* Logistyka */}
-        <div className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 transition-colors" onClick={() => goToStep(4)}>
+        <div
+          className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 transition-colors"
+          onClick={() => goToStep(4)}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <Truck className="w-4 h-4 text-rose-600" />
-            <span className="text-xs font-medium text-rose-600 uppercase">Logistyka</span>
+            <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
-          {(state.deliveryType === 'DELIVERY' || state.deliveryType === 'ON_SITE') && state.deliveryAddress && (
+          {state.deliveryAddress && (
             <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{state.deliveryAddress}</p>
           )}
           {state.deliveryTime && (
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {state.deliveryType === 'PICKUP' ? 'Odbi\u00f3r:' : 'Godzina:'} {state.deliveryTime}
+              {state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}
             </p>
           )}
           {state.eventDate && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {formatDatePl(state.eventDate)}
-            </p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>
           )}
         </div>
-
       </div>
     </div>
   );
@@ -945,7 +1057,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
       >
         <Card className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-b border-neutral-200 dark:border-neutral-700">
-            <CardTitle className="text-xl">Nowe zam\u00f3wienie cateringowe</CardTitle>
+            <CardTitle className="text-xl">Nowe zamówienie cateringowe</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <Stepper
@@ -975,7 +1087,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
               onSubmit={handleSubmit}
               isNextDisabled={isNextDisabled}
               isSubmitting={createOrder.isPending}
-              submitLabel="Utw\u00f3rz zam\u00f3wienie"
+              submitLabel="Utwórz zamówienie"
               className="mt-8"
             />
           </CardContent>
