@@ -14,13 +14,16 @@ export function useDishCategories(): UseQueryResult<DishCategory[]> {
   });
 }
 
-export function useDishes(): UseQueryResult<Dish[]> {
+export function useDishesByCategory(
+  categoryId: string | null,
+): UseQueryResult<Dish[]> {
   return useQuery({
-    queryKey: ['dishes'],
+    queryKey: ['dishes', 'by-category', categoryId],
     queryFn: async () => {
-      const res = await api.get('/dishes');
+      const res = await api.get(`/dishes/category/${categoryId}`);
       return (res.data.data ?? []) as Dish[];
     },
+    enabled: !!categoryId,
     staleTime: 60_000,
   });
 }
