@@ -18,12 +18,13 @@ import type {
   CateringOrderHistoryEntry,
 } from '@/types/catering-order.types';
 
-const KEYS = {
-  orders: (filter?: CateringOrdersFilter) =>
-    ['catering-orders', filter ?? {}] as const,
-  order: (id: string) => ['catering-orders', id] as const,
-  history: (id: string) => ['catering-orders', id, 'history'] as const,
-};
+// Query key factories — plain arrays (no "as const") to avoid strict-mode inference issues
+const ordersKey = (filter: CateringOrdersFilter) =>
+  ['catering-orders', 'list', filter] as unknown[];
+const orderKey = (id: string) =>
+  ['catering-orders', 'detail', id] as unknown[];
+const historyKey = (id: string) =>
+  ['catering-orders', 'history', id] as unknown[];
 
 // ═══════════════════════════════════════════════════════════════
 // Queries
@@ -31,20 +32,20 @@ const KEYS = {
 
 export function useCateringOrders(filter: CateringOrdersFilter = {}) {
   return useQuery<CateringOrdersListResponse>({
-    queryKey: KEYS.orders(filter),
+    queryKey: ordersKey(filter),
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filter.status) params.set('status', filter.status);
-      if (filter.deliveryType) params.set('deliveryType', filter.deliveryType);
-      if (filter.clientId) params.set('clientId', filter.clientId);
+      if (filter.status)        params.set('status', filter.status);
+      if (filter.deliveryType)  params.set('deliveryType', filter.deliveryType);
+      if (filter.clientId)      params.set('clientId', filter.clientId);
       if (filter.eventDateFrom) params.set('eventDateFrom', filter.eventDateFrom);
-      if (filter.eventDateTo) params.set('eventDateTo', filter.eventDateTo);
-      if (filter.search) params.set('search', filter.search);
-      if (filter.page) params.set('page', String(filter.page));
-      if (filter.limit) params.set('limit', String(filter.limit));
+      if (filter.eventDateTo)   params.set('eventDateTo', filter.eventDateTo);
+      if (filter.search)        params.set('search', filter.search);
+      if (filter.page)          params.set('page', String(filter.page));
+      if (filter.limit)         params.set('limit', String(filter.limit));
       const qs = params.toString();
       const res = await api.get(`/catering/orders${qs ? `?${qs}` : ''}`);
-      return res.data;
+      return res.data as CateringOrdersListResponse;
     },
     placeholderData: keepPreviousData,
     staleTime: 5_000,
@@ -53,10 +54,10 @@ export function useCateringOrders(filter: CateringOrdersFilter = {}) {
 
 export function useCateringOrder(id: string) {
   return useQuery<CateringOrder>({
-    queryKey: KEYS.order(id),
+    queryKey: orderKey(id),
     queryFn: async () => {
       const res = await api.get(`/catering/orders/${id}`);
-      return res.data.data;
+      return res.data.data as CateringOrder;
     },
     enabled: !!id,
     staleTime: 5_000,
@@ -65,10 +66,10 @@ export function useCateringOrder(id: string) {
 
 export function useCateringOrderHistory(id: string) {
   return useQuery<CateringOrderHistoryEntry[]>({
-    queryKey: KEYS.history(id),
+    queryKey: historyKey(id),
     queryFn: async () => {
       const res = await api.get(`/catering/orders/${id}/history`);
-      return res.data.data;
+      return res.data.data as CateringOrderHistoryEntry[];
     },
     enabled: !!id,
     staleTime: 10_000,
@@ -84,7 +85,7 @@ export function useCreateCateringOrder() {
   return useMutation<CateringOrder, Error, CreateCateringOrderInput>({
     mutationFn: async (data) => {
       const res = await api.post('/catering/orders', data);
-      return res.data.data;
+      return res.data.data as CateringOrder;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['catering-orders'] });
@@ -97,10 +98,10 @@ export function useUpdateCateringOrder(id: string) {
   return useMutation<CateringOrder, Error, UpdateCateringOrderInput>({
     mutationFn: async (data) => {
       const res = await api.patch(`/catering/orders/${id}`, data);
-      return res.data.data;
+      return res.data.data as CateringOrder;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: KEYS.order(id) });
+      await qc.invalidateQueries({ queryKey: orderKey(id) });
       await qc.invalidateQueries({ queryKey: ['catering-orders'] });
     },
   });
@@ -111,11 +112,11 @@ export function useChangeCateringOrderStatus(id: string) {
   return useMutation<CateringOrder, Error, ChangeStatusInput>({
     mutationFn: async (data) => {
       const res = await api.patch(`/catering/orders/${id}/status`, data);
-      return res.data.data;
+      return res.data.data as CateringOrder;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: KEYS.order(id) });
-      await qc.invalidateQueries({ queryKey: KEYS.history(id) });
+      await qc.invalidateQueries({ queryKey: orderKey(id) });
+      await qc.invalidateQueries({ queryKey: historyKey(id) });
       await qc.invalidateQueries({ queryKey: ['catering-orders'] });
     },
   });
@@ -141,7 +142,7 @@ export function useCreateCateringDeposit(orderId: string) {
       return res.data.data;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: KEYS.order(orderId) });
+      await qc.invalidateQueries({ queryKey: orderKey(orderId) });
     },
   });
 }
@@ -157,7 +158,7 @@ export function useMarkDepositPaid(orderId: string, depositId: string) {
       return res.data.data;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: KEYS.order(orderId) });
+      await qc.invalidateQueries({ queryKey: orderKey(orderId) });
     },
   });
 }
