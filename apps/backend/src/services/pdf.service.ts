@@ -52,7 +52,7 @@ interface ReservationExtraForPDF {
   status: string;
 }
 
-interface ReservationPDFData {
+export interface ReservationPDFData {
   id: string;
   client: {
     firstName: string;
@@ -111,7 +111,7 @@ interface ReservationPDFData {
   createdAt: Date;
 }
 
-interface PaymentConfirmationData {
+export interface PaymentConfirmationData {
   depositId: string;
   amount: number;
   paidAt: Date;
