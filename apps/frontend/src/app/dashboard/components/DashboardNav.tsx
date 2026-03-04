@@ -16,6 +16,7 @@ import {
   X,
   Building2,
   UtensilsCrossed,
+  ClipboardList,
 } from 'lucide-react';
 
 // ── Nav item types ─────────────────────────────────────
@@ -42,6 +43,11 @@ const NAV_ITEMS: NavItem[] = [
         label: 'Szablony',
         href: '/dashboard/catering/templates',
         icon: <UtensilsCrossed className="h-4 w-4" />,
+      },
+      {
+        label: 'Zamówienia',
+        href: '/dashboard/catering/orders',
+        icon: <ClipboardList className="h-4 w-4" />,
       },
     ],
   },
