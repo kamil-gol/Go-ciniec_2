@@ -33,6 +33,7 @@ const navItems = [
   { name: 'Klienci', href: '/dashboard/clients', icon: Users },
   { name: 'Sale', href: '/dashboard/halls', icon: Building2 },
   { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed },
+  { name: 'Catering', href: '/dashboard/catering', icon: ClipboardList },
   { name: 'Kolejka', href: '/dashboard/queue', icon: Clock },
   { name: 'Zaliczki', href: '/dashboard/deposits', icon: DollarSign },
   { name: 'Usługi dodatkowe', href: '/dashboard/service-extras', icon: Gift },
