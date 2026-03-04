@@ -392,8 +392,19 @@ export async function updateOrder(
   // Skalarne pola
   if (input.status !== undefined) updateData.status = input.status;
   if (input.deliveryType !== undefined) updateData.deliveryType = input.deliveryType;
-  if ('templateId' in input) updateData.templateId = input.templateId ?? null;
-  if ('packageId' in input) updateData.packageId = input.packageId ?? null;
+
+  // Relacje — Prisma wymaga connect/disconnect zamiast bezpośredniego ID
+  if ('templateId' in input) {
+    updateData.template = input.templateId
+      ? { connect: { id: input.templateId } }
+      : { disconnect: true };
+  }
+  if ('packageId' in input) {
+    updateData.package = input.packageId
+      ? { connect: { id: input.packageId } }
+      : { disconnect: true };
+  }
+
   if ('eventName' in input) updateData.eventName = input.eventName ?? null;
   if ('eventDate' in input) updateData.eventDate = input.eventDate ?? null;
   if ('eventTime' in input) updateData.eventTime = input.eventTime ?? null;
