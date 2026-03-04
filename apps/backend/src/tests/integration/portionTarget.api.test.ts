@@ -2,6 +2,8 @@
  * Integration Tests — #166 portionTarget
  *
  * Tests the full API flow for portionTarget on menu template categories.
+ * FIX: Cast prismaTest as any for menuTemplateCategory (model added in migration,
+ *      but generated Prisma client types may not include it in test environment).
  */
 
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
@@ -163,7 +165,8 @@ describe('#166 portionTarget — API Integration', () => {
       const { categories } = await createTemplateWithCategories([
         { name: 'Zupy', portionTarget: 'ALL' },
       ]);
-      const dbCat = await prismaTest.menuTemplateCategory.findUnique({
+      // Cast as any: menuTemplateCategory added via migration, may not be in generated client types
+      const dbCat = await (prismaTest as any).menuTemplateCategory.findUnique({
         where: { id: categories[0].id },
       });
       expect(dbCat?.portionTarget).toBe('ALL');
@@ -173,7 +176,7 @@ describe('#166 portionTarget — API Integration', () => {
       const { categories } = await createTemplateWithCategories([
         { name: 'Wino', portionTarget: 'ADULTS_ONLY' },
       ]);
-      const dbCat = await prismaTest.menuTemplateCategory.findUnique({
+      const dbCat = await (prismaTest as any).menuTemplateCategory.findUnique({
         where: { id: categories[0].id },
       });
       expect(dbCat?.portionTarget).toBe('ADULTS_ONLY');
@@ -183,7 +186,7 @@ describe('#166 portionTarget — API Integration', () => {
       const { categories } = await createTemplateWithCategories([
         { name: 'Nuggetsy', portionTarget: 'CHILDREN_ONLY' },
       ]);
-      const dbCat = await prismaTest.menuTemplateCategory.findUnique({
+      const dbCat = await (prismaTest as any).menuTemplateCategory.findUnique({
         where: { id: categories[0].id },
       });
       expect(dbCat?.portionTarget).toBe('CHILDREN_ONLY');

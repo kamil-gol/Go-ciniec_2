@@ -1,15 +1,16 @@
 /**
  * EventType Controller
  * Full CRUD + stats for event type management
+ * FIX: Added optional _next param to methods called with 3 args in tests (Express pattern).
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import eventTypeService from '../services/eventType.service';
 import { AppError } from '../utils/AppError';
 import { CreateEventTypeDTO, UpdateEventTypeDTO } from '../types/eventType.types';
 
 export class EventTypeController {
-  async createEventType(req: Request, res: Response): Promise<void> {
+  async createEventType(req: Request, res: Response, _next?: NextFunction): Promise<void> {
     const { name, description, color, isActive, standardHours, extraHourRate } = req.body;
     const userId = (req as any).user?.id;
 
@@ -42,7 +43,7 @@ export class EventTypeController {
     });
   }
 
-  async getEventTypeById(req: Request, res: Response): Promise<void> {
+  async getEventTypeById(req: Request, res: Response, _next?: NextFunction): Promise<void> {
     const { id } = req.params;
     const eventType = await eventTypeService.getEventTypeById(id);
 

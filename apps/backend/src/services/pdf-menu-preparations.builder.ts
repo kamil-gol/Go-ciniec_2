@@ -1,4 +1,5 @@
 // apps/backend/src/services/pdf-menu-preparations.builder.ts
+// FIX: Cast doc as any for _fragment (pdfkit internal method not in @types/pdfkit).
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
 
@@ -324,7 +325,7 @@ export function buildMenuPreparationsReportPDF(
     }
   }
 
-  // SUMMARY VIEW (5 columns: Danie, Porcje, Doros\u0142e, Dzieci\u0119ce, Klienci)
+  // SUMMARY VIEW (5 columns)
   if (!isDetailed && data.summaryDays) {
     for (const day of data.summaryDays) {
       let minDayHeight = DAY_HEADER_HEIGHT;
@@ -342,7 +343,6 @@ export function buildMenuPreparationsReportPDF(
       for (const course of day.courses) {
         ensureSpace(doc, 35);
 
-        // #166: portionTarget label from first dish
         const ptLabel = (course as any).dishes?.length > 0 ? portionTargetLabel((course as any).dishes[0]?.portionTarget) : '';
 
         doc.rect(LEFT, doc.y, W, 11).fill(COLORS.bgLight);
@@ -425,12 +425,13 @@ export function buildMenuPreparationsReportPDF(
     const line1W = measureTextWidth(doc, footerLine1, 7, ctx.regularFont);
     doc.fillColor(COLORS.textMuted);
     const line1X = LEFT + (W - line1W) / 2;
-    doc._fragment(footerLine1, line1X, footerTextY, { lineBreak: false });
+    // _fragment is pdfkit internal: renders text at exact x/y without cursor movement
+    (doc as any)._fragment(footerLine1, line1X, footerTextY, { lineBreak: false });
 
     const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
     const line2W = measureTextWidth(doc, footerLine2, 6, ctx.regularFont);
     doc.fillColor(COLORS.textLight);
     const line2X = LEFT + (W - line2W) / 2;
-    doc._fragment(footerLine2, line2X, footerTextY + 12, { lineBreak: false });
+    (doc as any)._fragment(footerLine2, line2X, footerTextY + 12, { lineBreak: false });
   }
 }
