@@ -2,13 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import cateringOrderService from '@/services/catering-order.service';
 import { CateringOrderStatus, CateringDeliveryType } from '@prisma/client';
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
-
 function getUserId(req: Request): string {
-  return (req as Request & { user?: { id: string } }).user!.id;
+  return (req as Request & { user: { id: string } }).user.id;
 }
 
-// ─── List ────────────────────────────────────────────────────────────────────
+// ─── Lista zamówień ───────────────────────────────────────────────────────────────
 
 export async function listOrders(
   req: Request,
@@ -16,16 +14,8 @@ export async function listOrders(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const {
-      status,
-      deliveryType,
-      clientId,
-      eventDateFrom,
-      eventDateTo,
-      search,
-      page,
-      limit,
-    } = req.query as Record<string, string | undefined>;
+    const { status, deliveryType, clientId, eventDateFrom, eventDateTo, search, page, limit } =
+      req.query as Record<string, string | undefined>;
 
     const result = await cateringOrderService.listOrders({
       status: status as CateringOrderStatus | undefined,
@@ -44,7 +34,7 @@ export async function listOrders(
   }
 }
 
-// ─── Get by ID ────────────────────────────────────────────────────────────────
+// ─── Szczegóły zamówienia ──────────────────────────────────────────────────────────
 
 export async function getOrder(
   req: Request,
@@ -63,7 +53,7 @@ export async function getOrder(
   }
 }
 
-// ─── Create ──────────────────────────────────────────────────────────────────
+// ─── Utwórz ──────────────────────────────────────────────────────────────────
 
 export async function createOrder(
   req: Request,
@@ -81,7 +71,7 @@ export async function createOrder(
   }
 }
 
-// ─── Update ──────────────────────────────────────────────────────────────────
+// ─── Aktualizuj ─────────────────────────────────────────────────────────────────
 
 export async function updateOrder(
   req: Request,
@@ -99,7 +89,7 @@ export async function updateOrder(
   }
 }
 
-// ─── Status change ────────────────────────────────────────────────────────────
+// ─── Zmień status ──────────────────────────────────────────────────────────────
 
 export async function changeStatus(
   req: Request,
@@ -120,7 +110,7 @@ export async function changeStatus(
   }
 }
 
-// ─── Delete ──────────────────────────────────────────────────────────────────
+// ─── Usuń ──────────────────────────────────────────────────────────────────
 
 export async function deleteOrder(
   req: Request,
@@ -135,7 +125,7 @@ export async function deleteOrder(
   }
 }
 
-// ─── History ──────────────────────────────────────────────────────────────────
+// ─── Historia (timeline) ─────────────────────────────────────────────────────────
 
 export async function getHistory(
   req: Request,
@@ -150,7 +140,7 @@ export async function getHistory(
   }
 }
 
-// ─── Deposits ─────────────────────────────────────────────────────────────────
+// ─── Depozyty ─────────────────────────────────────────────────────────────────
 
 export async function createDeposit(
   req: Request,

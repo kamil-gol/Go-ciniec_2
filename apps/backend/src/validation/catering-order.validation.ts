@@ -1,6 +1,15 @@
-import Joi from 'joi';
+/**
+ * Catering Order Validation Schemas (Zod)
+ * Issue #150 — Faza 2: Zamówienia
+ */
 
-const CATERING_ORDER_STATUSES = [
+import { z } from 'zod';
+
+// ═══════════════════════════════════════════════════════════════
+// Enums
+// ═══════════════════════════════════════════════════════════════
+
+export const CateringOrderStatusEnum = z.enum([
   'DRAFT',
   'INQUIRY',
   'QUOTED',
@@ -10,116 +19,138 @@ const CATERING_ORDER_STATUSES = [
   'DELIVERED',
   'COMPLETED',
   'CANCELLED',
-] as const;
+]);
 
-const DELIVERY_TYPES = ['PICKUP', 'DELIVERY', 'ON_SITE'] as const;
-const DISCOUNT_TYPES = ['PERCENTAGE', 'AMOUNT'] as const;
+export const CateringDeliveryTypeEnum = z.enum([
+  'PICKUP',
+  'DELIVERY',
+  'ON_SITE',
+]);
 
-const orderItemSchema = Joi.object({
-  dishId: Joi.string().uuid().required(),
-  quantity: Joi.number().integer().min(1).required(),
-  unitPrice: Joi.number().min(0).required(),
-  note: Joi.string().max(500).optional().allow('', null),
+export const CateringDiscountTypeEnum = z.enum([
+  'PERCENTAGE',
+  'AMOUNT',
+]);
+
+// ═══════════════════════════════════════════════════════════════
+// Shared sub-schemas
+// ═══════════════════════════════════════════════════════════════
+
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const timePattern = /^\d{2}:\d{2}$/;
+
+const orderItemSchema = z.object({
+  dishId: z.string().uuid('dishId musi być UUID'),
+  quantity: z.number().int().min(1, 'Ilość min. 1'),
+  unitPrice: z.number().min(0, 'Cena nie może być ujemna'),
+  note: z.string().max(500).optional().nullable(),
 });
 
-const orderExtraSchema = Joi.object({
-  name: Joi.string().max(255).required(),
-  description: Joi.string().max(1000).optional().allow('', null),
-  quantity: Joi.number().integer().min(1).required(),
-  unitPrice: Joi.number().min(0).required(),
+const orderExtraSchema = z.object({
+  name: z.string().min(1).max(255, 'Nazwa max 255 znaków'),
+  description: z.string().max(1000).optional().nullable(),
+  quantity: z.number().int().min(1, 'Ilość min. 1'),
+  unitPrice: z.number().min(0, 'Cena nie może być ujemna'),
 });
 
-export const createOrderSchema = Joi.object({
-  clientId: Joi.string().uuid().required(),
-  templateId: Joi.string().uuid().optional().allow(null),
-  packageId: Joi.string().uuid().optional().allow(null),
-  deliveryType: Joi.string().valid(...DELIVERY_TYPES).optional(),
-  eventName: Joi.string().max(255).optional().allow('', null),
-  eventDate: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+// Pola wspólne dla create i update
+const sharedOrderFields = {
+  templateId: z.string().uuid().optional().nullable(),
+  packageId: z.string().uuid().optional().nullable(),
+  deliveryType: CateringDeliveryTypeEnum.optional(),
+  eventName: z.string().max(255).optional().nullable(),
+  eventDate: z
+    .string()
+    .regex(datePattern, 'Format daty: YYYY-MM-DD')
     .optional()
-    .allow(null),
-  eventTime: Joi.string()
-    .pattern(/^\d{2}:\d{2}$/)
+    .nullable(),
+  eventTime: z
+    .string()
+    .regex(timePattern, 'Format czasu: HH:MM')
     .optional()
-    .allow(null),
-  eventLocation: Joi.string().max(255).optional().allow('', null),
-  guestsCount: Joi.number().integer().min(0).optional(),
-  deliveryAddress: Joi.string().max(1000).optional().allow('', null),
-  deliveryNotes: Joi.string().max(1000).optional().allow('', null),
-  deliveryDate: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  eventLocation: z.string().max(255).optional().nullable(),
+  guestsCount: z.number().int().min(0).optional(),
+  deliveryAddress: z.string().max(1000).optional().nullable(),
+  deliveryNotes: z.string().max(1000).optional().nullable(),
+  deliveryDate: z
+    .string()
+    .regex(datePattern, 'Format daty: YYYY-MM-DD')
     .optional()
-    .allow(null),
-  deliveryTime: Joi.string()
-    .pattern(/^\d{2}:\d{2}$/)
+    .nullable(),
+  deliveryTime: z
+    .string()
+    .regex(timePattern, 'Format czasu: HH:MM')
     .optional()
-    .allow(null),
-  discountType: Joi.string().valid(...DISCOUNT_TYPES).optional().allow(null),
-  discountValue: Joi.number().min(0).optional().allow(null),
-  discountReason: Joi.string().max(500).optional().allow('', null),
-  contactName: Joi.string().max(200).optional().allow('', null),
-  contactPhone: Joi.string().max(20).optional().allow('', null),
-  contactEmail: Joi.string().email().max(255).optional().allow('', null),
-  notes: Joi.string().max(5000).optional().allow('', null),
-  internalNotes: Joi.string().max(5000).optional().allow('', null),
-  specialRequirements: Joi.string().max(5000).optional().allow('', null),
-  quoteExpiresAt: Joi.string().isoDate().optional().allow(null),
-  items: Joi.array().items(orderItemSchema).optional(),
-  extras: Joi.array().items(orderExtraSchema).optional(),
+    .nullable(),
+  discountType: CateringDiscountTypeEnum.optional().nullable(),
+  discountValue: z.number().min(0).optional().nullable(),
+  discountReason: z.string().max(500).optional().nullable(),
+  contactName: z.string().max(200).optional().nullable(),
+  contactPhone: z.string().max(20).optional().nullable(),
+  contactEmail: z.string().email('Nieprawidłowy e-mail').max(255).optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+  internalNotes: z.string().max(5000).optional().nullable(),
+  specialRequirements: z.string().max(5000).optional().nullable(),
+  quoteExpiresAt: z
+    .string()
+    .datetime({ message: 'Nieprawidłowy format ISO 8601' })
+    .optional()
+    .nullable(),
+  items: z.array(orderItemSchema).optional(),
+  extras: z.array(orderExtraSchema).optional(),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// Create Order
+// ═══════════════════════════════════════════════════════════════
+
+export const createOrderSchema = z.object({
+  clientId: z.string().uuid('clientId musi być UUID'),
+  ...sharedOrderFields,
 });
 
-export const updateOrderSchema = Joi.object({
-  templateId: Joi.string().uuid().optional().allow(null),
-  packageId: Joi.string().uuid().optional().allow(null),
-  deliveryType: Joi.string().valid(...DELIVERY_TYPES).optional(),
-  eventName: Joi.string().max(255).optional().allow('', null),
-  eventDate: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .allow(null),
-  eventTime: Joi.string()
-    .pattern(/^\d{2}:\d{2}$/)
-    .optional()
-    .allow(null),
-  eventLocation: Joi.string().max(255).optional().allow('', null),
-  guestsCount: Joi.number().integer().min(0).optional(),
-  deliveryAddress: Joi.string().max(1000).optional().allow('', null),
-  deliveryNotes: Joi.string().max(1000).optional().allow('', null),
-  deliveryDate: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .allow(null),
-  deliveryTime: Joi.string()
-    .pattern(/^\d{2}:\d{2}$/)
-    .optional()
-    .allow(null),
-  discountType: Joi.string().valid(...DISCOUNT_TYPES).optional().allow(null),
-  discountValue: Joi.number().min(0).optional().allow(null),
-  discountReason: Joi.string().max(500).optional().allow('', null),
-  contactName: Joi.string().max(200).optional().allow('', null),
-  contactPhone: Joi.string().max(20).optional().allow('', null),
-  contactEmail: Joi.string().email().max(255).optional().allow('', null),
-  notes: Joi.string().max(5000).optional().allow('', null),
-  internalNotes: Joi.string().max(5000).optional().allow('', null),
-  specialRequirements: Joi.string().max(5000).optional().allow('', null),
-  quoteExpiresAt: Joi.string().isoDate().optional().allow(null),
-  items: Joi.array().items(orderItemSchema).optional(),
-  extras: Joi.array().items(orderExtraSchema).optional(),
-  changeReason: Joi.string().max(500).optional().allow('', null),
+// ═══════════════════════════════════════════════════════════════
+// Update Order (partial — wszystkie pola opcjonalne)
+// ═══════════════════════════════════════════════════════════════
+
+export const updateOrderSchema = z.object({
+  ...sharedOrderFields,
+  changeReason: z.string().max(500).optional().nullable(),
 });
 
-export const changeStatusSchema = Joi.object({
-  status: Joi.string().valid(...CATERING_ORDER_STATUSES).required(),
-  reason: Joi.string().max(500).optional().allow('', null),
+// ═══════════════════════════════════════════════════════════════
+// Change Status
+// ═══════════════════════════════════════════════════════════════
+
+export const changeStatusSchema = z.object({
+  status: CateringOrderStatusEnum,
+  reason: z.string().max(500).optional().nullable(),
 });
 
-export const createDepositSchema = Joi.object({
-  amount: Joi.number().positive().required(),
-  dueDate: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)
-    .required(),
-  title: Joi.string().max(255).optional().allow('', null),
-  description: Joi.string().max(1000).optional().allow('', null),
-  internalNotes: Joi.string().max(1000).optional().allow('', null),
+// ═══════════════════════════════════════════════════════════════
+// Create Deposit
+// ═══════════════════════════════════════════════════════════════
+
+export const createDepositSchema = z.object({
+  amount: z
+    .number({ required_error: 'Kwota jest wymagana' })
+    .positive('Kwota musi być większa od 0')
+    .max(999999.99, 'Kwota nie może przekraczać 999 999,99 PLN'),
+  dueDate: z
+    .string({ required_error: 'Termin płatności jest wymagany' })
+    .regex(datePattern, 'Format daty: YYYY-MM-DD'),
+  title: z.string().max(255).optional().nullable(),
+  description: z.string().max(1000).optional().nullable(),
+  internalNotes: z.string().max(1000).optional().nullable(),
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Mark Deposit Paid (opcjonalny paymentMethod)
+// ═══════════════════════════════════════════════════════════════
+
+export const markDepositPaidSchema = z.object({
+  paymentMethod: z
+    .enum(['CASH', 'TRANSFER', 'BLIK', 'CARD'])
+    .optional(),
 });
