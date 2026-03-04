@@ -31,157 +31,103 @@ jest.setTimeout(30000);
 
 describe('PDF Service - SPY-BASED Coverage', () => {
   it('should execute real buildMenuCardPremium logic with allergens', async () => {
-    /**
-     * This test generates a REAL PDF to force Istanbul to track:
-     * - Line 445-446: course.description (TRUE)
-     * - Line 996-999: allergenMap.size === 0 (FALSE - has allergens)
-     * - Line 1133-1134: templateDescription (TRUE)
-     * - Line 1170-1203: Package rendering with badgeText, description, includedItems
-     */
     const data: MenuCardPDFData = {
       templateName: 'SPY Test Menu',
-      templateDescription: 'Full description to hit line 1133', // TRUE: line 1133
+      templateDescription: 'Full description to hit line 1133',
       variant: 'Premium',
       eventTypeName: 'Wesele',
       eventTypeColor: '#c8a45a',
       packages: [
         {
           name: 'Pakiet SPY',
-          description: 'Package description to hit line 1193', // TRUE: line 1193
+          description: 'Package description to hit line 1193',
           shortDescription: 'Short',
-          badgeText: 'PROMO', // TRUE: line 1175
-          includedItems: ['Item A', 'Item B', 'Item C'], // TRUE: line 1199
+          badgeText: 'PROMO',
+          includedItems: ['Item A', 'Item B', 'Item C'],
           pricePerAdult: 150,
           pricePerChild: 75,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Przystawki',
-              description: 'Course description ACTIVE - hits line 445-446', // 🎯 TRUE
+              description: 'Course description ACTIVE - hits line 445-446',
               icon: 'appetizer',
               minSelect: 2,
               maxSelect: 3,
               dishes: [
-                {
-                  name: 'Tatar z łososia',
-                  description: 'Z awokado',
-                  allergens: ['fish', 'eggs'], // Forces allergenMap.size > 0
-                },
-                {
-                  name: 'Carpaccio',
-                  description: 'Z rukolą',
-                  allergens: ['lactose'],
-                },
-                {
-                  name: 'Sałatka',
-                  allergens: ['lactose', 'nuts'],
-                },
+                { name: 'Tatar z łososia', description: 'Z awokado', allergens: ['fish', 'eggs'] },
+                { name: 'Carpaccio', description: 'Z rukolą', allergens: ['lactose'] },
+                { name: 'Sałatka', allergens: ['lactose', 'nuts'] },
               ],
             },
             {
               name: 'Zupy',
-              description: 'Second course description - line 445-446 again', // 🎯 TRUE
+              description: 'Second course description - line 445-446 again',
               icon: 'soup',
               minSelect: 1,
               maxSelect: 1,
               dishes: [
-                {
-                  name: 'Rosół',
-                  allergens: ['gluten'],
-                },
-                {
-                  name: 'Krem z dyni',
-                  allergens: ['lactose', 'soy'],
-                },
+                { name: 'Rosół', allergens: ['gluten'] },
+                { name: 'Krem z dyni', allergens: ['lactose', 'soy'] },
               ],
             },
             {
               name: 'Dania główne',
-              description: 'Third course description', // 🎯 TRUE
+              description: 'Third course description',
               minSelect: 1,
               maxSelect: 2,
               dishes: [
-                {
-                  name: 'Polędwica',
-                  allergens: ['lactose'],
-                },
-                {
-                  name: 'Filet z dorsza',
-                  allergens: ['fish', 'lactose', 'shellfish'],
-                },
+                { name: 'Połędwica', allergens: ['lactose'] },
+                { name: 'Filet z dorsza', allergens: ['fish', 'lactose', 'shellfish'] },
               ],
             },
             {
               name: 'Desery',
-              description: 'Fourth course description', // 🎯 TRUE
+              description: 'Fourth course description',
               minSelect: 1,
               maxSelect: 1,
               dishes: [
-                {
-                  name: 'Tiramisu',
-                  allergens: ['eggs', 'lactose', 'gluten'],
-                },
-                {
-                  name: 'Sernik',
-                  allergens: ['eggs', 'lactose', 'gluten', 'nuts', 'peanuts'],
-                },
+                { name: 'Tiramisu', allergens: ['eggs', 'lactose', 'gluten'] },
+                { name: 'Sernik', allergens: ['eggs', 'lactose', 'gluten', 'nuts', 'peanuts'] },
               ],
             },
           ],
           options: [
-            {
-              name: 'Tort',
-              description: 'Wielopiętrowy',
-              category: 'Desery',
-              priceType: 'FLAT',
-              priceAmount: 500,
-              isRequired: true,
-            },
-            {
-              name: 'Fontanna',
-              category: 'Atrakcje',
-              priceType: 'FLAT',
-              priceAmount: 300,
-              isRequired: false,
-            },
+            { name: 'Tort', description: 'Wielopiętrowy', category: 'Desery', priceType: 'FLAT', priceAmount: 500, isRequired: true },
+            { name: 'Fontanna', category: 'Atrakcje', priceType: 'FLAT', priceAmount: 300, isRequired: false },
           ],
         },
       ],
     };
 
-    // Generate REAL PDF - no mocking PDFDocument internals
     const buffer = await pdfService.generateMenuCardPDF(data);
-    
     expect(buffer).toBeInstanceOf(Buffer);
     expect(buffer.length).toBeGreaterThan(5000);
   });
 
   it('should execute drawAllergenSection early return (no allergens)', async () => {
-    /**
-     * Line 996-999: allergenMap.size === 0 → TRUE (early return)
-     */
     const data: MenuCardPDFData = {
       templateName: 'No Allergens Test',
-      templateDescription: null, // FALSE: line 1133
+      templateDescription: null,
       eventTypeName: 'Konferencja',
       packages: [
         {
           name: 'Pakiet Simple',
-          description: null, // FALSE: line 1193
-          badgeText: null, // FALSE: line 1175
-          includedItems: undefined, // FALSE: line 1199
+          description: null,
+          badgeText: null,
+          includedItems: undefined,
           pricePerAdult: 60,
           pricePerChild: 30,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Obiad',
-              description: null, // FALSE: line 445-446
+              description: null,
               minSelect: 1,
               maxSelect: 1,
               dishes: [
-                { name: 'Danie A' }, // NO allergens
-                { name: 'Danie B' }, // NO allergens
+                { name: 'Danie A' },
+                { name: 'Danie B' },
               ],
             },
           ],
@@ -195,28 +141,24 @@ describe('PDF Service - SPY-BASED Coverage', () => {
   });
 
   it('should handle mixed TRUE/FALSE branches across multiple packages', async () => {
-    /**
-     * Comprehensive test with alternating TRUE/FALSE values
-     */
     const data: MenuCardPDFData = {
       templateName: 'Mixed Coverage Test',
-      templateDescription: 'Has template description', // TRUE: line 1133
+      templateDescription: 'Has template description',
       variant: 'Standard',
       eventTypeName: 'Test Event',
       packages: [
-        // Package 1: ALL TRUE
         {
           name: 'Package ALL TRUE',
-          description: 'Package description present', // TRUE
-          badgeText: 'BESTSELLER', // TRUE
-          includedItems: ['Item 1', 'Item 2'], // TRUE
+          description: 'Package description present',
+          badgeText: 'BESTSELLER',
+          includedItems: ['Item 1', 'Item 2'],
           pricePerAdult: 100,
           pricePerChild: 50,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Course A',
-              description: 'Course A description present', // TRUE: line 445-446
+              description: 'Course A description present',
               minSelect: 1,
               maxSelect: 1,
               dishes: [
@@ -229,55 +171,47 @@ describe('PDF Service - SPY-BASED Coverage', () => {
             { name: 'Option 1', category: 'Cat1', priceType: 'FLAT', priceAmount: 100, isRequired: true },
           ],
         },
-        // Package 2: ALL FALSE
         {
           name: 'Package ALL FALSE',
-          description: null, // FALSE
-          badgeText: null, // FALSE
-          includedItems: null, // FALSE
+          description: null,
+          badgeText: null,
+          includedItems: undefined,
           pricePerAdult: 50,
           pricePerChild: 25,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Course B',
-              description: null, // FALSE: line 445-446
+              description: null,
               minSelect: 1,
               maxSelect: 1,
-              dishes: [
-                { name: 'Dish B1' }, // No allergens
-              ],
+              dishes: [{ name: 'Dish B1' }],
             },
           ],
           options: [],
         },
-        // Package 3: MIXED
         {
           name: 'Package MIXED',
-          description: 'Has desc', // TRUE
-          badgeText: null, // FALSE
-          includedItems: ['Single item'], // TRUE
+          description: 'Has desc',
+          badgeText: null,
+          includedItems: ['Single item'],
           pricePerAdult: 75,
           pricePerChild: 35,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Course C',
-              description: '', // FALSE (empty string is falsy)
+              description: '',
               minSelect: 1,
               maxSelect: 1,
-              dishes: [
-                { name: 'Dish C1', allergens: ['fish'] },
-              ],
+              dishes: [{ name: 'Dish C1', allergens: ['fish'] }],
             },
             {
               name: 'Course D',
-              description: 'Course D has description', // TRUE
+              description: 'Course D has description',
               minSelect: 1,
               maxSelect: 1,
-              dishes: [
-                { name: 'Dish D1', allergens: ['soy', 'nuts'] },
-              ],
+              dishes: [{ name: 'Dish D1', allergens: ['soy', 'nuts'] }],
             },
           ],
           options: [
@@ -293,31 +227,26 @@ describe('PDF Service - SPY-BASED Coverage', () => {
   });
 
   it('should handle empty includedItems array (truthy but empty)', async () => {
-    /**
-     * Edge case: includedItems = [] (truthy but length 0)
-     */
     const data: MenuCardPDFData = {
       templateName: 'Empty Array Test',
-      templateDescription: undefined, // FALSE: line 1133
+      templateDescription: undefined,
       eventTypeName: 'Test',
       packages: [
         {
           name: 'Package Empty Array',
-          description: '', // FALSE (empty string)
-          badgeText: '', // FALSE (empty string)
-          includedItems: [], // TRUE but empty (should not render anything)
+          description: '',
+          badgeText: '',
+          includedItems: [],
           pricePerAdult: 50,
           pricePerChild: 25,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Course',
-              description: undefined, // FALSE: line 445-446
+              description: undefined,
               minSelect: 1,
               maxSelect: 1,
-              dishes: [
-                { name: 'Dish', allergens: ['gluten'] },
-              ],
+              dishes: [{ name: 'Dish', allergens: ['gluten'] }],
             },
           ],
           options: [],
@@ -330,9 +259,6 @@ describe('PDF Service - SPY-BASED Coverage', () => {
   });
 
   it('should execute all allergen types for comprehensive coverage', async () => {
-    /**
-     * Test with ALL allergen types to maximize collectAllAllergens coverage
-     */
     const data: MenuCardPDFData = {
       templateName: 'All Allergens Test',
       templateDescription: 'Full allergen coverage test',
@@ -361,7 +287,6 @@ describe('PDF Service - SPY-BASED Coverage', () => {
                 { name: 'Soy dish', allergens: ['soy'] },
                 { name: 'Shellfish dish', allergens: ['shellfish'] },
                 { name: 'Peanuts dish', allergens: ['peanuts'] },
-                // Dish with multiple allergens
                 { name: 'Everything dish', allergens: ['gluten', 'lactose', 'eggs', 'nuts', 'fish', 'soy', 'shellfish', 'peanuts'] },
               ],
             },
@@ -377,31 +302,26 @@ describe('PDF Service - SPY-BASED Coverage', () => {
   });
 
   it('should handle undefined vs null vs empty string for all conditional fields', async () => {
-    /**
-     * Test all falsy variants: undefined, null, '', 0, false
-     */
     const data: MenuCardPDFData = {
       templateName: 'Falsy Values Test',
-      templateDescription: '', // Empty string (falsy)
+      templateDescription: '',
       eventTypeName: 'Test',
       packages: [
         {
           name: 'Falsy Package',
-          description: undefined, // undefined
-          badgeText: '', // empty string
-          includedItems: null, // null
+          description: undefined,
+          badgeText: '',
+          includedItems: undefined,
           pricePerAdult: 50,
-          pricePerChild: 0, // zero (but still renders)
+          pricePerChild: 0,
           pricePerToddler: 0,
           courses: [
             {
               name: 'Falsy Course',
-              description: '', // empty string
+              description: '',
               minSelect: 1,
               maxSelect: 1,
-              dishes: [
-                { name: 'Dish', allergens: undefined }, // undefined allergens
-              ],
+              dishes: [{ name: 'Dish', allergens: undefined }],
             },
           ],
           options: [],
