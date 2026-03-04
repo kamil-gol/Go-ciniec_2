@@ -31,6 +31,9 @@ import {
   Trash2,
   Building2,
   UserPlus,
+  Clock,
+  MapPin,
+  ShoppingBag,
 } from 'lucide-react';
 import { CreateClientModal } from '@/components/clients/create-client-modal';
 import type {
@@ -222,10 +225,12 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
   const handleClientCreated = useCallback(async (newClient: any) => {
     await queryClient.invalidateQueries({ queryKey: ['clients'] });
-    set({ clientId: newClient.id, clientName:
-      newClient.clientType === 'COMPANY' && newClient.companyName
-        ? newClient.companyName
-        : `${newClient.firstName} ${newClient.lastName}`,
+    set({
+      clientId: newClient.id,
+      clientName:
+        newClient.clientType === 'COMPANY' && newClient.companyName
+          ? newClient.companyName
+          : `${newClient.firstName} ${newClient.lastName}`,
     });
     setShowCreateClientModal(false);
   }, [queryClient, set]);
@@ -316,7 +321,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
     return (
       <div className="space-y-6">
         {renderStepHeader(0)}
-
         <div className="space-y-3">
           <Combobox
             options={clientComboboxOptions}
@@ -328,7 +332,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
             emptyMessage="Nie znaleziono klienta."
             disabled={clientsLoading}
           />
-
           <button
             type="button"
             onClick={() => setShowCreateClientModal(true)}
@@ -347,9 +350,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
           >
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isCompany
-                  ? 'bg-purple-200 dark:bg-purple-800'
-                  : 'bg-green-200 dark:bg-green-800'
+                isCompany ? 'bg-purple-200 dark:bg-purple-800' : 'bg-green-200 dark:bg-green-800'
               }`}>
                 {isCompany
                   ? <Building2 className="w-5 h-5 text-purple-700 dark:text-purple-300" />
@@ -415,7 +416,12 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </div>
         <div className="md:col-span-2 space-y-1.5">
           <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Miejsce</Label>
-          <Input placeholder="Adres lub nazwa miejsca..." value={state.eventLocation} onChange={e => set({ eventLocation: e.target.value })} className="h-11" />
+          <Input
+            placeholder="Adres lub nazwa miejsca..."
+            value={state.eventLocation}
+            onChange={e => set({ eventLocation: e.target.value })}
+            className="h-11"
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Liczba gości</Label>
@@ -447,7 +453,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
           </SelectContent>
         </Select>
       </div>
-
       {templatePackages && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-3"
@@ -457,10 +462,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
             <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Pakiet cenowy</Label>
             <span className="text-xs text-neutral-500 dark:text-neutral-400">(opcjonalnie)</span>
           </div>
-          <Select
-            value={state.packageId || 'NONE'}
-            onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}
-          >
+          <Select value={state.packageId || 'NONE'} onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}>
             <SelectTrigger className="h-11 bg-white dark:bg-neutral-900"><SelectValue placeholder="Wybierz pakiet" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="NONE">— Bez pakietu —</SelectItem>
@@ -473,7 +475,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
           </Select>
         </motion.div>
       )}
-
       {!state.templateId && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
           Możesz pominąć ten krok — szablon i pakiet nie są wymagane.
@@ -508,7 +509,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
         ))}
         {state.items.length === 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">Brak dań — możesz dodać je później</p>}
       </div>
-
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</Label>
@@ -538,10 +538,17 @@ export function NewOrderWizard({ onSuccess }: Props) {
   const renderStep4 = () => (
     <div className="space-y-6">
       {renderStepHeader(4)}
+
+      {/* Typ dostawy — selector */}
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ dostawy</Label>
-        <Select value={state.deliveryType} onValueChange={v => set({ deliveryType: v as CateringDeliveryType })}>
-          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+        <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ realizacji</Label>
+        <Select
+          value={state.deliveryType}
+          onValueChange={v => set({ deliveryType: v as CateringDeliveryType, deliveryAddress: '', deliveryTime: '', deliveryDate: '' })}
+        >
+          <SelectTrigger className="h-11">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {(Object.entries(DELIVERY_TYPE_LABEL) as [CateringDeliveryType, string][]).map(([v, l]) => (
               <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -550,13 +557,96 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </Select>
       </div>
 
-      {state.deliveryType === 'DELIVERY' && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-          className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-4"
+      {/* PICKUP — Odbiór osobisty: tylko godzina */}
+      {state.deliveryType === 'PICKUP' && (
+        <motion.div
+          key="pickup"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl space-y-4"
         >
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Odbiór osobisty</span>
+          </div>
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Adres dostawy</Label>
-            <Textarea value={state.deliveryAddress} onChange={e => set({ deliveryAddress: e.target.value })} rows={2} placeholder="Ulica, nr, miasto..." />
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Godzina odbioru
+            </Label>
+            <Input
+              type="time"
+              value={state.deliveryTime}
+              onChange={e => set({ deliveryTime: e.target.value })}
+              className="h-11 max-w-[160px]"
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* ON_SITE — U klienta: godzina + adres */}
+      {state.deliveryType === 'ON_SITE' && (
+        <motion.div
+          key="on-site"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="p-5 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl space-y-4"
+        >
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            <span className="text-sm font-semibold text-violet-800 dark:text-violet-200">U klienta</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Godzina
+              </Label>
+              <Input
+                type="time"
+                value={state.deliveryTime}
+                onChange={e => set({ deliveryTime: e.target.value })}
+                className="h-11"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" /> Adres klienta
+            </Label>
+            <Textarea
+              value={state.deliveryAddress}
+              onChange={e => set({ deliveryAddress: e.target.value })}
+              rows={2}
+              placeholder="Ulica, numer, miasto..."
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* DELIVERY — Dostawa: adres + data + godzina */}
+      {state.deliveryType === 'DELIVERY' && (
+        <motion.div
+          key="delivery"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="p-5 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-4"
+        >
+          <div className="flex items-center gap-2">
+            <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span className="text-sm font-semibold text-rose-800 dark:text-rose-200">Dostawa</span>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" /> Adres dostawy
+            </Label>
+            <Textarea
+              value={state.deliveryAddress}
+              onChange={e => set({ deliveryAddress: e.target.value })}
+              rows={2}
+              placeholder="Ulica, nr, miasto..."
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -564,16 +654,24 @@ export function NewOrderWizard({ onSuccess }: Props) {
               <Input type="date" value={state.deliveryDate} onChange={e => set({ deliveryDate: e.target.value })} className="h-11" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Godzina dostawy</Label>
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Godzina dostawy
+              </Label>
               <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} className="h-11" />
             </div>
           </div>
         </motion.div>
       )}
 
+      {/* Uwagi — zawsze widoczne */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Uwagi do logistyki</Label>
-        <Textarea value={state.deliveryNotes} onChange={e => set({ deliveryNotes: e.target.value })} rows={2} placeholder="Dodatkowe instrukcje..." />
+        <Textarea
+          value={state.deliveryNotes}
+          onChange={e => set({ deliveryNotes: e.target.value })}
+          rows={2}
+          placeholder="Dodatkowe instrukcje, dostęp do obiektu..."
+        />
       </div>
     </div>
   );
@@ -585,10 +683,12 @@ export function NewOrderWizard({ onSuccess }: Props) {
       {renderStepHeader(5)}
 
       <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
-        <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
-        <p className="text-xs text-teal-700 dark:text-teal-300 -mt-2">
-          Wypełnione automatycznie z profilu klienta — możesz zmienić.
-        </p>
+        <div>
+          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
+          <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">
+            Wypełnione automatycznie z profilu klienta — możesz zmienić.
+          </p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2 space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Osoba kontaktowa</Label>
@@ -681,8 +781,14 @@ export function NewOrderWizard({ onSuccess }: Props) {
             <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
-          {state.deliveryAddress && (
+          {(state.deliveryType === 'DELIVERY' || state.deliveryType === 'ON_SITE') && state.deliveryAddress && (
             <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{state.deliveryAddress}</p>
+          )}
+          {state.deliveryTime && (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}
+              {state.deliveryType === 'DELIVERY' && state.deliveryDate && ` · ${new Date(state.deliveryDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}`}
+            </p>
           )}
         </div>
       </div>
