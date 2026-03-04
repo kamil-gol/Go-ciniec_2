@@ -41,7 +41,7 @@ jest.mock('../../../lib/prisma', () => ({
 
 jest.mock('../../../utils/recalculate-price', () => ({
   computeReservationBasePrice: jest.fn(),
-  recalculateReservationPrice: jest.fn(),
+  recalculateReservationTotalPrice: jest.fn(),
 }));
 
 jest.mock('../../../utils/audit-logger', () => ({
@@ -51,7 +51,7 @@ jest.mock('../../../utils/audit-logger', () => ({
 import { QueueService } from '../../../services/queue.service';
 import { prisma } from '../../../lib/prisma';
 import { ReservationStatus } from '@prisma/client';
-import { computeReservationBasePrice, recalculateReservationPrice } from '../../../utils/recalculate-price';
+import { computeReservationBasePrice, recalculateReservationTotalPrice } from '../../../utils/recalculate-price';
 
 const db = prisma as any;
 const svc = new QueueService();
@@ -150,7 +150,7 @@ describe('QueueService', () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
 
       await expect(svc.moveToPosition('res-1', 3, 'u1'))
-        .rejects.toThrow(/Można przenosić tylko.*RESERVED|Can only move.*RESERVED/i);
+        .rejects.toThrow(/Można przenościć tylko.*RESERVED|Can only move.*RESERVED/i);
     });
 
     it('should move to new position', async () => {
@@ -171,7 +171,7 @@ describe('QueueService', () => {
         basePrice: 5000,
         breakdown: {},
       });
-      (recalculateReservationPrice as jest.Mock).mockResolvedValue(undefined);
+      (recalculateReservationTotalPrice as jest.Mock).mockResolvedValue(undefined);
     });
 
     it('should promote RESERVED to PENDING with calculated price', async () => {
