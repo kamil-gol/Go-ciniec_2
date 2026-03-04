@@ -26,6 +26,7 @@ import {
   AlertCircle,
   Sparkles,
   ChevronRight,
+  History,
 } from 'lucide-react';
 import { useCateringOrder, useDeleteCateringOrder } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
@@ -282,7 +283,7 @@ export default function CateringOrderDetailPage() {
           {/* LEFT COLUMN — 2/3 */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Wydarzenie */}
+            {/* Wydarzenie — data realizacji usunięta (widoczna w bannerze i logistyce) */}
             <SectionCard
               icon={CalendarDays}
               iconBg="bg-orange-100 dark:bg-orange-900/30"
@@ -291,7 +292,6 @@ export default function CateringOrderDetailPage() {
             >
               <div className="grid grid-cols-2 gap-x-6 gap-y-5">
                 <Field label="Okazja" value={order.eventName} />
-                <Field label="Data realizacji" value={formatDatePl(order.eventDate)} />
                 <Field label="Liczba osób" value={order.guestsCount ? `${order.guestsCount} osób` : '—'} />
               </div>
             </SectionCard>
@@ -670,15 +670,15 @@ export default function CateringOrderDetailPage() {
               </SectionCard>
             )}
 
-            {/* Timeline */}
-            <Card className="border-0 shadow-sm ring-1 ring-neutral-200/60 dark:ring-neutral-700/60">
-              <CardHeader className="pb-3 pt-5 px-5">
-                <CardTitle className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Historia</CardTitle>
-              </CardHeader>
-              <CardContent className="px-5 pb-5">
-                <OrderTimeline orderId={id} />
-              </CardContent>
-            </Card>
+            {/* Historia zmian — SectionCard z ikoną History */}
+            <SectionCard
+              icon={History}
+              iconBg="bg-slate-100 dark:bg-slate-800"
+              iconColor="text-slate-500 dark:text-slate-400"
+              title="Historia zmian"
+            >
+              <OrderTimeline orderId={id} />
+            </SectionCard>
 
           </div>
         </div>
