@@ -16,7 +16,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, ChevronRight, ChevronLeft, Check, Plus, Trash2 } from 'lucide-react';
+import {
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import type {
   CateringDeliveryType,
   CreateOrderItemInput,
@@ -28,28 +35,22 @@ import { PackageCards } from './PackageCards';
 // ─── Typy stanu formularza ────────────────────────────────
 
 interface WizardState {
-  // Krok 1 — klient
   clientId: string;
   clientName: string;
-  // Krok 2 — wydarzenie
   eventName: string;
   eventDate: string;
   eventTime: string;
   eventLocation: string;
   guestsCount: string;
-  // Krok 3 — szablon / pakiet
   templateId: string;
   packageId: string;
-  // Krok 4 — dania
   items: CreateOrderItemInput[];
   extras: CreateOrderExtraInput[];
-  // Krok 5 — logistyka
   deliveryType: CateringDeliveryType;
   deliveryAddress: string;
   deliveryDate: string;
   deliveryTime: string;
   deliveryNotes: string;
-  // Krok 6 — kontakt + uwagi
   contactName: string;
   contactPhone: string;
   contactEmail: string;
@@ -112,22 +113,26 @@ export function NewOrderWizard({ onSuccess }: Props) {
     setClientSearching(true);
     try {
       const { api } = await import('@/lib/api');
-      const res = await api.get(`/clients?search=${encodeURIComponent(clientSearch)}&limit=10`);
+      const res = await api.get(
+        `/clients?search=${encodeURIComponent(clientSearch)}&limit=10`,
+      );
       const data = res.data.data ?? [];
       setClients(
-        data.map((c: {
-          id: string;
-          firstName: string;
-          lastName: string;
-          companyName?: string;
-          clientType: string;
-        }) => ({
-          id: c.id,
-          label:
-            c.clientType === 'COMPANY' && c.companyName
-              ? c.companyName
-              : `${c.firstName} ${c.lastName}`,
-        }))
+        data.map(
+          (c: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            companyName?: string;
+            clientType: string;
+          }) => ({
+            id: c.id,
+            label:
+              c.clientType === 'COMPANY' && c.companyName
+                ? c.companyName
+                : `${c.firstName} ${c.lastName}`,
+          }),
+        ),
       );
     } finally {
       setClientSearching(false);
@@ -136,8 +141,14 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
   const selectedTemplate = templates?.find(t => t.id === state.templateId);
   const templatePackages =
-    selectedTemplate && Array.isArray(selectedTemplate.packages) && selectedTemplate.packages.length > 0
-      ? selectedTemplate.packages as { id: string; name: string; basePrice: number }[]
+    selectedTemplate &&
+    Array.isArray(selectedTemplate.packages) &&
+    selectedTemplate.packages.length > 0
+      ? (selectedTemplate.packages as {
+          id: string;
+          name: string;
+          basePrice: number;
+        }[])
       : null;
 
   const handleSubmit = async () => {
@@ -167,9 +178,32 @@ export function NewOrderWizard({ onSuccess }: Props) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Stepper */}
-      <div className="flex items-center gap-1">
+    <div className="max-w-xl sm:max-w-2xl mx-auto space-y-4 sm:space-y-6">
+
+      {/* ─── STEPPER ─────────────────────────────────────── */}
+
+      {/* Mobile: kompaktowy pasek postępu */}
+      <div className="sm:hidden space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Krok {step + 1} z {STEPS.length}
+          </span>
+          <span className="font-semibold">{STEPS[step]}</span>
+        </div>
+        <div className="flex gap-1">
+          {STEPS.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                i <= step ? 'bg-primary' : 'bg-muted'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: pełny stepper z kołkami */}
+      <div className="hidden sm:flex items-center gap-1">
         {STEPS.map((label, i) => (
           <div key={i} className="flex items-center gap-1">
             <div
@@ -184,17 +218,21 @@ export function NewOrderWizard({ onSuccess }: Props) {
               {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`h-0.5 w-8 ${
-                i < step ? 'bg-primary' : 'bg-muted'
-              }`} />
+              <div
+                className={`h-0.5 w-8 ${
+                  i < step ? 'bg-primary' : 'bg-muted'
+                }`}
+              />
             )}
           </div>
         ))}
         <span className="ml-3 text-sm font-medium">{STEPS[step]}</span>
       </div>
 
+      {/* ─── KROK CONTENT ───────────────────────────────── */}
       <Card>
         <CardContent className="pt-6">
+
           {/* KROK 0 — Klient */}
           {step === 0 && (
             <div className="space-y-4">
@@ -205,8 +243,17 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   onChange={e => setClientSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchClients()}
                 />
-                <Button variant="outline" onClick={searchClients} disabled={clientSearching}>
-                  {clientSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Szukaj'}
+                <Button
+                  variant="outline"
+                  onClick={searchClients}
+                  disabled={clientSearching}
+                  className="shrink-0"
+                >
+                  {clientSearching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Szukaj'
+                  )}
                 </Button>
               </div>
               {clients.length > 0 && (
@@ -228,33 +275,54 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 </div>
               )}
               {state.clientName && (
-                <p className="text-sm text-green-600 font-medium">Wybrany: {state.clientName}</p>
+                <p className="text-sm text-green-600 font-medium">
+                  Wybrany: {state.clientName}
+                </p>
               )}
             </div>
           )}
 
           {/* KROK 1 — Wydarzenie */}
           {step === 1 && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label>Nazwa wydarzenia</Label>
-                <Input value={state.eventName} onChange={e => set({ eventName: e.target.value })} />
+                <Input
+                  value={state.eventName}
+                  onChange={e => set({ eventName: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Data</Label>
-                <Input type="date" value={state.eventDate} onChange={e => set({ eventDate: e.target.value })} />
+                <Input
+                  type="date"
+                  value={state.eventDate}
+                  onChange={e => set({ eventDate: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Godzina</Label>
-                <Input type="time" value={state.eventTime} onChange={e => set({ eventTime: e.target.value })} />
+                <Input
+                  type="time"
+                  value={state.eventTime}
+                  onChange={e => set({ eventTime: e.target.value })}
+                />
               </div>
-              <div className="col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label>Miejsce</Label>
-                <Input value={state.eventLocation} onChange={e => set({ eventLocation: e.target.value })} />
+                <Input
+                  value={state.eventLocation}
+                  onChange={e => set({ eventLocation: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Liczba gości</Label>
-                <Input type="number" min={0} value={state.guestsCount} onChange={e => set({ guestsCount: e.target.value })} />
+                <Input
+                  type="number"
+                  min={0}
+                  value={state.guestsCount}
+                  onChange={e => set({ guestsCount: e.target.value })}
+                />
               </div>
             </div>
           )}
@@ -266,7 +334,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 <Label>Szablon cateringu (opcjonalnie)</Label>
                 <Select
                   value={state.templateId || 'NONE'}
-                  onValueChange={v => set({ templateId: v === 'NONE' ? '' : v, packageId: '' })}
+                  onValueChange={v =>
+                    set({ templateId: v === 'NONE' ? '' : v, packageId: '' })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Wybierz szablon" />
@@ -274,7 +344,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   <SelectContent>
                     <SelectItem value="NONE">— Bez szablonu —</SelectItem>
                     {templates?.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -308,6 +380,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
           {/* KROK 3 — Dania i Extras */}
           {step === 3 && (
             <div className="space-y-6">
+              {/* Dania */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base">Dania</Label>
@@ -315,14 +388,23 @@ export function NewOrderWizard({ onSuccess }: Props) {
                     size="sm"
                     variant="outline"
                     onClick={() =>
-                      set({ items: [...state.items, { dishId: '', quantity: 1, unitPrice: 0 }] })
+                      set({
+                        items: [
+                          ...state.items,
+                          { dishId: '', quantity: 1, unitPrice: 0 },
+                        ],
+                      })
                     }
                   >
                     <Plus className="mr-1 h-3 w-3" /> Dodaj danie
                   </Button>
                 </div>
+
                 {state.items.map((item, i) => (
-                  <div key={i} className="flex gap-2 items-start">
+                  <div
+                    key={i}
+                    className="border rounded-lg p-3 space-y-2 sm:p-0 sm:border-0 sm:space-y-0 sm:flex sm:gap-2 sm:items-start"
+                  >
                     <Input
                       placeholder="UUID dania"
                       value={item.dishId}
@@ -331,47 +413,62 @@ export function NewOrderWizard({ onSuccess }: Props) {
                         items[i] = { ...items[i], dishId: e.target.value };
                         set({ items });
                       }}
-                      className="flex-1"
+                      className="w-full sm:flex-1"
                     />
-                    <Input
-                      type="number"
-                      min={1}
-                      placeholder="Ilość"
-                      value={item.quantity}
-                      onChange={e => {
-                        const items = [...state.items];
-                        items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
-                        set({ items });
-                      }}
-                      className="w-20"
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="Cena"
-                      value={item.unitPrice}
-                      onChange={e => {
-                        const items = [...state.items];
-                        items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
-                        set({ items });
-                      }}
-                      className="w-28"
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => set({ items: state.items.filter((_, j) => j !== i) })}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Ilość"
+                        value={item.quantity}
+                        onChange={e => {
+                          const items = [...state.items];
+                          items[i] = {
+                            ...items[i],
+                            quantity: parseInt(e.target.value, 10) || 1,
+                          };
+                          set({ items });
+                        }}
+                        className="flex-1 sm:w-20"
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        placeholder="Cena"
+                        value={item.unitPrice}
+                        onChange={e => {
+                          const items = [...state.items];
+                          items[i] = {
+                            ...items[i],
+                            unitPrice: parseFloat(e.target.value) || 0,
+                          };
+                          set({ items });
+                        }}
+                        className="flex-1 sm:w-28"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          set({ items: state.items.filter((_, j) => j !== i) })
+                        }
+                        className="shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
+
                 {state.items.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Brak dań — możesz dodać je później</p>
+                  <p className="text-sm text-muted-foreground">
+                    Brak dań — możesz dodać je później
+                  </p>
                 )}
               </div>
 
+              {/* Extras */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base">Usługi dodatkowe</Label>
@@ -379,14 +476,23 @@ export function NewOrderWizard({ onSuccess }: Props) {
                     size="sm"
                     variant="outline"
                     onClick={() =>
-                      set({ extras: [...state.extras, { name: '', quantity: 1, unitPrice: 0 }] })
+                      set({
+                        extras: [
+                          ...state.extras,
+                          { name: '', quantity: 1, unitPrice: 0 },
+                        ],
+                      })
                     }
                   >
                     <Plus className="mr-1 h-3 w-3" /> Dodaj
                   </Button>
                 </div>
+
                 {state.extras.map((extra, i) => (
-                  <div key={i} className="flex gap-2 items-start">
+                  <div
+                    key={i}
+                    className="border rounded-lg p-3 space-y-2 sm:p-0 sm:border-0 sm:space-y-0 sm:flex sm:gap-2 sm:items-start"
+                  >
                     <Input
                       placeholder="Nazwa usługi"
                       value={extra.name}
@@ -395,40 +501,53 @@ export function NewOrderWizard({ onSuccess }: Props) {
                         extras[i] = { ...extras[i], name: e.target.value };
                         set({ extras });
                       }}
-                      className="flex-1"
+                      className="w-full sm:flex-1"
                     />
-                    <Input
-                      type="number"
-                      min={1}
-                      placeholder="Ilość"
-                      value={extra.quantity}
-                      onChange={e => {
-                        const extras = [...state.extras];
-                        extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
-                        set({ extras });
-                      }}
-                      className="w-20"
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="Cena"
-                      value={extra.unitPrice}
-                      onChange={e => {
-                        const extras = [...state.extras];
-                        extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
-                        set({ extras });
-                      }}
-                      className="w-28"
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => set({ extras: state.extras.filter((_, j) => j !== i) })}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Ilość"
+                        value={extra.quantity}
+                        onChange={e => {
+                          const extras = [...state.extras];
+                          extras[i] = {
+                            ...extras[i],
+                            quantity: parseInt(e.target.value, 10) || 1,
+                          };
+                          set({ extras });
+                        }}
+                        className="flex-1 sm:w-20"
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        placeholder="Cena"
+                        value={extra.unitPrice}
+                        onChange={e => {
+                          const extras = [...state.extras];
+                          extras[i] = {
+                            ...extras[i],
+                            unitPrice: parseFloat(e.target.value) || 0,
+                          };
+                          set({ extras });
+                        }}
+                        className="flex-1 sm:w-28"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          set({
+                            extras: state.extras.filter((_, j) => j !== i),
+                          })
+                        }
+                        className="shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -437,26 +556,34 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
           {/* KROK 4 — Logistyka */}
           {step === 4 && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label>Typ dostawy</Label>
                 <Select
                   value={state.deliveryType}
-                  onValueChange={v => set({ deliveryType: v as CateringDeliveryType })}
+                  onValueChange={v =>
+                    set({ deliveryType: v as CateringDeliveryType })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.entries(DELIVERY_TYPE_LABEL) as [CateringDeliveryType, string][]).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    {(
+                      Object.entries(
+                        DELIVERY_TYPE_LABEL,
+                      ) as [CateringDeliveryType, string][]
+                    ).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>
+                        {l}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               {state.deliveryType === 'DELIVERY' && (
                 <>
-                  <div className="col-span-2 space-y-1.5">
+                  <div className="sm:col-span-2 space-y-1.5">
                     <Label>Adres dostawy</Label>
                     <Textarea
                       value={state.deliveryAddress}
@@ -466,15 +593,23 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Data dostawy</Label>
-                    <Input type="date" value={state.deliveryDate} onChange={e => set({ deliveryDate: e.target.value })} />
+                    <Input
+                      type="date"
+                      value={state.deliveryDate}
+                      onChange={e => set({ deliveryDate: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Godzina dostawy</Label>
-                    <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })} />
+                    <Input
+                      type="time"
+                      value={state.deliveryTime}
+                      onChange={e => set({ deliveryTime: e.target.value })}
+                    />
                   </div>
                 </>
               )}
-              <div className="col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label>Uwagi do logistyki</Label>
                 <Textarea
                   value={state.deliveryNotes}
@@ -485,11 +620,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
             </div>
           )}
 
-          {/* KROK 5 — Podsumowanie */}
+          {/* KROK 5 — Podsumowanie + kontakt */}
           {step === 5 && (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 space-y-1.5">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2 space-y-1.5">
                   <Label>Osoba kontaktowa</Label>
                   <Input
                     placeholder="Imię i nazwisko"
@@ -513,7 +648,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                     onChange={e => set({ contactEmail: e.target.value })}
                   />
                 </div>
-                <div className="col-span-2 space-y-1.5">
+                <div className="sm:col-span-2 space-y-1.5">
                   <Label>Uwagi</Label>
                   <Textarea
                     rows={3}
@@ -521,7 +656,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                     onChange={e => set({ notes: e.target.value })}
                   />
                 </div>
-                <div className="col-span-2 space-y-1.5">
+                <div className="sm:col-span-2 space-y-1.5">
                   <Label>Specjalne wymagania</Label>
                   <Textarea
                     rows={2}
@@ -530,20 +665,42 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   />
                 </div>
               </div>
-              <div className="border rounded-md p-4 space-y-2 bg-muted/30">
+
+              {/* Podsumowanie danych */}
+              <div className="border rounded-lg p-4 space-y-2 bg-muted/30 text-sm">
                 <p className="font-semibold">Podsumowanie</p>
-                <p><span className="text-muted-foreground">Klient:</span> {state.clientName || '—'}</p>
-                <p><span className="text-muted-foreground">Wydarzenie:</span> {state.eventName || '—'} {state.eventDate && `(${state.eventDate})`}</p>
-                <p><span className="text-muted-foreground">Goście:</span> {state.guestsCount}</p>
-                <p><span className="text-muted-foreground">Typ dostawy:</span> {DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
-                <p><span className="text-muted-foreground">Dania:</span> {state.items.length} pozycji</p>
-                <p><span className="text-muted-foreground">Extras:</span> {state.extras.length} pozycji</p>
+                <p>
+                  <span className="text-muted-foreground">Klient:</span>{' '}
+                  {state.clientName || '—'}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Wydarzenie:</span>{' '}
+                  {state.eventName || '—'}{' '}
+                  {state.eventDate && `(${state.eventDate})`}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Goście:</span>{' '}
+                  {state.guestsCount}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Typ dostawy:</span>{' '}
+                  {DELIVERY_TYPE_LABEL[state.deliveryType]}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Dania:</span>{' '}
+                  {state.items.length} pozycji
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Extras:</span>{' '}
+                  {state.extras.length} pozycji
+                </p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* ─── NAWIGACJA ────────────────────────────────── */}
       <div className="flex justify-between">
         <Button
           variant="outline"
@@ -565,7 +722,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
             onClick={handleSubmit}
             disabled={createOrder.isPending || !state.clientId}
           >
-            {createOrder.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {createOrder.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Utwórz zamówienie
           </Button>
         )}
