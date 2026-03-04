@@ -39,9 +39,9 @@ export const ORDER_STATUS_COLOR: Record<CateringOrderStatus, string> = {
 };
 
 export const DELIVERY_TYPE_LABEL: Record<CateringDeliveryType, string> = {
-  PICKUP: 'Odbiór własny',
+  PICKUP: 'Odbiór osobisty',
   DELIVERY: 'Dostawa',
-  ON_SITE: 'Na miejscu',
+  ON_SITE: 'U klienta',
 };
 
 export interface CateringOrderClient {
