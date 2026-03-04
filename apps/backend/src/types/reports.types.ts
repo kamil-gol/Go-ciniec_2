@@ -3,6 +3,7 @@
 /**
  * Reports Types
  * Type definitions for reports module
+ * Updated: fix/ts-errors — portionTarget added to MenuPreparationCourse + MenuPreparationSummaryDish
  */
 
 export type GroupByPeriod = 'day' | 'week' | 'month' | 'year';
@@ -243,6 +244,7 @@ export interface MenuPreparationCourse {
   courseName: string;
   icon: string | null;
   dishes: MenuPreparationDish[];
+  portionTarget?: number;  // fix: used in reports.service (total portions target for this course)
 }
 
 /** Reservation context for the menu report (detailed view) */
@@ -284,6 +286,7 @@ export interface MenuPreparationSummaryDish {
   totalPortions: number;        // (adults + children) * portionSize - toddlers excluded
   adultPortions: number;
   childrenPortions: number;
+  portionTarget?: number;       // fix: used in reports.service (target portion count for planning)
   reservations: Array<{
     id: string;
     clientName: string;
