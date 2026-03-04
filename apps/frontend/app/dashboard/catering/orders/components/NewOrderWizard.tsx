@@ -36,6 +36,7 @@ import {
   MapPin,
   ShoppingBag,
   Info,
+  Home,
 } from 'lucide-react';
 import { CreateClientModal } from '@/components/clients/create-client-modal';
 import type {
@@ -108,7 +109,10 @@ interface WizardState {
   items: CreateOrderItemInput[];
   extras: CreateOrderExtraInput[];
   deliveryType: CateringDeliveryType;
-  deliveryAddress: string;
+  // Adres rozbity na 3 pola — na submit łączone w jeden string
+  deliveryStreet: string;
+  deliveryNumber: string;
+  deliveryCity: string;
   deliveryTime: string;
   deliveryNotes: string;
   contactName: string;
@@ -129,7 +133,9 @@ const INITIAL: WizardState = {
   items: [],
   extras: [],
   deliveryType: 'ON_SITE',
-  deliveryAddress: '',
+  deliveryStreet: '',
+  deliveryNumber: '',
+  deliveryCity: '',
   deliveryTime: '',
   deliveryNotes: '',
   contactName: '',
@@ -157,12 +163,17 @@ function formatDatePl(iso: string) {
   }
 }
 
+function buildAddress(street: string, number: string, city: string): string {
+  const streetPart = [street.trim(), number.trim()].filter(Boolean).join(' ');
+  return [streetPart, city.trim()].filter(Boolean).join(', ');
+}
+
 // ═══ COMPONENT ═══
 
 export function NewOrderWizard({ onSuccess }: Props) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
-  const [maxStep, setMaxStep] = useState(0);           // najwyższy krok osiągnięty
+  const [maxStep, setMaxStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [state, setState] = useState<WizardState>(INITIAL);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
@@ -208,7 +219,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
     [clientsArray, state.clientId]
   );
 
-  // ─── Auto-fill contact from selected client ───
+  // ─── Auto-fill contact ───
 
   useEffect(() => {
     if (!selectedClient) return;
@@ -270,17 +281,15 @@ export function NewOrderWizard({ onSuccess }: Props) {
   );
 
   // ─── Step 4 validation ───
-  // Godzina zawsze wymagana. Adres wymagany dla ON_SITE i DELIVERY.
 
   const isStep4Valid = useMemo(() => {
     const hasTime = !!state.deliveryTime;
     if (state.deliveryType === 'PICKUP') return hasTime;
-    return hasTime && !!state.deliveryAddress.trim();
-  }, [state.deliveryType, state.deliveryTime, state.deliveryAddress]);
+    // ON_SITE i DELIVERY: godzina + miasto wymagane
+    return hasTime && !!state.deliveryCity.trim();
+  }, [state.deliveryType, state.deliveryTime, state.deliveryCity]);
 
   // ─── Navigation ───
-  // maxStep śledzi najwyższy krok, na którym byliśmy — pozwala swobodnie
-  // klikać między wcześniej odwiedzonymi krokami.
 
   const goToNextStep = useCallback(() => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -302,12 +311,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
     (step === 4 && !isStep4Valid);
 
   // ─── Submit ───
-  // deliveryDate = eventDate (automatycznie)
-  // Filtrujemy puste dania i usługi przed wysłaniem do API
 
   const handleSubmit = async () => {
     const validItems = state.items.filter(item => item.dishId.trim() !== '');
     const validExtras = state.extras.filter(extra => extra.name.trim() !== '');
+    const deliveryAddress = buildAddress(state.deliveryStreet, state.deliveryNumber, state.deliveryCity) || null;
 
     const order = await createOrder.mutateAsync({
       clientId: state.clientId,
@@ -317,7 +325,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
       eventName: state.eventName || null,
       eventDate: state.eventDate || null,
       guestsCount: parseInt(state.guestsCount, 10) || 0,
-      deliveryAddress: state.deliveryAddress || null,
+      deliveryAddress,
       deliveryDate: state.eventDate || null,
       deliveryTime: state.deliveryTime || null,
       deliveryNotes: state.deliveryNotes || null,
@@ -332,9 +340,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
     onSuccess(order.id);
   };
 
-  // ═════════════════════════════════════════════
+  // ═══════════════════════════════════════════════
   // STEP RENDERERS
-  // ═════════════════════════════════════════════
+  // ═══════════════════════════════════════════════
 
   const renderStepHeader = (idx: number) => {
     const meta = STEP_META[idx];
@@ -532,7 +540,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
   );
 
   // ─── Step 3: Dania i Extras ───
-  // Każde danie jako osobna karta — Combobox pełna szerokość, potem ilość i cena.
 
   const renderStep3 = () => (
     <div className="space-y-6">
@@ -557,7 +564,6 @@ export function NewOrderWizard({ onSuccess }: Props) {
               key={i}
               className="p-3 bg-white dark:bg-neutral-900 border border-green-200 dark:border-green-700 rounded-xl space-y-2"
             >
-              {/* Wiersz 1: Combobox dania + usuń */}
               <div className="flex gap-2 items-start">
                 <div className="flex-1">
                   <Combobox
@@ -566,11 +572,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                     onChange={dishId => {
                       const dish = dishesArray.find((d: any) => d.id === dishId);
                       const items = [...state.items];
-                      items[i] = {
-                        ...items[i],
-                        dishId,
-                        unitPrice: dish?.price ?? items[i].unitPrice,
-                      };
+                      items[i] = { ...items[i], dishId, unitPrice: dish?.price ?? items[i].unitPrice };
                       set({ items });
                     }}
                     placeholder="Wybierz danie..."
@@ -586,35 +588,20 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </button>
               </div>
-
-              {/* Wiersz 2: Ilość + cena */}
               <div className="flex gap-4 items-center">
                 <div className="flex items-center gap-2">
                   <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Ilość</Label>
                   <Input
-                    type="number"
-                    min={1}
-                    value={item.quantity}
-                    onChange={e => {
-                      const items = [...state.items];
-                      items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
-                      set({ items });
-                    }}
+                    type="number" min={1} value={item.quantity}
+                    onChange={e => { const items = [...state.items]; items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ items }); }}
                     className="w-20 h-8 text-center"
                   />
                 </div>
                 <div className="flex items-center gap-2 flex-1">
                   <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Cena jedn.</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={item.unitPrice}
-                    onChange={e => {
-                      const items = [...state.items];
-                      items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
-                      set({ items });
-                    }}
+                    type="number" min={0} step="0.01" value={item.unitPrice}
+                    onChange={e => { const items = [...state.items]; items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ items }); }}
                     className="flex-1 h-8"
                   />
                 </div>
@@ -654,16 +641,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
               key={i}
               className="p-3 bg-white dark:bg-neutral-900 border border-amber-200 dark:border-amber-700 rounded-xl space-y-2"
             >
-              {/* Wiersz 1: Nazwa usługi + usuń */}
               <div className="flex gap-2 items-center">
                 <Input
                   placeholder="np. obsługa kelnerska, wynajem sprzętu..."
                   value={extra.name}
-                  onChange={e => {
-                    const extras = [...state.extras];
-                    extras[i] = { ...extras[i], name: e.target.value };
-                    set({ extras });
-                  }}
+                  onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], name: e.target.value }; set({ extras }); }}
                   className="flex-1 h-9"
                 />
                 <button
@@ -674,35 +656,20 @@ export function NewOrderWizard({ onSuccess }: Props) {
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </button>
               </div>
-
-              {/* Wiersz 2: Ilość + cena */}
               <div className="flex gap-4 items-center">
                 <div className="flex items-center gap-2">
                   <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Ilość</Label>
                   <Input
-                    type="number"
-                    min={1}
-                    value={extra.quantity}
-                    onChange={e => {
-                      const extras = [...state.extras];
-                      extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
-                      set({ extras });
-                    }}
+                    type="number" min={1} value={extra.quantity}
+                    onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ extras }); }}
                     className="w-20 h-8 text-center"
                   />
                 </div>
                 <div className="flex items-center gap-2 flex-1">
                   <Label className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">Cena jedn.</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={extra.unitPrice}
-                    onChange={e => {
-                      const extras = [...state.extras];
-                      extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
-                      set({ extras });
-                    }}
+                    type="number" min={0} step="0.01" value={extra.unitPrice}
+                    onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ extras }); }}
                     className="flex-1 h-8"
                   />
                 </div>
@@ -726,8 +693,53 @@ export function NewOrderWizard({ onSuccess }: Props) {
   );
 
   // ─── Step 4: Logistyka ───
-  // Godzina wymagana zawsze. Adres wymagany dla ON_SITE i DELIVERY.
-  // deliveryDate = eventDate (automatycznie, bez pola).
+  // Adres rozbity na: ulica + numer + miasto
+
+  const addressSection = (label: string) => (
+    <div className="space-y-3">
+      <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+        <Home className="w-3.5 h-3.5" />
+        {label}
+        <span className="text-red-500">*</span>
+      </Label>
+
+      {/* Ulica + numer */}
+      <div className="grid grid-cols-[1fr_6rem] gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal">Ulica</Label>
+          <Input
+            placeholder="np. ul. Kwiatowa"
+            value={state.deliveryStreet}
+            onChange={e => set({ deliveryStreet: e.target.value })}
+            className="h-10"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal">Numer</Label>
+          <Input
+            placeholder="12A"
+            value={state.deliveryNumber}
+            onChange={e => set({ deliveryNumber: e.target.value })}
+            className="h-10"
+          />
+        </div>
+      </div>
+
+      {/* Miasto */}
+      <div className="space-y-1">
+        <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal flex items-center gap-1">
+          Miasto
+          <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          placeholder="np. Katowice"
+          value={state.deliveryCity}
+          onChange={e => set({ deliveryCity: e.target.value })}
+          className={`h-10 ${!state.deliveryCity.trim() ? 'border-red-300 dark:border-red-700' : ''}`}
+        />
+      </div>
+    </div>
+  );
 
   const renderStep4 = () => (
     <div className="space-y-6">
@@ -739,13 +751,13 @@ export function NewOrderWizard({ onSuccess }: Props) {
           value={state.deliveryType}
           onValueChange={v => set({
             deliveryType: v as CateringDeliveryType,
-            deliveryAddress: '',
+            deliveryStreet: '',
+            deliveryNumber: '',
+            deliveryCity: '',
             deliveryTime: '',
           })}
         >
-          <SelectTrigger className="h-11">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
           <SelectContent>
             {(Object.entries(DELIVERY_TYPE_LABEL) as [CateringDeliveryType, string][]).map(([v, l]) => (
               <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -798,35 +810,20 @@ export function NewOrderWizard({ onSuccess }: Props) {
             <MapPin className="w-4 h-4 text-violet-600 dark:text-violet-400" />
             <span className="text-sm font-semibold text-violet-800 dark:text-violet-200">U klienta</span>
           </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                Godzina przyjazdu
-                <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="time"
-                value={state.deliveryTime}
-                onChange={e => set({ deliveryTime: e.target.value })}
-                className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
-                Adres klienta
-                <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                value={state.deliveryAddress}
-                onChange={e => set({ deliveryAddress: e.target.value })}
-                rows={2}
-                placeholder="Ulica, numer, miasto..."
-                className={!state.deliveryAddress.trim() ? 'border-red-300 dark:border-red-700' : ''}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              Godzina przyjazdu
+              <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="time"
+              value={state.deliveryTime}
+              onChange={e => set({ deliveryTime: e.target.value })}
+              className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`}
+            />
           </div>
+          {addressSection('Adres klienta')}
           {state.eventDate && (
             <p className="text-xs text-violet-600 dark:text-violet-400 flex items-center gap-1.5">
               <Info className="w-3 h-3 shrink-0" />
@@ -855,20 +852,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
               </p>
             </div>
           )}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" />
-              Adres dostawy
-              <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              value={state.deliveryAddress}
-              onChange={e => set({ deliveryAddress: e.target.value })}
-              rows={2}
-              placeholder="Ulica, nr, miasto..."
-              className={!state.deliveryAddress.trim() ? 'border-red-300 dark:border-red-700' : ''}
-            />
-          </div>
+          {addressSection('Adres dostawy')}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
@@ -885,13 +869,12 @@ export function NewOrderWizard({ onSuccess }: Props) {
         </motion.div>
       )}
 
-      {/* Walidacja — komunikat gdy pola puste */}
       {!isStep4Valid && (
         <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1.5">
           <Info className="w-4 h-4 shrink-0" />
           {state.deliveryType === 'PICKUP'
             ? 'Podaj godzinę odbioru'
-            : 'Podaj godzinę oraz adres, aby przejść dalej'}
+            : 'Podaj godzinę oraz miasto, aby przejść dalej'}
         </p>
       )}
 
@@ -909,164 +892,120 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
   // ─── Step 5: Podsumowanie ───
 
-  const renderStep5 = () => (
-    <div className="space-y-6">
-      {renderStepHeader(5)}
+  const renderStep5 = () => {
+    const formattedAddress = buildAddress(state.deliveryStreet, state.deliveryNumber, state.deliveryCity);
 
-      <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
-        <div>
-          <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
-          <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">
-            Wypełnione automatycznie z profilu klienta — możesz zmienić.
-          </p>
+    return (
+      <div className="space-y-6">
+        {renderStepHeader(5)}
+
+        <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
+          <div>
+            <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Dane kontaktowe</Label>
+            <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">Wypełnione automatycznie z profilu klienta — możesz zmienić.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2 space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Osoba kontaktowa</Label>
+              <Input placeholder="Imię i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} className="h-11" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Telefon kontaktowy</Label>
+              <Input placeholder="+48..." value={state.contactPhone} onChange={e => set({ contactPhone: e.target.value })} className="h-11" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">E-mail kontaktowy</Label>
+              <Input type="email" value={state.contactEmail} onChange={e => set({ contactEmail: e.target.value })} className="h-11" />
+            </div>
+          </div>
         </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Uwagi</Label>
+            <Textarea rows={3} value={state.notes} onChange={e => set({ notes: e.target.value })} placeholder="Dodatkowe informacje..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Specjalne wymagania</Label>
+            <Textarea rows={2} value={state.specialRequirements} onChange={e => set({ specialRequirements: e.target.value })} placeholder="np. alergie, dieta bezglutenowa..." />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2 space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Osoba kontaktowa</Label>
-            <Input placeholder="Imię i nazwisko" value={state.contactName} onChange={e => set({ contactName: e.target.value })} className="h-11" />
+          {/* Klient */}
+          <div className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors" onClick={() => goToStep(0)}>
+            <div className="flex items-center gap-2 mb-2">
+              {selectedClient?.clientType === 'COMPANY' ? <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> : <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+              <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Klient</span>
+            </div>
+            {selectedClient ? (
+              selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
+                <>
+                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.companyName}</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{selectedClient.firstName} {selectedClient.lastName}</p>
+                </>
+              ) : (
+                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient?.firstName} {selectedClient?.lastName}</p>
+              )
+            ) : <p className="text-neutral-500">—</p>}
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Telefon kontaktowy</Label>
-            <Input placeholder="+48..." value={state.contactPhone} onChange={e => set({ contactPhone: e.target.value })} className="h-11" />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">E-mail kontaktowy</Label>
-            <Input type="email" value={state.contactEmail} onChange={e => set({ contactEmail: e.target.value })} className="h-11" />
-          </div>
-        </div>
-      </div>
 
-      <div className="space-y-4">
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Uwagi</Label>
-          <Textarea rows={3} value={state.notes} onChange={e => set({ notes: e.target.value })} placeholder="Dodatkowe informacje..." />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Specjalne wymagania</Label>
-          <Textarea rows={2} value={state.specialRequirements} onChange={e => set({ specialRequirements: e.target.value })} placeholder="np. alergie, dieta bezglutenowa..." />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Klient */}
-        <div
-          className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
-          onClick={() => goToStep(0)}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            {selectedClient?.clientType === 'COMPANY'
-              ? <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              : <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-            <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Klient</span>
+          {/* Szczegóły */}
+          <div className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 dark:hover:border-orange-600 transition-colors" onClick={() => goToStep(1)}>
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDays className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase">Szczegóły</span>
+            </div>
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '—'}</p>
+            {state.eventDate && <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>}
+            {parseInt(state.guestsCount) > 0 && <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} osób</p>}
           </div>
-          {selectedClient ? (
-            selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
-              <>
-                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.companyName}</p>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">{selectedClient.firstName} {selectedClient.lastName}</p>
-              </>
-            ) : (
-              <>
-                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.firstName} {selectedClient.lastName}</p>
-                <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
-                  {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                </div>
-              </>
-            )
-          ) : <p className="text-neutral-500">—</p>}
-        </div>
 
-        {/* Szczegóły */}
-        <div
-          className="p-4 rounded-xl border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:border-orange-400 dark:hover:border-orange-600 transition-colors"
-          onClick={() => goToStep(1)}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <CalendarDays className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-            <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase">Szczegóły</span>
-          </div>
-          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '—'}</p>
-          {state.eventDate && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>
-          )}
-          {parseInt(state.guestsCount) > 0 && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} osób</p>
-          )}
-        </div>
-
-        {/* Menu */}
-        <div
-          className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors"
-          onClick={() => goToStep(3)}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
-            <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase">Menu</span>
-          </div>
-          <p className="font-semibold text-neutral-900 dark:text-neutral-100">
-            {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'dań'}
-          </p>
-          {state.extras.length > 0 && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} usług dodatkowych</p>
-          )}
-        </div>
-
-        {/* Logistyka */}
-        <div
-          className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 transition-colors"
-          onClick={() => goToStep(4)}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
-          </div>
-          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
-          {state.deliveryAddress && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{state.deliveryAddress}</p>
-          )}
-          {state.deliveryTime && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}
+          {/* Menu */}
+          <div className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors" onClick={() => goToStep(3)}>
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase">Menu</span>
+            </div>
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+              {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'dań'}
             </p>
-          )}
-          {state.eventDate && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>
-          )}
+            {state.extras.length > 0 && <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} usług dodatkowych</p>}
+          </div>
+
+          {/* Logistyka */}
+          <div className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 transition-colors" onClick={() => goToStep(4)}>
+            <div className="flex items-center gap-2 mb-2">
+              <Truck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
+            </div>
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
+            {formattedAddress && <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{formattedAddress}</p>}
+            {state.deliveryTime && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}
+              </p>
+            )}
+            {state.eventDate && <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const stepRenderers = [
-    renderStep0,
-    renderStep1,
-    renderStep2,
-    renderStep3,
-    renderStep4,
-    renderStep5,
-  ];
+  const stepRenderers = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5];
 
   // ═══ RENDER ═══
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <Card className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-b border-neutral-200 dark:border-neutral-700">
             <CardTitle className="text-xl">Nowe zamówienie cateringowe</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <Stepper
-              steps={STEPS}
-              currentStep={step}
-              completedSteps={completedSteps}
-              onStepClick={goToStep}
-              className="mb-8"
-            />
+            <Stepper steps={STEPS} currentStep={step} completedSteps={completedSteps} onStepClick={goToStep} className="mb-8" />
             <AnimatePresence mode="wait">
               <motion.div
                 key={`step-${step}`}
