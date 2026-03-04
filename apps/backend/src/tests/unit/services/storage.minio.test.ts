@@ -11,7 +11,6 @@ jest.mock('../../../config/storage.config', () => ({
       secretKey: 'minioadmin',
       useSSL: false,
     },
-    bucket: 'test-bucket',
     buckets: {
       attachments: 'attachments',
       documents: 'documents',
@@ -47,11 +46,11 @@ const client = (realService as any).client;
 // Create wrapper that matches interface expectations (bucket as first param)
 const service = {
   upload: (key: string, buffer: Buffer, mimetype: string) =>
-    realService.upload(storageConfig.bucket, key, buffer, { 'Content-Type': mimetype }),
-  download: (key: string) => realService.download(storageConfig.bucket, key),
-  delete: (key: string) => realService.delete(storageConfig.bucket, key),
+    realService.upload(storageConfig.buckets.attachments, key, buffer, { 'Content-Type': mimetype }),
+  download: (key: string) => realService.download(storageConfig.buckets.attachments, key),
+  delete: (key: string) => realService.delete(storageConfig.buckets.attachments, key),
   getPresignedUrl: (key: string, ttl?: number) =>
-    realService.getPresignedUrl(storageConfig.bucket, key, ttl),
+    realService.getPresignedUrl(storageConfig.buckets.attachments, key, ttl),
 };
 
 beforeEach(() => {
@@ -66,7 +65,7 @@ describe('MinioStorageService', () => {
       await service.upload('test.txt', buffer, 'text/plain');
 
       expect(client.putObject).toHaveBeenCalledWith(
-        storageConfig.bucket,
+        storageConfig.buckets.attachments,
         'test.txt',
         buffer,
         buffer.length,
@@ -108,7 +107,7 @@ describe('MinioStorageService', () => {
     it('should delete file from bucket', async () => {
       await service.delete('test.txt');
 
-      expect(client.removeObject).toHaveBeenCalledWith(storageConfig.bucket, 'test.txt');
+      expect(client.removeObject).toHaveBeenCalledWith(storageConfig.buckets.attachments, 'test.txt');
     });
   });
 
@@ -117,7 +116,7 @@ describe('MinioStorageService', () => {
       const url = await service.getPresignedUrl('test.txt');
 
       expect(url).toBe('http://presigned-url');
-      expect(client.presignedGetObject).toHaveBeenCalledWith(storageConfig.bucket, 'test.txt', 7200);
+      expect(client.presignedGetObject).toHaveBeenCalledWith(storageConfig.buckets.attachments, 'test.txt', 7200);
     });
   });
 });

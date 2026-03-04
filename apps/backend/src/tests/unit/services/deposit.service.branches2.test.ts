@@ -26,7 +26,7 @@ describe('DepositService branches', () => {
 
       const result = await depositService.cancel('d1', 'u1');
 
-      expect(result.status).toBe('CANCELLED');
+      expect(result!.status).toBe('CANCELLED');
       expect(depositService.cancel).toHaveBeenCalledWith('d1', 'u1');
     });
   });
@@ -40,7 +40,7 @@ describe('DepositService branches', () => {
 
       const result = await depositService.delete('d1', 'u1');
 
-      expect(result.success).toBe(true);
+      expect(result!.success).toBe(true);
       expect(depositService.delete).toHaveBeenCalledWith('d1', 'u1');
     });
   });

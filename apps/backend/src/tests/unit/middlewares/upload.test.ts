@@ -30,26 +30,26 @@ describe('upload middleware', () => {
 
     it('should accept allowed file types', () => {
       const cb = jest.fn();
-      fileFilter!({}, { mimetype: 'application/pdf' } as Express.Multer.File, cb);
+      fileFilter!({} as any, { mimetype: 'application/pdf' } as Express.Multer.File, cb);
       expect(cb).toHaveBeenCalledWith(null, true);
     });
 
     it('should accept JPEG images', () => {
       const cb = jest.fn();
-      fileFilter!({}, { mimetype: 'image/jpeg' } as Express.Multer.File, cb);
+      fileFilter!({} as any, { mimetype: 'image/jpeg' } as Express.Multer.File, cb);
       expect(cb).toHaveBeenCalledWith(null, true);
     });
 
     it('should accept PNG images', () => {
       const cb = jest.fn();
-      fileFilter!({}, { mimetype: 'image/png' } as Express.Multer.File, cb);
+      fileFilter!({} as any, { mimetype: 'image/png' } as Express.Multer.File, cb);
       expect(cb).toHaveBeenCalledWith(null, true);
     });
 
     it('should accept DOCX files', () => {
       const cb = jest.fn();
       fileFilter!(
-        {},
+        {} as any,
         {
           mimetype:
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -61,7 +61,7 @@ describe('upload middleware', () => {
 
     it('should reject non-allowed file types', () => {
       const cb = jest.fn();
-      fileFilter!({}, { mimetype: 'application/zip' } as Express.Multer.File, cb);
+      fileFilter!({} as any, { mimetype: 'application/zip' } as Express.Multer.File, cb);
       // Callback is called with error (first arg is Error, second is undefined or false)
       expect(cb).toHaveBeenCalledWith(expect.any(Error));
     });

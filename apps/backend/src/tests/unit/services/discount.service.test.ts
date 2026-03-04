@@ -61,8 +61,8 @@ describe('DiscountService (singleton)', () => {
         'u1'
       );
 
-      expect(result.discountType).toBe('FIXED');
-      expect(result.discountAmount).toBe(200);
+      expect(result!.discountType).toBe('FIXED');
+      expect(result!.discountAmount).toBe(200);
       expect(discountService.applyDiscount).toHaveBeenCalled();
     });
   });
@@ -81,8 +81,8 @@ describe('DiscountService (singleton)', () => {
 
       const result = await discountService.removeDiscount('r1', 'u1');
 
-      expect(result.discountType).toBeNull();
-      expect(result.totalPrice).toBe(1000);
+      expect(result!.discountType).toBeNull();
+      expect(result!.totalPrice).toBe(1000);
       expect(discountService.removeDiscount).toHaveBeenCalledWith('r1', 'u1');
     });
   });
