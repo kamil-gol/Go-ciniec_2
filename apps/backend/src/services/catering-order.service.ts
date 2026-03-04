@@ -10,7 +10,6 @@ import {
 
 async function generateOrderNumber(): Promise<string> {
   const year = new Date().getFullYear();
-  // Liczymy istniejące zamówienia z bieżącego roku
   const count = await prisma.cateringOrder.count({
     where: { orderNumber: { startsWith: `CAT-${year}-` } },
   });
@@ -24,12 +23,12 @@ export interface CreateOrderItemInput {
   dishId: string;
   quantity: number;
   unitPrice: number;
-  note?: string;
+  note?: string | null;
 }
 
 export interface CreateOrderExtraInput {
   name: string;
-  description?: string;
+  description?: string | null;
   quantity: number;
   unitPrice: number;
 }
@@ -37,28 +36,28 @@ export interface CreateOrderExtraInput {
 export interface CreateCateringOrderInput {
   clientId: string;
   createdById: string;
-  templateId?: string;
-  packageId?: string;
+  templateId?: string | null;
+  packageId?: string | null;
   deliveryType?: CateringDeliveryType;
-  eventName?: string;
-  eventDate?: string;
-  eventTime?: string;
-  eventLocation?: string;
+  eventName?: string | null;
+  eventDate?: string | null;
+  eventTime?: string | null;
+  eventLocation?: string | null;
   guestsCount?: number;
-  deliveryAddress?: string;
-  deliveryNotes?: string;
-  deliveryDate?: string;
-  deliveryTime?: string;
-  discountType?: CateringDiscountType;
-  discountValue?: number;
-  discountReason?: string;
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
-  notes?: string;
-  internalNotes?: string;
-  specialRequirements?: string;
-  quoteExpiresAt?: string;
+  deliveryAddress?: string | null;
+  deliveryNotes?: string | null;
+  deliveryDate?: string | null;
+  deliveryTime?: string | null;
+  discountType?: CateringDiscountType | null;
+  discountValue?: number | null;
+  discountReason?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  notes?: string | null;
+  internalNotes?: string | null;
+  specialRequirements?: string | null;
+  quoteExpiresAt?: string | null;
   items?: CreateOrderItemInput[];
   extras?: CreateOrderExtraInput[];
 }
@@ -90,7 +89,7 @@ export interface UpdateCateringOrderInput {
   items?: CreateOrderItemInput[];
   extras?: CreateOrderExtraInput[];
   changedById?: string;
-  changeReason?: string;
+  changeReason?: string | null;
 }
 
 export interface ListOrdersFilter {
@@ -104,6 +103,24 @@ export interface ListOrdersFilter {
   limit?: number;
 }
 
+// ─── Pobierz nazwy dań (snapshot) ───────────────────────────────────────────────
+
+async function resolveDishNames(
+  items: CreateOrderItemInput[],
+): Promise<Array<CreateOrderItemInput & { dishNameSnapshot: string }>> {
+  if (items.length === 0) return [];
+  const dishIds = [...new Set(items.map(i => i.dishId))];
+  const dishes = await prisma.dish.findMany({
+    where: { id: { in: dishIds } },
+    select: { id: true, name: true },
+  });
+  const nameMap = new Map(dishes.map(d => [d.id, d.name]));
+  return items.map(i => ({
+    ...i,
+    dishNameSnapshot: nameMap.get(i.dishId) ?? i.dishId,
+  }));
+}
+
 // ─── Pomocnicze: przelicz sumy ───────────────────────────────────────────────
 
 function computeTotals(
@@ -111,12 +128,7 @@ function computeTotals(
   extras: { quantity: number; unitPrice: number }[],
   discountType?: CateringDiscountType | null,
   discountValue?: number | null,
-): {
-  subtotal: number;
-  extrasTotalPrice: number;
-  discountAmount: number;
-  totalPrice: number;
-} {
+): { subtotal: number; extrasTotalPrice: number; discountAmount: number; totalPrice: number } {
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const extrasTotalPrice = extras.reduce((s, e) => s + e.quantity * e.unitPrice, 0);
   const gross = subtotal + extrasTotalPrice;
@@ -138,7 +150,7 @@ function computeTotals(
   };
 }
 
-// ─── Serwis ──────────────────────────────────────────────────────────────────
+// ─── Include (wspólny dla get/create/update) ─────────────────────────────────────────
 
 const orderInclude = {
   client: {
@@ -165,65 +177,62 @@ const orderInclude = {
   deposits: { orderBy: { dueDate: 'asc' as const } },
 } satisfies Prisma.CateringOrderInclude;
 
+// ─── Serwis ──────────────────────────────────────────────────────────────────
+
 export async function createOrder(
   input: CreateCateringOrderInput,
 ): Promise<Prisma.CateringOrderGetPayload<{ include: typeof orderInclude }>> {
   const orderNumber = await generateOrderNumber();
-
   const items = input.items ?? [];
   const extras = input.extras ?? [];
-  const totals = computeTotals(
-    items,
-    extras,
-    input.discountType,
-    input.discountValue,
-  );
+  const resolvedItems = await resolveDishNames(items);
+  const totals = computeTotals(items, extras, input.discountType, input.discountValue);
 
   return prisma.cateringOrder.create({
     data: {
       orderNumber,
       clientId: input.clientId,
       createdById: input.createdById,
-      templateId: input.templateId,
-      packageId: input.packageId,
+      templateId: input.templateId ?? null,
+      packageId: input.packageId ?? null,
       deliveryType: input.deliveryType ?? 'ON_SITE',
-      eventName: input.eventName,
-      eventDate: input.eventDate,
-      eventTime: input.eventTime,
-      eventLocation: input.eventLocation,
+      eventName: input.eventName ?? null,
+      eventDate: input.eventDate ?? null,
+      eventTime: input.eventTime ?? null,
+      eventLocation: input.eventLocation ?? null,
       guestsCount: input.guestsCount ?? 0,
-      deliveryAddress: input.deliveryAddress,
-      deliveryNotes: input.deliveryNotes,
-      deliveryDate: input.deliveryDate,
-      deliveryTime: input.deliveryTime,
+      deliveryAddress: input.deliveryAddress ?? null,
+      deliveryNotes: input.deliveryNotes ?? null,
+      deliveryDate: input.deliveryDate ?? null,
+      deliveryTime: input.deliveryTime ?? null,
       subtotal: totals.subtotal,
       extrasTotalPrice: totals.extrasTotalPrice,
-      discountType: input.discountType,
-      discountValue: input.discountValue,
+      discountType: input.discountType ?? null,
+      discountValue: input.discountValue ?? null,
       discountAmount: totals.discountAmount,
-      discountReason: input.discountReason,
+      discountReason: input.discountReason ?? null,
       totalPrice: totals.totalPrice,
-      contactName: input.contactName,
-      contactPhone: input.contactPhone,
-      contactEmail: input.contactEmail,
-      notes: input.notes,
-      internalNotes: input.internalNotes,
-      specialRequirements: input.specialRequirements,
-      quoteExpiresAt: input.quoteExpiresAt ? new Date(input.quoteExpiresAt) : undefined,
+      contactName: input.contactName ?? null,
+      contactPhone: input.contactPhone ?? null,
+      contactEmail: input.contactEmail ?? null,
+      notes: input.notes ?? null,
+      internalNotes: input.internalNotes ?? null,
+      specialRequirements: input.specialRequirements ?? null,
+      quoteExpiresAt: input.quoteExpiresAt ? new Date(input.quoteExpiresAt) : null,
       items: {
-        create: items.map(i => ({
+        create: resolvedItems.map(i => ({
           dishId: i.dishId,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
           totalPrice: i.quantity * i.unitPrice,
-          note: i.note,
-          dishNameSnapshot: '',  // uzupełniamy poniżej
+          note: i.note ?? null,
+          dishNameSnapshot: i.dishNameSnapshot,
         })),
       },
       extras: {
         create: extras.map(e => ({
           name: e.name,
-          description: e.description,
+          description: e.description ?? null,
           quantity: e.quantity,
           unitPrice: e.unitPrice,
           totalPrice: e.quantity * e.unitPrice,
@@ -259,26 +268,27 @@ export async function listOrders(filter: ListOrdersFilter) {
   const skip = (page - 1) * limit;
 
   const where: Prisma.CateringOrderWhereInput = {};
-
   if (filter.status) where.status = filter.status;
   if (filter.deliveryType) where.deliveryType = filter.deliveryType;
   if (filter.clientId) where.clientId = filter.clientId;
 
   if (filter.eventDateFrom || filter.eventDateTo) {
     where.eventDate = {};
-    if (filter.eventDateFrom) (where.eventDate as Prisma.StringFilter).gte = filter.eventDateFrom;
-    if (filter.eventDateTo) (where.eventDate as Prisma.StringFilter).lte = filter.eventDateTo;
+    if (filter.eventDateFrom)
+      (where.eventDate as Prisma.StringFilter).gte = filter.eventDateFrom;
+    if (filter.eventDateTo)
+      (where.eventDate as Prisma.StringFilter).lte = filter.eventDateTo;
   }
 
   if (filter.search) {
-    const search = filter.search;
+    const s = filter.search;
     where.OR = [
-      { orderNumber: { contains: search, mode: 'insensitive' } },
-      { eventName: { contains: search, mode: 'insensitive' } },
-      { contactName: { contains: search, mode: 'insensitive' } },
-      { client: { firstName: { contains: search, mode: 'insensitive' } } },
-      { client: { lastName: { contains: search, mode: 'insensitive' } } },
-      { client: { companyName: { contains: search, mode: 'insensitive' } } },
+      { orderNumber: { contains: s, mode: 'insensitive' } },
+      { eventName: { contains: s, mode: 'insensitive' } },
+      { contactName: { contains: s, mode: 'insensitive' } },
+      { client: { firstName: { contains: s, mode: 'insensitive' } } },
+      { client: { lastName: { contains: s, mode: 'insensitive' } } },
+      { client: { companyName: { contains: s, mode: 'insensitive' } } },
     ];
   }
 
@@ -298,9 +308,7 @@ export async function listOrders(filter: ListOrdersFilter) {
             clientType: true,
           },
         },
-        _count: {
-          select: { items: true, deposits: true },
-        },
+        _count: { select: { items: true, deposits: true } },
       },
     }),
     prisma.cateringOrder.count({ where }),
@@ -308,12 +316,7 @@ export async function listOrders(filter: ListOrdersFilter) {
 
   return {
     data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
   };
 }
 
@@ -322,45 +325,38 @@ export async function updateOrder(
   input: UpdateCateringOrderInput,
 ): Promise<Prisma.CateringOrderGetPayload<{ include: typeof orderInclude }>> {
   const existing = await prisma.cateringOrder.findUniqueOrThrow({ where: { id } });
-
   const oldStatus = existing.status;
-
-  // Jeśli przekazano nowe items/extras — usuń stare i przelicz
-  let subtotalData: {
-    subtotal: number;
-    extrasTotalPrice: number;
-    discountAmount: number;
-    totalPrice: number;
-  } | null = null;
-
   const updateData: Prisma.CateringOrderUpdateInput = {};
 
   if (input.items !== undefined || input.extras !== undefined) {
     const items = input.items ?? [];
     const extras = input.extras ?? [];
-    subtotalData = computeTotals(
+    const resolvedItems = await resolveDishNames(items);
+    const totals = computeTotals(
       items,
       extras,
       input.discountType !== undefined
         ? input.discountType
         : (existing.discountType as CateringDiscountType | null),
-      input.discountValue !== undefined ? input.discountValue : Number(existing.discountValue),
+      input.discountValue !== undefined
+        ? input.discountValue
+        : Number(existing.discountValue),
     );
-    updateData.subtotal = subtotalData.subtotal;
-    updateData.extrasTotalPrice = subtotalData.extrasTotalPrice;
-    updateData.discountAmount = subtotalData.discountAmount;
-    updateData.totalPrice = subtotalData.totalPrice;
+    updateData.subtotal = totals.subtotal;
+    updateData.extrasTotalPrice = totals.extrasTotalPrice;
+    updateData.discountAmount = totals.discountAmount;
+    updateData.totalPrice = totals.totalPrice;
 
     if (input.items !== undefined) {
       updateData.items = {
         deleteMany: {},
-        create: input.items.map(i => ({
+        create: resolvedItems.map(i => ({
           dishId: i.dishId,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
           totalPrice: i.quantity * i.unitPrice,
-          note: i.note,
-          dishNameSnapshot: '',
+          note: i.note ?? null,
+          dishNameSnapshot: i.dishNameSnapshot,
         })),
       };
     }
@@ -369,27 +365,25 @@ export async function updateOrder(
         deleteMany: {},
         create: input.extras.map(e => ({
           name: e.name,
-          description: e.description,
+          description: e.description ?? null,
           quantity: e.quantity,
           unitPrice: e.unitPrice,
           totalPrice: e.quantity * e.unitPrice,
         })),
       };
     }
-  } else if (
-    input.discountType !== undefined ||
-    input.discountValue !== undefined
-  ) {
-    // Tylko rabat zmieniony — przelicz na podstawie istniejących sum
-    const currentSubtotal = Number(existing.subtotal);
-    const currentExtras = Number(existing.extrasTotalPrice);
+  } else if (input.discountType !== undefined || input.discountValue !== undefined) {
+    // Tylko rabat — przelicz na podstawie istniejących sum
+    const cur = { quantity: 1, unitPrice: Number(existing.subtotal) + Number(existing.extrasTotalPrice) };
     const disc = computeTotals(
-      [{ quantity: 1, unitPrice: currentSubtotal }],
-      [{ quantity: 1, unitPrice: currentExtras }],
+      [cur],
+      [],
       input.discountType !== undefined
         ? input.discountType
         : (existing.discountType as CateringDiscountType | null),
-      input.discountValue !== undefined ? input.discountValue : Number(existing.discountValue),
+      input.discountValue !== undefined
+        ? input.discountValue
+        : Number(existing.discountValue),
     );
     updateData.discountAmount = disc.discountAmount;
     updateData.totalPrice = disc.totalPrice;
@@ -431,7 +425,7 @@ export async function updateOrder(
         fieldName: 'status',
         oldValue: oldStatus,
         newValue: input.status,
-        reason: input.changeReason,
+        reason: input.changeReason ?? null,
       },
     };
   }
@@ -447,7 +441,7 @@ export async function changeOrderStatus(
   id: string,
   status: CateringOrderStatus,
   changedById: string,
-  reason?: string,
+  reason?: string | null,
 ): Promise<Prisma.CateringOrderGetPayload<{ include: typeof orderInclude }>> {
   return updateOrder(id, { status, changedById, changeReason: reason });
 }
@@ -455,9 +449,9 @@ export async function changeOrderStatus(
 export async function deleteOrder(id: string): Promise<void> {
   const order = await prisma.cateringOrder.findUniqueOrThrow({ where: { id } });
   if (order.status !== 'DRAFT' && order.status !== 'CANCELLED') {
-    throw Object.assign(new Error('Można usunąć tylko zamówienia w statusie DRAFT lub CANCELLED'), {
-      statusCode: 400,
-    });
+    const err = new Error('Można usunąć tylko zamówienia w statusie DRAFT lub CANCELLED') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
   }
   await prisma.cateringOrder.delete({ where: { id } });
 }
@@ -477,9 +471,9 @@ export async function getOrderHistory(orderId: string) {
 export interface CreateDepositInput {
   amount: number;
   dueDate: string;
-  title?: string;
-  description?: string;
-  internalNotes?: string;
+  title?: string | null;
+  description?: string | null;
+  internalNotes?: string | null;
 }
 
 export async function createDeposit(orderId: string, input: CreateDepositInput) {
@@ -489,28 +483,33 @@ export async function createDeposit(orderId: string, input: CreateDepositInput) 
       amount: input.amount,
       remainingAmount: input.amount,
       dueDate: input.dueDate,
-      title: input.title,
-      description: input.description,
-      internalNotes: input.internalNotes,
+      title: input.title ?? null,
+      description: input.description ?? null,
+      internalNotes: input.internalNotes ?? null,
     },
   });
 }
 
+/**
+ * Oznacz depozyt jako opłacony.
+ * 2-krokowe: najpierw pobieramy kwotę, potem aktualizujemy.
+ */
 export async function markDepositPaid(
   depositId: string,
   paymentMethod?: string,
 ) {
+  const deposit = await prisma.cateringDeposit.findUniqueOrThrow({
+    where: { id: depositId },
+  });
   return prisma.cateringDeposit.update({
     where: { id: depositId },
     data: {
       paid: true,
       paidAt: new Date(),
-      paidAmount: prisma.cateringDeposit
-        .findUniqueOrThrow({ where: { id: depositId } })
-        .then(d => Number(d.amount)) as unknown as number,
+      paidAmount: deposit.amount,
       remainingAmount: 0,
       status: 'PAID',
-      paymentMethod,
+      paymentMethod: paymentMethod ?? null,
     },
   });
 }

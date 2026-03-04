@@ -8,12 +8,12 @@ import {
   updateOrderSchema,
   changeStatusSchema,
   createDepositSchema,
+  markDepositPaidSchema,
 } from '../validation/catering-order.validation';
 import * as ctrl from '../controllers/catering-order.controller';
 
 const router = Router();
 
-// ── Lista zamówień z filtrami ──────────────────────────────────────────────
 // GET /api/catering/orders
 router.get(
   '/',
@@ -22,7 +22,6 @@ router.get(
   ctrl.listOrders,
 );
 
-// ── Szczegóły zamówienia ────────────────────────────────────────────────────
 // GET /api/catering/orders/:id
 router.get(
   '/:id',
@@ -32,7 +31,6 @@ router.get(
   ctrl.getOrder,
 );
 
-// ── Utwórz zamówienie ───────────────────────────────────────────────────────
 // POST /api/catering/orders
 router.post(
   '/',
@@ -42,7 +40,6 @@ router.post(
   ctrl.createOrder,
 );
 
-// ── Aktualizuj zamówienie ───────────────────────────────────────────────────
 // PATCH /api/catering/orders/:id
 router.patch(
   '/:id',
@@ -53,7 +50,6 @@ router.patch(
   ctrl.updateOrder,
 );
 
-// ── Zmień status ────────────────────────────────────────────────────────────
 // PATCH /api/catering/orders/:id/status
 router.patch(
   '/:id/status',
@@ -64,8 +60,7 @@ router.patch(
   ctrl.changeStatus,
 );
 
-// ── Usuń zamówienie (tylko DRAFT/CANCELLED) ─────────────────────────────────
-// DELETE /api/catering/orders/:id
+// DELETE /api/catering/orders/:id  (tylko DRAFT/CANCELLED)
 router.delete(
   '/:id',
   authenticate,
@@ -74,7 +69,6 @@ router.delete(
   ctrl.deleteOrder,
 );
 
-// ── Historia zmian (timeline) ───────────────────────────────────────────────
 // GET /api/catering/orders/:id/history
 router.get(
   '/:id/history',
@@ -84,7 +78,6 @@ router.get(
   ctrl.getHistory,
 );
 
-// ── Depozyty zamówienia ─────────────────────────────────────────────────────
 // POST /api/catering/orders/:id/deposits
 router.post(
   '/:id/deposits',
@@ -102,6 +95,7 @@ router.patch(
   requirePermission('catering:manage_orders'),
   validateUUID('id'),
   validateUUID('depositId'),
+  validateBody(markDepositPaidSchema),
   ctrl.markDepositPaid,
 );
 
