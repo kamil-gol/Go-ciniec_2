@@ -12,6 +12,7 @@ import { validateUUID } from '../middlewares/validateUUID';
 
 const router = Router();
 
+// GET /api/dishes
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -19,14 +20,8 @@ router.get(
   })
 );
 
-router.get(
-  '/:id',
-  validateUUID('id'),
-  asyncHandler(async (req, res) => {
-    await dishController.getDishById(req, res);
-  })
-);
-
+// GET /api/dishes/category/:categoryId
+// NOTE: must be registered BEFORE /:id to prevent route shadowing by Express
 router.get(
   '/category/:categoryId',
   validateUUID('categoryId'),
@@ -35,6 +30,16 @@ router.get(
   })
 );
 
+// GET /api/dishes/:id
+router.get(
+  '/:id',
+  validateUUID('id'),
+  asyncHandler(async (req, res) => {
+    await dishController.getDishById(req, res);
+  })
+);
+
+// POST /api/dishes
 router.post(
   '/',
   authMiddleware,
@@ -44,6 +49,7 @@ router.post(
   })
 );
 
+// PUT /api/dishes/:id
 router.put(
   '/:id',
   authMiddleware,
@@ -54,6 +60,7 @@ router.put(
   })
 );
 
+// DELETE /api/dishes/:id
 router.delete(
   '/:id',
   authMiddleware,
