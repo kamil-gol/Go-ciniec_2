@@ -237,6 +237,12 @@ export interface CreateDepositInput {
   internalNotes?: string | null;
 }
 
+export interface UpdateDepositInput {
+  amount?: number;
+  dueDate?: string;
+  title?: string | null;
+}
+
 export interface MarkDepositPaidInput {
   paymentMethod?: 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
 }
