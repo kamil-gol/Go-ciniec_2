@@ -18,6 +18,7 @@ import {
   CalendarDays,
   Undo2,
   Mail,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -36,18 +37,18 @@ import type { Deposit, DepositStatus, PaymentMethod, CreateDepositInput } from '
 import { toast } from 'sonner'
 import Link from 'next/link'
 
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 // Types
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 
 interface ReservationDepositsSectionProps {
   reservationId: string
   totalPrice: number
 }
 
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 // Config
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 
 const statusConfig: Record<DepositStatus, {
   label: string
@@ -101,9 +102,9 @@ const paymentMethodOptions: { value: PaymentMethod; label: string; icon: React.E
   { value: 'CARD', label: 'Karta', icon: CreditCard, color: 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
 ]
 
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 // Helpers
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 
 function getDaysLabel(dateStr: string): { text: string; className: string } | null {
   const today = new Date()
@@ -132,9 +133,79 @@ function suggestDueDate(daysFromNow: number = 14): string {
   return d.toISOString().split('T')[0]
 }
 
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
+// Delete Paid Deposit Confirm Dialog
+// ═════════════════════════════════════════════
+
+interface DeletePaidDepositDialogProps {
+  deposit: Deposit | null
+  open: boolean
+  onClose: () => void
+  onConfirm: () => Promise<void>
+  loading: boolean
+}
+
+function DeletePaidDepositDialog({ deposit, open, onClose, onConfirm, loading }: DeletePaidDepositDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            Usuń opłaconą zaliczkę
+          </DialogTitle>
+          <DialogDescription className="text-left pt-1">
+            Ta zaliczka jest oznaczona jako <span className="font-semibold text-emerald-600 dark:text-emerald-400">opłacona</span>.
+            Usunięcie jej spowoduje obniżenie sumy wpłat dla tej rezerwacji.
+          </DialogDescription>
+        </DialogHeader>
+
+        {deposit && (
+          <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-neutral-500">Kwota</span>
+              <span className="font-bold text-red-700 dark:text-red-300">{Number(deposit.amount).toLocaleString('pl-PL')} zł</span>
+            </div>
+            {deposit.paymentMethod && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-500">Metoda płatności</span>
+                <span className="font-medium">{deposit.paymentMethod}</span>
+              </div>
+            )}
+            {deposit.paidAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-500">Data wpłaty</span>
+                <span className="font-medium">{formatDate(deposit.paidAt as string)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground">
+          Operacja jest rejestrowana w logu audytowym. Używaj tylko w przypadku błędu lub rezygnacji klienta.
+        </p>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={loading}>Anuluj</Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+            Usuń zaliczkę
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ═════════════════════════════════════════════
 // Component
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════
 
 export function ReservationDepositsSection({ reservationId, totalPrice }: ReservationDepositsSectionProps) {
   const [deposits, setDeposits] = useState<Deposit[]>([])
@@ -142,6 +213,10 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null)
+
+  // Delete paid deposit dialog
+  const [deleteTarget, setDeleteTarget] = useState<Deposit | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // Create form state
   const [createAmount, setCreateAmount] = useState('')
@@ -234,7 +309,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       loadDeposits()
     } catch (error) {
       console.error('Error marking deposit as paid:', error)
-      toast.error('Nie udało się oznaczyć jako opłaconą')
+      toast.error('Nie udało się oznaczyć jako opłaconej')
     } finally {
       setPaying(false)
     }
@@ -287,6 +362,21 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       toast.error('Nie udało się anulować zaliczki')
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const handleDeletePaid = async () => {
+    if (!deleteTarget) return
+    try {
+      setDeleteLoading(true)
+      await depositsApi.delete(deleteTarget.id)
+      toast.success('Zaliczka została usunięta')
+      setDeleteTarget(null)
+      loadDeposits()
+    } catch (error) {
+      toast.error('Nie udało się usunąć zaliczki')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -456,6 +546,14 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                             <Undo2 className="h-3 w-3" />
                             Cofnij
                           </button>
+                          <button
+                            onClick={() => setDeleteTarget(deposit)}
+                            disabled={isActioning}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Usuń
+                          </button>
                         </>
                       )}
                       {!isCancelled && !isPaid && (
@@ -489,6 +587,17 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
           )}
         </div>
       </Card>
+
+      {/* ═══════════════════════════════════ */}
+      {/* Delete Paid Deposit Dialog */}
+      {/* ═══════════════════════════════════ */}
+      <DeletePaidDepositDialog
+        deposit={deleteTarget}
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeletePaid}
+        loading={deleteLoading}
+      />
 
       {/* ═══════════════════════════════════ */}
       {/* Create Deposit Modal */}
