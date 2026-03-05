@@ -14,11 +14,12 @@ import type {
   UpdateCateringOrderInput,
   ChangeStatusInput,
   CreateDepositInput,
+  UpdateDepositInput,
   MarkDepositPaidInput,
   CateringOrderHistoryEntry,
 } from '@/types/catering-order.types';
 
-// Query key factories — plain arrays (no "as const") to avoid strict-mode inference issues
+// Query key factories
 const ordersKey = (filter: CateringOrdersFilter) =>
   ['catering-orders', 'list', filter] as unknown[];
 const orderKey = (id: string) =>
@@ -140,6 +141,34 @@ export function useCreateCateringDeposit(orderId: string) {
     mutationFn: async (data) => {
       const res = await api.post(`/catering/orders/${orderId}/deposits`, data);
       return res.data.data;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: orderKey(orderId) });
+    },
+  });
+}
+
+export function useUpdateCateringDeposit(orderId: string, depositId: string) {
+  const qc = useQueryClient();
+  return useMutation<unknown, Error, UpdateDepositInput>({
+    mutationFn: async (data) => {
+      const res = await api.patch(
+        `/catering/orders/${orderId}/deposits/${depositId}`,
+        data,
+      );
+      return res.data.data;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: orderKey(orderId) });
+    },
+  });
+}
+
+export function useDeleteCateringDeposit(orderId: string) {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (depositId) => {
+      await api.delete(`/catering/orders/${orderId}/deposits/${depositId}`);
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: orderKey(orderId) });
