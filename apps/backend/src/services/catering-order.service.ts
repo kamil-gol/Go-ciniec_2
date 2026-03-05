@@ -6,7 +6,7 @@ import {
   Prisma,
 } from '@prisma/client';
 
-// ─── Auto-numeracja: CAT-YYYY-XXXXX ─────────────────────────────────────────
+// ─── Auto-numeracja: CAT-YYYY-XXXXX ──────────────────────────────────────
 
 async function generateOrderNumber(): Promise<string> {
   const year = new Date().getFullYear();
@@ -17,7 +17,7 @@ async function generateOrderNumber(): Promise<string> {
   return `CAT-${year}-${seq}`;
 }
 
-// ─── Typy wejściowe ──────────────────────────────────────────────────────────
+// ─── Typy wejściowe ───────────────────────────────────────────
 
 export interface CreateOrderItemInput {
   dishId: string;
@@ -103,7 +103,7 @@ export interface ListOrdersFilter {
   limit?: number;
 }
 
-// ─── Pobierz nazwy dań (snapshot) ───────────────────────────────────────────────
+// ─── Pobierz nazwy dań (snapshot) ──────────────────────────────────────────
 
 async function resolveDishNames(
   items: CreateOrderItemInput[],
@@ -121,7 +121,7 @@ async function resolveDishNames(
   }));
 }
 
-// ─── Pomocnicze: przelicz sumy ───────────────────────────────────────────────
+// ─── Pomocnicze: przelicz sumy ─────────────────────────────────────────
 
 function computeTotals(
   items: { quantity: number; unitPrice: number }[],
@@ -150,7 +150,7 @@ function computeTotals(
   };
 }
 
-// ─── Include (wspólny dla get/create/update) ─────────────────────────────────────────
+// ─── Include (wspólny dla get/create/update) ──────────────────────────────────────────────
 
 const orderInclude = {
   client: {
@@ -177,7 +177,7 @@ const orderInclude = {
   deposits: { orderBy: { dueDate: 'asc' as const } },
 } satisfies Prisma.CateringOrderInclude;
 
-// ─── Serwis ──────────────────────────────────────────────────────────────────
+// ─── Serwis ────────────────────────────────────────────────────────────────────
 
 export async function createOrder(
   input: CreateCateringOrderInput,
@@ -328,6 +328,44 @@ export async function updateOrder(
   const oldStatus = existing.status;
   const updateData: Prisma.CateringOrderUpdateInput = {};
 
+  // ─── Detekcja zmian rabatu (przed zapisem) ──────────────────────────────────────
+  const oldDiscountType = existing.discountType as CateringDiscountType | null;
+  const newDiscountType = 'discountType' in input ? input.discountType : oldDiscountType;
+  const oldDiscountValue = existing.discountValue != null ? Number(existing.discountValue) : null;
+  const newDiscountValue = 'discountValue' in input ? input.discountValue : oldDiscountValue;
+  const newDiscountReason = 'discountReason' in input ? input.discountReason : existing.discountReason;
+
+  let discountEvent: string | null = null;
+  let discountOldValue: string | null = null;
+  let discountNewValue: string | null = null;
+
+  if (!oldDiscountType && newDiscountType) {
+    discountEvent = 'DISCOUNT_ADDED';
+    discountNewValue = newDiscountType === 'PERCENTAGE'
+      ? `${newDiscountValue}%`
+      : `${newDiscountValue} PLN`;
+  } else if (oldDiscountType && !newDiscountType) {
+    discountEvent = 'DISCOUNT_REMOVED';
+    discountOldValue = oldDiscountType === 'PERCENTAGE'
+      ? `${oldDiscountValue}%`
+      : `${oldDiscountValue} PLN`;
+  } else if (
+    oldDiscountType && newDiscountType && (
+      oldDiscountType !== newDiscountType ||
+      oldDiscountValue !== newDiscountValue ||
+      ('discountReason' in input && input.discountReason !== existing.discountReason)
+    )
+  ) {
+    discountEvent = 'DISCOUNT_UPDATED';
+    discountOldValue = oldDiscountType === 'PERCENTAGE'
+      ? `${oldDiscountValue}%`
+      : `${oldDiscountValue} PLN`;
+    discountNewValue = newDiscountType === 'PERCENTAGE'
+      ? `${newDiscountValue}%`
+      : `${newDiscountValue} PLN`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────────
+
   if (input.items !== undefined || input.extras !== undefined) {
     const items = input.items ?? [];
     const extras = input.extras ?? [];
@@ -373,7 +411,6 @@ export async function updateOrder(
       };
     }
   } else if (input.discountType !== undefined || input.discountValue !== undefined) {
-    // Tylko rabat — przelicz na podstawie istniejących sum
     const cur = { quantity: 1, unitPrice: Number(existing.subtotal) + Number(existing.extrasTotalPrice) };
     const disc = computeTotals(
       [cur],
@@ -389,11 +426,9 @@ export async function updateOrder(
     updateData.totalPrice = disc.totalPrice;
   }
 
-  // Skalarne pola
   if (input.status !== undefined) updateData.status = input.status;
   if (input.deliveryType !== undefined) updateData.deliveryType = input.deliveryType;
 
-  // Relacje — Prisma wymaga connect/disconnect zamiast bezpośredniego ID
   if ('templateId' in input) {
     updateData.template = input.templateId
       ? { connect: { id: input.templateId } }
@@ -427,7 +462,6 @@ export async function updateOrder(
     updateData.quoteExpiresAt = input.quoteExpiresAt ? new Date(input.quoteExpiresAt) : null;
   }
 
-  // Historia zmian statusu
   if (input.status !== undefined && input.status !== oldStatus) {
     updateData.history = {
       create: {
@@ -441,11 +475,28 @@ export async function updateOrder(
     };
   }
 
-  return prisma.cateringOrder.update({
+  const updated = await prisma.cateringOrder.update({
     where: { id },
     data: updateData,
     include: orderInclude,
   });
+
+  // ─── Zapis historii rabatu (po głównym update) ─────────────────────────────────
+  if (discountEvent && input.changedById) {
+    await prisma.cateringOrderHistory.create({
+      data: {
+        orderId: id,
+        changedById: input.changedById,
+        changeType: discountEvent,
+        fieldName: 'discount',
+        oldValue: discountOldValue,
+        newValue: discountNewValue,
+        reason: newDiscountReason ?? null,
+      },
+    });
+  }
+
+  return updated;
 }
 
 export async function changeOrderStatus(
@@ -477,7 +528,7 @@ export async function getOrderHistory(orderId: string) {
   });
 }
 
-// ─── Depozyty ────────────────────────────────────────────────────────────────
+// ─── Depozyty ────────────────────────────────────────────────────────────────────
 
 export interface CreateDepositInput {
   amount: number;
@@ -487,8 +538,12 @@ export interface CreateDepositInput {
   internalNotes?: string | null;
 }
 
-export async function createDeposit(orderId: string, input: CreateDepositInput) {
-  return prisma.cateringDeposit.create({
+export async function createDeposit(
+  orderId: string,
+  input: CreateDepositInput,
+  changedById?: string,
+) {
+  const deposit = await prisma.cateringDeposit.create({
     data: {
       orderId,
       amount: input.amount,
@@ -499,20 +554,36 @@ export async function createDeposit(orderId: string, input: CreateDepositInput) 
       internalNotes: input.internalNotes ?? null,
     },
   });
+
+  if (changedById) {
+    await prisma.cateringOrderHistory.create({
+      data: {
+        orderId,
+        changedById,
+        changeType: 'DEPOSIT_CREATED',
+        fieldName: 'deposit',
+        newValue: `${input.title ?? 'Zaliczka'} — ${input.amount} PLN`,
+      },
+    });
+  }
+
+  return deposit;
 }
 
 /**
  * Oznacz depozyt jako opłacony.
- * 2-krokowe: najpierw pobieramy kwotę, potem aktualizujemy.
  */
 export async function markDepositPaid(
   depositId: string,
   paymentMethod?: string,
+  changedById?: string,
+  orderId?: string,
 ) {
   const deposit = await prisma.cateringDeposit.findUniqueOrThrow({
     where: { id: depositId },
   });
-  return prisma.cateringDeposit.update({
+
+  const result = await prisma.cateringDeposit.update({
     where: { id: depositId },
     data: {
       paid: true,
@@ -523,6 +594,20 @@ export async function markDepositPaid(
       paymentMethod: paymentMethod ?? null,
     },
   });
+
+  if (changedById && orderId) {
+    await prisma.cateringOrderHistory.create({
+      data: {
+        orderId,
+        changedById,
+        changeType: 'DEPOSIT_PAID',
+        fieldName: 'deposit',
+        newValue: `${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN (${paymentMethod ?? 'bez metody'})`,
+      },
+    });
+  }
+
+  return result;
 }
 
 export default {
