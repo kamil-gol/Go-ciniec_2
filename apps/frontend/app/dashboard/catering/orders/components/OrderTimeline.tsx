@@ -1,14 +1,29 @@
 'use client';
 
 import { useCateringOrderHistory } from '@/hooks/use-catering-orders';
-import { Loader2, CheckCircle2, RefreshCw, PenLine, Circle } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  RefreshCw,
+  PenLine,
+  Circle,
+  Wallet,
+  Tag,
+  Pencil,
+  X,
+} from 'lucide-react';
 import type { CateringOrderHistoryEntry } from '@/types/catering-order.types';
 import { ORDER_STATUS_LABEL } from '@/types/catering-order.types';
 
 const CHANGE_TYPE_LABEL: Record<string, string> = {
-  CREATED: 'Zamówienie utworzone',
-  STATUS_CHANGE: 'Zmiana statusu',
-  UPDATED: 'Zaktualizowano',
+  CREATED:          'Zamówienie utworzone',
+  STATUS_CHANGE:    'Zmiana statusu',
+  UPDATED:          'Zaktualizowano',
+  DEPOSIT_CREATED:  'Dodano zaliczkę',
+  DEPOSIT_PAID:     'Zaliczka opłacona',
+  DISCOUNT_ADDED:   'Dodano rabat',
+  DISCOUNT_UPDATED: 'Zaktualizowano rabat',
+  DISCOUNT_REMOVED: 'Usunięto rabat',
 };
 
 function formatDate(iso: string) {
@@ -25,14 +40,40 @@ function formatDate(iso: string) {
   }
 }
 
-function entryLabel(entry: CateringOrderHistoryEntry) {
-  if (entry.changeType === 'STATUS_CHANGE' && entry.oldValue && entry.newValue) {
-    const from = ORDER_STATUS_LABEL[entry.oldValue as keyof typeof ORDER_STATUS_LABEL] ?? entry.oldValue;
-    const to = ORDER_STATUS_LABEL[entry.newValue as keyof typeof ORDER_STATUS_LABEL] ?? entry.newValue;
-    return `${from} → ${to}`;
+function entryLabel(entry: CateringOrderHistoryEntry): string {
+  switch (entry.changeType) {
+    case 'CREATED':
+      return 'Zamówienie zostało utworzone';
+
+    case 'STATUS_CHANGE':
+      if (entry.oldValue && entry.newValue) {
+        const from = ORDER_STATUS_LABEL[entry.oldValue as keyof typeof ORDER_STATUS_LABEL] ?? entry.oldValue;
+        const to   = ORDER_STATUS_LABEL[entry.newValue as keyof typeof ORDER_STATUS_LABEL] ?? entry.newValue;
+        return `${from} → ${to}`;
+      }
+      return 'Status zmieniony';
+
+    case 'DEPOSIT_CREATED':
+      return entry.newValue ?? 'Nowa zaliczka';
+
+    case 'DEPOSIT_PAID':
+      return entry.newValue ?? 'Zaliczka opłacona';
+
+    case 'DISCOUNT_ADDED':
+      return entry.newValue ? `Nowy rabat: ${entry.newValue}` : 'Dodano rabat';
+
+    case 'DISCOUNT_UPDATED':
+      if (entry.oldValue && entry.newValue) {
+        return `${entry.oldValue} → ${entry.newValue}`;
+      }
+      return 'Rabat zaktualizowany';
+
+    case 'DISCOUNT_REMOVED':
+      return entry.oldValue ? `Usunięto rabat: ${entry.oldValue}` : 'Rabat usunięty';
+
+    default:
+      return entry.newValue ?? '—';
   }
-  if (entry.changeType === 'CREATED') return 'Zamówienie zostało utworzone';
-  return entry.newValue ?? '—';
 }
 
 function getAuthorInitials(author?: { firstName?: string; lastName?: string } | null) {
@@ -61,6 +102,36 @@ function getEntryConfig(changeType: string) {
         iconColor: 'text-amber-600 dark:text-amber-400',
         Icon: PenLine,
       };
+    case 'DEPOSIT_CREATED':
+      return {
+        iconBg: 'bg-violet-100 dark:bg-violet-900/40',
+        iconColor: 'text-violet-600 dark:text-violet-400',
+        Icon: Wallet,
+      };
+    case 'DEPOSIT_PAID':
+      return {
+        iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        Icon: CheckCircle2,
+      };
+    case 'DISCOUNT_ADDED':
+      return {
+        iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+        iconColor: 'text-orange-600 dark:text-orange-400',
+        Icon: Tag,
+      };
+    case 'DISCOUNT_UPDATED':
+      return {
+        iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+        iconColor: 'text-amber-600 dark:text-amber-400',
+        Icon: Pencil,
+      };
+    case 'DISCOUNT_REMOVED':
+      return {
+        iconBg: 'bg-red-100 dark:bg-red-900/40',
+        iconColor: 'text-red-600 dark:text-red-400',
+        Icon: X,
+      };
     default:
       return {
         iconBg: 'bg-neutral-100 dark:bg-neutral-800',
@@ -77,7 +148,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
     return (
       <div className="flex items-center gap-2 text-neutral-400 py-4">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-sm">Ładowanie historii...</span>
+        <span className="text-sm">Wczytywanie historii...</span>
       </div>
     );
   }
@@ -95,7 +166,6 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
 
   return (
     <div className="relative">
-      {/* Oś czasu — pionowa linia */}
       <div className="absolute left-4 top-5 bottom-2 w-px bg-neutral-200 dark:bg-neutral-700" />
 
       <ol className="space-y-5">
@@ -104,14 +174,12 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
 
           return (
             <li key={entry.id} className="relative flex items-start gap-4">
-              {/* Ikona typu zdarzenia */}
               <div
                 className={`relative z-10 shrink-0 w-8 h-8 rounded-full ${iconBg} flex items-center justify-center border-2 border-white dark:border-neutral-900 shadow-sm`}
               >
                 <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
               </div>
 
-              {/* Treść */}
               <div className="flex-1 min-w-0 pt-0.5">
                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                   {CHANGE_TYPE_LABEL[entry.changeType] ?? entry.changeType}
@@ -127,7 +195,6 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
                   </p>
                 )}
 
-                {/* Data + autor */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2">
                   <span className="text-xs text-neutral-400 dark:text-neutral-500">
                     {formatDate(entry.createdAt)}
