@@ -307,9 +307,8 @@ const depositService = {
     const deposit = await prisma.deposit.findUnique({ where: { id } });
     if (!deposit) throw AppError.notFound('Zaliczka');
 
-    if (deposit.paid) {
-      throw AppError.badRequest(DEPOSIT.CANNOT_DELETE_PAID);
-    }
+    // Usunięcie opłaconej zaliczki jest dozwolone (np. błąd lub rezygnacja klienta).
+    // Operacja jest w pełni auditowana — pole wasPaid zapisywane w logu.
 
     await prisma.$queryRawUnsafe(`DELETE FROM "Deposit" WHERE id = $1::uuid`, id);
 
@@ -320,8 +319,13 @@ const depositService = {
       entityType: 'DEPOSIT',
       entityId: id,
       details: {
-        description: `Usuni\u0119to zaliczk\u0119: ${Number(deposit.amount)} PLN`,
-        deletedData: { amount: Number(deposit.amount), dueDate: deposit.dueDate }
+        description: `Usuni\u0119to zaliczk\u0119: ${Number(deposit.amount)} PLN${deposit.paid ? ' [BY\u0141A OP\u0141ACONA]' : ''}`,
+        deletedData: {
+          amount: Number(deposit.amount),
+          dueDate: deposit.dueDate,
+          wasPaid: deposit.paid,
+          paymentMethod: deposit.paymentMethod,
+        }
       }
     });
 
