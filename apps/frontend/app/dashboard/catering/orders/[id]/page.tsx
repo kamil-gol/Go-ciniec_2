@@ -356,11 +356,12 @@ export default function CateringOrderDetailPage() {
           {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-6">
 
+            {/* Szczegóły cateringu (było: Szczegóły wydarzenia) */}
             <SectionCard
               icon={CalendarDays}
               iconBg="bg-orange-100 dark:bg-orange-900/30"
               iconColor="text-orange-600 dark:text-orange-400"
-              title="Szczegóły wydarzenia"
+              title="Szczegóły cateringu"
             >
               <div className="grid grid-cols-2 gap-x-6 gap-y-5">
                 <Field label="Okazja" value={order.eventName} />
@@ -720,7 +721,6 @@ export default function CateringOrderDetailPage() {
                 </Button>
               }
             >
-              {/* Podsumowanie kwot */}
               <div className="space-y-2.5">
                 {Number(order.subtotal) > 0 && (
                   <div className="flex items-center justify-between text-sm">
@@ -761,7 +761,6 @@ export default function CateringOrderDetailPage() {
                 )}
               </div>
 
-              {/* Łącznie */}
               <div className="mt-4 pt-4 border-t-2 border-dashed border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center justify-between">
                   <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">
@@ -803,10 +802,7 @@ export default function CateringOrderDetailPage() {
                     {deposits.map((d) => {
                       const paid = d.paid || d.status === 'PAID';
                       return (
-                        <div
-                          key={d.id}
-                          className="flex items-center gap-3"
-                        >
+                        <div key={d.id} className="flex items-center gap-3">
                           <div className="shrink-0">
                             {paid ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
