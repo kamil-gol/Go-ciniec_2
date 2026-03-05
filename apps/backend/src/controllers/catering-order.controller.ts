@@ -6,7 +6,7 @@ function getUserId(req: Request): string {
   return (req as Request & { user: { id: string } }).user.id;
 }
 
-// ─── Lista zamówień ───────────────────────────────────────────────────────────────────────────
+// ─── Lista zamówień ──────────────────────────────────────────────────────────────────────────
 
 export async function listOrders(
   req: Request,
@@ -34,7 +34,7 @@ export async function listOrders(
   }
 }
 
-// ─── Szczegóły zamówienia ───────────────────────────────────────────────────────────
+// ─── Szczegóły zamówienia ──────────────────────────────────────────────────────────────────
 
 export async function getOrder(
   req: Request,
@@ -53,7 +53,7 @@ export async function getOrder(
   }
 }
 
-// ─── Utwórz ────────────────────────────────────────────────────────────────────────
+// ─── Utwórz ──────────────────────────────────────────────────────────────────────
 
 export async function createOrder(
   req: Request,
@@ -71,7 +71,7 @@ export async function createOrder(
   }
 }
 
-// ─── Aktualizuj ────────────────────────────────────────────────────────────────────────
+// ─── Aktualizuj ──────────────────────────────────────────────────────────────────────
 
 export async function updateOrder(
   req: Request,
@@ -89,7 +89,7 @@ export async function updateOrder(
   }
 }
 
-// ─── Zmień status ───────────────────────────────────────────────────────────────────────
+// ─── Zmień status ─────────────────────────────────────────────────────────────────────
 
 export async function changeStatus(
   req: Request,
@@ -125,7 +125,7 @@ export async function deleteOrder(
   }
 }
 
-// ─── Historia (timeline) ──────────────────────────────────────────────────────────────
+// ─── Historia (timeline) ──────────────────────────────────────────────────────────────────
 
 export async function getHistory(
   req: Request,
@@ -154,6 +154,41 @@ export async function createDeposit(
       getUserId(req),
     );
     res.status(201).json({ success: true, data: deposit });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateDeposit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const deposit = await cateringOrderService.updateDeposit(
+      req.params.depositId,
+      req.body,
+      getUserId(req),
+      req.params.id,
+    );
+    res.json({ success: true, data: deposit });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteDeposit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    await cateringOrderService.deleteDeposit(
+      req.params.depositId,
+      getUserId(req),
+      req.params.id,
+    );
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

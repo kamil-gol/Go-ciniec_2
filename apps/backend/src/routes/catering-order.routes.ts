@@ -8,6 +8,7 @@ import {
   updateOrderSchema,
   changeStatusSchema,
   createDepositSchema,
+  updateDepositSchema,
   markDepositPaidSchema,
 } from '../validation/catering-order.validation';
 import * as ctrl from '../controllers/catering-order.controller';
@@ -86,6 +87,27 @@ router.post(
   validateUUID('id'),
   validateBody(createDepositSchema),
   ctrl.createDeposit,
+);
+
+// PATCH /api/catering/orders/:id/deposits/:depositId
+router.patch(
+  '/:id/deposits/:depositId',
+  authenticate,
+  requirePermission('catering:manage_orders'),
+  validateUUID('id'),
+  validateUUID('depositId'),
+  validateBody(updateDepositSchema),
+  ctrl.updateDeposit,
+);
+
+// DELETE /api/catering/orders/:id/deposits/:depositId
+router.delete(
+  '/:id/deposits/:depositId',
+  authenticate,
+  requirePermission('catering:manage_orders'),
+  validateUUID('id'),
+  validateUUID('depositId'),
+  ctrl.deleteDeposit,
 );
 
 // PATCH /api/catering/orders/:id/deposits/:depositId/pay

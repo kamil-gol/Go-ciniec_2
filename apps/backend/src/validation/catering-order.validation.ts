@@ -53,7 +53,6 @@ const orderExtraSchema = z.object({
   unitPrice: z.number().min(0, 'Cena nie może być ujemna'),
 });
 
-// Pola wspólne dla create i update
 const sharedOrderFields = {
   templateId: z.string().uuid().optional().nullable(),
   packageId: z.string().uuid().optional().nullable(),
@@ -140,6 +139,25 @@ export const createDepositSchema = z.object({
   dueDate: z
     .string({ required_error: 'Termin płatności jest wymagany' })
     .regex(datePattern, 'Format daty: YYYY-MM-DD'),
+  title: z.string().max(255).optional().nullable(),
+  description: z.string().max(1000).optional().nullable(),
+  internalNotes: z.string().max(1000).optional().nullable(),
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Update Deposit
+// ═══════════════════════════════════════════════════════════════
+
+export const updateDepositSchema = z.object({
+  amount: z
+    .number()
+    .positive('Kwota musi być większa od 0')
+    .max(999999.99, 'Kwota nie może przekraczać 999 999,99 PLN')
+    .optional(),
+  dueDate: z
+    .string()
+    .regex(datePattern, 'Format daty: YYYY-MM-DD')
+    .optional(),
   title: z.string().max(255).optional().nullable(),
   description: z.string().max(1000).optional().nullable(),
   internalNotes: z.string().max(1000).optional().nullable(),
