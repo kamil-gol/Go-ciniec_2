@@ -97,6 +97,7 @@ export function useUpdateCateringOrder(id: string) {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: orderKey(id) });
+      await qc.invalidateQueries({ queryKey: historyKey(id) });
       await qc.invalidateQueries({ queryKey: ['catering-orders'] });
     },
   });
@@ -138,6 +139,7 @@ export function useCreateCateringDeposit(orderId: string) {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: orderKey(orderId) });
+      await qc.invalidateQueries({ queryKey: historyKey(orderId) });
     },
   });
 }
@@ -154,6 +156,7 @@ export function useMarkDepositPaid(orderId: string, depositId: string) {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: orderKey(orderId) });
+      await qc.invalidateQueries({ queryKey: historyKey(orderId) });
     },
   });
 }
