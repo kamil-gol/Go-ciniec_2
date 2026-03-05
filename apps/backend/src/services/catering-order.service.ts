@@ -328,7 +328,6 @@ export async function updateOrder(
   const oldStatus = existing.status;
   const updateData: Prisma.CateringOrderUpdateInput = {};
 
-  // ─── Detekcja zmian rabatu (przed zapisem) ──────────────────────────────────────
   const oldDiscountType = existing.discountType as CateringDiscountType | null;
   const newDiscountType = 'discountType' in input ? input.discountType : oldDiscountType;
   const oldDiscountValue = existing.discountValue != null ? Number(existing.discountValue) : null;
@@ -364,7 +363,6 @@ export async function updateOrder(
       ? `${newDiscountValue}%`
       : `${newDiscountValue} PLN`;
   }
-  // ──────────────────────────────────────────────────────────────────────────────
 
   if (input.items !== undefined || input.extras !== undefined) {
     const items = input.items ?? [];
@@ -481,7 +479,6 @@ export async function updateOrder(
     include: orderInclude,
   });
 
-  // ─── Zapis historii rabatu (po głównym update) ─────────────────────────────────
   if (discountEvent && input.changedById) {
     await prisma.cateringOrderHistory.create({
       data: {
@@ -538,6 +535,14 @@ export interface CreateDepositInput {
   internalNotes?: string | null;
 }
 
+export interface UpdateDepositInput {
+  amount?: number;
+  dueDate?: string;
+  title?: string | null;
+  description?: string | null;
+  internalNotes?: string | null;
+}
+
 export async function createDeposit(
   orderId: string,
   input: CreateDepositInput,
@@ -570,9 +575,71 @@ export async function createDeposit(
   return deposit;
 }
 
-/**
- * Oznacz depozyt jako opłacony.
- */
+export async function updateDeposit(
+  depositId: string,
+  input: UpdateDepositInput,
+  changedById?: string,
+  orderId?: string,
+) {
+  const deposit = await prisma.cateringDeposit.findUniqueOrThrow({ where: { id: depositId } });
+
+  const updated = await prisma.cateringDeposit.update({
+    where: { id: depositId },
+    data: {
+      ...(input.amount !== undefined && {
+        amount: input.amount,
+        remainingAmount: deposit.paid ? 0 : input.amount,
+      }),
+      ...(input.dueDate !== undefined && { dueDate: input.dueDate }),
+      ...('title' in input && { title: input.title ?? null }),
+      ...('description' in input && { description: input.description ?? null }),
+      ...('internalNotes' in input && { internalNotes: input.internalNotes ?? null }),
+    },
+  });
+
+  if (changedById && orderId) {
+    await prisma.cateringOrderHistory.create({
+      data: {
+        orderId,
+        changedById,
+        changeType: 'DEPOSIT_UPDATED',
+        fieldName: 'deposit',
+        newValue: `${updated.title ?? 'Zaliczka'} — ${updated.amount} PLN`,
+      },
+    });
+  }
+
+  return updated;
+}
+
+export async function deleteDeposit(
+  depositId: string,
+  changedById?: string,
+  orderId?: string,
+) {
+  const deposit = await prisma.cateringDeposit.findUniqueOrThrow({ where: { id: depositId } });
+
+  if (deposit.paid) {
+    const err = new Error('Nie można usunąć opłaconej zaliczki') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+
+  await prisma.cateringDeposit.delete({ where: { id: depositId } });
+
+  if (changedById && orderId) {
+    await prisma.cateringOrderHistory.create({
+      data: {
+        orderId,
+        changedById,
+        changeType: 'DEPOSIT_DELETED',
+        fieldName: 'deposit',
+        oldValue: `${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN`,
+      },
+    });
+  }
+}
+
 export async function markDepositPaid(
   depositId: string,
   paymentMethod?: string,
@@ -620,5 +687,7 @@ export default {
   deleteOrder,
   getOrderHistory,
   createDeposit,
+  updateDeposit,
+  deleteDeposit,
   markDepositPaid,
 };

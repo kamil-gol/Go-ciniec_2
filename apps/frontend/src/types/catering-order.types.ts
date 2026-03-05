@@ -107,6 +107,7 @@ export interface CateringDeposit {
   paymentMethod?: string | null;
   title?: string | null;
   description?: string | null;
+  internalNotes?: string | null;
   createdAt: string;
 }
 
@@ -250,6 +251,14 @@ export interface ChangeStatusInput {
 export interface CreateDepositInput {
   amount: number;
   dueDate: string;
+  title?: string | null;
+  description?: string | null;
+  internalNotes?: string | null;
+}
+
+export interface UpdateDepositInput {
+  amount?: number;
+  dueDate?: string;
   title?: string | null;
   description?: string | null;
   internalNotes?: string | null;
