@@ -6,7 +6,7 @@ function getUserId(req: Request): string {
   return (req as Request & { user: { id: string } }).user.id;
 }
 
-// ─── Lista zamówień ───────────────────────────────────────────────────────────────
+// ─── Lista zamówień ───────────────────────────────────────────────────────────────────────────
 
 export async function listOrders(
   req: Request,
@@ -34,7 +34,7 @@ export async function listOrders(
   }
 }
 
-// ─── Szczegóły zamówienia ──────────────────────────────────────────────────────────
+// ─── Szczegóły zamówienia ───────────────────────────────────────────────────────────
 
 export async function getOrder(
   req: Request,
@@ -53,7 +53,7 @@ export async function getOrder(
   }
 }
 
-// ─── Utwórz ──────────────────────────────────────────────────────────────────
+// ─── Utwórz ────────────────────────────────────────────────────────────────────────
 
 export async function createOrder(
   req: Request,
@@ -71,7 +71,7 @@ export async function createOrder(
   }
 }
 
-// ─── Aktualizuj ─────────────────────────────────────────────────────────────────
+// ─── Aktualizuj ────────────────────────────────────────────────────────────────────────
 
 export async function updateOrder(
   req: Request,
@@ -89,7 +89,7 @@ export async function updateOrder(
   }
 }
 
-// ─── Zmień status ──────────────────────────────────────────────────────────────
+// ─── Zmień status ───────────────────────────────────────────────────────────────────────
 
 export async function changeStatus(
   req: Request,
@@ -110,7 +110,7 @@ export async function changeStatus(
   }
 }
 
-// ─── Usuń ──────────────────────────────────────────────────────────────────
+// ─── Usuń ──────────────────────────────────────────────────────────────────────
 
 export async function deleteOrder(
   req: Request,
@@ -125,7 +125,7 @@ export async function deleteOrder(
   }
 }
 
-// ─── Historia (timeline) ─────────────────────────────────────────────────────────
+// ─── Historia (timeline) ──────────────────────────────────────────────────────────────
 
 export async function getHistory(
   req: Request,
@@ -140,7 +140,7 @@ export async function getHistory(
   }
 }
 
-// ─── Depozyty ─────────────────────────────────────────────────────────────────
+// ─── Depozyty ───────────────────────────────────────────────────────────────────────
 
 export async function createDeposit(
   req: Request,
@@ -148,7 +148,11 @@ export async function createDeposit(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const deposit = await cateringOrderService.createDeposit(req.params.id, req.body);
+    const deposit = await cateringOrderService.createDeposit(
+      req.params.id,
+      req.body,
+      getUserId(req),
+    );
     res.status(201).json({ success: true, data: deposit });
   } catch (err) {
     next(err);
@@ -165,6 +169,8 @@ export async function markDepositPaid(
     const deposit = await cateringOrderService.markDepositPaid(
       req.params.depositId,
       paymentMethod,
+      getUserId(req),
+      req.params.id,
     );
     res.json({ success: true, data: deposit });
   } catch (err) {
