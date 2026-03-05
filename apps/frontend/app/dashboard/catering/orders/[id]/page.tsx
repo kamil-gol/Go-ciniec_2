@@ -317,8 +317,11 @@ export default function CateringOrderDetailPage() {
     });
   };
 
-  const handleDeleteDeposit = async (depositId: string) => {
-    if (!confirm('Czy na pewno usunąć tę zaliczkę?')) return;
+  const handleDeleteDeposit = async (depositId: string, isPaid?: boolean) => {
+    const msg = isPaid
+      ? 'Ta zaliczka jest opłacona. Usunięcie jej obniży sumę wpłat. Czy na pewno chcesz kontynuować?'
+      : 'Czy na pewno usunąć tę zaliczkę?';
+    if (!confirm(msg)) return;
     await deleteDepositMutation.mutateAsync(depositId);
   };
 
@@ -800,25 +803,29 @@ export default function CateringOrderDetailPage() {
                               <p className="text-xs text-neutral-400 dark:text-neutral-500">{formatDatePl(d.dueDate)}</p>
                             )}
                           </div>
-                          {!paid && (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                onClick={() => { setEditDeposit(d); setEditDepositOpen(true); }}
-                                className={iconBtnEdit}
-                                title="Edytuj zaliczkę"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteDeposit(d.id)}
-                                disabled={deleteDepositMutation.isPending}
-                                className={iconBtnDelete}
-                                title="Usuń zaliczkę"
-                              >
-                                {deleteDepositMutation.isPending
-                                  ? <Loader2 className="w-3 h-3 animate-spin" />
-                                  : <Trash2 className="w-3 h-3" />}
-                              </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!paid && (
+                              <>
+                                <button
+                                  onClick={() => { setEditDeposit(d); setEditDepositOpen(true); }}
+                                  className={iconBtnEdit}
+                                  title="Edytuj zaliczkę"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => handleDeleteDeposit(d.id, paid)}
+                              disabled={deleteDepositMutation.isPending}
+                              className={iconBtnDelete}
+                              title="Usuń zaliczkę"
+                            >
+                              {deleteDepositMutation.isPending
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <Trash2 className="w-3 h-3" />}
+                            </button>
+                            {!paid && (
                               <Button
                                 size="sm" variant="ghost"
                                 className="h-6 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
@@ -826,8 +833,8 @@ export default function CateringOrderDetailPage() {
                               >
                                 Opłać
                               </Button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           <span className={`text-xs font-bold shrink-0 ${paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
                             {formatPrice(d.amount)}
                           </span>
