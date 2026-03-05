@@ -6,7 +6,7 @@ import {
   Prisma,
 } from '@prisma/client';
 
-// ─── Auto-numeracja: CAT-YYYY-XXXXX ──────────────────────────────────────
+// ─── Auto-numeracja: CAT-YYYY-XXXXX ────────────────────────────────────────
 
 async function generateOrderNumber(): Promise<string> {
   const year = new Date().getFullYear();
@@ -17,7 +17,7 @@ async function generateOrderNumber(): Promise<string> {
   return `CAT-${year}-${seq}`;
 }
 
-// ─── Typy wejściowe ───────────────────────────────────────────
+// ─── Typy wejściowe ─────────────────────────────────────────────────────
 
 export interface CreateOrderItemInput {
   dishId: string;
@@ -103,7 +103,7 @@ export interface ListOrdersFilter {
   limit?: number;
 }
 
-// ─── Pobierz nazwy dań (snapshot) ──────────────────────────────────────────
+// ─── Pobierz nazwy dań (snapshot) ────────────────────────────────────────────────
 
 async function resolveDishNames(
   items: CreateOrderItemInput[],
@@ -121,7 +121,7 @@ async function resolveDishNames(
   }));
 }
 
-// ─── Pomocnicze: przelicz sumy ─────────────────────────────────────────
+// ─── Pomocnicze: przelicz sumy ───────────────────────────────────────────────────
 
 function computeTotals(
   items: { quantity: number; unitPrice: number }[],
@@ -150,7 +150,7 @@ function computeTotals(
   };
 }
 
-// ─── Include (wspólny dla get/create/update) ──────────────────────────────────────────────
+// ─── Include (wspólny dla get/create/update) ─────────────────────────────────────────────────────────
 
 const orderInclude = {
   client: {
@@ -177,7 +177,7 @@ const orderInclude = {
   deposits: { orderBy: { dueDate: 'asc' as const } },
 } satisfies Prisma.CateringOrderInclude;
 
-// ─── Serwis ────────────────────────────────────────────────────────────────────
+// ─── Serwis ────────────────────────────────────────────────────────────────────────────────────
 
 export async function createOrder(
   input: CreateCateringOrderInput,
@@ -525,7 +525,7 @@ export async function getOrderHistory(orderId: string) {
   });
 }
 
-// ─── Depozyty ────────────────────────────────────────────────────────────────────
+// ─── Depozyty ────────────────────────────────────────────────────────────────────────────────────
 
 export interface CreateDepositInput {
   amount: number;
@@ -619,11 +619,9 @@ export async function deleteDeposit(
 ) {
   const deposit = await prisma.cateringDeposit.findUniqueOrThrow({ where: { id: depositId } });
 
-  if (deposit.paid) {
-    const err = new Error('Nie można usunąć opłaconej zaliczki') as Error & { statusCode: number };
-    err.statusCode = 400;
-    throw err;
-  }
+  // Usuwanie opłaconych zaliczek jest dozwolone (korekta błędu, rezygnacja klienta).
+  // Operacja rejestrowana jest w logu audytowym z flagą wasPaid.
+  const wasPaid = deposit.paid;
 
   await prisma.cateringDeposit.delete({ where: { id: depositId } });
 
@@ -635,6 +633,7 @@ export async function deleteDeposit(
         changeType: 'DEPOSIT_DELETED',
         fieldName: 'deposit',
         oldValue: `${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN`,
+        newValue: wasPaid ? `wasPaid:true paymentMethod:${deposit.paymentMethod ?? 'N/A'}` : null,
       },
     });
   }
