@@ -232,6 +232,10 @@ export const DEPOSIT = {
   NOT_FOUND: 'Nie znaleziono zaliczki',
   AMOUNT_POSITIVE: 'Kwota zaliczki musi być większa od 0',
   CANNOT_EDIT_PAID: 'Nie można edytować opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.',
+  /**
+   * @deprecated Od 2026-03-05 usuwanie opłaconych zaliczek jest dozwolone
+   * (korekta błędu lub rezygnacja klienta). Klucz zachowany dla ciągłości historycznej.
+   */
   CANNOT_DELETE_PAID: 'Nie można usunąć opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.',
   CANNOT_CANCEL_PAID: 'Nie można anulować opłaconej zaliczki. Najpierw cofnij płatność.',
   ALREADY_PAID: 'Ta zaliczka jest już oznaczona jako opłacona',
