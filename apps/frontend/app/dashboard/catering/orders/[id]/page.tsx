@@ -34,9 +34,18 @@ import {
   useCateringOrder,
   useDeleteCateringOrder,
   useUpdateCateringOrder,
+  useUpdateCateringDeposit,
+  useDeleteCateringDeposit,
 } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +53,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { OrderTimeline } from '../components/OrderTimeline';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
@@ -176,6 +187,94 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
+// ═══ EDIT DEPOSIT DIALOG ═══
+
+interface EditDepositDialogProps {
+  orderId: string;
+  deposit: CateringDeposit | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialogProps) {
+  const [amount, setAmount] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [title, setTitle] = useState('');
+
+  const updateMutation = useUpdateCateringDeposit(orderId, deposit?.id ?? '');
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen && deposit) {
+      setAmount(String(deposit.amount));
+      setDueDate(deposit.dueDate ?? '');
+      setTitle(deposit.title ?? '');
+    }
+    if (!isOpen) onClose();
+  };
+
+  const handleSave = async () => {
+    if (!deposit) return;
+    await updateMutation.mutateAsync({
+      amount: parseFloat(amount),
+      dueDate,
+      title: title || null,
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Edytuj zaliczkę</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="dep-title">Tytuł</Label>
+            <Input
+              id="dep-title"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="np. Zaliczka 1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dep-amount">Kwota (PLN)</Label>
+            <Input
+              id="dep-amount"
+              type="number"
+              min={0.01}
+              step={0.01}
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dep-date">Termin płatności</Label>
+            <Input
+              id="dep-date"
+              type="date"
+              value={dueDate}
+              onChange={e => setDueDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Anuluj</Button>
+          <Button
+            onClick={handleSave}
+            disabled={updateMutation.isPending || !amount || !dueDate}
+          >
+            {updateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : 'Zapisz'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ═══ PAGE ═══
 
 export default function CateringOrderDetailPage() {
@@ -185,6 +284,8 @@ export default function CateringOrderDetailPage() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+  const [editDepositOpen, setEditDepositOpen] = useState(false);
+  const [editDeposit, setEditDeposit] = useState<CateringDeposit | null>(null);
   const [payingDeposit, setPayingDeposit] = useState<Pick<
     CateringDeposit,
     'id' | 'amount' | 'title'
@@ -193,6 +294,7 @@ export default function CateringOrderDetailPage() {
   const { data: order, isLoading } = useCateringOrder(id);
   const deleteMutation = useDeleteCateringOrder();
   const removeDiscountMutation = useUpdateCateringOrder(id);
+  const deleteDepositMutation = useDeleteCateringDeposit(id);
 
   const handleDelete = async () => {
     if (!confirm('Czy na pewno usunąć to zamówienie?')) return;
@@ -207,6 +309,11 @@ export default function CateringOrderDetailPage() {
       discountValue: null,
       discountReason: null,
     });
+  };
+
+  const handleDeleteDeposit = async (depositId: string) => {
+    if (!confirm('Czy na pewno usunąć tę zaliczkę?')) return;
+    await deleteDepositMutation.mutateAsync(depositId);
   };
 
   if (isLoading) {
@@ -468,18 +575,10 @@ export default function CateringOrderDetailPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-neutral-50 dark:bg-neutral-800/50 border-y border-neutral-200 dark:border-neutral-700">
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Danie
-                        </th>
-                        <th className="text-center px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Ilość
-                        </th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Cena jedn.
-                        </th>
-                        <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Razem
-                        </th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Danie</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Ilość</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Cena jedn.</th>
+                        <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Razem</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -516,10 +615,7 @@ export default function CateringOrderDetailPage() {
                     </tbody>
                     <tfoot>
                       <tr className="bg-green-50 dark:bg-green-900/10 border-t-2 border-green-200 dark:border-green-800">
-                        <td
-                          colSpan={3}
-                          className="px-5 py-3 text-right text-sm font-semibold text-green-700 dark:text-green-300"
-                        >
+                        <td colSpan={3} className="px-5 py-3 text-right text-sm font-semibold text-green-700 dark:text-green-300">
                           Razem za dania
                         </td>
                         <td className="text-right px-5 py-3 font-bold text-green-700 dark:text-green-300">
@@ -545,18 +641,10 @@ export default function CateringOrderDetailPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-neutral-50 dark:bg-neutral-800/50 border-y border-neutral-200 dark:border-neutral-700">
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Usługa
-                        </th>
-                        <th className="text-center px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Ilość
-                        </th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Cena jedn.
-                        </th>
-                        <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                          Razem
-                        </th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Usługa</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Ilość</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Cena jedn.</th>
+                        <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Razem</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -593,10 +681,7 @@ export default function CateringOrderDetailPage() {
                     </tbody>
                     <tfoot>
                       <tr className="bg-amber-50 dark:bg-amber-900/10 border-t-2 border-amber-200 dark:border-amber-800">
-                        <td
-                          colSpan={3}
-                          className="px-5 py-3 text-right text-sm font-semibold text-amber-700 dark:text-amber-300"
-                        >
+                        <td colSpan={3} className="px-5 py-3 text-right text-sm font-semibold text-amber-700 dark:text-amber-300">
                           Razem za usługi
                         </td>
                         <td className="text-right px-5 py-3 font-bold text-amber-700 dark:text-amber-300">
@@ -665,9 +750,7 @@ export default function CateringOrderDetailPage() {
                 )}
               </div>
 
-              {(order.contactName ||
-                order.contactPhone ||
-                order.contactEmail) && (
+              {(order.contactName || order.contactPhone || order.contactEmail) && (
                 <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
                   <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">
                     Kontakt do zamówienia
@@ -698,9 +781,7 @@ export default function CateringOrderDetailPage() {
               )}
 
               <button
-                onClick={() =>
-                  router.push(`/dashboard/clients/${order.client.id}`)
-                }
+                onClick={() => router.push(`/dashboard/clients/${order.client.id}`)}
                 className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
               >
                 Profil klienta <ChevronRight className="w-3.5 h-3.5" />
@@ -740,9 +821,7 @@ export default function CateringOrderDetailPage() {
                     <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
                       <Star className="w-3.5 h-3.5" /> Usługi dodatkowe
                     </span>
-                    <span className="font-medium">
-                      {formatPrice(order.extrasTotalPrice)}
-                    </span>
+                    <span className="font-medium">{formatPrice(order.extrasTotalPrice)}</span>
                   </div>
                 )}
 
@@ -791,9 +870,7 @@ export default function CateringOrderDetailPage() {
 
               <div className="mt-4 pt-4 border-t-2 border-dashed border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-                    Łącznie
-                  </span>
+                  <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">Łącznie</span>
                   <span className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">
                     {formatPrice(order.totalPrice)}
                   </span>
@@ -830,7 +907,7 @@ export default function CateringOrderDetailPage() {
                     {deposits.map((d) => {
                       const paid = d.paid || d.status === 'PAID';
                       return (
-                        <div key={d.id} className="flex items-center gap-3">
+                        <div key={d.id} className="flex items-center gap-2">
                           <div className="shrink-0">
                             {paid ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -864,20 +941,35 @@ export default function CateringOrderDetailPage() {
                             {formatPrice(d.amount)}
                           </span>
                           {!paid && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs shrink-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                              onClick={() =>
-                                setPayingDeposit({
-                                  id: d.id,
-                                  amount: d.amount,
-                                  title: d.title,
-                                })
-                              }
-                            >
-                              Opłać
-                            </Button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => { setEditDeposit(d); setEditDepositOpen(true); }}
+                                className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                                title="Edytuj zaliczkę"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDeposit(d.id)}
+                                disabled={deleteDepositMutation.isPending}
+                                className="p-1 rounded text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                                title="Usuń zaliczkę"
+                              >
+                                {deleteDepositMutation.isPending ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                              </button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                onClick={() => setPayingDeposit({ id: d.id, amount: d.amount, title: d.title })}
+                              >
+                                Opłać
+                              </Button>
+                            </div>
                           )}
                         </div>
                       );
@@ -898,28 +990,14 @@ export default function CateringOrderDetailPage() {
                 <div className="space-y-4">
                   {order.notes && (
                     <div>
-                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1.5">
-                        Uwagi
-                      </p>
-                      <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                        {order.notes}
-                      </p>
+                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1.5">Uwagi</p>
+                      <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{order.notes}</p>
                     </div>
                   )}
                   {order.specialRequirements && (
-                    <div
-                      className={
-                        order.notes
-                          ? 'pt-3 border-t border-neutral-100 dark:border-neutral-800'
-                          : ''
-                      }
-                    >
-                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1.5">
-                        Specjalne wymagania
-                      </p>
-                      <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                        {order.specialRequirements}
-                      </p>
+                    <div className={order.notes ? 'pt-3 border-t border-neutral-100 dark:border-neutral-800' : ''}>
+                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1.5">Specjalne wymagania</p>
+                      <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{order.specialRequirements}</p>
                     </div>
                   )}
                 </div>
@@ -974,6 +1052,13 @@ export default function CateringOrderDetailPage() {
           onClose={() => setPayingDeposit(null)}
         />
       )}
+
+      <EditDepositDialog
+        orderId={id}
+        deposit={editDeposit}
+        open={editDepositOpen}
+        onClose={() => { setEditDepositOpen(false); setEditDeposit(null); }}
+      />
     </div>
   );
 }
