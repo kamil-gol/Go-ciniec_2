@@ -95,6 +95,12 @@ function getInitials(
   return (f + l).toUpperCase() || '??';
 }
 
+// Wspolne style ikon akcji
+const iconBtnEdit =
+  'p-1 rounded text-neutral-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors';
+const iconBtnDelete =
+  'p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50';
+
 // ═══ SUB-COMPONENTS ═══
 
 function StatPill({
@@ -320,9 +326,7 @@ export default function CateringOrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Wczytywanie zamówienia…
-        </p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Wczytywanie zamówienia…</p>
       </div>
     );
   }
@@ -331,13 +335,8 @@ export default function CateringOrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <AlertCircle className="h-12 w-12 text-neutral-300" />
-        <p className="font-semibold text-neutral-600 dark:text-neutral-400">
-          Zamówienie nie istnieje
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => router.push('/dashboard/catering/orders')}
-        >
+        <p className="font-semibold text-neutral-600 dark:text-neutral-400">Zamówienie nie istnieje</p>
+        <Button variant="outline" onClick={() => router.push('/dashboard/catering/orders')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Powrót do listy
         </Button>
       </div>
@@ -367,6 +366,13 @@ export default function CateringOrderDetailPage() {
 
   const hasDiscount = !!order.discountType;
 
+  // Rozliczenie zaliczek
+  const totalPaid = deposits
+    .filter(d => d.paid || d.status === 'PAID')
+    .reduce((sum, d) => sum + Number(d.paidAmount ?? d.amount), 0);
+  const remaining = Math.max(0, Number(order.totalPrice) - totalPaid);
+  const fullyPaid = deposits.length > 0 && remaining === 0;
+
   return (
     <div className="min-h-0">
       {/* ═══ HERO ═══ */}
@@ -381,33 +387,24 @@ export default function CateringOrderDetailPage() {
               onClick={() => router.push('/dashboard/catering/orders')}
               className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors py-1.5"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Powrót
+              <ArrowLeft className="h-4 w-4" /> Powrót
             </button>
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
+              <Button size="sm" variant="ghost"
                 className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
                 onClick={() => setStatusDialogOpen(true)}
               >
                 Zmień status
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
+              <Button size="sm" variant="ghost"
                 className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
-                onClick={() =>
-                  router.push(`/dashboard/catering/orders/${id}/edit`)
-                }
+                onClick={() => router.push(`/dashboard/catering/orders/${id}/edit`)}
               >
                 <Edit className="mr-1.5 h-3.5 w-3.5" /> Edytuj
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
+                  <Button size="sm" variant="ghost"
                     className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 w-9 p-0"
                   >
                     <MoreVertical className="h-4 w-4" />
@@ -428,9 +425,7 @@ export default function CateringOrderDetailPage() {
           </div>
 
           <div className="flex items-center gap-3 mb-2">
-            <span className="font-mono text-white/60 text-sm tracking-wide">
-              {order.orderNumber}
-            </span>
+            <span className="font-mono text-white/60 text-sm tracking-wide">{order.orderNumber}</span>
             <OrderStatusBadge status={order.status} />
           </div>
 
@@ -440,29 +435,14 @@ export default function CateringOrderDetailPage() {
 
           <div className="flex flex-wrap gap-3">
             {order.eventDate && (
-              <StatPill
-                icon={CalendarDays}
-                label="Data"
-                value={formatDatePl(order.eventDate)}
-              />
+              <StatPill icon={CalendarDays} label="Data" value={formatDatePl(order.eventDate)} />
             )}
             <StatPill icon={Users} label="Osób" value={String(order.guestsCount)} />
-            <StatPill
-              icon={Receipt}
-              label="Wartość"
-              value={formatPrice(order.totalPrice)}
-            />
+            <StatPill icon={Receipt} label="Wartość" value={formatPrice(order.totalPrice)} />
             {pricePerGuest !== null && (
-              <StatPill
-                icon={Sparkles}
-                label="/ os."
-                value={formatPrice(pricePerGuest)}
-              />
+              <StatPill icon={Sparkles} label="/ os." value={formatPrice(pricePerGuest)} />
             )}
-            <StatPill
-              icon={Truck}
-              value={DELIVERY_TYPE_LABEL[order.deliveryType]}
-            />
+            <StatPill icon={Truck} value={DELIVERY_TYPE_LABEL[order.deliveryType]} />
           </div>
         </div>
       </div>
@@ -474,7 +454,6 @@ export default function CateringOrderDetailPage() {
           {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Szczegóły cateringu */}
             <SectionCard
               icon={CalendarDays}
               iconBg="bg-orange-100 dark:bg-orange-900/30"
@@ -483,12 +462,7 @@ export default function CateringOrderDetailPage() {
             >
               <div className="grid grid-cols-2 gap-x-6 gap-y-5">
                 <Field label="Okazja" value={order.eventName} />
-                <Field
-                  label="Liczba osób"
-                  value={
-                    order.guestsCount ? `${order.guestsCount} osób` : '—'
-                  }
-                />
+                <Field label="Liczba osób" value={order.guestsCount ? `${order.guestsCount} osób` : '—'} />
               </div>
             </SectionCard>
 
@@ -505,16 +479,12 @@ export default function CateringOrderDetailPage() {
                     {DELIVERY_TYPE_LABEL[order.deliveryType]}
                   </span>
                 </div>
-
                 <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-                  {(order.deliveryType === 'DELIVERY' ||
-                    order.deliveryType === 'ON_SITE') &&
+                  {(order.deliveryType === 'DELIVERY' || order.deliveryType === 'ON_SITE') &&
                     order.deliveryAddress && (
                       <div className="col-span-2">
                         <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-2">
-                          {order.deliveryType === 'DELIVERY'
-                            ? 'Adres dostawy'
-                            : 'Adres klienta'}
+                          {order.deliveryType === 'DELIVERY' ? 'Adres dostawy' : 'Adres klienta'}
                         </p>
                         <div className="flex items-start gap-2">
                           <MapPin className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
@@ -524,13 +494,10 @@ export default function CateringOrderDetailPage() {
                         </div>
                       </div>
                     )}
-
                   {order.deliveryTime && (
                     <div>
                       <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1">
-                        {order.deliveryType === 'PICKUP'
-                          ? 'Godzina odbioru'
-                          : 'Godzina'}
+                        {order.deliveryType === 'PICKUP' ? 'Godzina odbioru' : 'Godzina'}
                       </p>
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-neutral-400" />
@@ -540,23 +507,14 @@ export default function CateringOrderDetailPage() {
                       </div>
                     </div>
                   )}
-
                   {order.deliveryDate && (
-                    <Field
-                      label="Data dostawy"
-                      value={formatDatePl(order.deliveryDate)}
-                    />
+                    <Field label="Data dostawy" value={formatDatePl(order.deliveryDate)} />
                   )}
                 </div>
-
                 {order.deliveryNotes && (
                   <div className="p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                    <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">
-                      Uwagi
-                    </p>
-                    <p className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {order.deliveryNotes}
-                    </p>
+                    <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">Uwagi</p>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300">{order.deliveryNotes}</p>
                   </div>
                 )}
               </div>
@@ -583,44 +541,21 @@ export default function CateringOrderDetailPage() {
                     </thead>
                     <tbody>
                       {items.map((item, i) => (
-                        <tr
-                          key={item.id}
-                          className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${
-                            i % 2 === 1
-                              ? 'bg-neutral-50/50 dark:bg-neutral-800/20'
-                              : 'bg-white dark:bg-transparent'
-                          }`}
-                        >
+                        <tr key={item.id} className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${i % 2 === 1 ? 'bg-neutral-50/50 dark:bg-neutral-800/20' : 'bg-white dark:bg-transparent'}`}>
                           <td className="px-5 py-3">
-                            <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                              {item.dishNameSnapshot ?? '—'}
-                            </span>
-                            {item.note && (
-                              <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                {item.note}
-                              </span>
-                            )}
+                            <span className="font-medium text-neutral-900 dark:text-neutral-100">{item.dishNameSnapshot ?? '—'}</span>
+                            {item.note && <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{item.note}</span>}
                           </td>
-                          <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono">
-                            ×{item.quantity}
-                          </td>
-                          <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-400">
-                            {formatPrice(item.unitPrice)}
-                          </td>
-                          <td className="text-right px-5 py-3 font-semibold text-neutral-900 dark:text-neutral-100">
-                            {formatPrice(item.totalPrice)}
-                          </td>
+                          <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono">×{item.quantity}</td>
+                          <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatPrice(item.unitPrice)}</td>
+                          <td className="text-right px-5 py-3 font-semibold text-neutral-900 dark:text-neutral-100">{formatPrice(item.totalPrice)}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr className="bg-green-50 dark:bg-green-900/10 border-t-2 border-green-200 dark:border-green-800">
-                        <td colSpan={3} className="px-5 py-3 text-right text-sm font-semibold text-green-700 dark:text-green-300">
-                          Razem za dania
-                        </td>
-                        <td className="text-right px-5 py-3 font-bold text-green-700 dark:text-green-300">
-                          {formatPrice(order.subtotal)}
-                        </td>
+                        <td colSpan={3} className="px-5 py-3 text-right text-sm font-semibold text-green-700 dark:text-green-300">Razem za dania</td>
+                        <td className="text-right px-5 py-3 font-bold text-green-700 dark:text-green-300">{formatPrice(order.subtotal)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -649,44 +584,21 @@ export default function CateringOrderDetailPage() {
                     </thead>
                     <tbody>
                       {extras.map((extra, i) => (
-                        <tr
-                          key={extra.id}
-                          className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${
-                            i % 2 === 1
-                              ? 'bg-neutral-50/50 dark:bg-neutral-800/20'
-                              : 'bg-white dark:bg-transparent'
-                          }`}
-                        >
+                        <tr key={extra.id} className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${i % 2 === 1 ? 'bg-neutral-50/50 dark:bg-neutral-800/20' : 'bg-white dark:bg-transparent'}`}>
                           <td className="px-5 py-3">
-                            <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                              {extra.name}
-                            </span>
-                            {extra.description && (
-                              <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                {extra.description}
-                              </span>
-                            )}
+                            <span className="font-medium text-neutral-900 dark:text-neutral-100">{extra.name}</span>
+                            {extra.description && <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{extra.description}</span>}
                           </td>
-                          <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono">
-                            ×{extra.quantity}
-                          </td>
-                          <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-400">
-                            {formatPrice(extra.unitPrice)}
-                          </td>
-                          <td className="text-right px-5 py-3 font-semibold text-neutral-900 dark:text-neutral-100">
-                            {formatPrice(extra.totalPrice)}
-                          </td>
+                          <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono">×{extra.quantity}</td>
+                          <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatPrice(extra.unitPrice)}</td>
+                          <td className="text-right px-5 py-3 font-semibold text-neutral-900 dark:text-neutral-100">{formatPrice(extra.totalPrice)}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr className="bg-amber-50 dark:bg-amber-900/10 border-t-2 border-amber-200 dark:border-amber-800">
-                        <td colSpan={3} className="px-5 py-3 text-right text-sm font-semibold text-amber-700 dark:text-amber-300">
-                          Razem za usługi
-                        </td>
-                        <td className="text-right px-5 py-3 font-bold text-amber-700 dark:text-amber-300">
-                          {formatPrice(order.extrasTotalPrice)}
-                        </td>
+                        <td colSpan={3} className="px-5 py-3 text-right text-sm font-semibold text-amber-700 dark:text-amber-300">Razem za usługi</td>
+                        <td className="text-right px-5 py-3 font-bold text-amber-700 dark:text-amber-300">{formatPrice(order.extrasTotalPrice)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -701,32 +613,16 @@ export default function CateringOrderDetailPage() {
             {/* Klient */}
             <SectionCard
               icon={isCompany ? Building2 : User}
-              iconBg={
-                isCompany
-                  ? 'bg-violet-100 dark:bg-violet-900/30'
-                  : 'bg-indigo-100 dark:bg-indigo-900/30'
-              }
-              iconColor={
-                isCompany
-                  ? 'text-violet-600 dark:text-violet-400'
-                  : 'text-indigo-600 dark:text-indigo-400'
-              }
+              iconBg={isCompany ? 'bg-violet-100 dark:bg-violet-900/30' : 'bg-indigo-100 dark:bg-indigo-900/30'}
+              iconColor={isCompany ? 'text-violet-600 dark:text-violet-400' : 'text-indigo-600 dark:text-indigo-400'}
               title="Klient"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 ${
-                    isCompany
-                      ? 'bg-gradient-to-br from-violet-500 to-purple-600'
-                      : 'bg-gradient-to-br from-indigo-500 to-blue-600'
-                  }`}
-                >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 ${isCompany ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-indigo-500 to-blue-600'}`}>
                   {initials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
-                    {clientName}
-                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-neutral-100 truncate">{clientName}</p>
                   {isCompany && (
                     <span className="inline-flex items-center gap-1 text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full">
                       <Building2 className="w-2.5 h-2.5" /> Firma
@@ -734,7 +630,6 @@ export default function CateringOrderDetailPage() {
                   )}
                 </div>
               </div>
-
               <div className="space-y-2">
                 {order.client.email && (
                   <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
@@ -749,19 +644,14 @@ export default function CateringOrderDetailPage() {
                   </div>
                 )}
               </div>
-
               {(order.contactName || order.contactPhone || order.contactEmail) && (
                 <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-                  <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">
-                    Kontakt do zamówienia
-                  </p>
+                  <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">Kontakt do zamówienia</p>
                   <div className="space-y-2">
                     {order.contactName && (
                       <div className="flex items-center gap-2.5 text-sm">
                         <User className="w-4 h-4 shrink-0 text-neutral-400" />
-                        <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                          {order.contactName}
-                        </span>
+                        <span className="font-medium text-neutral-900 dark:text-neutral-100">{order.contactName}</span>
                       </div>
                     )}
                     {order.contactPhone && (
@@ -779,7 +669,6 @@ export default function CateringOrderDetailPage() {
                   </div>
                 </div>
               )}
-
               <button
                 onClick={() => router.push(`/dashboard/clients/${order.client.id}`)}
                 className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
@@ -797,8 +686,7 @@ export default function CateringOrderDetailPage() {
               badge={
                 !hasDiscount ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    size="sm" variant="ghost"
                     className="h-8 px-3 text-xs gap-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                     onClick={() => setDiscountDialogOpen(true)}
                   >
@@ -807,6 +695,7 @@ export default function CateringOrderDetailPage() {
                 ) : undefined
               }
             >
+              {/* Pozycje */}
               <div className="space-y-2.5">
                 {Number(order.subtotal) > 0 && (
                   <div className="flex items-center justify-between text-sm">
@@ -825,7 +714,7 @@ export default function CateringOrderDetailPage() {
                   </div>
                 )}
 
-                {/* Rabat — ikony zawsze widoczne */}
+                {/* Rabat — ikony jednolite z zaliczkami */}
                 {hasDiscount && (
                   <div className="flex items-start justify-between text-sm text-emerald-600 dark:text-emerald-400">
                     <span>
@@ -834,16 +723,14 @@ export default function CateringOrderDetailPage() {
                         ? ` (${order.discountValue}%)`
                         : ''}
                       {order.discountReason && (
-                        <span className="block text-xs text-neutral-400 font-normal">
-                          {order.discountReason}
-                        </span>
+                        <span className="block text-xs text-neutral-400 font-normal">{order.discountReason}</span>
                       )}
                     </span>
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       <button
                         onClick={() => setDiscountDialogOpen(true)}
                         disabled={removeDiscountMutation.isPending}
-                        className="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                        className={iconBtnEdit}
                         title="Edytuj rabat"
                       >
                         <Pencil className="w-3 h-3" />
@@ -851,23 +738,20 @@ export default function CateringOrderDetailPage() {
                       <button
                         onClick={handleRemoveDiscount}
                         disabled={removeDiscountMutation.isPending}
-                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        className={iconBtnDelete}
                         title="Usuń rabat"
                       >
-                        {removeDiscountMutation.isPending ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3 h-3" />
-                        )}
+                        {removeDiscountMutation.isPending
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : <Trash2 className="w-3 h-3" />}
                       </button>
-                      <span className="font-medium ml-1">
-                        −{formatPrice(order.discountAmount)}
-                      </span>
+                      <span className="font-medium ml-1">−{formatPrice(order.discountAmount)}</span>
                     </div>
                   </div>
                 )}
               </div>
 
+              {/* Łącznie */}
               <div className="mt-4 pt-4 border-t-2 border-dashed border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center justify-between">
                   <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">Łącznie</span>
@@ -885,12 +769,9 @@ export default function CateringOrderDetailPage() {
               {/* Zaliczki */}
               <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
-                    Zaliczki
-                  </p>
+                  <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Zaliczki</p>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    size="sm" variant="ghost"
                     className="h-7 px-2.5 text-xs gap-1 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
                     onClick={() => setDepositDialogOpen(true)}
                   >
@@ -899,48 +780,31 @@ export default function CateringOrderDetailPage() {
                 </div>
 
                 {deposits.length === 0 ? (
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">
-                    Brak zaliczek
-                  </p>
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">Brak zaliczek</p>
                 ) : (
                   <div className="space-y-2">
                     {deposits.map((d) => {
                       const paid = d.paid || d.status === 'PAID';
                       return (
                         <div key={d.id} className="flex items-center gap-2">
-                          {/* status icon */}
                           <div className="shrink-0">
-                            {paid ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-600" />
-                            )}
+                            {paid
+                              ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                              : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-600" />}
                           </div>
-
-                          {/* title + date */}
                           <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-xs font-medium truncate ${
-                                paid
-                                  ? 'text-emerald-700 dark:text-emerald-300'
-                                  : 'text-neutral-600 dark:text-neutral-400'
-                              }`}
-                            >
+                            <p className={`text-xs font-medium truncate ${paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-neutral-600 dark:text-neutral-400'}`}>
                               {d.title ?? 'Zaliczka'}
                             </p>
                             {d.dueDate && (
-                              <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                                {formatDatePl(d.dueDate)}
-                              </p>
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500">{formatDatePl(d.dueDate)}</p>
                             )}
                           </div>
-
-                          {/* akcje (tylko nieopłacone) */}
                           {!paid && (
                             <div className="flex items-center gap-1 shrink-0">
                               <button
                                 onClick={() => { setEditDeposit(d); setEditDepositOpen(true); }}
-                                className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                                className={iconBtnEdit}
                                 title="Edytuj zaliczkę"
                               >
                                 <Pencil className="w-3 h-3" />
@@ -948,18 +812,15 @@ export default function CateringOrderDetailPage() {
                               <button
                                 onClick={() => handleDeleteDeposit(d.id)}
                                 disabled={deleteDepositMutation.isPending}
-                                className="p-1 rounded text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                                className={iconBtnDelete}
                                 title="Usuń zaliczkę"
                               >
-                                {deleteDepositMutation.isPending ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-3 h-3" />
-                                )}
+                                {deleteDepositMutation.isPending
+                                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                                  : <Trash2 className="w-3 h-3" />}
                               </button>
                               <Button
-                                size="sm"
-                                variant="ghost"
+                                size="sm" variant="ghost"
                                 className="h-6 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                                 onClick={() => setPayingDeposit({ id: d.id, amount: d.amount, title: d.title })}
                               >
@@ -967,20 +828,36 @@ export default function CateringOrderDetailPage() {
                               </Button>
                             </div>
                           )}
-
-                          {/* kwota — zawsze po prawej */}
-                          <span
-                            className={`text-xs font-bold shrink-0 ${
-                              paid
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-neutral-700 dark:text-neutral-300'
-                            }`}
-                          >
+                          <span className={`text-xs font-bold shrink-0 ${paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
                             {formatPrice(d.amount)}
                           </span>
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Podsumowanie rozliczeń */}
+                {deposits.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 dark:border-neutral-700 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-neutral-400 dark:text-neutral-500">Wpłacono</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        {formatPrice(totalPaid)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`font-semibold ${fullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        Pozostało do zapłaty
+                      </span>
+                      <span className={`font-bold ${
+                        fullyPaid
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
+                      }`}>
+                        {fullyPaid ? 'Opłacone ✓' : formatPrice(remaining)}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1031,7 +908,6 @@ export default function CateringOrderDetailPage() {
         open={statusDialogOpen}
         onClose={() => setStatusDialogOpen(false)}
       />
-
       <DiscountDialog
         orderId={id}
         current={{
@@ -1042,13 +918,11 @@ export default function CateringOrderDetailPage() {
         open={discountDialogOpen}
         onClose={() => setDiscountDialogOpen(false)}
       />
-
       <AddDepositDialog
         orderId={id}
         open={depositDialogOpen}
         onClose={() => setDepositDialogOpen(false)}
       />
-
       {payingDeposit && (
         <MarkDepositPaidDialog
           orderId={id}
@@ -1059,7 +933,6 @@ export default function CateringOrderDetailPage() {
           onClose={() => setPayingDeposit(null)}
         />
       )}
-
       <EditDepositDialog
         orderId={id}
         deposit={editDeposit}
