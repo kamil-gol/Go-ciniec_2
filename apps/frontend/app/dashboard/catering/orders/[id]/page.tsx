@@ -33,6 +33,7 @@ import {
 import {
   useCateringOrder,
   useDeleteCateringOrder,
+  useUpdateCateringOrder,
 } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -191,11 +192,21 @@ export default function CateringOrderDetailPage() {
 
   const { data: order, isLoading } = useCateringOrder(id);
   const deleteMutation = useDeleteCateringOrder();
+  const removeDiscountMutation = useUpdateCateringOrder(id);
 
   const handleDelete = async () => {
     if (!confirm('Czy na pewno usunąć to zamówienie?')) return;
     await deleteMutation.mutateAsync(id);
     router.push('/dashboard/catering/orders');
+  };
+
+  const handleRemoveDiscount = async () => {
+    if (!confirm('Czy na pewno usunąć rabat?')) return;
+    await removeDiscountMutation.mutateAsync({
+      discountType: null,
+      discountValue: null,
+      discountReason: null,
+    });
   };
 
   if (isLoading) {
@@ -356,7 +367,7 @@ export default function CateringOrderDetailPage() {
           {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Szczegóły cateringu (było: Szczegóły wydarzenia) */}
+            {/* Szczegóły cateringu */}
             <SectionCard
               icon={CalendarDays}
               iconBg="bg-orange-100 dark:bg-orange-900/30"
@@ -703,22 +714,16 @@ export default function CateringOrderDetailPage() {
               iconColor="text-emerald-600 dark:text-emerald-400"
               title="Rozliczenie"
               badge={
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 px-3 text-xs gap-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                  onClick={() => setDiscountDialogOpen(true)}
-                >
-                  {hasDiscount ? (
-                    <>
-                      <Pencil className="w-3.5 h-3.5" /> Edytuj rabat
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-3.5 h-3.5" /> Dodaj rabat
-                    </>
-                  )}
-                </Button>
+                !hasDiscount ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-3 text-xs gap-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                    onClick={() => setDiscountDialogOpen(true)}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Dodaj rabat
+                  </Button>
+                ) : undefined
               }
             >
               <div className="space-y-2.5">
@@ -740,12 +745,13 @@ export default function CateringOrderDetailPage() {
                     </span>
                   </div>
                 )}
-                {hasDiscount && Number(order.discountAmount) > 0 && (
-                  <div className="flex items-center justify-between text-sm text-emerald-600 dark:text-emerald-400">
+
+                {/* Rabat — inline edit/delete */}
+                {hasDiscount && (
+                  <div className="flex items-start justify-between text-sm text-emerald-600 dark:text-emerald-400 group">
                     <span>
                       Rabat
-                      {order.discountType === 'PERCENTAGE' &&
-                      order.discountValue
+                      {order.discountType === 'PERCENTAGE' && order.discountValue
                         ? ` (${order.discountValue}%)`
                         : ''}
                       {order.discountReason && (
@@ -754,9 +760,31 @@ export default function CateringOrderDetailPage() {
                         </span>
                       )}
                     </span>
-                    <span className="font-medium">
-                      −{formatPrice(order.discountAmount)}
-                    </span>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      <span className="font-medium">
+                        −{formatPrice(order.discountAmount)}
+                      </span>
+                      <button
+                        onClick={() => setDiscountDialogOpen(true)}
+                        disabled={removeDiscountMutation.isPending}
+                        className="ml-1.5 p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Edytuj rabat"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={handleRemoveDiscount}
+                        disabled={removeDiscountMutation.isPending}
+                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Usuń rabat"
+                      >
+                        {removeDiscountMutation.isPending ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
