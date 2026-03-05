@@ -825,9 +825,9 @@ export default function CateringOrderDetailPage() {
                   </div>
                 )}
 
-                {/* Rabat — inline edit/delete */}
+                {/* Rabat — ikony zawsze widoczne */}
                 {hasDiscount && (
-                  <div className="flex items-start justify-between text-sm text-emerald-600 dark:text-emerald-400 group">
+                  <div className="flex items-start justify-between text-sm text-emerald-600 dark:text-emerald-400">
                     <span>
                       Rabat
                       {order.discountType === 'PERCENTAGE' && order.discountValue
@@ -840,13 +840,10 @@ export default function CateringOrderDetailPage() {
                       )}
                     </span>
                     <div className="flex items-center gap-1 shrink-0 ml-2">
-                      <span className="font-medium">
-                        −{formatPrice(order.discountAmount)}
-                      </span>
                       <button
                         onClick={() => setDiscountDialogOpen(true)}
                         disabled={removeDiscountMutation.isPending}
-                        className="ml-1.5 p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
                         title="Edytuj rabat"
                       >
                         <Pencil className="w-3 h-3" />
@@ -854,7 +851,7 @@ export default function CateringOrderDetailPage() {
                       <button
                         onClick={handleRemoveDiscount}
                         disabled={removeDiscountMutation.isPending}
-                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                         title="Usuń rabat"
                       >
                         {removeDiscountMutation.isPending ? (
@@ -863,6 +860,9 @@ export default function CateringOrderDetailPage() {
                           <Trash2 className="w-3 h-3" />
                         )}
                       </button>
+                      <span className="font-medium ml-1">
+                        −{formatPrice(order.discountAmount)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -908,6 +908,7 @@ export default function CateringOrderDetailPage() {
                       const paid = d.paid || d.status === 'PAID';
                       return (
                         <div key={d.id} className="flex items-center gap-2">
+                          {/* status icon */}
                           <div className="shrink-0">
                             {paid ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -915,6 +916,8 @@ export default function CateringOrderDetailPage() {
                               <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-600" />
                             )}
                           </div>
+
+                          {/* title + date */}
                           <div className="flex-1 min-w-0">
                             <p
                               className={`text-xs font-medium truncate ${
@@ -931,15 +934,8 @@ export default function CateringOrderDetailPage() {
                               </p>
                             )}
                           </div>
-                          <span
-                            className={`text-xs font-bold shrink-0 ${
-                              paid
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-neutral-600 dark:text-neutral-400'
-                            }`}
-                          >
-                            {formatPrice(d.amount)}
-                          </span>
+
+                          {/* akcje (tylko nieopłacone) */}
                           {!paid && (
                             <div className="flex items-center gap-1 shrink-0">
                               <button
@@ -971,6 +967,17 @@ export default function CateringOrderDetailPage() {
                               </Button>
                             </div>
                           )}
+
+                          {/* kwota — zawsze po prawej */}
+                          <span
+                            className={`text-xs font-bold shrink-0 ${
+                              paid
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-neutral-700 dark:text-neutral-300'
+                            }`}
+                          >
+                            {formatPrice(d.amount)}
+                          </span>
                         </div>
                       );
                     })}
