@@ -32,36 +32,34 @@ const accent = moduleAccents.reservations
 // Helper functions
 
 /**
- * Extract a Date for grouping purposes, using UTC components so that
- * timezone offset never shifts the date (e.g. 23:00 UTC stays on the
- * same calendar day instead of jumping to the next day in CET).
+ * Extract a Date (midnight) in LOCAL timezone for grouping by calendar day.
+ * Uses local year/month/date so that the reservation appears on the correct
+ * Warsaw calendar day (not shifted by UTC offset).
  */
 function getFormattedDate(reservation: any): Date | null {
   if (reservation.startDateTime) {
     const d = new Date(reservation.startDateTime)
-    // Build a local Date from UTC year/month/day to avoid TZ shift
-    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
   }
   if (reservation.date) {
-    // Plain date string — parse without TZ conversion
     return new Date(reservation.date + 'T00:00:00')
   }
   return null
 }
 
 /**
- * Format the time range using UTC hours/minutes.
- * Backend stores user-chosen times as UTC (18:00 means 18:00:00.000Z),
- * so we must NOT let the browser convert to local time (+1h in CET).
+ * Format the time range in LOCAL (Warsaw) timezone.
+ * Data is stored as UTC with correct offset (e.g. 2026-03-07T13:00:00Z = 14:00 Warsaw),
+ * so we use local accessors (getHours/getMinutes) — NOT getUTCHours.
  */
 function getFormattedTimeRange(reservation: any): string {
   if (reservation.startDateTime && reservation.endDateTime) {
     const start = new Date(reservation.startDateTime)
     const end = new Date(reservation.endDateTime)
-    const sh = String(start.getUTCHours()).padStart(2, '0')
-    const sm = String(start.getUTCMinutes()).padStart(2, '0')
-    const eh = String(end.getUTCHours()).padStart(2, '0')
-    const em = String(end.getUTCMinutes()).padStart(2, '0')
+    const sh = String(start.getHours()).padStart(2, '0')
+    const sm = String(start.getMinutes()).padStart(2, '0')
+    const eh = String(end.getHours()).padStart(2, '0')
+    const em = String(end.getMinutes()).padStart(2, '0')
     return `${sh}:${sm} - ${eh}:${em}`
   }
   if (reservation.startTime && reservation.endTime) {
