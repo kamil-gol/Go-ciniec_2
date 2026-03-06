@@ -1,0 +1,281 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+import {
+  UtensilsCrossed,
+  ArrowRight,
+  AlertCircle,
+  Users,
+  Clock,
+  RefreshCw,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { moduleAccents } from '@/lib/design-tokens'
+import {
+  useCateringOrdersByDate,
+  CATERING_STATUS_LABELS,
+  CATERING_DELIVERY_LABELS,
+  formatCateringCurrency,
+  type CateringOrderListItem,
+} from '@/lib/api/catering-orders'
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse">
+      <div className="h-11 w-11 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 w-44 rounded bg-neutral-200 dark:bg-neutral-700" />
+        <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
+      </div>
+      <div className="h-5 w-20 rounded-full bg-neutral-200 dark:bg-neutral-700" />
+      <div className="h-4 w-16 rounded bg-neutral-200 dark:bg-neutral-700" />
+    </div>
+  )
+}
+
+// ─── Single order row ──────────────────────────────────────────────────────
+
+function OrderRow({ order, index }: { order: CateringOrderListItem; index: number }) {
+  const accent = moduleAccents.catering
+  const statusInfo = CATERING_STATUS_LABELS[order.status]
+  const clientName = order.client.companyName
+    ? order.client.companyName
+    : `${order.client.firstName} ${order.client.lastName}`
+
+  const pendingDeposits = order.deposits
+    .filter((d) => !d.isPaid)
+    .reduce((sum, d) => sum + Number(d.remainingAmount), 0)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -16 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.1 + index * 0.06 }}
+    >
+      <Link
+        href={`/dashboard/catering/orders/${order.id}`}
+        className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 hover:border-orange-200 dark:hover:border-orange-800/50"
+      >
+        {/* Icon */}
+        <div
+          className={cn(
+            'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm flex-shrink-0',
+            accent.iconBg
+          )}
+        >
+          <UtensilsCrossed className="h-5 w-5" />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+              {clientName}
+            </span>
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0',
+                statusInfo.classes
+              )}
+            >
+              {statusInfo.emoji} {statusInfo.label}
+            </span>
+          </div>
+
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+            {CATERING_DELIVERY_LABELS[order.deliveryType]}
+            {order.deliveryTime && (
+              <>
+                {' '}
+                <Clock className="inline h-3 w-3 mb-0.5" />{' '}
+                {order.deliveryTime}
+              </>
+            )}
+            {order.guestCount != null && (
+              <>
+                {' • '}
+                <Users className="inline h-3 w-3 mb-0.5" />{' '}
+                {order.guestCount} os.
+              </>
+            )}
+            {order.templateName && <>{' • '}{order.templateName}</>}
+          </p>
+
+          {pendingDeposits > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              💰 Zaliczka do zapłaty: {formatCateringCurrency(pendingDeposits)}
+            </p>
+          )}
+        </div>
+
+        {/* Price */}
+        <div className="text-right flex-shrink-0">
+          <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+            {formatCateringCurrency(order.finalPrice)}
+          </p>
+          {order.orderNumber && (
+            <p className="text-xs text-neutral-400">{order.orderNumber}</p>
+          )}
+        </div>
+
+        <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+      </Link>
+    </motion.div>
+  )
+}
+
+// ─── Summary footer ─────────────────────────────────────────────────────────
+
+function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
+  const accent = moduleAccents.catering
+  const totalValue = orders.reduce((sum, o) => sum + Number(o.finalPrice), 0)
+  const confirmedCount = orders.filter(
+    (o) => o.status === 'CONFIRMED' || o.status === 'IN_PROGRESS'
+  ).length
+
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between rounded-xl px-4 py-3 mt-2',
+        'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10',
+        'border border-orange-100 dark:border-orange-800/30'
+      )}
+    >
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-neutral-600 dark:text-neutral-400">
+          <span className="font-bold text-neutral-900 dark:text-neutral-100">{orders.length}</span>
+          {' '}zamówień
+        </span>
+        {confirmedCount > 0 && (
+          <span className="text-emerald-600 dark:text-emerald-400">
+            ✅ {confirmedCount} potwierdzone
+          </span>
+        )}
+      </div>
+      <span className={cn('text-base font-bold', accent.text, accent.textDark)}>
+        {formatCateringCurrency(totalValue)}
+      </span>
+    </div>
+  )
+}
+
+// ─── Main widget ───────────────────────────────────────────────────────────────
+
+interface CateringDailyWidgetProps {
+  /** Data w formacie YYYY-MM-DD */
+  date: string
+}
+
+export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) {
+  const accent = moduleAccents.catering
+  const { data, isLoading, error, refetch } = useCateringOrdersByDate(date)
+  const orders = data?.data ?? []
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="rounded-2xl bg-white dark:bg-neutral-800/80 p-6 shadow-soft border border-neutral-100 dark:border-neutral-700/50"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br shadow-sm',
+              accent.iconBg
+            )}
+          >
+            <UtensilsCrossed className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+              🍱 Catering
+            </h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Zamówienia na ten dzień
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            className="rounded-lg p-1.5 text-neutral-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+            title="Odśwież"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+          <Link
+            href="/dashboard/catering/orders"
+            className={cn(
+              'flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80',
+              accent.text,
+              accent.textDark
+            )}
+          >
+            Wszystkie
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-2">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+        ) : error ? (
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                Nie udało się pobrać zamówień
+              </p>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="text-sm font-medium text-red-700 dark:text-red-300 hover:underline flex-shrink-0"
+            >
+              Spróbuj ponownie
+            </button>
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div
+              className={cn(
+                'mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br opacity-20',
+                accent.iconBg
+              )}
+            >
+              <UtensilsCrossed className="h-7 w-7 text-white" />
+            </div>
+            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+              Brak zamówień cateringowych
+            </p>
+            <Link
+              href="/dashboard/catering/orders/new"
+              className={cn(
+                'mt-2 text-sm font-medium hover:opacity-80 transition-opacity',
+                accent.text,
+                accent.textDark
+              )}
+            >
+              + Nowe zamówienie
+            </Link>
+          </div>
+        ) : (
+          <>
+            {orders.map((order, index) => (
+              <OrderRow key={order.id} order={order} index={index} />
+            ))}
+            <SummaryFooter orders={orders} />
+          </>
+        )}
+      </div>
+    </motion.div>
+  )
+}
