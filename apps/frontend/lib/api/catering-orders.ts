@@ -19,33 +19,77 @@ export interface CateringOrderClient {
   firstName: string
   lastName: string
   companyName?: string | null
+  clientType?: string | null
 }
 
+/**
+ * Depozyt – pola zgodne z modelem Prisma `cateringDeposit`.
+ * Dostępny tylko w getById (nie w listOrders).
+ */
 export interface CateringOrderDeposit {
   id: string
   amount: string
-  isPaid: boolean
+  /** Prisma: `paid` (nie isPaid) */
+  paid: boolean
   dueDate: string | null
   remainingAmount: string
+  status?: string | null
+  paymentMethod?: string | null
 }
 
+/**
+ * Kształt danych zwracany przez `listOrders` (endpoint GET /catering/orders).
+ *
+ * UWAGA: `deposits`, `template`, `package`, `items` NIE są dołączane do
+ * listOrders — tylko do getById. Pola opcjonalne (?) są dostępne wyłącznie
+ * po użyciu `getById`.
+ */
 export interface CateringOrderListItem {
   id: string
   orderNumber: string
   status: CateringOrderStatus
   deliveryType: CateringDeliveryType
-  eventDate: string | null
+
+  // ── Wydarzenie ──
+  eventDate: string | null       // YYYY-MM-DD
+  eventTime: string | null       // HH:mm
+  eventName: string | null
+  eventLocation: string | null
+
+  // ── Dostawa ──
+  deliveryDate: string | null
   deliveryTime: string | null
-  guestCount: number | null
+  deliveryAddress: string | null
+
+  // ── Goście ──
+  /** Nazwa pola w Prisma: guestsCount */
+  guestsCount: number | null
+
+  // ── Ceny (Decimal w Prisma → string po JSON) ──
   totalPrice: string
-  finalPrice: string
+  subtotal?: string
+  extrasTotalPrice?: string
+  discountAmount?: string
+
+  // ── Kontakt ──
+  contactName: string | null
+  contactPhone: string | null
+  contactEmail?: string | null
+
+  // ── Misc ──
   notes: string | null
-  client: CateringOrderClient
-  templateName: string | null
-  packageName: string | null
-  /** Opcjonalne — dostępne tylko w getById, może być undefined w liście */
-  deposits?: CateringOrderDeposit[]
+  specialRequirements?: string | null
   createdAt: string
+
+  // ── Relacje z listOrders ──
+  client: CateringOrderClient
+  /** Liczniki z _count – dostępne w listOrders */
+  _count?: { items: number; deposits: number }
+
+  // ── Relacje tylko z getById ──
+  deposits?: CateringOrderDeposit[]
+  template?: { id: string; name: string; slug: string } | null
+  package?: { id: string; name: string; basePrice: string } | null
 }
 
 export interface CateringOrdersResponse {
@@ -74,9 +118,9 @@ export const cateringOrdersApi = {
     if (data.success) {
       return {
         data: data.data ?? [],
-        total: data.total ?? data.data?.length ?? 0,
-        page: data.page ?? 1,
-        totalPages: data.totalPages ?? 1,
+        total: data.meta?.total ?? data.total ?? data.data?.length ?? 0,
+        page: data.meta?.page ?? data.page ?? 1,
+        totalPages: data.meta?.totalPages ?? data.totalPages ?? 1,
       }
     }
     return { data: [], total: 0, page: 1, totalPages: 1 }
@@ -104,9 +148,8 @@ export const useCateringOrders = (filters: CateringOrdersFilters = {}) =>
 /**
  * Zamówienia na konkretny dzień (YYYY-MM-DD).
  *
- * dateTo: `${date}T23:59:59.999Z` — pokrywa cały dzień UTC.
- * Bez tego `lte: new Date("2026-03-07")` = 00:00Z, więc rezerwacje
- * o godz. 10:00 Warsaw (= 09:00Z) nie przechodzą filtru.
+ * eventDateTo: `${date}T23:59:59.999Z` — pokrywa cały dzień UTC.
+ * Bez tego `lte: "2026-03-07"` wyklucza zamówienia dodane po 00:00Z.
  */
 export const useCateringOrdersByDate = (date: string) =>
   useQuery({
@@ -168,11 +211,13 @@ export const CATERING_DELIVERY_LABELS: Record<CateringDeliveryType, string> = {
   ON_SITE: '🏠 Na miejscu',
 }
 
-export function formatCateringCurrency(amount: string | number): string {
+export function formatCateringCurrency(amount: string | number | null | undefined): string {
+  const n = Number(amount)
+  if (isNaN(n)) return '—'
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(Number(amount))
+  }).format(n)
 }
