@@ -6,6 +6,7 @@
 # Testing:       make test-unit / test-integration / test-all
 # Storage:       make migrate-minio / minio-stats / minio-backup
 # DB migrations: make fix-timezone-dry / fix-timezone
+#                make fix-timezone-dry-prod / fix-timezone-prod
 # Cleanup:       make down / test-down
 # ============================================
 
@@ -15,6 +16,7 @@
         migrate-minio migrate-minio-dry minio-stats minio-ls \
         minio-backup minio-policies \
         fix-timezone-dry fix-timezone \
+        fix-timezone-dry-prod fix-timezone-prod \
         logs logs-backend logs-frontend logs-minio status help
 
 # ============================================
@@ -125,29 +127,35 @@ minio-policies:
 	@./scripts/minio-set-policies.sh
 
 # ============================================
-# DB: Timezone fix (#timezone-fix)
-# ============================================
-# Run AFTER deploying the frontend timezone fixes (make dev-build).
-# Records created before 2026-03-06T20:29:43Z have startDateTime/endDateTime
-# stored 1h too late (UTC+0 instead of UTC+1 Warsaw).
-# Shifts those records by -1h in a safe transaction.
-#
-# ALWAYS run dry first:
-#   make fix-timezone-dry
-# Then apply:
-#   make fix-timezone
+# DB: Timezone fix — DEV (#timezone-fix)
 # ============================================
 
 fix-timezone-dry:
-	@echo "\n=== Timezone fix: DRY RUN (no changes) ==="
+	@echo "\n=== Timezone fix DEV: DRY RUN (no changes) ==="
 	$(COMPOSE_DEV) --env-file .env.dev exec backend \
 		sh -c "DRY_RUN=true npx tsx src/scripts/fix-timezone-offset.ts"
 
 fix-timezone:
-	@echo "\n=== Timezone fix: LIVE MIGRATION ==="
-	@echo "WARNING: This will modify the database. Press Ctrl+C within 5s to abort."
+	@echo "\n=== Timezone fix DEV: LIVE MIGRATION ==="
+	@echo "WARNING: This will modify the DEV database. Press Ctrl+C within 5s to abort."
 	@sleep 5
 	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "DRY_RUN=false npx tsx src/scripts/fix-timezone-offset.ts"
+
+# ============================================
+# DB: Timezone fix — PROD (#timezone-fix)
+# ============================================
+
+fix-timezone-dry-prod:
+	@echo "\n=== Timezone fix PROD: DRY RUN (no changes) ==="
+	$(COMPOSE_PROD) --env-file .env.prod exec backend \
+		sh -c "DRY_RUN=true npx tsx src/scripts/fix-timezone-offset.ts"
+
+fix-timezone-prod:
+	@echo "\n=== Timezone fix PROD: LIVE MIGRATION ==="
+	@echo "WARNING: This will modify the PROD database. Press Ctrl+C within 5s to abort."
+	@sleep 5
+	$(COMPOSE_PROD) --env-file .env.prod exec backend \
 		sh -c "DRY_RUN=false npx tsx src/scripts/fix-timezone-offset.ts"
 
 # ============================================
@@ -225,8 +233,10 @@ help:
 	@echo "    make minio-policies     Set private policies + versioning on buckets"
 	@echo ""
 	@echo "  DB MIGRATIONS:"
-	@echo "    make fix-timezone-dry   Timezone fix: dry run (safe, no changes)"
-	@echo "    make fix-timezone       Timezone fix: LIVE migration (irreversible!)"
+	@echo "    make fix-timezone-dry        Timezone fix DEV: dry run"
+	@echo "    make fix-timezone            Timezone fix DEV: live migration"
+	@echo "    make fix-timezone-dry-prod   Timezone fix PROD: dry run"
+	@echo "    make fix-timezone-prod       Timezone fix PROD: live migration"
 	@echo ""
 	@echo "  UTILITIES:"
 	@echo "    make logs               Follow all logs (dev)"
