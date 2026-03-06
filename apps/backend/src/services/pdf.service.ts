@@ -1273,10 +1273,17 @@ export class PDFService {
     // (see recalculate-price.ts formula). Do NOT add extras again.
     const displayTotal = Number(r.totalPrice);
 
-    /* istanbul ignore next */
-    const deposit = r.deposits && r.deposits.length > 0
-      ? r.deposits[0]
-      : r.deposit;
+    // #deposits-fix (2/5): Secondary guard — filter CANCELLED deposits in the PDF renderer.
+    // Primary guard lives in reservation.controller.ts downloadPDF().
+    // Using both guards ensures robustness even if the controller path changes.
+    const activeDeposits = (r.deposits || []).filter((d: any) => d.status !== 'CANCELLED');
+    // Legacy fallback: if no deposits array, fall back to the single deposit field
+    const depositsForDisplay: Array<{ amount: number | string; dueDate: Date | string; status: string; paid: boolean }> =
+      activeDeposits.length > 0
+        ? activeDeposits
+        : r.deposit
+          ? [r.deposit]
+          : [];
 
     let rowCount = 0;
     if (r.adults > 0 && r.pricePerAdult > 0) rowCount++;
@@ -1286,8 +1293,9 @@ export class PDFService {
     if (venueSurchargeAmount > 0) rowCount++;
     if (extraHoursCostAmt > 0) rowCount++;
     rowCount++; // RAZEM
-    if (deposit) rowCount += 2; // deposit + DO ZAPŁATY
-    const boxHeight = 22 + rowCount * 13 + (deposit ? 14 : 0);
+    // Each active deposit gets its own row + one final DO ZAPŁATY row
+    if (depositsForDisplay.length > 0) rowCount += depositsForDisplay.length + 1;
+    const boxHeight = 22 + rowCount * 13 + (depositsForDisplay.length > 0 ? 14 : 0);
 
     this.safePageBreak(doc, boxHeight + 15);
     const boxY = doc.y;
@@ -1360,35 +1368,45 @@ export class PDFService {
     doc.text(this.formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
     y += 14;
 
-    if (deposit) {
+    if (depositsForDisplay.length > 0) {
       const depositBadgeWidth = 32;
       const depositBadgeGap = 4;
       const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
       const depositValueX = valueX;
 
-      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
-      /* istanbul ignore next */
-      const dueDate = deposit.dueDate instanceof Date
-        ? this.formatDate(deposit.dueDate)
-        : deposit.dueDate;
-      const depositLabel = deposit.paid ? 'Zaliczka (opłacona)' : `Zaliczka (termin: ${dueDate})`;
-      doc.text(depositLabel, labelX, y);
-      doc.text(`-${this.formatCurrency(deposit.amount)}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
+      for (let i = 0; i < depositsForDisplay.length; i++) {
+        const dep = depositsForDisplay[i];
+        /* istanbul ignore next */
+        const dueDate = dep.dueDate instanceof Date
+          ? this.formatDate(dep.dueDate)
+          : dep.dueDate;
+        // Use numbered prefix only when there are multiple deposits
+        const labelPrefix = depositsForDisplay.length > 1 ? `Zaliczka ${i + 1}` : 'Zaliczka';
+        const depositLabel = dep.paid
+          ? `${labelPrefix} (opłacona)`
+          : `${labelPrefix} (termin: ${dueDate})`;
 
-      const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
-      const statusText = deposit.paid ? 'OK' : 'OCZEK.';
-      const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
-      doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(statusColor);
-      doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
-      doc.text(statusText, depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
+        doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
+        doc.text(depositLabel, labelX, y);
+        doc.text(`-${this.formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
-      y += 14;
+        const statusColor = dep.paid ? COLORS.success : COLORS.warning;
+        const statusText = dep.paid ? 'OK' : 'OCZEK.';
+        const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
+        doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(statusColor);
+        doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
+        doc.text(statusText, depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
+
+        y += 14;
+      }
 
       doc.strokeColor(COLORS.accent).lineWidth(0.8)
          .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
       y += 5;
 
-      const remaining = displayTotal - Number(deposit.amount);
+      // DO ZAPŁATY = totalPrice minus sum of ALL active deposits
+      const totalDeposited = depositsForDisplay.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+      const remaining = displayTotal - totalDeposited;
       doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.primary);
       doc.text('DO ZAPŁATY', labelX, y);
       doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
