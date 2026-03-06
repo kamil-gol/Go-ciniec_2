@@ -9,7 +9,7 @@ import {
   useCreateCateringSection,
   useUpdateCateringSection,
 } from '@/hooks/use-catering';
-import { useDishCategories } from '@/hooks/use-menu';
+import { useDishCategories } from '@/hooks/use-dishes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

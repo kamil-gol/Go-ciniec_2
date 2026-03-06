@@ -7,7 +7,7 @@ import {
   useUpdateSectionOption,
   useRemoveSectionOption,
 } from '@/hooks/use-catering';
-import { useDishesByCategory } from '@/hooks/use-menu';
+import { useDishesByCategory } from '@/hooks/use-dishes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,7 @@ export function OptionManager({ section, templateId }: Props) {
 
   const alreadyAddedDishIds = new Set(options.map((o) => o.dishId));
   const availableDishes = (dishes ?? []).filter(
-    (d) => d.isActive && !alreadyAddedDishIds.has(d.id),
+    (d) => (d as any).isActive && !alreadyAddedDishIds.has(d.id),
   );
 
   const handleAdd = async () => {
@@ -91,7 +91,7 @@ export function OptionManager({ section, templateId }: Props) {
               className="flex items-center justify-between rounded border bg-background px-2.5 py-1.5 text-sm"
             >
               <div className="flex items-center gap-2">
-                <span>{opt.dish?.name ?? '–'}</span>
+                <span>{(opt as any).dish?.name ?? '–'}</span>
                 {opt.isDefault && (
                   <Badge variant="secondary" className="text-xs gap-0.5">
                     <Star className="h-2.5 w-2.5" />
@@ -103,8 +103,8 @@ export function OptionManager({ section, templateId }: Props) {
                 <span className="text-xs text-muted-foreground">
                   {opt.customPrice != null
                     ? `${opt.customPrice.toFixed(2)} zł`
-                    : opt.dish?.price != null
-                      ? `${opt.dish.price.toFixed(2)} zł`
+                    : (opt as any).dish?.price != null
+                      ? `${(opt as any).dish.price.toFixed(2)} zł`
                       : '–'}
                 </span>
                 <button
@@ -147,9 +147,9 @@ export function OptionManager({ section, templateId }: Props) {
             {availableDishes.map((dish) => (
               <SelectItem key={dish.id} value={dish.id}>
                 <span>{dish.name}</span>
-                {dish.price != null && (
+                {(dish as any).price != null && (
                   <span className="text-muted-foreground ml-1 text-xs">
-                    ({dish.price.toFixed(2)} zł)
+                    ({(dish as any).price.toFixed(2)} zł)
                   </span>
                 )}
               </SelectItem>

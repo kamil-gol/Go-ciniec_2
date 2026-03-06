@@ -13,6 +13,12 @@ export interface DishFilters {
   search?: string;
 }
 
+export interface DishCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -83,6 +89,14 @@ export const dishesApi = {
    */
   getDishesByCategory: async (categoryId: string): Promise<ApiResponse<Dish[]>> => {
     const { data } = await apiClient.get<ApiResponse<Dish[]>>(`/dishes/category/${categoryId}`);
+    return data;
+  },
+
+  /**
+   * Get all dish categories
+   */
+  getDishCategories: async (): Promise<ApiResponse<DishCategory[]>> => {
+    const { data } = await apiClient.get<ApiResponse<DishCategory[]>>('/dish-categories');
     return data;
   },
 };

@@ -5,7 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { dishesApi, type DishFilters } from '@/lib/api/dishes-api';
+import { dishesApi, type DishFilters, type DishCategory } from '@/lib/api/dishes-api';
 import type { Dish, CreateDishInput, UpdateDishInput } from '@/types';
 import { toast } from 'sonner';
 
@@ -20,6 +20,7 @@ export const dishesKeys = {
   details: () => [...dishesKeys.all, 'detail'] as const,
   detail: (id: string) => [...dishesKeys.details(), id] as const,
   byCategoryId: (categoryId: string) => [...dishesKeys.all, 'category', categoryId] as const,
+  categories: () => [...dishesKeys.all, 'categories'] as const,
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -28,9 +29,6 @@ export const dishesKeys = {
 
 /**
  * Get all dishes
- * 
- * @example
- * const { data: dishes, isLoading } = useDishes({ categoryId: 'abc-123' });
  */
 export function useDishes(filters?: DishFilters) {
   return useQuery({
@@ -42,9 +40,6 @@ export function useDishes(filters?: DishFilters) {
 
 /**
  * Get single dish
- * 
- * @example
- * const { data: dish } = useDish(dishId);
  */
 export function useDish(id: string | undefined) {
   return useQuery({
@@ -57,9 +52,6 @@ export function useDish(id: string | undefined) {
 
 /**
  * Get dishes by category ID
- * 
- * @example
- * const { data: soups } = useDishesByCategory(soupCategoryId);
  */
 export function useDishesByCategory(categoryId: string | undefined) {
   return useQuery({
@@ -70,23 +62,30 @@ export function useDishesByCategory(categoryId: string | undefined) {
   });
 }
 
+/**
+ * Get all dish categories
+ */
+export function useDishCategories() {
+  return useQuery({
+    queryKey: dishesKeys.categories(),
+    queryFn: () => dishesApi.getDishCategories(),
+    select: (response) => response.data,
+  });
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // MUTATIONS
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create dish
- * 
- * @example
- * const mutation = useCreateDish();
- * mutation.mutate({ name: 'Rosół', categoryId: 'abc-123', ... });
  */
 export function useCreateDish() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (input: CreateDishInput) => dishesApi.createDish(input),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dishesKeys.lists() });
       toast.success('Danie zostało dodane');
     },
@@ -98,10 +97,6 @@ export function useCreateDish() {
 
 /**
  * Update dish
- * 
- * @example
- * const mutation = useUpdateDish();
- * mutation.mutate({ id: '...', data: {...} });
  */
 export function useUpdateDish() {
   const queryClient = useQueryClient();
@@ -122,10 +117,6 @@ export function useUpdateDish() {
 
 /**
  * Delete dish
- * 
- * @example
- * const mutation = useDeleteDish();
- * mutation.mutate(dishId);
  */
 export function useDeleteDish() {
   const queryClient = useQueryClient();
@@ -148,10 +139,6 @@ export function useDeleteDish() {
 
 /**
  * Get dishes grouped by category slug
- * 
- * @example
- * const { data: groupedDishes } = useDishesByCategories();
- * // Returns: { 'SOUP': [...], 'MAIN_COURSE': [...] }
  */
 export function useDishesByCategories() {
   return useQuery({
@@ -160,9 +147,8 @@ export function useDishesByCategories() {
       const response = await dishesApi.getDishes({ isActive: true });
       const dishes = response.data;
 
-      // Group by category slug
       const grouped = dishes.reduce((acc, dish) => {
-        const categorySlug = dish.category.slug;
+        const categorySlug = (dish as any).category?.slug ?? 'other';
         if (!acc[categorySlug]) {
           acc[categorySlug] = [];
         }
