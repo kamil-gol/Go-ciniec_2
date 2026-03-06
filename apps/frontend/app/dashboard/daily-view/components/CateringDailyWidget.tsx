@@ -8,7 +8,11 @@ import {
   AlertCircle,
   Users,
   Clock,
+  MapPin,
+  Phone,
   RefreshCw,
+  Utensils,
+  AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -24,14 +28,16 @@ import {
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse">
-      <div className="h-11 w-11 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
-      <div className="flex-1 space-y-2">
-        <div className="h-4 w-44 rounded bg-neutral-200 dark:bg-neutral-700" />
-        <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
+    <div className="rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse space-y-2">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
+          <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
+        </div>
+        <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
       </div>
-      <div className="h-5 w-20 rounded-full bg-neutral-200 dark:bg-neutral-700" />
-      <div className="h-4 w-16 rounded bg-neutral-200 dark:bg-neutral-700" />
+      <div className="h-3 w-48 rounded bg-neutral-200 dark:bg-neutral-700 ml-13" />
     </div>
   )
 }
@@ -41,14 +47,25 @@ function SkeletonRow() {
 function OrderRow({ order, index }: { order: CateringOrderListItem; index: number }) {
   const accent = moduleAccents.catering
   const statusInfo = CATERING_STATUS_LABELS[order.status]
+
   const clientName = order.client.companyName
     ? order.client.companyName
     : `${order.client.firstName} ${order.client.lastName}`
 
-  // deposits są opcjonalne (nie zawsze backend je zwraca w liście)
+  // Kontakt do zdjęcia: albo dedykowany contactName, albo klient
+  const contactDisplay = order.contactName
+    ? order.contactName
+    : `${order.client.firstName} ${order.client.lastName}`
+  const hasContact = !!(order.contactName || order.contactPhone)
+
+  // Zaliczki — tylko z getById; w liście deposits jest undefined
   const pendingDeposits = (order.deposits ?? [])
-    .filter((d) => !d.isPaid)
+    .filter((d) => !d.paid)
     .reduce((sum, d) => sum + Number(d.remainingAmount), 0)
+
+  const itemsCount = order._count?.items ?? 0
+  const hasAddress = order.deliveryType === 'DELIVERY' && !!order.deliveryAddress
+  const hasSpecialReq = !!order.specialRequirements
 
   return (
     <motion.div
@@ -58,71 +75,104 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
     >
       <Link
         href={`/dashboard/catering/orders/${order.id}`}
-        className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 hover:border-orange-200 dark:hover:border-orange-800/50"
+        className="group block rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 hover:border-orange-200 dark:hover:border-orange-800/50"
       >
-        {/* Icon */}
-        <div
-          className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm flex-shrink-0',
-            accent.iconBg
-          )}
-        >
-          <UtensilsCrossed className="h-5 w-5" />
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
-              {clientName}
-            </span>
-            <span
-              className={cn(
-                'rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0',
-                statusInfo.classes
-              )}
-            >
-              {statusInfo.emoji} {statusInfo.label}
-            </span>
+        {/* Wiersz 1: ikona + klient + status + cena */}
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm flex-shrink-0 mt-0.5',
+              accent.iconBg
+            )}
+          >
+            <UtensilsCrossed className="h-5 w-5" />
           </div>
 
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-            {CATERING_DELIVERY_LABELS[order.deliveryType]}
-            {order.deliveryTime && (
-              <>
-                {' '}
-                <Clock className="inline h-3 w-3 mb-0.5" />{' '}
-                {order.deliveryTime}
-              </>
-            )}
-            {order.guestCount != null && (
-              <>
-                {' • '}
-                <Users className="inline h-3 w-3 mb-0.5" />{' '}
-                {order.guestCount} os.
-              </>
-            )}
-            {order.templateName && <>{' • '}{order.templateName}</>}
-          </p>
+          <div className="flex-1 min-w-0">
+            {/* Linia 1: nazwa + badge statusu */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                {clientName}
+              </span>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0',
+                  statusInfo.classes
+                )}
+              >
+                {statusInfo.emoji} {statusInfo.label}
+              </span>
+            </div>
 
-          {pendingDeposits > 0 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-              💰 Zaliczka do zapłaty: {formatCateringCurrency(pendingDeposits)}
+            {/* Linia 2: sposób dostawy + godzina + goście + szablon */}
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+              {CATERING_DELIVERY_LABELS[order.deliveryType]}
+              {order.deliveryTime && (
+                <>
+                  {' '}<Clock className="inline h-3 w-3 mb-0.5" /> {order.deliveryTime}
+                </>
+              )}
+              {(order.guestsCount ?? 0) > 0 && (
+                <>
+                  {' • '}<Users className="inline h-3 w-3 mb-0.5" /> {order.guestsCount} os.
+                </>
+              )}
+              {order.template?.name && <>{' • '}{order.template.name}</>}
+              {itemsCount > 0 && (
+                <>
+                  {' • '}<Utensils className="inline h-3 w-3 mb-0.5" /> {itemsCount} poz.
+                </>
+              )}
             </p>
-          )}
-        </div>
 
-        {/* Price */}
-        <div className="text-right flex-shrink-0">
-          <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-            {formatCateringCurrency(order.finalPrice)}
-          </p>
-          {order.orderNumber && (
-            <p className="text-xs text-neutral-400">{order.orderNumber}</p>
-          )}
-        </div>
+            {/* Linia 3: adres dostawy (tylko DELIVERY) */}
+            {hasAddress && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1 truncate">
+                <MapPin className="h-3 w-3 flex-shrink-0 text-orange-500" />
+                {order.deliveryAddress}
+              </p>
+            )}
 
-        <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+            {/* Linia 4: nazwa wydarzenia + kontakt */}
+            {(order.eventName || hasContact) && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                {order.eventName && <>🎉 {order.eventName}</>}
+                {order.eventName && hasContact && ' • '}
+                {hasContact && (
+                  <>
+                    <Phone className="inline h-3 w-3 mb-0.5" />{' '}
+                    {contactDisplay}
+                    {order.contactPhone && ` ${order.contactPhone}`}
+                  </>
+                )}
+              </p>
+            )}
+
+            {/* Linia 5: alerty — zaliczka + specjalne wymagania */}
+            <div className="flex flex-wrap gap-2 mt-1">
+              {pendingDeposits > 0 && (
+                <span className="text-xs text-amber-600 dark:text-amber-400">
+                  💰 Zaliczka: {formatCateringCurrency(pendingDeposits)}
+                </span>
+              )}
+              {hasSpecialReq && (
+                <span className="inline-flex items-center gap-0.5 text-xs text-orange-600 dark:text-orange-400">
+                  <AlertTriangle className="h-3 w-3" /> Spec. wymagania
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Cena + numer */}
+          <div className="text-right flex-shrink-0 ml-1">
+            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+              {formatCateringCurrency(order.totalPrice)}
+            </p>
+            <p className="text-xs text-neutral-400 mt-0.5">{order.orderNumber}</p>
+          </div>
+
+          <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
+        </div>
       </Link>
     </motion.div>
   )
@@ -132,10 +182,12 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
 
 function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
   const accent = moduleAccents.catering
-  const totalValue = orders.reduce((sum, o) => sum + Number(o.finalPrice), 0)
+  // totalPrice to Decimal → string w JSON, Number() bezpieczne
+  const totalValue = orders.reduce((sum, o) => sum + Number(o.totalPrice), 0)
   const confirmedCount = orders.filter(
     (o) => o.status === 'CONFIRMED' || o.status === 'IN_PROGRESS'
   ).length
+  const specialCount = orders.filter((o) => !!o.specialRequirements).length
 
   return (
     <div
@@ -145,14 +197,19 @@ function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
         'border border-orange-100 dark:border-orange-800/30'
       )}
     >
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-3 text-sm flex-wrap">
         <span className="text-neutral-600 dark:text-neutral-400">
           <span className="font-bold text-neutral-900 dark:text-neutral-100">{orders.length}</span>
           {' '}zamówień
         </span>
         {confirmedCount > 0 && (
-          <span className="text-emerald-600 dark:text-emerald-400">
-            ✅ {confirmedCount} potwierdzone
+          <span className="text-emerald-600 dark:text-emerald-400 text-xs">
+            ✅ {confirmedCount} potw.
+          </span>
+        )}
+        {specialCount > 0 && (
+          <span className="text-orange-600 dark:text-orange-400 text-xs flex items-center gap-0.5">
+            <AlertTriangle className="h-3 w-3" /> {specialCount} spec.
           </span>
         )}
       </div>
@@ -166,7 +223,6 @@ function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
 // ─── Main widget ───────────────────────────────────────────────────────────────
 
 interface CateringDailyWidgetProps {
-  /** Data w formacie YYYY-MM-DD */
   date: string
 }
 
@@ -232,11 +288,9 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
         ) : error ? (
           <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800 dark:text-red-300">
-                Nie udało się pobrać zamówień
-              </p>
-            </div>
+            <p className="text-sm font-medium text-red-800 dark:text-red-300 flex-1">
+              Nie udało się pobrać zamówień
+            </p>
             <button
               onClick={() => refetch()}
               className="text-sm font-medium text-red-700 dark:text-red-300 hover:underline flex-shrink-0"
