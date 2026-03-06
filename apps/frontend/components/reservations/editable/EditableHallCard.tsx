@@ -17,9 +17,10 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 
-function utcTime(iso: string): string {
+// Returns HH:MM in local (Warsaw) time — NOT UTC
+function localTime(iso: string): string {
   try {
-    return new Date(iso).toISOString().slice(11, 16)
+    return new Date(iso).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
   } catch {
     return ''
   }
@@ -350,7 +351,7 @@ export function EditableHallCard({
                     <div className="space-y-1">
                       {capacityData.overlappingReservations.map((r) => (
                         <div key={r.id} className="ml-1 text-xs text-neutral-600 dark:text-neutral-400">
-                          {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${utcTime(r.startDateTime)}\u2013${utcTime(r.endDateTime)}, ${r.guests} os.)`}
+                          {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${localTime(r.startDateTime)}\u2013${localTime(r.endDateTime)}, ${r.guests} os.)`}
                         </div>
                       ))}
                     </div>
@@ -369,7 +370,7 @@ export function EditableHallCard({
                     </p>
                     {capacityData.overlappingReservations.map((r) => (
                       <div key={r.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
-                        {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${utcTime(r.startDateTime)}\u2013${utcTime(r.endDateTime)}, ${r.guests} os.)`}
+                        {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${localTime(r.startDateTime)}\u2013${localTime(r.endDateTime)}, ${r.guests} os.)`}
                       </div>
                     ))}
                   </div>
@@ -386,7 +387,7 @@ export function EditableHallCard({
                     </p>
                     {capacityData.overlappingReservations.map((r) => (
                       <div key={r.id} className="ml-7 text-xs text-red-700 dark:text-red-300">
-                        {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${utcTime(r.startDateTime)}\u2013${utcTime(r.endDateTime)})`}
+                        {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${localTime(r.startDateTime)}\u2013${localTime(r.endDateTime)})`}
                       </div>
                     ))}
                   </div>
