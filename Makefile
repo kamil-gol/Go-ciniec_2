@@ -127,7 +127,7 @@ minio-policies:
 # ============================================
 # DB: Timezone fix (#timezone-fix)
 # ============================================
-# Run AFTER deploying the frontend timezone fixes.
+# Run AFTER deploying the frontend timezone fixes (make dev-build).
 # Records created before 2026-03-06T20:29:43Z have startDateTime/endDateTime
 # stored 1h too late (UTC+0 instead of UTC+1 Warsaw).
 # Shifts those records by -1h in a safe transaction.
@@ -140,14 +140,14 @@ minio-policies:
 
 fix-timezone-dry:
 	@echo "\n=== Timezone fix: DRY RUN (no changes) ==="
-	$(COMPOSE_PROD) --env-file .env.prod exec backend \
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
 		sh -c "DRY_RUN=true npx tsx src/scripts/fix-timezone-offset.ts"
 
 fix-timezone:
 	@echo "\n=== Timezone fix: LIVE MIGRATION ==="
 	@echo "WARNING: This will modify the database. Press Ctrl+C within 5s to abort."
 	@sleep 5
-	$(COMPOSE_PROD) --env-file .env.prod exec backend \
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
 		sh -c "DRY_RUN=false npx tsx src/scripts/fix-timezone-offset.ts"
 
 # ============================================
