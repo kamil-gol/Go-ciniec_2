@@ -1,4 +1,3 @@
-// apps/frontend/src/app/dashboard/catering/templates/[id]/packages/components/SectionForm.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -10,7 +9,7 @@ import {
   useCreateCateringSection,
   useUpdateCateringSection,
 } from '@/hooks/use-catering';
-import { useDishCategories } from '@/hooks/use-menu';
+import { useDishCategories } from '@/hooks/use-dishes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -92,8 +91,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           name: values.name || null,
           description: values.description || null,
           minSelect: values.minSelect,
-          maxSelect:
-            values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+          maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
           isRequired: values.isRequired,
           displayOrder: values.displayOrder,
         },
@@ -104,8 +102,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
         name: values.name || undefined,
         description: values.description || undefined,
         minSelect: values.minSelect,
-        maxSelect:
-          values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+        maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
         isRequired: values.isRequired,
         displayOrder: values.displayOrder,
       });
@@ -118,7 +115,6 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Category */}
         <FormField
           control={form.control}
           name="categoryId"
@@ -133,9 +129,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue
-                      placeholder={
-                        categoriesLoading ? 'Ładowanie...' : 'Wybierz kategorię'
-                      }
+                      placeholder={categoriesLoading ? 'Ładowanie...' : 'Wybierz kategorię'}
                     />
                   </SelectTrigger>
                 </FormControl>
@@ -157,7 +151,6 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           )}
         />
 
-        {/* Custom name */}
         <FormField
           control={form.control}
           name="name"
@@ -165,17 +158,13 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             <FormItem>
               <FormLabel>Własna nazwa sekcji</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Zostaw puste — użyje nazwy kategorii"
-                  {...field}
-                />
+                <Input placeholder="Zostaw puste — użyje nazwy kategorii" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Description */}
         <FormField
           control={form.control}
           name="description"
@@ -183,18 +172,13 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             <FormItem>
               <FormLabel>Opis sekcji</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Opcjonalny opis dla klienta..."
-                  rows={2}
-                  {...field}
-                />
+                <Textarea placeholder="Opcjonalny opis dla klienta..." rows={2} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Min / Max select + displayOrder */}
         <div className="grid grid-cols-3 gap-3">
           <FormField
             control={form.control}
@@ -216,13 +200,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
               <FormItem>
                 <FormLabel>Maks. wybór</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="–"
-                    {...field}
-                    value={field.value ?? ''}
-                  />
+                  <Input type="number" min="0" placeholder="–" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -243,24 +221,19 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           />
         </div>
 
-        {/* isRequired */}
         <FormField
           control={form.control}
           name="isRequired"
           render={({ field }) => (
             <FormItem className="flex items-center gap-2">
               <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
               </FormControl>
               <FormLabel className="!mt-0">Sekcja wymagana</FormLabel>
             </FormItem>
           )}
         />
 
-        {/* Footer */}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Anuluj
