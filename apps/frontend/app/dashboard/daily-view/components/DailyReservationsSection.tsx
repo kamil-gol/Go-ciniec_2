@@ -10,6 +10,7 @@ import {
   Users,
   Building2,
   RefreshCw,
+  AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -55,6 +56,70 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+/**
+ * Wyciąga godzinę (HH:mm) z ISO string lub legacy HH:mm string.
+ * Zwraca lokalną godzinę (Warsaw) z daty ISO.
+ */
+function toLocalTime(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  // Jeśli to już format HH:mm (legacy startTime)
+  if (/^\d{2}:\d{2}/.test(iso)) return iso.slice(0, 5)
+  try {
+    return new Date(iso).toLocaleTimeString('pl-PL', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Wyciąga dzień miesiąca (np. "07") z rezerwacji.
+ * Priorytet: pole `date` (legacy) → `startDateTime` (nowe).
+ */
+function getDayNumber(r: any): string {
+  if (r.date) return String(r.date).split('-')[2] ?? '?'
+  if (r.startDateTime) {
+    return String(new Date(r.startDateTime).getDate()).padStart(2, '0')
+  }
+  return '?'
+}
+
+/**
+ * Zwraca czas startowy do wyświetlenia w badge.
+ * Priorytet: startDateTime → startTime (legacy).
+ */
+function getStartTime(r: any): string | null {
+  if (r.startDateTime) return toLocalTime(r.startDateTime)
+  if (r.startTime) return toLocalTime(r.startTime)
+  return null
+}
+
+/**
+ * Zwraca czas końcowy (skrócony do HH:mm).
+ */
+function getEndTime(r: any): string | null {
+  if (r.endDateTime) return toLocalTime(r.endDateTime)
+  if (r.endTime) return toLocalTime(r.endTime)
+  return null
+}
+
+/**
+ * Sprawdza termin potwierdzenia.
+ * Zwraca { daysLeft, urgent } jeśli ≤7 dni, null jeśli nie dotyczy.
+ */
+function getDeadlineInfo(
+  deadline: string | null | undefined
+): { daysLeft: number; urgent: boolean } | null {
+  if (!deadline) return null
+  const d = new Date(deadline)
+  const now = new Date()
+  const daysLeft = Math.ceil((d.getTime() - now.getTime()) / 86_400_000)
+  if (daysLeft < 0 || daysLeft > 7) return null
+  return { daysLeft, urgent: daysLeft <= 3 }
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function SkeletonRow() {
@@ -67,28 +132,40 @@ function SkeletonRow() {
           <div className="h-4 w-20 rounded-full bg-neutral-200 dark:bg-neutral-700" />
         </div>
         <div className="h-3 w-56 rounded bg-neutral-200 dark:bg-neutral-700" />
+        <div className="h-3 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
       </div>
       <div className="h-4 w-16 rounded bg-neutral-200 dark:bg-neutral-700" />
     </div>
   )
 }
 
-// ─── Reservation row ──────────────────────────────────────────────────────────
+// ─── Reservation row ─────────────────────────────────────────────────────────
 
 function ReservationRow({ reservation, index }: { reservation: Reservation; index: number }) {
+  const r = reservation as any
   const accent = moduleAccents.reservations
-  const status = reservation.status as string
-  const statusInfo = STATUS_LABELS[status] ?? STATUS_LABELS.PENDING
-  const clientName = `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim()
+  const statusInfo = STATUS_LABELS[r.status] ?? STATUS_LABELS.PENDING
+  const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
-  const pendingDeposits = (reservation.deposits ?? []).reduce(
+  // Czas
+  const startTime = getStartTime(r)
+  const endTime = getEndTime(r)
+  const dayNumber = getDayNumber(r)
+
+  // Goście — rozbicie
+  const adults: number = r.adults ?? 0
+  const children: number = r.children ?? 0
+  const toddlers: number = r.toddlers ?? 0
+  const totalGuests: number = r.guests ?? adults + children + toddlers
+
+  // Zaliczki (opcjonalne — tylko z getById)
+  const pendingDeposits = (r.deposits ?? []).reduce(
     (sum: number, d: { remainingAmount: string }) => sum + Number(d.remainingAmount),
     0
   )
 
-  const dateStr = reservation.date ?? ''
-  const [, , day] = dateStr.split('-')
-  const startTime = (reservation as any).startTime as string | undefined
+  // Termin potwierdzenia
+  const deadlineInfo = getDeadlineInfo(r.confirmationDeadline)
 
   return (
     <motion.div
@@ -97,10 +174,10 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
       transition={{ delay: 0.05 + index * 0.06 }}
     >
       <Link
-        href={`/dashboard/reservations/${reservation.id}`}
-        className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 hover:border-blue-200 dark:hover:border-blue-800/50"
+        href={`/dashboard/reservations/${r.id}`}
+        className="group flex items-start gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 hover:border-blue-200 dark:hover:border-blue-800/50"
       >
-        {/* Date badge */}
+        {/* Badge: czas lub dzień */}
         <div
           className={cn(
             'flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm flex-shrink-0',
@@ -109,22 +186,25 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
         >
           {startTime ? (
             <>
-              <Clock className="h-3.5 w-3.5 mb-0.5" />
-              <span className="text-xs font-bold leading-none">{startTime.slice(0, 5)}</span>
+              <span className="text-xs font-bold leading-tight">{startTime}</span>
+              {endTime && (
+                <span className="text-[10px] leading-tight opacity-80">–{endTime}</span>
+              )}
             </>
           ) : (
             <>
               <Calendar className="h-3.5 w-3.5 mb-0.5" />
-              <span className="text-lg font-bold leading-none">{day ?? '?'}</span>
+              <span className="text-lg font-bold leading-none">{dayNumber}</span>
             </>
           )}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+          {/* Linia 1: typ wydarzenia + status */}
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
-              {(reservation as any).eventType?.name ?? 'Wydarzenie'}
+              {r.eventType?.name ?? 'Wydarzenie'}
             </span>
             <span
               className={cn(
@@ -136,41 +216,66 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
             </span>
           </div>
 
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+          {/* Linia 2: klient + sala */}
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
             {clientName}
-            {(reservation as any).hall && (
+            {r.hall && (
               <>
-                {' • '}
-                <Building2 className="inline h-3 w-3 mb-0.5" />{' '}
-                {(reservation as any).hall.name}
-              </>
-            )}
-            {(reservation as any).guests > 0 && (
-              <>
-                {' • '}
-                <Users className="inline h-3 w-3 mb-0.5" />{' '}
-                {(reservation as any).guests} os.
+                {' • '}<Building2 className="inline h-3 w-3 mb-0.5" /> {r.hall.name}
               </>
             )}
           </p>
 
-          {pendingDeposits > 0 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-              💰 Zaliczka do zapłaty: {formatCurrency(pendingDeposits)}
+          {/* Linia 3: goście z rozbiciem */}
+          {totalGuests > 0 && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1">
+              <Users className="h-3 w-3 flex-shrink-0" />
+              {(r.adults != null && r.children != null && r.toddlers != null) ? (
+                // Pełne rozbicie gdy dostępne
+                <span>
+                  {adults} dor.
+                  {children > 0 && <> • {children} dz.</>}
+                  {toddlers > 0 && <> • {toddlers} mal.</>}
+                  <span className="text-neutral-400"> ({totalGuests} os.)</span>
+                </span>
+              ) : (
+                <span>{totalGuests} os.</span>
+              )}
             </p>
           )}
+
+          {/* Linia 4+: alerty */}
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+            {deadlineInfo && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 text-xs font-medium',
+                  deadlineInfo.urgent
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-amber-600 dark:text-amber-400'
+                )}
+              >
+                <AlertTriangle className="h-3 w-3" />
+                Potwierdzenie za {deadlineInfo.daysLeft === 0 ? 'dziś' : `${deadlineInfo.daysLeft} dni`}
+              </span>
+            )}
+            {pendingDeposits > 0 && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                💰 Zaliczka: {formatCurrency(pendingDeposits)}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Price */}
-        {Number(reservation.totalPrice) > 0 && (
-          <div className="text-right flex-shrink-0">
+        {/* Cena */}
+        <div className="text-right flex-shrink-0 ml-1">
+          {Number(r.totalPrice) > 0 && (
             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(Number(reservation.totalPrice))}
+              {formatCurrency(Number(r.totalPrice))}
             </p>
-          </div>
-        )}
-
-        <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+          )}
+          <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all mt-1 ml-auto" />
+        </div>
       </Link>
     </motion.div>
   )
@@ -179,20 +284,12 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
 // ─── Main component ───────────────────────────────────────────────────────────────
 
 interface DailyReservationsSectionProps {
-  /** Data w formacie YYYY-MM-DD */
   date: string
 }
 
 export default function DailyReservationsSection({ date }: DailyReservationsSectionProps) {
   const accent = moduleAccents.reservations
 
-  /**
-   * dateTo: `${date}T23:59:59.999Z` — pokrywa cały dzień UTC.
-   *
-   * Backend robi `lte: new Date(dateTo)`. Bez suffixu T23:59:59Z
-   * wartość `new Date("2026-03-07")` = 00:00Z, przez co rezerwacje
-   * o godz. 10:00 Warsaw (09:00Z) nie przechodzą filtru lte.
-   */
   const { data, isLoading, error, refetch } = useReservations({
     dateFrom: date,
     dateTo: `${date}T23:59:59.999Z`,
