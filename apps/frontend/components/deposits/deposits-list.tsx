@@ -21,7 +21,7 @@ interface DepositsListProps {
 
 const paymentMethodConfig: Record<PaymentMethod, { label: string; icon: React.ElementType; className: string }> = {
   TRANSFER: { label: 'Przelew', icon: ArrowDownUp, className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' },
-  CASH: { label: 'Got\u00f3wka', icon: Banknote, className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800' },
+  CASH: { label: 'Gotówka', icon: Banknote, className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800' },
   BLIK: { label: 'BLIK', icon: Smartphone, className: 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800' },
   CARD: { label: 'Karta', icon: CreditCard, className: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800' },
 }
@@ -92,11 +92,11 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                 </Link>
                 <div className="text-right flex-shrink-0">
                   <p className="font-bold text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
-                    {amount.toLocaleString('pl-PL')} z\u0142
+                    {amount.toLocaleString('pl-PL')} zł
                   </p>
                   {paidAmount > 0 && paidAmount < amount && (
                     <p className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
-                      wp\u0142acono {paidAmount.toLocaleString('pl-PL')} z\u0142
+                      wpłacono {paidAmount.toLocaleString('pl-PL')} zł
                     </p>
                   )}
                 </div>
@@ -151,7 +151,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Wydarzenie</TableHead>
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Sala</TableHead>
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Kwota</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Wp\u0142acono</TableHead>
+              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Wpłacono</TableHead>
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Termin</TableHead>
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Status</TableHead>
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Metoda</TableHead>
@@ -233,14 +233,14 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   {/* Amount */}
                   <TableCell className="text-right">
                     <span className="font-semibold tabular-nums text-sm">
-                      {Number(deposit.amount).toLocaleString('pl-PL')} z\u0142
+                      {Number(deposit.amount).toLocaleString('pl-PL')} zł
                     </span>
                   </TableCell>
 
                   {/* Paid */}
                   <TableCell className="text-right">
                     <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                      {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} z\u0142` : `0 z\u0142`}
+                      {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
                     </span>
                   </TableCell>
 

@@ -63,12 +63,12 @@ export default function ReservationDetailsPage() {
       await downloadReservationPDF(reservation.id)
       toast({
         title: 'Sukces',
-        description: 'PDF zosta\u0142 pobrany',
+        description: 'PDF został pobrany',
       })
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 pobra\u0107 PDF',
+        title: 'Błąd',
+        description: 'Nie udało się pobrać PDF',
         variant: 'destructive',
       })
     } finally {
@@ -79,22 +79,22 @@ export default function ReservationDetailsPage() {
   const handleArchive = async () => {
     if (!reservation) return
 
-    if (!confirm('Czy na pewno chcesz zarchiwizowa\u0107 t\u0119 rezerwacj\u0119?')) return
+    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
 
     try {
       await archiveMutation.mutateAsync({
         id: reservation.id,
-        reason: 'Zarchiwizowano przez u\u017cytkownika'
+        reason: 'Zarchiwizowano przez użytkownika'
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja zosta\u0142a zarchiwizowana',
+        description: 'Rezerwacja została zarchiwizowana',
       })
       refetch()
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 zarchiwizowa\u0107 rezerwacji',
+        title: 'Błąd',
+        description: 'Nie udało się zarchiwizować rezerwacji',
         variant: 'destructive',
       })
     }
@@ -106,17 +106,17 @@ export default function ReservationDetailsPage() {
     try {
       await unarchiveMutation.mutateAsync({
         id: reservation.id,
-        reason: 'Przywr\u00f3cono z archiwum'
+        reason: 'Przywrócono z archiwum'
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja zosta\u0142a przywr\u00f3cona z archiwum',
+        description: 'Rezerwacja została przywrócona z archiwum',
       })
       refetch()
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 przywr\u00f3ci\u0107 rezerwacji',
+        title: 'Błąd',
+        description: 'Nie udało się przywrócić rezerwacji',
         variant: 'destructive',
       })
     }
@@ -125,7 +125,7 @@ export default function ReservationDetailsPage() {
   const handleCancel = async () => {
     if (!reservation) return
 
-    const reason = prompt('Podaj pow\u00f3d anulowania rezerwacji:')
+    const reason = prompt('Podaj powód anulowania rezerwacji:')
     if (!reason) return
 
     try {
@@ -135,12 +135,12 @@ export default function ReservationDetailsPage() {
       })
       toast({
         title: 'Sukces',
-        description: 'Rezerwacja zosta\u0142a anulowana',
+        description: 'Rezerwacja została anulowana',
       })
     } catch {
       toast({
-        title: 'B\u0142\u0105d',
-        description: 'Nie uda\u0142o si\u0119 anulowa\u0107 rezerwacji',
+        title: 'Błąd',
+        description: 'Nie udało się anulować rezerwacji',
         variant: 'destructive',
       })
     }
@@ -162,9 +162,9 @@ export default function ReservationDetailsPage() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="text-center space-y-4">
           <XCircle className="h-16 w-16 text-red-400 mx-auto" />
-          <p className="text-muted-foreground">Nie uda\u0142o si\u0119 za\u0142adowa\u0107 rezerwacji</p>
+          <p className="text-muted-foreground">Nie udało się załadować rezerwacji</p>
           <Link href="/dashboard/reservations">
-            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powr\u00f3t do listy</Button>
+            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
           </Link>
         </div>
       </div>
@@ -197,11 +197,11 @@ export default function ReservationDetailsPage() {
 
   // Banner message for read-only mode
   const readOnlyBannerMessage = reservation.status === 'CANCELLED'
-    ? 'Ta rezerwacja zosta\u0142a anulowana. Dane s\u0105 dost\u0119pne tylko do odczytu.'
+    ? 'Ta rezerwacja została anulowana. Dane są dostępne tylko do odczytu.'
     : reservation.status === 'ARCHIVED'
-      ? 'Ta rezerwacja jest zarchiwizowana. Dane s\u0105 dost\u0119pne tylko do odczytu.'
+      ? 'Ta rezerwacja jest zarchiwizowana. Dane są dostępne tylko do odczytu.'
       : reservation.status === 'COMPLETED'
-        ? 'Ta rezerwacja zosta\u0142a zrealizowana. Dane s\u0105 dost\u0119pne tylko do odczytu.'
+        ? 'Ta rezerwacja została zrealizowana. Dane są dostępne tylko do odczytu.'
         : null
 
   return (
@@ -223,7 +223,7 @@ export default function ReservationDetailsPage() {
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Powr\u00f3t do listy
+                Powrót do listy
               </Button>
             </Link>
 
@@ -235,7 +235,7 @@ export default function ReservationDetailsPage() {
                   </div>
                   <div>
                     <h1 className="text-2xl sm:text-4xl font-bold">Rezerwacja #{reservation.id.slice(0, 8)}</h1>
-                    <p className="text-white/90 text-base sm:text-lg mt-1">Szczeg\u00f3\u0142y rezerwacji</p>
+                    <p className="text-white/90 text-base sm:text-lg mt-1">Szczegóły rezerwacji</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -289,7 +289,7 @@ export default function ReservationDetailsPage() {
             }`}
           >
             <Calendar className="h-4 w-4" />
-            Szczeg\u00f3\u0142y
+            Szczegóły
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -304,7 +304,7 @@ export default function ReservationDetailsPage() {
           </button>
         </div>
 
-        {/* Tab: Szczeg\u00f3\u0142y */}
+        {/* Tab: Szczegóły */}
         {activeTab === 'details' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Main Info */}
@@ -322,7 +322,7 @@ export default function ReservationDetailsPage() {
                     <div className="flex items-center gap-3">
                       <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm text-muted-foreground">Imi\u0119 i nazwisko</p>
+                        <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
                         <p className="text-base sm:text-lg font-semibold truncate">
                           {reservation.client?.firstName} {reservation.client?.lastName}
                         </p>
@@ -409,7 +409,7 @@ export default function ReservationDetailsPage() {
                 disabled={isReadOnly}
               />
 
-              {/* Notatka wewn\u0119trzna (Etap 5) \u2014 nie trafia do PDF */}
+              {/* Notatka wewnętrzna (Etap 5) \u2014 nie trafia do PDF */}
               <EditableInternalNotesCard
                 reservationId={reservation.id}
                 internalNotes={reservation.internalNotes ?? null}
@@ -421,7 +421,7 @@ export default function ReservationDetailsPage() {
               <AttachmentPanel
                 entityType="RESERVATION"
                 entityId={reservation.id}
-                title="Za\u0142\u0105czniki rezerwacji"
+                title="Załączniki rezerwacji"
                 className="shadow-xl"
                 readOnly={isReadOnly}
               />
@@ -494,7 +494,7 @@ export default function ReservationDetailsPage() {
                         onClick={handleArchive}
                       >
                         <Archive className="mr-2 h-4 w-4" />
-                        {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwacj\u0119'}
+                        {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
                       </Button>
                     ) : (
                       <Button
@@ -505,7 +505,7 @@ export default function ReservationDetailsPage() {
                         onClick={handleUnarchive}
                       >
                         <ArchiveRestore className="mr-2 h-4 w-4" />
-                        {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywr\u00f3\u0107 z archiwum'}
+                        {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
                       </Button>
                     )}
 
@@ -517,7 +517,7 @@ export default function ReservationDetailsPage() {
                       onClick={handleCancel}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwacj\u0119'}
+                      {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
                     </Button>
                   </div>
                 </div>
