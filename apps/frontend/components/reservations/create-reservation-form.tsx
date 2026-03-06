@@ -142,6 +142,19 @@ const selectAllOnFocus = (e: React.FocusEvent<HTMLInputElement>) => {
   e.target.select()
 }
 
+// ═══ HELPER: Convert local date+time strings to ISO with timezone offset ═══
+// Fixes UTC+1 (Warsaw) shift: without offset, backend stores 14:00Z instead of 13:00Z,
+// causing the UI to display times 1 hour later than entered.
+function toLocalISO(dateStr: string, timeStr: string): string {
+  const dt = new Date(`${dateStr}T${timeStr}:00`)
+  const offsetMin = -dt.getTimezoneOffset()
+  const sign = offsetMin >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMin)
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const mm = String(abs % 60).padStart(2, '0')
+  return `${dateStr}T${timeStr}:00${sign}${hh}:${mm}`
+}
+
 // ═══ COMPONENT ═══
 
 export function CreateReservationForm({
@@ -235,13 +248,14 @@ export function CreateReservationForm({
   const { data: templatePackages, isLoading: templatePackagesLoading } = usePackagesByTemplate(menuTemplateId)
   const templatePackagesArray = useMemo(() => Array.isArray(templatePackages) ? templatePackages : [], [templatePackages])
 
+  // tz-aware ISO strings for availability checks
   const startDateTimeISO = useMemo(() => {
-    if (startDate && startTime) return `${startDate}T${startTime}:00`
+    if (startDate && startTime) return toLocalISO(startDate, startTime)
     return undefined
   }, [startDate, startTime])
 
   const endDateTimeISO = useMemo(() => {
-    if (endDate && endTime) return `${endDate}T${endTime}:00`
+    if (endDate && endTime) return toLocalISO(endDate, endTime)
     return undefined
   }, [endDate, endTime])
 
@@ -472,8 +486,10 @@ export function CreateReservationForm({
   }, [currentStep, completedSteps])
 
   const onFormSubmit = async (data: ReservationFormData) => {
-    const startDateTime = `${data.startDate}T${data.startTime}`
-    const endDateTime = `${data.endDate}T${data.endTime}`
+    // toLocalISO ensures the ISO string includes the Warsaw UTC+1 offset,
+    // preventing the backend (UTC) from shifting the time by +1h on storage.
+    const startDateTime = toLocalISO(data.startDate, data.startTime)
+    const endDateTime = toLocalISO(data.endDate, data.endTime)
 
     const input: CreateReservationInput | any = {
       hallId: data.hallId,
