@@ -49,7 +49,7 @@ export default function DepositsPage() {
       setStats(statsData)
     } catch (error) {
       console.error('Error loading deposits:', error)
-      toast.error('Nie udało się załadować zaliczek')
+      toast.error('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 zaliczek')
     } finally {
       setLoading(false)
     }
@@ -64,11 +64,14 @@ export default function DepositsPage() {
         : ''
       const hallName = deposit.reservation?.hall?.name?.toLowerCase() || ''
       const eventType = deposit.reservation?.eventType?.name?.toLowerCase() || ''
+      // #deposits-fix (5/5): include deposit title in search
+      const title = deposit.title?.toLowerCase() || ''
       return (
         clientName.includes(query) ||
         hallName.includes(query) ||
         eventType.includes(query) ||
-        deposit.amount.toString().includes(query)
+        deposit.amount.toString().includes(query) ||
+        title.includes(query)
       )
     }
     return true
@@ -81,8 +84,8 @@ export default function DepositsPage() {
 
   const filterButtons: { label: string; value: FilterStatus; count?: number }[] = [
     { label: 'Wszystkie', value: 'ALL', count: totalAllCount },
-    { label: 'Oczekujące', value: 'PENDING', count: stats?.counts.pending },
-    { label: 'Opłacone', value: 'PAID', count: stats?.counts.paid },
+    { label: 'Oczekuj\u0105ce', value: 'PENDING', count: stats?.counts.pending },
+    { label: 'Op\u0142acone', value: 'PAID', count: stats?.counts.paid },
     { label: 'Przetermin.', value: 'OVERDUE', count: stats?.counts.overdue },
     { label: 'Anulowane', value: 'CANCELLED', count: stats?.counts.cancelled },
   ]
@@ -96,7 +99,7 @@ export default function DepositsPage() {
       <PageHero
         accent={accent}
         title="Zaliczki"
-        subtitle="Zarządzaj zaliczkami i płatnościami"
+        subtitle="Zarz\u0105dzaj zaliczkami i p\u0142atno\u015bciami"
         icon={DollarSign}
         action={
           <Button
@@ -113,17 +116,17 @@ export default function DepositsPage() {
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
-            label="Oczekujące"
+            label="Oczekuj\u0105ce"
             value={stats.counts.pending}
-            subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} zł do zapłaty`}
+            subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} z\u0142 do zap\u0142aty`}
             icon={Clock}
             iconGradient="from-amber-500 to-orange-500"
             delay={0.1}
           />
           <StatCard
-            label="Opłacone"
+            label="Op\u0142acone"
             value={stats.counts.paid}
-            subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} zł wpłacono`}
+            subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} z\u0142 wp\u0142acono`}
             icon={CheckCircle2}
             iconGradient="from-emerald-500 to-teal-500"
             delay={0.2}
@@ -131,15 +134,17 @@ export default function DepositsPage() {
           <StatCard
             label="Przetermin."
             value={stats.counts.overdue}
-            subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
+            subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} z\u0142 zaleg\u0142o\u015bci`}
             icon={AlertTriangle}
             iconGradient="from-red-500 to-rose-500"
             delay={0.3}
           />
+          {/* #deposits-fix (5/5): totalAllCount includes CANCELLED so the subtitle */}
+          {/* matches the actual "Wszystkie" filter row count. */}
           <StatCard
-            label="Łącznie"
-            value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
-            subtitle={`${percentPaid}% wpłacono · ${stats.counts.total} zaliczek`}
+            label="\u0141\u0105cznie"
+            value={`${stats.amounts.total.toLocaleString('pl-PL')} z\u0142`}
+            subtitle={`${percentPaid}% wp\u0142acono \u00b7 ${totalAllCount} zaliczek`}
             icon={TrendingUp}
             iconGradient="from-rose-500 to-pink-500"
             delay={0.4}
@@ -213,14 +218,14 @@ export default function DepositsPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={5} message="Ładowanie zaliczek..." />
+              <LoadingState variant="skeleton" rows={5} message="\u0141adowanie zaliczek..." />
             </div>
           ) : filteredDeposits.length === 0 && (searchQuery || statusFilter !== 'ALL') ? (
             <div className="p-4 sm:p-6">
               <EmptyState
                 icon={DollarSign}
                 title="Nie znaleziono zaliczek"
-                description="Spróbuj innych kryteriów wyszukiwania lub filtru"
+                description="Spr\u00f3buj innych kryteri\u00f3w wyszukiwania lub filtru"
               />
             </div>
           ) : filteredDeposits.length === 0 ? (
@@ -228,7 +233,7 @@ export default function DepositsPage() {
               <EmptyState
                 icon={DollarSign}
                 title="Brak zaliczek"
-                description="Utwórz pierwszą zaliczkę aby zacząć śledzić płatności"
+                description="Utw\u00f3rz pierwsz\u0105 zaliczk\u0119 aby zacz\u0105\u0107 \u015bledzi\u0107 p\u0142atno\u015bci"
                 actionLabel="Nowa Zaliczka"
                 onAction={() => setShowCreateForm(true)}
               />
