@@ -74,8 +74,13 @@ export default function DepositsPage() {
     return true
   })
 
+  // #deposits-fix (3/5): "Wszystkie" count must include CANCELLED deposits.
+  // stats.counts.total only covers PENDING+PAID+OVERDUE+PARTIALLY_PAID,
+  // but the ALL filter shows every deposit including CANCELLED rows.
+  const totalAllCount = (stats?.counts.total ?? 0) + (stats?.counts.cancelled ?? 0)
+
   const filterButtons: { label: string; value: FilterStatus; count?: number }[] = [
-    { label: 'Wszystkie', value: 'ALL', count: stats?.counts.total },
+    { label: 'Wszystkie', value: 'ALL', count: totalAllCount },
     { label: 'Oczekujące', value: 'PENDING', count: stats?.counts.pending },
     { label: 'Opłacone', value: 'PAID', count: stats?.counts.paid },
     { label: 'Przetermin.', value: 'OVERDUE', count: stats?.counts.overdue },

@@ -95,15 +95,23 @@ export interface MarkDepositPaidInput {
 // ═══════════════════════════════════════════════════════════════
 
 export const depositsApi = {
+  /**
+   * #deposits-fix (3/5): Pass limit=500 to ensure ALL deposits are loaded.
+   * Previously the default backend limit of 20 silently truncated the list while
+   * the stats panel showed accurate full counts — causing a visible discrepancy.
+   * 500 is a safe ceiling for a restaurant context (deposits per active period).
+   */
   getAll: async (params?: {
     status?: DepositStatus
     overdue?: boolean
     search?: string
+    limit?: number
   }): Promise<Deposit[]> => {
     const searchParams = new URLSearchParams()
     if (params?.status) searchParams.set('status', params.status)
     if (params?.overdue) searchParams.set('overdue', 'true')
     if (params?.search) searchParams.set('search', params.search)
+    searchParams.set('limit', String(params?.limit ?? 500))
     const query = searchParams.toString()
     const response = await apiClient.get(`/deposits${query ? `?${query}` : ''}`)
     return response.data.data
