@@ -6,7 +6,6 @@ import {
   Calendar,
   ArrowRight,
   AlertCircle,
-  Clock,
   Users,
   Building2,
   RefreshCw,
@@ -56,66 +55,37 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-/**
- * Wyciąga godzinę (HH:mm) z ISO string lub legacy HH:mm string.
- * Zwraca lokalną godzinę (Warsaw) z daty ISO.
- */
 function toLocalTime(iso: string | null | undefined): string | null {
   if (!iso) return null
-  // Jeśli to już format HH:mm (legacy startTime)
   if (/^\d{2}:\d{2}/.test(iso)) return iso.slice(0, 5)
   try {
-    return new Date(iso).toLocaleTimeString('pl-PL', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return null
-  }
+    return new Date(iso).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+  } catch { return null }
 }
 
-/**
- * Wyciąga dzień miesiąca (np. "07") z rezerwacji.
- * Priorytet: pole `date` (legacy) → `startDateTime` (nowe).
- */
 function getDayNumber(r: any): string {
   if (r.date) return String(r.date).split('-')[2] ?? '?'
-  if (r.startDateTime) {
-    return String(new Date(r.startDateTime).getDate()).padStart(2, '0')
-  }
+  if (r.startDateTime) return String(new Date(r.startDateTime).getDate()).padStart(2, '0')
   return '?'
 }
 
-/**
- * Zwraca czas startowy do wyświetlenia w badge.
- * Priorytet: startDateTime → startTime (legacy).
- */
 function getStartTime(r: any): string | null {
   if (r.startDateTime) return toLocalTime(r.startDateTime)
   if (r.startTime) return toLocalTime(r.startTime)
   return null
 }
 
-/**
- * Zwraca czas końcowy (skrócony do HH:mm).
- */
 function getEndTime(r: any): string | null {
   if (r.endDateTime) return toLocalTime(r.endDateTime)
   if (r.endTime) return toLocalTime(r.endTime)
   return null
 }
 
-/**
- * Sprawdza termin potwierdzenia.
- * Zwraca { daysLeft, urgent } jeśli ≤7 dni, null jeśli nie dotyczy.
- */
 function getDeadlineInfo(
   deadline: string | null | undefined
 ): { daysLeft: number; urgent: boolean } | null {
   if (!deadline) return null
-  const d = new Date(deadline)
-  const now = new Date()
-  const daysLeft = Math.ceil((d.getTime() - now.getTime()) / 86_400_000)
+  const daysLeft = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000)
   if (daysLeft < 0 || daysLeft > 7) return null
   return { daysLeft, urgent: daysLeft <= 3 }
 }
@@ -147,24 +117,20 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
   const statusInfo = STATUS_LABELS[r.status] ?? STATUS_LABELS.PENDING
   const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
-  // Czas
   const startTime = getStartTime(r)
   const endTime = getEndTime(r)
   const dayNumber = getDayNumber(r)
 
-  // Goście — rozbicie
   const adults: number = r.adults ?? 0
   const children: number = r.children ?? 0
   const toddlers: number = r.toddlers ?? 0
   const totalGuests: number = r.guests ?? adults + children + toddlers
 
-  // Zaliczki (opcjonalne — tylko z getById)
   const pendingDeposits = (r.deposits ?? []).reduce(
     (sum: number, d: { remainingAmount: string }) => sum + Number(d.remainingAmount),
     0
   )
 
-  // Termin potwierdzenia
   const deadlineInfo = getDeadlineInfo(r.confirmationDeadline)
 
   return (
@@ -206,12 +172,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
             <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
               {r.eventType?.name ?? 'Wydarzenie'}
             </span>
-            <span
-              className={cn(
-                'rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0',
-                statusInfo.classes
-              )}
-            >
+            <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0', statusInfo.classes)}>
               {statusInfo.emoji} {statusInfo.label}
             </span>
           </div>
@@ -220,9 +181,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
             {clientName}
             {r.hall && (
-              <>
-                {' • '}<Building2 className="inline h-3 w-3 mb-0.5" /> {r.hall.name}
-              </>
+              <> • <Building2 className="inline h-3 w-3 mb-0.5" /> {r.hall.name}</>
             )}
           </p>
 
@@ -231,7 +190,6 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1">
               <Users className="h-3 w-3 flex-shrink-0" />
               {(r.adults != null && r.children != null && r.toddlers != null) ? (
-                // Pełne rozbicie gdy dostępne
                 <span>
                   {adults} dor.
                   {children > 0 && <> • {children} dz.</>}
@@ -244,33 +202,31 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
             </p>
           )}
 
-          {/* Linia 4+: alerty */}
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-            {deadlineInfo && (
-              <span
-                className={cn(
+          {/* Alerty */}
+          {(deadlineInfo || pendingDeposits > 0) && (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+              {deadlineInfo && (
+                <span className={cn(
                   'inline-flex items-center gap-1 text-xs font-medium',
-                  deadlineInfo.urgent
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-amber-600 dark:text-amber-400'
-                )}
-              >
-                <AlertTriangle className="h-3 w-3" />
-                Potwierdzenie za {deadlineInfo.daysLeft === 0 ? 'dziś' : `${deadlineInfo.daysLeft} dni`}
-              </span>
-            )}
-            {pendingDeposits > 0 && (
-              <span className="text-xs text-amber-600 dark:text-amber-400">
-                💰 Zaliczka: {formatCurrency(pendingDeposits)}
-              </span>
-            )}
-          </div>
+                  deadlineInfo.urgent ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
+                )}>
+                  <AlertTriangle className="h-3 w-3" />
+                  Potwierdzenie za {deadlineInfo.daysLeft === 0 ? 'dziś' : `${deadlineInfo.daysLeft} dni`}
+                </span>
+              )}
+              {pendingDeposits > 0 && (
+                <span className="text-xs text-amber-600 dark:text-amber-400">
+                  💰 Zaliczka: {formatCurrency(pendingDeposits)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Cena */}
+        {/* Cena + strzałka */}
         <div className="text-right flex-shrink-0 ml-1">
           {Number(r.totalPrice) > 0 && (
-            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
               {formatCurrency(Number(r.totalPrice))}
             </p>
           )}
@@ -278,6 +234,49 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
         </div>
       </Link>
     </motion.div>
+  )
+}
+
+// ─── Summary footer (identyczna struktura co catering) ────────────────────────────
+
+function SummaryFooter({ reservations }: { reservations: any[] }) {
+  const accent = moduleAccents.reservations
+  const totalValue = reservations.reduce((sum, r) => sum + Number(r.totalPrice ?? 0), 0)
+  const confirmedCount = reservations.filter((r) => r.status === 'CONFIRMED').length
+  const deadlineCount = reservations.filter((r) => {
+    if (!r.confirmationDeadline) return false
+    const daysLeft = Math.ceil((new Date(r.confirmationDeadline).getTime() - Date.now()) / 86_400_000)
+    return daysLeft >= 0 && daysLeft <= 3
+  }).length
+
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between rounded-xl px-4 py-3 mt-2',
+        'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10',
+        'border border-blue-100 dark:border-blue-800/30'
+      )}
+    >
+      <div className="flex items-center gap-3 text-sm flex-wrap">
+        <span className="text-neutral-600 dark:text-neutral-400">
+          <span className="font-bold text-neutral-900 dark:text-neutral-100">{reservations.length}</span>
+          {' '}rezerwacji
+        </span>
+        {confirmedCount > 0 && (
+          <span className="text-emerald-600 dark:text-emerald-400 text-xs">
+            ✅ {confirmedCount} potw.
+          </span>
+        )}
+        {deadlineCount > 0 && (
+          <span className="text-red-600 dark:text-red-400 text-xs flex items-center gap-0.5">
+            <AlertTriangle className="h-3 w-3" /> {deadlineCount} deadline
+          </span>
+        )}
+      </div>
+      <span className={cn('text-base font-bold whitespace-nowrap', accent.text, accent.textDark)}>
+        {formatCurrency(totalValue)}
+      </span>
+    </div>
   )
 }
 
@@ -390,9 +389,12 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
             </Link>
           </div>
         ) : (
-          reservations.map((reservation, index) => (
-            <ReservationRow key={reservation.id} reservation={reservation} index={index} />
-          ))
+          <>
+            {reservations.map((reservation, index) => (
+              <ReservationRow key={reservation.id} reservation={reservation} index={index} />
+            ))}
+            <SummaryFooter reservations={reservations} />
+          </>
         )}
       </div>
     </motion.div>

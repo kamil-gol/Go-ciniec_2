@@ -52,7 +52,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
     ? order.client.companyName
     : `${order.client.firstName} ${order.client.lastName}`
 
-  // Kontakt do zdjęcia: albo dedykowany contactName, albo klient
+  // Jeśli contactName ustawiony — używamy go, inaczej fallback na klienta
   const contactDisplay = order.contactName
     ? order.contactName
     : `${order.client.firstName} ${order.client.lastName}`
@@ -77,8 +77,8 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
         href={`/dashboard/catering/orders/${order.id}`}
         className="group block rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 hover:border-orange-200 dark:hover:border-orange-800/50"
       >
-        {/* Wiersz 1: ikona + klient + status + cena */}
         <div className="flex items-start gap-3">
+          {/* Ikona */}
           <div
             className={cn(
               'flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm flex-shrink-0 mt-0.5',
@@ -89,7 +89,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
           </div>
 
           <div className="flex-1 min-w-0">
-            {/* Linia 1: nazwa + badge statusu */}
+            {/* Linia 1: klient + badge statusu */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
                 {clientName}
@@ -104,71 +104,72 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
               </span>
             </div>
 
-            {/* Linia 2: sposób dostawy + godzina + goście + szablon */}
+            {/* Linia 2: sposób dostawy + godzina + goście + liczba dań */}
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
               {CATERING_DELIVERY_LABELS[order.deliveryType]}
               {order.deliveryTime && (
-                <>
-                  {' '}<Clock className="inline h-3 w-3 mb-0.5" /> {order.deliveryTime}
-                </>
+                <> <Clock className="inline h-3 w-3 mb-0.5" /> {order.deliveryTime}</>
               )}
               {(order.guestsCount ?? 0) > 0 && (
-                <>
-                  {' • '}<Users className="inline h-3 w-3 mb-0.5" /> {order.guestsCount} os.
-                </>
+                <> • <Users className="inline h-3 w-3 mb-0.5" /> {order.guestsCount} os.</>
               )}
-              {order.template?.name && <>{' • '}{order.template.name}</>}
+              {order.template?.name && <> • {order.template.name}</>}
               {itemsCount > 0 && (
-                <>
-                  {' • '}<Utensils className="inline h-3 w-3 mb-0.5" /> {itemsCount} poz.
-                </>
+                <> • <Utensils className="inline h-3 w-3 mb-0.5" /> {itemsCount} poz.</>
               )}
             </p>
 
             {/* Linia 3: adres dostawy (tylko DELIVERY) */}
             {hasAddress && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1 truncate">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1">
                 <MapPin className="h-3 w-3 flex-shrink-0 text-orange-500" />
-                {order.deliveryAddress}
+                <span className="break-all">{order.deliveryAddress}</span>
               </p>
             )}
 
-            {/* Linia 4: nazwa wydarzenia + kontakt */}
-            {(order.eventName || hasContact) && (
+            {/* Linia 4: nazwa wydarzenia */}
+            {order.eventName && (
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
-                {order.eventName && <>🎉 {order.eventName}</>}
-                {order.eventName && hasContact && ' • '}
-                {hasContact && (
-                  <>
-                    <Phone className="inline h-3 w-3 mb-0.5" />{' '}
-                    {contactDisplay}
-                    {order.contactPhone && ` ${order.contactPhone}`}
-                  </>
+                🎉 {order.eventName}
+              </p>
+            )}
+
+            {/* Linia 5: kontakt — osobna linia, bez truncate żeby numer nie był ucinany */}
+            {hasContact && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1 flex-wrap">
+                <Phone className="h-3 w-3 flex-shrink-0" />
+                <span className="font-medium">{contactDisplay}</span>
+                {order.contactPhone && (
+                  <span className="text-neutral-600 dark:text-neutral-300 font-mono tracking-tight">
+                    {order.contactPhone}
+                  </span>
                 )}
               </p>
             )}
 
-            {/* Linia 5: alerty — zaliczka + specjalne wymagania */}
-            <div className="flex flex-wrap gap-2 mt-1">
-              {pendingDeposits > 0 && (
-                <span className="text-xs text-amber-600 dark:text-amber-400">
-                  💰 Zaliczka: {formatCateringCurrency(pendingDeposits)}
-                </span>
-              )}
-              {hasSpecialReq && (
-                <span className="inline-flex items-center gap-0.5 text-xs text-orange-600 dark:text-orange-400">
-                  <AlertTriangle className="h-3 w-3" /> Spec. wymagania
-                </span>
-              )}
-            </div>
+            {/* Linia 6: alerty — zaliczka + specjalne wymagania */}
+            {(pendingDeposits > 0 || hasSpecialReq) && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {pendingDeposits > 0 && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400">
+                    💰 Zaliczka: {formatCateringCurrency(pendingDeposits)}
+                  </span>
+                )}
+                {hasSpecialReq && (
+                  <span className="inline-flex items-center gap-0.5 text-xs text-orange-600 dark:text-orange-400">
+                    <AlertTriangle className="h-3 w-3" /> Spec. wymagania
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Cena + numer */}
+          {/* Cena + numer zamówienia */}
           <div className="text-right flex-shrink-0 ml-1">
-            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
               {formatCateringCurrency(order.totalPrice)}
             </p>
-            <p className="text-xs text-neutral-400 mt-0.5">{order.orderNumber}</p>
+            <p className="text-xs text-neutral-400 mt-0.5 whitespace-nowrap">{order.orderNumber}</p>
           </div>
 
           <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
@@ -182,7 +183,6 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
 
 function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
   const accent = moduleAccents.catering
-  // totalPrice to Decimal → string w JSON, Number() bezpieczne
   const totalValue = orders.reduce((sum, o) => sum + Number(o.totalPrice), 0)
   const confirmedCount = orders.filter(
     (o) => o.status === 'CONFIRMED' || o.status === 'IN_PROGRESS'
@@ -213,7 +213,7 @@ function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
           </span>
         )}
       </div>
-      <span className={cn('text-base font-bold', accent.text, accent.textDark)}>
+      <span className={cn('text-base font-bold whitespace-nowrap', accent.text, accent.textDark)}>
         {formatCateringCurrency(totalValue)}
       </span>
     </div>
