@@ -29,6 +29,17 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     badge: 'bg-indigo-100 dark:bg-indigo-900/30',
     badgeText: 'text-indigo-700 dark:text-indigo-300',
   },
+  dailyView: {
+    name: 'Widok Dzienny',
+    gradient: 'from-slate-700 via-slate-600 to-violet-700',
+    gradientSubtle: 'from-slate-500/5 via-violet-500/5 to-slate-500/5',
+    iconBg: 'from-slate-600 to-violet-600',
+    text: 'text-slate-700',
+    textDark: 'dark:text-slate-300',
+    ring: 'ring-slate-500/20',
+    badge: 'bg-slate-100 dark:bg-slate-900/30',
+    badgeText: 'text-slate-700 dark:text-slate-300',
+  },
   reservations: {
     name: 'Rezerwacje',
     gradient: 'from-blue-600 via-blue-500 to-cyan-600',

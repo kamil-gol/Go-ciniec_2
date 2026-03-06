@@ -28,19 +28,27 @@ export interface CalendarHall {
   allowMultipleBookings?: boolean
 }
 
-/** Extract "HH:mm" in UTC from an ISO datetime string */
-function utcTime(iso: string): string {
+/** Extract "HH:mm" in LOCAL (Warsaw) timezone from an ISO datetime string */
+function localTime(iso: string): string {
   try {
-    return new Date(iso).toISOString().slice(11, 16)
+    const d = new Date(iso)
+    return [
+      String(d.getHours()).padStart(2, '0'),
+      String(d.getMinutes()).padStart(2, '0'),
+    ].join(':')
   } catch {
     return ''
   }
 }
 
-/** Extract "YYYY-MM-DD" in UTC from an ISO datetime string */
-function utcDate(iso: string): string {
+/** Extract "YYYY-MM-DD" in LOCAL (Warsaw) timezone from an ISO datetime string */
+function localDate(iso: string): string {
   try {
-    return new Date(iso).toISOString().slice(0, 10)
+    const d = new Date(iso)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
   } catch {
     return ''
   }
@@ -62,9 +70,9 @@ export function useCalendarReservations(year: number, month: number) {
 
       return list.map((r: any) => ({
         ...r,
-        date: r.date || (r.startDateTime ? utcDate(r.startDateTime) : null),
-        startTime: r.startTime || (r.startDateTime ? utcTime(r.startDateTime) : ''),
-        endTime: r.endTime || (r.endDateTime ? utcTime(r.endDateTime) : ''),
+        date: r.date || (r.startDateTime ? localDate(r.startDateTime) : null),
+        startTime: r.startTime || (r.startDateTime ? localTime(r.startDateTime) : ''),
+        endTime: r.endTime || (r.endDateTime ? localTime(r.endDateTime) : ''),
         guests: r.guests || ((Number(r.adults) || 0) + (Number(r.children) || 0) + (Number(r.toddlers) || 0)),
         totalPrice: String(r.totalPrice || '0'),
         hall: r.hall

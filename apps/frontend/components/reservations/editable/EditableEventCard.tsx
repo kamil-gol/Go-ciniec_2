@@ -16,22 +16,41 @@ import { pl } from 'date-fns/locale'
 const STANDARD_HOURS = 6
 const EXTRA_HOUR_RATE = 500
 
-// ── UTC helpers ──────────────────────────────────────────────────────
-function utcTime(dt: string | Date): string {
+// ══ LOCAL-TIME helpers (Warsaw / browser timezone) ═══════════════════════════════════════
+
+// Returns HH:MM in browser’s local timezone (not UTC)
+function localTime(dt: string | Date): string {
   const d = typeof dt === 'string' ? new Date(dt) : dt
-  return d.toISOString().slice(11, 16)
+  return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
 }
 
-function utcDate(dt: string | Date): string {
+// Returns YYYY-MM-DD in browser’s local timezone
+function localDate(dt: string | Date): string {
   const d = typeof dt === 'string' ? new Date(dt) : dt
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
-function utcDateForDisplay(dt: string | Date): Date {
+// Returns a plain Date (midnight) in local timezone, suitable for date-fns format()
+function localDateForDisplay(dt: string | Date): Date {
   const d = typeof dt === 'string' ? new Date(dt) : dt
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
-// ────────────────────────────────────────────────────────────────────
+
+// Builds an ISO string with the local timezone offset, e.g. "2026-03-07T14:00:00+01:00"
+// Prevents the backend (UTC) from shifting the time on storage.
+function toLocalISO(dateStr: string, timeStr: string): string {
+  const dt = new Date(`${dateStr}T${timeStr}:00`)
+  const offsetMin = -dt.getTimezoneOffset()
+  const sign = offsetMin >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMin)
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const mm = String(abs % 60).padStart(2, '0')
+  return `${dateStr}T${timeStr}:00${sign}${hh}:${mm}`
+}
+// ══════════════════════════════════════════════════════════════════════════════
 
 interface EditableEventCardProps {
   reservationId: string
@@ -63,10 +82,11 @@ export function EditableEventCard({
   const initStart = initialStart ? new Date(initialStart) : null
   const initEnd = initialEnd ? new Date(initialEnd) : null
 
-  const [startDate, setStartDate] = useState(initStart ? utcDate(initStart) : '')
-  const [startTime, setStartTime] = useState(initStart ? utcTime(initStart) : '')
-  const [endDate, setEndDate] = useState(initEnd ? utcDate(initEnd) : '')
-  const [endTime, setEndTime] = useState(initEnd ? utcTime(initEnd) : '')
+  // Initialise form fields with LOCAL time so the user sees Warsaw time in the pickers
+  const [startDate, setStartDate] = useState(initStart ? localDate(initStart) : '')
+  const [startTime, setStartTime] = useState(initStart ? localTime(initStart) : '')
+  const [endDate, setEndDate] = useState(initEnd ? localDate(initEnd) : '')
+  const [endTime, setEndTime] = useState(initEnd ? localTime(initEnd) : '')
   const [customEventType, setCustomEventType] = useState(initialCustom || '')
   const [birthdayAge, setBirthdayAge] = useState(initialBirthdayAge || 0)
   const [anniversaryYear, setAnniversaryYear] = useState(initialAnniversaryYear || 0)
@@ -79,10 +99,11 @@ export function EditableEventCard({
   const isAnniversary = initialEventTypeName === 'Rocznica' || initialEventTypeName === 'Rocznica/Jubileusz'
   const isCustom = initialEventTypeName === 'Inne'
 
+  // Duration: parse date+time as LOCAL (no Z suffix → browser treats as local)
   const durationHours = useMemo(() => {
     if (startDate && startTime && endDate && endTime) {
-      const start = new Date(`${startDate}T${startTime}:00.000Z`)
-      const end = new Date(`${endDate}T${endTime}:00.000Z`)
+      const start = new Date(`${startDate}T${startTime}`)
+      const end = new Date(`${endDate}T${endTime}`)
       const diffMs = end.getTime() - start.getTime()
       return Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10
     }
@@ -91,23 +112,25 @@ export function EditableEventCard({
 
   const extraHours = durationHours > STANDARD_HOURS ? Math.ceil(durationHours - STANDARD_HOURS) : 0
 
+  // Auto-fill end time when start is set and end is empty
   useEffect(() => {
     if (startDate && startTime && !endDate && !endTime) {
-      const start = new Date(`${startDate}T${startTime}:00.000Z`)
+      const start = new Date(`${startDate}T${startTime}`) // local time
       const end = new Date(start.getTime() + 6 * 60 * 60 * 1000)
-      setEndDate(utcDate(end))
-      setEndTime(utcTime(end))
+      setEndDate(localDate(end))
+      setEndTime(localTime(end))
     }
   }, [startDate, startTime, endDate, endTime])
 
+  // Sync form state when props change (e.g. after external update)
   useEffect(() => {
     if (initialStart) {
-      setStartDate(utcDate(initialStart))
-      setStartTime(utcTime(initialStart))
+      setStartDate(localDate(initialStart))
+      setStartTime(localTime(initialStart))
     }
     if (initialEnd) {
-      setEndDate(utcDate(initialEnd))
-      setEndTime(utcTime(initialEnd))
+      setEndDate(localDate(initialEnd))
+      setEndTime(localTime(initialEnd))
     }
     setCustomEventType(initialCustom || '')
     setBirthdayAge(initialBirthdayAge || 0)
@@ -119,14 +142,15 @@ export function EditableEventCard({
     if (!startDate || !startTime) throw new Error('Wybierz datę i czas rozpoczęcia')
     if (!endDate || !endTime) throw new Error('Wybierz datę i czas zakończenia')
 
-    const startDT = `${startDate}T${startTime}:00`
-    const endDT = `${endDate}T${endTime}:00`
-
-    if (new Date(`${endDT}Z`) <= new Date(`${startDT}Z`)) {
+    if (durationHours <= 0) {
       throw new Error('Czas zakończenia musi być po czasie rozpoczęcia')
     }
 
-    // eventTypeId is NOT sent — it's immutable after creation
+    // toLocalISO ensures the offset (e.g. +01:00) is included so backend stores correct UTC
+    const startDT = toLocalISO(startDate, startTime)
+    const endDT = toLocalISO(endDate, endTime)
+
+    // eventTypeId is NOT sent — it’s immutable after creation
     await updateMutation.mutateAsync({
       id: reservationId,
       input: {
@@ -146,12 +170,12 @@ export function EditableEventCard({
 
   const handleCancel = () => {
     if (initialStart) {
-      setStartDate(utcDate(initialStart))
-      setStartTime(utcTime(initialStart))
+      setStartDate(localDate(initialStart))
+      setStartTime(localTime(initialStart))
     }
     if (initialEnd) {
-      setEndDate(utcDate(initialEnd))
-      setEndTime(utcTime(initialEnd))
+      setEndDate(localDate(initialEnd))
+      setEndTime(localTime(initialEnd))
     }
     setCustomEventType(initialCustom || '')
     setBirthdayAge(initialBirthdayAge || 0)
@@ -159,7 +183,7 @@ export function EditableEventCard({
     setAnniversaryOccasion(initialAnniversaryOccasion || '')
   }
 
-  const eventDateForDisplay = initialStart ? utcDateForDisplay(initialStart) : null
+  const eventDateForDisplay = initialStart ? localDateForDisplay(initialStart) : null
 
   return (
     <EditableCard
@@ -197,7 +221,7 @@ export function EditableEventCard({
                 <div>
                   <p className="text-sm text-muted-foreground">Godziny</p>
                   <p className="text-lg font-semibold">
-                    {utcTime(initialStart)} - {utcTime(initialEnd)}
+                    {localTime(initialStart)} – {localTime(initialEnd)}
                   </p>
                 </div>
               )}

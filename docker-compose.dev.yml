@@ -48,6 +48,7 @@ services:
       - .env.dev
     environment:
       NODE_ENV: development
+      TZ: Europe/Warsaw
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       LOG_LEVEL: debug
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
@@ -83,6 +84,7 @@ services:
       - .env.dev
     environment:
       NODE_ENV: development
+      TZ: Europe/Warsaw
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4001/api}
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Rezerwacje DEV}
     ports:
