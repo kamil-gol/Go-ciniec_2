@@ -5,6 +5,7 @@
 # Production:    make prod
 # Testing:       make test-unit / test-integration / test-all
 # Storage:       make migrate-minio / minio-stats / minio-backup
+# DB migrations: make fix-timezone-dry / fix-timezone
 # Cleanup:       make down / test-down
 # ============================================
 
@@ -13,6 +14,7 @@
         test-coverage test-frontend-coverage test-down \
         migrate-minio migrate-minio-dry minio-stats minio-ls \
         minio-backup minio-policies \
+        fix-timezone-dry fix-timezone \
         logs logs-backend logs-frontend logs-minio status help
 
 # ============================================
@@ -123,6 +125,32 @@ minio-policies:
 	@./scripts/minio-set-policies.sh
 
 # ============================================
+# DB: Timezone fix (#timezone-fix)
+# ============================================
+# Run AFTER deploying the frontend timezone fixes.
+# Records created before 2026-03-06T20:29:43Z have startDateTime/endDateTime
+# stored 1h too late (UTC+0 instead of UTC+1 Warsaw).
+# Shifts those records by -1h in a safe transaction.
+#
+# ALWAYS run dry first:
+#   make fix-timezone-dry
+# Then apply:
+#   make fix-timezone
+# ============================================
+
+fix-timezone-dry:
+	@echo "\n=== Timezone fix: DRY RUN (no changes) ==="
+	$(COMPOSE_PROD) --env-file .env.prod exec backend \
+		sh -c "DRY_RUN=true npx tsx src/scripts/fix-timezone-offset.ts"
+
+fix-timezone:
+	@echo "\n=== Timezone fix: LIVE MIGRATION ==="
+	@echo "WARNING: This will modify the database. Press Ctrl+C within 5s to abort."
+	@sleep 5
+	$(COMPOSE_PROD) --env-file .env.prod exec backend \
+		sh -c "DRY_RUN=false npx tsx src/scripts/fix-timezone-offset.ts"
+
+# ============================================
 # Logs & Status
 # ============================================
 
@@ -195,6 +223,10 @@ help:
 	@echo "    make minio-stats        Show bucket size/count"
 	@echo "    make minio-backup       Backup all MinIO data to /data/backups/minio"
 	@echo "    make minio-policies     Set private policies + versioning on buckets"
+	@echo ""
+	@echo "  DB MIGRATIONS:"
+	@echo "    make fix-timezone-dry   Timezone fix: dry run (safe, no changes)"
+	@echo "    make fix-timezone       Timezone fix: LIVE migration (irreversible!)"
 	@echo ""
 	@echo "  UTILITIES:"
 	@echo "    make logs               Follow all logs (dev)"
