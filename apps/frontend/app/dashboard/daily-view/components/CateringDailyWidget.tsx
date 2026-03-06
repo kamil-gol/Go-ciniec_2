@@ -45,7 +45,8 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
     ? order.client.companyName
     : `${order.client.firstName} ${order.client.lastName}`
 
-  const pendingDeposits = order.deposits
+  // deposits są opcjonalne (nie zawsze backend je zwraca w liście)
+  const pendingDeposits = (order.deposits ?? [])
     .filter((d) => !d.isPaid)
     .reduce((sum, d) => sum + Number(d.remainingAmount), 0)
 

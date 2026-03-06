@@ -43,7 +43,8 @@ export interface CateringOrderListItem {
   client: CateringOrderClient
   templateName: string | null
   packageName: string | null
-  deposits: CateringOrderDeposit[]
+  /** Opcjonalne — dostępne tylko w getById, może być undefined w liście */
+  deposits?: CateringOrderDeposit[]
   createdAt: string
 }
 
@@ -102,7 +103,10 @@ export const useCateringOrders = (filters: CateringOrdersFilters = {}) =>
 
 /**
  * Zamówienia na konkretny dzień (YYYY-MM-DD).
- * Używa eventDateFrom = eventDateTo = date.
+ *
+ * dateTo: `${date}T23:59:59.999Z` — pokrywa cały dzień UTC.
+ * Bez tego `lte: new Date("2026-03-07")` = 00:00Z, więc rezerwacje
+ * o godz. 10:00 Warsaw (= 09:00Z) nie przechodzą filtru.
  */
 export const useCateringOrdersByDate = (date: string) =>
   useQuery({
@@ -110,11 +114,11 @@ export const useCateringOrdersByDate = (date: string) =>
     queryFn: () =>
       cateringOrdersApi.getAll({
         eventDateFrom: date,
-        eventDateTo: date,
+        eventDateTo: `${date}T23:59:59.999Z`,
         limit: 50,
       }),
     enabled: !!date,
-    staleTime: 30_000, // 30 s — widok dzienny odświeżamy rzadziej
+    staleTime: 30_000,
   })
 
 /** Szczegóły pojedynczego zamówienia */

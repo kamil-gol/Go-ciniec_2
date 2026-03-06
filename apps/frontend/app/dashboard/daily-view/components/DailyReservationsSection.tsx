@@ -86,7 +86,6 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
     0
   )
 
-  // Date badge display
   const dateStr = reservation.date ?? ''
   const [, , day] = dateStr.split('-')
   const startTime = (reservation as any).startTime as string | undefined
@@ -187,9 +186,16 @@ interface DailyReservationsSectionProps {
 export default function DailyReservationsSection({ date }: DailyReservationsSectionProps) {
   const accent = moduleAccents.reservations
 
+  /**
+   * dateTo: `${date}T23:59:59.999Z` — pokrywa cały dzień UTC.
+   *
+   * Backend robi `lte: new Date(dateTo)`. Bez suffixu T23:59:59Z
+   * wartość `new Date("2026-03-07")` = 00:00Z, przez co rezerwacje
+   * o godz. 10:00 Warsaw (09:00Z) nie przechodzą filtru lte.
+   */
   const { data, isLoading, error, refetch } = useReservations({
     dateFrom: date,
-    dateTo: date,
+    dateTo: `${date}T23:59:59.999Z`,
     pageSize: 50,
   })
 
