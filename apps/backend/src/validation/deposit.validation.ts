@@ -96,7 +96,10 @@ export const depositFiltersSchema = z.object({
   paid: z.coerce.boolean().optional(),
   search: z.string().max(100).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  // #deposits-fix (3/5 backend sync): raised from 100 → 500 to match frontend
+  // depositsApi.getAll passes limit=500 to load ALL deposits and avoid silent
+  // truncation that caused visible discrepancy between list and stats counters.
+  limit: z.coerce.number().int().min(1).max(500).default(20),
   sortBy: z.enum(['dueDate', 'amount', 'createdAt', 'status']).default('dueDate'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 });
