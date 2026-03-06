@@ -6,7 +6,7 @@ import {
   XCircle, ArrowDownUp, Banknote, Smartphone, CreditCard, Loader2,
   ExternalLink, CalendarDays, Undo2, Mail, TrendingUp, Receipt,
   Package, ShoppingCart, Users, Sparkles, ChevronDown, ChevronUp,
-  Timer, Gift, Building2,
+  Timer, Gift, Building2, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -63,9 +63,8 @@ interface ReservationFinancialSummaryProps {
   readOnly?: boolean
   /**
    * #deposits-fix (4/5): Optional callback fired after any deposit mutation
-   * (create / mark-paid / mark-unpaid / cancel). Used by the reservation detail
-   * page to re-fetch reservation data so the status badge stays in sync after
-   * the backend auto-confirms the reservation when all deposits are paid.
+   * (create / mark-paid / mark-unpaid / cancel / delete). Used by the reservation
+   * detail page to re-fetch reservation data so the status badge stays in sync.
    */
   onDepositChange?: () => void
 }
@@ -206,7 +205,7 @@ export function ReservationFinancialSummary({
     ? priceBreakdown.packageCost.toddlers.priceEach
     : pricePerToddler
 
-  // Extra hours calculation — uses per-event-type standardHours & extraHourRate
+  // Extra hours calculation
   const extraHoursInfo = useMemo(() => {
     if (!startDateTime || !endDateTime) return null
     const start = new Date(startDateTime)
@@ -219,14 +218,11 @@ export function ReservationFinancialSummary({
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
   }, [startDateTime, endDateTime, standardHours, extraHourRate])
 
-  // Whether extra hour charges are exempt for this event type (rate = 0)
   const isExtraHoursExempt = extraHourRate === 0
 
-  // ── DISCOUNT: compute early so we can restore the pre-discount base ──
   const activeDiscountAmount = Number(discountAmount) || 0
   const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
 
-  // ── EFFECTIVE TOTAL: base + extra hours + service extras + venue surcharge ──
   const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
     : (hasActiveDiscount && priceBeforeDiscount != null && Number(priceBeforeDiscount) > 0)
@@ -235,7 +231,6 @@ export function ReservationFinancialSummary({
   const extraHoursCost = extraHoursInfo?.extraCost || 0
   const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice + effectiveVenueSurcharge
 
-  // Final price after discount (single subtraction, never double)
   const finalTotalPrice = hasActiveDiscount
     ? Math.max(0, effectiveTotalPrice - activeDiscountAmount)
     : effectiveTotalPrice
@@ -248,6 +243,10 @@ export function ReservationFinancialSummary({
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null)
   const [showCostDetails, setShowCostDetails] = useState(false)
   const [showDepositsDetails, setShowDepositsDetails] = useState(true)
+
+  // #deposits-fix (P4): delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [depositToDelete, setDepositToDelete] = useState<Deposit | null>(null)
 
   // Create form
   const [createAmount, setCreateAmount] = useState('')
@@ -280,7 +279,7 @@ export function ReservationFinancialSummary({
     loadDeposits()
   }, [loadDeposits])
 
-  // Calculations — use finalTotalPrice (after discount) for balance
+  // Calculations
   const financials = useMemo(() => {
     const activeDeposits = deposits.filter(d => d.status !== 'CANCELLED')
     const totalPaid = activeDeposits.reduce((sum, d) => sum + Number(d.paidAmount || 0), 0)
@@ -378,6 +377,26 @@ export function ReservationFinancialSummary({
     if (readOnly) return
     try { setActionLoading(deposit.id); await depositsApi.cancel(deposit.id); toast.success('Zaliczka anulowana'); loadDeposits(); onDepositChange?.() }
     catch { toast.error('Nie uda\u0142o si\u0119 anulowa\u0107 zaliczki') } finally { setActionLoading(null) }
+  }
+
+  // #deposits-fix (P4): permanently delete a CANCELLED deposit
+  const handleOpenDelete = (deposit: Deposit) => {
+    if (readOnly) return
+    setDepositToDelete(deposit)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (readOnly || !depositToDelete) return
+    try {
+      setActionLoading(depositToDelete.id)
+      await depositsApi.delete(depositToDelete.id)
+      toast.success('Zaliczka usuni\u0119ta')
+      setShowDeleteModal(false)
+      setDepositToDelete(null)
+      loadDeposits()
+      onDepositChange?.()
+    } catch { toast.error('Nie uda\u0142o si\u0119 usun\u0105\u0107 zaliczki') } finally { setActionLoading(null) }
   }
 
   return (
@@ -505,7 +524,7 @@ export function ReservationFinancialSummary({
                   </div>
                 )}
 
-                {/* Venue Surcharge (whole venue booking) */}
+                {/* Venue Surcharge */}
                 {hasVenueSurcharge && (
                   <div className="bg-white dark:bg-black/20 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -532,9 +551,7 @@ export function ReservationFinancialSummary({
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Czas trwania wydarzenia
-                        </span>
+                        <span className="text-muted-foreground">Czas trwania wydarzenia</span>
                         <span className="font-medium">{extraHoursInfo.durationHours}h</span>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -565,7 +582,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* DISCOUNT SECTION (Sprint 7) — uses effectiveTotalPrice as base */}
+            {/* DISCOUNT SECTION */}
             {status && (
               <div className="mb-3">
                 <DiscountSection
@@ -584,7 +601,7 @@ export function ReservationFinancialSummary({
               </div>
             )}
 
-            {/* TOTAL — uses finalTotalPrice (after discount) */}
+            {/* TOTAL */}
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -620,7 +637,7 @@ export function ReservationFinancialSummary({
             </div>
           </div>
 
-          {/* DEPOSITS + BALANCE — uses finalTotalPrice */}
+          {/* DEPOSITS + BALANCE */}
           <div className="px-6 pb-6">
             {/* Balance bar */}
             <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
@@ -713,8 +730,8 @@ export function ReservationFinancialSummary({
                 {!depositsLoading && deposits.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {deposits.map((deposit) => {
-                      const status = statusConfig[deposit.status]
-                      const StatusIcon = status?.icon || Clock
+                      const st = statusConfig[deposit.status]
+                      const StatusIcon = st?.icon || Clock
                       const isPending = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
                       const isPaid = deposit.status === 'PAID'
                       const isCancelled = deposit.status === 'CANCELLED'
@@ -743,9 +760,9 @@ export function ReservationFinancialSummary({
                                 </span>
                               )}
                             </div>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${status?.className || ''}`}>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${st?.className || ''}`}>
                               <StatusIcon className="h-3 w-3" />
-                              {status?.label || deposit.status}
+                              {st?.label || deposit.status}
                             </span>
                           </div>
 
@@ -792,6 +809,17 @@ export function ReservationFinancialSummary({
                               <button onClick={() => handleCancel(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors">
                                 <XCircle className="h-3 w-3" /> Anuluj
+                              </button>
+                            )}
+                            {/* #deposits-fix (P4): permanently delete CANCELLED deposit */}
+                            {isCancelled && !readOnly && (
+                              <button
+                                onClick={() => handleOpenDelete(deposit)}
+                                disabled={isActioning}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                              >
+                                {isActioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                Usu\u0144
                               </button>
                             )}
                           </div>
@@ -921,6 +949,54 @@ export function ReservationFinancialSummary({
               <Button onClick={handlePay} disabled={paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                 {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                 Potwierd\u017a p\u0142atno\u015b\u0107
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* #deposits-fix (P4): Delete confirmation modal — only for CANCELLED deposits */}
+      {!readOnly && (
+        <Dialog open={showDeleteModal} onOpenChange={(open) => { if (!open) { setShowDeleteModal(false); setDepositToDelete(null) } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                Usu\u0144 zaliczk\u0119
+              </DialogTitle>
+              <DialogDescription>
+                Ta operacja jest nieodwracalna. Zaliczka zostanie trwale usuni\u0119ta z bazy danych.
+              </DialogDescription>
+            </DialogHeader>
+            {depositToDelete && (
+              <div className="py-4">
+                <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+                  <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Zaliczka do usuni\u0119cia</p>
+                  <p className="text-xl font-bold text-red-700 dark:text-red-300">
+                    {Number(depositToDelete.amount).toLocaleString('pl-PL')} z\u0142
+                  </p>
+                  {depositToDelete.title && (
+                    <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">{depositToDelete.title}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => { setShowDeleteModal(false); setDepositToDelete(null) }}>
+                Anuluj
+              </Button>
+              <Button
+                onClick={handleDeleteConfirm}
+                disabled={actionLoading === depositToDelete?.id}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {actionLoading === depositToDelete?.id
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <Trash2 className="mr-2 h-4 w-4" />
+                }
+                Usu\u0144 trwale
               </Button>
             </DialogFooter>
           </DialogContent>
