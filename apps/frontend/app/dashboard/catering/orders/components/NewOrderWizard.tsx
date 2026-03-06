@@ -618,7 +618,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                         options={dishOptions}
                         value={item.dishId}
                         onChange={dishId => {
-                          const dish = dishesArray.find((d: any) => d.id === dishId);
+                          const dish = dishesArray.find((d: any) => d.id === dishId) as any;
                           const items = [...state.items];
                           items[i] = { ...items[i], dishId, unitPrice: dish?.price ?? items[i].unitPrice };
                           set({ items });
