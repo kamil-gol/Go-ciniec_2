@@ -11,6 +11,7 @@ import {
   ChevronDown,
   LayoutDashboard,
   Calendar,
+  CalendarDays,
   Users,
   Building2,
   ClipboardList,
@@ -35,12 +36,13 @@ type NavChild = { name: string; href: string; icon: React.ElementType }
 type NavItem  = { name: string; href: string; icon: React.ElementType; children?: NavChild[] }
 
 const navItems: NavItem[] = [
-  { name: 'Dashboard',          href: '/dashboard',                  icon: LayoutDashboard },
-  { name: 'Rezerwacje',         href: '/dashboard/reservations',     icon: Calendar },
-  { name: 'Archiwum',           href: '/dashboard/archive',          icon: Archive },
-  { name: 'Klienci',            href: '/dashboard/clients',          icon: Users },
-  { name: 'Sale',               href: '/dashboard/halls',            icon: Building2 },
-  { name: 'Menu',               href: '/dashboard/menu',             icon: UtensilsCrossed },
+  { name: 'Dashboard',           href: '/dashboard',                   icon: LayoutDashboard },
+  { name: 'Widok Dzienny',       href: '/dashboard/daily-view',        icon: CalendarDays },
+  { name: 'Rezerwacje',          href: '/dashboard/reservations',      icon: Calendar },
+  { name: 'Archiwum',            href: '/dashboard/archive',           icon: Archive },
+  { name: 'Klienci',             href: '/dashboard/clients',           icon: Users },
+  { name: 'Sale',                href: '/dashboard/halls',             icon: Building2 },
+  { name: 'Menu',                href: '/dashboard/menu',              icon: UtensilsCrossed },
   {
     name: 'Catering',
     href: '/dashboard/catering',
@@ -50,14 +52,14 @@ const navItems: NavItem[] = [
       { name: 'Szablony',   href: '/dashboard/catering/templates', icon: BookOpen },
     ],
   },
-  { name: 'Kolejka',            href: '/dashboard/queue',            icon: Clock },
-  { name: 'Zaliczki',           href: '/dashboard/deposits',         icon: DollarSign },
-  { name: 'Usługi dodatkowe',   href: '/dashboard/service-extras',   icon: Gift },
-  { name: 'Typy Wydarzeń',      href: '/dashboard/event-types',      icon: Theater },
-  { name: 'Szablony dokumentów',href: '/dashboard/document-templates',icon: ScrollText },
-  { name: 'Dziennik Audytu',    href: '/dashboard/audit-log',        icon: FileText },
-  { name: 'Raporty',            href: '/dashboard/reports',          icon: BarChart3 },
-  { name: 'Ustawienia',         href: '/dashboard/settings',         icon: Settings },
+  { name: 'Kolejka',             href: '/dashboard/queue',             icon: Clock },
+  { name: 'Zaliczki',            href: '/dashboard/deposits',          icon: DollarSign },
+  { name: 'Usługi dodatkowe',    href: '/dashboard/service-extras',    icon: Gift },
+  { name: 'Typy Wydarzeń',       href: '/dashboard/event-types',       icon: Theater },
+  { name: 'Szablony dokumentów', href: '/dashboard/document-templates', icon: ScrollText },
+  { name: 'Dziennik Audytu',     href: '/dashboard/audit-log',         icon: FileText },
+  { name: 'Raporty',             href: '/dashboard/reports',           icon: BarChart3 },
+  { name: 'Ustawienia',          href: '/dashboard/settings',          icon: Settings },
 ]
 
 // ═══ SIDEBAR NAV ═══
@@ -65,7 +67,6 @@ const navItems: NavItem[] = [
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const pathname = usePathname()
 
-  // Auto-open groups where a child is currently active
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
     const set = new Set<string>()
     navItems.forEach(item => {
@@ -76,7 +77,6 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
     return set
   })
 
-  // Keep group open when navigating into a child
   useEffect(() => {
     navItems.forEach(item => {
       if (item.children?.some(child => pathname.startsWith(child.href))) {
@@ -125,7 +125,6 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                   <ChevronDown className={cn('h-4 w-4 flex-shrink-0 transition-transform duration-200 text-neutral-400', isOpen && 'rotate-180')} />
                 </button>
 
-                {/* Sub-items */}
                 {isOpen && (
                   <ul className="mt-1 ml-4 pl-3 border-l border-neutral-200 dark:border-neutral-700 space-y-0.5">
                     {item.children.map(child => {
@@ -154,7 +153,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
             )
           }
 
-          // ─── Group (collapsed) — icon links to first child ───
+          // ─── Group (collapsed) ───
           if (item.children && collapsed) {
             return (
               <li key={item.href}>
