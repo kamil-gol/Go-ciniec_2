@@ -1,3 +1,4 @@
+// apps/frontend/src/app/dashboard/catering/templates/[id]/packages/components/SectionForm.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -83,31 +84,38 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
     }
   }, [section, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = (values: FormValues) => {
     if (isEdit && section) {
-      await updateSection.mutateAsync({
-        sectionId: section.id,
-        data: {
-          name: values.name || null,
-          description: values.description || null,
+      updateSection.mutate(
+        {
+          sectionId: section.id,
+          data: {
+            name: values.name || null,
+            description: values.description || null,
+            minSelect: values.minSelect,
+            maxSelect:
+              values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+            isRequired: values.isRequired,
+            displayOrder: values.displayOrder,
+          },
+        },
+        { onSuccess: onClose },
+      );
+    } else {
+      createSection.mutate(
+        {
+          categoryId: values.categoryId,
+          name: values.name || undefined,
+          description: values.description || undefined,
           minSelect: values.minSelect,
-          maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+          maxSelect:
+            values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
           isRequired: values.isRequired,
           displayOrder: values.displayOrder,
         },
-      });
-    } else {
-      await createSection.mutateAsync({
-        categoryId: values.categoryId,
-        name: values.name || undefined,
-        description: values.description || undefined,
-        minSelect: values.minSelect,
-        maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
-        isRequired: values.isRequired,
-        displayOrder: values.displayOrder,
-      });
+        { onSuccess: onClose },
+      );
     }
-    onClose();
   };
 
   const isPending = createSection.isPending || updateSection.isPending;
@@ -129,7 +137,9 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue
-                      placeholder={categoriesLoading ? 'Ładowanie...' : 'Wybierz kategorię'}
+                      placeholder={
+                        categoriesLoading ? 'Ładowanie...' : 'Wybierz kategorię'
+                      }
                     />
                   </SelectTrigger>
                 </FormControl>
@@ -158,7 +168,10 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             <FormItem>
               <FormLabel>Własna nazwa sekcji</FormLabel>
               <FormControl>
-                <Input placeholder="Zostaw puste — użyje nazwy kategorii" {...field} />
+                <Input
+                  placeholder="Zostaw puste — użyje nazwy kategorii"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -172,7 +185,11 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             <FormItem>
               <FormLabel>Opis sekcji</FormLabel>
               <FormControl>
-                <Textarea placeholder="Opcjonalny opis dla klienta..." rows={2} {...field} />
+                <Textarea
+                  placeholder="Opcjonalny opis dla klienta..."
+                  rows={2}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -200,7 +217,13 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
               <FormItem>
                 <FormLabel>Maks. wybór</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" placeholder="–" {...field} value={field.value ?? ''} />
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="–"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -227,7 +250,10 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           render={({ field }) => (
             <FormItem className="flex items-center gap-2">
               <FormControl>
-                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
               </FormControl>
               <FormLabel className="!mt-0">Sekcja wymagana</FormLabel>
             </FormItem>
