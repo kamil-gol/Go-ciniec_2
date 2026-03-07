@@ -150,6 +150,14 @@ function computeTotals(
   };
 }
 
+// ─── Pomocnicze: rzuć 400 ────────────────────────────────────────────────────
+
+function badRequest(message: string): never {
+  const err = new Error(message) as Error & { statusCode: number };
+  err.statusCode = 400;
+  throw err;
+}
+
 // ─── Include (wspólny dla get/create/update) ─────────────────────────────────────────────────────────
 
 const orderInclude = {
@@ -508,9 +516,7 @@ export async function changeOrderStatus(
 export async function deleteOrder(id: string): Promise<void> {
   const order = await prisma.cateringOrder.findUniqueOrThrow({ where: { id } });
   if (order.status !== 'DRAFT' && order.status !== 'CANCELLED') {
-    const err = new Error('Można usunąć tylko zamówienia w statusie DRAFT lub CANCELLED') as Error & { statusCode: number };
-    err.statusCode = 400;
-    throw err;
+    badRequest('Można usunąć tylko zamówienia w statusie DRAFT lub CANCELLED');
   }
   await prisma.cateringOrder.delete({ where: { id } });
 }
@@ -548,6 +554,27 @@ export async function createDeposit(
   input: CreateDepositInput,
   changedById?: string,
 ) {
+  if (input.amount <= 0) {
+    badRequest('Kwota zaliczki musi być większa od 0.');
+  }
+
+  // Walidacja: suma zaliczek nie może przekroczyć wartości zamówienia
+  const order = await prisma.cateringOrder.findUniqueOrThrow({
+    where: { id: orderId },
+    include: { deposits: true },
+  });
+
+  const existingTotal = order.deposits.reduce((sum, d) => sum + Number(d.amount), 0);
+  const totalPrice = Number(order.totalPrice);
+  const newTotal = existingTotal + input.amount;
+
+  if (newTotal > totalPrice) {
+    const remaining = Math.max(0, totalPrice - existingTotal);
+    badRequest(
+      `Suma zaliczek (${newTotal.toFixed(2)} PLN) przekracza wartość zamówienia (${totalPrice.toFixed(2)} PLN). Możesz dodać maksymalnie ${remaining.toFixed(2)} PLN.`,
+    );
+  }
+
   const deposit = await prisma.cateringDeposit.create({
     data: {
       orderId,
@@ -582,6 +609,32 @@ export async function updateDeposit(
   orderId?: string,
 ) {
   const deposit = await prisma.cateringDeposit.findUniqueOrThrow({ where: { id: depositId } });
+
+  // Walidacja kwoty: suma pozostałych zaliczek + nowa kwota ≤ totalPrice
+  if (input.amount !== undefined) {
+    if (input.amount <= 0) {
+      badRequest('Kwota zaliczki musi być większa od 0.');
+    }
+
+    const order = await prisma.cateringOrder.findUniqueOrThrow({
+      where: { id: deposit.orderId },
+      include: { deposits: true },
+    });
+
+    const otherTotal = order.deposits
+      .filter(d => d.id !== depositId)
+      .reduce((sum, d) => sum + Number(d.amount), 0);
+
+    const totalPrice = Number(order.totalPrice);
+    const newTotal = otherTotal + input.amount;
+
+    if (newTotal > totalPrice) {
+      const maxAllowed = Math.max(0, totalPrice - otherTotal);
+      badRequest(
+        `Suma zaliczek (${newTotal.toFixed(2)} PLN) przekracza wartość zamówienia (${totalPrice.toFixed(2)} PLN). Maksymalna kwota tej zaliczki to ${maxAllowed.toFixed(2)} PLN.`,
+      );
+    }
+  }
 
   const updated = await prisma.cateringDeposit.update({
     where: { id: depositId },
