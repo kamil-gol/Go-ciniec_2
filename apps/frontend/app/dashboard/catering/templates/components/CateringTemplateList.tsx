@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  LayoutTemplate,
   Pencil,
   Trash2,
   Package,
@@ -60,18 +59,6 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
       onSuccess: () => setDeleteId(null),
     });
   };
-
-  if (templates.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20">
-        <LayoutTemplate className="h-12 w-12 text-muted-foreground/40" />
-        <h3 className="mt-4 text-lg font-semibold">Brak szablonów</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Utwórz pierwszy szablon cateringowy
-        </p>
-      </div>
-    );
-  }
 
   return (
     <>
