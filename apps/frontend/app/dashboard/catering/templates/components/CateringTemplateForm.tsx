@@ -1,3 +1,4 @@
+// apps/frontend/app/dashboard/catering/templates/components/CateringTemplateForm.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -31,7 +32,7 @@ const schema = z.object({
     .max(100)
     .regex(/^[a-z0-9-]+$/, 'Tylko małe litery, cyfry i myślniki'),
   description: z.string().max(500).optional(),
-  imageUrl: z.string().url('Nieprawidłowy URL').optional().or(z.literal('')),
+  imageUrl: z.string().url('Nieprawiłowy URL').optional().or(z.literal('')),
   isActive: z.boolean(),
   displayOrder: z.coerce.number().int().min(0),
 });
@@ -85,122 +86,88 @@ export function CateringTemplateForm({ template, onClose }: Props) {
     form.setValue('slug', slug, { shouldValidate: false });
   }, [watchName, isEdit, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = (values: FormValues) => {
     const payload = {
       ...values,
       description: values.description || undefined,
       imageUrl: values.imageUrl || undefined,
     };
-
     if (isEdit && template) {
-      await updateMutation.mutateAsync({ id: template.id, data: payload });
+      updateMutation.mutate(
+        { id: template.id, data: payload },
+        { onSuccess: onClose },
+      );
     } else {
-      await createMutation.mutateAsync(payload);
+      createMutation.mutate(payload, { onSuccess: onClose });
     }
-    onClose();
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* ── Dane podstawowe ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Dane podstawowe
+          </p>
+          <FormField control={form.control} name="name" render={({ field }) => (
             <FormItem>
               <FormLabel>Nazwa szablonu *</FormLabel>
-              <FormControl>
-                <Input placeholder="np. Catering komunijny" {...field} />
-              </FormControl>
+              <FormControl><Input placeholder="np. Catering komunijny" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="slug"
-          render={({ field }) => (
+          )} />
+          <FormField control={form.control} name="slug" render={({ field }) => (
             <FormItem>
               <FormLabel>Slug *</FormLabel>
-              <FormControl>
-                <Input placeholder="np. catering-komunijny" {...field} />
-              </FormControl>
+              <FormControl><Input placeholder="np. catering-komunijny" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
+          )} />
+          <FormField control={form.control} name="description" render={({ field }) => (
             <FormItem>
               <FormLabel>Opis</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Krótki opis szablonu..."
-                  rows={3}
-                  {...field}
-                />
-              </FormControl>
+              <FormControl><Textarea placeholder="Krótki opis szablonu..." rows={3} {...field} /></FormControl>
               <FormMessage />
             </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
+          )} />
+          <FormField control={form.control} name="imageUrl" render={({ field }) => (
             <FormItem>
               <FormLabel>URL zdjęcia</FormLabel>
-              <FormControl>
-                <Input placeholder="https://..." {...field} />
-              </FormControl>
+              <FormControl><Input placeholder="https://..." {...field} /></FormControl>
               <FormMessage />
             </FormItem>
-          )}
-        />
+          )} />
+        </div>
 
-        <div className="flex items-center gap-6">
-          <FormField
-            control={form.control}
-            name="displayOrder"
-            render={({ field }) => (
+        {/* ── Ustawienia ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Ustawienia
+          </p>
+          <div className="flex items-end gap-4">
+            <FormField control={form.control} name="displayOrder" render={({ field }) => (
               <FormItem className="flex-1">
                 <FormLabel>Kolejność wyświetlania</FormLabel>
-                <FormControl>
-                  <Input type="number" min={0} {...field} />
-                </FormControl>
+                <FormControl><Input type="number" min={0} {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="isActive"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2 mt-6">
+            )} />
+            <FormField control={form.control} name="isActive" render={({ field }) => (
+              <FormItem className="flex items-center gap-2 pb-1">
                 <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
                 <FormLabel className="!mt-0">Aktywny</FormLabel>
               </FormItem>
-            )}
-          />
+            )} />
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Anuluj
-          </Button>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>Anuluj</Button>
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? 'Zapisz zmiany' : 'Utwórz szablon'}

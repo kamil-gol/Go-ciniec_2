@@ -1,27 +1,22 @@
+// apps/frontend/app/dashboard/catering/templates/components/CateringTemplateList.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import {
-  MoreHorizontal,
+  LayoutTemplate,
   Pencil,
   Trash2,
   Package,
+  Settings2,
   BadgeCheck,
   BadgeX,
-  ChevronDown,
-  ChevronRight,
-  Settings2,
+  Star,
 } from 'lucide-react';
 import { useDeleteCateringTemplate } from '@/hooks/use-catering';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,149 +27,190 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { CATERING_PRICE_TYPE_LABELS } from '@/types/catering.types';
-import type { CateringTemplate, CateringPackage } from '@/types/catering.types';
+import type { CateringTemplate } from '@/types/catering.types';
 
 interface Props {
   templates: CateringTemplate[];
   onEdit: (template: CateringTemplate) => void;
 }
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 360,
+      damping: 28,
+      delay: i * 0.05,
+    },
+  }),
+};
+
 export function CateringTemplateList({ templates, onEdit }: Props) {
   const router = useRouter();
-  const [expanded, setExpanded] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const deleteMutation = useDeleteCateringTemplate();
 
-  const toggle = (id: string) =>
-    setExpanded((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteId) return;
-    await deleteMutation.mutateAsync(deleteId);
-    setDeleteId(null);
+    deleteMutation.mutate(deleteId, {
+      onSuccess: () => setDeleteId(null),
+    });
   };
+
+  if (templates.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20">
+        <LayoutTemplate className="h-12 w-12 text-muted-foreground/40" />
+        <h3 className="mt-4 text-lg font-semibold">Brak szablonów</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Utwórz pierwszy szablon cateringowy
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="space-y-3">
-        {templates.map((template) => (
-          <div
-            key={template.id}
-            className="rounded-lg border bg-card shadow-sm"
-          >
-            <div className="flex items-center justify-between p-4">
-              <button
-                onClick={() => toggle(template.id)}
-                className="flex items-center gap-3 text-left flex-1"
-              >
-                {expanded.includes(template.id) ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{template.name}</span>
-                    {template.isActive ? (
-                      <BadgeCheck className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <BadgeX className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span className="text-xs text-muted-foreground font-mono">
-                      /{template.slug}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {templates.map((template, i) => {
+          const packages = template.packages ?? [];
+          const previewPkgs = packages.slice(0, 3);
+          const remaining = packages.length - previewPkgs.length;
+
+          return (
+            <motion.div
+              key={template.id}
+              custom={i}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              className="group relative rounded-xl border-2 bg-card p-5 shadow-sm transition-colors hover:border-primary/40 hover:shadow-md"
+            >
+              {/* Header row */}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-base truncate">
+                      {template.name}
                     </span>
+                    {template.isActive ? (
+                      <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
+                    ) : (
+                      <BadgeX className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
                   </div>
-                  {template.description && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {template.description}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                    /{template.slug}
+                  </p>
                 </div>
-                <div className="ml-auto mr-3 flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    {template.packages?.length ?? 0}{' '}
-                    {template.packages?.length === 1 ? 'pakiet' : 'pakiety/ów'}
-                  </span>
-                </div>
-              </button>
+                <Badge
+                  variant={template.isActive ? 'default' : 'secondary'}
+                  className="shrink-0 text-xs"
+                >
+                  {template.isActive ? 'Aktywny' : 'Nieaktywny'}
+                </Badge>
+              </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/catering/templates/${template.id}/packages`,
-                      )
-                    }
-                  >
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Zarządzaj pakietami
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onEdit(template)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edytuj szablon
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setDeleteId(template.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Usuń
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+              {/* Description */}
+              {template.description && (
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                  {template.description}
+                </p>
+              )}
 
-            {expanded.includes(template.id) && (
-              <div className="border-t px-4 pb-4 pt-3">
-                {template.packages && template.packages.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                      Pakiety
-                    </p>
-                    {template.packages.map((pkg) => (
-                      <PackageRow key={pkg.id} pkg={pkg} />
+              {/* Packages preview */}
+              <div className="space-y-1.5 mb-4 min-h-[2rem]">
+                {previewPkgs.length > 0 ? (
+                  <>
+                    {previewPkgs.map((pkg) => (
+                      <div
+                        key={pkg.id}
+                        className="flex items-center justify-between rounded-md bg-muted/50 px-2.5 py-1.5 text-xs"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-medium truncate">{pkg.name}</span>
+                          {pkg.isPopular && (
+                            <Star className="h-3 w-3 text-amber-500 shrink-0" />
+                          )}
+                          {pkg.badgeText && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1 py-0"
+                            >
+                              {pkg.badgeText}
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="font-semibold text-primary shrink-0 ml-2">
+                          {pkg.basePrice.toFixed(2)} zł
+                          <span className="text-muted-foreground font-normal ml-1">
+                            / {CATERING_PRICE_TYPE_LABELS[pkg.priceType]}
+                          </span>
+                        </span>
+                      </div>
                     ))}
-                  </div>
+                    {remaining > 0 && (
+                      <p className="text-xs text-muted-foreground pl-1">
+                        +{remaining} więcej pakiet{remaining === 1 ? '' : 'ów'}
+                      </p>
+                    )}
+                  </>
                 ) : (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                    <Package className="h-4 w-4" />
-                    Brak pakietów —{' '}
-                    <button
-                      className="underline hover:text-foreground transition-colors"
-                      onClick={() =>
-                        router.push(
-                          `/dashboard/catering/templates/${template.id}/packages`,
-                        )
-                      }
-                    >
-                      dodaj pierwszy pakiet
-                    </button>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+                    <Package className="h-3.5 w-3.5" />
+                    <span>Brak pakietów</span>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-3 border-t">
+                <Button
+                  size="sm"
+                  className="flex-1 h-8 text-xs"
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/catering/templates/${template.id}/packages`,
+                    )
+                  }
+                >
+                  <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                  Pakiety
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3"
+                  onClick={() => onEdit(template)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => setDeleteId(template.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
+      {/* Delete confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usuń szablon?</AlertDialogTitle>
             <AlertDialogDescription>
-              Spowoduje to usunięcie szablonu wraz ze wszystkimi pakietami i sekcjami.
-              Tej operacji nie można cofnąć.
+              Spowoduje to usunięcie szablonu wraz ze wszystkimi pakietami i
+              sekcjami. Tej operacji nie można cofnąć.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -189,33 +225,5 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-}
-
-function PackageRow({ pkg }: { pkg: CateringPackage }) {
-  return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-      <div className="flex items-center gap-2">
-        <span className="font-medium">{pkg.name}</span>
-        {pkg.badgeText && (
-          <Badge variant="secondary" className="text-xs">{pkg.badgeText}</Badge>
-        )}
-        {pkg.isPopular && (
-          <Badge className="text-xs">Popularny</Badge>
-        )}
-        {!pkg.isActive && (
-          <Badge variant="outline" className="text-xs text-muted-foreground">Nieaktywny</Badge>
-        )}
-      </div>
-      <div className="flex items-center gap-3 text-muted-foreground">
-        <span>{CATERING_PRICE_TYPE_LABELS[pkg.priceType]}</span>
-        <span className="font-medium text-foreground">
-          {pkg.basePrice.toFixed(2)} zł
-        </span>
-        <span className="text-xs">
-          {pkg.sections?.length ?? 0} sekcji
-        </span>
-      </div>
-    </div>
   );
 }
