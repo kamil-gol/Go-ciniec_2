@@ -74,6 +74,19 @@ function formatPrice(value: number | string) {
   );
 }
 
+/** Wyciąga czytelny komunikat z błędu Axios lub zwykłego Error */
+function extractApiErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, any>;
+    const msg =
+      e?.response?.data?.message ??
+      e?.response?.data?.error ??
+      e?.message;
+    if (msg && typeof msg === 'string') return msg;
+  }
+  return 'Wystąpił błąd. Spróbuj ponownie.';
+}
+
 // ─── Add Deposit Dialog ───────────────────────────────────────
 
 interface AddDepositDialogProps {
@@ -88,6 +101,7 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
   const [dueDate, setDueDate] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const createMutation = useCreateCateringDeposit(orderId);
 
@@ -102,19 +116,25 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
       setDueDate('');
       setTitle('');
       setDescription('');
+      setApiError(null);
       onClose();
     }
   };
 
   const handleSave = async () => {
     if (!canSave) return;
-    await createMutation.mutateAsync({
-      amount: parsedAmount,
-      dueDate,
-      title: title || null,
-      description: description || null,
-    });
-    handleOpenChange(false);
+    setApiError(null);
+    try {
+      await createMutation.mutateAsync({
+        amount: parsedAmount,
+        dueDate,
+        title: title || null,
+        description: description || null,
+      });
+      handleOpenChange(false);
+    } catch (err) {
+      setApiError(extractApiErrorMessage(err));
+    }
   };
 
   return (
@@ -125,12 +145,12 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="add-dep-title">Tytuł</Label>
+            <Label htmlFor="add-dep-title">Tytuł <span className="text-muted-foreground font-normal">(opcjonalnie)</span></Label>
             <Input
               id="add-dep-title"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="np. Zaliczka 1"
+              placeholder="np. Zaliczka 30%, Zadatek"
             />
           </div>
           <div className="space-y-1.5">
@@ -145,7 +165,7 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
               max={maxAmount}
               step={0.01}
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => { setAmount(e.target.value); setApiError(null); }}
               placeholder="0.00"
               className={amountExceedsMax ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
@@ -165,20 +185,25 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="add-dep-desc">Opis</Label>
+            <Label htmlFor="add-dep-desc">Opis <span className="text-muted-foreground font-normal">(opcjonalnie)</span></Label>
             <Textarea
               id="add-dep-desc"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Opcjonalny opis..."
+              placeholder="Dodatkowe informacje..."
               rows={2}
             />
           </div>
+          {apiError && (
+            <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2">
+              {apiError}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>Anuluj</Button>
           <Button onClick={handleSave} disabled={createMutation.isPending || !canSave}>
-            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Dodaj'}
+            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Dodaj zaliczkę'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -200,6 +225,7 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [title, setTitle] = useState('');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const updateMutation = useUpdateCateringDeposit(orderId, deposit?.id ?? '');
 
@@ -213,14 +239,23 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
       setAmount(String(deposit.amount));
       setDueDate(deposit.dueDate);
       setTitle(deposit.title ?? '');
+      setApiError(null);
     }
-    if (!isOpen) onClose();
+    if (!isOpen) {
+      setApiError(null);
+      onClose();
+    }
   };
 
   const handleSave = async () => {
     if (!deposit || !canSave) return;
-    await updateMutation.mutateAsync({ amount: parsedAmount, dueDate, title: title || null });
-    onClose();
+    setApiError(null);
+    try {
+      await updateMutation.mutateAsync({ amount: parsedAmount, dueDate, title: title || null });
+      onClose();
+    } catch (err) {
+      setApiError(extractApiErrorMessage(err));
+    }
   };
 
   return (
@@ -251,7 +286,7 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
               max={maxAmount}
               step={0.01}
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => { setAmount(e.target.value); setApiError(null); }}
               className={amountExceedsMax ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
             {amountExceedsMax && (
@@ -269,6 +304,11 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
               onChange={e => setDueDate(e.target.value)}
             />
           </div>
+          {apiError && (
+            <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2">
+              {apiError}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Anuluj</Button>
@@ -357,7 +397,7 @@ function MarkDepositPaidDialog({ orderId, deposit, open, onClose }: MarkDepositP
 
 interface DiscountDialogProps {
   orderId: string;
-  baseAmount: number; // subtotal + extras — podstawa do wyliczenia % rabatu
+  baseAmount: number;
   initialType?: CateringDiscountType | null;
   initialValue?: number | null;
   initialReason?: string | null;
@@ -383,7 +423,6 @@ function DiscountDialog({
   const parsedValue = parseFloat(value);
   const isValidValue = !isNaN(parsedValue) && parsedValue > 0;
 
-  // Live preview kwoty rabatu
   const previewAmount =
     isValidValue
       ? discountType === 'PERCENTAGE'
@@ -579,7 +618,6 @@ export default function CateringOrderDetailPage() {
     return Math.max(0, Number(order.totalPrice) - othersTotal);
   };
 
-  // Podstawa do wyliczenia rabatu procentowego (bez rabatu)
   const discountBase = Number(order.subtotal) + Number(order.extrasTotalPrice);
 
   return (
@@ -787,7 +825,7 @@ export default function CateringOrderDetailPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Podsumowanie finansowe</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Rozliczenie</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Dania</span>
@@ -800,7 +838,6 @@ export default function CateringOrderDetailPage() {
                 </div>
               )}
 
-              {/* Linia rabatu — klikalna gdy istnieje */}
               {hasDiscount ? (
                 <div className="flex items-center justify-between text-green-600">
                   <button
@@ -830,14 +867,14 @@ export default function CateringOrderDetailPage() {
               )}
 
               <div className="flex justify-between font-bold border-t pt-2">
-                <span>Razem</span>
+                <span>Łącznie</span>
                 <span>{formatPrice(order.totalPrice)}</span>
               </div>
 
               {/* Zaliczki */}
               <div className="pt-2 border-t space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground">Zaliczki</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Zaliczki</p>
                   {remainingForDeposit > 0 && (
                     <button
                       onClick={() => setAddDepositOpen(true)}
@@ -890,10 +927,18 @@ export default function CateringOrderDetailPage() {
                   </div>
                 ))}
                 {depositsTotal > 0 && (
-                  <div className="flex justify-between text-xs pt-1 border-t">
-                    <span className="text-muted-foreground">Wpłacono</span>
-                    <span className="font-medium">{formatPrice(depositsTotal)}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between text-xs pt-1 border-t">
+                      <span className="text-muted-foreground">Wpłacono</span>
+                      <span className="font-medium">{formatPrice(depositsTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Pozostało do zapłaty</span>
+                      <span className={remainingForDeposit === 0 ? 'text-green-600 font-medium' : 'font-medium'}>
+                        {remainingForDeposit === 0 ? 'Opłacone ✓' : formatPrice(remainingForDeposit)}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
             </CardContent>
