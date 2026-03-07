@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -132,11 +133,16 @@ export default function CateringTemplatesPage() {
 
       {/* Dialog create/edit */}
       <Dialog open={formOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[560px]">
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingTemplate ? 'Edytuj szablon' : 'Nowy szablon'}
             </DialogTitle>
+            <DialogDescription>
+              {editingTemplate
+                ? 'Zaktualizuj informacje o szablonie cateringowym'
+                : 'Utwórz nowy szablon cateringowy'}
+            </DialogDescription>
           </DialogHeader>
           <CateringTemplateForm template={editingTemplate} onClose={handleClose} />
         </DialogContent>

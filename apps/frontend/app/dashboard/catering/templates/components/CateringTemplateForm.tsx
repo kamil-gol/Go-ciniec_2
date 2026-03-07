@@ -14,9 +14,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { DialogFooter } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -32,7 +34,7 @@ const schema = z.object({
     .max(100)
     .regex(/^[a-z0-9-]+$/, 'Tylko małe litery, cyfry i myślniki'),
   description: z.string().max(500).optional(),
-  imageUrl: z.string().url('Nieprawiłowy URL').optional().or(z.literal('')),
+  imageUrl: z.string().url('Nieprawidłowy URL').optional().or(z.literal('')),
   isActive: z.boolean(),
   displayOrder: z.coerce.number().int().min(0),
 });
@@ -106,73 +108,114 @@ export function CateringTemplateForm({ template, onClose }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        {/* ── Dane podstawowe ── */}
-        <div className="rounded-lg border p-4 space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Dane podstawowe
-          </p>
-          <FormField control={form.control} name="name" render={({ field }) => (
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+        {/* Nazwa */}
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazwa szablonu *</FormLabel>
-              <FormControl><Input placeholder="np. Catering komunijny" {...field} /></FormControl>
+              <FormLabel>Nazwa szablonu <span className="text-red-500">*</span></FormLabel>
+              <FormControl>
+                <Input placeholder="np. Catering komunijny" {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
-          )} />
-          <FormField control={form.control} name="slug" render={({ field }) => (
+          )}
+        />
+
+        {/* Slug */}
+        <FormField
+          control={form.control}
+          name="slug"
+          render={({ field }) => (
             <FormItem>
-              <FormLabel>Slug *</FormLabel>
-              <FormControl><Input placeholder="np. catering-komunijny" {...field} /></FormControl>
+              <FormLabel>Slug <span className="text-red-500">*</span></FormLabel>
+              <FormControl>
+                <Input placeholder="np. catering-komunijny" {...field} />
+              </FormControl>
+              <FormDescription>Generowany automatycznie z nazwy</FormDescription>
               <FormMessage />
             </FormItem>
-          )} />
-          <FormField control={form.control} name="description" render={({ field }) => (
+          )}
+        />
+
+        {/* Opis */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Opis</FormLabel>
-              <FormControl><Textarea placeholder="Krótki opis szablonu..." rows={3} {...field} /></FormControl>
+              <FormControl>
+                <Textarea placeholder="Krótki opis szablonu..." rows={3} {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
-          )} />
-          <FormField control={form.control} name="imageUrl" render={({ field }) => (
+          )}
+        />
+
+        {/* URL zdjęcia */}
+        <FormField
+          control={form.control}
+          name="imageUrl"
+          render={({ field }) => (
             <FormItem>
               <FormLabel>URL zdjęcia</FormLabel>
-              <FormControl><Input placeholder="https://..." {...field} /></FormControl>
+              <FormControl>
+                <Input placeholder="https://..." {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
-          )} />
-        </div>
+          )}
+        />
 
-        {/* ── Ustawienia ── */}
-        <div className="rounded-lg border p-4 space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Ustawienia
-          </p>
-          <div className="flex items-end gap-4">
-            <FormField control={form.control} name="displayOrder" render={({ field }) => (
-              <FormItem className="flex-1">
+        {/* Kolejność + Aktywny */}
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="displayOrder"
+            render={({ field }) => (
+              <FormItem>
                 <FormLabel>Kolejność wyświetlania</FormLabel>
-                <FormControl><Input type="number" min={0} {...field} /></FormControl>
+                <FormControl>
+                  <Input type="number" min={0} {...field} />
+                </FormControl>
+                <FormDescription>Niższy numer = wyżej na liście</FormDescription>
                 <FormMessage />
               </FormItem>
-            )} />
-            <FormField control={form.control} name="isActive" render={({ field }) => (
-              <FormItem className="flex items-center gap-2 pb-1">
-                <FormControl>
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-                <FormLabel className="!mt-0">Aktywny</FormLabel>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="isActive"
+            render={({ field }) => (
+              <FormItem className="flex flex-col justify-end pb-1">
+                <FormLabel>Aktywny</FormLabel>
+                <div className="flex items-center gap-2 h-10">
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <span className="text-sm text-muted-foreground">
+                    {field.value ? 'Tak' : 'Nie'}
+                  </span>
+                </div>
               </FormItem>
-            )} />
-          </div>
+            )}
+          />
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>Anuluj</Button>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
+            Anuluj
+          </Button>
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? 'Zapisz zmiany' : 'Utwórz szablon'}
           </Button>
-        </div>
+        </DialogFooter>
+
       </form>
     </Form>
   );
