@@ -121,20 +121,18 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
     }
   };
 
-  const handleSave = async () => {
+  // Używamy mutate (nie mutateAsync) — błędy trafiają tylko do onError,
+  // dzięki temu nie ma unhandled promise rejection i Next.js dev overlay się nie pokazuje
+  const handleSave = () => {
     if (!canSave) return;
     setApiError(null);
-    try {
-      await createMutation.mutateAsync({
-        amount: parsedAmount,
-        dueDate,
-        title: title || null,
-        description: description || null,
-      });
-      handleOpenChange(false);
-    } catch (err) {
-      setApiError(extractApiErrorMessage(err));
-    }
+    createMutation.mutate(
+      { amount: parsedAmount, dueDate, title: title || null, description: description || null },
+      {
+        onSuccess: () => handleOpenChange(false),
+        onError: (err) => setApiError(extractApiErrorMessage(err)),
+      },
+    );
   };
 
   return (
@@ -247,15 +245,17 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
     }
   };
 
-  const handleSave = async () => {
+  // mutate zamiast mutateAsync — j.w.
+  const handleSave = () => {
     if (!deposit || !canSave) return;
     setApiError(null);
-    try {
-      await updateMutation.mutateAsync({ amount: parsedAmount, dueDate, title: title || null });
-      onClose();
-    } catch (err) {
-      setApiError(extractApiErrorMessage(err));
-    }
+    updateMutation.mutate(
+      { amount: parsedAmount, dueDate, title: title || null },
+      {
+        onSuccess: () => onClose(),
+        onError: (err) => setApiError(extractApiErrorMessage(err)),
+      },
+    );
   };
 
   return (
