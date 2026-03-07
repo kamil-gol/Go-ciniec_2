@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Pencil,
   Plus,
+  Tag,
   Trash2,
 } from 'lucide-react';
 import {
@@ -20,6 +21,7 @@ import {
   useDeleteCateringDeposit,
   useCreateCateringDeposit,
   useMarkDepositPaid,
+  useUpdateCateringOrder,
 } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,11 +48,16 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { OrderTimeline } from '../components/OrderTimeline';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
-import { DELIVERY_TYPE_LABEL, type CateringDeposit } from '@/types/catering-order.types';
+import {
+  DELIVERY_TYPE_LABEL,
+  type CateringDeposit,
+  type CateringDiscountType,
+} from '@/types/catering-order.types';
 
 type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
 
@@ -169,9 +176,7 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Anuluj
-          </Button>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>Anuluj</Button>
           <Button onClick={handleSave} disabled={createMutation.isPending || !canSave}>
             {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Dodaj'}
           </Button>
@@ -191,13 +196,7 @@ interface EditDepositDialogProps {
   onClose: () => void;
 }
 
-function EditDepositDialog({
-  orderId,
-  deposit,
-  maxAmount,
-  open,
-  onClose,
-}: EditDepositDialogProps) {
+function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditDepositDialogProps) {
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [title, setTitle] = useState('');
@@ -272,9 +271,7 @@ function EditDepositDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Anuluj
-          </Button>
+          <Button variant="outline" onClick={onClose}>Anuluj</Button>
           <Button onClick={handleSave} disabled={updateMutation.isPending || !canSave}>
             {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Zapisz'}
           </Button>
@@ -293,12 +290,7 @@ interface MarkDepositPaidDialogProps {
   onClose: () => void;
 }
 
-function MarkDepositPaidDialog({
-  orderId,
-  deposit,
-  open,
-  onClose,
-}: MarkDepositPaidDialogProps) {
+function MarkDepositPaidDialog({ orderId, deposit, open, onClose }: MarkDepositPaidDialogProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
 
   const markPaidMutation = useMarkDepositPaid(orderId, deposit?.id ?? '');
@@ -311,9 +303,7 @@ function MarkDepositPaidDialog({
   };
 
   const handleConfirm = async () => {
-    await markPaidMutation.mutateAsync({
-      paymentMethod: paymentMethod || undefined,
-    });
+    await markPaidMutation.mutateAsync({ paymentMethod: paymentMethod || undefined });
     handleOpenChange(false);
   };
 
@@ -334,19 +324,14 @@ function MarkDepositPaidDialog({
           )}
           <div className="space-y-1.5">
             <Label htmlFor="pay-method">Forma płatności (opcjonalnie)</Label>
-            <Select
-              value={paymentMethod}
-              onValueChange={v => setPaymentMethod(v as PaymentMethod)}
-            >
+            <Select value={paymentMethod} onValueChange={v => setPaymentMethod(v as PaymentMethod)}>
               <SelectTrigger id="pay-method">
                 <SelectValue placeholder="Wybierz formę..." />
               </SelectTrigger>
               <SelectContent>
                 {(Object.entries(PAYMENT_METHOD_LABEL) as [PaymentMethod, string][]).map(
                   ([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
                   ),
                 )}
               </SelectContent>
@@ -354,16 +339,175 @@ function MarkDepositPaidDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Anuluj
-          </Button>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>Anuluj</Button>
           <Button onClick={handleConfirm} disabled={markPaidMutation.isPending}>
             {markPaidMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <>
-                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Potwierdź wpłatę
-              </>
+              <><CheckCircle2 className="mr-1.5 h-4 w-4" /> Potwierdź wpłatę</>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Discount Dialog ──────────────────────────────────────────
+
+interface DiscountDialogProps {
+  orderId: string;
+  baseAmount: number; // subtotal + extras — podstawa do wyliczenia % rabatu
+  initialType?: CateringDiscountType | null;
+  initialValue?: number | null;
+  initialReason?: string | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+function DiscountDialog({
+  orderId,
+  baseAmount,
+  initialType,
+  initialValue,
+  initialReason,
+  open,
+  onClose,
+}: DiscountDialogProps) {
+  const [discountType, setDiscountType] = useState<CateringDiscountType>('PERCENTAGE');
+  const [value, setValue] = useState('');
+  const [reason, setReason] = useState('');
+
+  const updateMutation = useUpdateCateringOrder(orderId);
+
+  const parsedValue = parseFloat(value);
+  const isValidValue = !isNaN(parsedValue) && parsedValue > 0;
+
+  // Live preview kwoty rabatu
+  const previewAmount =
+    isValidValue
+      ? discountType === 'PERCENTAGE'
+        ? (baseAmount * parsedValue) / 100
+        : parsedValue
+      : null;
+
+  const percentageExceeds100 = discountType === 'PERCENTAGE' && !isNaN(parsedValue) && parsedValue > 100;
+  const amountExceedsBase = discountType === 'AMOUNT' && !isNaN(parsedValue) && parsedValue > baseAmount;
+  const hasError = percentageExceeds100 || amountExceedsBase;
+  const canSave = !!value && isValidValue && !hasError;
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setDiscountType(initialType ?? 'PERCENTAGE');
+      setValue(initialValue != null ? String(initialValue) : '');
+      setReason(initialReason ?? '');
+    }
+    if (!isOpen) onClose();
+  };
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    await updateMutation.mutateAsync({
+      discountType,
+      discountValue: parsedValue,
+      discountReason: reason || null,
+    });
+    onClose();
+  };
+
+  const handleRemove = async () => {
+    await updateMutation.mutateAsync({
+      discountType: null,
+      discountValue: null,
+      discountReason: null,
+    });
+    onClose();
+  };
+
+  const hasExistingDiscount = initialValue != null && initialValue > 0;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{hasExistingDiscount ? 'Edytuj rabat' : 'Dodaj rabat'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Typ rabatu</Label>
+            <Tabs
+              value={discountType}
+              onValueChange={v => { setDiscountType(v as CateringDiscountType); setValue(''); }}
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="PERCENTAGE" className="flex-1">Procent (%)</TabsTrigger>
+                <TabsTrigger value="AMOUNT" className="flex-1">Kwota (PLN)</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="disc-value">
+                {discountType === 'PERCENTAGE' ? 'Wartość (%)' : 'Kwota (PLN)'} *
+              </Label>
+              {previewAmount !== null && !hasError && (
+                <span className="text-xs text-green-600 font-medium">
+                  = -{formatPrice(previewAmount)}
+                </span>
+              )}
+            </div>
+            <Input
+              id="disc-value"
+              type="number"
+              min={0.01}
+              max={discountType === 'PERCENTAGE' ? 100 : baseAmount}
+              step={discountType === 'PERCENTAGE' ? 0.1 : 0.01}
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              placeholder={discountType === 'PERCENTAGE' ? 'np. 10' : 'np. 200.00'}
+              className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {percentageExceeds100 && (
+              <p className="text-xs text-destructive">Rabat procentowy nie może przekroczyć 100%</p>
+            )}
+            {amountExceedsBase && (
+              <p className="text-xs text-destructive">
+                Rabat nie może przekroczyć wartości zamówienia ({formatPrice(baseAmount)})
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="disc-reason">Powód (opcjonalnie)</Label>
+            <Input
+              id="disc-reason"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="np. Stały klient, rabat okolicznościowy..."
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
+          {hasExistingDiscount && (
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive sm:mr-auto"
+              onClick={handleRemove}
+              disabled={updateMutation.isPending}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Usuń rabat
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>Anuluj</Button>
+          <Button onClick={handleSave} disabled={updateMutation.isPending || !canSave}>
+            {updateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : hasExistingDiscount ? (
+              'Zapisz'
+            ) : (
+              'Dodaj rabat'
             )}
           </Button>
         </DialogFooter>
@@ -384,6 +528,7 @@ export default function CateringOrderDetailPage() {
   const [addDepositOpen, setAddDepositOpen] = useState(false);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [markPaidDeposit, setMarkPaidDeposit] = useState<CateringDeposit | null>(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
 
   const { data: order, isLoading } = useCateringOrder(id);
   const deleteMutation = useDeleteCateringOrder();
@@ -422,6 +567,7 @@ export default function CateringOrderDetailPage() {
       : `${order.client.firstName} ${order.client.lastName}`;
 
   const canDelete = order.status === 'DRAFT' || order.status === 'CANCELLED';
+  const hasDiscount = order.discountAmount != null && Number(order.discountAmount) > 0;
 
   const depositsTotal = order.deposits.reduce((sum, d) => sum + Number(d.amount), 0);
   const remainingForDeposit = Math.max(0, Number(order.totalPrice) - depositsTotal);
@@ -432,6 +578,9 @@ export default function CateringOrderDetailPage() {
       .reduce((sum, d) => sum + Number(d.amount), 0);
     return Math.max(0, Number(order.totalPrice) - othersTotal);
   };
+
+  // Podstawa do wyliczenia rabatu procentowego (bez rabatu)
+  const discountBase = Number(order.subtotal) + Number(order.extrasTotalPrice);
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -650,17 +799,36 @@ export default function CateringOrderDetailPage() {
                   <span>{formatPrice(order.extrasTotalPrice)}</span>
                 </div>
               )}
-              {order.discountAmount && Number(order.discountAmount) > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>
-                    Rabat
-                    {order.discountType === 'PERCENTAGE' && order.discountValue
-                      ? ` (${order.discountValue}%)`
-                      : ''}
-                  </span>
-                  <span>-{formatPrice(order.discountAmount)}</span>
+
+              {/* Linia rabatu — klikalna gdy istnieje */}
+              {hasDiscount ? (
+                <div className="flex items-center justify-between text-green-600">
+                  <button
+                    onClick={() => setDiscountOpen(true)}
+                    className="flex items-center gap-1 hover:underline transition-colors"
+                    title="Edytuj rabat"
+                  >
+                    <span>
+                      Rabat
+                      {order.discountType === 'PERCENTAGE' && order.discountValue
+                        ? ` (${order.discountValue}%)`
+                        : ''}
+                    </span>
+                    <Pencil className="h-3 w-3 opacity-60" />
+                  </button>
+                  <span>-{formatPrice(order.discountAmount!)}</span>
+                </div>
+              ) : (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setDiscountOpen(true)}
+                    className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Tag className="h-3 w-3" /> Dodaj rabat
+                  </button>
                 </div>
               )}
+
               <div className="flex justify-between font-bold border-t pt-2">
                 <span>Razem</span>
                 <span>{formatPrice(order.totalPrice)}</span>
@@ -695,20 +863,14 @@ export default function CateringOrderDetailPage() {
                       {!d.paid && (
                         <>
                           <button
-                            onClick={() => {
-                              setMarkPaidDeposit(d);
-                              setMarkPaidOpen(true);
-                            }}
+                            onClick={() => { setMarkPaidDeposit(d); setMarkPaidOpen(true); }}
                             className="p-0.5 text-muted-foreground hover:text-green-600 transition-colors rounded"
                             title="Oznacz jako opłaconą"
                           >
                             <CheckCircle2 className="h-3 w-3" />
                           </button>
                           <button
-                            onClick={() => {
-                              setEditDeposit(d);
-                              setEditDepositOpen(true);
-                            }}
+                            onClick={() => { setEditDeposit(d); setEditDepositOpen(true); }}
                             className="p-0.5 text-muted-foreground hover:text-foreground transition-colors rounded"
                             title="Edytuj zaliczkę"
                           >
@@ -792,6 +954,16 @@ export default function CateringOrderDetailPage() {
         deposit={markPaidDeposit}
         open={markPaidOpen}
         onClose={() => { setMarkPaidOpen(false); setMarkPaidDeposit(null); }}
+      />
+
+      <DiscountDialog
+        orderId={id}
+        baseAmount={discountBase}
+        initialType={order.discountType}
+        initialValue={order.discountValue}
+        initialReason={order.discountReason}
+        open={discountOpen}
+        onClose={() => setDiscountOpen(false)}
       />
     </div>
   );
