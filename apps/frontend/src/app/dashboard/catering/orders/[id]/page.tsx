@@ -53,17 +53,22 @@ function formatPrice(value: number | string) {
 
 interface AddDepositDialogProps {
   orderId: string;
+  maxAmount: number;
   open: boolean;
   onClose: () => void;
 }
 
-function AddDepositDialog({ orderId, open, onClose }: AddDepositDialogProps) {
+function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialogProps) {
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
   const createMutation = useCreateCateringDeposit(orderId);
+
+  const parsedAmount = parseFloat(amount);
+  const amountExceedsMax = !isNaN(parsedAmount) && parsedAmount > maxAmount;
+  const canSave = !!amount && !!dueDate && !isNaN(parsedAmount) && parsedAmount > 0 && !amountExceedsMax;
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -76,8 +81,9 @@ function AddDepositDialog({ orderId, open, onClose }: AddDepositDialogProps) {
   };
 
   const handleSave = async () => {
+    if (!canSave) return;
     await createMutation.mutateAsync({
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       dueDate,
       title: title || null,
       description: description || null,
@@ -102,16 +108,28 @@ function AddDepositDialog({ orderId, open, onClose }: AddDepositDialogProps) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="add-dep-amount">Kwota (PLN) *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="add-dep-amount">Kwota (PLN) *</Label>
+              <span className="text-xs text-muted-foreground">
+                maks. {formatPrice(maxAmount)}
+              </span>
+            </div>
             <Input
               id="add-dep-amount"
               type="number"
               min={0.01}
+              max={maxAmount}
               step={0.01}
               value={amount}
               onChange={e => setAmount(e.target.value)}
               placeholder="0.00"
+              className={amountExceedsMax ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
+            {amountExceedsMax && (
+              <p className="text-xs text-destructive">
+                Zaliczka nie może przekroczyć pozostałej kwoty do wpłaty ({formatPrice(maxAmount)})
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="add-dep-date">Termin płatności *</Label>
@@ -139,7 +157,7 @@ function AddDepositDialog({ orderId, open, onClose }: AddDepositDialogProps) {
           </Button>
           <Button
             onClick={handleSave}
-            disabled={createMutation.isPending || !amount || !dueDate}
+            disabled={createMutation.isPending || !canSave}
           >
             {createMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -158,16 +176,21 @@ function AddDepositDialog({ orderId, open, onClose }: AddDepositDialogProps) {
 interface EditDepositDialogProps {
   orderId: string;
   deposit: CateringDeposit | null;
+  maxAmount: number;
   open: boolean;
   onClose: () => void;
 }
 
-function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialogProps) {
+function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditDepositDialogProps) {
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [title, setTitle] = useState('');
 
   const updateMutation = useUpdateCateringDeposit(orderId, deposit?.id ?? '');
+
+  const parsedAmount = parseFloat(amount);
+  const amountExceedsMax = !isNaN(parsedAmount) && parsedAmount > maxAmount;
+  const canSave = !!amount && !!dueDate && !isNaN(parsedAmount) && parsedAmount > 0 && !amountExceedsMax;
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && deposit) {
@@ -179,9 +202,9 @@ function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialo
   };
 
   const handleSave = async () => {
-    if (!deposit) return;
+    if (!deposit || !canSave) return;
     await updateMutation.mutateAsync({
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       dueDate,
       title: title || null,
     });
@@ -205,15 +228,27 @@ function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialo
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="dep-amount">Kwota (PLN)</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="dep-amount">Kwota (PLN)</Label>
+              <span className="text-xs text-muted-foreground">
+                maks. {formatPrice(maxAmount)}
+              </span>
+            </div>
             <Input
               id="dep-amount"
               type="number"
               min={0.01}
+              max={maxAmount}
               step={0.01}
               value={amount}
               onChange={e => setAmount(e.target.value)}
+              className={amountExceedsMax ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
+            {amountExceedsMax && (
+              <p className="text-xs text-destructive">
+                Zaliczka nie może przekroczyć pozostałej kwoty do wpłaty ({formatPrice(maxAmount)})
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="dep-date">Termin płatności</Label>
@@ -231,7 +266,7 @@ function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialo
           </Button>
           <Button
             onClick={handleSave}
-            disabled={updateMutation.isPending || !amount || !dueDate}
+            disabled={updateMutation.isPending || !canSave}
           >
             {updateMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -293,6 +328,19 @@ export default function CateringOrderDetailPage() {
       : `${order.client.firstName} ${order.client.lastName}`;
 
   const canDelete = order.status === 'DRAFT' || order.status === 'CANCELLED';
+
+  // Suma wszystkich istniejących zaliczek (opłacone + nieopłacone)
+  const depositsTotal = order.deposits.reduce((sum, d) => sum + Number(d.amount), 0);
+  // Ile jeszcze można wpisać przy dodawaniu nowej zaliczki
+  const remainingForDeposit = Math.max(0, Number(order.totalPrice) - depositsTotal);
+  // Przy edycji: limit = całkowita kwota minus suma pozostałych zaliczek (bez edytowanej)
+  const maxAmountForEdit = (editDeposit: CateringDeposit | null) => {
+    if (!editDeposit) return 0;
+    const othersTotal = order.deposits
+      .filter(d => d.id !== editDeposit.id)
+      .reduce((sum, d) => sum + Number(d.amount), 0);
+    return Math.max(0, Number(order.totalPrice) - othersTotal);
+  };
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -575,13 +623,15 @@ export default function CateringOrderDetailPage() {
               <div className="pt-2 border-t space-y-1.5">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">Zaliczki</p>
-                  <button
-                    onClick={() => setAddDepositOpen(true)}
-                    className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    title="Dodaj zaliczkę"
-                  >
-                    <Plus className="h-3 w-3" /> Dodaj
-                  </button>
+                  {remainingForDeposit > 0 && (
+                    <button
+                      onClick={() => setAddDepositOpen(true)}
+                      className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      title="Dodaj zaliczkę"
+                    >
+                      <Plus className="h-3 w-3" /> Dodaj
+                    </button>
+                  )}
                 </div>
                 {order.deposits.length === 0 && (
                   <p className="text-xs text-muted-foreground italic">Brak zaliczek</p>
@@ -620,6 +670,12 @@ export default function CateringOrderDetailPage() {
                     </div>
                   </div>
                 ))}
+                {depositsTotal > 0 && (
+                  <div className="flex justify-between text-xs pt-1 border-t">
+                    <span className="text-muted-foreground">Wpłacono</span>
+                    <span className="font-medium">{formatPrice(depositsTotal)}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -670,6 +726,7 @@ export default function CateringOrderDetailPage() {
       <EditDepositDialog
         orderId={id}
         deposit={editDeposit}
+        maxAmount={maxAmountForEdit(editDeposit)}
         open={editDepositOpen}
         onClose={() => {
           setEditDepositOpen(false);
@@ -680,6 +737,7 @@ export default function CateringOrderDetailPage() {
       {/* Dialog dodawania zaliczki */}
       <AddDepositDialog
         orderId={id}
+        maxAmount={remainingForDeposit}
         open={addDepositOpen}
         onClose={() => setAddDepositOpen(false)}
       />
