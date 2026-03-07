@@ -2,10 +2,10 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
   ChevronRight,
-  MoreHorizontal,
   Pencil,
   Trash2,
   BadgeCheck,
@@ -15,12 +15,6 @@ import {
 import { useDeleteCateringPackage } from '@/hooks/use-catering';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,97 +40,139 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const deleteMutation = useDeleteCateringPackage(templateId);
 
-  const handleDelete = async () => {
-    await deleteMutation.mutateAsync(pkg.id);
-    setDeleteOpen(false);
+  const handleDelete = () => {
+    deleteMutation.mutate(pkg.id, {
+      onSuccess: () => setDeleteOpen(false),
+    });
   };
 
   return (
     <>
-      <div className="rounded-lg border bg-card shadow-sm">
+      <motion.div
+        layout
+        whileHover={{ y: -1 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className={[
+          'rounded-xl border-2 bg-card shadow-sm transition-colors',
+          expanded
+            ? 'border-primary/50'
+            : 'border-border hover:border-primary/30',
+        ].join(' ')}
+      >
         {/* Package header */}
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3 p-4">
+          {/* Expand toggle */}
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-3 text-left flex-1 min-w-0"
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
           >
             {expanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronDown className="h-4 w-4" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronRight className="h-4 w-4" />
             )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold">{pkg.name}</span>
-                {pkg.badgeText && (
-                  <Badge variant="secondary" className="text-xs">
-                    {pkg.badgeText}
-                  </Badge>
-                )}
-                {pkg.isPopular && (
-                  <Badge className="text-xs gap-1">
-                    <Star className="h-3 w-3" />
-                    Popularny
-                  </Badge>
-                )}
-                {pkg.isActive ? (
-                  <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
-                ) : (
-                  <BadgeX className="h-4 w-4 text-muted-foreground shrink-0" />
-                )}
-              </div>
-              {pkg.shortDescription && (
-                <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                  {pkg.shortDescription}
-                </p>
-              )}
-            </div>
-            <div className="ml-auto mr-3 flex items-center gap-3 text-sm text-muted-foreground shrink-0">
-              <span>{CATERING_PRICE_TYPE_LABELS[pkg.priceType]}</span>
-              <span className="font-medium text-foreground">
-                {pkg.basePrice.toFixed(2)} zł
-              </span>
-              {(pkg.minGuests != null || pkg.maxGuests != null) && (
-                <span className="text-xs">
-                  {pkg.minGuests ?? '–'}–{pkg.maxGuests ?? '∞'} os.
-                </span>
-              )}
-              <span className="text-xs">
-                {pkg.sections?.length ?? 0}{' '}
-                {(pkg.sections?.length ?? 0) === 1 ? 'sekcja' : 'sekcji'}
-              </span>
-            </div>
           </button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(pkg)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edytuj pakiet
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Usuń pakiet
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Info — clickable to expand */}
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="flex-1 min-w-0 text-left"
+          >
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-sm">{pkg.name}</span>
+              {pkg.isPopular && (
+                <Badge className="text-xs gap-1 py-0">
+                  <Star className="h-2.5 w-2.5" />
+                  Popularny
+                </Badge>
+              )}
+              {pkg.badgeText && (
+                <Badge variant="secondary" className="text-xs py-0">
+                  {pkg.badgeText}
+                </Badge>
+              )}
+              {pkg.isActive ? (
+                <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
+              ) : (
+                <BadgeX className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+            </div>
+            {pkg.shortDescription && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {pkg.shortDescription}
+              </p>
+            )}
+          </button>
+
+          {/* Price & meta (desktop) */}
+          <div className="hidden sm:flex items-center gap-3 text-sm shrink-0">
+            <span className="text-xs text-muted-foreground">
+              {CATERING_PRICE_TYPE_LABELS[pkg.priceType]}
+            </span>
+            <span className="font-bold text-primary text-base">
+              {pkg.basePrice.toFixed(2)} zł
+            </span>
+            {(pkg.minGuests != null || pkg.maxGuests != null) && (
+              <span className="text-xs text-muted-foreground">
+                {pkg.minGuests ?? '–'}–{pkg.maxGuests ?? '∞'} os.
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {pkg.sections?.length ?? 0} sekcji
+            </span>
+          </div>
+
+          {/* Inline actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEdit(pkg)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Price row (mobile) */}
+        <div className="sm:hidden flex items-center gap-3 px-4 pb-3 text-sm">
+          <span className="text-xs text-muted-foreground">
+            {CATERING_PRICE_TYPE_LABELS[pkg.priceType]}
+          </span>
+          <span className="font-bold text-primary">
+            {pkg.basePrice.toFixed(2)} zł
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {pkg.sections?.length ?? 0} sekcji
+          </span>
         </div>
 
         {/* Sections (expanded) */}
-        {expanded && (
-          <div className="border-t px-4 pb-4 pt-3">
-            <SectionManager pkg={pkg} templateId={templateId} />
-          </div>
-        )}
-      </div>
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="overflow-hidden"
+            >
+              <div className="border-t px-4 pb-4 pt-3">
+                <SectionManager pkg={pkg} templateId={templateId} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Delete confirm */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
