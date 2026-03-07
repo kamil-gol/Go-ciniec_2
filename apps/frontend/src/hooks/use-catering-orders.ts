@@ -138,6 +138,9 @@ export function useDeleteCateringOrder() {
 export function useCreateCateringDeposit(orderId: string) {
   const qc = useQueryClient();
   return useMutation<unknown, Error, CreateDepositInput>({
+    // throwOnError: false — błąd obsługujemy lokalnie w komponencie (try/catch),
+    // bez tego React Query propaguje go globalnie i Next.js dev overlay go łapie
+    throwOnError: false,
     mutationFn: async (data) => {
       const res = await api.post(`/catering/orders/${orderId}/deposits`, data);
       return res.data.data;
@@ -151,6 +154,8 @@ export function useCreateCateringDeposit(orderId: string) {
 export function useUpdateCateringDeposit(orderId: string, depositId: string) {
   const qc = useQueryClient();
   return useMutation<unknown, Error, UpdateDepositInput>({
+    // throwOnError: false — j.w.
+    throwOnError: false,
     mutationFn: async (data) => {
       const res = await api.patch(
         `/catering/orders/${orderId}/deposits/${depositId}`,
