@@ -32,7 +32,7 @@ const schema = z.object({
     .max(100)
     .regex(/^[a-z0-9-]+$/, 'Tylko małe litery, cyfry i myślniki'),
   description: z.string().max(500).optional(),
-  imageUrl: z.string().url('Nieprawidłowy URL').optional().or(z.literal('')),
+  imageUrl: z.string().url('Nieprawiłowy URL').optional().or(z.literal('')),
   isActive: z.boolean(),
   displayOrder: z.coerce.number().int().min(0),
 });
@@ -87,7 +87,7 @@ export function CateringTemplateForm({ template, onClose }: Props) {
     form.setValue('slug', slug, { shouldValidate: false });
   }, [watchName, isEdit, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = (values: FormValues) => {
     const payload = {
       ...values,
       description: values.description || undefined,
@@ -95,118 +95,128 @@ export function CateringTemplateForm({ template, onClose }: Props) {
     };
 
     if (isEdit && template) {
-      await updateMutation.mutateAsync({ id: template.id, data: payload });
+      updateMutation.mutate(
+        { id: template.id, data: payload },
+        { onSuccess: onClose },
+      );
     } else {
-      await createMutation.mutateAsync(payload);
+      createMutation.mutate(payload, { onSuccess: onClose });
     }
-    onClose();
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nazwa szablonu *</FormLabel>
-              <FormControl>
-                <Input placeholder="np. Catering komunijny" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* ── Sekcja: Dane podstawowe ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Dane podstawowe
+          </p>
 
-        {/* Slug */}
-        <FormField
-          control={form.control}
-          name="slug"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Slug *</FormLabel>
-              <FormControl>
-                <Input placeholder="np. catering-komunijny" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Opis</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Krótki opis szablonu..."
-                  rows={3}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Image URL */}
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>URL zdjęcia</FormLabel>
-              <FormControl>
-                <Input placeholder="https://..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex items-center gap-6">
-          {/* Display order */}
           <FormField
             control={form.control}
-            name="displayOrder"
+            name="name"
             render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>Kolejność wyświetlania</FormLabel>
+              <FormItem>
+                <FormLabel>Nazwa szablonu *</FormLabel>
                 <FormControl>
-                  <Input type="number" min={0} {...field} />
+                  <Input placeholder="np. Catering komunijny" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Active */}
           <FormField
             control={form.control}
-            name="isActive"
+            name="slug"
             render={({ field }) => (
-              <FormItem className="flex items-center gap-2 mt-6">
+              <FormItem>
+                <FormLabel>Slug *</FormLabel>
                 <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
+                  <Input placeholder="np. catering-komunijny" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Opis</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Krótki opis szablonu..."
+                    rows={3}
+                    {...field}
                   />
                 </FormControl>
-                <FormLabel className="!mt-0">Aktywny</FormLabel>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>URL zdjęcia</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://..." {...field} />
+                </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
+        {/* ── Sekcja: Ustawienia ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Ustawienia
+          </p>
+
+          <div className="flex items-end gap-4">
+            <FormField
+              control={form.control}
+              name="displayOrder"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel>Kolejność wyświetlania</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={0} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 pb-1">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Aktywny</FormLabel>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
         {/* Footer */}
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Anuluj
           </Button>
