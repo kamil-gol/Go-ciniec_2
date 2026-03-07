@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  CheckCircle2,
   Edit,
   Loader2,
   MoreVertical,
@@ -18,6 +19,7 @@ import {
   useUpdateCateringDeposit,
   useDeleteCateringDeposit,
   useCreateCateringDeposit,
+  useMarkDepositPaid,
 } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +37,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,6 +51,15 @@ import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { OrderTimeline } from '../components/OrderTimeline';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
 import { DELIVERY_TYPE_LABEL, type CateringDeposit } from '@/types/catering-order.types';
+
+type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
+
+const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  CASH: 'Gotówka',
+  TRANSFER: 'Przelew',
+  BLIK: 'BLIK',
+  CARD: 'Karta',
+};
 
 function formatPrice(value: number | string) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(
@@ -68,7 +86,8 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
 
   const parsedAmount = parseFloat(amount);
   const amountExceedsMax = !isNaN(parsedAmount) && parsedAmount > maxAmount;
-  const canSave = !!amount && !!dueDate && !isNaN(parsedAmount) && parsedAmount > 0 && !amountExceedsMax;
+  const canSave =
+    !!amount && !!dueDate && !isNaN(parsedAmount) && parsedAmount > 0 && !amountExceedsMax;
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -110,9 +129,7 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="add-dep-amount">Kwota (PLN) *</Label>
-              <span className="text-xs text-muted-foreground">
-                maks. {formatPrice(maxAmount)}
-              </span>
+              <span className="text-xs text-muted-foreground">maks. {formatPrice(maxAmount)}</span>
             </div>
             <Input
               id="add-dep-amount"
@@ -155,15 +172,8 @@ function AddDepositDialog({ orderId, maxAmount, open, onClose }: AddDepositDialo
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Anuluj
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={createMutation.isPending || !canSave}
-          >
-            {createMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Dodaj'
-            )}
+          <Button onClick={handleSave} disabled={createMutation.isPending || !canSave}>
+            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Dodaj'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -181,7 +191,13 @@ interface EditDepositDialogProps {
   onClose: () => void;
 }
 
-function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditDepositDialogProps) {
+function EditDepositDialog({
+  orderId,
+  deposit,
+  maxAmount,
+  open,
+  onClose,
+}: EditDepositDialogProps) {
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [title, setTitle] = useState('');
@@ -190,7 +206,8 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
 
   const parsedAmount = parseFloat(amount);
   const amountExceedsMax = !isNaN(parsedAmount) && parsedAmount > maxAmount;
-  const canSave = !!amount && !!dueDate && !isNaN(parsedAmount) && parsedAmount > 0 && !amountExceedsMax;
+  const canSave =
+    !!amount && !!dueDate && !isNaN(parsedAmount) && parsedAmount > 0 && !amountExceedsMax;
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && deposit) {
@@ -203,11 +220,7 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
 
   const handleSave = async () => {
     if (!deposit || !canSave) return;
-    await updateMutation.mutateAsync({
-      amount: parsedAmount,
-      dueDate,
-      title: title || null,
-    });
+    await updateMutation.mutateAsync({ amount: parsedAmount, dueDate, title: title || null });
     onClose();
   };
 
@@ -230,9 +243,7 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="dep-amount">Kwota (PLN)</Label>
-              <span className="text-xs text-muted-foreground">
-                maks. {formatPrice(maxAmount)}
-              </span>
+              <span className="text-xs text-muted-foreground">maks. {formatPrice(maxAmount)}</span>
             </div>
             <Input
               id="dep-amount"
@@ -264,14 +275,95 @@ function EditDepositDialog({ orderId, deposit, maxAmount, open, onClose }: EditD
           <Button variant="outline" onClick={onClose}>
             Anuluj
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={updateMutation.isPending || !canSave}
-          >
-            {updateMutation.isPending ? (
+          <Button onClick={handleSave} disabled={updateMutation.isPending || !canSave}>
+            {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Zapisz'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Mark Deposit Paid Dialog ────────────────────────────────
+
+interface MarkDepositPaidDialogProps {
+  orderId: string;
+  deposit: CateringDeposit | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+function MarkDepositPaidDialog({
+  orderId,
+  deposit,
+  open,
+  onClose,
+}: MarkDepositPaidDialogProps) {
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
+
+  const markPaidMutation = useMarkDepositPaid(orderId, deposit?.id ?? '');
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      setPaymentMethod('');
+      onClose();
+    }
+  };
+
+  const handleConfirm = async () => {
+    await markPaidMutation.mutateAsync({
+      paymentMethod: paymentMethod || undefined,
+    });
+    handleOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Oznacz zaliczkę jako opłaconą</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          {deposit && (
+            <div className="rounded-lg bg-muted px-4 py-3 text-sm">
+              <p className="font-medium">{deposit.title ?? 'Zaliczka'}</p>
+              <p className="text-muted-foreground mt-0.5">
+                {formatPrice(deposit.amount)} · termin: {deposit.dueDate}
+              </p>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="pay-method">Forma płatności (opcjonalnie)</Label>
+            <Select
+              value={paymentMethod}
+              onValueChange={v => setPaymentMethod(v as PaymentMethod)}
+            >
+              <SelectTrigger id="pay-method">
+                <SelectValue placeholder="Wybierz formę..." />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(PAYMENT_METHOD_LABEL) as [PaymentMethod, string][]).map(
+                  ([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            Anuluj
+          </Button>
+          <Button onClick={handleConfirm} disabled={markPaidMutation.isPending}>
+            {markPaidMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Zapisz'
+              <>
+                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Potwierdź wpłatę
+              </>
             )}
           </Button>
         </DialogFooter>
@@ -290,6 +382,8 @@ export default function CateringOrderDetailPage() {
   const [editDepositOpen, setEditDepositOpen] = useState(false);
   const [editDeposit, setEditDeposit] = useState<CateringDeposit | null>(null);
   const [addDepositOpen, setAddDepositOpen] = useState(false);
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [markPaidDeposit, setMarkPaidDeposit] = useState<CateringDeposit | null>(null);
 
   const { data: order, isLoading } = useCateringOrder(id);
   const deleteMutation = useDeleteCateringOrder();
@@ -329,15 +423,12 @@ export default function CateringOrderDetailPage() {
 
   const canDelete = order.status === 'DRAFT' || order.status === 'CANCELLED';
 
-  // Suma wszystkich istniejących zaliczek (opłacone + nieopłacone)
   const depositsTotal = order.deposits.reduce((sum, d) => sum + Number(d.amount), 0);
-  // Ile jeszcze można wpisać przy dodawaniu nowej zaliczki
   const remainingForDeposit = Math.max(0, Number(order.totalPrice) - depositsTotal);
-  // Przy edycji: limit = całkowita kwota minus suma pozostałych zaliczek (bez edytowanej)
-  const maxAmountForEdit = (editDeposit: CateringDeposit | null) => {
-    if (!editDeposit) return 0;
+  const maxAmountForEdit = (dep: CateringDeposit | null) => {
+    if (!dep) return 0;
     const othersTotal = order.deposits
-      .filter(d => d.id !== editDeposit.id)
+      .filter(d => d.id !== dep.id)
       .reduce((sum, d) => sum + Number(d.amount), 0);
     return Math.max(0, Number(order.totalPrice) - othersTotal);
   };
@@ -365,11 +456,7 @@ export default function CateringOrderDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setStatusDialogOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setStatusDialogOpen(true)}>
             Zmień status
           </Button>
           <Button
@@ -402,14 +489,11 @@ export default function CateringOrderDetailPage() {
       {/* ── Siatka treści ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Lewa kolumna — dane zamówienia */}
+        {/* Lewa kolumna */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Wydarzenie */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Wydarzenie</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Wydarzenie</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Nazwa</p>
@@ -418,8 +502,7 @@ export default function CateringOrderDetailPage() {
               <div>
                 <p className="text-muted-foreground">Data i godzina</p>
                 <p className="font-medium">
-                  {order.eventDate ?? '—'}{' '}
-                  {order.eventTime ? `· ${order.eventTime}` : ''}
+                  {order.eventDate ?? '—'}{order.eventTime ? ` · ${order.eventTime}` : ''}
                 </p>
               </div>
               <div>
@@ -433,11 +516,8 @@ export default function CateringOrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Dostawa */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Dostawa</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Dostawa</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Typ</p>
@@ -452,8 +532,7 @@ export default function CateringOrderDetailPage() {
                   <div>
                     <p className="text-muted-foreground">Data dostawy</p>
                     <p className="font-medium">
-                      {order.deliveryDate ?? '—'}{' '}
-                      {order.deliveryTime ? `· ${order.deliveryTime}` : ''}
+                      {order.deliveryDate ?? '—'}{order.deliveryTime ? ` · ${order.deliveryTime}` : ''}
                     </p>
                   </div>
                 </>
@@ -467,12 +546,9 @@ export default function CateringOrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Dania */}
           {order.items.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Dania</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Dania</CardTitle></CardHeader>
               <CardContent>
                 <div className="overflow-x-auto -mx-2 px-2">
                   <table className="w-full text-sm min-w-[400px]">
@@ -490,16 +566,12 @@ export default function CateringOrderDetailPage() {
                           <td className="py-2">
                             {item.dishNameSnapshot}
                             {item.note && (
-                              <span className="block text-xs text-muted-foreground">
-                                {item.note}
-                              </span>
+                              <span className="block text-xs text-muted-foreground">{item.note}</span>
                             )}
                           </td>
                           <td className="text-right py-2">{item.quantity}</td>
                           <td className="text-right py-2">{formatPrice(item.unitPrice)}</td>
-                          <td className="text-right py-2 font-medium">
-                            {formatPrice(item.totalPrice)}
-                          </td>
+                          <td className="text-right py-2 font-medium">{formatPrice(item.totalPrice)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -509,20 +581,15 @@ export default function CateringOrderDetailPage() {
             </Card>
           )}
 
-          {/* Extras */}
           {order.extras.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Usługi dodatkowe</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Usługi dodatkowe</CardTitle></CardHeader>
               <CardContent>
                 <div className="overflow-x-auto -mx-2 px-2">
                   <table className="w-full text-sm min-w-[400px]">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left pb-2 font-medium text-muted-foreground">
-                          Usługa
-                        </th>
+                        <th className="text-left pb-2 font-medium text-muted-foreground">Usługa</th>
                         <th className="text-right pb-2 font-medium text-muted-foreground">Ilość</th>
                         <th className="text-right pb-2 font-medium text-muted-foreground">Cena</th>
                         <th className="text-right pb-2 font-medium text-muted-foreground">Razem</th>
@@ -534,16 +601,12 @@ export default function CateringOrderDetailPage() {
                           <td className="py-2">
                             {extra.name}
                             {extra.description && (
-                              <span className="block text-xs text-muted-foreground">
-                                {extra.description}
-                              </span>
+                              <span className="block text-xs text-muted-foreground">{extra.description}</span>
                             )}
                           </td>
                           <td className="text-right py-2">{extra.quantity}</td>
                           <td className="text-right py-2">{formatPrice(extra.unitPrice)}</td>
-                          <td className="text-right py-2 font-medium">
-                            {formatPrice(extra.totalPrice)}
-                          </td>
+                          <td className="text-right py-2 font-medium">{formatPrice(extra.totalPrice)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -554,44 +617,28 @@ export default function CateringOrderDetailPage() {
           )}
         </div>
 
-        {/* Prawa kolumna — podsumowanie + historia */}
+        {/* Prawa kolumna */}
         <div className="space-y-6">
 
-          {/* Klient i kontakt */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Klient</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Klient</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p className="font-medium">{clientName}</p>
-              {order.client.email && (
-                <p className="text-muted-foreground">{order.client.email}</p>
-              )}
-              {order.client.phone && (
-                <p className="text-muted-foreground">{order.client.phone}</p>
-              )}
+              {order.client.email && <p className="text-muted-foreground">{order.client.email}</p>}
+              {order.client.phone && <p className="text-muted-foreground">{order.client.phone}</p>}
               {(order.contactName || order.contactPhone || order.contactEmail) && (
                 <div className="pt-2 border-t">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Kontakt do zamówienia
-                  </p>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Kontakt do zamówienia</p>
                   {order.contactName && <p>{order.contactName}</p>}
-                  {order.contactPhone && (
-                    <p className="text-muted-foreground">{order.contactPhone}</p>
-                  )}
-                  {order.contactEmail && (
-                    <p className="text-muted-foreground">{order.contactEmail}</p>
-                  )}
+                  {order.contactPhone && <p className="text-muted-foreground">{order.contactPhone}</p>}
+                  {order.contactEmail && <p className="text-muted-foreground">{order.contactEmail}</p>}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Podsumowanie finansowe */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Podsumowanie finansowe</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Podsumowanie finansowe</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Dania</span>
@@ -649,6 +696,16 @@ export default function CateringOrderDetailPage() {
                         <>
                           <button
                             onClick={() => {
+                              setMarkPaidDeposit(d);
+                              setMarkPaidOpen(true);
+                            }}
+                            className="p-0.5 text-muted-foreground hover:text-green-600 transition-colors rounded"
+                            title="Oznacz jako opłaconą"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => {
                               setEditDeposit(d);
                               setEditDepositOpen(true);
                             }}
@@ -680,12 +737,9 @@ export default function CateringOrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Uwagi */}
           {(order.notes || order.specialRequirements) && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Uwagi</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Uwagi</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {order.notes && (
                   <div>
@@ -695,9 +749,7 @@ export default function CateringOrderDetailPage() {
                 )}
                 {order.specialRequirements && (
                   <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Specjalne wymagania
-                    </p>
+                    <p className="text-xs text-muted-foreground mb-1">Specjalne wymagania</p>
                     <p>{order.specialRequirements}</p>
                   </div>
                 )}
@@ -705,7 +757,6 @@ export default function CateringOrderDetailPage() {
             </Card>
           )}
 
-          {/* Timeline */}
           <Card>
             <CardContent className="pt-6">
               <OrderTimeline orderId={id} />
@@ -714,7 +765,6 @@ export default function CateringOrderDetailPage() {
         </div>
       </div>
 
-      {/* Dialog zmiany statusu */}
       <ChangeStatusDialog
         orderId={id}
         currentStatus={order.status}
@@ -722,24 +772,26 @@ export default function CateringOrderDetailPage() {
         onClose={() => setStatusDialogOpen(false)}
       />
 
-      {/* Dialog edycji zaliczki */}
       <EditDepositDialog
         orderId={id}
         deposit={editDeposit}
         maxAmount={maxAmountForEdit(editDeposit)}
         open={editDepositOpen}
-        onClose={() => {
-          setEditDepositOpen(false);
-          setEditDeposit(null);
-        }}
+        onClose={() => { setEditDepositOpen(false); setEditDeposit(null); }}
       />
 
-      {/* Dialog dodawania zaliczki */}
       <AddDepositDialog
         orderId={id}
         maxAmount={remainingForDeposit}
         open={addDepositOpen}
         onClose={() => setAddDepositOpen(false)}
+      />
+
+      <MarkDepositPaidDialog
+        orderId={id}
+        deposit={markPaidDeposit}
+        open={markPaidOpen}
+        onClose={() => { setMarkPaidOpen(false); setMarkPaidDeposit(null); }}
       />
     </div>
   );
