@@ -9,6 +9,7 @@ import {
   Loader2,
   MoreVertical,
   Pencil,
+  Plus,
   Trash2,
 } from 'lucide-react';
 import {
@@ -16,6 +17,7 @@ import {
   useDeleteCateringOrder,
   useUpdateCateringDeposit,
   useDeleteCateringDeposit,
+  useCreateCateringDeposit,
 } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { OrderTimeline } from '../components/OrderTimeline';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
@@ -43,6 +46,110 @@ import { DELIVERY_TYPE_LABEL, type CateringDeposit } from '@/types/catering-orde
 function formatPrice(value: number | string) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(
     Number(value),
+  );
+}
+
+// ─── Add Deposit Dialog ───────────────────────────────────────
+
+interface AddDepositDialogProps {
+  orderId: string;
+  open: boolean;
+  onClose: () => void;
+}
+
+function AddDepositDialog({ orderId, open, onClose }: AddDepositDialogProps) {
+  const [amount, setAmount] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  const createMutation = useCreateCateringDeposit(orderId);
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      setAmount('');
+      setDueDate('');
+      setTitle('');
+      setDescription('');
+      onClose();
+    }
+  };
+
+  const handleSave = async () => {
+    await createMutation.mutateAsync({
+      amount: parseFloat(amount),
+      dueDate,
+      title: title || null,
+      description: description || null,
+    });
+    handleOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Dodaj zaliczkę</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="add-dep-title">Tytuł</Label>
+            <Input
+              id="add-dep-title"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="np. Zaliczka 1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="add-dep-amount">Kwota (PLN) *</Label>
+            <Input
+              id="add-dep-amount"
+              type="number"
+              min={0.01}
+              step={0.01}
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="add-dep-date">Termin płatności *</Label>
+            <Input
+              id="add-dep-date"
+              type="date"
+              value={dueDate}
+              onChange={e => setDueDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="add-dep-desc">Opis</Label>
+            <Textarea
+              id="add-dep-desc"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Opcjonalny opis..."
+              rows={2}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            Anuluj
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={createMutation.isPending || !amount || !dueDate}
+          >
+            {createMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              'Dodaj'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -62,7 +169,6 @@ function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialo
 
   const updateMutation = useUpdateCateringDeposit(orderId, deposit?.id ?? '');
 
-  // Sync values when deposit changes
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && deposit) {
       setAmount(String(deposit.amount));
@@ -148,6 +254,7 @@ export default function CateringOrderDetailPage() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [editDepositOpen, setEditDepositOpen] = useState(false);
   const [editDeposit, setEditDeposit] = useState<CateringDeposit | null>(null);
+  const [addDepositOpen, setAddDepositOpen] = useState(false);
 
   const { data: order, isLoading } = useCateringOrder(id);
   const deleteMutation = useDeleteCateringOrder();
@@ -432,7 +539,7 @@ export default function CateringOrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Cennik */}
+          {/* Podsumowanie finansowe */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Podsumowanie finansowe</CardTitle>
@@ -465,45 +572,55 @@ export default function CateringOrderDetailPage() {
               </div>
 
               {/* Zaliczki */}
-              {order.deposits.length > 0 && (
-                <div className="pt-2 border-t space-y-1.5">
+              <div className="pt-2 border-t space-y-1.5">
+                <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">Zaliczki</p>
-                  {order.deposits.map(d => (
-                    <div key={d.id} className="flex items-center justify-between text-xs gap-1">
-                      <span className={d.paid ? 'text-green-600' : 'text-muted-foreground'}>
-                        {d.title ?? 'Zaliczka'} · {d.dueDate}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <span className={d.paid ? 'text-green-600 font-medium' : ''}>
-                          {d.paid ? '✓ ' : ''}{formatPrice(d.amount)}
-                        </span>
-                        {!d.paid && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setEditDeposit(d);
-                                setEditDepositOpen(true);
-                              }}
-                              className="p-0.5 text-muted-foreground hover:text-foreground transition-colors rounded"
-                              title="Edytuj zaliczkę"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDeposit(d.id)}
-                              disabled={deleteDepositMutation.isPending}
-                              className="p-0.5 text-muted-foreground hover:text-destructive transition-colors rounded disabled:opacity-50"
-                              title="Usuń zaliczkę"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  <button
+                    onClick={() => setAddDepositOpen(true)}
+                    className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    title="Dodaj zaliczkę"
+                  >
+                    <Plus className="h-3 w-3" /> Dodaj
+                  </button>
                 </div>
-              )}
+                {order.deposits.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Brak zaliczek</p>
+                )}
+                {order.deposits.map(d => (
+                  <div key={d.id} className="flex items-center justify-between text-xs gap-1">
+                    <span className={d.paid ? 'text-green-600' : 'text-muted-foreground'}>
+                      {d.title ?? 'Zaliczka'} · {d.dueDate}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className={d.paid ? 'text-green-600 font-medium' : ''}>
+                        {d.paid ? '✓ ' : ''}{formatPrice(d.amount)}
+                      </span>
+                      {!d.paid && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditDeposit(d);
+                              setEditDepositOpen(true);
+                            }}
+                            className="p-0.5 text-muted-foreground hover:text-foreground transition-colors rounded"
+                            title="Edytuj zaliczkę"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDeposit(d.id)}
+                            disabled={deleteDepositMutation.isPending}
+                            className="p-0.5 text-muted-foreground hover:text-destructive transition-colors rounded disabled:opacity-50"
+                            title="Usuń zaliczkę"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
@@ -558,6 +675,13 @@ export default function CateringOrderDetailPage() {
           setEditDepositOpen(false);
           setEditDeposit(null);
         }}
+      />
+
+      {/* Dialog dodawania zaliczki */}
+      <AddDepositDialog
+        orderId={id}
+        open={addDepositOpen}
+        onClose={() => setAddDepositOpen(false)}
       />
     </div>
   );
