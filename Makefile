@@ -36,6 +36,8 @@ dev-build:
 
 dev-down:
 	$(COMPOSE_DEV) --env-file .env.dev down
+	@rm -rf apps/frontend/.next
+	@echo "  ✔ .next cache wyczyszczony"
 
 # ============================================
 # Production
@@ -200,7 +202,7 @@ help:
 	@echo "  DEVELOPMENT (ports 4000/4001):"
 	@echo "    make dev                Start dev environment (hot-reload)"
 	@echo "    make dev-build          Rebuild & start dev environment"
-	@echo "    make dev-down           Stop dev environment"
+	@echo "    make dev-down           Stop dev environment + clear .next cache"
 	@echo ""
 	@echo "  PRODUCTION (ports 3000/3001):"
 	@echo "    make prod               Start production (detached)"
