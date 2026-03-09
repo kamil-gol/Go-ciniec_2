@@ -94,7 +94,10 @@ services:
     volumes:
       - ./apps/frontend:/app
       - /app/node_modules
-      - /app/.next
+      # Uwaga: /app/.next celowo nie ma osobnego anonymous volume.
+      # Dzięki temu .next trafia do bind-mounted ./apps/frontend/.next na hoście,
+      # co pozwala na jego czyszczenie przez make dev-down (rm -rf apps/frontend/.next).
+      # Bez tego Docker zachowujeł stary skompilowany cache między rebuildami.
     networks:
       - rezerwacje-network
     command: npm run dev

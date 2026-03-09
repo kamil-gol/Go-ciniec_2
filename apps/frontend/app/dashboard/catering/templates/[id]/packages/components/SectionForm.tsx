@@ -1,3 +1,4 @@
+// apps/frontend/app/dashboard/catering/templates/[id]/packages/components/SectionForm.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -5,30 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
-import {
-  useCreateCateringSection,
-  useUpdateCateringSection,
-} from '@/hooks/use-catering';
+import { useCreateCateringSection, useUpdateCateringSection } from '@/hooks/use-catering';
 import { useDishCategories } from '@/hooks/use-dishes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CateringPackageSection } from '@/types/catering.types';
 
 const schema = z.object({
@@ -59,16 +44,12 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      categoryId: '',
-      name: '',
-      description: '',
-      minSelect: 1,
-      maxSelect: '',
-      isRequired: true,
-      displayOrder: 0,
+      categoryId: '', name: '', description: '',
+      minSelect: 1, maxSelect: '', isRequired: true, displayOrder: 0,
     },
   });
 
+  // categories musi byc w deps - Select nie moze dopasowac wartosci zanim opcje sie zaladuja
   useEffect(() => {
     if (section) {
       form.reset({
@@ -81,33 +62,38 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
         displayOrder: section.displayOrder,
       });
     }
-  }, [section, form]);
+  }, [section, categories, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = (values: FormValues) => {
     if (isEdit && section) {
-      await updateSection.mutateAsync({
-        sectionId: section.id,
-        data: {
-          name: values.name || null,
-          description: values.description || null,
+      updateSection.mutate(
+        {
+          sectionId: section.id,
+          data: {
+            name: values.name || null,
+            description: values.description || null,
+            minSelect: values.minSelect,
+            maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+            isRequired: values.isRequired,
+            displayOrder: values.displayOrder,
+          },
+        },
+        { onSuccess: onClose },
+      );
+    } else {
+      createSection.mutate(
+        {
+          categoryId: values.categoryId,
+          name: values.name || undefined,
+          description: values.description || undefined,
           minSelect: values.minSelect,
           maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
           isRequired: values.isRequired,
           displayOrder: values.displayOrder,
         },
-      });
-    } else {
-      await createSection.mutateAsync({
-        categoryId: values.categoryId,
-        name: values.name || undefined,
-        description: values.description || undefined,
-        minSelect: values.minSelect,
-        maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
-        isRequired: values.isRequired,
-        displayOrder: values.displayOrder,
-      });
+        { onSuccess: onClose },
+      );
     }
-    onClose();
   };
 
   const isPending = createSection.isPending || updateSection.isPending;
@@ -115,6 +101,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
         <FormField
           control={form.control}
           name="categoryId"
@@ -186,9 +173,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Min. wybór</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" {...field} />
-                </FormControl>
+                <FormControl><Input type="number" min="0" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -212,9 +197,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Kolejność</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" {...field} />
-                </FormControl>
+                <FormControl><Input type="number" min="0" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -235,14 +218,13 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
         />
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Anuluj
-          </Button>
+          <Button type="button" variant="outline" onClick={onClose}>Anuluj</Button>
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? 'Zapisz zmiany' : 'Dodaj sekcję'}
           </Button>
         </div>
+
       </form>
     </Form>
   );

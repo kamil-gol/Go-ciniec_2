@@ -96,7 +96,7 @@ export function PackageForm({ templateId, pkg, onClose }: Props) {
     }
   }, [pkg, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = (values: FormValues) => {
     const payload = {
       name: values.name,
       description: values.description || undefined,
@@ -112,11 +112,13 @@ export function PackageForm({ templateId, pkg, onClose }: Props) {
     };
 
     if (isEdit && pkg) {
-      await updateMutation.mutateAsync({ packageId: pkg.id, data: payload });
+      updateMutation.mutate(
+        { packageId: pkg.id, data: payload },
+        { onSuccess: onClose },
+      );
     } else {
-      await createMutation.mutateAsync(payload);
+      createMutation.mutate(payload, { onSuccess: onClose });
     }
-    onClose();
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -127,201 +129,218 @@ export function PackageForm({ templateId, pkg, onClose }: Props) {
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-4 max-h-[70vh] overflow-y-auto pr-1"
       >
-        {/* Name */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nazwa pakietu *</FormLabel>
-              <FormControl>
-                <Input placeholder="np. Standard, Premium, Deluxe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* ── Dane pakietu ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Dane pakietu
+          </p>
 
-        {/* Short description */}
-        <FormField
-          control={form.control}
-          name="shortDescription"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Krótki opis (na karcie pakietu)</FormLabel>
-              <FormControl>
-                <Input placeholder="np. Idealny na 50–100 osób" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pełny opis</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Szczegółowy opis pakietu..."
-                  rows={3}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Price type + base price */}
-        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="priceType"
+            name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Typ ceny *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <FormLabel>Nazwa pakietu *</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. Standard, Premium, Deluxe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="shortDescription"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Krótki opis (na karcie pakietu)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="np. Idealny na 50–100 osób"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pełny opis</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Szczegółowy opis pakietu..."
+                    rows={3}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* ── Cennik ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Cennik
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="priceType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Typ ceny *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wybierz..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {priceTypes.map((key) => (
+                        <SelectItem key={key} value={key}>
+                          {CATERING_PRICE_TYPE_LABELS[key]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="basePrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cena bazowa (zł) *</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wybierz..." />
-                    </SelectTrigger>
+                    <Input type="number" step="0.01" min="0" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {priceTypes.map((key) => (
-                      <SelectItem key={key} value={key}>
-                        {CATERING_PRICE_TYPE_LABELS[key]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-          <FormField
-            control={form.control}
-            name="basePrice"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cena bazowa (zł) *</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.01" min="0" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="minGuests"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Min. gości</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="–"
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="maxGuests"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Maks. gości</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="–"
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
-        {/* Min / Max guests */}
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="minGuests"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Min. gości</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="–"
-                    {...field}
-                    value={field.value ?? ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="maxGuests"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Maks. gości</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="–"
-                    {...field}
-                    value={field.value ?? ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* ── Ustawienia ── */}
+        <div className="rounded-lg border p-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Ustawienia
+          </p>
 
-        {/* Badge + displayOrder */}
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="badgeText"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tekst badge&apos;a</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. Bestseller" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="displayOrder"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kolejność</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="badgeText"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tekst badge&apos;a</FormLabel>
+                  <FormControl>
+                    <Input placeholder="np. Bestseller" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="displayOrder"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kolejność</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        {/* Toggles */}
-        <div className="flex items-center gap-6">
-          <FormField
-            control={form.control}
-            name="isPopular"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2">
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <FormLabel className="!mt-0">Popularny</FormLabel>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="isActive"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2">
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <FormLabel className="!mt-0">Aktywny</FormLabel>
-              </FormItem>
-            )}
-          />
+          <div className="flex items-center gap-6">
+            <FormField
+              control={form.control}
+              name="isPopular"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Popularny</FormLabel>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Aktywny</FormLabel>
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         {/* Footer */}
