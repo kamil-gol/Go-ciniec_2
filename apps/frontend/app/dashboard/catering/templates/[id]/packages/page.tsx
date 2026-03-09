@@ -23,10 +23,10 @@ import {
 } from '@/components/shared';
 import { PackageCard } from './components/PackageCard';
 import { PackageForm } from './components/PackageForm';
-import type { CateringPackage, ModuleAccent } from '@/types/catering.types';
-import type { ModuleAccent as DesignModuleAccent } from '@/lib/design-tokens';
+import type { CateringPackage } from '@/types/catering.types';
+import type { ModuleAccent } from '@/lib/design-tokens';
 
-const CATERING_ACCENT: DesignModuleAccent = {
+const CATERING_ACCENT: ModuleAccent = {
   name: 'Catering',
   gradient: 'from-orange-600 via-orange-500 to-amber-600',
   gradientSubtle: 'from-orange-500/5 via-amber-500/5 to-orange-500/5',
@@ -119,7 +119,11 @@ export default function PackagesPage() {
         <EmptyState
           icon={Package}
           title="Brak pakietów"
-          description={template ? `Utwórz pierwszy pakiet dla szablonu \u201e${template.name}\u201c` : 'Utwórz pierwszy pakiet cateringowy'}
+          description={
+            template
+              ? `Utwórz pierwszy pakiet dla szablonu \u201e${template.name}\u201c`
+              : 'Utwórz pierwszy pakiet cateringowy'
+          }
           actionLabel="Nowy pakiet"
           onAction={handleCreate}
         />
