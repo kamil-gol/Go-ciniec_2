@@ -30,6 +30,9 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const deleteMutation = useDeleteCateringPackage(templateId);
 
+  // Prisma Decimal serializuje się jako string przez JSON - zabezpieczenie
+  const basePrice = Number(pkg.basePrice);
+
   const handleDelete = () => {
     deleteMutation.mutate(pkg.id, { onSuccess: () => setDeleteOpen(false) });
   };
@@ -46,8 +49,10 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
         ].join(' ')}
       >
         <div className="flex items-center gap-3 p-4">
-          <button onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+          >
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
 
@@ -55,7 +60,9 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-sm">{pkg.name}</span>
               {pkg.isPopular && (
-                <Badge className="text-xs gap-1 py-0"><Star className="h-2.5 w-2.5" />Popularny</Badge>
+                <Badge className="text-xs gap-1 py-0">
+                  <Star className="h-2.5 w-2.5" />Popularny
+                </Badge>
               )}
               {pkg.badgeText && (
                 <Badge variant="secondary" className="text-xs py-0">{pkg.badgeText}</Badge>
@@ -71,7 +78,7 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
 
           <div className="hidden sm:flex items-center gap-3 text-sm shrink-0">
             <span className="text-xs text-muted-foreground">{CATERING_PRICE_TYPE_LABELS[pkg.priceType]}</span>
-            <span className="font-bold text-primary text-base">{pkg.basePrice.toFixed(2)} zł</span>
+            <span className="font-bold text-primary text-base">{basePrice.toFixed(2)} zł</span>
             {(pkg.minGuests != null || pkg.maxGuests != null) && (
               <span className="text-xs text-muted-foreground">
                 {pkg.minGuests ?? '–'}–{pkg.maxGuests ?? '∞'} os.
@@ -84,17 +91,21 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(pkg)}>
               <Pencil className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon"
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 text-destructive hover:bg-destructive/10"
-              onClick={() => setDeleteOpen(true)}>
+              onClick={() => setDeleteOpen(true)}
+            >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
 
+        {/* Mobile row */}
         <div className="sm:hidden flex items-center gap-3 px-4 pb-3 text-sm">
           <span className="text-xs text-muted-foreground">{CATERING_PRICE_TYPE_LABELS[pkg.priceType]}</span>
-          <span className="font-bold text-primary">{pkg.basePrice.toFixed(2)} zł</span>
+          <span className="font-bold text-primary">{basePrice.toFixed(2)} zł</span>
           <span className="text-xs text-muted-foreground">{pkg.sections?.length ?? 0} sekcji</span>
         </div>
 
@@ -125,8 +136,10 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Usuń
             </AlertDialogAction>
           </AlertDialogFooter>
