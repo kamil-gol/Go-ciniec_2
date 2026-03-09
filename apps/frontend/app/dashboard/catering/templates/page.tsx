@@ -133,10 +133,10 @@ export default function CateringTemplatesPage() {
 
       {/* Dialog create/edit */}
       <Dialog open={formOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingTemplate ? 'Edytuj szablon' : 'Nowy szablon'}
+              {editingTemplate ? 'Edytuj szablon cateringowy' : 'Nowy szablon cateringowy'}
             </DialogTitle>
             <DialogDescription>
               {editingTemplate
