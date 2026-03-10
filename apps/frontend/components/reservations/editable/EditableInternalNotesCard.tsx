@@ -63,7 +63,7 @@ export function EditableInternalNotesCard({
             <div>
               <h2 className="text-xl sm:text-2xl font-bold">Notatka wewnętrzna</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                \uD83D\uDD12 Tylko dla pracowników \u2014 nie pojawia się w PDF
+                \uD83D\uDD12 Tylko dla pracowników — nie pojawia się w PDF
               </p>
             </div>
           </div>

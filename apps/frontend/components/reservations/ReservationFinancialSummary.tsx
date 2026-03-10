@@ -442,19 +442,19 @@ export function ReservationFinancialSummary({
                   <div className="space-y-2">
                     {adults > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dorośli ({adults} \u00d7 {formatPLN(effectivePricePerAdult)} zł)</span>
+                        <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
                         <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
                     {children > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dzieci ({children} \u00d7 {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
                         <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Maluchy ({toddlers} \u00d7 {formatPLN(effectivePricePerToddler)} zł)</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
                         <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
                       </div>
                     )}
@@ -483,7 +483,7 @@ export function ReservationFinancialSummary({
                       {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} \u00d7 ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
+                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
                           </span>
                           <span className="font-semibold">{formatPLN(opt.total)} zł</span>
                         </div>
@@ -508,9 +508,9 @@ export function ReservationFinancialSummary({
                       {activeExtras.map((extra: any) => (
                         <div key={extra.id} className="flex justify-between text-sm">
                           <span className="text-muted-foreground flex items-center gap-1.5">
-                            <span>{extra.serviceItem?.icon || '\ud83d\udce6'}</span>
+                            <span>{extra.serviceItem?.icon || '📦'}</span>
                             {extra.serviceItem?.name || 'Pozycja'}
-                            {extra.quantity > 1 && ` (\u00d7${extra.quantity})`}
+                            {extra.quantity > 1 && ` (×${extra.quantity})`}
                           </span>
                           <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
                         </div>
@@ -571,7 +571,7 @@ export function ReservationFinancialSummary({
                       ) : (
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            Dodatkowe godziny ({extraHoursInfo.extraHours} \u00d7 {formatPLN(extraHourRate)} zł/h)
+                            Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
                           </span>
                           <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
                         </div>
@@ -756,7 +756,7 @@ export function ReservationFinancialSummary({
                               </span>
                               {deposit.title && (
                                 <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                  \u2014 {deposit.title}
+                                  — {deposit.title}
                                 </span>
                               )}
                             </div>
