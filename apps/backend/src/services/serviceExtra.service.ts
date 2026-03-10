@@ -615,7 +615,7 @@ export class ServiceExtraService {
     }
 
     // Final recalculation after all extras assigned
-    await recalculateReservationTotal(reservationId);
+    await recalculateReservationTotalPrice(reservationId);
 
     await logChange({
       userId,
@@ -701,7 +701,7 @@ export class ServiceExtraService {
     });
 
     // Recalculate reservation total (extras + base + surcharge - discount)
-    await recalculateReservationTotal(reservationId);
+    await recalculateReservationTotalPrice(reservationId);
 
     const changes = diffObjects(existing, extra);
     if (Object.keys(changes).length > 0) {
@@ -748,7 +748,7 @@ export class ServiceExtraService {
     await prisma.reservationExtra.delete({ where: { id: extraId } });
 
     // Recalculate reservation total (extras + base + surcharge - discount)
-    await recalculateReservationTotal(reservationId);
+    await recalculateReservationTotalPrice(reservationId);
 
     // Log on extra-level (item audit trail)
     await logChange({
