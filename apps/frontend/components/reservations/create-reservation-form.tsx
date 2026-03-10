@@ -1199,7 +1199,7 @@ export function CreateReservationForm({
         totalPrice={totalWithExtras}
       />
 
-      {/* Service Extras — Sprint 8 */}
+      {/* Service Extras — Sprint 8 */}         <CreateReservationExtrasSection           selectedExtras={selectedExtras}           onExtrasChange={setSelectedExtras}           totalGuests={totalGuests}         />
       <CreateReservationExtrasSection
         selectedExtras={selectedExtras}
         onExtrasChange={setSelectedExtras}
