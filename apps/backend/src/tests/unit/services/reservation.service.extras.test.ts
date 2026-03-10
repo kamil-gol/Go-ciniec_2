@@ -7,22 +7,22 @@
  * getReservationById rzuca AppError gdy rez. nie istnieje (nie zwraca null).
  * listReservations w serwisie = getReservations().
  */
-
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {
-    reservation: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-    },
-    reservationExtra: {
-      findMany: jest.fn(),
-      aggregate: jest.fn(),
-    },
+const mockPrisma = {
+  reservation: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
   },
-}));
+  reservationExtra: {
+    findMany: jest.fn(),
+    aggregate: jest.fn(),
+  },
+  user: {
+    findUnique: jest.fn(),
+  }
+};
 
 jest.mock('../../../services/audit-log.service', () => ({
   auditLogService: { log: jest.fn() },
@@ -35,23 +35,7 @@ jest.mock('../../../services/email.service', () => ({
   },
 }));
 
-jest.mock('../../../utils/recalculate-price', () => ({
-  computeReservationBasePrice: jest.fn(),
-  recalculateReservationTotalPrice: jest.fn(),
-}));
-
-jest.mock('../../../utils/audit-logger', () => ({
-  logChange: jest.fn().mockResolvedValue(undefined),
-  diffObjects: jest.fn().mockReturnValue({}),
-}));
-
-jest.mock('../../../utils/logger', () => ({
-  __esModule: true,
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
-}));
-
-import { prisma } from '../../../lib/prisma';
-const mockPrisma = prisma as any;
+import { ReservationService } from '../../../services/reservation.service';
 
 const EXTRAS_WITH_RELATIONS = [
   {
@@ -132,7 +116,12 @@ const BASE_RESERVATION_DB = {
 import { reservationService } from '../../../services/reservation.service';
 
 describe('ReservationService — reservationExtras include (#22)', () => {
-  beforeEach(() => jest.clearAllMocks());
+  let reservationService: ReservationService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    reservationService = new ReservationService();
+  });
 
   // --- getReservationById ---
   describe('getReservationById()', () => {
@@ -226,11 +215,9 @@ describe('ReservationService — reservationExtras include (#22)', () => {
       mockPrisma.reservation.count.mockResolvedValue(3);
       const result = await reservationService.getReservations({});
       expect(result).toBeDefined();
-      const data = Array.isArray(result) ? result : (result as any)?.data ?? (result as any)?.reservations ?? [];
-      if (data.length > 0) {
-        const r = data.find((r: any) => r.id === 'res-1');
-        if (r) expect(r).toHaveProperty('extrasTotalPrice');
-      }
+      const data = Array.isArray(result) ? result : (result as any)?.data ?? [];
+      const r = data.find((r: any) => r.id === 'res-1');
+      expect(r).toHaveProperty('extrasTotalPrice');
     });
 
     it('should handle empty reservations list', async () => {
@@ -259,8 +246,9 @@ describe('ReservationService — reservationExtras include (#22)', () => {
     it('should handle reservations with mixed extras (some 0, some >0)', async () => {
       mockPrisma.reservation.findMany.mockResolvedValue(LIST_RES);
       mockPrisma.reservation.count.mockResolvedValue(3);
-      const result = await reservationService.getReservations({});
-      expect(result).toBeDefined();
+      const result = await reservationService.listReservations({});
+      const data = Array.isArray(result) ? result : (result as any)?.data ?? [];
+      expect(data).toBeDefined();
     });
 
     it('should handle getReservations with date filter', async () => {

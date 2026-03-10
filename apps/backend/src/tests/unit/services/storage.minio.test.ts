@@ -56,9 +56,7 @@ describe('MinioStorageService', () => {
   describe('deleteFile', () => {
     it('should call removeObject', async () => {
       client.removeObject.mockResolvedValue(undefined);
-
       await service.deleteFile(storageConfig.buckets.attachments, 'test.txt');
-
       expect(client.removeObject).toHaveBeenCalledWith(
         storageConfig.buckets.attachments,
         'test.txt',
