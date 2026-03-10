@@ -31,13 +31,14 @@ async function checkAvailability(
   }
   // apiClient.baseURL already includes /api, so use relative path
   const response = await apiClient.get(`/reservations/check-availability?${params.toString()}`)
-  // Backend returns { success, data: { available, conflicts } } — unwrap envelope
+  // Backend returns { success, data: { available, conflicts } } -- unwrap envelope
   return response.data?.data ?? response.data
 }
 
 /**
  * Hook to check hall availability for a given time range.
- * Only fires when all three params are provided.
+ * Only fires when all three params are provided AND endDateTime > startDateTime.
+ * Guard against 400 "endDateTime must be after startDateTime" from backend.
  */
 export function useCheckAvailability(
   hallId: string | undefined,
@@ -45,11 +46,19 @@ export function useCheckAvailability(
   endDateTime: string | undefined,
   excludeReservationId?: string
 ) {
+  // Guard: do not fire if end <= start (would cause 400 Bad Request)
+  const isValidRange = Boolean(
+    hallId &&
+    startDateTime &&
+    endDateTime &&
+    new Date(endDateTime) > new Date(startDateTime)
+  )
+
   return useQuery({
     queryKey: ['check-availability', hallId, startDateTime, endDateTime, excludeReservationId],
     queryFn: () => checkAvailability(hallId!, startDateTime!, endDateTime!, excludeReservationId),
-    enabled: Boolean(hallId && startDateTime && endDateTime),
-    staleTime: 30 * 1000, // 30s — re-check after half a minute
+    enabled: isValidRange,
+    staleTime: 30 * 1000, // 30s -- re-check after half a minute
     retry: false,
   })
 }

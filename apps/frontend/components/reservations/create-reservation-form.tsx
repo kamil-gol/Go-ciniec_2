@@ -368,7 +368,7 @@ export function CreateReservationForm({
     if (startDate && startTime && !watchAll.endDate && !watchAll.endTime) {
       const start = new Date(`${startDate}T${startTime}`)
       const end = new Date(start.getTime() + standardHours * 60 * 60 * 1000)
-      setValue('endDate', end.toISOString().split('T')[0])
+      setValue('endDate', `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`)
       setValue('endTime', end.toTimeString().slice(0, 5))
     }
   }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue, standardHours])
