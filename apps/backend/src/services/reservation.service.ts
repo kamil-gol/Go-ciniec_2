@@ -798,25 +798,20 @@ export class ReservationService {
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
     const isUsingMenuPackage = hasMenuSnapshot && data.menuPackageId !== null;
     
+    // fix/pricing-recalculation: When using menu package with guest changes,
+    // still recalculate snapshot but DON'T set totalPrice here — defer to recalculateReservationTotal
     if (isUsingMenuPackage && guestsChanged) {
       const recalcResult = await reservationMenuService.recalculateForGuestChange(
         id, newAdults, newChildren, newToddlers
       );
-
+      // NOTE: We no longer set updateData.totalPrice here.
+      // recalculateReservationTotal() at the end will compute the correct total.
       /* istanbul ignore next */
       if (recalcResult) {
-        updateData.totalPrice = recalcResult.totalMenuPrice;
-        console.log(`[Reservation] Auto-recalculated menu for ${id}: ${recalcResult.totalMenuPrice} (was ${Number(existingReservation.totalPrice)})`);
+        console.log(`[Reservation] Auto-recalculated menu snapshot for ${id}: menuPrice=${recalcResult.totalMenuPrice}`);
       }
     } else if (!isUsingMenuPackage) {
-      if (guestsChanged ||
-          data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-        const finalPricePerAdult = data.pricePerAdult ?? Number(existingReservation.pricePerAdult);
-        const finalPricePerChild = data.pricePerChild ?? Number(existingReservation.pricePerChild);
-        const finalPricePerToddler = data.pricePerToddler ?? Number(existingReservation.pricePerToddler);
-        updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, finalPricePerAdult, finalPricePerChild, newToddlers, finalPricePerToddler);
-      }
-
+      // Update per-person prices if provided (will be used by recalculateReservationTotal)
       if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
       if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
       if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
@@ -887,6 +882,17 @@ export class ReservationService {
       data: updateData,
       include: RESERVATION_INCLUDE
     });
+
+    // fix/pricing-recalculation: Centralized total recalculation after ALL fields are persisted.
+    // This ensures totalPrice = basePricing + extrasTotal + venueSurcharge - discountAmount
+    // regardless of which fields were changed (guests, prices, hall, menu, etc.).
+    const pricingChanged = guestsChanged || hallChanged
+      || data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined
+      || data.menuPackageId !== undefined;
+
+    if (pricingChanged) {
+      await recalculateReservationTotal(id);
+    }
 
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);

@@ -6,6 +6,8 @@
  * Extras are independent from the Menu system — they can be added
  * to a reservation at any stage, without selecting a menu first.
  * 🇵🇱 Spolonizowany — komunikaty po polsku
+ *
+ * Updated: fix/pricing-recalculation — use centralized recalculateReservationTotal
  */
 
 import { prisma } from '@/lib/prisma';
@@ -612,7 +614,8 @@ export class ServiceExtraService {
       await this.assignExtra(reservationId, extraData, userId);
     }
 
-    await this.recalculateExtrasTotal(reservationId);
+    // Final recalculation after all extras assigned
+    await recalculateReservationTotal(reservationId);
 
     await logChange({
       userId,
@@ -697,7 +700,8 @@ export class ServiceExtraService {
       },
     });
 
-    await this.recalculateExtrasTotal(reservationId);
+    // Recalculate reservation total (extras + base + surcharge - discount)
+    await recalculateReservationTotal(reservationId);
 
     const changes = diffObjects(existing, extra);
     if (Object.keys(changes).length > 0) {
@@ -743,7 +747,8 @@ export class ServiceExtraService {
 
     await prisma.reservationExtra.delete({ where: { id: extraId } });
 
-    await this.recalculateExtrasTotal(reservationId);
+    // Recalculate reservation total (extras + base + surcharge - discount)
+    await recalculateReservationTotal(reservationId);
 
     // Log on extra-level (item audit trail)
     await logChange({
