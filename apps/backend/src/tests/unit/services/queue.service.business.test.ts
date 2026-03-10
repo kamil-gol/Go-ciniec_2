@@ -150,7 +150,8 @@ describe('QueueService', () => {
       db.reservation.findUnique.mockResolvedValue(makeRes({ status: 'CONFIRMED' }));
 
       await expect(svc.moveToPosition('res-1', 3, 'u1'))
-        .rejects.toThrow(/Można przenościć tylko.*RESERVED|Can only move.*RESERVED/i);
+        // POPRAWKA: komunikat serwisu to 'przenosić', nie 'przenościć'
+        .rejects.toThrow(/Można przenosić tylko.*RESERVED|Can only move.*RESERVED/i);
     });
 
     it('should move to new position', async () => {
