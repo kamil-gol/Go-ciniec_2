@@ -210,8 +210,7 @@ export class ReservationService {
 
       /* istanbul ignore next */
       if (startDT.getFullYear() > new Date().getFullYear()) {
-        notes += '
-[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
+        notes += ' [Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -230,8 +229,7 @@ export class ReservationService {
 
       /* istanbul ignore next */
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
-        notes += '
-[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
+        notes += ' [Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
