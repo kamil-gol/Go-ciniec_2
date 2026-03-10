@@ -53,7 +53,7 @@ export const storageConfig: StorageConfig = {
     exports: process.env.MINIO_BUCKET_EXPORTS || 'exports',
   },
   presignedTtl: {
-    sensitive: parseInt(process.env.PRESIGNED_TTL_SENSITIVE || '300', 10),
+    sensitive: parseInt(process.env.PRESIGNED_TTL_SENSITIVE || '3600', 10),
     standard: parseInt(process.env.PRESIGNED_TTL_STANDARD || '900', 10),
   },
 };
