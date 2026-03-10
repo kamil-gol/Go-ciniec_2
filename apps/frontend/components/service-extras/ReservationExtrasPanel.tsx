@@ -339,7 +339,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                 {extras.map((extra) => {
                   const statusCfg = STATUS_CONFIG[extra.status as ExtraStatus] || STATUS_CONFIG.PENDING;
                   const StatusIcon = statusCfg.icon;
-                  const canEditQuantity = !readOnly && extra.priceType !== 'FREE' && extra.status !== 'CANCELLED';
+                  const canEditQuantity = !readOnly && extra.priceType !== 'FREE' && extra.status !== 'CANCELLED' && !extra.serviceItem?.category?.isExclusive;
                   const isEditingThisNote = editingNoteId === extra.id;
                   const isSavingThisNote = savingNoteId === extra.id;
 

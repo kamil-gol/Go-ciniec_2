@@ -152,7 +152,7 @@ export function EditableGuestsCard({
               <div className="p-3 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-white dark:bg-black/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Smile className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium">Dzieci (4\u201312)</span>
+                  <span className="text-sm font-medium">Dzieci (4–12)</span>
                 </div>
                 <Input
                   type="number"
@@ -168,7 +168,7 @@ export function EditableGuestsCard({
               <div className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-white dark:bg-black/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Baby className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium">Maluchy (0\u20133)</span>
+                  <span className="text-sm font-medium">Maluchy (0–3)</span>
                 </div>
                 <Input
                   type="number"
@@ -221,7 +221,7 @@ export function EditableGuestsCard({
                   </p>
                   {surchargeChanged && initialSurcharge && (
                     <p className="text-amber-700 dark:text-amber-300 mt-0.5">
-                      Zmiana z {formatSurchargePLN(initialSurcharge.amount)} \u2192 {formatSurchargePLN(editSurcharge.amount)}
+                      Zmiana z {formatSurchargePLN(initialSurcharge.amount)} → {formatSurchargePLN(editSurcharge.amount)}
                     </p>
                   )}
                   {surchargeChanged && !initialSurcharge && (
