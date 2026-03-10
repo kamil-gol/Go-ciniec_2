@@ -47,7 +47,7 @@ export interface RevenueSummary {
   growthPercent: number;
   totalReservations: number;
   completedReservations: number;
-  pendingRevenue: number;
+  pendingRevenue: number;   extrasRevenue?: number;
 }
 
 export interface RevenueBreakdownItem {
