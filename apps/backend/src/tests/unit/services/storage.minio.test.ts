@@ -32,11 +32,11 @@ describe('MinioStorageService', () => {
     jest.clearAllMocks();
   });
 
-  describe('uploadFile', () => {
+  describe('upload', () => {
     it('should upload file to correct bucket', async () => {
       client.putObject.mockResolvedValue(undefined);
 
-      await service.uploadFile(
+      await service.upload(
         storageConfig.buckets.attachments,
         'test.txt',
         Buffer.from('hello'),
@@ -53,10 +53,10 @@ describe('MinioStorageService', () => {
     });
   });
 
-  describe('deleteFile', () => {
+  describe('delete', () => {
     it('should call removeObject', async () => {
       client.removeObject.mockResolvedValue(undefined);
-      await service.deleteFile(storageConfig.buckets.attachments, 'test.txt');
+      await service.delete(storageConfig.buckets.attachments, 'test.txt');
       expect(client.removeObject).toHaveBeenCalledWith(
         storageConfig.buckets.attachments,
         'test.txt',
