@@ -724,6 +724,13 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
           <p className="text-base sm:text-lg font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(summary.pendingRevenue)}</p>
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Z {summary.totalReservations - summary.completedReservations} niezrealizowanych</p>
         </div>
+                {summary.extrasRevenue != null && summary.extrasRevenue > 0 && (
+                <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+                              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">✨ Przychody z usług dodatkowych</p>
+                              <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">{formatCurrency(summary.extrasRevenue)}</p>
+                              <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Usługi dodatkowe</p>
+                            </div>
+              )}
       </div>
 
       {breakdown.length > 0 && (
