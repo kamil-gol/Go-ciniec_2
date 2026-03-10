@@ -133,7 +133,7 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
                           )}
                         </div>
                         <span className="font-semibold text-primary shrink-0 ml-2">
-                          {pkg.basePrice.toFixed(2)} zł
+                          {Number(pkg.basePrice).toFixed(2)} zł
                           <span className="text-muted-foreground font-normal ml-1">
                             / {CATERING_PRICE_TYPE_LABELS[pkg.priceType]}
                           </span>
