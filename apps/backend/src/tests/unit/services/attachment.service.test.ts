@@ -1,9 +1,6 @@
 /**
  * AttachmentService — Full Branch Coverage
- * Covers: moveToEntityDir, resolveClientId, createAttachment (RODO redirect),
- * getAttachments (filters), getAttachmentsWithClientRodo, getAttachmentById,
- * getFilePath, updateAttachment (change tracking), deleteAttachment, hardDeleteAttachment,
- * countByCategory, hasAttachment, batchCheckRodo/Contract, validateEntityExists
+ * Updated for #146: storageService abstraction, no getFilePath, dedup, compression
  */
 
 const mockFs = {
@@ -11,6 +8,7 @@ const mockFs = {
   mkdirSync: jest.fn(),
   renameSync: jest.fn(),
   unlinkSync: jest.fn(),
+  readFileSync: jest.fn(() => Buffer.from('fake-content')),
 };
 jest.mock('fs', () => mockFs);
 
@@ -19,6 +17,7 @@ jest.mock('../../../lib/prisma', () => ({
     attachment: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -50,6 +49,40 @@ jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
 }));
 
+const mockStorageService = {
+  upload: jest.fn().mockResolvedValue(undefined),
+  getStream: jest.fn().mockResolvedValue({ pipe: jest.fn() }),
+  getPresignedUrl: jest.fn().mockResolvedValue('https://minio.local/presigned'),
+  delete: jest.fn().mockResolvedValue(undefined),
+  exists: jest.fn().mockResolvedValue(true),
+};
+
+jest.mock('../../../services/storage', () => ({
+  storageService: mockStorageService,
+}));
+
+jest.mock('../../../config/storage.config', () => ({
+  storageConfig: {
+    driver: 'minio',
+    buckets: { attachments: 'attachments', pdfs: 'pdfs', exports: 'exports' },
+    minio: { publicEndpoint: 'https://minio.local' },
+    presignedTtl: { sensitive: 300, standard: 900 },
+  },
+}));
+
+jest.mock('../../../utils/image-compression', () => ({
+  compressIfImage: jest.fn().mockImplementation(async (buffer: Buffer) => ({
+    buffer,
+    originalSize: buffer.length,
+    compressedSize: buffer.length,
+    wasCompressed: false,
+  })),
+}));
+
+jest.mock('../../../utils/file-hash', () => ({
+  computeFileHash: jest.fn(() => 'a'.repeat(64)),
+}));
+
 import attachmentService from '../../../services/attachment.service';
 import { prisma } from '../../../lib/prisma';
 import { isValidCategory } from '../../../constants/attachmentCategories';
@@ -71,12 +104,34 @@ const mockAttachment = (o: any = {}) => ({
   originalName: 'doc.pdf', storedName: 'abc123.pdf',
   mimeType: 'application/pdf', sizeBytes: 1024,
   storagePath: 'clients/abc123.pdf', isArchived: false,
+  fileHash: 'a'.repeat(64),
   uploadedById: 'user-1',
   uploadedBy: { id: 'user-1', firstName: 'Jan', lastName: 'K' },
   ...o,
 });
 
-beforeEach(() => jest.resetAllMocks());
+beforeEach(() => {
+  jest.resetAllMocks();
+  mockFs.readFileSync.mockReturnValue(Buffer.from('fake-content'));
+  mockFs.existsSync.mockReturnValue(true);
+  db.attachment.findFirst.mockResolvedValue(null);
+  mockStorageService.upload.mockResolvedValue(undefined);
+  mockStorageService.delete.mockResolvedValue(undefined);
+  mockStorageService.exists.mockResolvedValue(true);
+  mockStorageService.getStream.mockResolvedValue({ pipe: jest.fn() });
+  mockStorageService.getPresignedUrl.mockResolvedValue('https://minio.local/presigned');
+
+  const { compressIfImage } = require('../../../utils/image-compression');
+  compressIfImage.mockImplementation(async (buffer: Buffer) => ({
+    buffer,
+    originalSize: buffer.length,
+    compressedSize: buffer.length,
+    wasCompressed: false,
+  }));
+
+  const { computeFileHash } = require('../../../utils/file-hash');
+  computeFileHash.mockReturnValue('a'.repeat(64));
+});
 
 describe('AttachmentService', () => {
 
@@ -96,7 +151,8 @@ describe('AttachmentService', () => {
         mockFile(), 'user-1'
       );
       expect(result.id).toBe('att-1');
-      expect(mockFs.renameSync).toHaveBeenCalled();
+      expect(mockStorageService.upload).toHaveBeenCalled();
+      expect(mockFs.unlinkSync).toHaveBeenCalled();
     });
 
     it('should throw for invalid entityType', async () => {
@@ -117,8 +173,8 @@ describe('AttachmentService', () => {
     it('should redirect RODO from RESERVATION to CLIENT', async () => {
       mockIsValid.mockReturnValue(true);
       db.reservation.findUnique
-        .mockResolvedValueOnce({ id: 'r-1' })     // validateEntityExists
-        .mockResolvedValueOnce({ clientId: 'c-1' }); // resolveClientId
+        .mockResolvedValueOnce({ id: 'r-1' })
+        .mockResolvedValueOnce({ clientId: 'c-1' });
       mockFs.existsSync.mockReturnValue(true);
       db.attachment.create.mockResolvedValue(mockAttachment({ entityType: 'CLIENT', entityId: 'c-1' }));
 
@@ -126,7 +182,6 @@ describe('AttachmentService', () => {
         { entityType: 'RESERVATION', entityId: 'r-1', category: 'RODO' },
         mockFile(), 'user-1'
       );
-      // Should create with CLIENT, not RESERVATION
       expect(db.attachment.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ entityType: 'CLIENT', entityId: 'c-1' }) })
       );
@@ -135,8 +190,8 @@ describe('AttachmentService', () => {
     it('should redirect RODO from DEPOSIT to CLIENT', async () => {
       mockIsValid.mockReturnValue(true);
       db.deposit.findUnique
-        .mockResolvedValueOnce({ id: 'd-1' })          // validateEntityExists
-        .mockResolvedValueOnce({ reservation: { clientId: 'c-1' } }); // resolveClientId
+        .mockResolvedValueOnce({ id: 'd-1' })
+        .mockResolvedValueOnce({ reservation: { clientId: 'c-1' } });
       mockFs.existsSync.mockReturnValue(true);
       db.attachment.create.mockResolvedValue(mockAttachment({ entityType: 'CLIENT' }));
 
@@ -152,8 +207,8 @@ describe('AttachmentService', () => {
     it('should throw when RODO redirect cannot resolve client', async () => {
       mockIsValid.mockReturnValue(true);
       db.reservation.findUnique
-        .mockResolvedValueOnce({ id: 'r-1' })   // validateEntityExists
-        .mockResolvedValueOnce(null);             // resolveClientId → null
+        .mockResolvedValueOnce({ id: 'r-1' })
+        .mockResolvedValueOnce(null);
 
       await expect(attachmentService.createAttachment(
         { entityType: 'RESERVATION', entityId: 'r-1', category: 'RODO' },
@@ -170,19 +225,6 @@ describe('AttachmentService', () => {
       expect(db.attachment.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ entityType: 'CLIENT' }) })
       );
-    });
-
-    it('should create dest dir if not exists', async () => {
-      mockIsValid.mockReturnValue(true);
-      db.client.findUnique.mockResolvedValue({ id: 'c-1' });
-      mockFs.existsSync.mockReturnValue(false); // dir does NOT exist
-      db.attachment.create.mockResolvedValue(mockAttachment());
-
-      await attachmentService.createAttachment(
-        { entityType: 'CLIENT', entityId: 'c-1', category: 'DOC' },
-        mockFile(), 'user-1'
-      );
-      expect(mockFs.mkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
     });
 
     it('should handle label and description as null when not provided', async () => {
@@ -206,42 +248,69 @@ describe('AttachmentService', () => {
         expect.objectContaining({ data: expect.objectContaining({ label: 'Lbl', description: 'Desc' }) })
       );
     });
+
+    it('should save fileHash in created record', async () => {
+      setupCreate();
+      await attachmentService.createAttachment(
+        { entityType: 'CLIENT', entityId: 'c-1', category: 'DOC' },
+        mockFile(), 'user-1'
+      );
+      expect(db.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ fileHash: 'a'.repeat(64) }) })
+      );
+    });
+
+    it('should return existing on dedup hit without uploading', async () => {
+      mockIsValid.mockReturnValue(true);
+      db.client.findUnique.mockResolvedValue({ id: 'c-1' });
+      mockFs.existsSync.mockReturnValue(true);
+      const existing = mockAttachment({ id: 'att-dup' });
+      db.attachment.findFirst.mockResolvedValue(existing);
+
+      const result = await attachmentService.createAttachment(
+        { entityType: 'CLIENT', entityId: 'c-1', category: 'DOCUMENT' },
+        mockFile(), 'user-1'
+      );
+
+      expect(result._deduplicated).toBe(true);
+      expect(result.id).toBe('att-dup');
+      expect(mockStorageService.upload).not.toHaveBeenCalled();
+      expect(db.attachment.create).not.toHaveBeenCalled();
+    });
   });
 
   // ═══ resolveClientId ═══
   describe('resolveClientId (via RODO redirect)', () => {
     it('should return null for unknown entityType', async () => {
       mockIsValid.mockReturnValue(true);
-      db.client.findUnique.mockResolvedValue({ id: 'c-1' }); // validateEntityExists for CLIENT
+      db.client.findUnique.mockResolvedValue({ id: 'c-1' });
       mockFs.existsSync.mockReturnValue(true);
       db.attachment.create.mockResolvedValue(mockAttachment());
 
-      // RODO on CLIENT => no redirect, resolveClientId not called for CLIENT type
       await attachmentService.createAttachment(
         { entityType: 'CLIENT', entityId: 'c-1', category: 'RODO' },
         mockFile(), 'user-1'
       );
-      // No redirect happened
       expect(db.reservation.findUnique).not.toHaveBeenCalled();
     });
 
     it('should handle resolveClientId error gracefully', async () => {
       mockIsValid.mockReturnValue(true);
       db.reservation.findUnique
-        .mockResolvedValueOnce({ id: 'r-1' })    // validateEntityExists
-        .mockRejectedValueOnce(new Error('DB')); // resolveClientId throws
+        .mockResolvedValueOnce({ id: 'r-1' })
+        .mockRejectedValueOnce(new Error('DB'));
 
       await expect(attachmentService.createAttachment(
         { entityType: 'RESERVATION', entityId: 'r-1', category: 'RODO' },
         mockFile(), 'user-1'
-      )).rejects.toThrow('klienta'); // null clientId -> throws "klienta"
+      )).rejects.toThrow('klienta');
     });
 
     it('should return null when reservation has no clientId', async () => {
       mockIsValid.mockReturnValue(true);
       db.reservation.findUnique
-        .mockResolvedValueOnce({ id: 'r-1' })        // validateEntityExists
-        .mockResolvedValueOnce({ clientId: null });   // resolveClientId → null
+        .mockResolvedValueOnce({ id: 'r-1' })
+        .mockResolvedValueOnce({ clientId: null });
 
       await expect(attachmentService.createAttachment(
         { entityType: 'RESERVATION', entityId: 'r-1', category: 'RODO' },
@@ -252,8 +321,8 @@ describe('AttachmentService', () => {
     it('should return null when deposit has no reservation', async () => {
       mockIsValid.mockReturnValue(true);
       db.deposit.findUnique
-        .mockResolvedValueOnce({ id: 'd-1' })    // validateEntityExists
-        .mockResolvedValueOnce({ reservation: null }); // resolveClientId → null
+        .mockResolvedValueOnce({ id: 'd-1' })
+        .mockResolvedValueOnce({ reservation: null });
 
       await expect(attachmentService.createAttachment(
         { entityType: 'DEPOSIT', entityId: 'd-1', category: 'RODO' },
@@ -294,14 +363,13 @@ describe('AttachmentService', () => {
       db.attachment.findMany.mockResolvedValue([mockAttachment()]);
       const result = await attachmentService.getAttachmentsWithClientRodo('CLIENT', 'c-1');
       expect(result).toHaveLength(1);
-      // Should NOT call resolveClientId
       expect(db.reservation.findUnique).not.toHaveBeenCalled();
     });
 
     it('should merge client RODO for RESERVATION', async () => {
       db.attachment.findMany
-        .mockResolvedValueOnce([mockAttachment({ category: 'CONTRACT' })]) // own
-        .mockResolvedValueOnce([mockAttachment({ category: 'RODO', entityId: 'c-1' })]); // client RODO
+        .mockResolvedValueOnce([mockAttachment({ category: 'CONTRACT' })])
+        .mockResolvedValueOnce([mockAttachment({ category: 'RODO', entityId: 'c-1' })]);
       db.reservation.findUnique.mockResolvedValueOnce({ clientId: 'c-1' });
 
       const result = await attachmentService.getAttachmentsWithClientRodo('RESERVATION', 'r-1');
@@ -311,7 +379,7 @@ describe('AttachmentService', () => {
 
     it('should return only own when clientId not resolved', async () => {
       db.attachment.findMany.mockResolvedValueOnce([mockAttachment()]);
-      db.reservation.findUnique.mockResolvedValueOnce(null); // no reservation
+      db.reservation.findUnique.mockResolvedValueOnce(null);
 
       const result = await attachmentService.getAttachmentsWithClientRodo('RESERVATION', 'r-1');
       expect(result).toHaveLength(1);
@@ -343,19 +411,45 @@ describe('AttachmentService', () => {
     });
   });
 
-  // ═══ getFilePath ═══
-  describe('getFilePath()', () => {
-    it('should return path when file exists', async () => {
+  // ═══ getFileStream ═══
+  describe('getFileStream()', () => {
+    it('should return stream when file exists in storage', async () => {
       db.attachment.findUnique.mockResolvedValue(mockAttachment());
-      mockFs.existsSync.mockReturnValue(true);
-      const { filePath } = await attachmentService.getFilePath('att-1');
-      expect(filePath).toContain('abc123.pdf');
+      mockStorageService.exists.mockResolvedValue(true);
+      const fakeStream = { pipe: jest.fn() };
+      mockStorageService.getStream.mockResolvedValue(fakeStream);
+
+      const { stream, attachment } = await attachmentService.getFileStream('att-1');
+      expect(stream).toBe(fakeStream);
+      expect(attachment.id).toBe('att-1');
+      expect(mockStorageService.getStream).toHaveBeenCalledWith('attachments', 'clients/abc123.pdf');
     });
 
-    it('should throw when file not on disk', async () => {
+    it('should throw when file not in storage', async () => {
       db.attachment.findUnique.mockResolvedValue(mockAttachment());
-      mockFs.existsSync.mockReturnValue(false);
-      await expect(attachmentService.getFilePath('att-1')).rejects.toThrow('dysku');
+      mockStorageService.exists.mockResolvedValue(false);
+
+      await expect(attachmentService.getFileStream('att-1')).rejects.toThrow('storage');
+    });
+  });
+
+  // ═══ getDownloadUrl ═══
+  describe('getDownloadUrl()', () => {
+    it('should return presigned URL when configured', async () => {
+      db.attachment.findUnique.mockResolvedValue(mockAttachment());
+      mockStorageService.exists.mockResolvedValue(true);
+
+      const result = await attachmentService.getDownloadUrl('att-1');
+      expect(result.direct).toBe(true);
+      expect(result.url).toContain('presigned');
+      expect(result.expiresIn).toBe(300);
+    });
+
+    it('should throw when file not in storage', async () => {
+      db.attachment.findUnique.mockResolvedValue(mockAttachment());
+      mockStorageService.exists.mockResolvedValue(false);
+
+      await expect(attachmentService.getDownloadUrl('att-1')).rejects.toThrow('storage');
     });
   });
 
@@ -444,30 +538,27 @@ describe('AttachmentService', () => {
 
   // ═══ hardDeleteAttachment ═══
   describe('hardDeleteAttachment()', () => {
-    it('should delete file from disk and DB record', async () => {
+    it('should delete from storage and DB', async () => {
       db.attachment.findUnique.mockResolvedValue(mockAttachment());
       db.attachment.delete.mockResolvedValue(undefined);
-      mockFs.existsSync.mockReturnValue(true);
 
       await attachmentService.hardDeleteAttachment('att-1', 'user-1');
-      expect(mockFs.unlinkSync).toHaveBeenCalled();
+      expect(mockStorageService.delete).toHaveBeenCalledWith('attachments', 'clients/abc123.pdf');
       expect(db.attachment.delete).toHaveBeenCalled();
     });
 
-    it('should skip unlink when file not on disk', async () => {
+    it('should still delete DB record if storage delete fails', async () => {
       db.attachment.findUnique.mockResolvedValue(mockAttachment());
       db.attachment.delete.mockResolvedValue(undefined);
-      mockFs.existsSync.mockReturnValue(false);
+      mockStorageService.delete.mockRejectedValueOnce(new Error('Not found'));
 
       await attachmentService.hardDeleteAttachment('att-1');
-      expect(mockFs.unlinkSync).not.toHaveBeenCalled();
       expect(db.attachment.delete).toHaveBeenCalled();
     });
 
     it('should handle null userId', async () => {
       db.attachment.findUnique.mockResolvedValue(mockAttachment());
       db.attachment.delete.mockResolvedValue(undefined);
-      mockFs.existsSync.mockReturnValue(false);
 
       await attachmentService.hardDeleteAttachment('att-1');
       const { logChange } = require('../../../utils/audit-logger');

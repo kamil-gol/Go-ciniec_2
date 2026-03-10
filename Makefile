@@ -4,13 +4,18 @@
 # Development:   make dev
 # Production:    make prod
 # Testing:       make test-unit / test-integration / test-all
+# Storage:       make migrate-minio / minio-stats / minio-backup
+# DB migrations: make fix-timezone-dry / fix-timezone
 # Cleanup:       make down / test-down
 # ============================================
 
 .PHONY: dev dev-build dev-down prod prod-build prod-down \
         test-unit test-integration test-frontend test-e2e test-all \
         test-coverage test-frontend-coverage test-down \
-        logs logs-backend logs-frontend status help
+        migrate-minio migrate-minio-dry minio-stats minio-ls \
+        minio-backup minio-policies \
+        fix-timezone-dry fix-timezone \
+        logs logs-backend logs-frontend logs-minio status help
 
 # ============================================
 # Compose file combinations
@@ -31,6 +36,8 @@ dev-build:
 
 dev-down:
 	$(COMPOSE_DEV) --env-file .env.dev down
+	@rm -rf apps/frontend/.next
+	@echo "  ✔ .next cache wyczyszczony"
 
 # ============================================
 # Production
@@ -89,6 +96,63 @@ test-down:
 	$(COMPOSE_TEST) down -v --remove-orphans
 
 # ============================================
+# Storage / MinIO (#146)
+# ============================================
+
+migrate-minio:
+	@echo "\n=== Migracja plików: local -> MinIO ==="
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "STORAGE_DRIVER=minio npx tsx src/scripts/migrate-to-minio.ts"
+
+migrate-minio-dry:
+	@echo "\n=== Migracja plików: DRY RUN ==="
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "STORAGE_DRIVER=minio DRY_RUN=true npx tsx src/scripts/migrate-to-minio.ts"
+
+minio-ls:
+	@$(COMPOSE_DEV) --env-file .env.dev exec minio \
+		sh -c "mc alias set local http://localhost:9000 \$$MINIO_ROOT_USER \$$MINIO_ROOT_PASSWORD >/dev/null 2>&1 && mc ls local/attachments/ --recursive"
+
+minio-stats:
+	@echo "\n=== MinIO Bucket Stats ==="
+	@$(COMPOSE_DEV) --env-file .env.dev exec minio \
+		sh -c "mc alias set local http://localhost:9000 \$$MINIO_ROOT_USER \$$MINIO_ROOT_PASSWORD >/dev/null 2>&1 && mc du local/attachments/"
+
+minio-backup:
+	@chmod +x scripts/minio-backup.sh
+	@./scripts/minio-backup.sh
+
+minio-policies:
+	@chmod +x scripts/minio-set-policies.sh
+	@./scripts/minio-set-policies.sh
+
+# ============================================
+# DB: Timezone fix (#timezone-fix)
+# ============================================
+# Run AFTER deploying the frontend timezone fixes (make dev-build).
+# Records created before 2026-03-06T20:29:43Z have startDateTime/endDateTime
+# stored 1h too late (UTC+0 instead of UTC+1 Warsaw).
+# Shifts those records by -1h in a safe transaction.
+#
+# ALWAYS run dry first:
+#   make fix-timezone-dry
+# Then apply:
+#   make fix-timezone
+# ============================================
+
+fix-timezone-dry:
+	@echo "\n=== Timezone fix: DRY RUN (no changes) ==="
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "DRY_RUN=true npx tsx src/scripts/fix-timezone-offset.ts"
+
+fix-timezone:
+	@echo "\n=== Timezone fix: LIVE MIGRATION ==="
+	@echo "WARNING: This will modify the database. Press Ctrl+C within 5s to abort."
+	@sleep 5
+	$(COMPOSE_DEV) --env-file .env.dev exec backend \
+		sh -c "DRY_RUN=false npx tsx src/scripts/fix-timezone-offset.ts"
+
+# ============================================
 # Logs & Status
 # ============================================
 
@@ -100,6 +164,9 @@ logs-backend:
 
 logs-frontend:
 	$(COMPOSE_DEV) --env-file .env.dev logs -f frontend
+
+logs-minio:
+	$(COMPOSE_DEV) --env-file .env.dev logs -f minio
 
 logs-prod:
 	$(COMPOSE_PROD) --env-file .env.prod logs -f
@@ -135,7 +202,7 @@ help:
 	@echo "  DEVELOPMENT (ports 4000/4001):"
 	@echo "    make dev                Start dev environment (hot-reload)"
 	@echo "    make dev-build          Rebuild & start dev environment"
-	@echo "    make dev-down           Stop dev environment"
+	@echo "    make dev-down           Stop dev environment + clear .next cache"
 	@echo ""
 	@echo "  PRODUCTION (ports 3000/3001):"
 	@echo "    make prod               Start production (detached)"
@@ -151,9 +218,22 @@ help:
 	@echo "    make test-all           All tests (unit + integration + frontend)"
 	@echo "    make test-down          Stop test containers"
 	@echo ""
+	@echo "  STORAGE / MINIO (#146):"
+	@echo "    make migrate-minio      Migrate files: local -> MinIO"
+	@echo "    make migrate-minio-dry  Dry run migration (no upload)"
+	@echo "    make minio-ls           List all files in MinIO"
+	@echo "    make minio-stats        Show bucket size/count"
+	@echo "    make minio-backup       Backup all MinIO data to /data/backups/minio"
+	@echo "    make minio-policies     Set private policies + versioning on buckets"
+	@echo ""
+	@echo "  DB MIGRATIONS:"
+	@echo "    make fix-timezone-dry   Timezone fix: dry run (safe, no changes)"
+	@echo "    make fix-timezone       Timezone fix: LIVE migration (irreversible!)"
+	@echo ""
 	@echo "  UTILITIES:"
 	@echo "    make logs               Follow all logs (dev)"
 	@echo "    make logs-backend       Follow backend logs (dev)"
+	@echo "    make logs-minio         Follow MinIO logs (dev)"
 	@echo "    make logs-prod          Follow all logs (prod)"
 	@echo "    make logs-prod-backend  Follow backend logs (prod)"
 	@echo "    make status             Show running containers (both envs)"

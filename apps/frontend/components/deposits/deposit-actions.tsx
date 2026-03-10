@@ -15,6 +15,7 @@ import {
   CreditCard,
   Loader2,
   Paperclip,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -384,12 +385,24 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
               </div>
               Usunąć zaliczkę?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Ta operacja jest nieodwracalna. Zaliczka na kwotę{' '}
-              <strong className="text-neutral-900 dark:text-neutral-100">
-                {Number(deposit.amount).toLocaleString('pl-PL')} zł
-              </strong>{' '}
-              zostanie trwale usunięta z systemu.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                {isPaid && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                      Ta zaliczka jest oznaczona jako <strong>OPŁACONA</strong>. Upewnij się, że usuwasz ją celowo (np. korekta błędu lub rezygnacja klienta).
+                    </p>
+                  </div>
+                )}
+                <p>
+                  Ta operacja jest nieodwracalna. Zaliczka na kwotę{' '}
+                  <strong className="text-neutral-900 dark:text-neutral-100">
+                    {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                  </strong>{' '}
+                  zostanie trwale usunięta z systemu.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -3,11 +3,12 @@
 /**
  * Reports Types
  * Type definitions for reports module
+ * Updated: fix/ts-errors — portionTarget added to MenuPreparationCourse + MenuPreparationSummaryDish
  */
 
 export type GroupByPeriod = 'day' | 'week' | 'month' | 'year';
 
-export type ReportType = 'revenue' | 'occupancy' | 'preparations' | 'reservations' | 'clients';
+export type ReportType = 'revenue' | 'occupancy' | 'preparations' | 'menu-preparations' | 'reservations' | 'clients';
 
 export type ExportFormat = 'excel' | 'pdf';
 
@@ -67,7 +68,7 @@ export interface RevenueReport {
 }
 
 // ============================================
-// OCCUPANCY REPORTS
+// OCCUPANCY REPORTS (#165: capacity utilization)
 // ============================================
 
 export interface OccupancyReportFilters {
@@ -77,20 +78,24 @@ export interface OccupancyReportFilters {
 }
 
 export interface OccupancyReportSummary {
-  avgOccupancy: number; // % dni z rezerwacją
-  peakDay: string; // "Saturday"
+  avgOccupancy: number; // % dni z rezerwacja
+  peakDay: string; // "Sobota"
   peakHall: string | null; // nazwa sali
   peakHallId: string | null;
   totalReservations: number;
   totalDaysInPeriod: number;
+  avgCapacityUtilization: number | null; // srednie wykorzystanie pojemnosci sal multi-booking (%)
 }
 
 export interface OccupancyByHallItem {
   hallId: string;
   hallName: string;
-  occupancy: number; // %
+  occupancy: number; // % dni z rezerwacja
   reservations: number;
   avgGuestsPerReservation: number;
+  capacity: number | null; // pojemnosc sali (#165)
+  allowMultipleBookings: boolean; // tryb wielu rezerwacji (#165)
+  avgCapacityUtilization: number | null; // srednie wykorzystanie pojemnosci (%) - tylko dla multi-booking (#165)
 }
 
 export interface PeakHourItem {
@@ -99,7 +104,7 @@ export interface PeakHourItem {
 }
 
 export interface PeakDayOfWeekItem {
-  dayOfWeek: string; // "Monday", "Tuesday", etc.
+  dayOfWeek: string; // "Poniedzialek", "Wtorek", etc.
   dayOfWeekNum: number; // 0-6 (0 = Sunday)
   count: number;
 }
@@ -167,7 +172,7 @@ export interface PreparationDayGroup {
   totalItems: number;
 }
 
-/** Summary item — aggregated per service across all reservations */
+/** Summary item - aggregated per service across all reservations */
 export interface PreparationSummaryItem {
   serviceItemId: string;
   serviceName: string;
@@ -186,7 +191,7 @@ export interface PreparationSummaryItem {
   }>;
 }
 
-/** Summary day group — aggregated view */
+/** Summary day group - aggregated view */
 export interface PreparationSummaryDayGroup {
   date: string;
   dateLabel: string;
@@ -215,6 +220,118 @@ export interface PreparationsReport {
   days: PreparationDayGroup[];          // detailed view
   summaryDays?: PreparationSummaryDayGroup[]; // summary view (if view=summary)
   filters: PreparationsReportFilters;
+}
+
+// ============================================
+// MENU PREPARATIONS REPORTS #160
+// ============================================
+
+export interface MenuPreparationsReportFilters {
+  dateFrom: string;
+  dateTo: string;
+  view?: 'detailed' | 'summary'; // default: 'detailed'
+}
+
+/** Single dish within a course */
+export interface MenuPreparationDish {
+  name: string;
+  description: string | null;
+  portionSize: number; // portion per guest (e.g. 1.0, 0.5, 0.25) - from menuData quantity
+}
+
+/** Single course with its selected dishes */
+export interface MenuPreparationCourse {
+  courseName: string;
+  icon: string | null;
+  dishes: MenuPreparationDish[];
+  portionTarget?: number;  // fix: used in reports.service (total portions target for this course)
+}
+
+/** Reservation context for the menu report (detailed view) */
+export interface MenuPreparationReservation {
+  reservationId: string;
+  clientName: string;
+  hallName: string | null;
+  eventTypeName: string | null;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  guests: {
+    adults: number;
+    children: number;
+    toddlers: number;
+    total: number;
+  };
+  package: {
+    name: string;
+    description: string | null;
+  };
+  courses: MenuPreparationCourse[];
+  packagePrice: number;
+  totalMenuPrice: number;
+}
+
+/** Single day in menu preparations timeline (detailed view) */
+export interface MenuPreparationDayGroup {
+  date: string;                // "2026-03-15"
+  dateLabel: string;            // "Sobota, 15 marca 2026"
+  reservations: MenuPreparationReservation[];
+  totalReservations: number;
+  totalGuests: number;
+}
+
+/** Summary: single dish aggregated across all reservations in a day (no toddlerPortions) */
+export interface MenuPreparationSummaryDish {
+  dishName: string;
+  totalPortions: number;        // (adults + children) * portionSize - toddlers excluded
+  adultPortions: number;
+  childrenPortions: number;
+  portionTarget?: number;       // fix: used in reports.service (target portion count for planning)
+  reservations: Array<{
+    id: string;
+    clientName: string;
+    guests: number;
+  }>;
+}
+
+/** Summary: course group containing aggregated dishes */
+export interface MenuPreparationSummaryCourseGroup {
+  courseName: string;
+  icon: string | null;
+  dishes: MenuPreparationSummaryDish[];
+}
+
+/** Summary day group - aggregated per course -> per dish */
+export interface MenuPreparationSummaryDayGroup {
+  date: string;
+  dateLabel: string;
+  courses: MenuPreparationSummaryCourseGroup[];
+  totalReservations: number;
+  totalGuests: number;
+}
+
+export interface MenuPreparationsReportSummary {
+  totalMenus: number;           // number of reservations with menu snapshot
+  totalGuests: number;          // sum of all guests
+  totalAdults: number;
+  totalChildren: number;
+  totalToddlers: number;
+  topPackage: {
+    name: string;
+    count: number;
+  } | null;
+  nearestEvent: {
+    date: string;
+    startTime: string | null;
+    clientName: string;
+  } | null;
+}
+
+export interface MenuPreparationsReport {
+  summary: MenuPreparationsReportSummary;
+  days: MenuPreparationDayGroup[];                    // detailed view
+  summaryDays?: MenuPreparationSummaryDayGroup[];     // summary view (if view=summary)
+  filters: MenuPreparationsReportFilters;
 }
 
 // ============================================

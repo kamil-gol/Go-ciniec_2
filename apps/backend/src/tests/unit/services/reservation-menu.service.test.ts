@@ -173,7 +173,7 @@ describe('ReservationMenuService', () => {
 
       await expect(reservationMenuService.selectMenu('nonexistent', {
         packageId: 'pkg-001', selectedOptions: [],
-      })).rejects.toThrow('Reservation not found');
+      })).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when package not found', async () => {
@@ -181,7 +181,7 @@ describe('ReservationMenuService', () => {
 
       await expect(reservationMenuService.selectMenu('res-001', {
         packageId: 'nonexistent', selectedOptions: [],
-      })).rejects.toThrow('Menu package not found');
+      })).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should throw on dish validation errors', async () => {
@@ -191,7 +191,7 @@ describe('ReservationMenuService', () => {
         dishSelections: [
           { categoryId: 'cat-001', dishes: [] }, // 0 selected, min is 1
         ],
-      })).rejects.toThrow(/Menu selection validation failed.*requires minimum 1/);
+      })).rejects.toThrow(/Błąd walidacji wyboru menu.*minimum 1/);
     });
   });
 
@@ -280,7 +280,7 @@ describe('ReservationMenuService', () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
 
       await expect(reservationMenuService.getReservationMenu('res-001'))
-        .rejects.toThrow('Menu not selected for this reservation');
+        .rejects.toThrow('Menu nie zostało wybrane dla tej rezerwacji');
     });
   });
 

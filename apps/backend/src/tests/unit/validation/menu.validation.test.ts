@@ -116,6 +116,44 @@ describe('menu.validation', () => {
     it('should reject negative minSelect', () => {
       expect(() => categorySettingSchema.parse({ ...validSetting, minSelect: -1 })).toThrow();
     });
+
+    // ─── #166: portionTarget validation ────────────────────────────────
+
+    it('should default portionTarget to ALL when not provided', () => {
+      const result = categorySettingSchema.parse(validSetting);
+      expect(result.portionTarget).toBe('ALL');
+    });
+
+    it('should accept portionTarget = ALL', () => {
+      const result = categorySettingSchema.parse({ ...validSetting, portionTarget: 'ALL' });
+      expect(result.portionTarget).toBe('ALL');
+    });
+
+    it('should accept portionTarget = ADULTS_ONLY', () => {
+      const result = categorySettingSchema.parse({ ...validSetting, portionTarget: 'ADULTS_ONLY' });
+      expect(result.portionTarget).toBe('ADULTS_ONLY');
+    });
+
+    it('should accept portionTarget = CHILDREN_ONLY', () => {
+      const result = categorySettingSchema.parse({ ...validSetting, portionTarget: 'CHILDREN_ONLY' });
+      expect(result.portionTarget).toBe('CHILDREN_ONLY');
+    });
+
+    it('should reject invalid portionTarget value', () => {
+      expect(() => categorySettingSchema.parse({ ...validSetting, portionTarget: 'TODDLERS_ONLY' })).toThrow();
+    });
+
+    it('should reject arbitrary string as portionTarget', () => {
+      expect(() => categorySettingSchema.parse({ ...validSetting, portionTarget: 'INVALID' })).toThrow();
+    });
+
+    it('should reject empty string as portionTarget', () => {
+      expect(() => categorySettingSchema.parse({ ...validSetting, portionTarget: '' })).toThrow();
+    });
+
+    it('should reject numeric portionTarget', () => {
+      expect(() => categorySettingSchema.parse({ ...validSetting, portionTarget: 123 })).toThrow();
+    });
   });
 
   describe('createMenuOptionSchema', () => {

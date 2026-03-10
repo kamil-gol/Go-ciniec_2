@@ -2,6 +2,7 @@
  * Unit tests for packageCategory.service.ts
  * Covers: getByPackageId, getById, create (duplicate guard), update, bulkUpdate, delete
  * Issue: #98
+ * FIX: spolonizowane komunikaty błędów
  */
 
 const mockPrisma = {
@@ -50,7 +51,7 @@ describe('PackageCategoryService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.getById('x')).rejects.toThrow('Category setting not found');
+      await expect(packageCategoryService.getById('x')).rejects.toThrow('Nie znaleziono ustawień kategorii');
     });
   });
 
@@ -67,7 +68,7 @@ describe('PackageCategoryService', () => {
     it('should throw when duplicate category for package', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(mockSetting);
       await expect(packageCategoryService.create({ packageId: 'pkg-1', category: 'SOUP' as any }))
-        .rejects.toThrow(/already exists/);
+        .rejects.toThrow(/już istnieją/);
     });
   });
 
@@ -82,7 +83,7 @@ describe('PackageCategoryService', () => {
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
       await expect(packageCategoryService.update('x', { maxSelect: 5 }))
-        .rejects.toThrow('Category setting not found');
+        .rejects.toThrow('Nie znaleziono ustawień kategorii');
     });
   });
 
@@ -115,7 +116,7 @@ describe('PackageCategoryService', () => {
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
       await expect(packageCategoryService.bulkUpdate('x', { settings: [] }))
-        .rejects.toThrow('Package not found');
+        .rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 
@@ -129,7 +130,7 @@ describe('PackageCategoryService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.delete('x')).rejects.toThrow('Category setting not found');
+      await expect(packageCategoryService.delete('x')).rejects.toThrow('Nie znaleziono ustawień kategorii');
     });
   });
 });

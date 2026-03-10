@@ -6,6 +6,7 @@
 #
 # Features:
 #   - Isolated test database on port 5433 (tmpfs for speed)
+#   - Isolated MinIO on tmpfs (no persistent data)
 #   - Separate network from dev/prod
 #   - Disposable containers
 # ============================================
@@ -28,6 +29,23 @@ services:
       retries: 5
     tmpfs:
       - /var/lib/postgresql/data
+    networks:
+      - test-network
+
+  minio-test:
+    image: minio/minio:latest
+    container_name: rezerwacje-minio-test
+    environment:
+      MINIO_ROOT_USER: testminio
+      MINIO_ROOT_PASSWORD: testminio123
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /data
     networks:
       - test-network
 
@@ -55,8 +73,17 @@ services:
       SMTP_USER: test
       SMTP_PASS: test
       SMTP_FROM: test@test.pl
+      STORAGE_DRIVER: minio
+      MINIO_ENDPOINT: http://minio-test:9000
+      MINIO_ROOT_USER: testminio
+      MINIO_ROOT_PASSWORD: testminio123
+      MINIO_BUCKET_ATTACHMENTS: test-attachments
+      MINIO_BUCKET_PDFS: test-pdfs
+      MINIO_BUCKET_EXPORTS: test-exports
     depends_on:
       postgres-test:
+        condition: service_healthy
+      minio-test:
         condition: service_healthy
     volumes:
       - ./apps/backend:/app

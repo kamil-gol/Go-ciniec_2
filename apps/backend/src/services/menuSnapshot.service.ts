@@ -3,6 +3,7 @@
  * Creates and manages immutable menu snapshots for reservations.
  * FIX: dishSelections enriched with dish/category names from DB
  * FIX: menuTemplateId/packageId saved in DB columns (not just JSONB)
+ * Updated: #166 — portionTarget from PackageCategorySettings included in snapshot
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption model removed from Prisma.
@@ -14,7 +15,9 @@ import { prisma } from '@/lib/prisma';
 import {
   MenuSnapshotData,
   CreateMenuSnapshotInput,
-  MenuPriceBreakdown
+  MenuPriceBreakdown,
+  EnrichedDishSelection,
+  PortionTarget,
 } from '../types/menu.types';
 import { MENU_CRUD } from '../i18n/pl';
 
@@ -27,8 +30,17 @@ export class MenuSnapshotService {
     });
     if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
 
+    // #166: Fetch portionTarget for each category in this package
+    const categorySettings = await prisma.packageCategorySettings.findMany({
+      where: { packageId: input.packageId },
+      select: { categoryId: true, portionTarget: true }
+    });
+    const portionTargetMap = new Map<string, string>(
+      categorySettings.map(s => [s.categoryId, s.portionTarget])
+    );
+
     // ── Enrich dishSelections with names from DB ──
-    let enrichedDishSelections: any[] = [];
+    let enrichedDishSelections: EnrichedDishSelection[] = [];
     if (input.dishSelections && input.dishSelections.length > 0) {
       const allDishIds: string[] = [];
       const allCategoryIds: string[] = [];
@@ -66,6 +78,8 @@ export class MenuSnapshotService {
           categoryName: category?.name || 'Nieznana kategoria',
           /* istanbul ignore next */
           categoryIcon: category?.icon || null,
+          // #166: portionTarget from PackageCategorySettings, default ALL
+          portionTarget: (portionTargetMap.get(catSel.categoryId) || 'ALL') as PortionTarget,
           dishes: catSel.dishes.map(dish => {
             const dishData = dishMap.get(dish.dishId);
             return {

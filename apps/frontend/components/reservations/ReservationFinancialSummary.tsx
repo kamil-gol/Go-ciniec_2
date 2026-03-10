@@ -6,7 +6,7 @@ import {
   XCircle, ArrowDownUp, Banknote, Smartphone, CreditCard, Loader2,
   ExternalLink, CalendarDays, Undo2, Mail, TrendingUp, Receipt,
   Package, ShoppingCart, Users, Sparkles, ChevronDown, ChevronUp,
-  Timer, Gift, Building2,
+  Timer, Gift, Building2, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -43,7 +43,9 @@ interface ReservationFinancialSummaryProps {
   startDateTime?: string
   /** ISO datetime string for event end */
   endDateTime?: string
-  /** Cost per extra hour beyond standard 6h (default: 500 PLN) */
+  /** Hours included in base price (default: 6h, from eventType.standardHours) */
+  standardHours?: number
+  /** Cost per extra hour beyond standardHours (default: 500 PLN, from eventType.extraHourRate; 0 = exempt) */
   extraHourRate?: number
   /** Reservation status (needed for discount section) */
   status?: string
@@ -57,6 +59,14 @@ interface ReservationFinancialSummaryProps {
   venueSurcharge?: number | null
   /** Label explaining the surcharge (e.g. "Dopłata za cały obiekt (< 30 os.)") */
   venueSurchargeLabel?: string | null
+  /** When true, hides all mutating controls (deposits, discount editing) */
+  readOnly?: boolean
+  /**
+   * #deposits-fix (4/5): Optional callback fired after any deposit mutation
+   * (create / mark-paid / mark-unpaid / cancel / delete). Used by the reservation
+   * detail page to re-fetch reservation data so the status badge stays in sync.
+   */
+  onDepositChange?: () => void
 }
 
 // Config
@@ -156,6 +166,7 @@ export function ReservationFinancialSummary({
   totalPrice,
   startDateTime,
   endDateTime,
+  standardHours = STANDARD_HOURS,
   extraHourRate = DEFAULT_EXTRA_HOUR_RATE,
   status,
   discountType,
@@ -165,6 +176,8 @@ export function ReservationFinancialSummary({
   priceBeforeDiscount,
   venueSurcharge,
   venueSurchargeLabel,
+  readOnly = false,
+  onDepositChange,
 }: ReservationFinancialSummaryProps) {
   // Menu data
   const { data: menuData } = useReservationMenu(reservationId)
@@ -200,20 +213,16 @@ export function ReservationFinancialSummary({
     const durationMs = end.getTime() - start.getTime()
     if (durationMs <= 0) return null
     const durationHours = durationMs / (1000 * 60 * 60)
-    const extraHours = Math.max(0, Math.ceil(durationHours - STANDARD_HOURS))
+    const extraHours = Math.max(0, Math.ceil(durationHours - standardHours))
     const extraCost = extraHours * extraHourRate
     return { durationHours: Math.round(durationHours * 10) / 10, extraHours, extraCost }
-  }, [startDateTime, endDateTime, extraHourRate])
+  }, [startDateTime, endDateTime, standardHours, extraHourRate])
 
-  // ── DISCOUNT: compute early so we can restore the pre-discount base ──
+  const isExtraHoursExempt = extraHourRate === 0
+
   const activeDiscountAmount = Number(discountAmount) || 0
   const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
 
-  // ── EFFECTIVE TOTAL: base + extra hours + service extras + venue surcharge ──
-  // IMPORTANT: Backend's totalPrice already includes discount when one is
-  // active (e.g. 5025 - 100 = 4925). If we used that as the base and then
-  // subtracted the discount again we'd get 4825 (double discount).
-  // Fix: when a discount exists, use priceBeforeDiscount as the base.
   const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
     : (hasActiveDiscount && priceBeforeDiscount != null && Number(priceBeforeDiscount) > 0)
@@ -222,7 +231,6 @@ export function ReservationFinancialSummary({
   const extraHoursCost = extraHoursInfo?.extraCost || 0
   const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice + effectiveVenueSurcharge
 
-  // Final price after discount (single subtraction, never double)
   const finalTotalPrice = hasActiveDiscount
     ? Math.max(0, effectiveTotalPrice - activeDiscountAmount)
     : effectiveTotalPrice
@@ -235,6 +243,10 @@ export function ReservationFinancialSummary({
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null)
   const [showCostDetails, setShowCostDetails] = useState(false)
   const [showDepositsDetails, setShowDepositsDetails] = useState(true)
+
+  // #deposits-fix (P4): delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [depositToDelete, setDepositToDelete] = useState<Deposit | null>(null)
 
   // Create form
   const [createAmount, setCreateAmount] = useState('')
@@ -267,7 +279,7 @@ export function ReservationFinancialSummary({
     loadDeposits()
   }, [loadDeposits])
 
-  // Calculations — use finalTotalPrice (after discount) for balance
+  // Calculations
   const financials = useMemo(() => {
     const activeDeposits = deposits.filter(d => d.status !== 'CANCELLED')
     const totalPaid = activeDeposits.reduce((sum, d) => sum + Number(d.paidAmount || 0), 0)
@@ -298,6 +310,7 @@ export function ReservationFinancialSummary({
 
   // Deposit handlers
   const handleOpenCreate = () => {
+    if (readOnly) return
     const suggested = Math.round(finalTotalPrice * 0.3)
     setCreateAmount(suggested > 0 ? suggested.toString() : '')
     setCreateDueDate(suggestDueDate(14))
@@ -306,6 +319,7 @@ export function ReservationFinancialSummary({
   }
 
   const handleCreate = async () => {
+    if (readOnly) return
     if (!createAmount || Number(createAmount) <= 0) { toast.error('Podaj prawidłową kwotę'); return }
     if (!createDueDate) { toast.error('Podaj termin płatności'); return }
     try {
@@ -318,10 +332,12 @@ export function ReservationFinancialSummary({
       toast.success('Zaliczka utworzona')
       setShowCreateModal(false)
       loadDeposits()
+      onDepositChange?.()
     } catch { toast.error('Nie udało się utworzyć zaliczki') } finally { setCreating(false) }
   }
 
   const handleOpenPay = (deposit: Deposit) => {
+    if (readOnly) return
     setSelectedDeposit(deposit)
     setPayMethod('TRANSFER')
     setPayDate(new Date().toISOString().split('T')[0])
@@ -329,6 +345,7 @@ export function ReservationFinancialSummary({
   }
 
   const handlePay = async () => {
+    if (readOnly) return
     if (!selectedDeposit) return
     try {
       setPaying(true)
@@ -336,11 +353,13 @@ export function ReservationFinancialSummary({
       toast.success('Zaliczka opłacona')
       setShowPayModal(false)
       loadDeposits()
+      onDepositChange?.()
     } catch { toast.error('Nie udało się oznaczyć jako opłaconą') } finally { setPaying(false) }
   }
 
   const handleMarkUnpaid = async (deposit: Deposit) => {
-    try { setActionLoading(deposit.id); await depositsApi.markAsUnpaid(deposit.id); toast.success('Cofnięto płatność'); loadDeposits() }
+    if (readOnly) return
+    try { setActionLoading(deposit.id); await depositsApi.markAsUnpaid(deposit.id); toast.success('Cofnięto płatność'); loadDeposits(); onDepositChange?.() }
     catch { toast.error('Nie udało się cofnąć płatności') } finally { setActionLoading(null) }
   }
 
@@ -355,8 +374,29 @@ export function ReservationFinancialSummary({
   }
 
   const handleCancel = async (deposit: Deposit) => {
-    try { setActionLoading(deposit.id); await depositsApi.cancel(deposit.id); toast.success('Zaliczka anulowana'); loadDeposits() }
+    if (readOnly) return
+    try { setActionLoading(deposit.id); await depositsApi.cancel(deposit.id); toast.success('Zaliczka anulowana'); loadDeposits(); onDepositChange?.() }
     catch { toast.error('Nie udało się anulować zaliczki') } finally { setActionLoading(null) }
+  }
+
+  // #deposits-fix (P4): permanently delete a CANCELLED deposit
+  const handleOpenDelete = (deposit: Deposit) => {
+    if (readOnly) return
+    setDepositToDelete(deposit)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (readOnly || !depositToDelete) return
+    try {
+      setActionLoading(depositToDelete.id)
+      await depositsApi.delete(depositToDelete.id)
+      toast.success('Zaliczka usunięta')
+      setShowDeleteModal(false)
+      setDepositToDelete(null)
+      loadDeposits()
+      onDepositChange?.()
+    } catch { toast.error('Nie udało się usunąć zaliczki') } finally { setActionLoading(null) }
   }
 
   return (
@@ -402,19 +442,19 @@ export function ReservationFinancialSummary({
                   <div className="space-y-2">
                     {adults > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
+                        <span className="text-muted-foreground">Dorośli ({adults} \u00d7 {formatPLN(effectivePricePerAdult)} zł)</span>
                         <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
                     {children > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="text-muted-foreground">Dzieci ({children} \u00d7 {formatPLN(effectivePricePerChild)} zł)</span>
                         <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
+                        <span className="text-muted-foreground">Maluchy ({toddlers} \u00d7 {formatPLN(effectivePricePerToddler)} zł)</span>
                         <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
                       </div>
                     )}
@@ -443,7 +483,7 @@ export function ReservationFinancialSummary({
                       {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
+                            {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} \u00d7 ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
                           </span>
                           <span className="font-semibold">{formatPLN(opt.total)} zł</span>
                         </div>
@@ -468,9 +508,9 @@ export function ReservationFinancialSummary({
                       {activeExtras.map((extra: any) => (
                         <div key={extra.id} className="flex justify-between text-sm">
                           <span className="text-muted-foreground flex items-center gap-1.5">
-                            <span>{extra.serviceItem?.icon || '📦'}</span>
+                            <span>{extra.serviceItem?.icon || '\ud83d\udce6'}</span>
                             {extra.serviceItem?.name || 'Pozycja'}
-                            {extra.quantity > 1 && ` (×${extra.quantity})`}
+                            {extra.quantity > 1 && ` (\u00d7${extra.quantity})`}
                           </span>
                           <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
                         </div>
@@ -484,7 +524,7 @@ export function ReservationFinancialSummary({
                   </div>
                 )}
 
-                {/* Venue Surcharge (whole venue booking) */}
+                {/* Venue Surcharge */}
                 {hasVenueSurcharge && (
                   <div className="bg-white dark:bg-black/20 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -511,31 +551,38 @@ export function ReservationFinancialSummary({
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Czas trwania wydarzenia
-                        </span>
+                        <span className="text-muted-foreground">Czas trwania wydarzenia</span>
                         <span className="font-medium">{extraHoursInfo.durationHours}h</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Czas w cenie (standard)
+                          Czas w cenie ({standardHours !== STANDARD_HOURS ? 'typ wydarzenia' : 'standard'})
                         </span>
-                        <span className="font-medium text-emerald-600">{STANDARD_HOURS}h</span>
+                        <span className="font-medium text-emerald-600">{standardHours}h</span>
                       </div>
                       <Separator className="my-2" />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
-                        </span>
-                        <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
-                      </div>
+                      {isExtraHoursExempt ? (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Dodatkowe godziny ({extraHoursInfo.extraHours}h)
+                          </span>
+                          <span className="font-semibold text-emerald-600">w cenie</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Dodatkowe godziny ({extraHoursInfo.extraHours} \u00d7 {formatPLN(extraHourRate)} zł/h)
+                          </span>
+                          <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* DISCOUNT SECTION (Sprint 7) — uses effectiveTotalPrice as base */}
+            {/* DISCOUNT SECTION */}
             {status && (
               <div className="mb-3">
                 <DiscountSection
@@ -549,11 +596,12 @@ export function ReservationFinancialSummary({
                     discountReason: discountReason || null,
                     priceBeforeDiscount: priceBeforeDiscount ?? null,
                   }}
+                  readOnly={readOnly}
                 />
               </div>
             )}
 
-            {/* TOTAL — uses finalTotalPrice (after discount) */}
+            {/* TOTAL */}
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -580,7 +628,7 @@ export function ReservationFinancialSummary({
                   <span>+{formatPLN(extrasTotalPrice)} zł</span>
                 </div>
               )}
-              {extraHoursInfo && extraHoursInfo.extraHours > 0 && (
+              {extraHoursInfo && extraHoursInfo.extraCost > 0 && (
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
                   <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
                   <span>+{formatPLN(extraHoursInfo.extraCost)} zł</span>
@@ -589,7 +637,7 @@ export function ReservationFinancialSummary({
             </div>
           </div>
 
-          {/* DEPOSITS + BALANCE — uses finalTotalPrice */}
+          {/* DEPOSITS + BALANCE */}
           <div className="px-6 pb-6">
             {/* Balance bar */}
             <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
@@ -682,8 +730,8 @@ export function ReservationFinancialSummary({
                 {!depositsLoading && deposits.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {deposits.map((deposit) => {
-                      const status = statusConfig[deposit.status]
-                      const StatusIcon = status?.icon || Clock
+                      const st = statusConfig[deposit.status]
+                      const StatusIcon = st?.icon || Clock
                       const isPending = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
                       const isPaid = deposit.status === 'PAID'
                       const isCancelled = deposit.status === 'CANCELLED'
@@ -708,13 +756,13 @@ export function ReservationFinancialSummary({
                               </span>
                               {deposit.title && (
                                 <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                  — {deposit.title}
+                                  \u2014 {deposit.title}
                                 </span>
                               )}
                             </div>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${status?.className || ''}`}>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${st?.className || ''}`}>
                               <StatusIcon className="h-3 w-3" />
-                              {status?.label || deposit.status}
+                              {st?.label || deposit.status}
                             </span>
                           </div>
 
@@ -733,7 +781,7 @@ export function ReservationFinancialSummary({
                           </div>
 
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {isPending && (
+                            {isPending && !readOnly && (
                               <button onClick={() => handleOpenPay(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50 transition-colors">
                                 <CheckCircle2 className="h-3 w-3" /> Opłać
@@ -749,16 +797,29 @@ export function ReservationFinancialSummary({
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors">
                                   {isActioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />} Email
                                 </button>
-                                <button onClick={() => handleMarkUnpaid(deposit)} disabled={isActioning}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50 transition-colors">
-                                  <Undo2 className="h-3 w-3" /> Cofnij
-                                </button>
+                                {!readOnly && (
+                                  <button onClick={() => handleMarkUnpaid(deposit)} disabled={isActioning}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50 transition-colors">
+                                    <Undo2 className="h-3 w-3" /> Cofnij
+                                  </button>
+                                )}
                               </>
                             )}
-                            {!isCancelled && !isPaid && (
+                            {!isCancelled && !isPaid && !readOnly && (
                               <button onClick={() => handleCancel(deposit)} disabled={isActioning}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors">
                                 <XCircle className="h-3 w-3" /> Anuluj
+                              </button>
+                            )}
+                            {/* #deposits-fix (P4): permanently delete CANCELLED deposit */}
+                            {isCancelled && !readOnly && (
+                              <button
+                                onClick={() => handleOpenDelete(deposit)}
+                                disabled={isActioning}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                              >
+                                {isActioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                Usuń
                               </button>
                             )}
                           </div>
@@ -768,14 +829,16 @@ export function ReservationFinancialSummary({
                   </div>
                 )}
 
-                <Button
-                  size="sm"
-                  onClick={handleOpenCreate}
-                  className="w-full bg-rose-600 hover:bg-rose-700 text-white shadow-md"
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Dodaj zaliczkę
-                </Button>
+                {!readOnly && (
+                  <Button
+                    size="sm"
+                    onClick={handleOpenCreate}
+                    className="w-full bg-rose-600 hover:bg-rose-700 text-white shadow-md"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Dodaj zaliczkę
+                  </Button>
+                )}
 
                 {!depositsLoading && deposits.length > 0 && (
                   <div className="mt-3 text-center">
@@ -792,101 +855,153 @@ export function ReservationFinancialSummary({
       </Card>
 
       {/* Create Deposit Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
-                <DollarSign className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+      {!readOnly && (
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                </div>
+                Nowa zaliczka
+              </DialogTitle>
+              <DialogDescription>
+                Sugerowana kwota: 30% ({formatPLN(Math.round(finalTotalPrice * 0.3))} zł)
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Kwota (zł) *</Label>
+                <Input type="number" min="1" step="0.01" placeholder={`np. ${Math.round(finalTotalPrice * 0.3)}`}
+                  value={createAmount} onChange={(e) => setCreateAmount(e.target.value)} className="h-10" />
+                {createAmount && finalTotalPrice > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {((Number(createAmount) / finalTotalPrice) * 100).toFixed(1)}% ceny rezerwacji
+                  </p>
+                )}
               </div>
-              Nowa zaliczka
-            </DialogTitle>
-            <DialogDescription>
-              Sugerowana kwota: 30% ({formatPLN(Math.round(finalTotalPrice * 0.3))} zł)
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Kwota (zł) *</Label>
-              <Input type="number" min="1" step="0.01" placeholder={`np. ${Math.round(finalTotalPrice * 0.3)}`}
-                value={createAmount} onChange={(e) => setCreateAmount(e.target.value)} className="h-10" />
-              {createAmount && finalTotalPrice > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {((Number(createAmount) / finalTotalPrice) * 100).toFixed(1)}% ceny rezerwacji
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Termin płatności *</Label>
+                <Input type="date" value={createDueDate} onChange={(e) => setCreateDueDate(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Tytuł (opcjonalnie)</Label>
+                <Input placeholder="np. Zaliczka na wesele" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} className="h-10" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Termin płatności *</Label>
-              <Input type="date" value={createDueDate} onChange={(e) => setCreateDueDate(e.target.value)} className="h-10" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Tytuł (opcjonalnie)</Label>
-              <Input placeholder="np. Zaliczka na wesele" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} className="h-10" />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowCreateModal(false)}>Anuluj</Button>
-            <Button onClick={handleCreate} disabled={creating} className="bg-rose-600 hover:bg-rose-700 text-white">
-              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Utwórz zaliczkę
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowCreateModal(false)}>Anuluj</Button>
+              <Button onClick={handleCreate} disabled={creating} className="bg-rose-600 hover:bg-rose-700 text-white">
+                {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                Utwórz zaliczkę
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Mark as Paid Modal */}
-      <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              Potwierdź płatność
-            </DialogTitle>
-          </DialogHeader>
-          {selectedDeposit && (
-            <div className="space-y-5 py-4">
-              <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
-                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota</p>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                  {Number(selectedDeposit.amount).toLocaleString('pl-PL')} zł
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Metoda płatności</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {paymentMethodOptions.map((m) => {
-                    const Icon = m.icon
-                    const selected = payMethod === m.value
-                    return (
-                      <button key={m.value} type="button" onClick={() => setPayMethod(m.value)}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
-                          selected ? `${m.color} border-current ring-2 ring-current/20`
-                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
-                        }`}>
-                        <Icon className="h-4 w-4" />{m.label}
-                      </button>
-                    )
-                  })}
+      {!readOnly && (
+        <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                Potwierdź płatność
+              </DialogTitle>
+            </DialogHeader>
+            {selectedDeposit && (
+              <div className="space-y-5 py-4">
+                <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
+                  <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota</p>
+                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                    {Number(selectedDeposit.amount).toLocaleString('pl-PL')} zł
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Metoda płatności</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {paymentMethodOptions.map((m) => {
+                      const Icon = m.icon
+                      const selected = payMethod === m.value
+                      return (
+                        <button key={m.value} type="button" onClick={() => setPayMethod(m.value)}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                            selected ? `${m.color} border-current ring-2 ring-current/20`
+                              : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                          }`}>
+                          <Icon className="h-4 w-4" />{m.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Data płatności</Label>
+                  <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} className="h-10" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Data płatności</Label>
-                <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} className="h-10" />
+            )}
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowPayModal(false)}>Anuluj</Button>
+              <Button onClick={handlePay} disabled={paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                Potwierdź płatność
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* #deposits-fix (P4): Delete confirmation modal — only for CANCELLED deposits */}
+      {!readOnly && (
+        <Dialog open={showDeleteModal} onOpenChange={(open) => { if (!open) { setShowDeleteModal(false); setDepositToDelete(null) } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                Usuń zaliczkę
+              </DialogTitle>
+              <DialogDescription>
+                Ta operacja jest nieodwracalna. Zaliczka zostanie trwale usunięta z bazy danych.
+              </DialogDescription>
+            </DialogHeader>
+            {depositToDelete && (
+              <div className="py-4">
+                <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+                  <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Zaliczka do usunięcia</p>
+                  <p className="text-xl font-bold text-red-700 dark:text-red-300">
+                    {Number(depositToDelete.amount).toLocaleString('pl-PL')} zł
+                  </p>
+                  {depositToDelete.title && (
+                    <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">{depositToDelete.title}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowPayModal(false)}>Anuluj</Button>
-            <Button onClick={handlePay} disabled={paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-              Potwierdź płatność
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            )}
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => { setShowDeleteModal(false); setDepositToDelete(null) }}>
+                Anuluj
+              </Button>
+              <Button
+                onClick={handleDeleteConfirm}
+                disabled={actionLoading === depositToDelete?.id}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {actionLoading === depositToDelete?.id
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <Trash2 className="mr-2 h-4 w-4" />
+                }
+                Usuń trwale
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }

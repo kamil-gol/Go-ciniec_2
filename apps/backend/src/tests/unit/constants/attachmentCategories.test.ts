@@ -1,119 +1,90 @@
-import {
-  ENTITY_TYPES,
-  ATTACHMENT_CATEGORIES,
-  getValidCategories,
-  isValidCategory,
-  ALLOWED_MIME_TYPES,
-  MAX_FILE_SIZE,
-  STORAGE_DIRS,
-} from '../../../constants/attachmentCategories';
+/**
+ * attachmentCategories constants — Unit Tests
+ * Tests: ATTACHMENT_CATEGORIES object structure, MAX_FILE_SIZE
+ */
+
+import { ATTACHMENT_CATEGORIES, MAX_FILE_SIZE } from '../../../constants/attachmentCategories';
 
 describe('attachmentCategories constants', () => {
-  describe('ENTITY_TYPES', () => {
-    it('should contain CLIENT, RESERVATION, DEPOSIT', () => {
-      expect(ENTITY_TYPES).toContain('CLIENT');
-      expect(ENTITY_TYPES).toContain('RESERVATION');
-      expect(ENTITY_TYPES).toContain('DEPOSIT');
-      expect(ENTITY_TYPES).toHaveLength(3);
-    });
-  });
-
   describe('ATTACHMENT_CATEGORIES', () => {
-    it('should have categories for all entity types', () => {
-      ENTITY_TYPES.forEach((et) => {
-        expect(ATTACHMENT_CATEGORIES[et]).toBeDefined();
-        expect(ATTACHMENT_CATEGORIES[et].length).toBeGreaterThan(0);
-      });
+    it('should have required entity types', () => {
+      expect(ATTACHMENT_CATEGORIES).toHaveProperty('CLIENT');
+      expect(ATTACHMENT_CATEGORIES).toHaveProperty('DEPOSIT');
+      expect(ATTACHMENT_CATEGORIES).toHaveProperty('RESERVATION');
     });
 
-    it('every category should have value and label', () => {
-      ENTITY_TYPES.forEach((et) => {
-        ATTACHMENT_CATEGORIES[et].forEach((cat) => {
-          expect(cat.value).toBeDefined();
-          expect(cat.label).toBeDefined();
-          expect(cat.value.length).toBeGreaterThan(0);
-        });
-      });
+    it('should have array values for each entity type', () => {
+      expect(Array.isArray(ATTACHMENT_CATEGORIES.CLIENT)).toBe(true);
+      expect(Array.isArray(ATTACHMENT_CATEGORIES.DEPOSIT)).toBe(true);
+      expect(Array.isArray(ATTACHMENT_CATEGORIES.RESERVATION)).toBe(true);
     });
 
-    it('CLIENT should have RODO, CORRESPONDENCE, OTHER', () => {
-      const values = ATTACHMENT_CATEGORIES.CLIENT.map((c) => c.value);
-      expect(values).toContain('RODO');
-      expect(values).toContain('CORRESPONDENCE');
-      expect(values).toContain('OTHER');
+    it('should have RODO category in CLIENT', () => {
+      const rodo = ATTACHMENT_CATEGORIES.CLIENT.find(c => c.value === 'RODO');
+      expect(rodo).toBeDefined();
+      expect(rodo?.label).toBe('Zgoda RODO');
     });
 
-    it('RESERVATION should have CONTRACT and ANNEX', () => {
-      const values = ATTACHMENT_CATEGORIES.RESERVATION.map((c) => c.value);
-      expect(values).toContain('CONTRACT');
-      expect(values).toContain('ANNEX');
-      expect(values).toContain('POST_EVENT');
+    it('should have CONTRACT category in RESERVATION', () => {
+      const contract = ATTACHMENT_CATEGORIES.RESERVATION.find(c => c.value === 'CONTRACT');
+      expect(contract).toBeDefined();
+      expect(contract?.label).toBe('Umowa');
     });
 
-    it('DEPOSIT should have PAYMENT_PROOF and INVOICE', () => {
-      const values = ATTACHMENT_CATEGORIES.DEPOSIT.map((c) => c.value);
-      expect(values).toContain('PAYMENT_PROOF');
-      expect(values).toContain('INVOICE');
-      expect(values).toContain('REFUND_PROOF');
-    });
-  });
-
-  describe('getValidCategories', () => {
-    it('should return category values for CLIENT', () => {
-      const cats = getValidCategories('CLIENT');
-      expect(cats).toContain('RODO');
-      expect(cats).toContain('OTHER');
+    it('should have PAYMENT_PROOF in DEPOSIT', () => {
+      const proof = ATTACHMENT_CATEGORIES.DEPOSIT.find(c => c.value === 'PAYMENT_PROOF');
+      expect(proof).toBeDefined();
+      expect(proof?.label).toBe('Potwierdzenie przelewu');
     });
 
-    it('should return category values for RESERVATION', () => {
-      const cats = getValidCategories('RESERVATION');
-      expect(cats).toContain('CONTRACT');
-    });
-
-    it('should return category values for DEPOSIT', () => {
-      const cats = getValidCategories('DEPOSIT');
-      expect(cats).toContain('PAYMENT_PROOF');
-    });
-  });
-
-  describe('isValidCategory', () => {
-    it('should return true for valid CLIENT category', () => {
-      expect(isValidCategory('CLIENT', 'RODO')).toBe(true);
-    });
-
-    it('should return false for invalid CLIENT category', () => {
-      expect(isValidCategory('CLIENT', 'INVOICE')).toBe(false);
-    });
-
-    it('should return true for valid DEPOSIT category', () => {
-      expect(isValidCategory('DEPOSIT', 'INVOICE')).toBe(true);
-    });
-
-    it('should return false for nonexistent category', () => {
-      expect(isValidCategory('RESERVATION', 'NONEXISTENT')).toBe(false);
-    });
-  });
-
-  describe('ALLOWED_MIME_TYPES', () => {
-    it('should include PDF and image types', () => {
-      expect(ALLOWED_MIME_TYPES).toContain('application/pdf');
-      expect(ALLOWED_MIME_TYPES).toContain('image/jpeg');
-      expect(ALLOWED_MIME_TYPES).toContain('image/png');
-      expect(ALLOWED_MIME_TYPES).toContain('image/webp');
+    it('should have OTHER in all entity types', () => {
+      expect(ATTACHMENT_CATEGORIES.CLIENT.some(c => c.value === 'OTHER')).toBe(true);
+      expect(ATTACHMENT_CATEGORIES.DEPOSIT.some(c => c.value === 'OTHER')).toBe(true);
+      expect(ATTACHMENT_CATEGORIES.RESERVATION.some(c => c.value === 'OTHER')).toBe(true);
     });
   });
 
   describe('MAX_FILE_SIZE', () => {
-    it('should be 10 MB', () => {
-      expect(MAX_FILE_SIZE).toBe(10 * 1024 * 1024);
+    it('should be 25 MB', () => {
+      expect(MAX_FILE_SIZE).toBe(25 * 1024 * 1024);
+    });
+
+    it('should be a positive number', () => {
+      expect(MAX_FILE_SIZE).toBeGreaterThan(0);
+    });
+
+    it('should be at least 10 MB', () => {
+      expect(MAX_FILE_SIZE).toBeGreaterThanOrEqual(10 * 1024 * 1024);
     });
   });
 
-  describe('STORAGE_DIRS', () => {
-    it('should map entity types to directories', () => {
-      expect(STORAGE_DIRS.CLIENT).toBe('clients');
-      expect(STORAGE_DIRS.RESERVATION).toBe('reservations');
-      expect(STORAGE_DIRS.DEPOSIT).toBe('deposits');
+  describe('category structure', () => {
+    it('each category should have value, label, description', () => {
+      const allCategories = [
+        ...ATTACHMENT_CATEGORIES.CLIENT,
+        ...ATTACHMENT_CATEGORIES.DEPOSIT,
+        ...ATTACHMENT_CATEGORIES.RESERVATION,
+      ];
+
+      allCategories.forEach(cat => {
+        expect(cat).toHaveProperty('value');
+        expect(cat).toHaveProperty('label');
+        expect(cat).toHaveProperty('description');
+        expect(typeof cat.value).toBe('string');
+        expect(typeof cat.label).toBe('string');
+        expect(typeof cat.description).toBe('string');
+      });
+    });
+
+    it('should not have duplicate values within entity types', () => {
+      const checkDuplicates = (arr: any[]) => {
+        const values = arr.map(c => c.value);
+        return values.length === new Set(values).size;
+      };
+
+      expect(checkDuplicates(ATTACHMENT_CATEGORIES.CLIENT)).toBe(true);
+      expect(checkDuplicates(ATTACHMENT_CATEGORIES.DEPOSIT)).toBe(true);
+      expect(checkDuplicates(ATTACHMENT_CATEGORIES.RESERVATION)).toBe(true);
     });
   });
 });

@@ -199,7 +199,7 @@ describe('ReportsService — branches', () => {
       setupOccupancy([]);
       const result = await reportsService.getOccupancyReport(baseFilters as any);
       expect(result.summary.avgOccupancy).toBe(0);
-      expect(result.summary.peakDay).toBe('N/A');
+      expect(result.summary.peakDay).toBe('Brak danych');
       expect(result.summary.peakHall).toBeNull();
       expect(result.summary.peakHallId).toBeNull();
     });

@@ -1,6 +1,7 @@
 /**
  * PackageCategory Service — Branch coverage tests
  * Covers: update (not found, line 77), bulkUpdate (existing=null skip, line 101)
+ * FIX: spolonizowane komunikaty błędów
  */
 
 const mockPrisma = {
@@ -25,7 +26,7 @@ describe('PackageCategoryService branches', () => {
   describe('update', () => {
     it('should throw when setting not found (line 77)', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.update('x', { minSelect: 2 })).rejects.toThrow('not found');
+      await expect(packageCategoryService.update('x', { minSelect: 2 })).rejects.toThrow('Nie znaleziono');
     });
 
     it('should update when setting exists', async () => {
@@ -40,7 +41,7 @@ describe('PackageCategoryService branches', () => {
   describe('bulkUpdate', () => {
     it('should throw when package not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.bulkUpdate('p1', { settings: [] })).rejects.toThrow('not found');
+      await expect(packageCategoryService.bulkUpdate('p1', { settings: [] })).rejects.toThrow('Nie znaleziono');
     });
 
     it('should skip settings that do not exist (line 101 — existing=null)', async () => {
@@ -68,7 +69,7 @@ describe('PackageCategoryService branches', () => {
   describe('getById', () => {
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.getById('x')).rejects.toThrow('not found');
+      await expect(packageCategoryService.getById('x')).rejects.toThrow('Nie znaleziono');
     });
   });
 
@@ -76,7 +77,7 @@ describe('PackageCategoryService branches', () => {
   describe('delete', () => {
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.delete('x')).rejects.toThrow('not found');
+      await expect(packageCategoryService.delete('x')).rejects.toThrow('Nie znaleziono');
     });
   });
 
@@ -86,7 +87,7 @@ describe('PackageCategoryService branches', () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue({ id: 'existing' });
       await expect(packageCategoryService.create({
         packageId: 'p1', category: 'SOUP' as any,
-      })).rejects.toThrow('already exists');
+      })).rejects.toThrow('już istnieją');
     });
 
     it('should create with default values', async () => {

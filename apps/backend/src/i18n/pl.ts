@@ -93,6 +93,10 @@ export const RESERVATION = {
   GUESTS_REQUIRED: 'Wymagana jest co najmniej jedna osoba (dorośli, dzieci lub maluchy)',
   GUESTS_EXCEED_CAPACITY: (guests: number, capacity: number) =>
     `Liczba gości (${guests}) przekracza pojemność sali (${capacity})`,
+  // #165: Aggregate capacity check — multiple reservations on same hall
+  CAPACITY_EXCEEDED: (requested: number, available: number, total: number) =>
+    `Brak wystarczającej pojemności sali. Żądano miejsc: ${requested}, dostępne: ${available}/${total}`,
+  MULTIPLE_BOOKINGS_DISABLED: 'Ta sala nie dopuszcza wielu rezerwacji w tym samym czasie',
   CANNOT_UPDATE_COMPLETED: 'Nie można edytować zakończonej rezerwacji',
   CANNOT_UPDATE_CANCELLED: 'Nie można edytować anulowanej rezerwacji',
   CANNOT_UPDATE_ARCHIVED: 'Nie można edytować zarchiwizowanej rezerwacji',
@@ -186,6 +190,10 @@ export const HALL = {
   CAPACITY_POSITIVE: 'Pojemność sali musi być większa od 0',
   CANNOT_DELETE_WITH_RESERVATIONS: 'Nie można usunąć sali posiadającej rezerwacje',
   DELETED: 'Sala została usunięta',
+  // #165: Capacity-based booking messages
+  CAPACITY_EXCEEDED: (requested: number, available: number, total: number) =>
+    `Brak wystarczającej pojemności sali. Żądano: ${requested}, dostępne: ${available}/${total}`,
+  MULTIPLE_BOOKINGS_DISABLED: 'Ta sala nie dopuszcza wielu rezerwacji w tym samym czasie',
 } as const;
 
 // ═══════════════════════════════════════
@@ -224,6 +232,10 @@ export const DEPOSIT = {
   NOT_FOUND: 'Nie znaleziono zaliczki',
   AMOUNT_POSITIVE: 'Kwota zaliczki musi być większa od 0',
   CANNOT_EDIT_PAID: 'Nie można edytować opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.',
+  /**
+   * @deprecated Od 2026-03-05 usuwanie opłaconych zaliczek jest dozwolone
+   * (korekta błędu lub rezygnacja klienta). Klucz zachowany dla ciągłości historycznej.
+   */
   CANNOT_DELETE_PAID: 'Nie można usunąć opłaconej zaliczki. Najpierw cofnij oznaczenie płatności.',
   CANNOT_CANCEL_PAID: 'Nie można anulować opłaconej zaliczki. Najpierw cofnij płatność.',
   ALREADY_PAID: 'Ta zaliczka jest już oznaczona jako opłacona',

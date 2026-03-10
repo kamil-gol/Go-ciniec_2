@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateReservation } from '@/hooks/use-reservations'
-import { useHalls } from '@/hooks/use-halls'
+import { useHalls, useAvailableCapacity } from '@/hooks/use-halls'
 import { useClients } from '@/hooks/use-clients'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { useMenuTemplates } from '@/hooks/use-menu-templates'
@@ -53,8 +53,8 @@ const STEPS: StepConfig[] = [
   { id: 'summary', title: 'Podsumowanie', icon: ClipboardCheck },
 ]
 
-const EXTRA_HOUR_RATE = 500
-const STANDARD_HOURS = 6
+const DEFAULT_EXTRA_HOUR_RATE = 500
+const DEFAULT_STANDARD_HOURS = 6
 
 // ═══ SCHEMA ═══
 
@@ -142,6 +142,19 @@ const selectAllOnFocus = (e: React.FocusEvent<HTMLInputElement>) => {
   e.target.select()
 }
 
+// ═══ HELPER: Convert local date+time strings to ISO with timezone offset ═══
+// Fixes UTC+1 (Warsaw) shift: without offset, backend stores 14:00Z instead of 13:00Z,
+// causing the UI to display times 1 hour later than entered.
+function toLocalISO(dateStr: string, timeStr: string): string {
+  const dt = new Date(`${dateStr}T${timeStr}:00`)
+  const offsetMin = -dt.getTimezoneOffset()
+  const sign = offsetMin >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMin)
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const mm = String(abs % 60).padStart(2, '0')
+  return `${dateStr}T${timeStr}:00${sign}${hh}:${mm}`
+}
+
 // ═══ COMPONENT ═══
 
 export function CreateReservationForm({
@@ -217,6 +230,14 @@ export function CreateReservationForm({
   const clientsArray = useMemo(() => Array.isArray(clientsData) ? clientsData : [], [clientsData])
   const eventTypesArray = useMemo(() => Array.isArray(eventTypes) ? eventTypes : [], [eventTypes])
 
+  const selectedEventType = useMemo(() => {
+    if (!selectedEventTypeId) return null
+    return (eventTypesArray as any[]).find((t) => t.id === selectedEventTypeId) || null
+  }, [selectedEventTypeId, eventTypesArray])
+
+  const standardHours = Number((selectedEventType as any)?.standardHours) || DEFAULT_STANDARD_HOURS
+  const extraHourRate = Number((selectedEventType as any)?.extraHourRate) || DEFAULT_EXTRA_HOUR_RATE
+
   // Menu templates filtered by event type
   const { data: menuTemplates, isLoading: menuTemplatesLoading } = useMenuTemplates(
     selectedEventTypeId ? { eventTypeId: selectedEventTypeId, isActive: true } : undefined
@@ -227,13 +248,14 @@ export function CreateReservationForm({
   const { data: templatePackages, isLoading: templatePackagesLoading } = usePackagesByTemplate(menuTemplateId)
   const templatePackagesArray = useMemo(() => Array.isArray(templatePackages) ? templatePackages : [], [templatePackages])
 
+  // tz-aware ISO strings for availability checks
   const startDateTimeISO = useMemo(() => {
-    if (startDate && startTime) return `${startDate}T${startTime}:00`
+    if (startDate && startTime) return toLocalISO(startDate, startTime)
     return undefined
   }, [startDate, startTime])
 
   const endDateTimeISO = useMemo(() => {
-    if (endDate && endTime) return `${endDate}T${endTime}:00`
+    if (endDate && endTime) return toLocalISO(endDate, endTime)
     return undefined
   }, [endDate, endTime])
 
@@ -241,8 +263,16 @@ export function CreateReservationForm({
     hallId, startDateTimeISO, endDateTimeISO
   )
 
+  // #165: Available capacity for multi-booking halls
+  const { data: availableCapacity, isLoading: capacityLoading } = useAvailableCapacity(
+    hallId, startDateTimeISO, endDateTimeISO
+  )
+
   const selectedHall = useMemo(() => hallsArray.find((h) => h.id === hallId), [hallsArray, hallId])
   const selectedHallCapacity = selectedHall?.capacity || 0
+
+  // #165: Is this hall in multi-booking mode?
+  const isMultiBookingHall = !!(selectedHall as any)?.allowMultipleBookings
 
   const selectedEventTypeName = useMemo(() => {
     const t = eventTypesArray.find((t) => t.id === selectedEventTypeId)
@@ -279,11 +309,11 @@ export function CreateReservationForm({
   }, [startDate, startTime, endDate, endTime])
 
   const extraHours = useMemo(() => {
-    if (durationHours > STANDARD_HOURS) return Math.ceil(durationHours - STANDARD_HOURS)
+    if (durationHours > standardHours) return Math.ceil(durationHours - standardHours)
     return 0
-  }, [durationHours])
+  }, [durationHours, standardHours])
 
-  const extraHoursCost = extraHours * EXTRA_HOUR_RATE
+  const extraHoursCost = extraHours * extraHourRate
 
   // Stage 3: Calculate total from selected service extras
   const extrasTotal = useMemo(() => {
@@ -337,11 +367,11 @@ export function CreateReservationForm({
   useEffect(() => {
     if (startDate && startTime && !watchAll.endDate && !watchAll.endTime) {
       const start = new Date(`${startDate}T${startTime}`)
-      const end = new Date(start.getTime() + 6 * 60 * 60 * 1000)
+      const end = new Date(start.getTime() + standardHours * 60 * 60 * 1000)
       setValue('endDate', end.toISOString().split('T')[0])
       setValue('endTime', end.toTimeString().slice(0, 5))
     }
-  }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue])
+  }, [startDate, startTime, watchAll.endDate, watchAll.endTime, setValue, standardHours])
 
   // Set prices from selected package
   useEffect(() => {
@@ -418,6 +448,10 @@ export function CreateReservationForm({
         await trigger('adults')
         return false
       }
+      // #165: Block if guests exceed available capacity for multi-booking halls
+      if (isMultiBookingHall && availableCapacity && (adults + children + toddlers) > availableCapacity.availableCapacity) {
+        return false
+      }
     }
 
     if (currentStep === 3) {
@@ -429,7 +463,7 @@ export function CreateReservationForm({
     }
 
     return await trigger(fields)
-  }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuTemplateId, menuPackageId])
+  }, [currentStep, trigger, adults, children, toddlers, useMenuPackage, pricePerAdult, menuTemplateId, menuPackageId, isMultiBookingHall, availableCapacity])
 
   const goToNextStep = useCallback(async () => {
     const isValid = await validateCurrentStep()
@@ -452,8 +486,10 @@ export function CreateReservationForm({
   }, [currentStep, completedSteps])
 
   const onFormSubmit = async (data: ReservationFormData) => {
-    const startDateTime = `${data.startDate}T${data.startTime}`
-    const endDateTime = `${data.endDate}T${data.endTime}`
+    // toLocalISO ensures the ISO string includes the Warsaw UTC+1 offset,
+    // preventing the backend (UTC) from shifting the time by +1h on storage.
+    const startDateTime = toLocalISO(data.startDate, data.startTime)
+    const endDateTime = toLocalISO(data.endDate, data.endTime)
 
     const input: CreateReservationInput | any = {
       hallId: data.hallId,
@@ -615,7 +651,7 @@ export function CreateReservationForm({
             <div className="flex justify-between text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 -mx-4 px-4 py-2">
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
-                Dodatkowe godziny: {extraHours}h × {EXTRA_HOUR_RATE} PLN
+                Dodatkowe godziny: {extraHours}h × {extraHourRate} PLN
               </span>
               <span className="font-medium">{formatCurrency(extraHoursCost)}</span>
             </div>
@@ -653,7 +689,7 @@ export function CreateReservationForm({
         </div>
       </motion.div>
     )
-  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage, venueSurchargeAmount, venueSurcharge])
+  }, [adults, children, toddlers, pricePerAdult, pricePerChild, pricePerToddler, calculatedPrice, extraHours, extraHoursCost, extrasTotal, selectedExtras, totalWithExtras, useMenuPackage, selectedTemplate, selectedPackage, venueSurchargeAmount, venueSurcharge, extraHourRate])
 
   // ═════════════════════════════════════════════════════════
   // STEP RENDERERS
@@ -788,12 +824,12 @@ export function CreateReservationForm({
 
       {durationHours > 0 && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > STANDARD_HOURS ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'}`}
+          className={`p-3 rounded-lg flex items-center gap-2 ${durationHours > standardHours ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'}`}
         >
-          {durationHours > STANDARD_HOURS && <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-          <span className={`text-sm ${durationHours > STANDARD_HOURS ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}`}>
+          {durationHours > standardHours && <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+          <span className={`text-sm ${durationHours > standardHours ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}`}>
             Czas trwania: {durationHours}h
-            {durationHours > STANDARD_HOURS && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
+            {durationHours > standardHours && ` (${extraHours}h ponad standard — dopłata zostanie doliczona w wycenie)`}
           </span>
         </motion.div>
       )}
@@ -829,6 +865,54 @@ export function CreateReservationForm({
               ))}
             </div>
           )}
+        </motion.div>
+      )}
+
+      {/* #165: Capacity banner for multi-booking halls */}
+      {isMultiBookingHall && hallId && startDateTimeISO && endDateTimeISO && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="p-4 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20"
+        >
+          {capacityLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie pojemności...</span>
+            </div>
+          ) : availableCapacity ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm font-medium text-purple-900 dark:text-purple-100">Tryb wielu rezerwacji — pojemność sali</span>
+              </div>
+              <div className="flex justify-between text-xs text-purple-700 dark:text-purple-300">
+                <span>Zajęto: {availableCapacity.occupiedCapacity} osób</span>
+                <span>Wolne: {availableCapacity.availableCapacity} z {availableCapacity.totalCapacity}</span>
+              </div>
+              <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    availableCapacity.availableCapacity === 0
+                      ? 'bg-red-500'
+                      : availableCapacity.occupiedCapacity / availableCapacity.totalCapacity >= 0.9
+                      ? 'bg-amber-500'
+                      : 'bg-purple-500'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.round((availableCapacity.occupiedCapacity / availableCapacity.totalCapacity) * 100))}%` }}
+                />
+              </div>
+              {availableCapacity.overlappingReservations > 0 && (
+                <p className="text-xs text-purple-600 dark:text-purple-400">
+                  {availableCapacity.overlappingReservations}{' '}
+                  {availableCapacity.overlappingReservations === 1 ? 'rezerwacja' : availableCapacity.overlappingReservations < 5 ? 'rezerwacje' : 'rezerwacji'} w tym terminie
+                </p>
+              )}
+              {availableCapacity.availableCapacity === 0 && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                  ⚠ Sala jest całkowicie zajęta — brak wolnych miejsc
+                </p>
+              )}
+            </div>
+          ) : null}
         </motion.div>
       )}
     </div>
@@ -899,6 +983,24 @@ export function CreateReservationForm({
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
           <span className="text-sm text-red-800 dark:text-red-200">Liczba gości ({totalGuests}) przekracza pojemność sali ({selectedHallCapacity})!</span>
+        </motion.div>
+      )}
+
+      {/* #165: Purple warning banner — multi-booking available capacity exceeded */}
+      {isMultiBookingHall && availableCapacity && totalGuests > availableCapacity.availableCapacity && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
+              Zbyt wielu gości dla tego terminu
+            </p>
+            <p className="text-xs text-purple-700 dark:text-purple-300 mt-0.5">
+              Wpisano {totalGuests} gości, ale w wybranym terminie dostępne jest tylko{' '}
+              <strong>{availableCapacity.availableCapacity}</strong> miejsc
+              (zajęto {availableCapacity.occupiedCapacity} z {availableCapacity.totalCapacity}).
+              Zmniejsz liczbę gości, aby przejść dalej.
+            </p>
+          </div>
         </motion.div>
       )}
     </div>
@@ -1234,8 +1336,8 @@ export function CreateReservationForm({
             </p>
           )}
           {durationHours > 0 && (
-            <p className={`text-xs ${durationHours > STANDARD_HOURS ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-neutral-500 dark:text-neutral-400'}`}>
-              {durationHours}h{durationHours > STANDARD_HOURS && ` (w tym ${extraHours}h dodatkowych)`}
+            <p className={`text-xs ${durationHours > standardHours ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-neutral-500 dark:text-neutral-400'}`}>
+              {durationHours}h{durationHours > standardHours && ` (w tym ${extraHours}h dodatkowych)`}
             </p>
           )}
           {venueSurchargeAmount > 0 && (
@@ -1269,7 +1371,8 @@ export function CreateReservationForm({
                 <>
                   <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.firstName} {selectedClient.lastName}</p>
                   <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
-                    {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                    {selectedClient.phone && <span>{selectedClient.phone}</span>
+                    }
                     {selectedClient.email && <span>{selectedClient.email}</span>}
                   </div>
                 </>

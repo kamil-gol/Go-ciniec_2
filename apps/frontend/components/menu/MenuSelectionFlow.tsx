@@ -384,6 +384,8 @@ export function MenuSelectionFlow({
               </div>
               <DishSelector
                 packageId={selectedPackage.id}
+                adults={adults}
+                children={children}
                 initialSelections={dishSelections}
                 onComplete={handleDishesComplete}
                 onBack={() => setCurrentStep('package')}

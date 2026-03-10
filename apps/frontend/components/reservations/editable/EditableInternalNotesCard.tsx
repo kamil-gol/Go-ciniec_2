@@ -10,12 +10,14 @@ import { toast } from 'sonner'
 interface EditableInternalNotesCardProps {
   reservationId: string
   internalNotes: string | null
+  disabled?: boolean
   onUpdated?: () => void
 }
 
 export function EditableInternalNotesCard({
   reservationId,
   internalNotes: initialNotes,
+  disabled = false,
   onUpdated,
 }: EditableInternalNotesCardProps) {
   const [notes, setNotes] = useState(initialNotes || '')
@@ -61,11 +63,11 @@ export function EditableInternalNotesCard({
             <div>
               <h2 className="text-xl sm:text-2xl font-bold">Notatka wewnętrzna</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                \uD83D\uDD12 Tylko dla pracowników — nie pojawia się w PDF
+                \uD83D\uDD12 Tylko dla pracowników \u2014 nie pojawia się w PDF
               </p>
             </div>
           </div>
-          {isDirty && (
+          {isDirty && !disabled && (
             <Button
               size="sm"
               onClick={handleSave}
@@ -81,7 +83,8 @@ export function EditableInternalNotesCard({
         <textarea
           value={notes}
           onChange={(e) => handleChange(e.target.value)}
-          className="w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none"
+          readOnly={disabled}
+          className={`w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-black/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-400 transition-colors resize-none${disabled ? ' opacity-60 cursor-not-allowed' : ''}`}
           rows={3}
           placeholder="Wewnętrzne uwagi, preferencje klienta, info dla zespołu..."
         />

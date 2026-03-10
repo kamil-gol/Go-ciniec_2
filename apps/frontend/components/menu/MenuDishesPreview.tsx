@@ -2,14 +2,17 @@
  * MenuDishesPreview Component
  * 
  * Displays selected dishes in a beautiful, organized way
+ * #166: Shows portionTarget badge per category
  */
 
 'use client';
 
-import { UtensilsCrossed, AlertCircle } from 'lucide-react';
+import { UtensilsCrossed, AlertCircle, User, Baby } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { PortionTarget } from '@/types/menu';
+import { PORTION_TARGET_LABELS } from '@/types/menu';
 
 interface DishSelection {
   dishId: string;
@@ -22,6 +25,7 @@ interface DishSelection {
 interface CategorySelection {
   categoryId: string;
   categoryName: string;
+  portionTarget?: PortionTarget; // #166
   dishes: DishSelection[];
 }
 
@@ -69,6 +73,7 @@ export function MenuDishesPreview({ dishSelections, className }: MenuDishesPrevi
       {dishSelections.map((category) => {
         const icon = CATEGORY_ICONS[category.categoryName] || '🍽️';
         const totalQuantity = category.dishes.reduce((sum, d) => sum + d.quantity, 0);
+        const pt = category.portionTarget;
 
         return (
           <Card key={category.categoryId} className="overflow-hidden">
@@ -76,6 +81,17 @@ export function MenuDishesPreview({ dishSelections, className }: MenuDishesPrevi
               <CardTitle className="flex items-center gap-2 text-lg">
                 <span className="text-2xl">{icon}</span>
                 <span>{category.categoryName}</span>
+                {/* #166: Portion target badge */}
+                {pt && pt !== 'ALL' && (
+                  <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    pt === 'ADULTS_ONLY'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                      : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
+                  }`}>
+                    {pt === 'ADULTS_ONLY' ? <User className="w-3 h-3" /> : <Baby className="w-3 h-3" />}
+                    {PORTION_TARGET_LABELS[pt]}
+                  </span>
+                )}
                 <Badge variant="secondary" className="ml-auto">
                   {totalQuantity} {totalQuantity === 1 ? 'porcja' : totalQuantity < 5 ? 'porcje' : 'porcji'}
                 </Badge>
@@ -159,20 +175,35 @@ export function MenuDishesPreviewCompact({ dishSelections, className }: MenuDish
         <span>Wybrane dania: {totalDishes} porcji</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {dishSelections.map((category) => (
-          <div
-            key={category.categoryId}
-            className="flex items-center gap-2 p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
-          >
-            <span className="text-lg">{CATEGORY_ICONS[category.categoryName] || '🍽️'}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{category.categoryName}</p>
-              <p className="text-xs text-muted-foreground">
-                {category.dishes.length} {category.dishes.length === 1 ? 'danie' : 'dań'}
-              </p>
+        {dishSelections.map((category) => {
+          const pt = category.portionTarget;
+          return (
+            <div
+              key={category.categoryId}
+              className="flex items-center gap-2 p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
+            >
+              <span className="text-lg">{CATEGORY_ICONS[category.categoryName] || '🍽️'}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <p className="text-xs font-medium truncate">{category.categoryName}</p>
+                  {/* #166: tiny badge */}
+                  {pt && pt !== 'ALL' && (
+                    <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                      pt === 'ADULTS_ONLY'
+                        ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'
+                        : 'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300'
+                    }`} title={PORTION_TARGET_LABELS[pt]}>
+                      {pt === 'ADULTS_ONLY' ? <User className="w-2.5 h-2.5" /> : <Baby className="w-2.5 h-2.5" />}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {category.dishes.length} {category.dishes.length === 1 ? 'danie' : 'dań'}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

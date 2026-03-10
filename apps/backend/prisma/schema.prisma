@@ -93,11 +93,8 @@ model User {
   firstName String   @db.VarChar(100)
   lastName  String   @db.VarChar(100)
 
-  // Legacy role field — kept for backward compatibility during migration
-  // Will be removed after full RBAC migration is complete
   legacyRole String?  @map("role") @db.VarChar(20)
 
-  // New RBAC role relation
   roleId    String?  @db.Uuid
   assignedRole Role?  @relation(fields: [roleId], references: [id])
 
@@ -113,6 +110,8 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   refreshTokens        RefreshToken[]
   documentTemplateChanges DocumentTemplateHistory[]
+  createdCateringOrders   CateringOrder[]        @relation("CateringOrderCreatedBy")
+  cateringOrderHistories  CateringOrderHistory[] @relation("CateringOrderChangedBy")
 
   @@index([email])
   @@index([roleId])
@@ -157,17 +156,18 @@ model RefreshToken {
 }
 
 model Hall {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                 String   @unique @db.VarChar(255)
-  capacity             Int      @db.SmallInt
-  description          String?  @db.Text
-  amenities            String[] @db.Text
-  images               String[] @db.Text
-  isActive             Boolean  @default(true)
-  isWholeVenue         Boolean  @default(false)
-  allowWithWholeVenue  Boolean  @default(false)   // Sala może współistnieć z rezerwacją "Cały Obiekt"
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String   @unique @db.VarChar(255)
+  capacity              Int      @db.SmallInt
+  description           String?  @db.Text
+  amenities             String[] @db.Text
+  images                String[] @db.Text
+  isActive              Boolean  @default(true)
+  isWholeVenue          Boolean  @default(false)
+  allowWithWholeVenue   Boolean  @default(false)
+  allowMultipleBookings Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   reservations    Reservation[]
 
@@ -182,6 +182,11 @@ model EventType {
   description String?  @db.Text
   color       String?  @db.VarChar(20)
   isActive    Boolean  @default(true)
+
+  // Per-event-type extra hours pricing (null = use global defaults)
+  standardHours  Int?                          // null → global default (6h)
+  extraHourRate  Decimal?  @db.Decimal(10, 2)  // null → global default (500 zł), 0 → exempt
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -204,17 +209,14 @@ enum ClientType {
 model Client {
   id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  // ── Client type ─────────────────────────────────────
   clientType  ClientType @default(INDIVIDUAL)
 
-  // ── Personal fields (INDIVIDUAL) ────────────────────
   firstName String   @db.VarChar(100)
   lastName  String   @db.VarChar(100)
   email     String?  @db.VarChar(255)
   phone     String   @db.VarChar(20)
   notes     String?  @db.Text
 
-  // ── Company fields (COMPANY) ────────────────────────
   companyName       String?  @db.VarChar(255)
   nip               String?  @db.VarChar(20)
   regon             String?  @db.VarChar(20)
@@ -226,16 +228,15 @@ model Client {
   industry          String?  @db.VarChar(100)
   website           String?  @db.VarChar(255)
 
-  // ── Soft-delete + anonymization (#147) ──────────────
   isDeleted Boolean  @default(false)
   deletedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // ── Relations ──────────────────────────────────────
-  reservations Reservation[]
-  contacts     ClientContact[]
+  reservations   Reservation[]
+  contacts       ClientContact[]
+  cateringOrders CateringOrder[]
 
   @@index([email])
   @@index([phone])
@@ -246,7 +247,6 @@ model Client {
   @@index([companyName])
 }
 
-// ── Contact persons for COMPANY clients ──────────────
 model ClientContact {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clientId  String   @db.Uuid
@@ -255,7 +255,7 @@ model ClientContact {
   lastName  String   @db.VarChar(100)
   email     String?  @db.VarChar(255)
   phone     String?  @db.VarChar(20)
-  role      String?  @db.VarChar(100)   // e.g. "HR Manager", "Asystent", "Właściciel"
+  role      String?  @db.VarChar(100)
   isPrimary Boolean  @default(false)
 
   createdAt DateTime @default(now())
@@ -312,17 +312,16 @@ model Reservation {
   discountReason      String?   @db.Text
   priceBeforeDiscount Decimal?  @db.Decimal(10, 2)
 
-  // ═══ Whole Venue Surcharge ═══
-  // Automatic surcharge when booking the whole venue (hall.isWholeVenue = true)
-  // < 30 guests → 3000 PLN, >= 30 guests → 2000 PLN
   venueSurcharge      Decimal?  @db.Decimal(10, 2)
   venueSurchargeLabel String?   @db.VarChar(255)
+
+  extraHoursCost      Decimal  @default(0) @db.Decimal(10, 2)
   
   status          ReservationStatus @default(RESERVED)
   confirmationDeadline DateTime?
   
   notes           String?  @db.Text
-  internalNotes   String?  @db.Text    // Etap 5: Notatka wewnętrzna — NIE pojawia się w PDF
+  internalNotes   String?  @db.Text
 
   customEventType String?  @db.VarChar(100)
   birthdayAge     Int?     @db.SmallInt
@@ -332,7 +331,6 @@ model Reservation {
   attachments     String[] @db.Text
   archivedAt      DateTime?
 
-  // Service Extras — total cost of all extras (independent from menu)
   extrasTotalPrice Decimal  @default(0) @db.Decimal(10, 2)
 
   createdAt       DateTime @default(now())
@@ -529,13 +527,6 @@ model MenuPackage {
   @@index([isPopular])
 }
 
-// NOTE: MenuOption, MenuPackageOption, AddonGroup, AddonGroupDish models REMOVED
-// Functionality fully replaced by ServiceExtras system (ServiceCategory, ServiceItem, ReservationExtra)
-
-// ═════════════════════════════════════════════════════════════════
-// 🍽️ MENU COURSES — Per-package course structure
-// ═════════════════════════════════════════════════════════════════
-
 model MenuCourse {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   packageId     String   @db.Uuid
@@ -598,8 +589,9 @@ model DishCategory {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
-  dishes        Dish[]
+  dishes           Dish[]
   categorySettings PackageCategorySettings[]
+  cateringSections CateringPackageSection[]
   
   @@index([slug])
   @@index([isActive])
@@ -621,8 +613,10 @@ model Dish {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
-  category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  courseOptions  MenuCourseOption[]
+  category        DishCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  courseOptions   MenuCourseOption[]
+  cateringOptions CateringSectionOption[]
+  orderItems      CateringOrderItem[]
   
   @@index([categoryId])
   @@index([isActive])
@@ -639,6 +633,7 @@ model PackageCategorySettings {
   
   isRequired    Boolean       @default(true)
   isEnabled     Boolean       @default(true)
+  portionTarget String        @default("ALL") @db.VarChar(20)
   
   displayOrder  Int           @default(0) @db.SmallInt
   customLabel   String?       @db.VarChar(255)
@@ -710,7 +705,7 @@ model MenuPriceHistory {
 }
 
 // ═════════════════════════════════════════════════════════════════
-// 📎 ATTACHMENT SYSTEM
+// 📎 ATTACHMENT SYSTEM (#146 — SHA-256 dedup)
 // ═════════════════════════════════════════════════════════════════
 
 model Attachment {
@@ -727,6 +722,7 @@ model Attachment {
   mimeType      String   @db.VarChar(100)
   sizeBytes     Int
   storagePath   String   @db.Text
+  fileHash      String?  @db.VarChar(64)
 
   uploadedById  String   @db.Uuid
   description   String?  @db.Text
@@ -742,11 +738,11 @@ model Attachment {
   @@index([category])
   @@index([uploadedById])
   @@index([createdAt])
+  @@index([fileHash])
 }
 
 // ═════════════════════════════════════════════════════════════════
-// 🎁 SERVICE EXTRAS — venue decoration, music, cake, etc.
-// Independent from Menu system — can be assigned without menu
+// 🎁 SERVICE EXTRAS
 // ═════════════════════════════════════════════════════════════════
 
 model ServiceCategory {
@@ -760,7 +756,7 @@ model ServiceCategory {
 
   displayOrder  Int      @default(0) @db.SmallInt
   isActive      Boolean  @default(true)
-  isExclusive   Boolean  @default(false)   // max 1 item from this category per reservation
+  isExclusive   Boolean  @default(false)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -779,14 +775,14 @@ model ServiceItem {
   name          String   @db.VarChar(255)
   description   String?  @db.Text
 
-  priceType     String   @db.VarChar(20)   // FLAT | PER_PERSON | FREE
+  priceType     String   @db.VarChar(20)
   basePrice     Decimal  @default(0) @db.Decimal(10, 2)
 
   icon          String?  @db.VarChar(50)
   displayOrder  Int      @default(0) @db.SmallInt
 
-  requiresNote  Boolean  @default(false)   // e.g. "describe your own cake"
-  noteLabel     String?  @db.VarChar(255)  // custom label for note field
+  requiresNote  Boolean  @default(false)
+  noteLabel     String?  @db.VarChar(255)
 
   isActive      Boolean  @default(true)
 
@@ -808,12 +804,12 @@ model ReservationExtra {
   serviceItemId   String   @db.Uuid
 
   quantity        Int      @default(1) @db.SmallInt
-  unitPrice       Decimal  @db.Decimal(10, 2)   // snapshot of price at assignment time
-  priceType       String   @db.VarChar(20)       // snapshot of price type
-  totalPrice      Decimal  @db.Decimal(10, 2)   // calculated total
+  unitPrice       Decimal  @db.Decimal(10, 2)
+  priceType       String   @db.VarChar(20)
+  totalPrice      Decimal  @db.Decimal(10, 2)
 
   note            String?  @db.Text
-  status          String   @default("PENDING") @db.VarChar(20)  // PENDING | CONFIRMED | CANCELLED
+  status          String   @default("PENDING") @db.VarChar(20)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -836,7 +832,7 @@ model DocumentTemplate {
   slug          String   @unique @db.VarChar(100)
   name          String   @db.VarChar(255)
   description   String?  @db.Text
-  category      String   @db.VarChar(50)   // RESERVATION_PDF | CATERING_PDF | EMAIL | POLICY | GENERAL
+  category      String   @db.VarChar(50)
   content       String   @db.Text
   availableVars String[] @db.Text
   version       Int      @default(1) @db.SmallInt
@@ -869,4 +865,306 @@ model DocumentTemplateHistory {
   @@index([templateId])
   @@index([changedById])
   @@index([version])
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 🍱 CATERING MODULE — Faza 1: Szablony i Pakiety (#150)
+// ═════════════════════════════════════════════════════════════════
+
+enum CateringPriceType {
+  PER_PERSON
+  FLAT
+  TIERED
+}
+
+model CateringTemplate {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+  slug          String   @unique @db.VarChar(100)
+  imageUrl      String?  @db.Text
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0) @db.SmallInt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  packages      CateringPackage[]
+  orders        CateringOrder[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([displayOrder])
+}
+
+model CateringPackage {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  templateId        String            @db.Uuid
+
+  name              String            @db.VarChar(255)
+  description       String?           @db.Text
+  shortDescription  String?           @db.VarChar(500)
+
+  priceType         CateringPriceType @default(PER_PERSON)
+  basePrice         Decimal           @default(0) @db.Decimal(10, 2)
+  // tieredPricing JSON: [{minGuests,maxGuests,pricePerPerson}]
+  tieredPricing     Json?
+
+  badgeText         String?           @db.VarChar(50)
+  isPopular         Boolean           @default(false)
+  displayOrder      Int               @default(0) @db.SmallInt
+  isActive          Boolean           @default(true)
+
+  minGuests         Int?              @db.SmallInt
+  maxGuests         Int?              @db.SmallInt
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  template          CateringTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  sections          CateringPackageSection[]
+  orders            CateringOrder[]
+
+  @@index([templateId])
+  @@index([displayOrder])
+  @@index([isActive])
+}
+
+model CateringPackageSection {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packageId     String          @db.Uuid
+  categoryId    String          @db.Uuid
+
+  name          String?         @db.VarChar(255)
+  description   String?         @db.Text
+  minSelect     Int             @default(1) @db.SmallInt
+  maxSelect     Int             @default(1) @db.SmallInt
+  isRequired    Boolean         @default(true)
+  displayOrder  Int             @default(0) @db.SmallInt
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  package       CateringPackage   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  category      DishCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  options       CateringSectionOption[]
+
+  @@unique([packageId, categoryId])
+  @@index([packageId])
+  @@index([categoryId])
+  @@index([displayOrder])
+}
+
+model CateringSectionOption {
+  id            String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sectionId     String                 @db.Uuid
+  dishId        String                 @db.Uuid
+
+  customPrice   Decimal?               @db.Decimal(10, 2)
+  isDefault     Boolean                @default(false)
+  displayOrder  Int                    @default(0) @db.SmallInt
+
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  section       CateringPackageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  dish          Dish                   @relation(fields: [dishId], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, dishId])
+  @@index([sectionId])
+  @@index([dishId])
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 🍱 CATERING MODULE — Faza 2: Zamówienia (#150)
+// ═════════════════════════════════════════════════════════════════
+
+enum CateringOrderStatus {
+  DRAFT
+  INQUIRY
+  QUOTED
+  CONFIRMED
+  IN_PREPARATION
+  READY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum CateringDeliveryType {
+  PICKUP
+  DELIVERY
+  ON_SITE
+}
+
+enum CateringDiscountType {
+  PERCENTAGE
+  AMOUNT
+}
+
+model CateringOrder {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // Auto-numbering: CAT-YYYY-XXXXX
+  orderNumber     String               @unique @db.VarChar(20)
+
+  clientId        String               @db.Uuid
+  createdById     String               @db.Uuid
+
+  // Powiązanie z szablonem i pakietem cateringowym
+  templateId      String?              @db.Uuid
+  packageId       String?              @db.Uuid
+
+  status          CateringOrderStatus  @default(DRAFT)
+  deliveryType    CateringDeliveryType @default(ON_SITE)
+
+  // Informacje o wydarzeniu
+  eventName       String?              @db.VarChar(255)
+  eventDate       String?              @db.VarChar(10)   // YYYY-MM-DD
+  eventTime       String?              @db.VarChar(5)    // HH:MM
+  eventLocation   String?              @db.VarChar(255)
+
+  // Goście
+  guestsCount     Int                  @default(0) @db.SmallInt
+
+  // Logistyka dostawy
+  deliveryAddress String?              @db.Text
+  deliveryNotes   String?              @db.Text
+  deliveryDate    String?              @db.VarChar(10)   // YYYY-MM-DD
+  deliveryTime    String?              @db.VarChar(5)    // HH:MM
+
+  // Cennik
+  subtotal        Decimal              @default(0) @db.Decimal(10, 2)
+  extrasTotalPrice Decimal             @default(0) @db.Decimal(10, 2)
+  discountType    CateringDiscountType?
+  discountValue   Decimal?             @db.Decimal(10, 2)
+  discountAmount  Decimal?             @db.Decimal(10, 2)
+  discountReason  String?              @db.Text
+  totalPrice      Decimal              @default(0) @db.Decimal(10, 2)
+
+  // Kontakt
+  contactName     String?              @db.VarChar(200)
+  contactPhone    String?              @db.VarChar(20)
+  contactEmail    String?              @db.VarChar(255)
+
+  // Uwagi
+  notes           String?              @db.Text
+  internalNotes   String?              @db.Text
+  specialRequirements String?          @db.Text
+
+  // Termin ważności oferty (QUOTED → CONFIRMED)
+  quoteExpiresAt  DateTime?
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  client          Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy       User                 @relation("CateringOrderCreatedBy", fields: [createdById], references: [id])
+  template        CateringTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  package         CateringPackage?     @relation(fields: [packageId], references: [id], onDelete: SetNull)
+
+  items           CateringOrderItem[]
+  extras          CateringOrderExtra[]
+  history         CateringOrderHistory[]
+  deposits        CateringDeposit[]
+
+  @@index([orderNumber])
+  @@index([clientId])
+  @@index([createdById])
+  @@index([status])
+  @@index([deliveryType])
+  @@index([eventDate])
+  @@index([createdAt])
+  @@index([templateId])
+  @@index([packageId])
+}
+
+model CateringOrderItem {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String        @db.Uuid
+  dishId      String        @db.Uuid
+
+  quantity    Int           @default(1) @db.SmallInt
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  totalPrice  Decimal       @db.Decimal(10, 2)
+  note        String?       @db.Text
+
+  // Snapshot nazwy dania w momencie zamówienia
+  dishNameSnapshot  String  @db.VarChar(255)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dish        Dish          @relation(fields: [dishId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([dishId])
+}
+
+model CateringOrderExtra {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String        @db.Uuid
+
+  name        String        @db.VarChar(255)
+  description String?       @db.Text
+  quantity    Int           @default(1) @db.SmallInt
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  totalPrice  Decimal       @db.Decimal(10, 2)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model CateringOrderHistory {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String        @db.Uuid
+  changedById String        @db.Uuid
+
+  changeType  String        @db.VarChar(30)
+  fieldName   String?       @db.VarChar(100)
+  oldValue    String?       @db.Text
+  newValue    String?       @db.Text
+  reason      String?       @db.Text
+
+  createdAt   DateTime      @default(now())
+
+  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy   User          @relation("CateringOrderChangedBy", fields: [changedById], references: [id])
+
+  @@index([orderId])
+  @@index([changedById])
+  @@index([createdAt])
+}
+
+model CateringDeposit {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId         String        @db.Uuid
+
+  amount          Decimal       @db.Decimal(10, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(10, 2)
+  remainingAmount Decimal       @db.Decimal(10, 2)
+  dueDate         String        @db.VarChar(10)   // YYYY-MM-DD
+  status          String        @default("PENDING") @db.VarChar(20)
+  paid            Boolean       @default(false)
+  paidAt          DateTime?
+  paymentMethod   String?       @db.VarChar(50)
+
+  title           String?       @db.VarChar(255)
+  description     String?       @db.Text
+  internalNotes   String?       @db.Text
+  receiptNumber   String?       @unique @db.VarChar(50)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order           CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([paid])
 }

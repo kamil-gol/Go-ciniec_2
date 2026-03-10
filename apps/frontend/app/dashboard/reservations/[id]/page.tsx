@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { 
+import {
   ArrowLeft, Trash2, Clock, Archive, ArchiveRestore,
   Calendar, Users, User, Mail, Phone,
-  Download, CheckCircle2, XCircle, History
+  Download, CheckCircle2, XCircle, History,
+  AlertTriangle, Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -45,13 +46,18 @@ export default function ReservationDetailsPage() {
   const archiveMutation = useArchiveReservation()
   const unarchiveMutation = useUnarchiveReservation()
 
+  // Bug fix: scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [reservationId])
+
   const handleRefetch = () => {
     refetch()
   }
 
   const handleDownloadPDF = async () => {
     if (!reservation) return
-    
+
     try {
       setDownloading(true)
       await downloadReservationPDF(reservation.id)
@@ -72,13 +78,13 @@ export default function ReservationDetailsPage() {
 
   const handleArchive = async () => {
     if (!reservation) return
-    
+
     if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
 
     try {
-      await archiveMutation.mutateAsync({ 
-        id: reservation.id, 
-        reason: 'Zarchiwizowano przez użytkownika' 
+      await archiveMutation.mutateAsync({
+        id: reservation.id,
+        reason: 'Zarchiwizowano przez użytkownika'
       })
       toast({
         title: 'Sukces',
@@ -98,9 +104,9 @@ export default function ReservationDetailsPage() {
     if (!reservation) return
 
     try {
-      await unarchiveMutation.mutateAsync({ 
-        id: reservation.id, 
-        reason: 'Przywrócono z archiwum' 
+      await unarchiveMutation.mutateAsync({
+        id: reservation.id,
+        reason: 'Przywrócono z archiwum'
       })
       toast({
         title: 'Sukces',
@@ -118,7 +124,7 @@ export default function ReservationDetailsPage() {
 
   const handleCancel = async () => {
     if (!reservation) return
-    
+
     const reason = prompt('Podaj powód anulowania rezerwacji:')
     if (!reason) return
 
@@ -165,24 +171,54 @@ export default function ReservationDetailsPage() {
     )
   }
 
-  const eventDate = reservation.startDateTime 
-    ? new Date(reservation.startDateTime) 
-    : reservation.date 
-    ? new Date(reservation.date) 
-    : null
+  const eventDate = reservation.startDateTime
+    ? new Date(reservation.startDateTime)
+    : reservation.date
+      ? new Date(reservation.date)
+      : null
 
   const isCancellable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
-  const isEditable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED'
+  const isEditable = reservation.status !== 'CANCELLED' && reservation.status !== 'COMPLETED' && reservation.status !== 'ARCHIVED'
+  const isReadOnly = !isEditable
   const totalGuests = (reservation.adults || 0) + (reservation.children || 0) + (reservation.toddlers || 0)
   const isArchived = !!reservation.archivedAt
+
+  // Pricing config — read directly from reservation.eventType (backend includes standardHours & extraHourRate).
+  // Fallback to legacy defaults (6h / 500 PLN) only if eventType somehow lacks the fields.
+  const resolvedStandardHours =
+    typeof reservation.eventType?.standardHours === 'number'
+      ? reservation.eventType.standardHours
+      : 6
+
+  const resolvedExtraHourRate =
+    reservation.eventType?.extraHourRate != null
+      ? Number(reservation.eventType.extraHourRate)
+      : 500
+
+  // Banner message for read-only mode
+  const readOnlyBannerMessage = reservation.status === 'CANCELLED'
+    ? 'Ta rezerwacja została anulowana. Dane są dostępne tylko do odczytu.'
+    : reservation.status === 'ARCHIVED'
+      ? 'Ta rezerwacja jest zarchiwizowana. Dane są dostępne tylko do odczytu.'
+      : reservation.status === 'COMPLETED'
+        ? 'Ta rezerwacja została zrealizowana. Dane są dostępne tylko do odczytu.'
+        : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
+        {/* Read-only info banner */}
+        {isReadOnly && readOnlyBannerMessage && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+            <Lock className="h-5 w-5 flex-shrink-0" />
+            <p className="text-sm font-medium">{readOnlyBannerMessage}</p>
+          </div>
+        )}
+
         {/* Premium Hero Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 p-5 sm:p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-          
+
           <div className="relative z-10 space-y-4 sm:space-y-6">
             <Link href="/dashboard/reservations">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
@@ -203,7 +239,7 @@ export default function ReservationDetailsPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {isArchived && (
+                  {isArchived && reservation.status !== 'ARCHIVED' && (
                     <Badge className="bg-neutral-200 text-neutral-800 border-neutral-300">
                       <Archive className="h-3 w-3 mr-1" />
                       Zarchiwizowane
@@ -213,6 +249,7 @@ export default function ReservationDetailsPage() {
                     reservationId={reservation.id}
                     currentStatus={reservation.status}
                     onStatusChanged={handleRefetch}
+                    disabled={isReadOnly}
                   />
                   {eventDate && (
                     <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
@@ -224,8 +261,8 @@ export default function ReservationDetailsPage() {
               </div>
 
               <div className="flex gap-2 sm:gap-3">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={handleDownloadPDF}
                   disabled={downloading}
                   className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
@@ -325,6 +362,7 @@ export default function ReservationDetailsPage() {
                 totalGuests={totalGuests}
                 currentVenueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
                 onUpdated={handleRefetch}
+                disabled={isReadOnly}
               />
 
               {/* Event Details */}
@@ -339,6 +377,7 @@ export default function ReservationDetailsPage() {
                 anniversaryYear={reservation.anniversaryYear}
                 anniversaryOccasion={reservation.anniversaryOccasion}
                 onUpdated={handleRefetch}
+                disabled={isReadOnly}
               />
 
               {/* Menu Section */}
@@ -350,11 +389,15 @@ export default function ReservationDetailsPage() {
                   adults={reservation.adults || 0}
                   children={reservation.children || 0}
                   toddlers={reservation.toddlers || 0}
+                  readOnly={isReadOnly}
                 />
               )}
 
               {/* Service Extras */}
-              <ReservationExtrasPanel reservationId={reservation.id} />
+              <ReservationExtrasPanel
+                reservationId={reservation.id}
+                readOnly={isReadOnly}
+              />
 
               {/* Notes */}
               <EditableNotesCard
@@ -363,13 +406,15 @@ export default function ReservationDetailsPage() {
                 confirmationDeadline={reservation.confirmationDeadline ?? null}
                 startDateTime={reservation.startDateTime ?? null}
                 onUpdated={handleRefetch}
+                disabled={isReadOnly}
               />
 
-              {/* Notatka wewnętrzna (Etap 5) — nie trafia do PDF */}
+              {/* Notatka wewnętrzna (Etap 5) \u2014 nie trafia do PDF */}
               <EditableInternalNotesCard
                 reservationId={reservation.id}
                 internalNotes={reservation.internalNotes ?? null}
                 onUpdated={handleRefetch}
+                disabled={isReadOnly}
               />
 
               {/* Attachments */}
@@ -378,6 +423,7 @@ export default function ReservationDetailsPage() {
                 entityId={reservation.id}
                 title="Załączniki rezerwacji"
                 className="shadow-xl"
+                readOnly={isReadOnly}
               />
             </div>
 
@@ -392,9 +438,12 @@ export default function ReservationDetailsPage() {
                 hallCapacity={reservation.hall?.capacity || 0}
                 isWholeVenue={reservation.hall?.isWholeVenue || false}
                 onUpdated={handleRefetch}
+                disabled={isReadOnly}
               />
 
-              {/* Financial Summary */}
+              {/* Financial Summary — always renders immediately, no hydration needed */}
+              {/* #deposits-fix (4/5): onDepositChange wires deposit mutations back to handleRefetch so the */}
+              {/* reservation status badge in the hero updates instantly after auto-confirm. */}
               <ReservationFinancialSummary
                 reservationId={reservation.id}
                 adults={reservation.adults || 0}
@@ -406,6 +455,8 @@ export default function ReservationDetailsPage() {
                 totalPrice={Number(reservation.totalPrice) || 0}
                 startDateTime={reservation.startDateTime}
                 endDateTime={reservation.endDateTime}
+                standardHours={resolvedStandardHours}
+                extraHourRate={resolvedExtraHourRate}
                 status={reservation.status}
                 discountType={reservation.discountType}
                 discountValue={reservation.discountValue}
@@ -414,6 +465,8 @@ export default function ReservationDetailsPage() {
                 priceBeforeDiscount={reservation.priceBeforeDiscount}
                 venueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
                 venueSurchargeLabel={reservation.venueSurchargeLabel}
+                readOnly={isReadOnly}
+                onDepositChange={handleRefetch}
               />
 
               {/* Quick Actions */}
@@ -421,9 +474,9 @@ export default function ReservationDetailsPage() {
                 <div className="p-5 sm:p-6">
                   <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
                   <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start" 
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
                       size="lg"
                       onClick={handleDownloadPDF}
                       disabled={downloading}
@@ -431,22 +484,22 @@ export default function ReservationDetailsPage() {
                       <Download className="mr-2 h-4 w-4" />
                       {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
                     </Button>
-                    
+
                     {!isArchived ? (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start text-neutral-600 hover:text-neutral-700" 
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-neutral-600 hover:text-neutral-700"
                         size="lg"
-                        disabled={archiveMutation.isPending}
+                        disabled={archiveMutation.isPending || isReadOnly}
                         onClick={handleArchive}
                       >
                         <Archive className="mr-2 h-4 w-4" />
                         {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
                       </Button>
                     ) : (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start text-green-600 hover:text-green-700" 
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-green-600 hover:text-green-700"
                         size="lg"
                         disabled={unarchiveMutation.isPending}
                         onClick={handleUnarchive}
@@ -455,12 +508,12 @@ export default function ReservationDetailsPage() {
                         {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
                       </Button>
                     )}
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start text-red-600 hover:text-red-700" 
+
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-red-600 hover:text-red-700"
                       size="lg"
-                      disabled={!isCancellable || cancelMutation.isPending}
+                      disabled={!isCancellable || cancelMutation.isPending || isReadOnly}
                       onClick={handleCancel}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />

@@ -7,6 +7,10 @@
  * This ensures all RODO documents are in one place per client.
  * 
  * Updated: Phase 3 Audit — logChange() for all CRUD operations
+ * Updated: #146 — storageService abstraction (local/MinIO)
+ * Updated: #146 — presigned download URLs with TTL
+ * Updated: #146 — image compression (sharp) on upload
+ * Updated: #146 — SHA-256 file deduplication
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
  */
 
@@ -16,38 +20,93 @@ import { logChange } from '../utils/audit-logger';
 import { ATTACHMENT } from '../i18n/pl';
 import { CreateAttachmentDTO, UpdateAttachmentDTO, AttachmentFilters } from '../types/attachment.types';
 import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../constants/attachmentCategories';
-import { UPLOAD_BASE } from '../middlewares/upload';
+import { storageService } from './storage';
+import { storageConfig } from '../config/storage.config';
+import { compressIfImage } from '../utils/image-compression';
+import { computeFileHash } from '../utils/file-hash';
 import logger from '../utils/logger';
 import fs from 'fs';
-import path from 'path';
+
+export interface DownloadUrlResult {
+  url: string;
+  expiresIn: number;
+  direct: boolean;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+}
 
 class AttachmentService {
   /**
-   * Move file from staging to correct entity subdirectory.
-   * Returns the relative storagePath for DB.
+   * Upload file from staging to storage backend.
+   * Compresses images before upload (sharp: max 2000px, quality 80%).
    */
-  private moveToEntityDir(file: Express.Multer.File, entityType: EntityType): string {
+  private async uploadToStorage(
+    file: Express.Multer.File,
+    entityType: EntityType,
+  ): Promise<{ storageKey: string; finalSize: number; fileHash: string }> {
     const subDir = STORAGE_DIRS[entityType] || 'other';
-    const destDir = path.join(UPLOAD_BASE, subDir);
+    const storageKey = `${subDir}/${file.filename}`;
+    const bucket = storageConfig.buckets.attachments;
 
-    // Ensure dest dir exists
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
+    const rawBuffer = fs.readFileSync(file.path);
+
+    const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
+    const fileBuffer = compression.buffer;
+    const finalSize = compression.compressedSize;
+
+    const fileHash = computeFileHash(fileBuffer);
+
+    await storageService.upload(bucket, storageKey, fileBuffer, {
+      'Content-Type': file.mimetype,
+      'X-Original-Name': encodeURIComponent(file.originalname),
+      ...(compression.wasCompressed ? {
+        'X-Original-Size': String(compression.originalSize),
+        'X-Compressed': 'true',
+      } : {}),
+    });
+
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+      logger.debug(`Staging file removed: ${file.path}`);
     }
 
-    const destPath = path.join(destDir, file.filename);
+    logger.info(`File uploaded to storage: ${bucket}/${storageKey} (${finalSize} bytes, hash: ${fileHash.substring(0, 12)}...)`);
+    return { storageKey, finalSize, fileHash };
+  }
 
-    // Move file from staging to entity dir
-    fs.renameSync(file.path, destPath);
+  /**
+   * Check if an identical file (by SHA-256) already exists for the same entity.
+   * Returns the existing attachment if found (deduplication).
+   */
+  private async findDuplicate(
+    fileBuffer: Buffer,
+    entityType: EntityType,
+    entityId: string,
+    category: string,
+  ): Promise<{ hash: string; existing: any | null }> {
+    const fileHash = computeFileHash(fileBuffer);
 
-    logger.info(`File moved: _staging/${file.filename} -> ${subDir}/${file.filename}`);
+    const existing = await prisma.attachment.findFirst({
+      where: {
+        entityType,
+        entityId,
+        category,
+        fileHash,
+        isArchived: false,
+      },
+      include: {
+        uploadedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+    });
 
-    return `${subDir}/${file.filename}`;
+    return { hash: fileHash, existing };
   }
 
   /**
    * Resolve the clientId from a RESERVATION or DEPOSIT entity.
-   * Used for RODO redirect — always store RODO under CLIENT.
    */
   private async resolveClientId(entityType: EntityType, entityId: string): Promise<string | null> {
     try {
@@ -80,32 +139,27 @@ class AttachmentService {
 
   /**
    * Create attachment record after file upload.
-   * 
-   * RODO REDIRECT: If category is RODO and entityType is RESERVATION or DEPOSIT,
-   * the attachment is automatically redirected to entityType=CLIENT with the
-   * resolved clientId. This ensures RODO is always stored at the client level.
+   *
+   * Deduplication: If a file with the same SHA-256 hash already exists
+   * for the same entity+category (and is not archived), the existing
+   * attachment is returned instead of creating a duplicate.
    */
   async createAttachment(
     dto: CreateAttachmentDTO,
     file: Express.Multer.File,
     uploadedById: string,
   ) {
-    // Validate entityType
     if (!ENTITY_TYPES.includes(dto.entityType)) {
       throw AppError.badRequest(`Nieprawidłowy entityType: ${dto.entityType}. Dozwolone: ${ENTITY_TYPES.join(', ')}`);
     }
 
-    // Validate category
     if (!isValidCategory(dto.entityType, dto.category)) {
       throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
     }
 
-    // Validate entity exists
     await this.validateEntityExists(dto.entityType, dto.entityId);
 
-    // ═══════════════════════════════════════════════════════════
-    // RODO REDIRECT: Always store RODO under CLIENT
-    // ═══════════════════════════════════════════════════════════
+    // RODO redirect
     let finalEntityType: EntityType = dto.entityType;
     let finalEntityId: string = dto.entityId;
 
@@ -119,16 +173,72 @@ class AttachmentService {
         );
       }
 
-      logger.info(
-        `RODO redirect: ${dto.entityType}/${dto.entityId} -> CLIENT/${clientId}`
-      );
-
+      logger.info(`RODO redirect: ${dto.entityType}/${dto.entityId} -> CLIENT/${clientId}`);
       finalEntityType = 'CLIENT';
       finalEntityId = clientId;
     }
 
-    // Move file to correct subdirectory (uses FINAL entityType)
-    const storagePath = this.moveToEntityDir(file, finalEntityType);
+    // ═══ DEDUPLICATION CHECK ═══
+    const rawBuffer = fs.readFileSync(file.path);
+    const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
+    const processedBuffer = compression.buffer;
+
+    const { hash: fileHash, existing: duplicate } = await this.findDuplicate(
+      processedBuffer,
+      finalEntityType,
+      finalEntityId,
+      dto.category,
+    );
+
+    if (duplicate) {
+      // Cleanup staging file — no upload needed
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+        logger.debug(`Staging file removed (dedup): ${file.path}`);
+      }
+
+      logger.info(
+        `Dedup hit: ${file.originalname} (hash: ${fileHash.substring(0, 12)}...) ` +
+        `matches existing attachment ${duplicate.id}`
+      );
+
+      await logChange({
+        userId: uploadedById,
+        action: 'ATTACHMENT_DEDUP',
+        entityType: finalEntityType,
+        entityId: finalEntityId,
+        details: {
+          description: `Duplikat wykryty: ${file.originalname} → istniejący załącznik ${duplicate.id}`,
+          existingAttachmentId: duplicate.id,
+          originalName: file.originalname,
+          fileHash,
+          category: dto.category,
+        },
+      });
+
+      return { ...duplicate, _deduplicated: true };
+    }
+
+    // ═══ UPLOAD (no duplicate found) ═══
+    const subDir = STORAGE_DIRS[finalEntityType] || 'other';
+    const storageKey = `${subDir}/${file.filename}`;
+    const bucket = storageConfig.buckets.attachments;
+    const finalSize = compression.compressedSize;
+
+    await storageService.upload(bucket, storageKey, processedBuffer, {
+      'Content-Type': file.mimetype,
+      'X-Original-Name': encodeURIComponent(file.originalname),
+      ...(compression.wasCompressed ? {
+        'X-Original-Size': String(compression.originalSize),
+        'X-Compressed': 'true',
+      } : {}),
+    });
+
+    // Cleanup staging file
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+      logger.debug(`Staging file removed: ${file.path}`);
+    }
 
     const attachment = await prisma.attachment.create({
       data: {
@@ -140,8 +250,9 @@ class AttachmentService {
         originalName: file.originalname,
         storedName: file.filename,
         mimeType: file.mimetype,
-        sizeBytes: file.size,
-        storagePath,
+        sizeBytes: finalSize,
+        storagePath: storageKey,
+        fileHash,
         uploadedById,
       },
       include: {
@@ -153,11 +264,10 @@ class AttachmentService {
 
     logger.info(
       `Attachment created: ${attachment.id} (${finalEntityType}/${finalEntityId}, ` +
-      `category: ${dto.category}) by user ${uploadedById}` +
+      `category: ${dto.category}, hash: ${fileHash.substring(0, 12)}...) by user ${uploadedById}` +
       (finalEntityType !== dto.entityType ? ` [redirected from ${dto.entityType}/${dto.entityId}]` : '')
     );
 
-    // Audit log — ATTACHMENT_UPLOAD
     await logChange({
       userId: uploadedById,
       action: 'ATTACHMENT_UPLOAD',
@@ -168,9 +278,12 @@ class AttachmentService {
         attachmentId: attachment.id,
         originalName: file.originalname,
         mimeType: file.mimetype,
-        sizeBytes: file.size,
+        sizeBytes: finalSize,
+        originalSizeBytes: file.size,
+        fileHash,
         category: dto.category,
         label: dto.label || null,
+        compressed: finalSize !== file.size,
         redirected: finalEntityType !== dto.entityType
           ? { from: `${dto.entityType}/${dto.entityId}`, to: `${finalEntityType}/${finalEntityId}` }
           : null,
@@ -213,26 +326,22 @@ class AttachmentService {
 
   /**
    * Get attachments for an entity + cross-referenced RODO from client.
-   * Used by RESERVATION and DEPOSIT views to show RODO stored at client level.
    */
   async getAttachmentsWithClientRodo(
     entityType: EntityType,
     entityId: string,
     includeArchived: boolean = false,
   ) {
-    // Get own attachments
     const ownAttachments = await this.getAttachments({
       entityType,
       entityId,
       includeArchived,
     });
 
-    // If already CLIENT, no cross-reference needed
     if (entityType === 'CLIENT') {
       return ownAttachments;
     }
 
-    // Resolve clientId and fetch client's RODO
     const clientId = await this.resolveClientId(entityType, entityId);
     if (!clientId) return ownAttachments;
 
@@ -251,7 +360,6 @@ class AttachmentService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Merge: own attachments + client RODO (marked with _fromClient flag)
     const mergedRodo = clientRodoAttachments.map(att => ({
       ...att,
       _fromClient: true,
@@ -281,19 +389,76 @@ class AttachmentService {
   }
 
   /**
-   * Get full file path for download
+   * Get file stream for download (backend proxy).
    */
-  async getFilePath(id: string): Promise<{ filePath: string; attachment: any }> {
+  async getFileStream(id: string): Promise<{ stream: NodeJS.ReadableStream; attachment: any }> {
     const attachment = await this.getAttachmentById(id);
+    const bucket = storageConfig.buckets.attachments;
 
-    const filePath = path.join(UPLOAD_BASE, attachment.storagePath);
-
-    if (!fs.existsSync(filePath)) {
-      logger.error(`File not found on disk: ${filePath} (attachment: ${id})`);
-      throw AppError.notFound('Plik nie istnieje na dysku');
+    const fileExists = await storageService.exists(bucket, attachment.storagePath);
+    if (!fileExists) {
+      logger.error(`File not found in storage: ${bucket}/${attachment.storagePath} (attachment: ${id})`);
+      throw AppError.notFound('Plik nie istnieje w storage');
     }
 
-    return { filePath, attachment };
+    const stream = await storageService.getStream(bucket, attachment.storagePath);
+    return { stream, attachment };
+  }
+
+  /**
+   * Get presigned download URL with TTL.
+   */
+  async getDownloadUrl(id: string, baseApiUrl?: string): Promise<DownloadUrlResult> {
+    const attachment = await this.getAttachmentById(id);
+    const bucket = storageConfig.buckets.attachments;
+
+    const fileExists = await storageService.exists(bucket, attachment.storagePath);
+    if (!fileExists) {
+      logger.error(`File not found in storage: ${bucket}/${attachment.storagePath} (attachment: ${id})`);
+      throw AppError.notFound('Plik nie istnieje w storage');
+    }
+
+    const isMinio = storageConfig.driver === 'minio';
+    const hasPublicEndpoint = !!storageConfig.minio.publicEndpoint;
+    const canDirect = isMinio && hasPublicEndpoint;
+
+    if (canDirect) {
+      const presignedUrl = await storageService.getPresignedUrl(bucket, attachment.storagePath);
+      const ttl = this.getPresignedTtl(bucket);
+
+      logger.debug(`Presigned URL generated for attachment ${id} (TTL: ${ttl}s, direct: true)`);
+
+      return {
+        url: presignedUrl,
+        expiresIn: ttl,
+        direct: true,
+        filename: attachment.originalName,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+      };
+    }
+
+    const apiBase = baseApiUrl || '/api';
+    const fallbackUrl = `${apiBase}/attachments/${id}/download`;
+
+    logger.debug(`Download URL for attachment ${id} (fallback to stream, direct: false)`);
+
+    return {
+      url: fallbackUrl,
+      expiresIn: 0,
+      direct: false,
+      filename: attachment.originalName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+    };
+  }
+
+  private getPresignedTtl(bucket: string): number {
+    const sensitiveBuckets = [storageConfig.buckets.attachments];
+    if (sensitiveBuckets.includes(bucket)) {
+      return storageConfig.presignedTtl.sensitive;
+    }
+    return storageConfig.presignedTtl.standard;
   }
 
   /**
@@ -302,12 +467,10 @@ class AttachmentService {
   async updateAttachment(id: string, dto: UpdateAttachmentDTO, userId?: string) {
     const existing = await this.getAttachmentById(id);
 
-    // If changing category, validate it
     if (dto.category && !isValidCategory(existing.entityType as EntityType, dto.category)) {
       throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${existing.entityType}"`);
     }
 
-    // Track changes for audit
     const changes: Record<string, { old: any; new: any }> = {};
     if (dto.label !== undefined && dto.label !== existing.label) {
       changes.label = { old: existing.label, new: dto.label };
@@ -335,7 +498,6 @@ class AttachmentService {
 
     logger.info(`Attachment updated: ${id}`);
 
-    // Audit log — ATTACHMENT_UPDATE
     if (Object.keys(changes).length > 0) {
       await logChange({
         userId: userId || null,
@@ -355,10 +517,10 @@ class AttachmentService {
   }
 
   /**
-   * Soft-delete attachment (set isArchived=true)
+   * Soft-delete attachment
    */
   async deleteAttachment(id: string, userId?: string) {
-    const existing = await this.getAttachmentById(id); // Verify exists
+    const existing = await this.getAttachmentById(id);
 
     const archived = await prisma.attachment.update({
       where: { id },
@@ -367,7 +529,6 @@ class AttachmentService {
 
     logger.info(`Attachment archived: ${id}`);
 
-    // Audit log — ATTACHMENT_ARCHIVE
     await logChange({
       userId: userId || null,
       action: 'ATTACHMENT_ARCHIVE',
@@ -385,13 +546,12 @@ class AttachmentService {
   }
 
   /**
-   * Hard-delete attachment (remove file + DB record)
-   * Only for admin cleanup
+   * Hard-delete attachment
    */
   async hardDeleteAttachment(id: string, userId?: string) {
     const attachment = await this.getAttachmentById(id);
+    const bucket = storageConfig.buckets.attachments;
 
-    // Save info for audit before deletion
     const auditData = {
       originalName: attachment.originalName,
       category: attachment.category,
@@ -401,19 +561,17 @@ class AttachmentService {
       storagePath: attachment.storagePath,
     };
 
-    // Delete file from disk
-    const filePath = path.join(UPLOAD_BASE, attachment.storagePath);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      logger.info(`File deleted from disk: ${filePath}`);
+    try {
+      await storageService.delete(bucket, attachment.storagePath);
+      logger.info(`File deleted from storage: ${bucket}/${attachment.storagePath}`);
+    } catch (error) {
+      logger.warn(`File not found in storage during hard delete: ${bucket}/${attachment.storagePath}`);
     }
 
-    // Delete DB record
     await prisma.attachment.delete({ where: { id } });
 
     logger.info(`Attachment hard-deleted: ${id}`);
 
-    // Audit log — ATTACHMENT_DELETE (permanent)
     await logChange({
       userId: userId || null,
       action: 'ATTACHMENT_DELETE',

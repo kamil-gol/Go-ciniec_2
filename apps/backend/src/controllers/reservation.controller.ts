@@ -197,6 +197,7 @@ export class ReservationController {
    *
    * Maps Prisma `extras` relation → `reservationExtras` expected by pdf.service.ts
    * Etap 5: internalNotes is stripped before PDF generation
+   * #deposits-fix: CANCELLED deposits are stripped before PDF generation
    */
   async downloadPDF(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
@@ -244,6 +245,12 @@ export class ReservationController {
       ...reservation,
       reservationExtras,
     };
+
+    // #deposits-fix (1/5): Strip CANCELLED deposits — they must NEVER appear in customer-facing PDF.
+    // This is the primary guard. pdf.service.ts also has a secondary guard in drawFinancialSummary().
+    if (Array.isArray(pdfData.deposits)) {
+      pdfData.deposits = pdfData.deposits.filter((d: any) => d.status !== 'CANCELLED');
+    }
 
     // Etap 5: Notatka wewnętrzna NIGDY nie trafia do PDF
     delete pdfData.internalNotes;

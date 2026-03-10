@@ -40,6 +40,17 @@ function getDaysInfo(dateStr: string): { text: string; className: string } | nul
   return null
 }
 
+/**
+ * #deposits-fix (5/5): resolve event date from startDateTime first, then fall
+ * back to the legacy `date` field so both old and new reservations display
+ * correctly in the deposits list.
+ */
+function resolveEventDate(reservation: Deposit['reservation']): string | undefined {
+  if (!reservation) return undefined
+  // New reservations use startDateTime; legacy ones may only have date
+  return (reservation as any).startDateTime ?? reservation.date ?? undefined
+}
+
 export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
   return (
     <>
@@ -49,7 +60,8 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
           const client = deposit.reservation?.client
           const hall = deposit.reservation?.hall
           const eventType = deposit.reservation?.eventType
-          const eventDate = deposit.reservation?.date
+          // #deposits-fix (5/5): use startDateTime with date fallback
+          const eventDate = resolveEventDate(deposit.reservation)
           const paidAmount = Number(deposit.paidAmount || 0)
           const amount = Number(deposit.amount)
           const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
@@ -151,7 +163,8 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
               const client = deposit.reservation?.client
               const hall = deposit.reservation?.hall
               const eventType = deposit.reservation?.eventType
-              const eventDate = deposit.reservation?.date
+              // #deposits-fix (5/5): use startDateTime with date fallback
+              const eventDate = resolveEventDate(deposit.reservation)
               const paidAmount = Number(deposit.paidAmount || 0)
               const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
                 ? getDaysInfo(deposit.dueDate)

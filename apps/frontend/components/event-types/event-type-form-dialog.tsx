@@ -46,6 +46,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
   const [description, setDescription] = useState('')
   const [color, setColor] = useState<string | null>(null)
   const [isActive, setIsActive] = useState(true)
+  const [standardHours, setStandardHours] = useState(6)
+  const [extraHourRate, setExtraHourRate] = useState(500)
 
   const isEditing = !!eventType
 
@@ -56,11 +58,15 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
         setDescription(eventType.description || '')
         setColor(eventType.color)
         setIsActive(eventType.isActive)
+        setStandardHours(eventType.standardHours ?? 6)
+        setExtraHourRate(eventType.extraHourRate ?? 500)
       } else {
         setName('')
         setDescription('')
         setColor(null)
         setIsActive(true)
+        setStandardHours(6)
+        setExtraHourRate(500)
       }
       getPredefinedColors().then(setColors).catch(() => setColors(DEFAULT_COLORS))
     }
@@ -83,6 +89,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           description: description.trim() || null,
           color: color,
           isActive,
+          standardHours,
+          extraHourRate,
         }
         await updateEventType(eventType.id, payload)
         toast({ title: 'Zaktualizowano', description: `Typ "${name}" został zaktualizowany` })
@@ -92,6 +100,8 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           description: description.trim() || undefined,
           color: color || undefined,
           isActive,
+          standardHours,
+          extraHourRate,
         }
         await createEventType(payload)
         toast({ title: 'Utworzono', description: `Typ "${name}" został utworzony` })
@@ -171,6 +181,41 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
               {color && (
                 <p className="text-xs text-neutral-400">Wybrany: {color}</p>
               )}
+            </div>
+
+            {/* Standard Hours */}
+            <div className="space-y-2">
+              <Label htmlFor="standardHours">Godziny w cenie (standard)</Label>
+              <Input
+                id="standardHours"
+                type="number"
+                min={1}
+                max={24}
+                step={1}
+                value={standardHours}
+                onChange={(e) => setStandardHours(Number(e.target.value) || 6)}
+                className="h-11"
+              />
+              <p className="text-xs text-neutral-500">
+                Ile godzin jest wliczonych w cenę podstawową (domyślnie 6h)
+              </p>
+            </div>
+
+            {/* Extra Hour Rate */}
+            <div className="space-y-2">
+              <Label htmlFor="extraHourRate">Stawka za dodatkową godzinę (zł)</Label>
+              <Input
+                id="extraHourRate"
+                type="number"
+                min={0}
+                step={50}
+                value={extraHourRate}
+                onChange={(e) => setExtraHourRate(Number(e.target.value) || 0)}
+                className="h-11"
+              />
+              <p className="text-xs text-neutral-500">
+                Koszt każdej godziny powyżej standardu (domyślnie 500 zł/h)
+              </p>
             </div>
 
             {/* Is Active */}

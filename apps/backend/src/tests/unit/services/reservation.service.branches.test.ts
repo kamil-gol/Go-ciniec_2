@@ -3,15 +3,17 @@
  * Target: 57.57% → ~80%+ branches
  * Covers: menu packages, legacy format, whole venue conflicts,
  *         cascade deposits, archive/unarchive, discount edge cases,
- *         option processing, deposit creation
+ *         deposit creation
  */
 
 // ═══ Mock Prisma with $transaction ═══
 const txMock = {
-  reservation: { update: jest.fn(), findFirst: jest.fn() },
+  reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
   deposit: { findMany: jest.fn(), updateMany: jest.fn() },
   reservationHistory: { create: jest.fn() },
   reservationMenuSnapshot: { delete: jest.fn(), update: jest.fn(), create: jest.fn() },
+  serviceItem: { findMany: jest.fn() },
+  reservationExtra: { findMany: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
 };
 
 jest.mock('../../../lib/prisma', () => {
@@ -30,6 +32,8 @@ jest.mock('../../../lib/prisma', () => {
     deposit: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
     activityLog: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
     $transaction: jest.fn((fn: any) => fn(txMock)),
   };
   return { prisma: mock, __esModule: true, default: mock };
@@ -38,6 +42,17 @@ jest.mock('../../../lib/prisma', () => {
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
   diffObjects: jest.fn().mockReturnValue({}),
+}));
+
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue(0),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockImplementation(
+    (adults: number, children: number, toddlers: number, ppa: number, ppc: number, ppt: number) =>
+      adults * ppa + children * ppc + toddlers * (ppt || 0)
+  ),
 }));
 
 jest.mock('../../../services/reservation-menu.service', () => ({
@@ -51,8 +66,8 @@ import { prisma } from '../../../lib/prisma';
 
 const db = prisma as any;
 const UID = 'user-001';
-const HALL = { id: 'hall-001', name: 'Sala A', capacity: 100, isActive: true, isWholeVenue: false };
-const HALL_WHOLE = { id: 'hall-wh', name: 'Cały Obiekt', capacity: 200, isActive: true, isWholeVenue: true };
+const HALL = { id: 'hall-001', name: 'Sala A', capacity: 100, isActive: true, isWholeVenue: false, allowMultipleBookings: false };
+const HALL_WHOLE = { id: 'hall-wh', name: 'Cały Obiekt', capacity: 200, isActive: true, isWholeVenue: true, allowMultipleBookings: false };
 const CLIENT = { id: 'cl-001', firstName: 'Jan', lastName: 'Kowalski', email: 'j@k.pl', phone: '+48123' };
 const EVENT = { id: 'ev-001', name: 'Wesele' };
 
@@ -96,6 +111,7 @@ beforeEach(() => {
   db.eventType.findUnique.mockResolvedValue(EVENT);
   db.reservation.create.mockResolvedValue(RES_BASE);
   db.reservation.findFirst.mockResolvedValue(null);
+  db.reservation.findMany.mockResolvedValue([]);
   db.reservation.findUnique.mockResolvedValue(RES_BASE);
   db.reservation.update.mockResolvedValue(RES_BASE);
   db.reservationHistory.create.mockResolvedValue({});
@@ -106,15 +122,20 @@ beforeEach(() => {
   db.menuPackage.findUnique.mockResolvedValue(null);
   db.menuOption.findMany.mockResolvedValue([]);
   db.deposit.create.mockResolvedValue({});
+  db.serviceItem.findMany.mockResolvedValue([]);
+  db.reservationExtra.findMany.mockResolvedValue([]);
 
   txMock.reservation.update.mockResolvedValue(RES_BASE);
   txMock.reservation.findFirst.mockResolvedValue(null);
+  txMock.reservation.findMany.mockResolvedValue([]);
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({});
   txMock.reservationHistory.create.mockResolvedValue({});
   txMock.reservationMenuSnapshot.delete.mockResolvedValue({});
   txMock.reservationMenuSnapshot.update.mockResolvedValue({});
   txMock.reservationMenuSnapshot.create.mockResolvedValue({});
+  txMock.serviceItem.findMany.mockResolvedValue([]);
+  txMock.reservationExtra.findMany.mockResolvedValue([]);
 });
 
 describe('ReservationService — Branch Coverage', () => {
@@ -132,85 +153,24 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when menu package not found', async () => {
       const dto = { ...BASE_DTO, menuPackageId: 'bad-pkg' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('Selected menu package not found');
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('Nie znaleziono wybranego pakietu menu');
     });
 
     it('should throw when guests below minGuests', async () => {
       db.menuPackage.findUnique.mockResolvedValue({ ...MENU_PKG, minGuests: 100 });
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/at least 100 guests/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/minimum 100 gości/);
     });
 
     it('should throw when guests above maxGuests', async () => {
       db.menuPackage.findUnique.mockResolvedValue({ ...MENU_PKG, maxGuests: 10 });
       const dto = { ...BASE_DTO, menuPackageId: 'pkg-001' };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maximum 10 guests/);
-    });
-
-    it('should process PER_PERSON option correctly', async () => {
-      db.menuPackage.findUnique.mockResolvedValue(MENU_PKG);
-      db.menuOption.findMany.mockResolvedValue([
-        { id: 'opt-1', name: 'Bar', isActive: true, priceType: 'PER_PERSON', priceAmount: 30, allowMultiple: false, category: 'BAR', description: 'Open bar' }
-      ]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 1 }] };
-      await svc.createReservation(dto as any, UID);
-      const snap = db.reservationMenuSnapshot.create.mock.calls[0][0];
-      expect(snap.data.optionsPrice).toBe(30 * 65); // PER_PERSON * guests
-    });
-
-    it('should process FLAT option with multiple quantity', async () => {
-      db.menuPackage.findUnique.mockResolvedValue(MENU_PKG);
-      db.menuOption.findMany.mockResolvedValue([
-        { id: 'opt-1', name: 'DJ', isActive: true, priceType: 'FLAT', priceAmount: 2000, allowMultiple: true, maxQuantity: 5, category: 'FUN', description: 'DJ' }
-      ]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 2 }] };
-      await svc.createReservation(dto as any, UID);
-      const snap = db.reservationMenuSnapshot.create.mock.calls[0][0];
-      expect(snap.data.optionsPrice).toBe(4000); // FLAT * quantity
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/maksimum 10 go/);
     });
 
     it('should throw when no prices and no menu package', async () => {
       const dto = { ...BASE_DTO, pricePerAdult: undefined, pricePerChild: undefined };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Price per adult and per child/);
-    });
-  });
-
-  // ════════════════════════════════════
-  // createReservation — option errors
-  // ════════════════════════════════════
-  describe('create — option edge cases', () => {
-    beforeEach(() => db.menuPackage.findUnique.mockResolvedValue(MENU_PKG));
-
-    it('should throw when option not found', async () => {
-      db.menuOption.findMany.mockResolvedValue([]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'bad', quantity: 1 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/not found/);
-    });
-
-    it('should throw when option is inactive', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'X', isActive: false, priceType: 'FLAT', priceAmount: 10, allowMultiple: false }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1' }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/not active/);
-    });
-
-    it('should throw when exceeding maxQuantity', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'D', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: true, maxQuantity: 3, category: 'X', description: '' }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 10 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Maximum 3/);
-    });
-
-    it('should throw when non-multiple option quantity > 1', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'Solo', isActive: true, priceType: 'FLAT', priceAmount: 10, allowMultiple: false, category: 'X', description: '' }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1', quantity: 5 }] };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/does not allow multiple/);
-    });
-
-    it('should default quantity to 1 when not specified', async () => {
-      db.menuOption.findMany.mockResolvedValue([{ id: 'opt-1', name: 'DJ', isActive: true, priceType: 'FLAT', priceAmount: 500, allowMultiple: false, category: 'FUN', description: '' }]);
-      const dto = { ...BASE_DTO, menuPackageId: 'pkg-001', selectedOptions: [{ optionId: 'opt-1' }] };
-      await svc.createReservation(dto as any, UID);
-      const snap = db.reservationMenuSnapshot.create.mock.calls[0][0];
-      expect(snap.data.optionsPrice).toBe(500);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Cena za dorosłego/);
     });
   });
 
@@ -232,17 +192,17 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when legacy date is in the past', async () => {
       await expect(svc.createReservation({ ...LEGACY, date: '2020-01-01' } as any, UID))
-        .rejects.toThrow('Reservation date must be in the future');
+        .rejects.toThrow('Data rezerwacji musi być w przyszłości');
     });
 
     it('should throw when startTime >= endTime', async () => {
       await expect(svc.createReservation({ ...LEGACY, startTime: '22:00', endTime: '14:00' } as any, UID))
-        .rejects.toThrow('End time must be after start time');
+        .rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
     });
 
     it('should throw on legacy time slot overlap', async () => {
-      db.reservation.findFirst.mockResolvedValue({ id: 'existing' });
-      await expect(svc.createReservation(LEGACY as any, UID)).rejects.toThrow(/already booked/);
+      db.reservation.findMany.mockResolvedValue([{ id: 'existing' }]);
+      await expect(svc.createReservation(LEGACY as any, UID)).rejects.toThrow(/nie dopuszcza wielu/);
     });
 
     it('should append next-year note for legacy format', async () => {
@@ -290,28 +250,28 @@ describe('ReservationService — Branch Coverage', () => {
     });
 
     it('should throw when fixed discount > totalPrice', async () => {
-      const dto = { ...BASE_DTO, discountType: 'FIXED', discountValue: 999999, discountReason: 'Excessive discount' };
+      const dto = { ...BASE_DTO, discountType: 'AMOUNT', discountValue: 999999, discountReason: 'Excessive discount' };
       await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nie może przekroczyć ceny/);
     });
 
     it('should throw on invalid confirmation deadline', async () => {
       const dto = { ...BASE_DTO, confirmationDeadline: FUTURE };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Confirmation deadline/);
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Termin potwierdzenia/);
     });
 
     it('should throw when endDateTime before startDateTime', async () => {
       const dto = { ...BASE_DTO, startDateTime: FUTURE_END, endDateTime: FUTURE };
-      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('End time must be after start time');
+      await expect(svc.createReservation(dto as any, UID)).rejects.toThrow('Godzina zakończenia musi być po godzinie rozpoczęcia');
     });
 
     it('should throw when client not found', async () => {
       db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Client not found');
+      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Nie znaleziono klienta');
     });
 
     it('should throw when event type not found', async () => {
       db.eventType.findUnique.mockResolvedValue(null);
-      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Event type not found');
+      await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Nie znaleziono typu wydarzenia');
     });
 
     it('should append next-year note for new format', async () => {
@@ -349,9 +309,7 @@ describe('ReservationService — Branch Coverage', () => {
   describe('create — whole venue conflicts', () => {
     it('should throw when booking whole venue but another hall is booked', async () => {
       db.hall.findUnique.mockResolvedValue(HALL_WHOLE);
-      db.reservation.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'x', hall: { name: 'Sala B' }, client: { firstName: 'Anna', lastName: 'Nowak' } });
+      db.reservation.findFirst.mockResolvedValue({ id: 'x', hall: { name: 'Sala B' }, client: { firstName: 'Anna', lastName: 'Nowak' } });
 
       const dto = { ...BASE_DTO, hallId: HALL_WHOLE.id };
       await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/Nie można zarezerwować całego obiektu/);
@@ -360,9 +318,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should throw when regular hall but whole venue is booked', async () => {
       db.hall.findUnique.mockResolvedValue(HALL);
       db.hall.findFirst.mockResolvedValue(HALL_WHOLE);
-      db.reservation.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'wh', client: { firstName: 'Piotr', lastName: 'W' } });
+      db.reservation.findFirst.mockResolvedValue({ id: 'wh', client: { firstName: 'Piotr', lastName: 'W' } });
 
       await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow(/cały obiekt jest już zarezerwowany/);
     });
@@ -375,9 +331,7 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should handle whole venue conflict with null client', async () => {
       db.hall.findUnique.mockResolvedValue(HALL_WHOLE);
-      db.reservation.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'x', hall: { name: 'Sala C' }, client: null });
+      db.reservation.findFirst.mockResolvedValue({ id: 'x', hall: { name: 'Sala C' }, client: null });
 
       const dto = { ...BASE_DTO, hallId: HALL_WHOLE.id };
       await expect(svc.createReservation(dto as any, UID)).rejects.toThrow(/nieznany klient/);
@@ -386,9 +340,7 @@ describe('ReservationService — Branch Coverage', () => {
     it('should handle non-whole-venue conflict with null client', async () => {
       db.hall.findUnique.mockResolvedValue(HALL);
       db.hall.findFirst.mockResolvedValue(HALL_WHOLE);
-      db.reservation.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'wh', client: null });
+      db.reservation.findFirst.mockResolvedValue({ id: 'wh', client: null });
 
       await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow(/nieznany klient/);
     });
@@ -403,14 +355,14 @@ describe('ReservationService — Branch Coverage', () => {
     it('should remove menu (null menuPackageId) with existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: SNAP });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('removed');
+      expect(result.message).toContain('usunięt');
       expect(db.reservationMenuSnapshot.delete).toHaveBeenCalledTimes(1);
     });
 
     it('should remove menu with no existing snapshot', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, menuSnapshot: null });
       const result = await svc.updateReservationMenu('res-001', { menuPackageId: null } as any, UID);
-      expect(result.message).toContain('removed');
+      expect(result.message).toContain('usunięt');
       expect(db.reservationMenuSnapshot.delete).not.toHaveBeenCalled();
     });
 
@@ -430,28 +382,28 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw on COMPLETED reservation', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/completed or cancelled/);
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/zakończonej/);
     });
 
     it('should throw on CANCELLED reservation', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'CANCELLED' });
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/completed or cancelled/);
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'x' } as any, UID)).rejects.toThrow(/zakończonej/);
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.updateReservationMenu('bad', {} as any, UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.updateReservationMenu('bad', {} as any, UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when menu package not found', async () => {
       db.reservation.findUnique.mockResolvedValue(RES_BASE);
       db.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'bad' } as any, UID)).rejects.toThrow('Menu package not found');
+      await expect(svc.updateReservationMenu('res-001', { menuPackageId: 'bad' } as any, UID)).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should throw on invalid data (no menuPackageId key)', async () => {
       db.reservation.findUnique.mockResolvedValue(RES_BASE);
-      await expect(svc.updateReservationMenu('res-001', {} as any, UID)).rejects.toThrow('Invalid menu update data');
+      await expect(svc.updateReservationMenu('res-001', {} as any, UID)).rejects.toThrow('Nieprawidłowe dane aktualizacji menu');
     });
 
     it('should use custom adultsCount/childrenCount/toddlersCount', async () => {
@@ -483,19 +435,19 @@ describe('ReservationService — Branch Coverage', () => {
 
     it('should throw when already archived', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date() });
-      await expect(svc.archiveReservation('res-001', UID)).rejects.toThrow('already archived');
+      await expect(svc.archiveReservation('res-001', UID)).rejects.toThrow('już zarchiwizowana');
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.archiveReservation('bad', UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.archiveReservation('bad', UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should use default reason when none provided', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: null });
       await svc.archiveReservation('res-001', UID);
       const histCall = db.reservationHistory.create.mock.calls[0][0];
-      expect(histCall.data.reason).toContain('archived');
+      expect(histCall.data.reason).toContain('zarchiwizowana');
     });
 
     it('should handle hall.name being null', async () => {
@@ -512,24 +464,25 @@ describe('ReservationService — Branch Coverage', () => {
     it('should unarchive successfully', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date('2026-01-01') });
       await svc.unarchiveReservation('res-001', UID, 'Restore');
-      expect(db.reservation.update).toHaveBeenCalledWith(expect.objectContaining({ data: { archivedAt: null } }));
+      const call = db.reservation.update.mock.calls[0][0];
+      expect(call.data.archivedAt).toBeNull();
     });
 
     it('should throw when not archived', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: null });
-      await expect(svc.unarchiveReservation('res-001', UID)).rejects.toThrow('not archived');
+      await expect(svc.unarchiveReservation('res-001', UID)).rejects.toThrow('nie jest zarchiwizowana');
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.unarchiveReservation('bad', UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.unarchiveReservation('bad', UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should use default reason when none provided', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, archivedAt: new Date() });
       await svc.unarchiveReservation('res-001', UID);
       const histCall = db.reservationHistory.create.mock.calls[0][0];
-      expect(histCall.data.reason).toContain('restored');
+      expect(histCall.data.reason).toContain('przywrócona');
     });
   });
 
@@ -545,7 +498,7 @@ describe('ReservationService — Branch Coverage', () => {
       ]);
       await svc.cancelReservation('res-001', UID, 'Klient zrezygnował');
       expect(txMock.deposit.updateMany).toHaveBeenCalledTimes(1);
-      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(3);
+      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(4); // 2 deposit + 1 cancel + 1 auto-archive
     });
 
     it('should cancel with no pending deposits', async () => {
@@ -553,19 +506,19 @@ describe('ReservationService — Branch Coverage', () => {
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.cancelReservation('res-001', UID);
       expect(txMock.deposit.updateMany).not.toHaveBeenCalled();
-      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(1);
+      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(2); // 1 cancel + 1 auto-archive
     });
 
     it('should include deposit info in per-deposit history entries', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'PENDING' });
       txMock.deposit.findMany.mockResolvedValue([{ id: 'd1', amount: 500, status: 'PENDING' }]);
       await svc.cancelReservation('res-001', UID, 'Anulowano');
-      // Per-deposit entries come first, main cancel entry is last
       const allCalls = txMock.reservationHistory.create.mock.calls;
+      // Per-deposit entry first
       const depositHist = allCalls[0][0];
       expect(depositHist.data.reason).toContain('500');
-      // Main cancel entry is the last call
-      const mainHist = allCalls[allCalls.length - 1][0];
+      // Main cancel entry is second-to-last (last = auto-archive)
+      const mainHist = allCalls[allCalls.length - 2][0];
       expect(mainHist.data.reason).toContain('Anulowano');
     });
 
@@ -573,23 +526,24 @@ describe('ReservationService — Branch Coverage', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'PENDING' });
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.cancelReservation('res-001', UID);
+      // With 0 deposits: cancel entry is first, auto-archive is second
       const hist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toContain('Reservation cancelled');
+      expect(hist.data.reason).toContain('Rezerwacja anulowana');
     });
 
     it('should throw when already cancelled', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'CANCELLED' });
-      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('already cancelled');
+      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('już anulowana');
     });
 
     it('should throw when completed', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
-      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('Cannot cancel completed');
+      await expect(svc.cancelReservation('res-001', UID)).rejects.toThrow('Nie można anulować zakończonej');
     });
 
     it('should throw when not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.cancelReservation('bad', UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.cancelReservation('bad', UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
   });
 
@@ -641,18 +595,18 @@ describe('ReservationService — Branch Coverage', () => {
       txMock.deposit.findMany.mockResolvedValue([]);
       await svc.updateStatus('res-001', { status: ReservationStatus.CANCELLED } as any, UID);
       const hist = txMock.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toContain('Status changed');
+      expect(hist.data.reason).toContain('Zmiana statusu');
     });
 
     it('should throw on invalid status transition', async () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'COMPLETED' });
       await expect(svc.updateStatus('res-001', { status: ReservationStatus.PENDING } as any, UID))
-        .rejects.toThrow(/Cannot change status/);
+        .rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should throw when reservation not found', async () => {
       db.reservation.findUnique.mockResolvedValue(null);
-      await expect(svc.updateStatus('bad', { status: ReservationStatus.CONFIRMED } as any, UID)).rejects.toThrow('Reservation not found');
+      await expect(svc.updateStatus('bad', { status: ReservationStatus.CONFIRMED } as any, UID)).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should perform regular update for non-cancel status change', async () => {
@@ -673,7 +627,7 @@ describe('ReservationService — Branch Coverage', () => {
       db.reservation.findUnique.mockResolvedValue({ ...RES_BASE, status: 'PENDING' });
       await svc.updateStatus('res-001', { status: ReservationStatus.CONFIRMED } as any, UID);
       const hist = db.reservationHistory.create.mock.calls[0][0];
-      expect(hist.data.reason).toBe('Status changed');
+      expect(hist.data.reason).toContain('Zmiana statusu');
     });
   });
 

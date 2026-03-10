@@ -52,7 +52,7 @@ interface ReservationExtraForPDF {
   status: string;
 }
 
-interface ReservationPDFData {
+export interface ReservationPDFData {
   id: string;
   client: {
     firstName: string;
@@ -66,6 +66,8 @@ interface ReservationPDFData {
   };
   eventType?: {
     name: string;
+    standardHours?: number | null;
+    extraHourRate?: number | null;
   };
   customEventType?: string;
   date?: string;
@@ -82,6 +84,7 @@ interface ReservationPDFData {
   pricePerToddler: number;
   totalPrice: number;
   extrasTotalPrice?: number;
+  extraHoursCost?: number | null;
   // #137: Venue surcharge fields
   venueSurcharge?: number | null;
   venueSurchargeLabel?: string | null;
@@ -108,7 +111,7 @@ interface ReservationPDFData {
   createdAt: Date;
 }
 
-interface PaymentConfirmationData {
+export interface PaymentConfirmationData {
   depositId: string;
   amount: number;
   paidAt: Date;
@@ -1076,6 +1079,20 @@ export class PDFService {
       dateStr && timeStr ? `${dateStr}  ${timeStr}` : dateStr || timeStr,
       guestLine,
     ];
+
+    // #176: Duration with extra hours info
+    if (r.startDateTime && r.endDateTime) {
+      const durationMs = new Date(r.endDateTime).getTime() - new Date(r.startDateTime).getTime();
+      const durationHours = Math.round(durationMs / (1000 * 60 * 60) * 10) / 10;
+      const standardHours = r.eventType?.standardHours;
+      if (standardHours && durationHours > standardHours) {
+        const extraHours = Math.round((durationHours - standardHours) * 10) / 10;
+        eventDetails.push(`Czas: ${durationHours}h (${standardHours}h + ${extraHours}h extra)`);
+      } else {
+        eventDetails.push(`Czas trwania: ${durationHours}h`);
+      }
+    }
+
     /* istanbul ignore next */
     if (r.birthdayAge) eventDetails.push(`Wiek jubilata: ${r.birthdayAge} lat`);
     /* istanbul ignore next */
@@ -1251,12 +1268,22 @@ export class PDFService {
     const extrasTotalCalc = (r.reservationExtras || [])
       .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     const venueSurchargeAmount = Number(r.venueSurcharge) || 0;
-    const displayTotal = Number(r.totalPrice) + extrasTotalCalc;
+    const extraHoursCostAmt = Number(r.extraHoursCost) || 0;
+    // totalPrice from DB already includes extras, surcharge, extraHours, and discount
+    // (see recalculate-price.ts formula). Do NOT add extras again.
+    const displayTotal = Number(r.totalPrice);
 
-    /* istanbul ignore next */
-    const deposit = r.deposits && r.deposits.length > 0
-      ? r.deposits[0]
-      : r.deposit;
+    // #deposits-fix (2/5): Secondary guard — filter CANCELLED deposits in the PDF renderer.
+    // Primary guard lives in reservation.controller.ts downloadPDF().
+    // Using both guards ensures robustness even if the controller path changes.
+    const activeDeposits = (r.deposits || []).filter((d: any) => d.status !== 'CANCELLED');
+    // Legacy fallback: if no deposits array, fall back to the single deposit field
+    const depositsForDisplay: Array<{ amount: number | string; dueDate: Date | string; status: string; paid: boolean }> =
+      activeDeposits.length > 0
+        ? activeDeposits
+        : r.deposit
+          ? [r.deposit]
+          : [];
 
     let rowCount = 0;
     if (r.adults > 0 && r.pricePerAdult > 0) rowCount++;
@@ -1264,9 +1291,11 @@ export class PDFService {
     if (r.toddlers > 0 && r.pricePerToddler > 0) rowCount++;
     if (extrasTotalCalc > 0) rowCount++;
     if (venueSurchargeAmount > 0) rowCount++;
+    if (extraHoursCostAmt > 0) rowCount++;
     rowCount++; // RAZEM
-    if (deposit) rowCount += 2; // deposit + DO ZAPŁATY
-    const boxHeight = 22 + rowCount * 13 + (deposit ? 14 : 0);
+    // Each active deposit gets its own row + one final DO ZAPŁATY row
+    if (depositsForDisplay.length > 0) rowCount += depositsForDisplay.length + 1;
+    const boxHeight = 22 + rowCount * 13 + (depositsForDisplay.length > 0 ? 14 : 0);
 
     this.safePageBreak(doc, boxHeight + 15);
     const boxY = doc.y;
@@ -1316,6 +1345,18 @@ export class PDFService {
       doc.text(this.formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
+    if (extraHoursCostAmt > 0) {
+      const extraHourRate = Number(r.eventType?.extraHourRate) || 0;
+      const extraHoursCount = extraHourRate > 0
+        ? Math.round(extraHoursCostAmt / extraHourRate * 10) / 10
+        : 0;
+      const extraLabel = extraHourRate > 0
+        ? `Dodatkowe godziny: ${extraHoursCount}h \u00d7 ${this.formatCurrency(extraHourRate)}/h`
+        : 'Dodatkowe godziny';
+      doc.text(extraLabel, labelX, y);
+      doc.text(this.formatCurrency(extraHoursCostAmt), valueX, y, { width: valueWidth, align: 'right' });
+      y += 13;
+    }
 
     y += 2;
     doc.strokeColor(COLORS.border).lineWidth(0.5)
@@ -1327,35 +1368,45 @@ export class PDFService {
     doc.text(this.formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
     y += 14;
 
-    if (deposit) {
+    if (depositsForDisplay.length > 0) {
       const depositBadgeWidth = 32;
       const depositBadgeGap = 4;
       const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
       const depositValueX = valueX;
 
-      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
-      /* istanbul ignore next */
-      const dueDate = deposit.dueDate instanceof Date
-        ? this.formatDate(deposit.dueDate)
-        : deposit.dueDate;
-      const depositLabel = deposit.paid ? 'Zaliczka (opłacona)' : `Zaliczka (termin: ${dueDate})`;
-      doc.text(depositLabel, labelX, y);
-      doc.text(`-${this.formatCurrency(deposit.amount)}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
+      for (let i = 0; i < depositsForDisplay.length; i++) {
+        const dep = depositsForDisplay[i];
+        /* istanbul ignore next */
+        const dueDate = dep.dueDate instanceof Date
+          ? this.formatDate(dep.dueDate)
+          : dep.dueDate;
+        // Use numbered prefix only when there are multiple deposits
+        const labelPrefix = depositsForDisplay.length > 1 ? `Zaliczka ${i + 1}` : 'Zaliczka';
+        const depositLabel = dep.paid
+          ? `${labelPrefix} (opłacona)`
+          : `${labelPrefix} (termin: ${dueDate})`;
 
-      const statusColor = deposit.paid ? COLORS.success : COLORS.warning;
-      const statusText = deposit.paid ? 'OK' : 'OCZEK.';
-      const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
-      doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(statusColor);
-      doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
-      doc.text(statusText, depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
+        doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
+        doc.text(depositLabel, labelX, y);
+        doc.text(`-${this.formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
-      y += 14;
+        const statusColor = dep.paid ? COLORS.success : COLORS.warning;
+        const statusText = dep.paid ? 'OK' : 'OCZEK.';
+        const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
+        doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(statusColor);
+        doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
+        doc.text(statusText, depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
+
+        y += 14;
+      }
 
       doc.strokeColor(COLORS.accent).lineWidth(0.8)
          .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
       y += 5;
 
-      const remaining = displayTotal - Number(deposit.amount);
+      // DO ZAPŁATY = totalPrice minus sum of ALL active deposits
+      const totalDeposited = depositsForDisplay.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+      const remaining = displayTotal - totalDeposited;
       doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.primary);
       doc.text('DO ZAPŁATY', labelX, y);
       doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
@@ -1430,7 +1481,6 @@ export class PDFService {
     const resLines: string[] = [
       `${data.reservation.date}  ${data.reservation.startTime} - ${data.reservation.endTime}`,
     ];
-    if (data.reservation.hall) resLines.push(`Sala: ${data.reservation.hall}`);
     if (data.reservation.eventType) resLines.push(`Typ: ${data.reservation.eventType}`);
     resLines.push(`Gości: ${data.reservation.guests}`);
     resLines.push(`Nr rezerwacji: ${data.reservation.id}`);
@@ -1439,63 +1489,7 @@ export class PDFService {
     const resBoxHeight = this.calculateInfoBoxHeight(resLines.length);
     doc.y = doc.y + resBoxHeight + 5;
 
-    doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.4);
-
-    // ── 5. FINANCIAL SUMMARY BOX ──
-    const totalPrice = Number(data.reservation.totalPrice);
-    const paidAmount = Number(data.amount);
-    const remaining = totalPrice - paidAmount;
-
-    const finBoxHeight = 30 + 4 * 18 + 10;
-
-    this.safePageBreak(doc, finBoxHeight + 20);
-    const finBoxY = doc.y;
-
-    doc.rect(left, finBoxY, pageWidth, finBoxHeight).fill(COLORS.bgLight);
-    doc.rect(left, finBoxY, 3, finBoxHeight).fill(COLORS.accent);
-
-    doc.fillColor(COLORS.textDark).fontSize(11).font(this.getBoldFont());
-    doc.text('PODSUMOWANIE FINANSOWE', left + 15, finBoxY + 10);
-
-    let y = finBoxY + 30;
-    const labelX = left + 15;
-    const rightEdge = left + pageWidth - 15;
-    const valueWidth = 115;
-    const valueX = rightEdge - valueWidth;
-
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
-    doc.text('Całkowita cena rezerwacji', labelX, y);
-    doc.text(this.formatCurrency(totalPrice), valueX, y, { width: valueWidth, align: 'right' });
-    y += 16;
-
-    const depositBadgeWidth = 40;
-    const depositBadgeGap = 6;
-    const depositValueWidth = valueWidth - depositBadgeWidth - depositBadgeGap;
-
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.success);
-    doc.text('Wpłacona zaliczka', labelX, y);
-    doc.text(`-${this.formatCurrency(paidAmount)}`, valueX, y, { width: depositValueWidth, align: 'right' });
-
-    const badgeX = valueX + depositValueWidth + depositBadgeGap;
-    doc.roundedRect(badgeX, y - 1, depositBadgeWidth, 13, 3).fill(COLORS.success);
-    doc.fillColor('#ffffff').fontSize(6).font(this.getBoldFont());
-    doc.text('ZAKS.', badgeX, y + 2, { width: depositBadgeWidth, align: 'center' });
-    y += 18;
-
-    y += 4;
-    doc.strokeColor(COLORS.accent).lineWidth(1)
-       .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
-    y += 8;
-
-    doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.primary);
-    doc.text('POZOSTAŁO DO ZAPŁATY', labelX, y);
-    doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
-
-    doc.y = finBoxY + finBoxHeight + 5;
-
-    // ── 6. FOOTER ──
+    // ── 5. FOOTER (sekcja finansowa usunieta - #172) ──
     doc.moveDown(1);
     this.drawInlineFooter(doc, left, pageWidth);
   }

@@ -15,6 +15,8 @@ import {
   Menu,
   X,
   Building2,
+  UtensilsCrossed,
+  ClipboardList,
 } from 'lucide-react';
 
 // ── Nav item types ─────────────────────────────────────
@@ -31,6 +33,23 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: <LayoutDashboard className="h-4 w-4" />,
+  },
+  {
+    label: 'Catering',
+    href: '/dashboard/catering',
+    icon: <UtensilsCrossed className="h-4 w-4" />,
+    children: [
+      {
+        label: 'Szablony',
+        href: '/dashboard/catering/templates',
+        icon: <UtensilsCrossed className="h-4 w-4" />,
+      },
+      {
+        label: 'Zamówienia',
+        href: '/dashboard/catering/orders',
+        icon: <ClipboardList className="h-4 w-4" />,
+      },
+    ],
   },
   {
     label: 'Usługi dodatkowe',
@@ -72,7 +91,6 @@ export default function DashboardNav() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(() => {
-    // Auto-expand section if current path matches a child
     const expanded: string[] = [];
     for (const item of NAV_ITEMS) {
       if (item.children?.some((child) => pathname.startsWith(child.href))) {
@@ -95,10 +113,8 @@ export default function DashboardNav() {
     return pathname.startsWith(href);
   };
 
-  // ── Render nav link ─────────────────────────────────
   const renderItem = (item: NavItem, depth = 0) => {
     const hasChildren = item.children && item.children.length > 0;
-    const active = isActive(item.href);
     const isExpanded = expandedSections.includes(item.label);
 
     if (hasChildren) {
@@ -137,7 +153,7 @@ export default function DashboardNav() {
         href={item.href}
         onClick={() => setMobileOpen(false)}
         className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-          active
+          isActive(item.href)
             ? 'bg-primary/10 text-primary'
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
         }`}
@@ -148,16 +164,12 @@ export default function DashboardNav() {
     );
   };
 
-  // ── Sidebar content ─────────────────────────────────
   const navContent = (
     <nav className="flex flex-col gap-1 p-4">
-      {/* Logo / brand */}
       <div className="mb-4 px-3">
         <h2 className="text-lg font-bold tracking-tight">Gościniec</h2>
         <p className="text-xs text-muted-foreground">Panel zarządzania</p>
       </div>
-
-      {/* Navigation items */}
       <div className="space-y-1">
         {NAV_ITEMS.map((item) => renderItem(item))}
       </div>
@@ -166,7 +178,6 @@ export default function DashboardNav() {
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
         className="fixed left-4 top-4 z-50 rounded-md border bg-background p-2 shadow-sm lg:hidden"
@@ -179,7 +190,6 @@ export default function DashboardNav() {
         )}
       </button>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -187,7 +197,6 @@ export default function DashboardNav() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-64 border-r bg-background transition-transform duration-200 lg:relative lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'

@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import {
   ChevronLeft,
+  ChevronDown,
   LayoutDashboard,
   Calendar,
+  CalendarDays,
   Users,
   Building2,
   ClipboardList,
@@ -24,40 +26,154 @@ import {
   FileText,
   Gift,
   ScrollText,
+  ShoppingBag,
+  BookOpen,
 } from 'lucide-react'
 
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Rezerwacje', href: '/dashboard/reservations', icon: Calendar },
-  { name: 'Archiwum', href: '/dashboard/archive', icon: Archive },
-  { name: 'Klienci', href: '/dashboard/clients', icon: Users },
-  { name: 'Sale', href: '/dashboard/halls', icon: Building2 },
-  { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed },
-  { name: 'Kolejka', href: '/dashboard/queue', icon: Clock },
-  { name: 'Zaliczki', href: '/dashboard/deposits', icon: DollarSign },
-  { name: 'Usługi dodatkowe', href: '/dashboard/service-extras', icon: Gift },
-  { name: 'Typy Wydarzeń', href: '/dashboard/event-types', icon: Theater },
+// ═══ NAV CONFIG ═══
+
+type NavChild = { name: string; href: string; icon: React.ElementType }
+type NavItem  = { name: string; href: string; icon: React.ElementType; children?: NavChild[] }
+
+const navItems: NavItem[] = [
+  { name: 'Dashboard',           href: '/dashboard',                   icon: LayoutDashboard },
+  { name: 'Widok Dzienny',       href: '/dashboard/daily-view',        icon: CalendarDays },
+  { name: 'Rezerwacje',          href: '/dashboard/reservations',      icon: Calendar },
+  { name: 'Archiwum',            href: '/dashboard/archive',           icon: Archive },
+  { name: 'Klienci',             href: '/dashboard/clients',           icon: Users },
+  { name: 'Sale',                href: '/dashboard/halls',             icon: Building2 },
+  { name: 'Menu',                href: '/dashboard/menu',              icon: UtensilsCrossed },
+  {
+    name: 'Catering',
+    href: '/dashboard/catering',
+    icon: ClipboardList,
+    children: [
+      { name: 'Zamówienia', href: '/dashboard/catering/orders',    icon: ShoppingBag },
+      { name: 'Szablony',   href: '/dashboard/catering/templates', icon: BookOpen },
+    ],
+  },
+  { name: 'Kolejka',             href: '/dashboard/queue',             icon: Clock },
+  { name: 'Zaliczki',            href: '/dashboard/deposits',          icon: DollarSign },
+  { name: 'Usługi dodatkowe',    href: '/dashboard/service-extras',    icon: Gift },
+  { name: 'Typy Wydarzeń',       href: '/dashboard/event-types',       icon: Theater },
   { name: 'Szablony dokumentów', href: '/dashboard/document-templates', icon: ScrollText },
-  { name: 'Dziennik Audytu', href: '/dashboard/audit-log', icon: FileText },
-  { name: 'Raporty', href: '/dashboard/reports', icon: BarChart3 },
-  { name: 'Ustawienia', href: '/dashboard/settings', icon: Settings },
+  { name: 'Dziennik Audytu',     href: '/dashboard/audit-log',         icon: FileText },
+  { name: 'Raporty',             href: '/dashboard/reports',           icon: BarChart3 },
+  { name: 'Ustawienia',          href: '/dashboard/settings',          icon: Settings },
 ]
 
-/* ============================
-   Shared nav list component
-   ============================ */
+// ═══ SIDEBAR NAV ═══
+
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const pathname = usePathname()
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const set = new Set<string>()
+    navItems.forEach(item => {
+      if (item.children?.some(child => pathname.startsWith(child.href))) {
+        set.add(item.href)
+      }
+    })
+    return set
+  })
+
+  useEffect(() => {
+    navItems.forEach(item => {
+      if (item.children?.some(child => pathname.startsWith(child.href))) {
+        setOpenGroups(prev => new Set([...prev, item.href]))
+      }
+    })
+  }, [pathname])
+
+  const toggleGroup = (href: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(href)) next.delete(href)
+      else next.add(href)
+      return next
+    })
+  }
 
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4">
       <ul className="space-y-1">
         {navItems.map((item) => {
-          const isActive =
-            item.href === '/dashboard'
+          const isGroupActive = item.children
+            ? item.children.some(child => pathname.startsWith(child.href))
+            : item.href === '/dashboard'
               ? pathname === '/dashboard'
               : pathname.startsWith(item.href)
 
+          const isOpen = !collapsed && openGroups.has(item.href)
+
+          // ─── Group (has children, expanded sidebar) ───
+          if (item.children && !collapsed) {
+            return (
+              <li key={item.href}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(item.href)}
+                  className={cn(
+                    'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                    isGroupActive
+                      ? 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-800/50'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
+                  )}
+                >
+                  <item.icon className={cn('h-5 w-5 flex-shrink-0', isGroupActive && 'text-blue-600 dark:text-blue-400')} />
+                  <span className="flex-1 text-left">{item.name}</span>
+                  <ChevronDown className={cn('h-4 w-4 flex-shrink-0 transition-transform duration-200 text-neutral-400', isOpen && 'rotate-180')} />
+                </button>
+
+                {isOpen && (
+                  <ul className="mt-1 ml-4 pl-3 border-l border-neutral-200 dark:border-neutral-700 space-y-0.5">
+                    {item.children.map(child => {
+                      const isChildActive = pathname.startsWith(child.href)
+                      return (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            onClick={onNavigate}
+                            className={cn(
+                              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                              isChildActive
+                                ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20'
+                                : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-800 dark:hover:text-neutral-100'
+                            )}
+                          >
+                            <child.icon className={cn('h-4 w-4 flex-shrink-0', isChildActive && 'text-blue-500 dark:text-blue-400')} />
+                            <span>{child.name}</span>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </li>
+            )
+          }
+
+          // ─── Group (collapsed) ───
+          if (item.children && collapsed) {
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.children[0].href}
+                  onClick={onNavigate}
+                  className={cn(
+                    'flex items-center justify-center rounded-xl px-2 py-2.5 text-sm font-medium transition-all duration-200',
+                    isGroupActive
+                      ? 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-800/50'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
+                  )}
+                >
+                  <item.icon className={cn('h-5 w-5 flex-shrink-0', isGroupActive && 'text-blue-600 dark:text-blue-400')} />
+                </Link>
+              </li>
+            )
+          }
+
+          // ─── Regular item ───
           return (
             <li key={item.href}>
               <Link
@@ -66,12 +182,12 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   collapsed && 'justify-center px-2',
-                  isActive
+                  isGroupActive
                     ? 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-800/50'
                     : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
                 )}
               >
-                <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-blue-600 dark:text-blue-400')} />
+                <item.icon className={cn('h-5 w-5 flex-shrink-0', isGroupActive && 'text-blue-600 dark:text-blue-400')} />
                 {!collapsed && <span>{item.name}</span>}
               </Link>
             </li>
@@ -82,9 +198,8 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   )
 }
 
-/* ============================
-   Shared user footer component
-   ============================ */
+// ═══ SIDEBAR USER ═══
+
 function SidebarUser({
   collapsed,
   user,
@@ -124,9 +239,8 @@ function SidebarUser({
   )
 }
 
-/* ============================
-   Props matching DashboardLayout
-   ============================ */
+// ═══ MAIN SIDEBAR ═══
+
 interface SidebarProps {
   user: { firstName: string; lastName: string; role: string; email?: string } | null
   onLogout: () => void
@@ -134,14 +248,10 @@ interface SidebarProps {
   onMobileClose: () => void
 }
 
-/* ============================
-   Main Sidebar — default export
-   ============================ */
 export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
-  // Auto-close mobile sheet on navigation
   useEffect(() => {
     onMobileClose()
   }, [pathname])
@@ -195,7 +305,6 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
           <SheetTitle className="sr-only">Menu nawigacji</SheetTitle>
 
           <div className="flex h-full flex-col">
-            {/* Mobile logo */}
             <div className="flex items-center gap-2.5 px-4 py-5 border-b border-neutral-100 dark:border-neutral-800">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg">
                 <ClipboardList className="h-5 w-5 text-white" />
@@ -208,7 +317,6 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
               </div>
             </div>
 
-            {/* Nav — always expanded on mobile, close sheet on click */}
             <SidebarNav collapsed={false} onNavigate={onMobileClose} />
             <SidebarUser collapsed={false} user={user} onLogout={onLogout} />
           </div>

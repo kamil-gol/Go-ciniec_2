@@ -24,12 +24,16 @@ import reportsRoutes from '@/routes/reports.routes';
 import settingsRoutes from '@/routes/settings.routes';
 import serviceExtraRoutes from '@/routes/serviceExtra.routes';
 import documentTemplateRoutes from '@/routes/document-template.routes';
+import cateringRoutes from '@/routes/catering.routes';
+import cateringOrderRoutes from '@/routes/catering-order.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
 import authService from '@/services/auth.service';
 import archiveSchedulerService from '@/services/archive-scheduler.service';
 import emailService from '@/services/email.service';
+import { initStorageBuckets } from '@/services/storage';
+import { storageConfig } from '@/config/storage.config';
 
 // Validate environment variables early
 validateEnv();
@@ -117,6 +121,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    storage: storageConfig.driver,
   });
 });
 
@@ -137,6 +142,14 @@ app.use('/api/audit-log', auditLogRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/document-templates', documentTemplateRoutes);
+
+/**
+ * Catering Routes
+ * /api/catering/templates, /packages, /sections, /options  → Faza 1
+ * /api/catering/orders                                       → Faza 2
+ */
+app.use('/api/catering', cateringRoutes);
+app.use('/api/catering/orders', cateringOrderRoutes);
 
 /**
  * Menu System Routes
@@ -189,9 +202,19 @@ export default app;
 // Start Server (skip in test mode)
 // ========================================
 if (process.env.NODE_ENV !== 'test') {
-  const server = app.listen(Number(PORT), HOST, () => {
+  const server = app.listen(Number(PORT), HOST, async () => {
     logger.info(`Server running on http://${HOST}:${PORT}`);
     logger.info(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+    logger.info(`Storage driver: ${storageConfig.driver}`);
+
+    // Initialize storage buckets (#146)
+    try {
+      await initStorageBuckets(
+        (await import('@/services/storage')).storageService
+      );
+    } catch (error) {
+      logger.error('[Storage] Bucket initialization failed — uploads may not work:', error);
+    }
 
     // Setup cron jobs
     setupAutoCancelCron();

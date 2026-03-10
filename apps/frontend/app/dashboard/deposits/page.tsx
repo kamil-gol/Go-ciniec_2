@@ -64,18 +64,26 @@ export default function DepositsPage() {
         : ''
       const hallName = deposit.reservation?.hall?.name?.toLowerCase() || ''
       const eventType = deposit.reservation?.eventType?.name?.toLowerCase() || ''
+      // #deposits-fix (5/5): include deposit title in search
+      const title = deposit.title?.toLowerCase() || ''
       return (
         clientName.includes(query) ||
         hallName.includes(query) ||
         eventType.includes(query) ||
-        deposit.amount.toString().includes(query)
+        deposit.amount.toString().includes(query) ||
+        title.includes(query)
       )
     }
     return true
   })
 
+  // #deposits-fix (3/5): "Wszystkie" count must include CANCELLED deposits.
+  // stats.counts.total only covers PENDING+PAID+OVERDUE+PARTIALLY_PAID,
+  // but the ALL filter shows every deposit including CANCELLED rows.
+  const totalAllCount = (stats?.counts.total ?? 0) + (stats?.counts.cancelled ?? 0)
+
   const filterButtons: { label: string; value: FilterStatus; count?: number }[] = [
-    { label: 'Wszystkie', value: 'ALL', count: stats?.counts.total },
+    { label: 'Wszystkie', value: 'ALL', count: totalAllCount },
     { label: 'Oczekujące', value: 'PENDING', count: stats?.counts.pending },
     { label: 'Opłacone', value: 'PAID', count: stats?.counts.paid },
     { label: 'Przetermin.', value: 'OVERDUE', count: stats?.counts.overdue },
@@ -131,10 +139,12 @@ export default function DepositsPage() {
             iconGradient="from-red-500 to-rose-500"
             delay={0.3}
           />
+          {/* #deposits-fix (5/5): totalAllCount includes CANCELLED so the subtitle */}
+          {/* matches the actual "Wszystkie" filter row count. */}
           <StatCard
             label="Łącznie"
             value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
-            subtitle={`${percentPaid}% wpłacono · ${stats.counts.total} zaliczek`}
+            subtitle={`${percentPaid}% wpłacono \u00b7 ${totalAllCount} zaliczek`}
             icon={TrendingUp}
             iconGradient="from-rose-500 to-pink-500"
             delay={0.4}

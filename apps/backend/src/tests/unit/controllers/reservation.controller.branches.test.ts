@@ -48,7 +48,7 @@ jest.mock('../../../utils/AppError', () => {
     }
     static unauthorized(msg?: string) { return new MockAppError(msg || 'Unauthorized', 401); }
     static badRequest(msg: string) { return new MockAppError(msg, 400); }
-    static notFound(entity: string) { return new MockAppError(`${entity} not found`, 404); }
+    static notFound(entity: string) { return new MockAppError(`Nie znaleziono: ${entity}`, 404); }
   }
   return { AppError: MockAppError };
 });
@@ -313,7 +313,7 @@ describe('ReservationController branches', () => {
     it('should throw notFound when null', async () => {
       (reservationService.getReservationById as jest.Mock).mockResolvedValue(null);
       const req = { params: { id: 'x' } } as any;
-      await expect(ctrl.getReservationById(req, mockRes())).rejects.toThrow('not found');
+      await expect(ctrl.getReservationById(req, mockRes())).rejects.toThrow(/Nie znaleziono/i);
     });
   });
 
@@ -322,7 +322,7 @@ describe('ReservationController branches', () => {
     it('should throw notFound when reservation missing', async () => {
       (reservationService.getReservationById as jest.Mock).mockResolvedValue(null);
       const req = { params: { id: 'x' } } as any;
-      await expect(ctrl.downloadPDF(req, mockRes())).rejects.toThrow('not found');
+      await expect(ctrl.downloadPDF(req, mockRes())).rejects.toThrow(/Nie znaleziono/i);
     });
 
     it('should return PDF buffer', async () => {

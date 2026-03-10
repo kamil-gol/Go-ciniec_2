@@ -13,7 +13,7 @@
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { logChange, diffObjects } from '../utils/audit-logger';
-import { recalculateReservationTotal } from '../utils/recalculate-total';
+import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import {
   CreateServiceCategoryDTO,
   UpdateServiceCategoryDTO,
@@ -554,8 +554,8 @@ export class ServiceExtraService {
       },
     });
 
-    // Recalculate reservation total (extras + base + surcharge - discount)
-    await recalculateReservationTotal(reservationId);
+    // Update reservation extras total + recalculate totalPrice
+    await this.recalculateExtrasTotal(reservationId);
 
     // Log on extra-level (item audit trail)
     await logChange({
@@ -804,6 +804,15 @@ export class ServiceExtraService {
       default:
         return unitPrice * quantity;
     }
+  }
+
+  /**
+   * Recalculate extras total AND reservation totalPrice.
+   * Uses centralized recalculateReservationTotalPrice() to ensure
+   * totalPrice = menuPrice + extrasTotal + surcharge - discount.
+   */
+  private async recalculateExtrasTotal(reservationId: string): Promise<void> {
+    await recalculateReservationTotalPrice(reservationId);
   }
 }
 

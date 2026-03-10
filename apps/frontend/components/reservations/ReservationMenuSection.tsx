@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   UtensilsCrossed, Plus, Edit, Trash2,
-  Users, Package, Sparkles, ShoppingCart, ChefHat
+  Users, Package, Sparkles, ShoppingCart, ChefHat,
+  User, Baby
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
 import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteReservationMenu } from '@/hooks/use-menu'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type { PortionTarget } from '@/types/menu'
+import { PORTION_TARGET_LABELS } from '@/types/menu'
 
 interface ReservationMenuSectionProps {
   reservationId: string
@@ -21,6 +24,7 @@ interface ReservationMenuSectionProps {
   children: number
   toddlers: number
   onMenuUpdated?: () => void
+  readOnly?: boolean
 }
 
 export function ReservationMenuSection({
@@ -30,7 +34,8 @@ export function ReservationMenuSection({
   adults,
   children,
   toddlers,
-  onMenuUpdated
+  onMenuUpdated,
+  readOnly = false
 }: ReservationMenuSectionProps) {
   const { toast } = useToast()
   const [showSelectionDialog, setShowSelectionDialog] = useState(false)
@@ -44,7 +49,7 @@ export function ReservationMenuSection({
   const isSaving = selectMenuMutation.isPending || updateMenuMutation.isPending
 
   const handleMenuSelected = async (selection: any) => {
-    if (isSaving) return // Prevent double-fire
+    if (isSaving || readOnly) return
     try {
       if (hasMenu) {
         await updateMenuMutation.mutateAsync({ reservationId, selection })
@@ -61,6 +66,7 @@ export function ReservationMenuSection({
   }
 
   const handleDeleteMenu = async () => {
+    if (readOnly) return
     if (!confirm('Czy na pewno chcesz usunąć wybrane menu?')) return
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
@@ -139,16 +145,20 @@ export function ReservationMenuSection({
               <div>
                 <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj menu do rezerwacji aby zobaczyć szczegóły
+                  {readOnly
+                    ? 'Menu nie zostało przypisane do tej rezerwacji'
+                    : 'Dodaj menu do rezerwacji aby zobaczyć szczegóły'}
                 </p>
               </div>
-              <Button
-                onClick={() => setShowSelectionDialog(true)}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Dodaj menu
-              </Button>
+              {!readOnly && (
+                <Button
+                  onClick={() => setShowSelectionDialog(true)}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Dodaj menu
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -169,21 +179,23 @@ export function ReservationMenuSection({
                   <p className="text-sm text-muted-foreground">{packageName}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Zmień
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleDeleteMenu} 
-                  className="text-red-600 hover:text-red-700"
-                  disabled={deleteMenuMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Zmień
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDeleteMenu} 
+                    className="text-red-600 hover:text-red-700"
+                    disabled={deleteMenuMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Package info - compact */}
@@ -217,27 +229,43 @@ export function ReservationMenuSection({
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {dishSelections.map((category: any) => (
-                    <div key={category.categoryId}>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <ChefHat className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{category.categoryName}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 ml-5">
-                        {category.dishes.map((dish: any) => (
-                          <span
-                            key={dish.dishId}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
-                          >
-                            <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
-                            {dish.quantity > 1 && (
-                              <span className="text-orange-600 font-bold">\u00d7{dish.quantity}</span>
-                            )}
+                  {dishSelections.map((category: any) => {
+                    const pt = category.portionTarget as PortionTarget | undefined;
+                    return (
+                      <div key={category.categoryId}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <ChefHat className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {category.categoryName}
                           </span>
-                        ))}
+                          {/* #166: Portion target badge */}
+                          {pt && pt !== 'ALL' && (
+                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0 rounded-full ${
+                              pt === 'ADULTS_ONLY'
+                                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'
+                                : 'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300'
+                            }`}>
+                              {pt === 'ADULTS_ONLY' ? <User className="w-2.5 h-2.5" /> : <Baby className="w-2.5 h-2.5" />}
+                              {PORTION_TARGET_LABELS[pt]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 ml-5">
+                          {category.dishes.map((dish: any) => (
+                            <span
+                              key={dish.dishId}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
+                            >
+                              <span className="font-medium">{dish.dishName || dish.name || 'Danie'}</span>
+                              {dish.quantity > 1 && (
+                                <span className="text-orange-600 font-bold">{'\u00d7'}{dish.quantity}</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -267,23 +295,25 @@ export function ReservationMenuSection({
         </Card>
       )}
 
-      {/* Selection Dialog */}
-      <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
-          </DialogHeader>
-          <MenuSelectionFlow
-            eventTypeId={eventTypeId}
-            eventDate={eventDate}
-            adults={adults}
-            children={children}
-            toddlers={toddlers}
-            initialSelection={buildInitialSelection()}
-            onComplete={handleMenuSelected}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Selection Dialog — only render when not readOnly */}
+      {!readOnly && (
+        <Dialog open={showSelectionDialog} onOpenChange={setShowSelectionDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{hasMenu ? 'Zmień menu rezerwacji' : 'Wybierz menu dla rezerwacji'}</DialogTitle>
+            </DialogHeader>
+            <MenuSelectionFlow
+              eventTypeId={eventTypeId}
+              eventDate={eventDate}
+              adults={adults}
+              children={children}
+              toddlers={toddlers}
+              initialSelection={buildInitialSelection()}
+              onComplete={handleMenuSelected}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }

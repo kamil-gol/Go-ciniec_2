@@ -57,7 +57,7 @@ describe('QueueService — 55P03 lock error branch in withRetry (line 39)', () =
 
     await expect(
       service.swapPositions('r1', 'r2', 'user-1')
-    ).rejects.toThrow('Another user is modifying the queue');
+    ).rejects.toThrow('Inny użytkownik modyfikuje kolejkę');
 
     // Should have been called 3 times (initial + 2 retries)
     expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(3);

@@ -9,7 +9,12 @@ export interface CalendarReservation {
   status: string
   guests: number
   totalPrice: string
-  hall: { id: string; name: string } | null
+  hall: {
+    id: string
+    name: string
+    capacity?: number
+    allowMultipleBookings?: boolean
+  } | null
   client: { id: string; firstName: string; lastName: string; phone: string }
   eventType: { id: string; name: string; color: string } | null
   customEventType: string | null
@@ -20,21 +25,30 @@ export interface CalendarHall {
   name: string
   capacity: number
   isActive: boolean
+  allowMultipleBookings?: boolean
 }
 
-/** Extract "HH:mm" in UTC from an ISO datetime string */
-function utcTime(iso: string): string {
+/** Extract "HH:mm" in LOCAL (Warsaw) timezone from an ISO datetime string */
+function localTime(iso: string): string {
   try {
-    return new Date(iso).toISOString().slice(11, 16)
+    const d = new Date(iso)
+    return [
+      String(d.getHours()).padStart(2, '0'),
+      String(d.getMinutes()).padStart(2, '0'),
+    ].join(':')
   } catch {
     return ''
   }
 }
 
-/** Extract "YYYY-MM-DD" in UTC from an ISO datetime string */
-function utcDate(iso: string): string {
+/** Extract "YYYY-MM-DD" in LOCAL (Warsaw) timezone from an ISO datetime string */
+function localDate(iso: string): string {
   try {
-    return new Date(iso).toISOString().slice(0, 10)
+    const d = new Date(iso)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
   } catch {
     return ''
   }
@@ -54,26 +68,22 @@ export function useCalendarReservations(year: number, month: number) {
       const raw = data.data || data || []
       const list = Array.isArray(raw) ? raw : []
 
-      // Transform: ensure each reservation has date, startTime, endTime, guests
-      // The API may return full reservation objects with startDateTime/endDateTime
-      // instead of the pre-formatted fields the calendar expects.
       return list.map((r: any) => ({
         ...r,
-        // Use existing date field, or extract from startDateTime (UTC)
-        date: r.date || (r.startDateTime ? utcDate(r.startDateTime) : null),
-        // Use existing startTime, or extract from startDateTime (UTC)
-        startTime: r.startTime || (r.startDateTime ? utcTime(r.startDateTime) : ''),
-        // Use existing endTime, or extract from endDateTime (UTC)
-        endTime: r.endTime || (r.endDateTime ? utcTime(r.endDateTime) : ''),
-        // Use existing guests, or compute from adults + children + toddlers
+        date: r.date || (r.startDateTime ? localDate(r.startDateTime) : null),
+        startTime: r.startTime || (r.startDateTime ? localTime(r.startDateTime) : ''),
+        endTime: r.endTime || (r.endDateTime ? localTime(r.endDateTime) : ''),
         guests: r.guests || ((Number(r.adults) || 0) + (Number(r.children) || 0) + (Number(r.toddlers) || 0)),
-        // Ensure totalPrice is a string
         totalPrice: String(r.totalPrice || '0'),
-        // Normalize hall (API might return hallId + hall object)
-        hall: r.hall || null,
-        // Normalize client
+        hall: r.hall
+          ? {
+              id: r.hall.id,
+              name: r.hall.name,
+              capacity: r.hall.capacity ?? undefined,
+              allowMultipleBookings: r.hall.allowMultipleBookings ?? undefined,
+            }
+          : null,
         client: r.client || null,
-        // Normalize eventType
         eventType: r.eventType || null,
       })) as CalendarReservation[]
     },

@@ -68,6 +68,7 @@ export default function PackageForm({
         maxSelect: Number(cs.maxSelect) || 0,
         isRequired: cs.isRequired,
         isEnabled: cs.isEnabled,
+        portionTarget: cs.portionTarget || 'ALL', // #166 fix: map portionTarget from saved data
         displayOrder: Number(cs.displayOrder) || 0,
         customLabel: cs.customLabel || undefined,
       }));
@@ -167,6 +168,7 @@ export default function PackageForm({
       maxSelect: Number(cs.maxSelect) || 0,
       isRequired: cs.isRequired,
       isEnabled: cs.isEnabled,
+      portionTarget: cs.portionTarget || 'ALL', // #166 fix: include portionTarget in save payload
       displayOrder: Number(cs.displayOrder) || 0,
       customLabel: cs.customLabel || null,
     }));

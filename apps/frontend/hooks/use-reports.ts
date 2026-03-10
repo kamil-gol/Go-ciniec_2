@@ -12,6 +12,9 @@ import type {
   PreparationsReportFilters,
   PreparationsReport,
   PreparationsReportResponse,
+  MenuPreparationsReportFilters,
+  MenuPreparationsReport,
+  MenuPreparationsReportResponse,
 } from '@/types/reports.types';
 
 // ============================================
@@ -38,7 +41,7 @@ export function useRevenueReport(
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
     staleTime: 60000,
-    retry: false, // Don't retry on 401 — avoids console spam
+    retry: false,
   });
 }
 
@@ -86,6 +89,31 @@ export function usePreparationsReport(
       if (filters.status) params.append('status', filters.status);
 
       const response = await api.get<PreparationsReportResponse>(`/reports/preparations?${params.toString()}`);
+      return response.data.data;
+    },
+    enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
+    staleTime: 60000,
+    retry: false,
+  });
+}
+
+// ============================================
+// MENU PREPARATIONS REPORT HOOK (#160)
+// ============================================
+
+export function useMenuPreparationsReport(
+  filters: MenuPreparationsReportFilters,
+  enabled: boolean = true
+): UseQueryResult<MenuPreparationsReport> {
+  return useQuery({
+    queryKey: ['reports', 'menu-preparations', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('dateFrom', filters.dateFrom);
+      params.append('dateTo', filters.dateTo);
+      params.append('view', filters.view);
+
+      const response = await api.get<MenuPreparationsReportResponse>(`/reports/menu-preparations?${params.toString()}`);
       return response.data.data;
     },
     enabled: enabled && !!filters.dateFrom && !!filters.dateTo,
@@ -192,5 +220,31 @@ export const exportPreparationsPDF = (filters: PreparationsReportFilters) => {
   return downloadFile(
     `/reports/export/preparations/pdf?${params.toString()}`,
     `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.pdf`
+  );
+};
+
+// ============================================
+// MENU PREPARATIONS EXPORT HELPERS (#160)
+// ============================================
+
+export const exportMenuPreparationsExcel = (filters: MenuPreparationsReportFilters) => {
+  const params = new URLSearchParams();
+  params.append('dateFrom', filters.dateFrom);
+  params.append('dateTo', filters.dateTo);
+  params.append('view', filters.view);
+  return downloadFile(
+    `/reports/export/menu-preparations/excel?${params.toString()}`,
+    `raport_menu_${filters.dateFrom}_${filters.dateTo}.xlsx`
+  );
+};
+
+export const exportMenuPreparationsPDF = (filters: MenuPreparationsReportFilters) => {
+  const params = new URLSearchParams();
+  params.append('dateFrom', filters.dateFrom);
+  params.append('dateTo', filters.dateTo);
+  params.append('view', filters.view);
+  return downloadFile(
+    `/reports/export/menu-preparations/pdf?${params.toString()}`,
+    `raport_menu_${filters.dateFrom}_${filters.dateTo}.pdf`
   );
 };

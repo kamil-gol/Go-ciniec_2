@@ -7,6 +7,7 @@
  *   - menuPackage.maxGuests check
  *   - discount PERCENTAGE > 100
  *   - discount AMOUNT > totalPrice
+ * FIX: spolonizowane komunikaty błędów
  */
 jest.mock('../../../lib/prisma', () => {
   const mockPrisma: any = {
@@ -59,6 +60,9 @@ const UID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   mockPrisma.user.findUnique.mockResolvedValue({ id: UID, email: 'a@b.com' });
   service = new ReservationService();
 });
@@ -76,7 +80,7 @@ const base: any = {
 describe('ReservationService — hall.isActive = false', () => {
   it('should throw when hall is inactive', async () => {
     mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: false, capacity: 200 });
-    await expect(service.createReservation(base, UID)).rejects.toThrow('Hall is not active');
+    await expect(service.createReservation(base, UID)).rejects.toThrow('Sala jest nieaktywna');
   });
 });
 
@@ -84,7 +88,7 @@ describe('ReservationService — client not found', () => {
   it('should throw when client does not exist', async () => {
     mockPrisma.hall.findUnique.mockResolvedValue({ id: 'h1', isActive: true, capacity: 200 });
     mockPrisma.client.findUnique.mockResolvedValue(null);
-    await expect(service.createReservation(base, UID)).rejects.toThrow('Client not found');
+    await expect(service.createReservation(base, UID)).rejects.toThrow('Nie znaleziono klienta');
   });
 });
 
@@ -107,7 +111,7 @@ describe('ReservationService — menuPackage guest limits', () => {
     });
     await expect(service.createReservation(
       { ...base, menuPackageId: 'pkg-1', adults: 20, children: 5, toddlers: 0 }, UID
-    )).rejects.toThrow('at least 100 guests');
+    )).rejects.toThrow('minimum 100 gości');
   });
 
   it('should throw when guests > maxGuests', async () => {
@@ -120,7 +124,7 @@ describe('ReservationService — menuPackage guest limits', () => {
     });
     await expect(service.createReservation(
       { ...base, menuPackageId: 'pkg-1', adults: 50, children: 10, toddlers: 5 }, UID
-    )).rejects.toThrow('maximum 30 guests');
+    )).rejects.toThrow('maksimum 30 gości');
   });
 });
 

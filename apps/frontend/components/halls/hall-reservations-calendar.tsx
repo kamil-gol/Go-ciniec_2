@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, User, DollarSign, Plus, ChevronRight, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, User, DollarSign, Plus, ChevronRight, AlertCircle, UsersRound, UserCheck } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,10 +15,18 @@ import Link from 'next/link'
 interface HallReservationsCalendarProps {
   hallId: string
   hallName: string
+  hallCapacity?: number
+  allowMultipleBookings?: boolean
   onCreateReservation?: () => void
 }
 
-export function HallReservationsCalendar({ hallId, hallName, onCreateReservation }: HallReservationsCalendarProps) {
+export function HallReservationsCalendar({
+  hallId,
+  hallName,
+  hallCapacity,
+  allowMultipleBookings = false,
+  onCreateReservation,
+}: HallReservationsCalendarProps) {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -31,7 +39,6 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
   const loadReservations = async () => {
     setLoading(true)
     try {
-      // Get date range based on view mode
       let dateFrom: string
       let dateTo: string
 
@@ -64,10 +71,10 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
 
   // Group reservations by date
   const reservationsByDate = reservations.reduce((acc, res) => {
-    const dateKey = res.startDateTime 
+    const dateKey = res.startDateTime
       ? format(parseISO(res.startDateTime), 'yyyy-MM-dd')
       : res.date || 'unknown'
-    
+
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push(res)
     return acc
@@ -108,6 +115,18 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
     }
   }
 
+  /** #165: Calculate occupied guests for a date (excluding cancelled) */
+  const getDateOccupancy = (dateReservations: Reservation[]) => {
+    const activeReservations = dateReservations.filter(
+      (r) => r.status !== 'CANCELLED'
+    )
+    const totalGuests = activeReservations.reduce(
+      (sum, r) => sum + (r.guests || 0),
+      0
+    )
+    return { activeCount: activeReservations.length, totalGuests }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -124,9 +143,28 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
       {/* Header with actions */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h3 className="text-lg font-semibold">Rezerwacje dla: {hallName}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Rezerwacje dla: {hallName}</h3>
+            {/* #165: Booking mode badge */}
+            {allowMultipleBookings ? (
+              <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-0 shadow-none">
+                <UsersRound className="h-3 w-3 mr-1" />
+                Wiele rezerwacji
+              </Badge>
+            ) : (
+              <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0 shadow-none">
+                <UserCheck className="h-3 w-3 mr-1" />
+                Wyłączność
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
-            {reservations.length === 0 ? 'Brak rezerwacji' : `Znaleziono ${reservations.length} rezerwacji`}
+            {reservations.length === 0
+              ? 'Brak rezerwacji'
+              : `Znaleziono ${reservations.length} rezerwacji`}
+            {allowMultipleBookings && hallCapacity && (
+              <span> · Pojemność sali: {hallCapacity} osób</span>
+            )}
           </p>
         </div>
 
@@ -171,12 +209,20 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
         </div>
       </div>
 
-      {/* Multi-reservation info */}
+      {/* #165: Multi-reservation info with capacity */}
       {todayReservations.length > 1 && (
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
           <AlertCircle className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800 dark:text-blue-300">
-            <strong>Wiele rezerwacji dziś ({todayReservations.length}):</strong> System automatycznie sprawdza, czy czasy się nie nakładają.
+            <strong>Wiele rezerwacji dziś ({todayReservations.length}):</strong>{' '}
+            {allowMultipleBookings && hallCapacity ? (
+              <>
+                Zajęto {getDateOccupancy(todayReservations).totalGuests} z {hallCapacity} miejsc
+                ({hallCapacity - getDateOccupancy(todayReservations).totalGuests} wolnych).
+              </>
+            ) : (
+              <>System automatycznie sprawdza, czy czasy się nie nakładają.</>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -204,16 +250,24 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
             const dateReservations = reservationsByDate[dateKey]
             const date = parseISO(dateKey)
             const isToday = isSameDay(date, new Date())
+            const { activeCount, totalGuests } = getDateOccupancy(dateReservations)
+            const hasCapacityInfo = allowMultipleBookings && hallCapacity && hallCapacity > 0
+            const occupancyPercent = hasCapacityInfo
+              ? Math.min(100, Math.round((totalGuests / hallCapacity) * 100))
+              : 0
+            const availableSeats = hasCapacityInfo ? hallCapacity - totalGuests : 0
 
             return (
               <div key={dateKey} className="space-y-3">
                 {/* Date Header */}
-                <div className="flex items-center gap-3">
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                    isToday 
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' 
-                      : 'bg-muted'
-                  }`}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                      isToday
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
+                        : 'bg-muted'
+                    }`}
+                  >
                     <Calendar className="h-4 w-4" />
                     <div>
                       <div className="font-semibold">
@@ -225,25 +279,59 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                     </div>
                   </div>
                   {dateReservations.length > 1 && (
-                    <Badge variant="default" className="border border-purple-300 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300">
+                    <Badge
+                      variant="default"
+                      className="border border-purple-300 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300"
+                    >
                       {dateReservations.length} rezerwacje
                     </Badge>
+                  )}
+
+                  {/* #165: Capacity indicator for multi-booking halls */}
+                  {hasCapacityInfo && activeCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
+                        <UsersRound className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                        <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                          {totalGuests}/{hallCapacity} osób
+                        </span>
+                        <span className="text-xs text-violet-500 dark:text-violet-400">
+                          ({availableSeats > 0 ? `wolne: ${availableSeats}` : 'pełna'})
+                        </span>
+                      </div>
+                      {/* Mini progress bar */}
+                      <div className="w-24 h-2 bg-violet-100 dark:bg-violet-900/30 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            occupancyPercent >= 90
+                              ? 'bg-red-500'
+                              : occupancyPercent >= 70
+                              ? 'bg-amber-500'
+                              : 'bg-violet-500'
+                          }`}
+                          style={{ width: `${occupancyPercent}%` }}
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
 
                 {/* Reservations for this date */}
                 <div className="grid gap-3">
                   {dateReservations.map((reservation, idx) => {
-                    const startTime = reservation.startDateTime 
+                    const startTime = reservation.startDateTime
                       ? format(parseISO(reservation.startDateTime), 'HH:mm')
                       : reservation.startTime || '00:00'
-                    
+
                     const endTime = reservation.endDateTime
                       ? format(parseISO(reservation.endDateTime), 'HH:mm')
                       : reservation.endTime || '23:59'
 
                     return (
-                      <Link key={reservation.id} href={`/dashboard/reservations/${reservation.id}`}>
+                      <Link
+                        key={reservation.id}
+                        href={`/dashboard/reservations/${reservation.id}`}
+                      >
                         <Card className="border-0 shadow-md hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer overflow-hidden">
                           <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-indigo-500/10 p-4">
                             <div className="flex items-start justify-between gap-4">
@@ -289,7 +377,8 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                                 <div>
                                   <div className="text-xs text-muted-foreground">Klient</div>
                                   <div className="font-medium">
-                                    {reservation.client?.firstName} {reservation.client?.lastName}
+                                    {reservation.client?.firstName}{' '}
+                                    {reservation.client?.lastName}
                                   </div>
                                 </div>
                               </div>
@@ -301,7 +390,15 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                                 </div>
                                 <div>
                                   <div className="text-xs text-muted-foreground">Goście</div>
-                                  <div className="font-medium">{reservation.guests} osób</div>
+                                  <div className="font-medium">
+                                    {reservation.guests} osób
+                                    {/* #165: show percentage of capacity */}
+                                    {hasCapacityInfo && (
+                                      <span className="text-xs text-muted-foreground ml-1">
+                                        ({Math.round(((reservation.guests || 0) / hallCapacity) * 100)}% sali)
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
 
@@ -312,7 +409,9 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
                                 </div>
                                 <div>
                                   <div className="text-xs text-muted-foreground">Wartość</div>
-                                  <div className="font-medium">{reservation.totalPrice} zł</div>
+                                  <div className="font-medium">
+                                    {reservation.totalPrice} zł
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -341,14 +440,14 @@ export function HallReservationsCalendar({ hallId, hallName, onCreateReservation
 function calculateDuration(startTime: string, endTime: string): string {
   const [startHour, startMin] = startTime.split(':').map(Number)
   const [endHour, endMin] = endTime.split(':').map(Number)
-  
+
   const startMinutes = startHour * 60 + startMin
   const endMinutes = endHour * 60 + endMin
   const durationMinutes = endMinutes - startMinutes
-  
+
   const hours = Math.floor(durationMinutes / 60)
   const minutes = durationMinutes % 60
-  
+
   if (hours === 0) return `${minutes} min`
   if (minutes === 0) return `${hours} godz`
   return `${hours} godz ${minutes} min`

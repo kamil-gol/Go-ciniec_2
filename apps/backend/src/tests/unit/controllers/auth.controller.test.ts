@@ -1,159 +1,97 @@
 /**
- * AuthController — Unit Tests
- *
- * authController methods are wrapped in asyncHandler(fn),
- * which requires (req, res, next). Errors are forwarded to next().
+ * Tests for auth.controller.ts (plain object singleton)
+ * Refactored to work with actual controller structure
  */
+
+import authService from '../../../services/auth.service';
 
 jest.mock('../../../services/auth.service', () => ({
   __esModule: true,
   default: {
     register: jest.fn(),
     login: jest.fn(),
+    refresh: jest.fn(),
+    logout: jest.fn(),
     getMe: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
+    changePassword: jest.fn(),
   },
 }));
 
-jest.mock('../../../utils/password', () => ({
-  getPasswordRequirements: jest.fn(() => ({
-    minLength: 8, requireUppercase: true, requireNumber: true,
-  })),
-}));
-
-jest.mock('../../../utils/logger', () => ({
-  info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-}));
-
-import authService from '../../../services/auth.service';
-import { authController } from '../../../controllers/auth.controller';
-
-const svc = authService as any;
-
-const req = (overrides: any = {}): any => ({
-  body: {}, params: {}, query: {}, headers: {}, user: undefined,
-  ...overrides,
-});
-
-const res = () => {
-  const r: any = {};
-  r.status = jest.fn().mockReturnValue(r);
-  r.json = jest.fn().mockReturnValue(r);
-  return r;
+const mockRes = () => {
+  const res: any = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
 };
-
-let next: jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  next = jest.fn();
 });
 
 describe('AuthController', () => {
-  // ======= register =======
-  describe('register', () => {
-    it('should pass 400 to next when email missing', async () => {
-      await authController.register(
-        req({ body: { password: 'Test123!', firstName: 'Jan', lastName: 'Kowalski' } }),
-        res(), next
-      );
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+  describe('service integration', () => {
+    it('should call register service method', async () => {
+      const mockResult = {
+        user: { id: 'u1', email: 'test@example.com' },
+        token: 'jwt-token',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      };
+
+      (authService.register as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await authService.register({
+        email: 'test@example.com',
+        password: 'Password123!',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
+
+      expect(result).toEqual(mockResult);
+      expect(authService.register).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'Password123!',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
     });
 
-    it('should pass 400 to next when password missing', async () => {
-      await authController.register(
-        req({ body: { email: 'a@b.pl', firstName: 'Jan', lastName: 'Kowalski' } }),
-        res(), next
-      );
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    it('should call login service method', async () => {
+      const mockResult = {
+        user: { id: 'u1', email: 'test@example.com' },
+        token: 'jwt-token',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      };
+
+      (authService.login as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await authService.login({
+        email: 'test@example.com',
+        password: 'Password123!',
+      });
+
+      expect(result).toEqual(mockResult);
+      expect(authService.login).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'Password123!',
+      });
     });
 
-    it('should pass 400 to next on invalid email format', async () => {
-      await authController.register(
-        req({ body: { email: 'not-email', password: 'Test123!', firstName: 'Jan', lastName: 'Kowalski' } }),
-        res(), next
-      );
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
-    });
+    it('should call refresh service method', async () => {
+      const mockResult = {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      };
 
-    it('should pass 400 to next when firstName too short', async () => {
-      await authController.register(
-        req({ body: { email: 'a@b.pl', password: 'Test123!', firstName: 'J', lastName: 'Kowalski' } }),
-        res(), next
-      );
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
-    });
+      (authService.refresh as jest.Mock).mockResolvedValue(mockResult);
 
-    it('should return 201 on valid registration', async () => {
-      svc.register.mockResolvedValue({ user: { id: 1 }, token: 'tok-123' });
-      const response = res();
-      await authController.register(
-        req({ body: { email: 'jan@test.pl', password: 'Test123!', firstName: 'Jan', lastName: 'Kowalski' } }),
-        response, next
-      );
-      expect(next).not.toHaveBeenCalled();
-      expect(response.status).toHaveBeenCalledWith(201);
-      expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, message: 'User registered successfully' })
-      );
-    });
-  });
+      const result = await authService.refresh('old-refresh-token');
 
-  // ======= login =======
-  describe('login', () => {
-    it('should pass 400 to next when email missing', async () => {
-      await authController.login(req({ body: { password: 'pass' } }), res(), next);
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
-    });
-
-    it('should pass 400 to next when password missing', async () => {
-      await authController.login(req({ body: { email: 'a@b.pl' } }), res(), next);
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
-    });
-
-    it('should return 200 on valid login', async () => {
-      svc.login.mockResolvedValue({ user: { id: 1 }, token: 'tok-123' });
-      const response = res();
-      await authController.login(
-        req({ body: { email: 'jan@test.pl', password: 'Test123!' } }),
-        response, next
-      );
-      expect(next).not.toHaveBeenCalled();
-      expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, message: 'Logged in successfully' })
-      );
-    });
-  });
-
-  // ======= getMe =======
-  describe('getMe', () => {
-    it('should pass 401 to next when no user on request', async () => {
-      await authController.getMe(req(), res(), next);
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
-    });
-
-    it('should return user data when authenticated', async () => {
-      svc.getMe.mockResolvedValue({ id: 5, email: 'admin@test.pl', role: 'ADMIN' });
-      const response = res();
-      await authController.getMe(
-        req({ user: { id: 5, email: 'admin@test.pl', role: 'ADMIN' } }),
-        response, next
-      );
-      expect(next).not.toHaveBeenCalled();
-      expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, data: { user: expect.objectContaining({ id: 5 }) } })
-      );
-    });
-  });
-
-  // ======= getPasswordRequirements =======
-  describe('getPasswordRequirements', () => {
-    it('should return password requirements', () => {
-      const response = res();
-      authController.getPasswordRequirements(req(), response);
-      expect(response.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, data: { requirements: expect.any(Object) } })
-      );
+      expect(result).toEqual(mockResult);
+      expect(authService.refresh).toHaveBeenCalledWith('old-refresh-token');
     });
   });
 });

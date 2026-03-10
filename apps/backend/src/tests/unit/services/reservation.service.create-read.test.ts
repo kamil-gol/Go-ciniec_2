@@ -111,6 +111,9 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
   service = new ReservationService();
 
   // Default mocks — happy path
@@ -123,6 +126,21 @@ beforeEach(() => {
   mockPrisma.reservation.findFirst.mockResolvedValue(null);    // no overlap
   mockPrisma.reservationHistory.create.mockResolvedValue({});
   mockPrisma.activityLog.create.mockResolvedValue({});
+
+  // Mock reservation.findUnique for recalculateReservationTotalPrice
+  // (called after create to compute final totalPrice)
+  mockPrisma.reservation.findUnique.mockResolvedValue({
+    ...CREATED_RESERVATION,
+    startDateTime: new Date(FUTURE_START),
+    endDateTime: new Date(FUTURE_END),
+    menuSnapshot: null,
+    eventType: { standardHours: 6, extraHourRate: 500 },
+    extras: [],
+    discountType: null,
+    discountValue: null,
+    venueSurcharge: 0,
+  });
+  mockPrisma.reservation.update.mockResolvedValue(CREATED_RESERVATION);
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -151,31 +169,31 @@ describe('ReservationService', () => {
     it('should throw when hallId is missing', async () => {
       const dto = { ...VALID_CREATE_DTO, hallId: '' };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow('Hall, client, and event type are required');
+        .rejects.toThrow('Sala, klient i typ wydarzenia są wymagane');
     });
 
     it('should throw when hall is not found', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue(null);
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow('Hall not found');
+        .rejects.toThrow('Nie znaleziono sali');
     });
 
     it('should throw when hall is inactive', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue({ ...TEST_HALL, isActive: false });
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow('Hall is not active');
+        .rejects.toThrow('Sala jest nieaktywna');
     });
 
     it('should throw when guests exceed hall capacity', async () => {
       mockPrisma.hall.findUnique.mockResolvedValue({ ...TEST_HALL, capacity: 30 });
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow(/exceeds hall capacity/);
+        .rejects.toThrow(/przekracza pojemność sali/);
     });
 
     it('should throw when no datetime provided', async () => {
       const dto = { ...VALID_CREATE_DTO, startDateTime: undefined, endDateTime: undefined };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow(/startDateTime\/endDateTime or date\/startTime\/endTime/);
+        .rejects.toThrow(/startDateTime.*endDateTime.*date.*startTime.*endTime/);
     });
 
     it('should throw when user does not exist', async () => {
@@ -185,15 +203,16 @@ describe('ReservationService', () => {
     });
 
     it('should throw when time slot overlaps', async () => {
-      mockPrisma.reservation.findFirst.mockResolvedValue({ id: 'existing-res' });
+      // Mock capacity check to return overlap
+      mockPrisma.reservation.findMany.mockResolvedValue([{ id: 'existing-res', guests: 60 }]);
       await expect(service.createReservation(VALID_CREATE_DTO, TEST_USER_ID))
-        .rejects.toThrow(/already booked/);
+        .rejects.toThrow(/przekracza|dostępność|nie dopuszcza wielu rezerwacji/);
     });
 
     it('should throw when all guest counts are zero', async () => {
       const dto = { ...VALID_CREATE_DTO, adults: 0, children: 0, toddlers: 0 };
       await expect(service.createReservation(dto, TEST_USER_ID))
-        .rejects.toThrow('At least one person is required');
+        .rejects.toThrow(/co najmniej jedna osoba/);
     });
 
     it('should apply percentage discount correctly', async () => {
@@ -303,7 +322,7 @@ describe('ReservationService', () => {
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.getReservationById('nonexistent'))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should include hall, client, eventType, createdBy', async () => {

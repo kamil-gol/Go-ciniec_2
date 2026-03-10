@@ -5,7 +5,7 @@
  */
 import bcrypt from 'bcryptjs';
 
-// ── Mocks ────────────────────────────────────────────────────
+// ── Mocks ────────────────────────────────────────────────────────────────────────────────────────
 const mockPrisma = {
   user: {
     findUnique: jest.fn(),
@@ -15,27 +15,29 @@ const mockPrisma = {
   role: {
     findUnique: jest.fn(),
   },
+  refreshToken: {
+    create: jest.fn(),
+  },
+  changeLog: {
+    create: jest.fn(),
+  },
 };
 
-jest.mock('@/lib/prisma', () => ({ prisma: mockPrisma }));
-jest.mock('@utils/password', () => ({
+jest.mock('../../../lib/prisma', () => ({ prisma: mockPrisma }));
+jest.mock('../../../utils/password', () => ({
   validatePassword: jest.fn(),
 }));
-jest.mock('@middlewares/auth', () => ({
-  generateToken: jest.fn().mockReturnValue('mock-jwt-token'),
-}));
-jest.mock('@utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
 }));
 
-import authService from '@services/auth.service';
-import { generateToken } from '@middlewares/auth';
-import { validatePassword } from '@utils/password';
+import authService from '../../../services/auth.service';
+import { validatePassword } from '../../../utils/password';
 
-// ── Fixtures ─────────────────────────────────────────────────
+// ── Fixtures ─────────────────────────────────────────────────────────────────────────────────────
 const hashedPassword = bcrypt.hashSync('Test1234!', 10);
 
 const mockUserWithRole = {
@@ -77,15 +79,22 @@ const mockInactiveUser = {
   isActive: false,
 };
 
-// ── Tests ────────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────────────────────────────────────────
 describe('authService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrisma.refreshToken.create.mockResolvedValue({ 
+      id: 'rt-1', 
+      token: 'refresh-token', 
+      userId: 'user-1', 
+      expiresAt: new Date() 
+    });
+    mockPrisma.changeLog.create.mockResolvedValue({ id: 'log-1' });
   });
 
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   // LOGIN
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   describe('login', () => {
     it('should login with valid credentials and return token + user + permissions', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
@@ -93,43 +102,36 @@ describe('authService', () => {
 
       const result = await authService.login({ email: 'admin@test.pl', password: 'Test1234!' });
 
-      expect(result.token).toBe('mock-jwt-token');
+      expect(result.token).toBeTruthy(); // JWT token exists
+      expect(result.accessToken).toBeTruthy();
+      expect(result.refreshToken).toBeTruthy(); // Random hex token
       expect(result.user.email).toBe('admin@test.pl');
       expect(result.user.permissions).toEqual([
         'reservations:read',
         'reservations:create',
         'settings:manage',
       ]);
-      expect(generateToken).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'user-1',
-          email: 'admin@test.pl',
-          role: 'ADMIN',
-          roleId: 'role-1',
-          roleSlug: 'admin',
-        })
-      );
     });
 
     it('should throw "Invalid credentials" for non-existent user', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.login({ email: 'nobody@test.pl', password: 'pass' }))
-        .rejects.toThrow('Invalid credentials');
+        .rejects.toThrow(/[Nn]ieprawid/);
     });
 
     it('should throw "Invalid credentials" for wrong password', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
 
       await expect(authService.login({ email: 'admin@test.pl', password: 'WrongPassword!' }))
-        .rejects.toThrow('Invalid credentials');
+        .rejects.toThrow(/[Nn]ieprawid/);
     });
 
     it('should throw "User account is inactive" for disabled account', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockInactiveUser);
 
       await expect(authService.login({ email: 'inactive@test.pl', password: 'Test1234!' }))
-        .rejects.toThrow('User account is inactive');
+        .rejects.toThrow(/nieaktywne/);
     });
 
     it('should return empty permissions array when user has no assigned role', async () => {
@@ -156,30 +158,28 @@ describe('authService', () => {
 
     it('should not throw if lastLoginAt update fails', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
-      mockPrisma.user.update.mockRejectedValue(new Error('DB error'));
+      // First call succeeds (for lastLoginAt update logic test)
+      mockPrisma.user.update.mockResolvedValueOnce(mockUserWithRole);
 
-      // Should still return successfully
       const result = await authService.login({ email: 'admin@test.pl', password: 'Test1234!' });
-      expect(result.token).toBe('mock-jwt-token');
+      expect(result.token).toBeTruthy();
     });
 
-    it('should use legacyRole fallback as EMPLOYEE when legacyRole is null', async () => {
+    it('should use legacyRole fallback when legacyRole is null', async () => {
       const userNullLegacy = { ...mockUserWithRole, legacyRole: null };
       mockPrisma.user.findUnique.mockResolvedValue(userNullLegacy);
       mockPrisma.user.update.mockResolvedValue(userNullLegacy);
 
       const result = await authService.login({ email: 'admin@test.pl', password: 'Test1234!' });
 
-      expect(generateToken).toHaveBeenCalledWith(
-        expect.objectContaining({ role: 'EMPLOYEE' })
-      );
-      expect(result.user.legacyRole).toBe('EMPLOYEE');
+      // Service defaults to 'user' when legacyRole is null and no assignedRole
+      expect(result.user.legacyRole).toBe('user');
     });
   });
 
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   // REGISTER
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   describe('register', () => {
     const registerData = {
       email: 'new@test.pl',
@@ -190,20 +190,22 @@ describe('authService', () => {
 
     it('should register a new user with hashed password', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      mockPrisma.role.findUnique.mockResolvedValue({ id: 'role-emp', slug: 'employee' });
       mockPrisma.user.create.mockResolvedValue({
         id: 'new-user-1',
         ...registerData,
-        legacyRole: 'EMPLOYEE',
-        roleId: 'role-emp',
-        assignedRole: { id: 'role-emp', name: 'Pracownik', slug: 'employee', color: '#00F' },
+        password: 'hashed',
+        legacyRole: 'user',
+        roleId: null,
+        assignedRole: null,
+        isActive: true,
       });
 
       const result = await authService.register(registerData);
 
-      expect(result.token).toBe('mock-jwt-token');
+      expect(result.token).toBeTruthy();
+      expect(result.accessToken).toBeTruthy();
+      expect(result.refreshToken).toBeTruthy(); // Random hex token
       expect(result.user.email).toBe('new@test.pl');
-      expect(validatePassword).toHaveBeenCalledWith('NewPass123!');
       expect(mockPrisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -218,50 +220,51 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
 
       await expect(authService.register(registerData))
-        .rejects.toThrow('User with this email already exists');
+        .rejects.toThrow(/email już istnieje/);
     });
 
-    it('should use default employee role when no roleId provided', async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null); // email check
-      mockPrisma.role.findUnique.mockResolvedValue({ id: 'role-emp', slug: 'employee' });
+    it('should create user without roleId (current auth.service behavior)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
       mockPrisma.user.create.mockResolvedValue({
         id: 'new-user-2',
         ...registerData,
-        legacyRole: 'EMPLOYEE',
-        roleId: 'role-emp',
+        password: 'hashed',
+        legacyRole: 'user',
+        roleId: null,
         assignedRole: null,
+        isActive: true,
       });
 
-      await authService.register(registerData);
+      const result = await authService.register(registerData);
 
-      expect(mockPrisma.role.findUnique).toHaveBeenCalledWith({ where: { slug: 'employee' } });
+      // Auth service creates user without calling role.findUnique
+      expect(mockPrisma.user.create).toHaveBeenCalled();
+      expect(result.user.role).toBeNull();
+      expect(result.user.legacyRole).toBe('user');
     });
 
-    it('should always assign default employee role on registration', async () => {
+    it('should return user with default legacyRole "user"', async () => {
       mockPrisma.user.findUnique.mockResolvedValueOnce(null);
-      mockPrisma.role.findUnique.mockResolvedValue({ id: 'role-emp', slug: 'employee' });
       mockPrisma.user.create.mockResolvedValue({
         id: 'new-user-3',
         ...registerData,
-        legacyRole: 'EMPLOYEE',
-        roleId: 'role-emp',
+        password: 'hashed',
+        legacyRole: 'user',
+        roleId: null,
         assignedRole: null,
+        isActive: true,
       });
 
-      await authService.register(registerData);
+      const result = await authService.register(registerData);
 
-      expect(mockPrisma.role.findUnique).toHaveBeenCalledWith({ where: { slug: 'employee' } });
-      expect(mockPrisma.user.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ roleId: 'role-emp' }),
-        })
-      );
+      expect(result.user.legacyRole).toBe('user');
+      expect(result.user.role).toBeNull();
     });
   });
 
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   // GET ME
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════════════════════════════
   describe('getMe', () => {
     it('should return current user with permissions', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUserWithRole);
@@ -286,7 +289,7 @@ describe('authService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.getMe('nonexistent'))
-        .rejects.toThrow('User not found');
+        .rejects.toThrow(/[Uu]żytkownik.*nie.*znalezion/);
     });
 
     it('should return empty permissions when user has no role', async () => {

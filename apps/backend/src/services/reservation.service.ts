@@ -7,7 +7,11 @@
  * Updated: allowWithWholeVenue — Strzecha Tył/Przód/Góra coexist with whole venue
  * Updated: #144 — ARCHIVED status support + auto-archive CRON preparation
  * Updated: Etap 5 — internalNotes field (excluded from PDF)
- * Updated: fix/pricing-recalculation — centralized recalculateReservationTotal
+ * Updated: fix/recalculate-totalPrice — centralized price recalculation
+ * Updated: #165 — capacity-based overlap logic (multiple reservations per hall)
+ * Updated: #172 — instant auto-archive on cancellation (no 30-day delay)
+ * Updated: fix/pricing-and-encoding — recalculate totalPrice at end of create/update
+ * Updated: #176 — eventTypeId is immutable after creation (cascading side-effects)
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  *
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
@@ -36,6 +40,7 @@ import {
   formatChangesSummary
 } from '../utils/reservation.utils';
 import { calculateVenueSurcharge } from '../utils/venue-surcharge';
+import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import reservationMenuService from './reservation-menu.service';
 import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE, VENUE_SURCHARGE } from '../i18n/pl';
 
@@ -45,9 +50,9 @@ function sanitizeString(value: any): string | null {
 }
 
 const RESERVATION_INCLUDE = {
-  hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true } },
+  hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true, allowMultipleBookings: true } },
   client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-  eventType: { select: { id: true, name: true } },
+  eventType: { select: { id: true, name: true, standardHours: true, extraHourRate: true } },
   createdBy: { select: { id: true, email: true } },
 } as const;
 
@@ -113,6 +118,8 @@ export class ReservationService {
     }
 
     const guests = calculateTotalGuests(adults, children, toddlers);
+
+    // #165: Single-reservation capacity check (guests alone exceed hall capacity)
     if (guests > hall.capacity) {
       throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(guests, hall.capacity));
     }
@@ -203,8 +210,8 @@ export class ReservationService {
       if (startDT < new Date()) throw new Error(RESERVATION.DATE_IN_FUTURE);
       if (startDT >= endDT) throw new Error(RESERVATION.END_AFTER_START);
 
-      const hasOverlap = await this.checkDateTimeOverlap(data.hallId, startDT, endDT);
-      if (hasOverlap) throw new Error(RESERVATION.TIME_SLOT_BOOKED);
+      // #165: Capacity-based overlap check instead of binary block
+      await this.validateCapacityForTimeRange(hall, startDT, endDT, guests);
 
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
@@ -222,11 +229,11 @@ export class ReservationService {
       if (reservationDate < today) throw new Error(RESERVATION.DATE_IN_FUTURE);
       if (data.startTime >= data.endTime) throw new Error(RESERVATION.END_AFTER_START);
 
-      const hasOverlap = await this.checkOverlap(data.hallId, data.date, data.startTime, data.endTime);
-      if (hasOverlap) throw new Error(RESERVATION.TIME_SLOT_BOOKED);
-
+      // #165: Capacity-based overlap check for legacy format
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
+      await this.validateCapacityForTimeRange(hall, startDT, endDT, guests);
+
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       /* istanbul ignore next */
@@ -383,6 +390,9 @@ export class ReservationService {
       }
     });
 
+    // Recalculate totalPrice with all components (including extra hours for long events)
+    await recalculateReservationTotalPrice(reservation.id);
+
     return reservation as any;
   }
 
@@ -443,6 +453,9 @@ export class ReservationService {
         },
       });
 
+      // Recalculate totalPrice after menu removal
+      await recalculateReservationTotalPrice(reservationId);
+
       return { message: MENU.MENU_REMOVED };
     }
 
@@ -500,14 +513,14 @@ export class ReservationService {
         await prisma.reservationMenuSnapshot.create({ data: snapshotData });
       }
 
-      // fix/pricing-recalculation: Update per-person prices and guest counts,
-      // then use centralized recalculation for totalPrice (includes extras + surcharge - discount)
+      // Update guest counts and per-person prices (totalPrice recalculated below)
       await prisma.reservation.update({
         where: { id: reservationId },
         data: { pricePerAdult, pricePerChild, pricePerToddler, adults, children, toddlers, guests }
       });
 
-      const recalcResult = await recalculateReservationTotal(reservationId);
+      // Recalculate totalPrice including extras + discount + surcharge
+      const newTotalPrice = await recalculateReservationTotalPrice(reservationId);
 
       await this.createHistoryEntry(
         reservationId, userId, 'MENU_UPDATED', 'menu',
@@ -534,7 +547,7 @@ export class ReservationService {
         },
       });
 
-      return { message: MENU.MENU_UPDATED, totalPrice: recalcResult.totalPrice };
+      return { message: MENU.MENU_UPDATED, totalPrice: newTotalPrice };
     }
 
     throw new Error(MENU.INVALID_MENU_DATA);
@@ -572,7 +585,6 @@ export class ReservationService {
     }
 
     // #144: When no explicit status filter, also exclude ARCHIVED by status
-    // (belt-and-suspenders with archivedAt filter above)
     if (!filters?.status && !filters?.archived) {
       where.status = { not: ReservationStatus.ARCHIVED };
     }
@@ -657,8 +669,6 @@ export class ReservationService {
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
 
     // ══ Etap 5: Notatka wewnętrzna — edytowalna niezależnie od statusu rezerwacji ══
-    // Nie wymaga reason, nie przechodzi przez detectReservationChanges.
-    // Early return: jeśli request zawiera TYLKO internalNotes, omijamy wszystkie guardy.
     const isOnlyInternalNotes =
       data.internalNotes !== undefined &&
       Object.keys(data).every(k => k === 'internalNotes');
@@ -667,7 +677,6 @@ export class ReservationService {
       const newValue = sanitizeString(data.internalNotes);
       const oldValue = (existingReservation as any).internalNotes ?? null;
 
-      // Skip update if nothing changed
       if (oldValue === newValue) {
         return await this.getReservationById(id);
       }
@@ -677,14 +686,12 @@ export class ReservationService {
         data: { internalNotes: newValue },
       });
 
-      // History entry — changeType max 20 chars (VarChar(20))
       await this.createHistoryEntry(
         id, userId, 'NOTE_UPDATED', 'internalNotes',
         oldValue || '(brak)', newValue || '(brak)',
         'Zaktualizowano notatkę wewnętrzną'
       );
 
-      // Audit log
       await logChange({
         userId,
         action: 'UPDATE',
@@ -698,12 +705,17 @@ export class ReservationService {
 
       return await this.getReservationById(id);
     }
-    // ══ Koniec: Etap 5 early return ══
 
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_UPDATE_COMPLETED);
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.CANNOT_UPDATE_CANCELLED);
-    // #144: Block editing of archived reservations
     if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.CANNOT_UPDATE_ARCHIVED);
+
+    // #176: eventTypeId is immutable after creation — silently ignore if sent
+    // Changing eventType would invalidate menu (scoped per eventType), orphan custom fields,
+    // and require cascading recalculations. Admin should cancel + recreate instead.
+    if (data.eventTypeId !== undefined && data.eventTypeId !== existingReservation.eventTypeId) {
+      console.warn(`[Reservation] Ignored eventTypeId change attempt on ${id}: ${existingReservation.eventTypeId} → ${data.eventTypeId}`);
+    }
 
     if (data.menuPackageId !== undefined) {
       if (data.menuPackageId === null) {
@@ -758,13 +770,6 @@ export class ReservationService {
     
     if (finalStart && finalEnd && finalStart >= finalEnd) throw new Error(RESERVATION.END_AFTER_START);
 
-    // Re-check overlap if hall or time changed
-    if ((hallChanged || data.startDateTime || data.endDateTime) && finalStart && finalEnd) {
-      const hasOverlap = await this.checkDateTimeOverlap(effectiveHallId, finalStart, finalEnd, id);
-      if (hasOverlap) throw new Error(RESERVATION.TIME_SLOT_BOOKED);
-      await this.checkWholeVenueConflict(effectiveHallId, finalStart, finalEnd, id);
-    }
-
     if (data.adults !== undefined) updateData.adults = data.adults;
     if (data.children !== undefined) updateData.children = data.children;
     if (data.toddlers !== undefined) updateData.toddlers = data.toddlers;
@@ -778,10 +783,17 @@ export class ReservationService {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
     }
 
-    // Validate capacity against effective hall (new or existing)
     const finalGuests = updateData.guests ?? existingReservation.guests;
-    if (effectiveHall && finalGuests > effectiveHall.capacity) {
-      throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, effectiveHall.capacity));
+
+    // #165: Capacity-based overlap + capacity check on hall/time/guests change
+    if ((hallChanged || data.startDateTime || data.endDateTime || guestsChanged) && finalStart && finalEnd && effectiveHall) {
+      await this.validateCapacityForTimeRange(effectiveHall as any, finalStart, finalEnd, finalGuests, id);
+      await this.checkWholeVenueConflict(effectiveHallId, finalStart, finalEnd, id);
+    }
+
+    // Single-reservation capacity guard (guests alone exceed hall.capacity)
+    if (effectiveHall && finalGuests > (effectiveHall as any).capacity) {
+      throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, (effectiveHall as any).capacity));
     }
 
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
@@ -818,11 +830,10 @@ export class ReservationService {
       updateData.venueSurcharge = surcharge.amount;
       updateData.venueSurchargeLabel = surcharge.label;
 
-      // NOTE: We no longer manually adjust totalPrice for surcharge here.
-      // recalculateReservationTotal() at the end handles surcharge in the formula.
-
-      // Audit-friendly log message for different scenarios
       if (oldSurcharge !== newSurcharge) {
+        const baseTotal = updateData.totalPrice ?? Number(existingReservation.totalPrice);
+        updateData.totalPrice = Math.round((baseTotal - oldSurcharge + newSurcharge) * 100) / 100;
+
         if (!oldIsWholeVenue && newIsWholeVenue) {
           console.log(`[Reservation] Venue surcharge APPLIED for ${id}: +${newSurcharge} PLN (hall changed to whole venue)`);
           await this.createHistoryEntry(
@@ -865,7 +876,6 @@ export class ReservationService {
     if (data.startTime !== undefined) updateData.startTime = data.startTime || null;
     if (data.endTime !== undefined) updateData.endTime = data.endTime || null;
     if (data.notes !== undefined) updateData.notes = sanitizeString(data.notes);
-    // Etap 5: Notatka wewnętrzna — aktualizacja niezależna od notes
     if (data.internalNotes !== undefined) updateData.internalNotes = sanitizeString(data.internalNotes);
 
     const reservation = await prisma.reservation.update({
@@ -906,6 +916,9 @@ export class ReservationService {
       });
     }
 
+    // Ensure totalPrice reflects all components (menu + extras + surcharge + extraHours - discount)
+    await recalculateReservationTotalPrice(id);
+
     return reservation as any;
   }
 
@@ -928,11 +941,12 @@ export class ReservationService {
       }
     }
 
+    // #172: Cancellation = instant archive (CANCELLED → ARCHIVED + archivedAt)
     if (data.status === ReservationStatus.CANCELLED) {
       const reservation = await prisma.$transaction(async (tx) => {
         const updatedReservation = await tx.reservation.update({
           where: { id },
-          data: { status: data.status },
+          data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
           include: RESERVATION_INCLUDE
         });
 
@@ -945,26 +959,38 @@ export class ReservationService {
             changeType: 'STATUS_CHANGED',
             fieldName: 'status',
             oldValue: existingReservation.status,
-            newValue: data.status,
+            newValue: 'CANCELLED',
             reason: data.reason
               ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
               : `Zmiana statusu${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
           }
         });
 
+        // #172: Auto-archive history entry
+        await tx.reservationHistory.create({
+          data: {
+            reservationId: id,
+            changedByUserId: userId,
+            changeType: 'AUTO_ARCHIVED',
+            fieldName: 'archivedAt',
+            oldValue: null,
+            newValue: new Date().toISOString(),
+            reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji'
+          }
+        });
+
         return updatedReservation;
       });
 
-      // Audit log
       await logChange({
         userId,
         action: 'STATUS_CHANGE',
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Anulowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+          description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
           oldStatus: existingReservation.status,
-          newStatus: data.status,
+          newStatus: 'CANCELLED → ARCHIVED',
           reason: data.reason
         }
       });
@@ -980,7 +1006,6 @@ export class ReservationService {
 
     await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Zmiana statusu');
 
-    // Audit log
     await logChange({
       userId,
       action: 'STATUS_CHANGE',
@@ -997,6 +1022,7 @@ export class ReservationService {
     return reservation as any;
   }
 
+  // #172: Cancellation = instant archive
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
 
@@ -1004,12 +1030,13 @@ export class ReservationService {
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.ALREADY_CANCELLED);
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_CANCEL_COMPLETED);
+    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.ALREADY_ARCHIVED);
 
     await prisma.$transaction(async (tx) => {
-      // #144: Don't set archivedAt immediately — CRON will archive after ARCHIVE_AFTER_DAYS
+      // #172: Instant archive — status ARCHIVED + archivedAt set
       await tx.reservation.update({
         where: { id },
-        data: { status: ReservationStatus.CANCELLED }
+        data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() }
       });
 
       const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
@@ -1021,30 +1048,39 @@ export class ReservationService {
           changeType: 'CANCELLED',
           fieldName: 'status',
           oldValue: existingReservation.status,
-          newValue: ReservationStatus.CANCELLED,
+          newValue: 'CANCELLED',
           reason: reason
             ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
             : `Rezerwacja anulowana${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
         }
       });
+
+      // #172: Auto-archive history entry
+      await tx.reservationHistory.create({
+        data: {
+          reservationId: id,
+          changedByUserId: userId,
+          changeType: 'AUTO_ARCHIVED',
+          fieldName: 'archivedAt',
+          oldValue: null,
+          newValue: new Date().toISOString(),
+          reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji'
+        }
+      });
     });
 
-    // Audit log
     await logChange({
       userId,
       action: 'CANCEL',
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Anulowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+        description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
   }
 
-  /**
-   * Archive reservation - set archivedAt timestamp + ARCHIVED status (#144)
-   */
   async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
 
@@ -1056,7 +1092,6 @@ export class ReservationService {
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
     if (reservation.archivedAt) throw new Error(RESERVATION.ALREADY_ARCHIVED);
 
-    // #144: Set both status and archivedAt for consistent state
     await prisma.reservation.update({
       where: { id },
       data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() }
@@ -1068,23 +1103,18 @@ export class ReservationService {
       reason || 'Rezerwacja zarchiwizowana'
     );
 
-    // Audit log
     await logChange({
       userId,
       action: 'ARCHIVE',
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        /* istanbul ignore next -- hall always included */
         description: `Zarchiwizowano rezerwację: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
     });
   }
 
-  /**
-   * Unarchive reservation - remove archivedAt timestamp + restore CANCELLED status (#144)
-   */
   async unarchiveReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
 
@@ -1096,7 +1126,6 @@ export class ReservationService {
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
     if (!reservation.archivedAt) throw new Error(RESERVATION.NOT_ARCHIVED);
 
-    // #144: Restore to CANCELLED status when unarchiving
     await prisma.reservation.update({
       where: { id },
       data: { status: ReservationStatus.CANCELLED, archivedAt: null }
@@ -1108,14 +1137,12 @@ export class ReservationService {
       reason || 'Rezerwacja przywrócona z archiwum'
     );
 
-    // Audit log
     await logChange({
       userId,
       action: 'UNARCHIVE',
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        /* istanbul ignore next -- hall always included */
         description: `Przywrócono rezerwację z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
         reason
       }
@@ -1166,7 +1193,6 @@ export class ReservationService {
       });
     }
 
-    // Audit log — DEPOSIT_CANCELLED (outside transaction, fire-and-forget)
     /* istanbul ignore next */
     setTimeout(async () => {
       try {
@@ -1192,12 +1218,54 @@ export class ReservationService {
   }
 
   /**
-   * Check whole-venue conflict with allowWithWholeVenue support.
+   * #165: Validate capacity for a time range — central capacity-based overlap logic.
    *
-   * Logic:
-   * - Booking "Cały Obiekt" → blocks only halls WITHOUT allowWithWholeVenue
-   * - Booking a regular hall WITH allowWithWholeVenue → no conflict with whole venue
-   * - Booking a regular hall WITHOUT allowWithWholeVenue → blocked by whole venue reservation
+   * Decision tree:
+   * 1. hall.allowMultipleBookings === false → any overlap = block (MULTIPLE_BOOKINGS_DISABLED)
+   * 2. hall.allowMultipleBookings === true  → aggregate occupied + newGuests vs capacity
+   *    If exceeded → CAPACITY_EXCEEDED with available/total info
+   */
+  private async validateCapacityForTimeRange(
+    hall: { id: string; capacity: number; allowMultipleBookings: boolean },
+    startDateTime: Date,
+    endDateTime: Date,
+    newGuests: number,
+    excludeReservationId?: string
+  ): Promise<void> {
+    const where: any = {
+      hallId: hall.id,
+      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+      archivedAt: null,
+      AND: [
+        { startDateTime: { lt: endDateTime } },
+        { endDateTime: { gt: startDateTime } },
+      ],
+    };
+    if (excludeReservationId) where.id = { not: excludeReservationId };
+
+    const overlapping = await prisma.reservation.findMany({
+      where,
+      select: { id: true, guests: true },
+    });
+
+    if (overlapping.length === 0) return; // no conflicts at all
+
+    // Case 1: Hall does NOT allow multiple bookings → any overlap is a block
+    if (!hall.allowMultipleBookings) {
+      throw new Error(RESERVATION.MULTIPLE_BOOKINGS_DISABLED);
+    }
+
+    // Case 2: Hall allows multiple bookings → check aggregate capacity
+    const occupiedCapacity = overlapping.reduce((sum, r) => sum + (r.guests || 0), 0);
+    const availableCapacity = Math.max(0, hall.capacity - occupiedCapacity);
+
+    if (newGuests > availableCapacity) {
+      throw new Error(RESERVATION.CAPACITY_EXCEEDED(newGuests, availableCapacity, hall.capacity));
+    }
+  }
+
+  /**
+   * Check whole-venue conflict with allowWithWholeVenue support.
    */
   private async checkWholeVenueConflict(
     hallId: string,
@@ -1224,7 +1292,6 @@ export class ReservationService {
     }
 
     if (hall.isWholeVenue) {
-      // Booking "Cały Obiekt" → block only halls WITHOUT allowWithWholeVenue
       const conflict = await prisma.reservation.findFirst({
         where: {
           ...baseWhere,
@@ -1238,19 +1305,15 @@ export class ReservationService {
       });
 
       if (conflict) {
-        /* istanbul ignore next -- client always included */
         const clientName = conflict.client
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
-        /* istanbul ignore next -- hall always included */
         const hallName = (conflict as any).hall?.name || 'inna sala';
         throw new Error(
           `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
         );
       }
     } else {
-      // Booking a regular hall → check if "Cały Obiekt" is reserved
-      // Halls with allowWithWholeVenue can coexist — skip conflict check
       if (hall.allowWithWholeVenue) return;
 
       const wholeVenueHall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
@@ -1267,7 +1330,6 @@ export class ReservationService {
       });
 
       if (conflict) {
-        /* istanbul ignore next -- client always included */
         const clientName = conflict.client
           ? `${conflict.client.firstName} ${conflict.client.lastName}`
           : 'nieznany klient';
@@ -1283,44 +1345,6 @@ export class ReservationService {
     if (!user) {
       throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
     }
-  }
-
-  private async checkDateTimeOverlap(hallId: string, startDateTime: Date, endDateTime: Date, excludeId?: string): Promise<boolean> {
-    const where: any = {
-      hallId,
-      startDateTime: { not: null },
-      endDateTime: { not: null },
-      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
-      archivedAt: null
-    };
-    if (excludeId) where.id = { not: excludeId };
-
-    const overlapping = await prisma.reservation.findFirst({
-      where: { ...where, AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }] }
-    });
-    return !!overlapping;
-  }
-
-  private async checkOverlap(hallId: string, date: string, startTime: string, endTime: string, excludeId?: string): Promise<boolean> {
-    const where: any = {
-      hallId,
-      date,
-      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
-      archivedAt: null
-    };
-    if (excludeId) where.id = { not: excludeId };
-
-    const overlapping = await prisma.reservation.findFirst({
-      where: {
-        ...where,
-        OR: [
-          { AND: [{ startTime: { lte: startTime } }, { endTime: { gt: startTime } }] },
-          { AND: [{ startTime: { lt: endTime } }, { endTime: { gte: endTime } }] },
-          { AND: [{ startTime: { gte: startTime } }, { endTime: { lte: endTime } }] }
-        ]
-      }
-    });
-    return !!overlapping;
   }
 
   // #144: Added ARCHIVED as terminal state (no transitions out)

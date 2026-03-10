@@ -27,9 +27,10 @@ interface DiscountSectionProps {
     discountReason?: string | null
     priceBeforeDiscount?: number | string | null
   }
+  readOnly?: boolean
 }
 
-export function DiscountSection({ reservation }: DiscountSectionProps) {
+export function DiscountSection({ reservation, readOnly }: DiscountSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE')
   const [discountValue, setDiscountValue] = useState('')
@@ -87,8 +88,9 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
     : Number(discountValue || 0)
   const previewFinal = Math.max(0, reservation.totalPrice - previewAmount)
 
-  // STATE 1: No discount — show "Add" button
+  // STATE 1: No discount \u2014 show \"Add\" button (hidden when readOnly)
   if (!hasDiscount && !isEditing) {
+    if (readOnly) return null
     return (
       <button
         type="button"
@@ -193,7 +195,7 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
     )
   }
 
-  // STATE 3: Has discount — compact vertical display
+  // STATE 3: Has discount \u2014 compact vertical display
   const finalPrice = Number(reservation.totalPrice) - Number(reservation.discountAmount || 0)
 
   return (
@@ -208,23 +210,25 @@ export function DiscountSection({ reservation }: DiscountSectionProps) {
               : formatCurrency(Number(reservation.discountValue || 0))}
           </span>
         </div>
-        <div className="flex gap-1">
-          <button
-            onClick={handleStartEdit}
-            className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
-            title="Edytuj rabat"
-          >
-            <Pencil className="h-3 w-3 text-orange-600" />
-          </button>
-          <button
-            onClick={handleRemove}
-            disabled={removeDiscount.isPending}
-            className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            title={'Usuń rabat'}
-          >
-            <X className="h-3 w-3 text-red-500" />
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex gap-1">
+            <button
+              onClick={handleStartEdit}
+              className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+              title="Edytuj rabat"
+            >
+              <Pencil className="h-3 w-3 text-orange-600" />
+            </button>
+            <button
+              onClick={handleRemove}
+              disabled={removeDiscount.isPending}
+              className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              title={'Usuń rabat'}
+            >
+              <X className="h-3 w-3 text-red-500" />
+            </button>
+          </div>
+        )}
       </div>
 
       {reservation.discountReason && (

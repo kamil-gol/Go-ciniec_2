@@ -6,9 +6,11 @@
 // ═══ Mock Prisma ═══
 jest.mock('../../../lib/prisma', () => {
   const txMock = {
-    reservation: { update: jest.fn(), findFirst: jest.fn() },
+    reservation: { update: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     deposit: { findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { findMany: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
   };
   const mock = {
     hall: { findUnique: jest.fn(), findFirst: jest.fn() },
@@ -32,6 +34,8 @@ jest.mock('../../../lib/prisma', () => {
     deposit: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     reservationHistory: { create: jest.fn() },
     activityLog: { create: jest.fn() },
+    serviceItem: { findMany: jest.fn() },
+    reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
     $transaction: jest.fn((fn: any) => fn(txMock)),
     __txMock: txMock,
   };
@@ -41,6 +45,17 @@ jest.mock('../../../lib/prisma', () => {
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
   diffObjects: jest.fn().mockReturnValue({}),
+}));
+
+jest.mock('../../../utils/venue-surcharge', () => ({
+  calculateVenueSurcharge: jest.fn().mockReturnValue(0),
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockImplementation(
+    (adults: number, children: number, toddlers: number, ppa: number, ppc: number, ppt: number) =>
+      adults * ppa + children * ppc + toddlers * (ppt || 0)
+  ),
 }));
 
 jest.mock('../../../services/reservation-menu.service', () => ({
@@ -68,10 +83,10 @@ const EXISTING_RESERVATION = {
   children: 10,
   toddlers: 5,
   guests: 65,
-  pricePerAdult: '200',
-  pricePerChild: '100',
-  pricePerToddler: '50',
-  totalPrice: '11250',
+  pricePerAdult: 200,
+  pricePerChild: 100,
+  pricePerToddler: 50,
+  totalPrice: 11250,
   status: ReservationStatus.PENDING,
   notes: null,
   confirmationDeadline: null,
@@ -82,7 +97,7 @@ const EXISTING_RESERVATION = {
   archivedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  hall: { id: 'hall-uuid-001', name: 'Sala Główna', capacity: 100, isWholeVenue: false },
+  hall: { id: 'hall-uuid-001', name: 'Sala Główna', capacity: 100, isWholeVenue: false, allowMultipleBookings: false },
   client: { id: 'client-uuid-001', firstName: 'Jan', lastName: 'Kowalski', email: 'jan@test.pl', phone: null },
   eventType: { id: 'event-uuid-001', name: 'Wesele' },
   menuSnapshot: null,
@@ -92,6 +107,11 @@ let service: ReservationService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPrisma.reservation.findMany.mockResolvedValue([]);
+  mockPrisma.reservation.findFirst.mockResolvedValue(null);
+  mockPrisma.hall.findFirst.mockResolvedValue(null);
+  mockPrisma.serviceItem.findMany.mockResolvedValue([]);
+  mockPrisma.reservationExtra.findMany.mockResolvedValue([]);
   service = new ReservationService();
 
   mockPrisma.user.findUnique.mockResolvedValue({ id: TEST_USER_ID });
@@ -106,9 +126,12 @@ beforeEach(() => {
   // Transaction mocks
   txMock.reservation.update.mockResolvedValue(EXISTING_RESERVATION);
   txMock.reservation.findFirst.mockResolvedValue(null);
+  txMock.reservation.findMany.mockResolvedValue([]);
   txMock.deposit.findMany.mockResolvedValue([]);
   txMock.deposit.updateMany.mockResolvedValue({ count: 0 });
   txMock.reservationHistory.create.mockResolvedValue({});
+  txMock.serviceItem.findMany.mockResolvedValue([]);
+  txMock.reservationExtra.findMany.mockResolvedValue([]);
 });
 
 describe('ReservationService', () => {
@@ -127,7 +150,7 @@ describe('ReservationService', () => {
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.updateReservation('nonexistent', {}, TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when updating completed reservation', async () => {
@@ -136,7 +159,7 @@ describe('ReservationService', () => {
         status: ReservationStatus.COMPLETED,
       });
       await expect(service.updateReservation('res-uuid-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Cannot update completed reservation');
+        .rejects.toThrow('Nie można edytować zakończonej rezerwacji');
     });
 
     it('should throw when updating cancelled reservation', async () => {
@@ -145,14 +168,14 @@ describe('ReservationService', () => {
         status: ReservationStatus.CANCELLED,
       });
       await expect(service.updateReservation('res-uuid-001', {}, TEST_USER_ID))
-        .rejects.toThrow('Cannot update cancelled reservation');
+        .rejects.toThrow('Nie można edytować anulowanej rezerwacji');
     });
 
     it('should require reason (min 10 chars) when changes detected', async () => {
       await expect(service.updateReservation('res-uuid-001', {
         adults: 60,
         reason: 'short',
-      }, TEST_USER_ID)).rejects.toThrow(/Reason is required/);
+      }, TEST_USER_ID)).rejects.toThrow(/Powód zmian jest wymagany/);
     });
 
     it('should recalculate total price on guest change (no menu)', async () => {
@@ -172,7 +195,7 @@ describe('ReservationService', () => {
         adults: 90,
         children: 20,
         reason: 'Zwiększenie liczby gości na weselu',
-      }, TEST_USER_ID)).rejects.toThrow(/exceeds hall capacity/);
+      }, TEST_USER_ID)).rejects.toThrow(/przekracza pojemność sali/);
     });
   });
 
@@ -193,7 +216,7 @@ describe('ReservationService', () => {
       expect(call.data.status).toBe('CONFIRMED');
     });
 
-    it('should transition PENDING → CANCELLED (via transaction)', async () => {
+    it('should transition PENDING → CANCELLED (via transaction, sets ARCHIVED)', async () => {
       await service.updateStatus('res-uuid-001', {
         status: ReservationStatus.CANCELLED,
         reason: 'Klient zrezygnował',
@@ -201,12 +224,16 @@ describe('ReservationService', () => {
 
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
       expect(txMock.reservation.update).toHaveBeenCalledTimes(1);
+      // #172: cancel sets status=ARCHIVED (instant archive)
+      const updateCall = txMock.reservation.update.mock.calls[0][0];
+      expect(updateCall.data.status).toBe('ARCHIVED');
+      expect(updateCall.data.archivedAt).toBeDefined();
     });
 
     it('should throw on invalid transition PENDING → COMPLETED', async () => {
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.COMPLETED,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should throw on invalid transition COMPLETED → anything', async () => {
@@ -217,7 +244,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.CANCELLED,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should throw on invalid transition CANCELLED → anything', async () => {
@@ -228,7 +255,7 @@ describe('ReservationService', () => {
 
       await expect(service.updateStatus('res-uuid-001', {
         status: ReservationStatus.CONFIRMED,
-      }, TEST_USER_ID)).rejects.toThrow(/Cannot change status/);
+      }, TEST_USER_ID)).rejects.toThrow(/Nie można zmienić statusu/);
     });
 
     it('should allow CONFIRMED → COMPLETED for past events', async () => {
@@ -252,14 +279,15 @@ describe('ReservationService', () => {
   // ══════════════════════════════════════════════════════════════
   describe('cancelReservation()', () => {
 
-    it('should cancel reservation and set archivedAt', async () => {
+    it('should cancel reservation and set archivedAt (instant archive #172)', async () => {
       await service.cancelReservation('res-uuid-001', TEST_USER_ID, 'Klient zrezygnował');
 
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
       expect(txMock.reservation.update).toHaveBeenCalledTimes(1);
 
       const updateCall = txMock.reservation.update.mock.calls[0][0];
-      expect(updateCall.data.status).toBe('CANCELLED');
+      // #172: cancelReservation sets status=ARCHIVED (instant archive)
+      expect(updateCall.data.status).toBe('ARCHIVED');
       expect(updateCall.data.archivedAt).toBeDefined();
     });
 
@@ -270,7 +298,7 @@ describe('ReservationService', () => {
       });
 
       await expect(service.cancelReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Reservation is already cancelled');
+        .rejects.toThrow('Rezerwacja jest już anulowana');
     });
 
     it('should throw when reservation is completed', async () => {
@@ -280,7 +308,7 @@ describe('ReservationService', () => {
       });
 
       await expect(service.cancelReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Cannot cancel completed reservation');
+        .rejects.toThrow('Nie można anulować zakończonej rezerwacji');
     });
 
     it('should cascade cancel pending deposits', async () => {
@@ -295,8 +323,8 @@ describe('ReservationService', () => {
       const updateCall = txMock.deposit.updateMany.mock.calls[0][0];
       expect(updateCall.data.status).toBe('CANCELLED');
 
-      // History entry for each deposit
-      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(3); // 1 cancel + 2 deposits
+      // #172: 1 CANCELLED entry + 2 DEPOSIT_CANCEL entries + 1 AUTO_ARCHIVED entry = 4 total
+      expect(txMock.reservationHistory.create).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -320,13 +348,13 @@ describe('ReservationService', () => {
       });
 
       await expect(service.archiveReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Reservation is already archived');
+        .rejects.toThrow('Rezerwacja jest już zarchiwizowana');
     });
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.archiveReservation('nonexistent', TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
   });
 
@@ -349,13 +377,13 @@ describe('ReservationService', () => {
 
     it('should throw when not archived', async () => {
       await expect(service.unarchiveReservation('res-uuid-001', TEST_USER_ID))
-        .rejects.toThrow('Reservation is not archived');
+        .rejects.toThrow('Rezerwacja nie jest zarchiwizowana');
     });
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
       await expect(service.unarchiveReservation('nonexistent', TEST_USER_ID))
-        .rejects.toThrow('Reservation not found');
+        .rejects.toThrow('Nie znaleziono rezerwacji');
     });
   });
 });

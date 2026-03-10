@@ -1,22 +1,22 @@
 /**
- * One-time migration script: Recalculate totalPrice + priceBeforeDiscount
+ * One-time migration script: Recalculate totalPrice + extraHoursCost + priceBeforeDiscount
  * for all active reservations.
  *
- * Run after deploying fix/pricing-recalculation to fix stale pricing data.
+ * Run after deploying fix/pricing-and-encoding to fix stale pricing data.
  *
  * Usage:
  *   npx tsx apps/backend/src/scripts/recalculate-all-totals.ts
  */
 
 import { prisma } from '../lib/prisma';
-import { recalculateReservationTotal } from '../utils/recalculate-total';
+import { computeReservationBasePrice, recalculateReservationTotalPrice } from '../utils/recalculate-price';
 
 async function main() {
   console.log('[Migration] Starting recalculation of all active reservations...\n');
 
   const reservations = await prisma.reservation.findMany({
     where: {
-      status: { in: ['PENDING', 'CONFIRMED'] },
+      status: { in: ['PENDING', 'CONFIRMED', 'RESERVED'] },
     },
     select: {
       id: true,
@@ -24,6 +24,8 @@ async function main() {
       extrasTotalPrice: true,
       priceBeforeDiscount: true,
       discountAmount: true,
+      startDateTime: true,
+      endDateTime: true,
       client: { select: { firstName: true, lastName: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -40,44 +42,40 @@ async function main() {
       ? `${r.client.firstName} ${r.client.lastName}`
       : 'N/A';
     const oldTotal = Number(r.totalPrice);
-    const oldExtras = Number(r.extrasTotalPrice) || 0;
-    const oldBeforeDiscount = r.priceBeforeDiscount ? Number(r.priceBeforeDiscount) : null;
 
     try {
-      const result = await recalculateReservationTotal(r.id);
-
-      const changed =
-        result.totalPrice !== oldTotal ||
-        result.extrasTotal !== oldExtras ||
-        (result.discountAmount > 0 && result.priceBeforeDiscount !== oldBeforeDiscount);
+      const breakdown = await computeReservationBasePrice(r.id);
+      const changed = breakdown.totalPrice !== oldTotal;
 
       if (changed) {
+        await recalculateReservationTotalPrice(r.id);
         console.log(
-          `  \u2705 ${clientName} (${r.id.slice(0, 8)}...): ` +
-          `total ${oldTotal} \u2192 ${result.totalPrice}` +
-          (result.extrasTotal !== oldExtras ? ` | extras ${oldExtras} \u2192 ${result.extrasTotal}` : '') +
-          (result.discountAmount > 0 ? ` | beforeDiscount ${oldBeforeDiscount} \u2192 ${result.priceBeforeDiscount}` : '')
+          `  ✓ ${r.id.slice(0, 8)} (${clientName}): ` +
+          `${oldTotal} → ${breakdown.totalPrice} ` +
+          `(menu=${breakdown.menuPrice} + extras=${breakdown.extrasTotal} + surcharge=${breakdown.surcharge} + hours=${breakdown.extraHoursCost} - discount=${breakdown.discountAmount})`
         );
         updated++;
       } else {
+        console.log(`  — ${r.id.slice(0, 8)} (${clientName}): unchanged (${oldTotal})`);
         unchanged++;
       }
     } catch (err: any) {
-      console.error(`  \u274c ${clientName} (${r.id.slice(0, 8)}...): ${err.message}`);
+      console.error(`  ✗ ${r.id.slice(0, 8)} (${clientName}): ${err.message}`);
       errors++;
     }
   }
 
-  console.log(`\n[Migration] Done!`);
+  console.log('\n[Migration] Complete!');
   console.log(`  Updated:   ${updated}`);
   console.log(`  Unchanged: ${unchanged}`);
   console.log(`  Errors:    ${errors}`);
-  console.log(`  Total:     ${reservations.length}`);
-
-  await prisma.$disconnect();
 }
 
-main().catch((err) => {
-  console.error('[Migration] Fatal error:', err);
-  process.exit(1);
-});
+main()
+  .catch((e) => {
+    console.error('[Migration] Fatal error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

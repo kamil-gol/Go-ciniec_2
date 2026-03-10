@@ -19,11 +19,13 @@
  * FIX: Removed (quantity) from Klienci column in summary — duplicates Łącznie szt.
  * FIX: Removed PODSUMOWANIE section and nearestEvent from PDF export.
  * FIX: Removed Wartość column — preparations report is for staff ops, prices in reservation form.
+ * FIX: Applied footer pagination fix (mirrors #160 menu report fix).
+ * FIX: Fixed measureText crash — doc._font is Font object, not string.
+ * FIX: Cast doc as any for _fragment (pdfkit internal method not in @types/pdfkit).
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
 
-// Re-use COLORS from pdf.service palette
 const COLORS = {
   primary: '#1a2332',
   primaryLight: '#2c3e50',
@@ -41,6 +43,10 @@ const COLORS = {
   purple: '#8e44ad',
 };
 
+const PAGE_HEIGHT = 841.89;  // A4
+const FOOTER_AREA = 50;
+const MAX_CONTENT_Y = PAGE_HEIGHT - FOOTER_AREA;
+
 export interface PreparationsPDFContext {
   doc: PDFKit.PDFDocument;
   regularFont: string;
@@ -50,6 +56,31 @@ export interface PreparationsPDFContext {
   restaurantEmail: string;
 }
 
+/**
+ * Measure text width for manual centering.
+ * Sets font+size as side effect (caller renders immediately after).
+ */
+function measureTextWidth(
+  doc: PDFKit.PDFDocument,
+  text: string,
+  fontSize: number,
+  font: string
+): number {
+  doc.font(font).fontSize(fontSize);
+  return doc.widthOfString(text);
+}
+
+/**
+ * Smart page break - ensures minimum space remaining.
+ */
+function ensureSpace(doc: PDFKit.PDFDocument, minSpace: number = 120): number {
+  if (doc.y > MAX_CONTENT_Y - minSpace) {
+    doc.addPage();
+    return 50;
+  }
+  return doc.y;
+}
+
 export function buildPreparationsReportPDF(
   ctx: PreparationsPDFContext,
   data: PreparationsReport
@@ -57,6 +88,7 @@ export function buildPreparationsReportPDF(
   const { doc } = ctx;
   const left = 40;
   const pageWidth = doc.page.width - 80;
+  let lastContentY = 0;
 
   // ── 1. HEADER BANNER ──
   drawHeaderBanner(ctx, 'PRZYGOTOWANIA', COLORS.purple);
@@ -79,15 +111,14 @@ export function buildPreparationsReportPDF(
   doc.moveDown(0.6);
   drawSeparator(ctx, left, pageWidth);
   doc.moveDown(0.5);
+  lastContentY = doc.y;
 
   // ── 3. DETAILED VIEW — daily timeline ──
-  // Columns: Usługa, Ilość, Rezerwacja, Uwagi (no Wartość)
   const days = (data as any).days;
   if (data.filters.view === 'detailed' && days && days.length > 0) {
     for (const day of days) {
-      safePageBreak(doc, 120);
+      ensureSpace(doc, 120);
 
-      // Day header bar
       const dayHeaderY = doc.y;
       doc.rect(left, dayHeaderY, pageWidth, 22).fill(COLORS.primaryLight);
       doc.rect(left, dayHeaderY, 4, 22).fill(COLORS.accent);
@@ -97,7 +128,6 @@ export function buildPreparationsReportPDF(
         left + 14, dayHeaderY + 5,
         { width: pageWidth - 100 }
       );
-      // Right-aligned count
       doc.text(
         `Usług: ${day.totalItems || 0}`,
         left + pageWidth - 100, dayHeaderY + 5,
@@ -105,9 +135,8 @@ export function buildPreparationsReportPDF(
       );
       doc.y = dayHeaderY + 26;
 
-      // Categories within the day
       for (const category of day.categories) {
-        safePageBreak(doc, 80);
+        ensureSpace(doc, 80);
 
         doc.fontSize(9).font(ctx.boldFont).fillColor(COLORS.purple);
         doc.text(
@@ -116,7 +145,6 @@ export function buildPreparationsReportPDF(
         );
         doc.moveDown(0.2);
 
-        // Build table for items in this category — no Wartość column
         const rows: string[][] = category.items.map((item: any) => {
           const timeStr = item.reservation?.startTime ? ` ${item.reservation.startTime}` : '';
           const reservationLabel = item.reservation
@@ -151,17 +179,16 @@ export function buildPreparationsReportPDF(
       doc.moveDown(0.3);
       drawSeparator(ctx, left, pageWidth);
       doc.moveDown(0.3);
+      lastContentY = doc.y;
     }
   }
 
   // ── 4. SUMMARY VIEW — aggregated table per day ──
-  // FIX: removed (quantity) from Klienci column — duplicates Łącznie szt. column
   const summaryDays = (data as any).summaryDays;
   if (data.filters.view === 'summary' && summaryDays && summaryDays.length > 0) {
     for (const day of summaryDays) {
-      safePageBreak(doc, 100);
+      ensureSpace(doc, 100);
 
-      // Day header bar
       const dayHeaderY = doc.y;
       doc.rect(left, dayHeaderY, pageWidth, 22).fill(COLORS.primaryLight);
       doc.rect(left, dayHeaderY, 4, 22).fill(COLORS.accent);
@@ -181,8 +208,6 @@ export function buildPreparationsReportPDF(
       doc.moveDown(0.2);
 
       const summaryRows = day.items.map((item: any) => {
-        // Changed from: clientName startTime (quantity)
-        // To: clientName startTime (no quantity — already in Łącznie szt. column)
         const clientNames = item.reservations
           ? item.reservations.map((r: any) => {
               const time = r.startTime ? ` ${r.startTime}` : '';
@@ -217,15 +242,49 @@ export function buildPreparationsReportPDF(
       doc.moveDown(0.3);
       drawSeparator(ctx, left, pageWidth);
       doc.moveDown(0.3);
+      lastContentY = doc.y;
     }
   }
 
-  // ── 5. FOOTER ──
-  doc.moveDown(0.5);
-  drawInlineFooter(ctx, left, pageWidth);
+  // ── 5. FOOTER (safe rendering without auto-pagination) ──
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(i);
+
+    const footerY = 810;
+    const sepFooterY = footerY - 10;
+
+    doc.strokeColor(COLORS.border).lineWidth(0.5)
+       .moveTo(left, sepFooterY).lineTo(left + pageWidth, sepFooterY).stroke();
+
+    // Footer line 1
+    const footerParts: string[] = [
+      `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
+    ];
+    const contactParts: string[] = [];
+    if (ctx.restaurantPhone) contactParts.push(ctx.restaurantPhone);
+    if (ctx.restaurantEmail) contactParts.push(ctx.restaurantEmail);
+    if (contactParts.length > 0) {
+      footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
+    }
+    const footerLine1 = footerParts.join('  |  ');
+
+    const line1W = measureTextWidth(doc, footerLine1, 7, ctx.regularFont);
+    doc.fillColor(COLORS.textMuted);
+    const line1X = left + (pageWidth - line1W) / 2;
+    // _fragment is pdfkit internal: renders text at exact x/y without cursor movement
+    (doc as any)._fragment(footerLine1, line1X, footerY, { lineBreak: false });
+
+    // Footer line 2
+    const footerLine2 = `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}  |  Strona ${i + 1} z ${range.count}`;
+    const line2W = measureTextWidth(doc, footerLine2, 6, ctx.regularFont);
+    doc.fillColor(COLORS.textLight);
+    const line2X = left + (pageWidth - line2W) / 2;
+    (doc as any)._fragment(footerLine2, line2X, footerY + 12, { lineBreak: false });
+  }
 }
 
-// ═══════════════ SHARED HELPERS (mirror pdf.service.ts) ═══════════════
+// ═══════════════ SHARED HELPERS ═══════════════
 
 function drawHeaderBanner(ctx: PreparationsPDFContext, badgeLabel: string, badgeColor: string): void {
   const { doc } = ctx;
@@ -277,7 +336,6 @@ function drawCompactTable(
   const totalWidth = colWidths.reduce((a, b) => a + b, 0);
   let y = doc.y;
 
-  // Header row
   doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
   let x = startX;
   headers.forEach((header, i) => {
@@ -287,9 +345,8 @@ function drawCompactTable(
   });
   y += headerHeight;
 
-  // Data rows
   rows.forEach((row, rowIndex) => {
-    if (y > doc.page.height - 80) {
+    if (y > MAX_CONTENT_Y - 80) {
       doc.addPage();
       y = 50;
     }
@@ -323,42 +380,6 @@ function drawCompactTable(
   doc.strokeColor(COLORS.border).lineWidth(0.5)
      .moveTo(startX, y).lineTo(startX + totalWidth, y).stroke();
   doc.y = y + 3;
-}
-
-function drawInlineFooter(ctx: PreparationsPDFContext, left: number, pageWidth: number): void {
-  const { doc } = ctx;
-  drawSeparator(ctx, left, pageWidth);
-  doc.moveDown(0.4);
-
-  doc.fontSize(7).fillColor(COLORS.textMuted).font(ctx.regularFont);
-  const footerParts: string[] = [
-    `Dziękujemy za wybór restauracji ${ctx.restaurantName}!`,
-  ];
-  const contactParts: string[] = [];
-  if (ctx.restaurantPhone) contactParts.push(ctx.restaurantPhone);
-  if (ctx.restaurantEmail) contactParts.push(ctx.restaurantEmail);
-  if (contactParts.length > 0) {
-    footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
-  }
-  doc.text(footerParts.join('  |  '), left, doc.y, {
-    align: 'center', width: pageWidth,
-  });
-
-  doc.moveDown(0.2);
-  doc.fontSize(6).fillColor(COLORS.textLight);
-  doc.text(
-    `Dokument wygenerowany automatycznie przez system ${ctx.restaurantName}`,
-    left, doc.y,
-    { align: 'center', width: pageWidth },
-  );
-}
-
-function safePageBreak(doc: PDFKit.PDFDocument, minSpace: number = 100): number {
-  if (doc.y > doc.page.height - minSpace) {
-    doc.addPage();
-    doc.y = 50;
-  }
-  return doc.y;
 }
 
 function formatDate(date: Date): string {

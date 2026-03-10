@@ -6,6 +6,7 @@
  * NOTE: MenuOption and MenuPackageOption Prisma models were removed.
  * Options are now handled via the ServiceExtras system.
  * Legacy type interfaces kept for backward compatibility where needed.
+ * Updated: #166 — Added portionTarget to enriched dish selections in snapshot
  */
 
 import { MenuTemplate, MenuPackage } from '@prisma/client';
@@ -117,6 +118,30 @@ export interface SelectedOptionDTO {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PORTION TARGET TYPE
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type PortionTarget = 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENRICHED DISH SELECTION (stored in snapshot JSONB)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface EnrichedDishSelection {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string | null;
+  portionTarget: PortionTarget;
+  dishes: Array<{
+    dishId: string;
+    dishName: string;
+    description: string | null;
+    allergens: string[];
+    quantity: number;
+  }>;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SNAPSHOT TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -150,8 +175,8 @@ export interface MenuSnapshotData {
     icon: string | null;
   }>;
 
-  // Dish selections
-  dishSelections?: CategoryDishSelection[];
+  // Dish selections — #166: now includes portionTarget per category
+  dishSelections?: EnrichedDishSelection[];
 }
 
 export interface CreateMenuSnapshotInput {

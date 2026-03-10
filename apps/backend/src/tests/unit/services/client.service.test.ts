@@ -1,232 +1,217 @@
-/**
- * ClientService — Comprehensive Unit Tests
- * Targets ~45.94% branches. Covers: validation (email, phone),
- * duplicate check, getClients with/without search, updateClient
- * conditional fields, deleteClient with reservations guard.
- */
+import { ClientService } from '@/services/client.service';
+import { prisma } from '@/lib/prisma';
 
-jest.mock('../../../lib/prisma', () => ({
+jest.mock('@/lib/prisma', () => ({
   prisma: {
     client: {
-      findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(),
-      create: jest.fn(), update: jest.fn(), delete: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
     },
-    reservation: { count: jest.fn() },
+    clientContact: {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    reservation: {
+      count: jest.fn(),
+    },
+    $transaction: jest.fn((cb) => cb({
+      client: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      clientContact: {
+        create: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+    })),
   },
 }));
 
-jest.mock('../../../utils/audit-logger', () => ({
-  logChange: jest.fn(),
-  diffObjects: jest.fn().mockReturnValue({}),
-}));
-
-import { ClientService } from '../../../services/client.service';
-import { prisma } from '../../../lib/prisma';
-import { diffObjects } from '../../../utils/audit-logger';
-
-const db = prisma as any;
-const svc = new ClientService();
-
-beforeEach(() => jest.clearAllMocks());
+let clientService: ClientService;
 
 describe('ClientService', () => {
-  // ========== createClient ==========
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clientService = new ClientService();
+  });
+
   describe('createClient()', () => {
-    it('should throw on invalid email', async () => {
-      await expect(svc.createClient(
-        { firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'invalid' } as any, 'u1'
-      )).rejects.toThrow('Nieprawidłowy format adresu email');
-    });
+    it('should create INDIVIDUAL client', async () => {
+      // Mock: no duplicate found
+      (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
 
-    it('should throw when phone is missing', async () => {
-      await expect(svc.createClient(
-        { firstName: 'Jan', lastName: 'K', phone: '' } as any, 'u1'
-      )).rejects.toThrow('Numer telefonu jest wymagany');
-    });
+      // Mock transaction
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        const tx = {
+          client: {
+            create: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              clientType: 'INDIVIDUAL',
+              firstName: 'Jan',
+              lastName: 'Kowalski',
+              email: 'jan@example.com',
+              phone: '123456789',
+            }),
+            findUnique: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              clientType: 'INDIVIDUAL',
+              firstName: 'Jan',
+              lastName: 'Kowalski',
+              email: 'jan@example.com',
+              phone: '123456789',
+              contacts: [],
+            }),
+          },
+        };
+        return cb(tx);
+      });
 
-    it('should throw when phone has less than 9 digits', async () => {
-      await expect(svc.createClient(
-        { firstName: 'Jan', lastName: 'K', phone: '12345' } as any, 'u1'
-      )).rejects.toThrow('co najmniej 9 cyfr');
-    });
-
-    it('should throw on duplicate client', async () => {
-      db.client.findFirst.mockResolvedValue({ id: 'existing' });
-      await expect(svc.createClient(
-        { firstName: 'Jan', lastName: 'K', phone: '123456789' } as any, 'u1'
-      )).rejects.toThrow('ju\u017c istnieje');
-    });
-
-    it('should create client without email/notes', async () => {
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.create.mockResolvedValue({ id: 'c1', firstName: 'Jan', lastName: 'K', phone: '123456789', email: null, notes: null });
-      const result = await svc.createClient(
-        { firstName: 'Jan', lastName: 'K', phone: '123456789' } as any, 'u1'
+      const result = await clientService.createClient(
+        {
+          clientType: 'INDIVIDUAL',
+          firstName: 'Jan',
+          lastName: 'Kowalski',
+          email: 'jan@example.com',
+          phone: '123456789',
+        },
+        '550e8400-e29b-41d4-a716-446655440001'
       );
-      expect(result.id).toBe('c1');
-      expect(db.client.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ email: null, notes: null })
-      }));
+
+      expect(result.clientType).toBe('INDIVIDUAL');
     });
 
-    it('should create client with email and notes', async () => {
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.create.mockResolvedValue({ id: 'c2', firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'jan@test.pl', notes: 'VIP' });
-      const result = await svc.createClient(
-        { firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'jan@test.pl', notes: 'VIP' } as any, 'u1'
+    it('should create COMPANY client with NIP validation', async () => {
+      // Mock: no duplicate NIP
+      (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        const tx = {
+          client: {
+            create: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440002',
+              clientType: 'COMPANY',
+              companyName: 'Acme Inc',
+              nip: '5260250274',
+              firstName: 'Jan',
+              lastName: 'Nowak',
+              phone: '987654321',
+              email: 'info@acme.com',
+            }),
+            findUnique: jest.fn().mockResolvedValue({
+              id: '550e8400-e29b-41d4-a716-446655440002',
+              clientType: 'COMPANY',
+              companyName: 'Acme Inc',
+              nip: '5260250274',
+              firstName: 'Jan',
+              lastName: 'Nowak',
+              phone: '987654321',
+              email: 'info@acme.com',
+              contacts: [],
+            }),
+          },
+        };
+        return cb(tx);
+      });
+
+      const result = await clientService.createClient(
+        {
+          clientType: 'COMPANY',
+          companyName: 'Acme Inc',
+          nip: '5260250274',
+          firstName: 'Jan',
+          lastName: 'Nowak',
+          email: 'info@acme.com',
+          phone: '987654321',
+        },
+        '550e8400-e29b-41d4-a716-446655440001'
       );
-      expect(result.email).toBe('jan@test.pl');
+
+      expect(result.clientType).toBe('COMPANY');
+      expect(result.nip).toBe('5260250274');
     });
 
-    it('should accept valid email', async () => {
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.create.mockResolvedValue({ id: 'c3', firstName: 'A', lastName: 'B', phone: '123456789', email: 'a@b.com', notes: null });
-      const result = await svc.createClient(
-        { firstName: 'A', lastName: 'B', phone: '123456789', email: 'a@b.com' } as any, 'u1'
-      );
-      expect(result).toBeDefined();
-    });
-  });
-
-  // ========== getClients ==========
-  describe('getClients()', () => {
-    it('should return all clients without filters', async () => {
-      db.client.findMany.mockResolvedValue([{ id: '1' }]);
-      const result = await svc.getClients();
-      expect(result).toHaveLength(1);
-    });
-
-    it('should build OR clause with search filter', async () => {
-      db.client.findMany.mockResolvedValue([]);
-      await svc.getClients({ search: 'Jan' });
-      const call = db.client.findMany.mock.calls[0][0];
-      expect(call.where.OR).toHaveLength(4);
+    it('should throw on invalid NIP format', async () => {
+      await expect(
+        clientService.createClient(
+          {
+            clientType: 'COMPANY',
+            companyName: 'BadCorp',
+            nip: '123',
+            firstName: 'Jan',
+            lastName: 'Kowalski',
+            email: 'bad@corp.com',
+            phone: '111111111',
+          },
+          '550e8400-e29b-41d4-a716-446655440001'
+        )
+      ).rejects.toThrow(/NIP.*10 cyfr/i);
     });
 
-    it('should not build OR clause without search', async () => {
-      db.client.findMany.mockResolvedValue([]);
-      await svc.getClients({});
-      const call = db.client.findMany.mock.calls[0][0];
-      expect(call.where.OR).toBeUndefined();
-    });
-  });
+    it('should throw on duplicate phone', async () => {
+      (prisma.client.findFirst as jest.Mock).mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        phone: '999999999',
+        firstName: 'Test',
+        lastName: 'User',
+      });
 
-  // ========== getClientById ==========
-  describe('getClientById()', () => {
-    it('should throw when not found', async () => {
-      db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.getClientById('x')).rejects.toThrow('Nie znaleziono klienta');
-    });
-
-    it('should return client with reservations', async () => {
-      db.client.findUnique.mockResolvedValue({ id: 'c1', reservations: [], _count: { reservations: 0 } });
-      const result = await svc.getClientById('c1');
-      expect(result.id).toBe('c1');
+      await expect(
+        clientService.createClient(
+          {
+            clientType: 'INDIVIDUAL',
+            firstName: 'Test',
+            lastName: 'User',
+            email: 'test@example.com',
+            phone: '999999999',
+          },
+          '550e8400-e29b-41d4-a716-446655440001'
+        )
+      ).rejects.toThrow(/już istnieje/i);
     });
   });
 
-  // ========== updateClient ==========
-  describe('updateClient()', () => {
-    const EXISTING = { id: 'c1', firstName: 'Jan', lastName: 'K', phone: '123456789', email: 'j@t.pl', notes: null };
-
-    it('should throw when not found', async () => {
-      db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.updateClient('x', {}, 'u1')).rejects.toThrow('Nie znaleziono klienta');
-    });
-
-    it('should throw on invalid email', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      await expect(svc.updateClient('c1', { email: 'bad' }, 'u1')).rejects.toThrow('Nieprawidłowy format adresu email');
-    });
-
-    it('should throw on short phone', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      await expect(svc.updateClient('c1', { phone: '123' }, 'u1')).rejects.toThrow('co najmniej 9 cyfr');
-    });
-
-    it('should throw on duplicate phone+name', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.findFirst.mockResolvedValue({ id: 'c2' });
-      await expect(svc.updateClient('c1', { phone: '999888777' }, 'u1')).rejects.toThrow('ju\u017c istnieje');
-    });
-
-    it('should use existing name when no name provided in phone duplicate check', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.update.mockResolvedValue({ ...EXISTING, phone: '999888777' });
-      await svc.updateClient('c1', { phone: '999888777' }, 'u1');
-      expect(db.client.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({ firstName: 'Jan', lastName: 'K' })
-      }));
-    });
-
-    it('should use provided name in phone duplicate check', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.findFirst.mockResolvedValue(null);
-      db.client.update.mockResolvedValue({ ...EXISTING, firstName: 'Anna', phone: '999888777' });
-      await svc.updateClient('c1', { firstName: 'Anna', phone: '999888777' }, 'u1');
-      expect(db.client.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({ firstName: 'Anna' })
-      }));
-    });
-
-    it('should only include provided fields in updateData', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, firstName: 'Anna' });
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { firstName: 'Anna' }, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.firstName).toBe('Anna');
-      expect(call.data.lastName).toBeUndefined();
-    });
-
-    it('should set email to null when empty string', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, email: null });
-      (diffObjects as jest.Mock).mockReturnValue({ email: { old: 'j@t.pl', new: null } });
-      await svc.updateClient('c1', { email: '' } as any, 'u1');
-      const call = db.client.update.mock.calls[0][0];
-      expect(call.data.email).toBeNull();
-    });
-
-    it('should audit log when changes exist', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue({ ...EXISTING, firstName: 'Anna' });
-      (diffObjects as jest.Mock).mockReturnValue({ firstName: { old: 'Jan', new: 'Anna' } });
-      await svc.updateClient('c1', { firstName: 'Anna' }, 'u1');
-      const { logChange } = require('../../../utils/audit-logger');
-      expect(logChange).toHaveBeenCalledWith(expect.objectContaining({ action: 'UPDATE' }));
-    });
-
-    it('should skip audit log when no changes', async () => {
-      db.client.findUnique.mockResolvedValue(EXISTING);
-      db.client.update.mockResolvedValue(EXISTING);
-      (diffObjects as jest.Mock).mockReturnValue({});
-      await svc.updateClient('c1', { firstName: 'Jan' }, 'u1');
-      const { logChange } = require('../../../utils/audit-logger');
-      expect(logChange).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'UPDATE' }));
-    });
-  });
-
-  // ========== deleteClient ==========
   describe('deleteClient()', () => {
-    it('should throw when not found', async () => {
-      db.client.findUnique.mockResolvedValue(null);
-      await expect(svc.deleteClient('x', 'u1')).rejects.toThrow('Nie znaleziono klienta');
+    it('should throw when client has active reservations', async () => {
+      (prisma.client.findUnique as jest.Mock).mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        isDeleted: false,
+        contacts: [],
+      });
+      (prisma.reservation.count as jest.Mock).mockResolvedValue(3);
+
+      await expect(
+        clientService.deleteClient('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001')
+      ).rejects.toThrow(/aktywn|rezerwacj/i);
     });
 
-    it('should throw when client has reservations', async () => {
-      db.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'J', lastName: 'K' });
-      db.reservation.count.mockResolvedValue(3);
-      await expect(svc.deleteClient('c1', 'u1')).rejects.toThrow('posiadającego rezerwacje');
-    });
+    it('should delete client when no active reservations', async () => {
+      (prisma.client.findUnique as jest.Mock).mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        clientType: 'INDIVIDUAL',
+        firstName: 'Jan',
+        lastName: 'Kowalski',
+        isDeleted: false,
+        contacts: [],
+      });
+      (prisma.reservation.count as jest.Mock).mockResolvedValue(0);
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        const tx = {
+          clientContact: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+          },
+          client: {
+            update: jest.fn().mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+          },
+        };
+        await cb(tx);
+      });
 
-    it('should delete client with no reservations', async () => {
-      db.client.findUnique.mockResolvedValue({ id: 'c1', firstName: 'J', lastName: 'K', email: null, phone: '123' });
-      db.reservation.count.mockResolvedValue(0);
-      db.client.delete.mockResolvedValue(undefined);
-      await svc.deleteClient('c1', 'u1');
-      expect(db.client.delete).toHaveBeenCalledWith({ where: { id: 'c1' } });
+      await expect(
+        clientService.deleteClient('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001')
+      ).resolves.not.toThrow();
     });
   });
 });

@@ -3,12 +3,15 @@
  * Business logic for reservation discount management
  * Sprint 7: System Rabatów
  * Updated: Phase 1 Audit — logChange() for ActivityLog
+ * Updated: fix/recalculate-totalPrice — uses computeReservationBasePrice
+ *   for consistent base price computation from components
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
+import { computeReservationBasePrice, recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import { RESERVATION, AUTH } from '../i18n/pl';
 
 const RESERVATION_INCLUDE = {
@@ -50,10 +53,10 @@ export class DiscountService {
       throw new AppError(400, 'Powód rabatu jest wymagany (min. 3 znaki)');
     }
 
-    // Use priceBeforeDiscount if already set (editing existing discount), otherwise current totalPrice
-    const basePrice = reservation.priceBeforeDiscount
-      ? Number(reservation.priceBeforeDiscount)
-      : Number(reservation.totalPrice);
+    // Compute base price from components (menu + extras + surcharge)
+    // This ensures basePrice is always correct regardless of stale totalPrice in DB
+    const breakdown = await computeReservationBasePrice(id);
+    const basePrice = breakdown.basePrice;
 
     let discountAmount: number;
     if (data.type === 'PERCENTAGE') {
@@ -143,8 +146,6 @@ export class DiscountService {
       throw new AppError(400, 'Ta rezerwacja nie ma rabatu');
     }
 
-    const originalPrice = Number(reservation.priceBeforeDiscount) || Number(reservation.totalPrice);
-
     // Save old discount info before removal
     const removedDiscount = {
       type: reservation.discountType,
@@ -153,7 +154,8 @@ export class DiscountService {
       reason: reservation.discountReason,
     };
 
-    const updated = await prisma.reservation.update({
+    // Clear discount fields first
+    await prisma.reservation.update({
       where: { id },
       data: {
         discountType: null,
@@ -161,8 +163,15 @@ export class DiscountService {
         discountAmount: null,
         discountReason: null,
         priceBeforeDiscount: null,
-        totalPrice: originalPrice,
       },
+    });
+
+    // Recalculate totalPrice from components (without discount)
+    const newTotalPrice = await recalculateReservationTotalPrice(id);
+
+    // Fetch updated reservation for return value
+    const updated = await prisma.reservation.findUnique({
+      where: { id },
       include: RESERVATION_INCLUDE,
     });
 
@@ -175,7 +184,7 @@ export class DiscountService {
         fieldName: 'discount',
         oldValue: `${reservation.discountType} ${Number(reservation.discountValue)}`,
         newValue: 'Brak',
-        reason: `Rabat usunięty. Przywrócono cenę: ${originalPrice} PLN`,
+        reason: `Rabat usunięty. Przywrócono cenę: ${newTotalPrice} PLN`,
       },
     });
 
@@ -191,7 +200,7 @@ export class DiscountService {
       details: {
         description: `Rabat usunięty: ${removedDiscount.type} ${removedDiscount.value}${removedDiscount.type === 'PERCENTAGE' ? '%' : ' PLN'} (-${removedDiscount.amount} PLN) | ${clientName}`,
         removedDiscount,
-        restoredPrice: originalPrice,
+        restoredPrice: newTotalPrice,
       },
     });
 

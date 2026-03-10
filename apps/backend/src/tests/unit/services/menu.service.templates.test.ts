@@ -136,7 +136,7 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(null);
-      await expect(service.getMenuTemplateById('nonexistent')).rejects.toThrow('Menu template not found');
+      await expect(service.getMenuTemplateById('nonexistent')).rejects.toThrow('Nie znaleziono szablonu menu');
     });
   });
 
@@ -148,7 +148,7 @@ describe('MenuService', () => {
 
     it('should throw when no active menu found', async () => {
       mockPrisma.menuTemplate.findFirst.mockResolvedValue(null);
-      await expect(service.getActiveMenuForEventType('et-999')).rejects.toThrow(/No active menu found/);
+      await expect(service.getActiveMenuForEventType('et-999')).rejects.toThrow(/aktywnego menu/);
     });
   });
 
@@ -189,7 +189,7 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(null);
-      await expect(service.updateMenuTemplate('nonexistent', {} as any, TEST_USER)).rejects.toThrow('Menu template not found');
+      await expect(service.updateMenuTemplate('nonexistent', {} as any, TEST_USER)).rejects.toThrow('Nie znaleziono szablonu menu');
     });
   });
 
@@ -202,12 +202,12 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuTemplate.findUnique.mockResolvedValue(null);
-      await expect(service.deleteMenuTemplate('nonexistent', TEST_USER)).rejects.toThrow('Menu template not found');
+      await expect(service.deleteMenuTemplate('nonexistent', TEST_USER)).rejects.toThrow('Nie znaleziono szablonu menu');
     });
 
     it('should throw when template is used in reservations', async () => {
       mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(3);
-      await expect(service.deleteMenuTemplate('tpl-001', TEST_USER)).rejects.toThrow(/Cannot delete.*3 reservation/);
+      await expect(service.deleteMenuTemplate('tpl-001', TEST_USER)).rejects.toThrow(/usunąć.*3.*rezerwacj/);
     });
   });
 
@@ -245,7 +245,7 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(service.getPackageById('nonexistent')).rejects.toThrow('Package not found');
+      await expect(service.getPackageById('nonexistent')).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 
@@ -272,7 +272,7 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(service.updatePackage('nonexistent', {} as any, TEST_USER)).rejects.toThrow('Package not found');
+      await expect(service.updatePackage('nonexistent', {} as any, TEST_USER)).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
   });
 
@@ -285,12 +285,12 @@ describe('MenuService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(service.deletePackage('nonexistent', TEST_USER)).rejects.toThrow('Package not found');
+      await expect(service.deletePackage('nonexistent', TEST_USER)).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should throw when package is used in reservations', async () => {
       mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(5);
-      await expect(service.deletePackage('pkg-001', TEST_USER)).rejects.toThrow(/Cannot delete.*5 reservation/);
+      await expect(service.deletePackage('pkg-001', TEST_USER)).rejects.toThrow(/usunąć.*5.*rezerwacj/);
     });
   });
 

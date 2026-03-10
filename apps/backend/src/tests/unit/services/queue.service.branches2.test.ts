@@ -1,6 +1,7 @@
 /**
  * QueueService — Branch Coverage (line 39: withRetry lock error + delay)
  * Also tests edge branches in queue operations
+ * FIX: spolonizowane komunikaty błędów
  */
 
 // Must mock before imports
@@ -104,7 +105,7 @@ describe('QueueService — withRetry lock error branch (line 39)', () => {
     mockPrisma.$executeRawUnsafe.mockRejectedValue(lockError);
 
     await expect(service.swapPositions('r1', 'r2', 'u1'))
-      .rejects.toThrow('Another user is modifying the queue. Please refresh and try again.');
+      .rejects.toThrow('Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.');
   });
 });
 

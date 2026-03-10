@@ -82,13 +82,13 @@ describe('ReservationMenuService branches', () => {
   describe('selectMenu', () => {
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
-      await expect(service.selectMenu('r1', { packageId: 'mp1' })).rejects.toThrow('Reservation not found');
+      await expect(service.selectMenu('r1', { packageId: 'mp1' })).rejects.toThrow('Nie znaleziono rezerwacji');
     });
 
     it('should throw when package not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(baseReservation);
       mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
-      await expect(service.selectMenu('r1', { packageId: 'mp1' })).rejects.toThrow('Menu package not found');
+      await expect(service.selectMenu('r1', { packageId: 'mp1' })).rejects.toThrow(/Nie znaleziono.*pakietu menu/);
     });
 
     it('should select as new (no existing snapshot) with dishes and PER_PERSON option', async () => {
@@ -216,7 +216,7 @@ describe('ReservationMenuService branches', () => {
       const menuData = upsertCall.create.menuData;
       const dishSel = menuData.dishSelections.find((s: any) => s !== null);
       if (dishSel) {
-        expect(dishSel.dishes[0].dishName).toBe('Unknown dish');
+        expect(dishSel.dishes[0].dishName).toBe('Nieznane danie');
       }
     });
   });
@@ -254,7 +254,7 @@ describe('ReservationMenuService branches', () => {
       await expect(service.selectMenu('r1', {
         packageId: 'mp1',
         dishSelections: [{ categoryId: 'cat1', dishes: [{ dishId: 'd1', quantity: 5 }] }],
-      })).rejects.toThrow('maximum 2');
+      })).rejects.toThrow('maksimum 2');
     });
 
     it('should pass when no selection for non-required category', async () => {
@@ -427,7 +427,7 @@ describe('ReservationMenuService branches', () => {
   describe('getReservationMenu', () => {
     it('should throw when no snapshot', async () => {
       mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
-      await expect(service.getReservationMenu('r1')).rejects.toThrow('Menu not selected');
+      await expect(service.getReservationMenu('r1')).rejects.toThrow('Menu nie zostało wybrane');
     });
 
     it('should return formatted response with selectedOptions', async () => {
