@@ -257,24 +257,20 @@ export function useDeleteCateringSection(
 
 /**
  * PATCH displayOrder dla pojedynczej sekcji po drag & drop.
- * Endpoint: PATCH /catering/templates/:templateId/packages/:packageId/sections/:sectionId
+ * Endpoint: PATCH /catering/sections/:sectionId
  */
 export function useReorderCateringSections(
   templateId: string
 ): UseMutationResult<
   void,
   Error,
-  { sectionId: string; packageId: string; displayOrder: number }
+  { sectionId: string; displayOrder: number }
 > {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ sectionId, packageId, displayOrder }) => {
-      await api.patch(
-        `/catering/templates/${templateId}/packages/${packageId}/sections/${sectionId}`,
-        { displayOrder },
-      );
+    mutationFn: async ({ sectionId, displayOrder }) => {
+      await api.patch(`/catering/sections/${sectionId}`, { displayOrder });
     },
-    // Soft invalidate — optimistic update already applied in component
     onSettled: async () => {
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.template(templateId),
