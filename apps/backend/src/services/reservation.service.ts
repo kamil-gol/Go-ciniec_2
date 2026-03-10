@@ -17,7 +17,6 @@
  * NOTE: MenuOption & MenuPackageOption models removed from Prisma.
  * Options/extras are now handled via the ServiceExtras system.
  */
-
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange, diffObjects } from '../utils/audit-logger';
@@ -36,7 +35,7 @@ import {
   validateConfirmationDeadline,
   validateCustomEventFields,
   detectReservationChanges,
-  formatChangesSummary
+  formatChangesSummary,
 } from '../utils/reservation.utils';
 import { calculateVenueSurcharge } from '../utils/venue-surcharge';
 import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
@@ -67,6 +66,7 @@ function calculateExtrasTotalPrice(
   for (const extra of extras) {
     const price = extra.customPrice !== null ? Number(extra.customPrice) : Number(extra.serviceItem.basePrice);
     const qty = extra.quantity || 1;
+
     if (extra.serviceItem.priceType === 'PER_PERSON') {
       total += price * qty * guests;
     } else if (extra.serviceItem.priceType === 'FREE') {
@@ -80,17 +80,15 @@ function calculateExtrasTotalPrice(
 }
 
 export class ReservationService {
-
-  async createReservation(data: CreateReservationDTO, userId: string): Promise<ReservationResponse> {
+  async createReservation(data: CreateReservationDTO, userId: string): Promise<any> {
     if (!data.hallId || !data.clientId || !data.eventTypeId) {
       throw new Error(RESERVATION.HALL_CLIENT_EVENT_REQUIRED);
     }
-
     await this.validateUserId(userId);
 
     const hasNewFormat = data.startDateTime && data.endDateTime;
     const hasLegacyFormat = data.date && data.startTime && data.endTime;
-    
+
     if (!hasNewFormat && !hasLegacyFormat) {
       throw new Error(RESERVATION.DATE_FORMAT_REQUIRED);
     }
@@ -133,12 +131,10 @@ export class ReservationService {
     if (data.menuPackageId) {
       menuPackage = await prisma.menuPackage.findUnique({
         where: { id: data.menuPackageId },
-        include: {
-          menuTemplate: true,
-        }
+        include: { menuTemplate: true },
       });
-
       if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
+
       if (menuPackage.minGuests && guests < menuPackage.minGuests) {
         throw new Error(MENU.MIN_GUESTS(menuPackage.minGuests));
       }
@@ -166,6 +162,7 @@ export class ReservationService {
     if (data.serviceExtras && data.serviceExtras.length > 0) {
       extrasTotal = data.serviceExtras.reduce((sum, e) => sum + e.totalPrice, 0);
     }
+
     const totalWithExtras = totalPrice + extrasTotal;
 
     // ══ #137: Venue surcharge for "Cały Obiekt" ══
@@ -181,8 +178,7 @@ export class ReservationService {
     let priceBeforeDiscountVal: number | null = null;
     let finalTotalPrice = totalWithSurcharge;
 
-    if (data.discountType && data.discountValue && data.discountValue > 0
-        && data.discountReason && data.discountReason.trim().length >= 3) {
+    if (data.discountType && data.discountValue && data.discountValue > 0 && data.discountReason && data.discountReason.trim().length >= 3) {
       discountTypeVal = data.discountType;
       discountValueNum = data.discountValue;
       discountReasonVal = data.discountReason.trim();
@@ -190,33 +186,32 @@ export class ReservationService {
 
       if (data.discountType === 'PERCENTAGE') {
         if (data.discountValue > 100) throw new Error('Rabat procentowy nie może przekroczyć 100%');
-        discountAmountVal = Math.round(totalWithSurcharge * data.discountValue / 100 * 100) / 100;
+        discountAmountVal = Math.round((totalWithSurcharge * data.discountValue) / 100 * 100) / 100;
       } else {
         discountAmountVal = data.discountValue;
         if (discountAmountVal > totalWithSurcharge) {
           throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie może przekroczyć ceny (${totalWithSurcharge} PLN)`);
         }
       }
-
       finalTotalPrice = Math.round((totalWithSurcharge - discountAmountVal) * 100) / 100;
     }
 
     let notes = data.notes || '';
+
     if (hasNewFormat && data.startDateTime && data.endDateTime) {
       const startDT = new Date(data.startDateTime);
       const endDT = new Date(data.endDateTime);
-      
       if (startDT < new Date()) throw new Error(RESERVATION.DATE_IN_FUTURE);
       if (startDT >= endDT) throw new Error(RESERVATION.END_AFTER_START);
 
       // #165: Capacity-based overlap check instead of binary block
       await this.validateCapacityForTimeRange(hall, startDT, endDT, guests);
-
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       /* istanbul ignore next */
       if (startDT.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
+        notes += '
+[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -224,7 +219,6 @@ export class ReservationService {
       const reservationDate = new Date(data.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
       if (reservationDate < today) throw new Error(RESERVATION.DATE_IN_FUTURE);
       if (data.startTime >= data.endTime) throw new Error(RESERVATION.END_AFTER_START);
 
@@ -232,12 +226,12 @@ export class ReservationService {
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
       await this.validateCapacityForTimeRange(hall, startDT, endDT, guests);
-
       await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       /* istanbul ignore next */
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
-        notes += '\n[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
+        notes += '
+[Auto] Rezerwacja na kolejny rok — ceny mogą ulec zmianie (inflacja).';
       }
     }
 
@@ -257,8 +251,12 @@ export class ReservationService {
         createdById: userId,
         startDateTime: data.startDateTime ? new Date(data.startDateTime) : null,
         endDateTime: data.endDateTime ? new Date(data.endDateTime) : null,
-        adults, children, toddlers,
-        pricePerAdult, pricePerChild, pricePerToddler,
+        adults,
+        children,
+        toddlers,
+        pricePerAdult,
+        pricePerChild,
+        pricePerToddler,
         confirmationDeadline: data.confirmationDeadline ? new Date(data.confirmationDeadline) : null,
         customEventType: sanitizeString(data.customEventType),
         birthdayAge: data.birthdayAge || null,
@@ -267,7 +265,8 @@ export class ReservationService {
         date: data.date || null,
         startTime: data.startTime || null,
         endTime: data.endTime || null,
-        guests, totalPrice: finalTotalPrice,
+        guests,
+        totalPrice: finalTotalPrice,
         discountType: discountTypeVal,
         discountValue: discountValueNum,
         discountAmount: discountAmountVal,
@@ -277,9 +276,9 @@ export class ReservationService {
         venueSurchargeLabel: surcharge.label,
         status: ReservationStatus.PENDING,
         notes: sanitizeString(notes),
-        attachments: []
+        attachments: [],
       },
-      include: RESERVATION_INCLUDE
+      include: RESERVATION_INCLUDE,
     });
 
     if (menuPackage) {
@@ -295,20 +294,21 @@ export class ReservationService {
             pricePerAdult: Number(menuPackage.pricePerAdult),
             pricePerChild: Number(menuPackage.pricePerChild),
             pricePerToddler: Number(menuPackage.pricePerToddler),
-            selectedOptions
+            selectedOptions,
           },
-          packagePrice, optionsPrice,
+          packagePrice,
+          optionsPrice,
           totalMenuPrice: totalPrice,
           adultsCount: adults,
           childrenCount: children,
-          toddlersCount: toddlers
-        }
+          toddlersCount: toddlers,
+        },
       });
     }
 
     // Sprint 8: Create service extras records
     if (data.serviceExtras && data.serviceExtras.length > 0) {
-      const serviceItemIds = data.serviceExtras.map(e => e.serviceItemId);
+      const serviceItemIds = data.serviceExtras.map((e) => e.serviceItemId);
       const serviceItems = await prisma.serviceItem.findMany({
         where: { id: { in: serviceItemIds } },
       });
@@ -338,11 +338,8 @@ export class ReservationService {
       });
     }
 
-    const depositData = data.deposit || (data.depositAmount && data.depositDueDate ? {
-      amount: data.depositAmount,
-      dueDate: data.depositDueDate
-    } : null);
-
+    const depositData =
+      data.deposit || (data.depositAmount && data.depositDueDate ? { amount: data.depositAmount, dueDate: data.depositDueDate } : null);
     if (depositData) {
       const depositAmount = Number(depositData.amount);
       await prisma.deposit.create({
@@ -355,15 +352,24 @@ export class ReservationService {
           status: depositData.paid ? 'PAID' : 'PENDING',
           paymentMethod: sanitizeString(depositData.paymentMethod),
           paidAt: depositData.paidAt ? new Date(depositData.paidAt) : null,
-        }
+        },
       });
     }
 
     await this.createHistoryEntry(
-      reservation.id, userId, 'CREATED', null, null, null,
+      reservation.id,
+      userId,
+      'CREATED',
+      null,
+      null,
+      null,
       menuPackage
-        ? `Utworzono rezerwację z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
-        : `Utworzono rezerwację${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''}${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
+        ? `Utworzono rezerwację z pakietem menu: ${menuPackage.name}${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${
+            extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''
+          }${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
+        : `Utworzono rezerwację${discountTypeVal ? ` | Rabat: -${discountAmountVal} PLN` : ''}${
+            extrasTotal > 0 ? ` | Dodatki: +${extrasTotal} PLN` : ''
+          }${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
     );
 
     // Audit log
@@ -384,9 +390,9 @@ export class ReservationService {
           extrasCount: data.serviceExtras?.length || 0,
           venueSurcharge: surchargeAmount > 0 ? surchargeAmount : undefined,
           startDateTime: data.startDateTime,
-          endDateTime: data.endDateTime
-        }
-      }
+          endDateTime: data.endDateTime,
+        },
+      },
     });
 
     // Recalculate totalPrice with all components (including extra hours for long events)
@@ -395,27 +401,26 @@ export class ReservationService {
     return reservation as any;
   }
 
-  async updateReservationMenu(
-    reservationId: string,
-    data: UpdateReservationMenuDTO,
-    userId: string
-  ): Promise<any> {
+  async updateReservationMenu(reservationId: string, data: UpdateReservationMenuDTO, userId: string): Promise<any> {
     await this.validateUserId(userId);
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { menuSnapshot: true, client: true, hall: true }
+      include: { menuSnapshot: true, client: true, hall: true },
     });
 
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
+
     // #144: Also block menu updates for ARCHIVED reservations
-    if (reservation.status === ReservationStatus.COMPLETED || reservation.status === ReservationStatus.CANCELLED || reservation.status === ReservationStatus.ARCHIVED) {
+    if (
+      reservation.status === ReservationStatus.COMPLETED ||
+      reservation.status === ReservationStatus.CANCELLED ||
+      reservation.status === ReservationStatus.ARCHIVED
+    ) {
       throw new Error(MENU.CANNOT_UPDATE_MENU);
     }
 
-    const clientName = reservation.client
-      ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}`
-      : 'N/A';
+    const clientName = reservation.client ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}` : 'N/A';
     /* istanbul ignore next -- hall always included */
     const hallName = (reservation.hall as any)?.name || 'N/A';
 
@@ -430,13 +435,12 @@ export class ReservationService {
       const oldPackageName = reservation.menuSnapshot
         ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || 'Nieznany pakiet'
         : 'Brak';
-      const oldTotalPrice = reservation.menuSnapshot
-        ? Number((reservation.menuSnapshot as any).totalMenuPrice)
-        : 0;
+      const oldTotalPrice = reservation.menuSnapshot ? Number((reservation.menuSnapshot as any).totalMenuPrice) : 0;
 
       if (reservation.menuSnapshot) {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
       }
+
       await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usunięte z rezerwacji');
 
       // Audit log — MENU_REMOVED
@@ -454,17 +458,16 @@ export class ReservationService {
 
       // Recalculate totalPrice after menu removal
       await recalculateReservationTotalPrice(reservationId);
-
       return { message: MENU.MENU_REMOVED };
     }
 
     if (data.menuPackageId) {
       const menuPackage = await prisma.menuPackage.findUnique({
         where: { id: data.menuPackageId },
-        include: { menuTemplate: true }
+        include: { menuTemplate: true },
       });
-
       if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
+
       if (menuPackage.minGuests && guests < menuPackage.minGuests) {
         throw new Error(MENU.MIN_GUESTS(menuPackage.minGuests));
       }
@@ -474,20 +477,16 @@ export class ReservationService {
 
       const selectedOptions: any[] = [];
       const optionsPrice = 0;
-
       const pricePerAdult = Number(menuPackage.pricePerAdult);
       const pricePerChild = Number(menuPackage.pricePerChild);
       const pricePerToddler = Number(menuPackage.pricePerToddler);
+
       const packagePrice = calculateTotalPrice(adults, children, pricePerAdult, pricePerChild, toddlers, pricePerToddler);
       const totalMenuPrice = packagePrice + optionsPrice;
 
       // Save old info for audit
-      const oldPackageName = reservation.menuSnapshot
-        ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || null
-        : null;
-      const oldTotalPrice = reservation.menuSnapshot
-        ? Number((reservation.menuSnapshot as any).totalMenuPrice)
-        : 0;
+      const oldPackageName = reservation.menuSnapshot ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || null : null;
+      const oldTotalPrice = reservation.menuSnapshot ? Number((reservation.menuSnapshot as any).totalMenuPrice) : 0;
 
       const snapshotData = {
         reservationId,
@@ -497,13 +496,17 @@ export class ReservationService {
           packageName: menuPackage.name,
           packageDescription: menuPackage.description,
           templateName: menuPackage.menuTemplate.name,
-          pricePerAdult, pricePerChild, pricePerToddler,
-          selectedOptions
+          pricePerAdult,
+          pricePerChild,
+          pricePerToddler,
+          selectedOptions,
         },
-        packagePrice, optionsPrice, totalMenuPrice,
+        packagePrice,
+        optionsPrice,
+        totalMenuPrice,
         adultsCount: adults,
         childrenCount: children,
-        toddlersCount: toddlers
+        toddlersCount: toddlers,
       };
 
       if (reservation.menuSnapshot) {
@@ -515,16 +518,20 @@ export class ReservationService {
       // Update guest counts and per-person prices (totalPrice recalculated below)
       await prisma.reservation.update({
         where: { id: reservationId },
-        data: { pricePerAdult, pricePerChild, pricePerToddler, adults, children, toddlers, guests }
+        data: { pricePerAdult, pricePerChild, pricePerToddler, adults, children, toddlers, guests },
       });
 
       // Recalculate totalPrice including extras + discount + surcharge
       const newTotalPrice = await recalculateReservationTotalPrice(reservationId);
 
       await this.createHistoryEntry(
-        reservationId, userId, 'MENU_UPDATED', 'menu',
+        reservationId,
+        userId,
+        'MENU_UPDATED',
+        'menu',
         reservation.menuSnapshot ? 'Poprzedni pakiet' : 'Brak',
-        menuPackage.name, `Menu zaktualizowane na: ${menuPackage.name}`
+        menuPackage.name,
+        `Menu zaktualizowane na: ${menuPackage.name}`
       );
 
       // Audit log — MENU_UPDATED
@@ -554,7 +561,6 @@ export class ReservationService {
 
   async getReservations(filters?: ReservationFilters): Promise<ReservationResponse[]> {
     const where: any = {};
-
     if (filters?.status) where.status = filters.status;
     if (filters?.hallId) where.hallId = filters.hallId;
     if (filters?.clientId) where.clientId = filters.clientId;
@@ -565,15 +571,15 @@ export class ReservationService {
         {
           startDateTime: {
             ...(filters.dateFrom && { gte: new Date(filters.dateFrom) }),
-            ...(filters.dateTo && { lte: new Date(filters.dateTo) })
-          }
+            ...(filters.dateTo && { lte: new Date(filters.dateTo) }),
+          },
         },
         {
           date: {
             ...(filters.dateFrom && { gte: filters.dateFrom }),
-            ...(filters.dateTo && { lte: filters.dateTo })
-          }
-        }
+            ...(filters.dateTo && { lte: filters.dateTo }),
+          },
+        },
       ];
     }
 
@@ -597,17 +603,11 @@ export class ReservationService {
         ...RESERVATION_INCLUDE,
         extras: {
           include: {
-            serviceItem: {
-              select: { id: true, name: true, basePrice: true, priceType: true }
-            }
-          }
-        }
+            serviceItem: { select: { id: true, name: true, basePrice: true, priceType: true } },
+          },
+        },
       },
-      orderBy: [
-        { startDateTime: 'asc' },
-        { date: 'asc' },
-        { startTime: 'asc' }
-      ],
+      orderBy: [{ startDateTime: 'asc' }, { date: 'asc' }, { startTime: 'asc' }],
       take: pageSize,
       skip: (page - 1) * pageSize,
     });
@@ -632,16 +632,10 @@ export class ReservationService {
         menuSnapshot: true,
         deposits: true,
         extras: {
-          include: {
-            serviceItem: {
-              include: {
-                category: true
-              }
-            }
-          },
-          orderBy: { createdAt: 'asc' }
-        }
-      }
+          include: { serviceItem: { include: { category: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
 
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
@@ -657,40 +651,35 @@ export class ReservationService {
     } as any;
   }
 
-  async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
+  async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<any> {
     await this.validateUserId(userId);
-
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { hall: true, eventType: true, menuSnapshot: true, client: true }
+      include: { hall: true, eventType: true, menuSnapshot: true, client: true },
     });
-
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
 
     // ══ Etap 5: Notatka wewnętrzna — edytowalna niezależnie od statusu rezerwacji ══
-    const isOnlyInternalNotes =
-      data.internalNotes !== undefined &&
-      Object.keys(data).every(k => k === 'internalNotes');
-
+    const isOnlyInternalNotes = data.internalNotes !== undefined && Object.keys(data).every((k) => k === 'internalNotes');
     if (isOnlyInternalNotes) {
       const newValue = sanitizeString(data.internalNotes);
       const oldValue = (existingReservation as any).internalNotes ?? null;
-
       if (oldValue === newValue) {
         return await this.getReservationById(id);
       }
-
       await prisma.reservation.update({
         where: { id },
         data: { internalNotes: newValue },
       });
-
       await this.createHistoryEntry(
-        id, userId, 'NOTE_UPDATED', 'internalNotes',
-        oldValue || '(brak)', newValue || '(brak)',
+        id,
+        userId,
+        'NOTE_UPDATED',
+        'internalNotes',
+        oldValue || '(brak)',
+        newValue || '(brak)',
         'Zaktualizowano notatkę wewnętrzną'
       );
-
       await logChange({
         userId,
         action: 'UPDATE',
@@ -701,7 +690,6 @@ export class ReservationService {
           changes: { internalNotes: { old: oldValue, new: newValue } },
         },
       });
-
       return await this.getReservationById(id);
     }
 
@@ -720,12 +708,16 @@ export class ReservationService {
       if (data.menuPackageId === null) {
         await this.updateReservationMenu(id, { menuPackageId: null }, userId);
       } else {
-        await this.updateReservationMenu(id, {
-          menuPackageId: data.menuPackageId,
-          adultsCount: data.adults ?? existingReservation.adults,
-          childrenCount: data.children ?? existingReservation.children,
-          toddlersCount: data.toddlers ?? existingReservation.toddlers
-        }, userId);
+        await this.updateReservationMenu(
+          id,
+          {
+            menuPackageId: data.menuPackageId,
+            adultsCount: data.adults ?? existingReservation.adults,
+            childrenCount: data.children ?? existingReservation.children,
+            toddlersCount: data.toddlers ?? existingReservation.toddlers,
+          },
+          userId
+        );
       }
     }
 
@@ -746,12 +738,10 @@ export class ReservationService {
     // ══ #137: Hall change — validate new hall + recalculate surcharge ══
     let effectiveHall = existingReservation.hall;
     const hallChanged = data.hallId !== undefined && data.hallId !== existingReservation.hallId;
-
     if (hallChanged) {
       const newHall = await prisma.hall.findUnique({ where: { id: data.hallId! } });
       if (!newHall) throw new Error(HALL.NOT_FOUND);
       if (!newHall.isActive) throw new Error(HALL.NOT_ACTIVE);
-
       effectiveHall = newHall as any;
       updateData.hallId = data.hallId;
     }
@@ -766,7 +756,7 @@ export class ReservationService {
     const effectiveHallId = (data.hallId ?? existingReservation.hallId)!;
     const finalStart = data.startDateTime ? new Date(data.startDateTime) : existingReservation.startDateTime;
     const finalEnd = data.endDateTime ? new Date(data.endDateTime) : existingReservation.endDateTime;
-    
+
     if (finalStart && finalEnd && finalStart >= finalEnd) throw new Error(RESERVATION.END_AFTER_START);
 
     if (data.adults !== undefined) updateData.adults = data.adults;
@@ -781,7 +771,6 @@ export class ReservationService {
     if (guestsChanged) {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
     }
-
     const finalGuests = updateData.guests ?? existingReservation.guests;
 
     // #165: Capacity-based overlap + capacity check on hall/time/guests change
@@ -797,13 +786,11 @@ export class ReservationService {
 
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
     const isUsingMenuPackage = hasMenuSnapshot && data.menuPackageId !== null;
-    
+
     // fix/pricing-recalculation: When using menu package with guest changes,
     // still recalculate snapshot but DON'T set totalPrice here — defer to recalculateReservationTotal
     if (isUsingMenuPackage && guestsChanged) {
-      const recalcResult = await reservationMenuService.recalculateForGuestChange(
-        id, newAdults, newChildren, newToddlers
-      );
+      const recalcResult = await reservationMenuService.recalculateForGuestChange(id, newAdults, newChildren, newToddlers);
       // NOTE: We no longer set updateData.totalPrice here.
       // recalculateReservationTotal() at the end will compute the correct total.
       /* istanbul ignore next */
@@ -811,10 +798,19 @@ export class ReservationService {
         console.log(`[Reservation] Auto-recalculated menu snapshot for ${id}: menuPrice=${recalcResult.totalMenuPrice}`);
       }
     } else if (!isUsingMenuPackage) {
-      // Update per-person prices if provided (will be used by recalculateReservationTotal)
+      // Update per-person prices if provided
       if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
       if (data.pricePerChild !== undefined) updateData.pricePerChild = data.pricePerChild;
       if (data.pricePerToddler !== undefined) updateData.pricePerToddler = data.pricePerToddler;
+
+      const ppa = data.pricePerAdult ?? existingReservation.pricePerAdult;
+      const ppc = data.pricePerChild ?? existingReservation.pricePerChild;
+      const ppt = data.pricePerToddler ?? existingReservation.pricePerToddler;
+
+      // Recalculate totalPrice for legacy/no-menu reservations when guests or prices change
+      if (guestsChanged || data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
+        updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, ppa, ppc, newToddlers, ppt);
+      }
     }
 
     // ══ #137: Recalculate venue surcharge — handles hall change + guest change ══
@@ -825,7 +821,6 @@ export class ReservationService {
     if (hallChanged || guestsChanged || oldIsWholeVenue || newIsWholeVenue) {
       const surcharge = calculateVenueSurcharge(newIsWholeVenue, finalGuests);
       const newSurcharge = surcharge.amount || 0;
-
       updateData.venueSurcharge = surcharge.amount;
       updateData.venueSurchargeLabel = surcharge.label;
 
@@ -836,22 +831,26 @@ export class ReservationService {
         if (!oldIsWholeVenue && newIsWholeVenue) {
           console.log(`[Reservation] Venue surcharge APPLIED for ${id}: +${newSurcharge} PLN (hall changed to whole venue)`);
           await this.createHistoryEntry(
-            id, userId, 'SURCHARGE_APPLIED', 'venueSurcharge',
-            '0', String(newSurcharge),
+            id,
+            userId,
+            'SURCHARGE_APPLIED',
+            'venueSurcharge',
+            '0',
+            String(newSurcharge),
             VENUE_SURCHARGE.AUDIT_APPLIED(newSurcharge, finalGuests)
           );
         } else if (oldIsWholeVenue && !newIsWholeVenue) {
           console.log(`[Reservation] Venue surcharge REMOVED for ${id}: -${oldSurcharge} PLN (hall changed to normal)`);
-          await this.createHistoryEntry(
-            id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge',
-            String(oldSurcharge), '0',
-            VENUE_SURCHARGE.AUDIT_REMOVED
-          );
+          await this.createHistoryEntry(id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge', String(oldSurcharge), '0', VENUE_SURCHARGE.AUDIT_REMOVED);
         } else {
           console.log(`[Reservation] Venue surcharge RECALCULATED for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
           await this.createHistoryEntry(
-            id, userId, 'SURCHARGE_RECALC', 'venueSurcharge',
-            String(oldSurcharge), String(newSurcharge),
+            id,
+            userId,
+            'SURCHARGE_RECALC',
+            'venueSurcharge',
+            String(oldSurcharge),
+            String(newSurcharge),
             VENUE_SURCHARGE.AUDIT_RECALCULATED(oldSurcharge, newSurcharge, finalGuests)
           );
         }
@@ -880,13 +879,15 @@ export class ReservationService {
     const reservation = await prisma.reservation.update({
       where: { id },
       data: updateData,
-      include: RESERVATION_INCLUDE
+      include: RESERVATION_INCLUDE,
     });
 
-  
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
-      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
+      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}
+
+Zmiany:
+${changesSummary}`);
     }
 
     // Audit log
@@ -898,10 +899,12 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Zaktualizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''}`,
+          description: `Zaktualizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${
+            (existingReservation.client as any)?.lastName ?? ''
+          }`,
           changes,
-          reason: data.reason
-        }
+          reason: data.reason,
+        },
       });
     }
 
@@ -911,10 +914,12 @@ export class ReservationService {
     return reservation as any;
   }
 
-  async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<ReservationResponse> {
+  async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<any> {
     await this.validateUserId(userId);
-
-    const existingReservation = await prisma.reservation.findUnique({ where: { id }, include: { client: true, hall: true } });
+    const existingReservation = await prisma.reservation.findUnique({
+      where: { id },
+      include: { client: true, hall: true },
+    });
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
 
     this.validateStatusTransition(existingReservation.status, data.status);
@@ -923,8 +928,8 @@ export class ReservationService {
       const eventDate = existingReservation.startDateTime
         ? new Date(existingReservation.startDateTime)
         : existingReservation.date
-          ? new Date(existingReservation.date)
-          : null;
+        ? new Date(existingReservation.date)
+        : null;
       if (eventDate && eventDate > new Date()) {
         throw new Error(RESERVATION.CANNOT_COMPLETE_BEFORE_EVENT);
       }
@@ -936,7 +941,7 @@ export class ReservationService {
         const updatedReservation = await tx.reservation.update({
           where: { id },
           data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
-          include: RESERVATION_INCLUDE
+          include: RESERVATION_INCLUDE,
         });
 
         const cancelledDeposits = await this.cascadeCancelDeposits(tx, id, userId, data.reason);
@@ -951,8 +956,8 @@ export class ReservationService {
             newValue: 'CANCELLED',
             reason: data.reason
               ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
-              : `Zmiana statusu${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
-          }
+              : `Zmiana statusu${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`,
+          },
         });
 
         // #172: Auto-archive history entry
@@ -964,8 +969,8 @@ export class ReservationService {
             fieldName: 'archivedAt',
             oldValue: null,
             newValue: new Date().toISOString(),
-            reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji'
-          }
+            reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji',
+          },
         });
 
         return updatedReservation;
@@ -977,11 +982,13 @@ export class ReservationService {
         entityType: 'RESERVATION',
         entityId: id,
         details: {
-          description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+          description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${
+            (existingReservation.client as any)?.lastName ?? ''
+          } | ${existingReservation.hall?.name ?? 'Brak sali'}`,
           oldStatus: existingReservation.status,
           newStatus: 'CANCELLED → ARCHIVED',
-          reason: data.reason
-        }
+          reason: data.reason,
+        },
       });
 
       return reservation as any;
@@ -990,7 +997,7 @@ export class ReservationService {
     const reservation = await prisma.reservation.update({
       where: { id },
       data: { status: data.status },
-      include: RESERVATION_INCLUDE
+      include: RESERVATION_INCLUDE,
     });
 
     await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Zmiana statusu');
@@ -1004,8 +1011,8 @@ export class ReservationService {
         description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
         oldStatus: existingReservation.status,
         newStatus: data.status,
-        reason: data.reason
-      }
+        reason: data.reason,
+      },
     });
 
     return reservation as any;
@@ -1014,9 +1021,12 @@ export class ReservationService {
   // #172: Cancellation = instant archive
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
-
-    const existingReservation = await prisma.reservation.findUnique({ where: { id }, include: { client: true, hall: true } });
+    const existingReservation = await prisma.reservation.findUnique({
+      where: { id },
+      include: { client: true, hall: true },
+    });
     if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
+
     if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.ALREADY_CANCELLED);
     if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_CANCEL_COMPLETED);
     if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.ALREADY_ARCHIVED);
@@ -1025,7 +1035,7 @@ export class ReservationService {
       // #172: Instant archive — status ARCHIVED + archivedAt set
       await tx.reservation.update({
         where: { id },
-        data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() }
+        data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
       });
 
       const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
@@ -1040,8 +1050,8 @@ export class ReservationService {
           newValue: 'CANCELLED',
           reason: reason
             ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
-            : `Rezerwacja anulowana${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
-        }
+            : `Rezerwacja anulowana${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`,
+        },
       });
 
       // #172: Auto-archive history entry
@@ -1053,8 +1063,8 @@ export class ReservationService {
           fieldName: 'archivedAt',
           oldValue: null,
           newValue: new Date().toISOString(),
-          reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji'
-        }
+          reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji',
+        },
       });
     });
 
@@ -1064,31 +1074,35 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${(existingReservation.client as any)?.lastName ?? ''} | ${existingReservation.hall?.name ?? 'Brak sali'}`,
-        reason
-      }
+        description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${
+          (existingReservation.client as any)?.lastName ?? ''
+        } | ${existingReservation.hall?.name ?? 'Brak sali'}`,
+        reason,
+      },
     });
   }
 
   async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
-
     const reservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { client: true, hall: true }
+      include: { client: true, hall: true },
     });
-
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
     if (reservation.archivedAt) throw new Error(RESERVATION.ALREADY_ARCHIVED);
 
     await prisma.reservation.update({
       where: { id },
-      data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() }
+      data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
     });
 
     await this.createHistoryEntry(
-      id, userId, 'ARCHIVED', 'archivedAt',
-      'null', new Date().toISOString(),
+      id,
+      userId,
+      'ARCHIVED',
+      'archivedAt',
+      'null',
+      new Date().toISOString(),
       reason || 'Rezerwacja zarchiwizowana'
     );
 
@@ -1098,31 +1112,35 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Zarchiwizowano rezerwację: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
-        reason
-      }
+        description: `Zarchiwizowano rezerwację: ${(reservation.client as any)?.firstName ?? ''} ${
+          (reservation.client as any)?.lastName ?? ''
+        } | ${reservation.hall?.name ?? 'Brak sali'}`,
+        reason,
+      },
     });
   }
 
   async unarchiveReservation(id: string, userId: string, reason?: string): Promise<void> {
     await this.validateUserId(userId);
-
     const reservation = await prisma.reservation.findUnique({
       where: { id },
-      include: { client: true, hall: true }
+      include: { client: true, hall: true },
     });
-
     if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
     if (!reservation.archivedAt) throw new Error(RESERVATION.NOT_ARCHIVED);
 
     await prisma.reservation.update({
       where: { id },
-      data: { status: ReservationStatus.CANCELLED, archivedAt: null }
+      data: { status: ReservationStatus.CANCELLED, archivedAt: null },
     });
 
     await this.createHistoryEntry(
-      id, userId, 'UNARCHIVED', 'archivedAt',
-      reservation.archivedAt.toISOString(), 'null',
+      id,
+      userId,
+      'UNARCHIVED',
+      'archivedAt',
+      reservation.archivedAt.toISOString(),
+      'null',
       reason || 'Rezerwacja przywrócona z archiwum'
     );
 
@@ -1132,41 +1150,27 @@ export class ReservationService {
       entityType: 'RESERVATION',
       entityId: id,
       details: {
-        description: `Przywrócono rezerwację z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${(reservation.client as any)?.lastName ?? ''} | ${reservation.hall?.name ?? 'Brak sali'}`,
-        reason
-      }
+        description: `Przywrócono rezerwację z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${
+          (reservation.client as any)?.lastName ?? ''
+        } | ${reservation.hall?.name ?? 'Brak sali'}`,
+        reason,
+      },
     });
   }
 
-  private async cascadeCancelDeposits(
-    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-    reservationId: string,
-    userId: string,
-    reason?: string
-  ): Promise<number> {
+  private async cascadeCancelDeposits(tx: any, reservationId: string, userId: string, reason?: string): Promise<number> {
     const pendingDeposits = await tx.deposit.findMany({
-      where: {
-        reservationId,
-        status: { in: ['PENDING', 'OVERDUE'] }
-      }
+      where: { reservationId, status: { in: ['PENDING', 'OVERDUE'] } },
     });
 
     if (pendingDeposits.length === 0) return 0;
 
     await tx.deposit.updateMany({
-      where: {
-        reservationId,
-        status: { in: ['PENDING', 'OVERDUE'] }
-      },
-      data: {
-        status: 'CANCELLED',
-        updatedAt: new Date()
-      }
+      where: { reservationId, status: { in: ['PENDING', 'OVERDUE'] } },
+      data: { status: 'CANCELLED', updatedAt: new Date() },
     });
 
-    const totalCancelledAmount = pendingDeposits.reduce(
-      (sum: number, d: any) => sum + Number(d.amount), 0
-    );
+    const totalCancelledAmount = pendingDeposits.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
     for (const deposit of pendingDeposits) {
       await tx.reservationHistory.create({
@@ -1177,8 +1181,10 @@ export class ReservationService {
           fieldName: 'deposit',
           oldValue: deposit.status,
           newValue: 'CANCELLED',
-          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${reason ? `: ${reason}` : ''}`
-        }
+          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${
+            reason ? `: ${reason}` : ''
+          }`,
+        },
       });
     }
 
@@ -1211,8 +1217,8 @@ export class ReservationService {
    *
    * Decision tree:
    * 1. hall.allowMultipleBookings === false → any overlap = block (MULTIPLE_BOOKINGS_DISABLED)
-   * 2. hall.allowMultipleBookings === true  → aggregate occupied + newGuests vs capacity
-   *    If exceeded → CAPACITY_EXCEEDED with available/total info
+   * 2. hall.allowMultipleBookings === true → aggregate occupied + newGuests vs capacity
+   * If exceeded → CAPACITY_EXCEEDED with available/total info
    */
   private async validateCapacityForTimeRange(
     hall: { id: string; capacity: number; allowMultipleBookings: boolean },
@@ -1225,10 +1231,7 @@ export class ReservationService {
       hallId: hall.id,
       status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
       archivedAt: null,
-      AND: [
-        { startDateTime: { lt: endDateTime } },
-        { endDateTime: { gt: startDateTime } },
-      ],
+      AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }],
     };
     if (excludeReservationId) where.id = { not: excludeReservationId };
 
@@ -1256,26 +1259,16 @@ export class ReservationService {
   /**
    * Check whole-venue conflict with allowWithWholeVenue support.
    */
-  private async checkWholeVenueConflict(
-    hallId: string,
-    startDateTime: Date,
-    endDateTime: Date,
-    excludeReservationId?: string
-  ): Promise<void> {
+  private async checkWholeVenueConflict(hallId: string, startDateTime: Date, endDateTime: Date, excludeReservationId?: string): Promise<void> {
     const hall = await prisma.hall.findUnique({ where: { id: hallId } });
     if (!hall) return;
 
     const activeStatuses = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED];
-
     const baseWhere: any = {
       status: { in: activeStatuses },
       archivedAt: null,
-      AND: [
-        { startDateTime: { lt: endDateTime } },
-        { endDateTime: { gt: startDateTime } }
-      ]
+      AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }],
     };
-
     if (excludeReservationId) {
       baseWhere.id = { not: excludeReservationId };
     }
@@ -1289,18 +1282,14 @@ export class ReservationService {
         },
         include: {
           hall: { select: { name: true } },
-          client: { select: { firstName: true, lastName: true } }
-        }
+          client: { select: { firstName: true, lastName: true } },
+        },
       });
 
       if (conflict) {
-        const clientName = conflict.client
-          ? `${conflict.client.firstName} ${conflict.client.lastName}`
-          : 'nieznany klient';
+        const clientName = conflict.client ? `${conflict.client.firstName} ${conflict.client.lastName}` : 'nieznany klient';
         const hallName = (conflict as any).hall?.name || 'inna sala';
-        throw new Error(
-          `Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`
-        );
+        throw new Error(`Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`);
       }
     } else {
       if (hall.allowWithWholeVenue) return;
@@ -1313,18 +1302,12 @@ export class ReservationService {
           ...baseWhere,
           hallId: wholeVenueHall.id,
         },
-        include: {
-          client: { select: { firstName: true, lastName: true } }
-        }
+        include: { client: { select: { firstName: true, lastName: true } } },
       });
 
       if (conflict) {
-        const clientName = conflict.client
-          ? `${conflict.client.firstName} ${conflict.client.lastName}`
-          : 'nieznany klient';
-        throw new Error(
-          `Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`
-        );
+        const clientName = conflict.client ? `${conflict.client.firstName} ${conflict.client.lastName}` : 'nieznany klient';
+        throw new Error(`Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`);
       }
     }
   }
@@ -1338,24 +1321,30 @@ export class ReservationService {
 
   // #144: Added ARCHIVED as terminal state (no transitions out)
   private validateStatusTransition(currentStatus: string, newStatus: ReservationStatus): void {
-    const validTransitions: Record<string, ReservationStatus[]> = {
+    const validTransitions: Record<string, string[]> = {
       [ReservationStatus.PENDING]: [ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED],
       [ReservationStatus.CONFIRMED]: [ReservationStatus.COMPLETED, ReservationStatus.CANCELLED],
       [ReservationStatus.COMPLETED]: [],
       [ReservationStatus.CANCELLED]: [],
       [ReservationStatus.ARCHIVED]: [],
     };
+
     if (!validTransitions[currentStatus]?.includes(newStatus)) {
       throw new Error(RESERVATION.STATUS_TRANSITION_INVALID(currentStatus, newStatus));
     }
   }
 
   private async createHistoryEntry(
-    reservationId: string, userId: string, changeType: string,
-    fieldName: string | null, oldValue: string | null, newValue: string | null, reason: string
+    reservationId: string,
+    userId: string,
+    changeType: string,
+    fieldName: string | null,
+    oldValue: string | null,
+    newValue: string | null,
+    reason: string
   ): Promise<void> {
     await prisma.reservationHistory.create({
-      data: { reservationId, changedByUserId: userId, changeType, fieldName, oldValue, newValue, reason }
+      data: { reservationId, changedByUserId: userId, changeType, fieldName, oldValue, newValue, reason },
     });
   }
 }
