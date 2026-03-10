@@ -268,10 +268,9 @@ export function SectionManager({ pkg, templateId }: Props) {
     const newIdx = localSections.findIndex((s) => s.id === over.id);
     const reordered = arrayMove(localSections, oldIdx, newIdx);
     setLocalSections(reordered);
-    // PATCH each changed section
     reordered.forEach((section, i) => {
       if (section.displayOrder !== i + 1) {
-        reorderSections.mutate({ sectionId: section.id, displayOrder: i + 1, packageId: pkg.id });
+        reorderSections.mutate({ sectionId: section.id, displayOrder: i + 1 });
       }
     });
   };
