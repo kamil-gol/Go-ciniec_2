@@ -19,6 +19,7 @@ export const DepositStatusEnum = z.enum([
 export const PaymentMethodEnum = z.enum([
   'CASH',
   'TRANSFER',
+    'BANK_TRANSFER',
   'BLIK',
   'CARD',
 ]);
@@ -28,6 +29,7 @@ export const PaymentMethodEnum = z.enum([
 // ═══════════════════════════════════════════════════════════════
 
 export const createDepositSchema = z.object({
+    reservationId: z.string({ required_error: 'ID rezerwacji jest wymagane' }).uuid('Nieprawidłowy format UUID'),
   amount: z
     .number({ required_error: 'Kwota jest wymagana' })
     .positive('Kwota musi być większa od 0')
@@ -80,6 +82,13 @@ export const markPaidSchema = z.object({
     .number()
     .positive('Kwota musi być większa od 0')
     .optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+export const markAsPaidSchema = z.object({
+  paymentMethod: PaymentMethodEnum.optional(),
+  paidAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Nieprawidłowy format daty').optional(),
+  amountPaid: z.number().positive('Kwota musi być większa od 0').optional(),
   notes: z.string().max(1000).optional(),
 });
 
