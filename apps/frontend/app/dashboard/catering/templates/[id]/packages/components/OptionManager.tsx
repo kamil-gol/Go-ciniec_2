@@ -37,11 +37,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { CateringPackageSection, CateringOption } from '@/types/catering.types';
+import type { CateringPackageSection, CateringSectionOption } from '@/types/catering.types';
 
 // ─── Sortable option row ─────────────────────────────────────────────────────
 interface SortableOptionRowProps {
-  opt: CateringOption;
+  opt: CateringSectionOption;
   onToggleDefault: (id: string, current: boolean) => void;
   onRemove: (id: string) => void;
 }
@@ -138,7 +138,7 @@ function SortableOptionRow({ opt, onToggleDefault, onRemove }: SortableOptionRow
 }
 
 // ─── Drag overlay ────────────────────────────────────────────────────────────
-function OptionDragOverlay({ opt }: { opt: CateringOption }) {
+function OptionDragOverlay({ opt }: { opt: CateringSectionOption }) {
   const dish = (opt as any).dish;
   return (
     <div className="flex items-center gap-2.5 rounded-lg border-2 border-primary/50 bg-card px-3 py-2 shadow-xl rotate-1 opacity-95">
@@ -162,7 +162,7 @@ export function OptionManager({ section, templateId }: Props) {
   const removeOption = useRemoveSectionOption(templateId);
   const reorderOptions = useReorderSectionOptions(templateId);
 
-  const [localOptions, setLocalOptions] = useState<CateringOption[]>(
+  const [localOptions, setLocalOptions] = useState<CateringSectionOption[]>(
     () => [...(section.options ?? [])].sort((a, b) => a.displayOrder - b.displayOrder),
   );
 
