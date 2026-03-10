@@ -21,7 +21,6 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange, diffObjects } from '../utils/audit-logger';
-import { recalculateReservationTotal } from '../utils/recalculate-total';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
