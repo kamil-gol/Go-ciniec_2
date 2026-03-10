@@ -883,17 +883,7 @@ export class ReservationService {
       include: RESERVATION_INCLUDE
     });
 
-    // fix/pricing-recalculation: Centralized total recalculation after ALL fields are persisted.
-    // This ensures totalPrice = basePricing + extrasTotal + venueSurcharge - discountAmount
-    // regardless of which fields were changed (guests, prices, hall, menu, etc.).
-    const pricingChanged = guestsChanged || hallChanged
-      || data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined
-      || data.menuPackageId !== undefined;
-
-    if (pricingChanged) {
-      await recalculateReservationTotal(id);
-    }
-
+  
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
       await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}\n\nZmiany:\n${changesSummary}`);
