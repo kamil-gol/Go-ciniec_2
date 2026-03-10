@@ -4,7 +4,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from '@/components/ui/toaster'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] , display: 'swap', preload: false })
 
 export const metadata: Metadata = {
   title: 'System Rezerwacji - Gościniec Rodzinny',
