@@ -255,6 +255,31 @@ export function useDeleteCateringSection(
   });
 }
 
+/**
+ * PATCH displayOrder dla pojedynczej sekcji po drag & drop.
+ * Endpoint: PATCH /catering/sections/:sectionId
+ */
+export function useReorderCateringSections(
+  templateId: string
+): UseMutationResult<
+  void,
+  Error,
+  { sectionId: string; displayOrder: number }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ sectionId, displayOrder }) => {
+      await api.patch(`/catering/sections/${sectionId}`, { displayOrder });
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.template(templateId),
+        refetchType: 'active',
+      });
+    },
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════
 // SECTION OPTIONS — Mutations
 // ═══════════════════════════════════════════════════════════════
@@ -312,6 +337,27 @@ export function useRemoveSectionOption(
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.template(templateId),
         refetchType: 'all',
+      });
+    },
+  });
+}
+
+/**
+ * PATCH displayOrder dla pojedynczej opcji (dania) po drag & drop.
+ * Endpoint: PATCH /catering/options/:optionId
+ */
+export function useReorderSectionOptions(
+  templateId: string
+): UseMutationResult<void, Error, { optionId: string; displayOrder: number }> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ optionId, displayOrder }) => {
+      await api.patch(`/catering/options/${optionId}`, { displayOrder });
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.template(templateId),
+        refetchType: 'active',
       });
     },
   });
