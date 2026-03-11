@@ -807,7 +807,7 @@ export class ReservationService {
 
       // Recalculate totalPrice for legacy/no-menu reservations when guests or prices change
       if (guestsChanged || data.pricePerAdult !== undefined || data.pricePerChild !== undefined || data.pricePerToddler !== undefined) {
-        updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, ppa, ppc, newToddlers, ppt);
+                updateData.totalPrice = calculateTotalPrice(newAdults, newChildren, Number(ppa), Number(ppc), newToddlers, Number(ppt));
       }
     }
 
