@@ -1,7 +1,6 @@
 /**
  * Deposit Validation Schemas (Zod)
  */
-
 import { z } from 'zod';
 
 // ═══════════════════════════════════════════════════════════════
@@ -19,7 +18,7 @@ export const DepositStatusEnum = z.enum([
 export const PaymentMethodEnum = z.enum([
   'CASH',
   'TRANSFER',
-    'BANK_TRANSFER',
+  'BANK_TRANSFER',
   'BLIK',
   'CARD',
 ]);
@@ -29,18 +28,17 @@ export const PaymentMethodEnum = z.enum([
 // ═══════════════════════════════════════════════════════════════
 
 export const createDepositSchema = z.object({
-    reservationId: z.string({ required_error: 'ID rezerwacji jest wymagane' }).uuid('Nieprawidłowy format UUID'),
   amount: z
     .number({ required_error: 'Kwota jest wymagana' })
-    .positive('Kwota musi być większa od 0')
-    .max(999999.99, 'Kwota nie może przekraczać 999 999,99 PLN'),
+    .positive('Kwota musi byc wieksza od 0')
+    .max(999999.99, 'Kwota nie moze przekraczac 999 999,99 PLN'),
   dueDate: z
-    .string({ required_error: 'Termin płatności jest wymagany' })
+    .string({ required_error: 'Termin platnosci jest wymagany' })
     .refine(
       (val) => !isNaN(Date.parse(val)),
-      'Nieprawidłowy format daty'
+      'Nieprawidlowy format daty'
     ),
-  notes: z.string().max(1000, 'Notatki mogą mieć max 1000 znaków').optional(),
+  notes: z.string().max(1000, 'Notatki moga miec max 1000 znakow').optional(),
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -50,17 +48,17 @@ export const createDepositSchema = z.object({
 export const updateDepositSchema = z.object({
   amount: z
     .number()
-    .positive('Kwota musi być większa od 0')
-    .max(999999.99, 'Kwota nie może przekraczać 999 999,99 PLN')
+    .positive('Kwota musi byc wieksza od 0')
+    .max(999999.99, 'Kwota nie moze przekraczac 999 999,99 PLN')
     .optional(),
   dueDate: z
     .string()
     .refine(
       (val) => !isNaN(Date.parse(val)),
-      'Nieprawidłowy format daty'
+      'Nieprawidlowy format daty'
     )
     .optional(),
-  notes: z.string().max(1000, 'Notatki mogą mieć max 1000 znaków').optional(),
+  notes: z.string().max(1000, 'Notatki moga miec max 1000 znakow').optional(),
 }).refine(
   (data) => data.amount !== undefined || data.dueDate !== undefined || data.notes !== undefined,
   { message: 'Podaj przynajmniej jedno pole do aktualizacji' }
@@ -73,22 +71,22 @@ export const updateDepositSchema = z.object({
 export const markPaidSchema = z.object({
   paymentMethod: PaymentMethodEnum,
   paidAt: z
-    .string({ required_error: 'Data płatności jest wymagana' })
+    .string({ required_error: 'Data platnosci jest wymagana' })
     .refine(
       (val) => !isNaN(Date.parse(val)),
-      'Nieprawidłowy format daty'
+      'Nieprawidlowy format daty'
     ),
   amountPaid: z
     .number()
-    .positive('Kwota musi być większa od 0')
+    .positive('Kwota musi byc wieksza od 0')
     .optional(),
   notes: z.string().max(1000).optional(),
 });
 
 export const markAsPaidSchema = z.object({
   paymentMethod: PaymentMethodEnum.optional(),
-  paidAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Nieprawidłowy format daty').optional(),
-  amountPaid: z.number().positive('Kwota musi być większa od 0').optional(),
+  paidAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Nieprawidlowy format daty').optional(),
+  amountPaid: z.number().positive('Kwota musi byc wieksza od 0').optional(),
   notes: z.string().max(1000).optional(),
 });
 
@@ -105,9 +103,6 @@ export const depositFiltersSchema = z.object({
   paid: z.coerce.boolean().optional(),
   search: z.string().max(100).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  // #deposits-fix (3/5 backend sync): raised from 100 → 500 to match frontend
-  // depositsApi.getAll passes limit=500 to load ALL deposits and avoid silent
-  // truncation that caused visible discrepancy between list and stats counters.
   limit: z.coerce.number().int().min(1).max(500).default(20),
   sortBy: z.enum(['dueDate', 'amount', 'createdAt', 'status']).default('dueDate'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
