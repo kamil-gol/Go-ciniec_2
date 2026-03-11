@@ -211,4 +211,48 @@ export async function markDepositPaid(
   } catch (err) {
     next(err);
   }
+
+  // ─── PDF ────────────────────────────────────────────────────────────────────
+
+export async function generatePDF(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { type } = req.params as { type: string };
+    const order = await cateringOrderService.getOrderById(req.params.id);
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Zamówienie nie istnieje' });
+      return;
+    }
+
+    const { pdfService } = await import('@/services/pdf.service');
+    let buffer: Buffer;
+    let filename: string;
+
+    if (type === 'quote') {
+      buffer = await pdfService.generateCateringQuotePDF(order as any);
+      filename = `wycena-catering-${order.orderNumber}.pdf`;
+    } else if (type === 'kitchen') {
+      buffer = await pdfService.generateCateringKitchenPDF(order as any);
+      filename = `druk-kuchenny-${order.orderNumber}.pdf`;
+    } else if (type === 'invoice') {
+      buffer = await pdfService.generateCateringInvoicePDF(order as any);
+      filename = `faktura-catering-${order.orderNumber}.pdf`;
+    } else {
+      res.status(400).json({ success: false, error: 'Nieprawidłowy typ dokumentu. Dozwolone: quote, kitchen, invoice' });
+      return;
+    }
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+}
 }
