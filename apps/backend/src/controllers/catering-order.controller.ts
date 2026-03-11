@@ -211,6 +211,7 @@ async function markDepositPaid(
   } catch (err) {
     next(err);
   }
+  }
 
   // ─── PDF ────────────────────────────────────────────────────────────────────
 
