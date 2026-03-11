@@ -4,6 +4,9 @@
  *
  * WAZNE: updateReservation() nie zapisuje totalPrice bezposrednio w prisma.update.data.
  * Po update wywoluje recalculateReservationTotalPrice(id) — dlatego sprawdzamy spy na recalculate.
+ *
+ * WAZNE: logChange jest wywolywane tylko gdy diffObjects wykryje roznice.
+ * Dlatego w teScie logChange mock update musi zwracac obiekt z innymi polami niz BASE_RESERVATION.
  */
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
@@ -28,7 +31,7 @@ jest.mock('../../../utils/recalculate-price', () => ({
 
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn().mockResolvedValue(undefined),
-  diffObjects: jest.fn().mockReturnValue({}),
+  diffObjects: jest.fn().mockReturnValue({ notes: { old: null, new: 'Audit test' } }),
 }));
 
 jest.mock('../../../utils/logger', () => ({
@@ -151,7 +154,13 @@ describe('ReservationService', () => {
     });
 
     it('should call logChange on update', async () => {
+      // diffObjects jest mockowany globalnie - zwraca niepuste zmiany
+      // wiec logChange BEDZIE wywolane
       const { logChange } = await import('../../../utils/audit-logger');
+      mockPrisma.reservation.update.mockResolvedValue({
+        ...BASE_RESERVATION,
+        notes: 'Audit test notatka rezerwacji',
+      });
       await reservationService.updateReservation('res-001', {
         notes: 'Audit test notatka rezerwacji',
         reason: 'Test wywolania audit log zmiany',
