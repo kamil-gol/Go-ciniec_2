@@ -17,7 +17,7 @@ import { logChange } from '../utils/audit-logger';
 import { DEPOSIT } from '../i18n/pl';
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
-export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD';
+export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD' | 'BANK_TRANSFER';
 
 export interface CreateDepositInput {
   reservationId: string;
