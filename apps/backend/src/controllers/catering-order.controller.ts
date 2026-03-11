@@ -8,7 +8,7 @@ function getUserId(req: Request): string {
 
 // ─── Lista zamówień ──────────────────────────────────────────────────────────────────────────
 
-export async function listOrders(
+async function listOrders(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -36,7 +36,7 @@ export async function listOrders(
 
 // ─── Szczegóły zamówienia ──────────────────────────────────────────────────────────────────
 
-export async function getOrder(
+async function getOrder(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -55,7 +55,7 @@ export async function getOrder(
 
 // ─── Utwórz ──────────────────────────────────────────────────────────────────────
 
-export async function createOrder(
+async function createOrder(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -73,7 +73,7 @@ export async function createOrder(
 
 // ─── Aktualizuj ──────────────────────────────────────────────────────────────────────
 
-export async function updateOrder(
+async function updateOrder(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -91,7 +91,7 @@ export async function updateOrder(
 
 // ─── Zmień status ─────────────────────────────────────────────────────────────────────
 
-export async function changeStatus(
+async function changeStatus(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -112,7 +112,7 @@ export async function changeStatus(
 
 // ─── Usuń ──────────────────────────────────────────────────────────────────────
 
-export async function deleteOrder(
+async function deleteOrder(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -127,7 +127,7 @@ export async function deleteOrder(
 
 // ─── Historia (timeline) ──────────────────────────────────────────────────────────────────
 
-export async function getHistory(
+async function getHistory(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -142,7 +142,7 @@ export async function getHistory(
 
 // ─── Depozyty ───────────────────────────────────────────────────────────────────────
 
-export async function createDeposit(
+async function createDeposit(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -159,7 +159,7 @@ export async function createDeposit(
   }
 }
 
-export async function updateDeposit(
+async function updateDeposit(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -177,7 +177,7 @@ export async function updateDeposit(
   }
 }
 
-export async function deleteDeposit(
+async function deleteDeposit(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -194,7 +194,7 @@ export async function deleteDeposit(
   }
 }
 
-export async function markDepositPaid(
+async function markDepositPaid(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -214,7 +214,7 @@ export async function markDepositPaid(
 
   // ─── PDF ────────────────────────────────────────────────────────────────────
 
-export async function generatePDF(
+async function generatePDF(
   req: Request,
   res: Response,
   next: NextFunction,
