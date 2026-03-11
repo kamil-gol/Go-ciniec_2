@@ -255,4 +255,17 @@ async function generatePDF(
     next(err);
   }
 }
+
+  export {
+  listOrders,
+  getOrder,
+  createOrder,
+  updateOrder,
+  changeStatus,
+  createDeposit,
+  updateDeposit,
+  deleteDeposit,
+  markDepositPaid,
+  generatePDF,
+};
 }
