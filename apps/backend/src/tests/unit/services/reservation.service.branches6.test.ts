@@ -5,7 +5,6 @@
  * Zamiast tego wywoluje recalculateReservationTotalPrice(id) po update.
  * Dlatego sprawdzamy wywolanie recalculate, a nie data.totalPrice.
  */
-
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     reservation: {
@@ -101,6 +100,7 @@ describe('updateReservation - manual price recalculation (no menu package)', () 
   it('should recalculate totalPrice when adults change (no menu)', async () => {
     await reservationService.updateReservation('res-001', {
       adults: 60,
+      reason: 'Zmiana liczby gosci w rezerwacji',
     }, 'user-1');
     // totalPrice nie jest w data bezposrednio - serwis wywoluje recalculate po update
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
@@ -112,6 +112,7 @@ describe('updateReservation - manual price recalculation (no menu package)', () 
   it('should recalculate totalPrice when pricePerAdult changes (no menu, no guest change)', async () => {
     await reservationService.updateReservation('res-001', {
       pricePerAdult: 250,
+      reason: 'Aktualizacja ceny za osobe doroslą',
     }, 'user-1');
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerAdult).toBe(250);
@@ -121,6 +122,7 @@ describe('updateReservation - manual price recalculation (no menu package)', () 
   it('should recalculate totalPrice when pricePerChild changes', async () => {
     await reservationService.updateReservation('res-001', {
       pricePerChild: 120,
+      reason: 'Aktualizacja ceny za dziecko w rezerwacji',
     }, 'user-1');
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerChild).toBe(120);
@@ -130,6 +132,7 @@ describe('updateReservation - manual price recalculation (no menu package)', () 
   it('should recalculate totalPrice when pricePerToddler changes', async () => {
     await reservationService.updateReservation('res-001', {
       pricePerToddler: 50,
+      reason: 'Aktualizacja ceny za niemowle w rezerwacji',
     }, 'user-1');
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerToddler).toBe(50);
