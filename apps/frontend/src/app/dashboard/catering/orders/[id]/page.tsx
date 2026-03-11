@@ -25,6 +25,7 @@ import {
   useUpdateCateringOrder,
 } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -576,23 +577,21 @@ export default function CateringOrderDetailPage() {
 
     const handleDownloadPDF = async (type: 'quote' | 'kitchen' | 'invoice') => {
           try {
-                  const response = await fetch(`/api/catering/orders/${id}/pdf/${type}`, {
-                            credentials: 'include',
-                          });
+                  const response = await apiClient.get<Blob>(`/catering/orders/${id}/pdf/${type}`, {
+        responseType: 'blob',
+      });
 
-                  if (!response.ok) throw new Error('Błąd pobierania PDF');
-
-                  const blob = await response.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `${order.orderNumber}-${type}.pdf`;
-                  document.body.appendChild(a);
-                  a.click();
-                  window.URL.revokeObjectURL(url);
-                  document.body.removeChild(a);
-                } catch (error) {
-                  console.error('Błąd podczas pobierania PDF:', error);
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${order?.orderNumber}-${type}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Błąd podczas pobierania PDF:', error);
                 }
         };
 
