@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "lint": "tsc --noEmit",
     "start": "node dist/index.js",
     "test": "jest --config jest.config.js --selectProjects unit --passWithNoTests && jest --config jest.config.js --selectProjects integration --runInBand --passWithNoTests",
     "test:unit": "jest --config jest.config.js --selectProjects unit --passWithNoTests",
