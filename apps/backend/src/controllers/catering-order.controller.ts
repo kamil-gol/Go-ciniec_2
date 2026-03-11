@@ -269,4 +269,3 @@ async function generatePDF(
   markDepositPaid,
   generatePDF,
 };
-}
