@@ -56,7 +56,6 @@ jest.mock('../../../services/reservation-menu.service', () => ({
 }));
 
 import { ReservationService } from '../../../services/reservation.service';
-import { ReservationStatus } from '../../../types/reservation.types';
 
 const EXTRAS_WITH_RELATIONS = [
   {
@@ -120,7 +119,7 @@ const BASE_RESERVATION_DB = {
   pricePerToddler: 0,
   totalPrice: 10500,
   extrasTotalPrice: 1700,
-  status: ReservationStatus.CONFIRMED,
+  status: 'CONFIRMED' as const,
   notes: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-15'),
@@ -237,10 +236,10 @@ describe('ReservationService - reservationExtras include (#22)', () => {
     });
 
     it('should include extras even when filtering by status', async () => {
-      const confirmed = LIST_RES.filter(r => r.status === ReservationStatus.CONFIRMED);
+      const confirmed = LIST_RES.filter(r => r.status === 'CONFIRMED');
       mockPrisma.reservation.findMany.mockResolvedValue(confirmed);
       mockPrisma.reservation.count.mockResolvedValue(confirmed.length);
-      const result = await reservationService.getReservations({ status: ReservationStatus.CONFIRMED });
+      const result = await reservationService.getReservations({ status: 'CONFIRMED' as any });
       expect(result).toBeDefined();
     });
 
