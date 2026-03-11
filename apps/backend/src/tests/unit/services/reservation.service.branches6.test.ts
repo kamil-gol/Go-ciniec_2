@@ -1,9 +1,9 @@
 /**
- * reservation.service — updateReservation: manual price recalculation (no menu package)
- * 
- * WAŻNE: updateReservation() nie ustawia totalPrice bezpośrednio w prisma.update.data.
- * Zamiast tego wywołuje recalculateReservationTotalPrice(id) po update.
- * Dlatego sprawdzamy wywołanie recalculate, a nie data.totalPrice.
+ * reservation.service - updateReservation: manual price recalculation (no menu package)
+ *
+ * WAZNE: updateReservation() nie ustawia totalPrice bezposrednio w prisma.update.data.
+ * Zamiast tego wywoluje recalculateReservationTotalPrice(id) po update.
+ * Dlatego sprawdzamy wywolanie recalculate, a nie data.totalPrice.
  */
 
 jest.mock('../../../lib/prisma', () => ({
@@ -17,6 +17,7 @@ jest.mock('../../../lib/prisma', () => ({
     hall: { findUnique: jest.fn() },
     eventType: { findUnique: jest.fn() },
     menuPackage: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'user@test.pl' }) },
   },
 }));
 
@@ -43,6 +44,12 @@ jest.mock('../../../services/email.service', () => ({
   emailService: {
     sendReservationConfirmation: jest.fn(),
     sendReservationCancellation: jest.fn(),
+  },
+}));
+
+jest.mock('../../../services/reservation-menu.service', () => ({
+  default: {
+    recalculateForGuestChange: jest.fn(),
   },
 }));
 
@@ -74,31 +81,31 @@ const BASE_RES = {
   createdAt: new Date(),
   updatedAt: new Date(),
   client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski' },
-  hall: { id: 'hall-1', name: 'Sala A' },
+  hall: { id: 'hall-1', name: 'Sala A', isActive: true, capacity: 100, isWholeVenue: false, allowMultipleBookings: false, allowWithWholeVenue: false },
   eventType: { id: 'et-1', name: 'Wesele' },
   menuPackage: null,
   extras: [],
   deposits: [],
+  menuSnapshot: null,
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockPrisma.reservation.findUnique.mockResolvedValue(BASE_RES);
   mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RES });
+  mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'user@test.pl' });
   mockRecalculate.mockResolvedValue(undefined);
 });
 
-describe('updateReservation — manual price recalculation (no menu package)', () => {
-
+describe('updateReservation - manual price recalculation (no menu package)', () => {
   it('should recalculate totalPrice when adults change (no menu)', async () => {
     await reservationService.updateReservation('res-001', {
       adults: 60,
     }, 'user-1');
-
-    // totalPrice nie jest w data bezpośrednio — serwis wywołuje recalculate po update
+    // totalPrice nie jest w data bezposrednio - serwis wywoluje recalculate po update
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.adults).toBe(60);
-    // Weryfikujemy że recalculate było wywołane
+    // Weryfikujemy ze recalculate bylo wywolane
     expect(mockRecalculate).toHaveBeenCalledWith('res-001');
   });
 
@@ -106,7 +113,6 @@ describe('updateReservation — manual price recalculation (no menu package)', (
     await reservationService.updateReservation('res-001', {
       pricePerAdult: 250,
     }, 'user-1');
-
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerAdult).toBe(250);
     expect(mockRecalculate).toHaveBeenCalledWith('res-001');
@@ -116,7 +122,6 @@ describe('updateReservation — manual price recalculation (no menu package)', (
     await reservationService.updateReservation('res-001', {
       pricePerChild: 120,
     }, 'user-1');
-
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerChild).toBe(120);
     expect(mockRecalculate).toHaveBeenCalledWith('res-001');
@@ -126,7 +131,6 @@ describe('updateReservation — manual price recalculation (no menu package)', (
     await reservationService.updateReservation('res-001', {
       pricePerToddler: 50,
     }, 'user-1');
-
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerToddler).toBe(50);
     expect(mockRecalculate).toHaveBeenCalledWith('res-001');
