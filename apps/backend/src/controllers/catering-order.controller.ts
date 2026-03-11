@@ -263,9 +263,11 @@ async function generatePDF(
   createOrder,
   updateOrder,
   changeStatus,
+      deleteOrder,
   createDeposit,
   updateDeposit,
   deleteDeposit,
+      getHistory,
   markDepositPaid,
   generatePDF,
 };
