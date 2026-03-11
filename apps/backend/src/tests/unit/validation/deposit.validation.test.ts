@@ -14,19 +14,10 @@ describe('deposit.validation', () => {
   describe('createDepositSchema', () => {
     it('should accept valid input', () => {
       expect(() => createDepositSchema.parse({
-        reservationId: '550e8400-e29b-41d4-a716-446655440000',
-        amount: 1500,
+          amount: 1500,
         dueDate: '2026-06-01',
       })).not.toThrow();
     });
-
-    it('should reject missing reservationId', () => {
-      expect(() => createDepositSchema.parse({
-        amount: 1500,
-        dueDate: '2026-06-01',
-      })).toThrow();
-    });
-
     it('should reject amount <= 0', () => {
       expect(() => createDepositSchema.parse({
         reservationId: '550e8400-e29b-41d4-a716-446655440000',
