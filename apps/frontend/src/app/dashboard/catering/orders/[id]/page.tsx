@@ -13,6 +13,7 @@ import {
   Plus,
   Tag,
   Trash2,
+    Download,
 } from 'lucide-react';
 import {
   useCateringOrder,
@@ -573,6 +574,28 @@ export default function CateringOrderDetailPage() {
   const deleteMutation = useDeleteCateringOrder();
   const deleteDepositMutation = useDeleteCateringDeposit(id);
 
+    const handleDownloadPDF = async (type: 'quote' | 'kitchen' | 'invoice') => {
+          try {
+                  const response = await fetch(`/api/catering/orders/${id}/pdf/${type}`, {
+                            credentials: 'include',
+                          });
+
+                  if (!response.ok) throw new Error('Błąd pobierania PDF');
+
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${order.orderNumber}-${type}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (error) {
+                  console.error('Błąd podczas pobierania PDF:', error);
+                }
+        };
+
   const handleDelete = async () => {
     if (!confirm('Czy na pewno usunąć to zamówienie?')) return;
     await deleteMutation.mutateAsync(id);
@@ -653,6 +676,25 @@ export default function CateringOrderDetailPage() {
           >
             <Edit className="mr-1.5 h-3.5 w-3.5" /> Edytuj
           </Button>
+                      <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                                        <Button variant="outline" size="sm">
+                                                                            <Download className="mr-1.5 h-3.5 w-3.5" />
+                                                                            Pobierz PDF
+                                                                          </Button>
+                                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => handleDownloadPDF('quote')}>
+                                                                            Wycena
+                                                                          </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDownloadPDF('kitchen')}>
+                                                                            Druk kuchenny
+                                                                          </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDownloadPDF('invoice')}>
+                                                                            Faktura pro forma
+                                                                          </DropdownMenuItem>
+                                                      </DropdownMenuContent>
+                                    </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
