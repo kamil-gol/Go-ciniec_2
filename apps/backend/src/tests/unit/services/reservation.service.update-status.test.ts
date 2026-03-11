@@ -17,6 +17,7 @@ jest.mock('../../../lib/prisma', () => ({
     eventType: { findUnique: jest.fn() },
     menuPackage: { findUnique: jest.fn() },
     user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'user@test.pl' }) },
+    reservationHistory: { create: jest.fn().mockResolvedValue({}) },
   },
 }));
 
@@ -93,6 +94,7 @@ beforeEach(() => {
   mockPrisma.reservation.findUnique.mockResolvedValue(BASE_RESERVATION);
   mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RESERVATION });
   mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'user@test.pl' });
+  mockPrisma.reservationHistory.create.mockResolvedValue({});
   mockRecalculate.mockResolvedValue(undefined);
 });
 
@@ -182,11 +184,9 @@ describe('ReservationService', () => {
     it('should cancel reservation', async () => {
       const cancelRes = { ...BASE_RESERVATION, status: 'ARCHIVED' };
       mockPrisma.reservation.findUnique.mockResolvedValue(BASE_RESERVATION);
-      // cancelReservation uses $transaction
       (mockPrisma as any).$transaction = jest.fn().mockImplementation(async (fn: any) => fn(mockPrisma));
       mockPrisma.reservation.update.mockResolvedValue(cancelRes);
       (mockPrisma as any).deposit = { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() };
-      (mockPrisma as any).reservationHistory = { create: jest.fn().mockResolvedValue({}) };
       await expect(reservationService.cancelReservation('res-001', 'user-1')).resolves.not.toThrow();
     });
 
