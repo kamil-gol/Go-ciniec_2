@@ -2011,6 +2011,282 @@ export class PDFService {
       currency: 'PLN',
     }).format(numAmount);
   }
+
+    // ═══════════════ CATERING PDF GENERATION ═══════════════
+
+  async generateCateringQuotePDF(data: CateringQuotePDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: { Title: `Wycena ${data.orderNumber}`, Author: this.restaurantData.name },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (error) => reject(error));
+      this.buildCateringQuotePDF(doc, data);
+      doc.end();
+    });
+  }
+
+  async generateCateringKitchenPDF(data: CateringKitchenPrintData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: { Title: `Druk kuchenny ${data.orderNumber}`, Author: this.restaurantData.name },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (error) => reject(error));
+      this.buildCateringKitchenPDF(doc, data);
+      doc.end();
+    });
+  }
+
+  async generateCateringInvoicePDF(data: CateringInvoicePDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: { Title: `Faktura ${data.orderNumber}`, Author: this.restaurantData.name },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (error) => reject(error));
+      this.buildCateringInvoicePDF(doc, data);
+      doc.end();
+    });
+  }
+
+    // ═══════════════ CATERING PDF BUILDERS ═══════════════
+
+  private buildCateringQuotePDF(doc: PDFKit.PDFDocument, data: CateringQuotePDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+    const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
+    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('WYCENA CATERING', left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(`Nr: ${data.orderNumber} | Data wygenerowania: ${this.formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+    // Client box
+    const clientLines = [data.client.firstName + ' ' + data.client.lastName, data.client.phone];
+    if (data.client.companyName) clientLines.push(data.client.companyName);
+    if (data.client.email) clientLines.push(data.client.email);
+    if (data.client.address) clientLines.push(data.client.address);
+    this.drawInfoBox(doc, 'KLIENT', left, doc.y, pageWidth, clientLines);
+    const boxHeight = this.calculateInfoBoxHeight(clientLines.length);
+    doc.y += boxHeight + 5;
+    doc.moveDown(0.4);
+    // Event info
+    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+    doc.text(`Typ dostawy: ${data.deliveryType}`, left, doc.y);
+    if (data.deliveryAddress) doc.text(`Adres: ${data.deliveryAddress}`, left, doc.y);
+    doc.text(`Liczba osób: ${data.guests}`, left, doc.y);
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+    // Items table
+    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
+    doc.moveDown(0.3);
+    const itemRows = data.items.map(item => [
+      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      `${item.quantity}`,
+      this.formatCurrency(item.unitPrice),
+      this.formatCurrency(item.totalPrice),
+    ]);
+    const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
+    this.drawCompactTable(doc, ['Produkt', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+    doc.moveDown(0.4);
+    // Total
+    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+    if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`RAZEM: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+    if (data.notes) {
+      doc.moveDown(0.4);
+      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+      doc.text('Uwagi:', left, doc.y);
+      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(data.notes, left, doc.y);
+    }
+    doc.moveDown(1);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  private buildCateringKitchenPDF(doc: PDFKit.PDFDocument, data: CateringKitchenPrintData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+    this.drawHeaderBanner(doc, 'DRUK KUCHENNY', COLORS.primary);
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(18).font(this.getBoldFont());
+    doc.text('DRUK KUCHENNY', left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.2);
+    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(`Nr zamówienia: ${data.orderNumber}`, left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+    doc.text(`Typ dostawy: ${data.deliveryType}`, left, doc.y);
+    if (data.deliveryAddress) doc.text(`Adres dostawy: ${data.deliveryAddress}`, left, doc.y);
+    doc.text(`Liczba gości: ${data.guests}`, left, doc.y);
+    doc.moveDown(0.5);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+    doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text('DO PRZYGOTOWANIA', left, doc.y);
+    doc.moveDown(0.3);
+    const itemRows = data.items.map(item => [
+      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      `${item.quantity}`,
+    ]);
+    const colWidths = [Math.round(pageWidth * 0.75), Math.round(pageWidth * 0.25)];
+    this.drawCompactTable(doc, ['Produkt', 'Ilość'], itemRows, colWidths, left);
+    if (data.notes) {
+      doc.moveDown(0.5);
+      doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
+      doc.text('Uwagi klienta:', left, doc.y);
+      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(data.notes, left, doc.y);
+    }
+    doc.moveDown(1);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
+  private buildCateringInvoicePDF(doc: PDFKit.PDFDocument, data: CateringInvoicePDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+    const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
+    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('FAKTURA PRO FORMA', left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(`Nr: ${data.orderNumber} | Data wystawienia: ${this.formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+    const clientLines = [data.client.firstName + ' ' + data.client.lastName, data.client.phone];
+    if (data.client.companyName) clientLines.push(data.client.companyName);
+    if (data.client.nip) clientLines.push(`NIP: ${data.client.nip}`);
+    if (data.client.email) clientLines.push(data.client.email);
+    if (data.client.address) clientLines.push(data.client.address);
+    this.drawInfoBox(doc, 'NABYWCA', left, doc.y, pageWidth, clientLines);
+    const boxHeight = this.calculateInfoBoxHeight(clientLines.length);
+    doc.y += boxHeight + 5;
+    doc.moveDown(0.4);
+    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+    doc.text(`Typ dostawy: ${data.deliveryType}`, left, doc.y);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text('POZYCJE', left, doc.y);
+    doc.moveDown(0.3);
+    const itemRows = data.items.map(item => [
+      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      `${item.quantity}`,
+      this.formatCurrency(item.unitPrice),
+      this.formatCurrency(item.totalPrice),
+    ]);
+    const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
+    this.drawCompactTable(doc, ['Nazwa', 'Ilość', 'Cena jedn.', 'Wartość'], itemRows, colWidths, left);
+    doc.moveDown(0.4);
+    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(`Netto: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+    if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.moveDown(1);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
 }
 
+
+// ═══════════════ CATERING PDF TYPES ═══════════════
+
+export interface CateringOrderItemForPDF {
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  extraDescription?: string;
+}
+
+export interface CateringQuotePDFData {
+  id: string;
+  orderNumber: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone: string;
+    companyName?: string;
+    address?: string;
+  };
+  eventDate: Date;
+  deliveryType: string;
+  deliveryAddress?: string;
+  guests: number;
+  items: CateringOrderItemForPDF[];
+  subtotal: number;
+  discountAmount?: number;
+  totalPrice: number;
+  status: string;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface CateringKitchenPrintData {
+  id: string;
+  orderNumber: string;
+  eventDate: Date;
+  deliveryType: string;
+  deliveryAddress?: string;
+  guests: number;
+  items: CateringOrderItemForPDF[];
+  notes?: string;
+}
+
+export interface CateringInvoicePDFData {
+  id: string;
+  orderNumber: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone: string;
+    companyName?: string;
+    address?: string;
+    nip?: string;
+  };
+  eventDate: Date;
+  deliveryType: string;
+  deliveryAddress?: string;
+  items: CateringOrderItemForPDF[];
+  subtotal: number;
+  discountAmount?: number;
+  totalPrice: number;
+  status: string;
+  createdAt: Date;
+}
 export const pdfService = new PDFService();
