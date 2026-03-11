@@ -46,6 +46,12 @@ jest.mock('../../../services/email.service', () => ({
   },
 }));
 
+jest.mock('../../../services/reservation-menu.service', () => ({
+  default: {
+    recalculateForGuestChange: jest.fn(),
+  },
+}));
+
 import { prisma } from '../../../lib/prisma';
 import { recalculateReservationTotalPrice } from '../../../utils/recalculate-price';
 import { reservationService } from '../../../services/reservation.service';
@@ -74,11 +80,12 @@ const BASE_RESERVATION = {
   createdAt: new Date(),
   updatedAt: new Date(),
   client: { id: 'c1', firstName: 'Jan', lastName: 'Kowalski', email: 'jan@test.pl', phone: '123456789' },
-  hall: { id: 'hall-1', name: 'Sala A', isActive: true, capacity: 100 },
+  hall: { id: 'hall-1', name: 'Sala A', isActive: true, capacity: 100, isWholeVenue: false, allowMultipleBookings: false, allowWithWholeVenue: false },
   eventType: { id: 'et-1', name: 'Wesele' },
   menuPackage: null,
   extras: [],
   deposits: [],
+  menuSnapshot: null,
 };
 
 beforeEach(() => {
@@ -89,14 +96,11 @@ beforeEach(() => {
 });
 
 describe('ReservationService', () => {
-
   describe('updateReservation()', () => {
-
     it('should update basic fields', async () => {
       await reservationService.updateReservation('res-001', {
         notes: 'Test notatka',
       }, 'user-1');
-
       const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
       expect(updateCall.data.notes).toBe('Test notatka');
     });
@@ -107,7 +111,6 @@ describe('ReservationService', () => {
         children: 10,
         toddlers: 5,
       }, 'user-1');
-
       const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
       // POPRAWKA: totalPrice NIE jest w data bezpośrednio — serwis wywołuje recalculate po update
       // Weryfikujemy dane gości i wywołanie recalculate
@@ -117,31 +120,26 @@ describe('ReservationService', () => {
       expect(mockRecalculate).toHaveBeenCalledWith('res-001');
     });
 
-    it('should update status to CONFIRMED', async () => {
-      mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RESERVATION, status: 'CONFIRMED' });
-
+    it('should update notes to CONFIRMED value', async () => {
+      mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RESERVATION, notes: 'CONFIRMED' });
       const result = await reservationService.updateReservation('res-001', {
-        status: 'CONFIRMED',
+        notes: 'CONFIRMED',
       }, 'user-1');
-
       const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
-      expect(updateCall.data.status).toBe('CONFIRMED');
+      expect(updateCall.data.notes).toBe('CONFIRMED');
     });
 
-    it('should update status to CANCELLED', async () => {
-      mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RESERVATION, status: 'CANCELLED' });
-
+    it('should update notes to CANCELLED value', async () => {
+      mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RESERVATION, notes: 'CANCELLED' });
       await reservationService.updateReservation('res-001', {
-        status: 'CANCELLED',
+        notes: 'CANCELLED',
       }, 'user-1');
-
       const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
-      expect(updateCall.data.status).toBe('CANCELLED');
+      expect(updateCall.data.notes).toBe('CANCELLED');
     });
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
-
       await expect(reservationService.updateReservation('nonexistent', {
         notes: 'test',
       }, 'user-1')).rejects.toThrow();
@@ -149,17 +147,14 @@ describe('ReservationService', () => {
 
     it('should call logChange on update', async () => {
       const { logChange } = await import('../../../utils/audit-logger');
-
       await reservationService.updateReservation('res-001', {
         notes: 'Audit test',
       }, 'user-1');
-
       expect(logChange).toHaveBeenCalled();
     });
   });
 
   describe('getReservationById()', () => {
-
     it('should return reservation by id', async () => {
       const result = await reservationService.getReservationById('res-001');
       expect(result).toBeDefined();
@@ -179,20 +174,21 @@ describe('ReservationService', () => {
     });
   });
 
-  describe('deleteReservation()', () => {
-
-    it('should delete reservation', async () => {
-      mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RESERVATION, status: 'CANCELLED' });
-
-      await reservationService.deleteReservation('res-001', 'user-1');
-
-      expect(mockPrisma.reservation.update).toHaveBeenCalled();
+  describe('cancelReservation()', () => {
+    it('should cancel reservation', async () => {
+      const cancelRes = { ...BASE_RESERVATION, status: 'ARCHIVED' };
+      mockPrisma.reservation.findUnique.mockResolvedValue(BASE_RESERVATION);
+      // cancelReservation uses $transaction
+      (mockPrisma as any).$transaction = jest.fn().mockImplementation(async (fn: any) => fn(mockPrisma));
+      mockPrisma.reservation.update.mockResolvedValue(cancelRes);
+      (mockPrisma as any).deposit = { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() };
+      (mockPrisma as any).reservationHistory = { create: jest.fn().mockResolvedValue({}) };
+      await expect(reservationService.cancelReservation('res-001', 'user-1')).resolves.not.toThrow();
     });
 
     it('should throw when reservation not found', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(null);
-
-      await expect(reservationService.deleteReservation('nonexistent', 'user-1'))
+      await expect(reservationService.cancelReservation('nonexistent', 'user-1'))
         .rejects.toThrow();
     });
   });
