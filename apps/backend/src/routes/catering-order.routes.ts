@@ -121,4 +121,15 @@ router.patch(
   ctrl.markDepositPaid,
 );
 
+// GET /api/catering/orders/:id/pdf/:type
+router.get(
+  '/:id/pdf/:type',
+  authenticate,
+  requirePermission('catering:read'),
+  validateUUID('id'),
+  ctrl.generatePDF,
+);
+
+export default router;
+
 export default router;
