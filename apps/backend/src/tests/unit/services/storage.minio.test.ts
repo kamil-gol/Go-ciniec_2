@@ -40,7 +40,7 @@ describe('MinioStorageService', () => {
         storageConfig.buckets.attachments,
         'test.txt',
         Buffer.from('hello'),
-        'text/plain',
+        { 'Content-Type': 'text/plain' },
       );
 
       expect(client.putObject).toHaveBeenCalledWith(
@@ -67,12 +67,10 @@ describe('MinioStorageService', () => {
   describe('getPresignedUrl', () => {
     it('should generate presigned URL', async () => {
       client.presignedGetObject.mockResolvedValue('http://presigned-url');
-
       const url = await service.getPresignedUrl(
         storageConfig.buckets.attachments,
         'test.txt',
       );
-
       expect(url).toBe('http://presigned-url');
       // POPRAWKA: bucket 'attachments' używa TTL 'sensitive' = 3600s, nie 7200s
       expect(client.presignedGetObject).toHaveBeenCalledWith(
