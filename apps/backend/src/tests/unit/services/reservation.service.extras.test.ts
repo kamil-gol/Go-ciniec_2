@@ -1,5 +1,5 @@
 /**
- * ReservationService — Unit Tests: include reservationExtras (#22 Issue #118)
+ * ReservationService - Unit Tests: include reservationExtras (#22 Issue #118)
  * Pokrycie: getReservationById zwraca extras z relacjami,
  * getReservations zwraca extrasTotalPrice, edge cases (brak extras, extras z notatkami).
  *
@@ -56,6 +56,7 @@ jest.mock('../../../services/reservation-menu.service', () => ({
 }));
 
 import { ReservationService } from '../../../services/reservation.service';
+import { ReservationStatus } from '../../../types/reservation.types';
 
 const EXTRAS_WITH_RELATIONS = [
   {
@@ -119,7 +120,7 @@ const BASE_RESERVATION_DB = {
   pricePerToddler: 0,
   totalPrice: 10500,
   extrasTotalPrice: 1700,
-  status: 'CONFIRMED',
+  status: ReservationStatus.CONFIRMED,
   notes: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-15'),
@@ -132,7 +133,7 @@ const BASE_RESERVATION_DB = {
   auditLogs: [],
 };
 
-describe('ReservationService — reservationExtras include (#22)', () => {
+describe('ReservationService - reservationExtras include (#22)', () => {
   let reservationService: ReservationService;
 
   beforeEach(() => {
@@ -140,7 +141,6 @@ describe('ReservationService — reservationExtras include (#22)', () => {
     reservationService = new ReservationService();
   });
 
-  // --- getReservationById ---
   describe('getReservationById()', () => {
     it('should return reservation with extras array', async () => {
       mockPrisma.reservation.findUnique.mockResolvedValue(BASE_RESERVATION_DB);
@@ -211,7 +211,6 @@ describe('ReservationService — reservationExtras include (#22)', () => {
     });
   });
 
-  // --- getReservations (listReservations) ---
   describe('getReservations()', () => {
     const LIST_RES = [
       { ...BASE_RESERVATION_DB, id: 'res-1', extrasTotalPrice: 1700 },
@@ -238,10 +237,10 @@ describe('ReservationService — reservationExtras include (#22)', () => {
     });
 
     it('should include extras even when filtering by status', async () => {
-      const confirmed = LIST_RES.filter(r => r.status === 'CONFIRMED');
+      const confirmed = LIST_RES.filter(r => r.status === ReservationStatus.CONFIRMED);
       mockPrisma.reservation.findMany.mockResolvedValue(confirmed);
       mockPrisma.reservation.count.mockResolvedValue(confirmed.length);
-      const result = await reservationService.getReservations({ status: 'CONFIRMED' });
+      const result = await reservationService.getReservations({ status: ReservationStatus.CONFIRMED });
       expect(result).toBeDefined();
     });
 
@@ -263,7 +262,7 @@ describe('ReservationService — reservationExtras include (#22)', () => {
     it('should handle getReservations with date filter', async () => {
       mockPrisma.reservation.findMany.mockResolvedValue([LIST_RES[0]]);
       mockPrisma.reservation.count.mockResolvedValue(1);
-      const result = await reservationService.getReservations({ dateFrom: '2026-06-01', dateTo: '2026-06-30' });
+      const result = await reservationService.getReservations({ dateFrom: '2026-06-01', dateTo: '2026-06-30' } as any);
       expect(result).toBeDefined();
     });
 
