@@ -1348,3 +1348,4 @@ ${changesSummary}`);
 }
 
 export default new ReservationService();
+export const reservationService = new ReservationService();
