@@ -17,6 +17,7 @@ jest.mock('../../../lib/prisma', () => ({
     eventType: { findUnique: jest.fn() },
     menuPackage: { findUnique: jest.fn() },
     user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'user@test.pl' }) },
+    reservationHistory: { create: jest.fn().mockResolvedValue({}) },
   },
 }));
 
@@ -93,6 +94,7 @@ beforeEach(() => {
   mockPrisma.reservation.findUnique.mockResolvedValue(BASE_RES);
   mockPrisma.reservation.update.mockResolvedValue({ ...BASE_RES });
   mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'user@test.pl' });
+  mockPrisma.reservationHistory.create.mockResolvedValue({});
   mockRecalculate.mockResolvedValue(undefined);
 });
 
@@ -102,17 +104,15 @@ describe('updateReservation - manual price recalculation (no menu package)', () 
       adults: 60,
       reason: 'Zmiana liczby gosci w rezerwacji',
     }, 'user-1');
-    // totalPrice nie jest w data bezposrednio - serwis wywoluje recalculate po update
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.adults).toBe(60);
-    // Weryfikujemy ze recalculate bylo wywolane
     expect(mockRecalculate).toHaveBeenCalledWith('res-001');
   });
 
   it('should recalculate totalPrice when pricePerAdult changes (no menu, no guest change)', async () => {
     await reservationService.updateReservation('res-001', {
       pricePerAdult: 250,
-      reason: 'Aktualizacja ceny za osobe doroslą',
+      reason: 'Aktualizacja ceny za osobe dorosla',
     }, 'user-1');
     const updateCall = mockPrisma.reservation.update.mock.calls[0][0];
     expect(updateCall.data.pricePerAdult).toBe(250);
