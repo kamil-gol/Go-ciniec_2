@@ -1977,30 +1977,36 @@ export class PDFService {
     return this.useCustomFonts ? 'DejaVu-Bold' : 'Helvetica-Bold';
   }
 
-  private formatDate(date: Date): string {
+  private formatDate(date: Date | string): string {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return String(date);
     return new Intl.DateTimeFormat('pl-PL', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(date);
+    }).format(d);
   }
 
-  private formatTime(date: Date): string {
+  private formatTime(date: Date | string): string {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return String(date);
     return new Intl.DateTimeFormat('pl-PL', {
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+    }).format(d);
   }
 
   /* istanbul ignore next */
-  private formatDateTime(date: Date): string {
+  private formatDateTime(date: Date | string): string {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return String(date);
     return new Intl.DateTimeFormat('pl-PL', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+    }).format(d);
   }
 
   private formatCurrency(amount: number | string): string {
