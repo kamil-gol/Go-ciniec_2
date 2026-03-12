@@ -65,7 +65,8 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
         name: section.name ?? '',
         description: section.description ?? '',
         minSelect: Number(section.minSelect),
-        maxSelect: Number(section.maxSelect) ?? 1,
+        // null/undefined z backendu traktujemy jako 0 (bez limitu)
+        maxSelect: section.maxSelect != null ? Number(section.maxSelect) : 0,
         isRequired: section.isRequired,
         displayOrder: section.displayOrder,
       });
@@ -73,6 +74,9 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
   }, [section, categories, form]);
 
   const onSubmit = (values: FormValues) => {
+    // maxSelect=0 oznacza brak limitu — wysyłamy null, żeby backend wyczyścił pole
+    const maxSelectValue = values.maxSelect !== 0 ? values.maxSelect : null;
+
     if (isEdit && section) {
       updateSection.mutate(
         {
@@ -81,7 +85,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             name: values.name || null,
             description: values.description || null,
             minSelect: values.minSelect,
-            maxSelect: values.maxSelect !== 0 ? values.maxSelect : undefined,
+            maxSelect: maxSelectValue,
             isRequired: values.isRequired,
             displayOrder: values.displayOrder,
           },
@@ -95,7 +99,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           name: values.name || undefined,
           description: values.description || undefined,
           minSelect: values.minSelect,
-          maxSelect: values.maxSelect !== 0 ? values.maxSelect : undefined,
+          maxSelect: maxSelectValue ?? undefined,
           isRequired: values.isRequired,
           displayOrder: values.displayOrder,
         },
