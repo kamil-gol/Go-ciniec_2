@@ -165,7 +165,7 @@ export interface UpdateCateringSectionInput {
   name?: string | null;
   description?: string | null;
   minSelect?: number;
-  maxSelect?: number;
+  maxSelect?: number | null;  // null = bez limitu górnego
   isRequired?: boolean;
   displayOrder?: number;
 }
