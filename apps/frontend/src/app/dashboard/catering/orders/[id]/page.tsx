@@ -694,7 +694,7 @@ export default function CateringOrderDetailPage() {
                                                                           </DropdownMenuItem>
                                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                  nMenu>
+                  <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
@@ -710,7 +710,7 @@ export default function CateringOrderDetailPage() {
                 <Trash2 className="mr-2 h-4 w-4" /> Usuń zamówienie
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </Dropdow<DropdownMenu>
         </div>
       </div>
 
