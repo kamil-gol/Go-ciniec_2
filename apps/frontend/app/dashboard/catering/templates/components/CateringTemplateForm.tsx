@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Loader2 } from 'lucide-react';
 import {
   useCreateCateringTemplate,
@@ -11,9 +11,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { DialogFooter } from '@/components/ui/dialog';
+import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import type { CateringTemplate } from '@/types/catering.types';
 
 interface FormData {
@@ -41,6 +41,7 @@ export function CateringTemplateForm({ template, onClose }: Props) {
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
@@ -56,7 +57,6 @@ export function CateringTemplateForm({ template, onClose }: Props) {
   const isActive = watch('isActive');
   const watchName = watch('name');
 
-  // Zaladuj dane przy edycji lub resetuj przy tworzeniu
   useEffect(() => {
     if (template) {
       reset({
@@ -164,15 +164,25 @@ export function CateringTemplateForm({ template, onClose }: Props) {
         </p>
       </div>
 
-      {/* Opis */}
+      {/* Opis — Markdown editor */}
       <div className="space-y-2">
         <Label htmlFor="description">Opis</Label>
-        <Textarea
-          id="description"
-          {...register('description')}
-          placeholder="Szczegółowy opis szablonu cateringowego"
-          rows={3}
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
+            <MarkdownEditor
+              id="description"
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="Szczegółowy opis szablonu cateringowego (obsługuje **Markdown**)…"
+              rows={6}
+            />
+          )}
         />
+        <p className="text-xs text-muted-foreground">
+          Obsługuje formatowanie Markdown: **pogrubienie**, *kursywa*, listy, nagłówki.
+        </p>
       </div>
 
       {/* URL zdjęcia */}
