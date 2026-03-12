@@ -29,6 +29,7 @@ import {
   History,
   Plus,
   Pencil,
+    Download,
 } from 'lucide-react';
 import {
   useCateringOrder,
@@ -393,6 +394,12 @@ export default function CateringOrderDetailPage() {
               <ArrowLeft className="h-4 w-4" /> Powrót
             </button>
             <div className="flex items-center gap-2">
+                            <Button size="sm" variant="ghost"
+                className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
+                onClick={() => window.print()}
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Pobierz PDF
+              </Button>
               <Button size="sm" variant="ghost"
                 className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
                 onClick={() => setStatusDialogOpen(true)}
