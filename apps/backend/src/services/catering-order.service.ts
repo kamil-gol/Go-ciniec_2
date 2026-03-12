@@ -5,6 +5,7 @@ import {
   CateringDiscountType,
   Prisma,
 } from '@prisma/client';
+import { logChange } from '../utils/audit-logger';
 
 // ─── Auto-numeracja: CAT-YYYY-XXXXX ────────────────────────────────────────
 
@@ -31,6 +32,7 @@ export interface CreateOrderExtraInput {
   description?: string | null;
   quantity: number;
   unitPrice: number;
+  serviceItemId?: string | null;
 }
 
 export interface CreateCateringOrderInput {
@@ -181,7 +183,10 @@ const orderInclude = {
     include: { dish: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'asc' as const },
   },
-  extras: { orderBy: { createdAt: 'asc' as const } },
+  extras: {
+    include: { serviceItem: { select: { id: true, name: true, icon: true } } },
+    orderBy: { createdAt: 'asc' as const },
+  },
   deposits: { orderBy: { dueDate: 'asc' as const } },
 } satisfies Prisma.CateringOrderInclude;
 
@@ -196,7 +201,7 @@ export async function createOrder(
   const resolvedItems = await resolveDishNames(items);
   const totals = computeTotals(items, extras, input.discountType, input.discountValue);
 
-  return prisma.cateringOrder.create({
+  const order = await prisma.cateringOrder.create({
     data: {
       orderNumber,
       clientId: input.clientId,
@@ -244,6 +249,7 @@ export async function createOrder(
           quantity: e.quantity,
           unitPrice: e.unitPrice,
           totalPrice: e.quantity * e.unitPrice,
+          serviceItemId: e.serviceItemId ?? null,
         })),
       },
       history: {
@@ -256,6 +262,27 @@ export async function createOrder(
     },
     include: orderInclude,
   });
+
+  await logChange({
+    userId: input.createdById,
+    action: 'CREATE',
+    entityType: 'CATERING_ORDER',
+    entityId: order.id,
+    details: {
+      description: `Utworzono zamówienie catering: ${order.orderNumber} — ${order.client.firstName} ${order.client.lastName}`,
+      data: {
+        orderNumber: order.orderNumber,
+        clientId: input.clientId,
+        deliveryType: input.deliveryType ?? 'ON_SITE',
+        guestsCount: input.guestsCount ?? 0,
+        itemsCount: items.length,
+        extrasCount: extras.length,
+        totalPrice: totals.totalPrice,
+      },
+    },
+  });
+
+  return order;
 }
 
 export async function getOrderById(
@@ -413,6 +440,7 @@ export async function updateOrder(
           quantity: e.quantity,
           unitPrice: e.unitPrice,
           totalPrice: e.quantity * e.unitPrice,
+          serviceItemId: e.serviceItemId ?? null,
         })),
       };
     }
@@ -487,6 +515,33 @@ export async function updateOrder(
     include: orderInclude,
   });
 
+  const userId = input.changedById ?? existing.createdById;
+
+  if (input.status !== undefined && input.status !== oldStatus) {
+    await logChange({
+      userId,
+      action: 'STATUS_CHANGE',
+      entityType: 'CATERING_ORDER',
+      entityId: id,
+      details: {
+        description: `Zmiana statusu zamówienia ${existing.orderNumber}: ${oldStatus} → ${input.status}`,
+        fieldName: 'status',
+        oldValue: oldStatus,
+        newValue: input.status,
+      },
+    });
+  } else {
+    await logChange({
+      userId,
+      action: 'UPDATE',
+      entityType: 'CATERING_ORDER',
+      entityId: id,
+      details: {
+        description: `Zaktualizowano zamówienie ${existing.orderNumber}`,
+      },
+    });
+  }
+
   if (discountEvent && input.changedById) {
     await prisma.cateringOrderHistory.create({
       data: {
@@ -513,12 +568,23 @@ export async function changeOrderStatus(
   return updateOrder(id, { status, changedById, changeReason: reason });
 }
 
-export async function deleteOrder(id: string): Promise<void> {
+export async function deleteOrder(id: string, deletedById?: string): Promise<void> {
   const order = await prisma.cateringOrder.findUniqueOrThrow({ where: { id } });
   if (order.status !== 'DRAFT' && order.status !== 'CANCELLED') {
     badRequest('Można usunąć tylko zamówienia w statusie DRAFT lub CANCELLED');
   }
   await prisma.cateringOrder.delete({ where: { id } });
+
+  await logChange({
+    userId: deletedById ?? order.createdById,
+    action: 'DELETE',
+    entityType: 'CATERING_ORDER',
+    entityId: id,
+    details: {
+      description: `Usunięto zamówienie catering: ${order.orderNumber}`,
+      data: { orderNumber: order.orderNumber, status: order.status },
+    },
+  });
 }
 
 export async function getOrderHistory(orderId: string) {
@@ -595,6 +661,17 @@ export async function createDeposit(
         changeType: 'DEPOSIT_CREATED',
         fieldName: 'deposit',
         newValue: `${input.title ?? 'Zaliczka'} — ${input.amount} PLN`,
+      },
+    });
+
+    await logChange({
+      userId: changedById,
+      action: 'DEPOSIT_CREATED',
+      entityType: 'CATERING_ORDER',
+      entityId: orderId,
+      details: {
+        description: `Dodano zaliczkę: ${input.title ?? 'Zaliczka'} — ${input.amount} PLN`,
+        data: { depositId: deposit.id, amount: input.amount, dueDate: input.dueDate },
       },
     });
   }
@@ -689,6 +766,17 @@ export async function deleteDeposit(
         newValue: wasPaid ? `wasPaid:true paymentMethod:${deposit.paymentMethod ?? 'N/A'}` : null,
       },
     });
+
+    await logChange({
+      userId: changedById,
+      action: 'DEPOSIT_DELETED',
+      entityType: 'CATERING_ORDER',
+      entityId: orderId,
+      details: {
+        description: `Usunięto zaliczkę: ${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN${wasPaid ? ' (była opłacona)' : ''}`,
+        data: { depositId, wasPaid },
+      },
+    });
   }
 }
 
@@ -722,6 +810,17 @@ export async function markDepositPaid(
         changeType: 'DEPOSIT_PAID',
         fieldName: 'deposit',
         newValue: `${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN (${paymentMethod ?? 'bez metody'})`,
+      },
+    });
+
+    await logChange({
+      userId: changedById,
+      action: 'DEPOSIT_PAID',
+      entityType: 'CATERING_ORDER',
+      entityId: orderId,
+      details: {
+        description: `Opłacono zaliczkę: ${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN`,
+        data: { depositId, amount: Number(deposit.amount), paymentMethod },
       },
     });
   }

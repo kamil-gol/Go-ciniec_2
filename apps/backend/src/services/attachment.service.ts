@@ -130,6 +130,14 @@ class AttachmentService {
         return deposit?.reservation?.clientId || null;
       }
 
+      if (entityType === 'CATERING_ORDER') {
+        const order = await prisma.cateringOrder.findUnique({
+          where: { id: entityId },
+          select: { clientId: true },
+        });
+        return order?.clientId || null;
+      }
+
       return null;
     } catch (error) {
       logger.error(`Failed to resolve clientId for ${entityType}/${entityId}:`, error);
@@ -684,6 +692,9 @@ class AttachmentService {
         break;
       case 'DEPOSIT':
         exists = !!(await prisma.deposit.findUnique({ where: { id: entityId }, select: { id: true } }));
+        break;
+      case 'CATERING_ORDER':
+        exists = !!(await prisma.cateringOrder.findUnique({ where: { id: entityId }, select: { id: true } }));
         break;
       default:
         throw AppError.badRequest(`Nieobsługiwany entityType: ${entityType}`);
