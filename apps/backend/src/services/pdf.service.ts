@@ -2014,6 +2014,27 @@ export class PDFService {
 
     // ═══════════════ CATERING PDF GENERATION ═══════════════
 
+
+    async generateCateringOrderPDF(data: CateringOrderPDFData): Promise<Buffer> {
+    await this.refreshRestaurantData();
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 0, bottom: 30, left: 40, right: 40 },
+        info: {
+          Title: `Zamówienie ${data.orderNumber}`,
+          Author: this.restaurantData.name,
+        },
+      });
+      this.setupFonts(doc);
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (error) => reject(error));
+      this.buildCateringOrderPDF(doc, data);
+      doc.end();
+    });
+  }
   async generateCateringQuotePDF(data: CateringQuotePDFData): Promise<Buffer> {
     await this.refreshRestaurantData();
     return new Promise((resolve, reject) => {
@@ -2172,6 +2193,90 @@ export class PDFService {
     this.drawInlineFooter(doc, left, pageWidth);
   }
 
+    private buildCateringOrderPDF(doc: PDFKit.PDFDocument, data: CateringOrderPDFData): void {
+    const left = 40;
+    const pageWidth = doc.page.width - 80;
+
+    // Header banner with status
+    const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
+    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+
+    // Title + metadata
+    doc.y = 80;
+    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.text('SZCZEGÓŁY ZAMÓWIENIA CATERING', left, doc.y, { align: 'center', width: pageWidth });
+    doc.moveDown(0.2);
+    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.text(`Nr: ${data.orderNumber} | Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+      align: 'center',
+      width: pageWidth,
+    });
+    doc.moveDown(0.6);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.5);
+
+    // Client + Event info (two columns)
+    const colGap = 20;
+    const colWidth = (pageWidth - colGap) / 2;
+    const startY = doc.y;
+
+    const clientLines = [data.client.firstName + ' ' + data.client.lastName, data.client.phone];
+    if (data.client.companyName) clientLines.push(data.client.companyName);
+    if (data.client.email) clientLines.push(data.client.email);
+    if (data.client.address) clientLines.push(data.client.address);
+    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, clientLines);
+
+    const eventLines = [
+      this.formatDate(data.eventDate),
+      `Typ dostawy: ${data.deliveryType}`,
+      `Liczba osób: ${data.guests}`,
+    ];
+    if (data.deliveryAddress) eventLines.push(`Adres: ${data.deliveryAddress}`);
+    this.drawInfoBox(doc, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth, eventLines);
+
+    const boxHeight = this.calculateInfoBoxHeight(Math.max(clientLines.length, eventLines.length));
+    doc.y = startY + boxHeight + 5;
+    doc.moveDown(0.4);
+    this.drawSeparator(doc, left, pageWidth);
+    doc.moveDown(0.4);
+
+    // Items table
+    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
+    doc.moveDown(0.3);
+
+    const itemRows = data.items.map(item => [
+      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      `${item.quantity}`,
+      this.formatCurrency(item.unitPrice),
+      this.formatCurrency(item.totalPrice),
+    ]);
+    const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
+    this.drawCompactTable(doc, ['Produkt', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+
+    doc.moveDown(0.4);
+
+    // Financial summary
+    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+    if (data.discountAmount && data.discountAmount > 0)
+      doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`RAZEM: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+
+    // Notes
+    if (data.notes) {
+      doc.moveDown(0.4);
+      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+      doc.text('Uwagi:', left, doc.y);
+      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.text(data.notes, left, doc.y);
+    }
+
+    // Footer
+    doc.moveDown(1);
+    this.drawInlineFooter(doc, left, pageWidth);
+  }
+
   private buildCateringInvoicePDF(doc: PDFKit.PDFDocument, data: CateringInvoicePDFData): void {
     const left = 40;
     const pageWidth = doc.page.width - 80;
@@ -2287,6 +2392,30 @@ export interface CateringInvoicePDFData {
   discountAmount?: number;
   totalPrice: number;
   status: string;
+  createdAt: Date;
+}
+
+export interface CateringOrderPDFData {
+  id: string;
+  orderNumber: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone: string;
+    companyName?: string;
+    address?: string;
+  };
+  eventDate: Date;
+  deliveryType: string;
+  deliveryAddress?: string;
+  guests: number;
+  items: CateringOrderItemForPDF[];
+  subtotal: number;
+  discountAmount?: number;
+  totalPrice: number;
+  status: string;
+  notes?: string;
   createdAt: Date;
 }
 export const pdfService = new PDFService();
