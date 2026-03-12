@@ -49,7 +49,18 @@ const SECTION_COLORS = [
   'from-cyan-500 to-sky-600',
 ];
 
-// ─── Sortable row ────────────────────────────────────────────────────────────
+/** Formatuje zakres wyboru: "1–2", "1+" (bez limitu), "1" */
+function formatSelectRange(min: unknown, max: unknown): string {
+  const minVal = Number(min);
+  // null, undefined lub 0 → brak limitu górnego
+  const maxVal = max != null && Number(max) > 0 ? Number(max) : null;
+
+  if (maxVal === null) return `${minVal}+`;
+  if (minVal === maxVal) return String(minVal);
+  return `${minVal}\u2013${maxVal}`;
+}
+
+// ─── Sortable row ──────────────────────────────────────────────────────────────────────────────
 interface SortableRowProps {
   section: CateringPackageSection;
   idx: number;
@@ -88,6 +99,7 @@ function SortableSectionRow({
 
   const colorGradient = SECTION_COLORS[idx % SECTION_COLORS.length];
   const dishCount = section.options?.length ?? 0;
+  const selectLabel = formatSelectRange(section.minSelect, section.maxSelect);
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -151,12 +163,9 @@ function SortableSectionRow({
                   ? 'Brak dań'
                   : `${dishCount} ${dishCount === 1 ? 'danie' : dishCount < 5 ? 'dania' : 'dań'}`}
               </span>
-              {(section.minSelect > 0 || section.maxSelect) && (
-                <span className="text-xs text-muted-foreground">
-                  Wybór: {section.minSelect}
-                  {section.maxSelect ? `–${section.maxSelect}` : '+'}
-                </span>
-              )}
+              <span className="text-xs text-muted-foreground">
+                Wybór: {selectLabel}
+              </span>
             </div>
           </div>
 
@@ -207,7 +216,7 @@ function SortableSectionRow({
   );
 }
 
-// ─── Drag overlay card ───────────────────────────────────────────────────────
+// ─── Drag overlay card ────────────────────────────────────────────────────────────────────────────
 function SectionDragOverlay({ section, idx }: { section: CateringPackageSection; idx: number }) {
   const colorGradient = SECTION_COLORS[idx % SECTION_COLORS.length];
   return (
@@ -223,7 +232,7 @@ function SectionDragOverlay({ section, idx }: { section: CateringPackageSection;
   );
 }
 
-// ─── Main component ──────────────────────────────────────────────────────────
+// ─── Main component ────────────────────────────────────────────────────────────────────────────
 interface Props { pkg: CateringPackage; templateId: string; }
 
 export function SectionManager({ pkg, templateId }: Props) {
@@ -240,14 +249,14 @@ export function SectionManager({ pkg, templateId }: Props) {
     () => [...(pkg.sections ?? [])].sort((a, b) => a.displayOrder - b.displayOrder),
   );
 
-  // Sync when pkg changes from server
+  // Sync when pkg changes from server (w tym po edycji — nowe maxSelect z backendu)
   const sortedFromServer = [...(pkg.sections ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
-  const serverIds = sortedFromServer.map((s) => s.id).join(',');
+  const serverKey = JSON.stringify(sortedFromServer.map((s) => ({ id: s.id, min: s.minSelect, max: s.maxSelect, order: s.displayOrder })));
   // biome-ignore lint: intentional sync
-  const [prevServerIds, setPrevServerIds] = useState(serverIds);
-  if (serverIds !== prevServerIds) {
+  const [prevServerKey, setPrevServerKey] = useState(serverKey);
+  if (serverKey !== prevServerKey) {
     setLocalSections(sortedFromServer);
-    setPrevServerIds(serverIds);
+    setPrevServerKey(serverKey);
   }
 
   const sensors = useSensors(
