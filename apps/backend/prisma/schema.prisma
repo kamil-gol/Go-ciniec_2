@@ -937,8 +937,9 @@ model CateringPackageSection {
 
   name          String?         @db.VarChar(255)
   description   String?         @db.Text
-  minSelect     Int             @default(1) @db.SmallInt
-  maxSelect     Int             @default(1) @db.SmallInt
+  // Decimal(4,2) — obsługuje wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25 ...
+  minSelect     Decimal         @default(1) @db.Decimal(4, 2)
+  maxSelect     Decimal         @default(1) @db.Decimal(4, 2)
   isRequired    Boolean         @default(true)
   displayOrder  Int             @default(0) @db.SmallInt
 
