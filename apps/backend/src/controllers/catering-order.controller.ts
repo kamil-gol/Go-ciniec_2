@@ -241,9 +241,11 @@ async function generatePDF(
     } else if (type === 'invoice') {
       buffer = await pdfService.generateCateringInvoicePDF(order as any);
       filename = `faktura-catering-${order.orderNumber}.pdf`;
+        } else if (type === 'order') {
+    buffer = await pdfService.generateCateringOrderPDF(order as any);
+    filename = `zamowienie-catering-${order.orderNumber}.pdf`;
     } else {
-      res.status(400).json({ success: false, error: 'Nieprawidłowy typ dokumentu. Dozwolone: quote, kitchen, invoice' });
-      return;
+      res.status(400).json({ success: false, error: 'Nieprawidłowy typ dokumentu. Dozwolone: quote, kitchen, invoice, order' });      return;
     }
 
     res.set({
