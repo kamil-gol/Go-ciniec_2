@@ -791,6 +791,7 @@ model ServiceItem {
 
   category      ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   reservationExtras ReservationExtra[]
+  cateringExtras    CateringOrderExtra[]
 
   @@index([categoryId])
   @@index([isActive])
@@ -1102,21 +1103,24 @@ model CateringOrderItem {
 }
 
 model CateringOrderExtra {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId     String        @db.Uuid
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId       String        @db.Uuid
+  serviceItemId String?       @db.Uuid
 
-  name        String        @db.VarChar(255)
-  description String?       @db.Text
-  quantity    Int           @default(1) @db.SmallInt
-  unitPrice   Decimal       @db.Decimal(10, 2)
-  totalPrice  Decimal       @db.Decimal(10, 2)
+  name          String        @db.VarChar(255)
+  description   String?       @db.Text
+  quantity      Int           @default(1) @db.SmallInt
+  unitPrice     Decimal       @db.Decimal(10, 2)
+  totalPrice    Decimal       @db.Decimal(10, 2)
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  order       CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order         CateringOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  serviceItem   ServiceItem?  @relation(fields: [serviceItemId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
+  @@index([serviceItemId])
 }
 
 model CateringOrderHistory {

@@ -3,7 +3,7 @@
  * Shared constants for frontend and backend validation
  */
 
-export const ENTITY_TYPES = ['CLIENT', 'RESERVATION', 'DEPOSIT'] as const;
+export const ENTITY_TYPES = ['CLIENT', 'RESERVATION', 'DEPOSIT', 'CATERING_ORDER'] as const;
 export type EntityType = typeof ENTITY_TYPES[number];
 
 export interface AttachmentCategoryDef {
@@ -31,6 +31,15 @@ export const ATTACHMENT_CATEGORIES: Record<EntityType, AttachmentCategoryDef[]> 
     { value: 'INVOICE', label: 'Faktura zaliczkowa', description: 'Faktura VAT za wpłaconą zaliczkę' },
     { value: 'REFUND_PROOF', label: 'Potwierdzenie zwrotu', description: 'Dokument potwierdzający zwrot' },
     { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty zaliczki' },
+  ],
+  CATERING_ORDER: [
+    { value: 'RODO', label: 'Zgoda RODO', description: 'Podpisana zgoda RODO — zostanie automatycznie przypisana do klienta' },
+    { value: 'CONTRACT', label: 'Umowa catering', description: 'Podpisana umowa na usługę cateringową' },
+    { value: 'INVOICE', label: 'Faktura', description: 'Faktura VAT za zamówienie cateringowe' },
+    { value: 'MENU', label: 'Menu / karta dań', description: 'Uzgodnione menu, karta dań klienta' },
+    { value: 'DIETARY', label: 'Wymagania dietetyczne', description: 'Informacje o alergiach, dietach, preferencjach' },
+    { value: 'CORRESPONDENCE', label: 'Korespondencja', description: 'Ustalenia mailowe, SMS, screenshots rozmów' },
+    { value: 'OTHER', label: 'Inne', description: 'Inne dokumenty zamówienia cateringowego' },
   ],
 };
 
@@ -88,4 +97,5 @@ export const STORAGE_DIRS: Record<EntityType, string> = {
   CLIENT: 'clients',
   RESERVATION: 'reservations',
   DEPOSIT: 'deposits',
+  CATERING_ORDER: 'catering_orders',
 };
