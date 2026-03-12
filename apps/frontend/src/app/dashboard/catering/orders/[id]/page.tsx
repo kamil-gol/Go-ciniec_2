@@ -710,8 +710,8 @@ export default function CateringOrderDetailPage() {
                 <Trash2 className="mr-2 h-4 w-4" /> Usuń zamówienie
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </Dropdow<DropdownMenu>
-        </div>
+      </DropdownMenu>
+      <DropdownMenu>        </div>
       </div>
 
       {/* ── Siatka treści ────────────────────────────────── */}
