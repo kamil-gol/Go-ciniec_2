@@ -35,6 +35,7 @@ import {
   useCateringOrder,
   useDeleteCateringOrder,
   useUpdateCateringOrder,
+  import { apiClient } from '@/lib/api-client';
   useUpdateCateringDeposit,
   useDeleteCateringDeposit,
 } from '@/hooks/use-catering-orders';
@@ -303,12 +304,13 @@ export default function CateringOrderDetailPage() {
   const removeDiscountMutation = useUpdateCateringOrder(id);
   const deleteDepositMutation = useDeleteCateringDeposit(id);
 
-    const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async () => {
     try {
-      const response = await fetch(`/api/catering/orders/${id}/pdf/order`);
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      const response = await apiClient.get(`/api/catering/orders/${id}/pdf/order`, {
+        responseType: 'blob',
+      });
       
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -322,7 +324,6 @@ export default function CateringOrderDetailPage() {
       alert('Nie udało się pobrać PDF');
     }
   };
-
   const handleDelete = async () => {
     if (!confirm('Czy na pewno usunąć to zamówienie?')) return;
     await deleteMutation.mutateAsync(id);
