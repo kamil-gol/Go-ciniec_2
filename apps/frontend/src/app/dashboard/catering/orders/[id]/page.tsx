@@ -694,26 +694,7 @@ export default function CateringOrderDetailPage() {
                                                                           </DropdownMenuItem>
                                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                  <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm">
-                                                            <Download className="mr-1.5 h-3.5 w-3.5" />
-                                                            Pobierz PDF
-                                                          </Button>
-                                          </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleDownloadPDF('quote')}>
-                                                            Wycena
-                                                          </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDownloadPDF('kitchen')}>
-                                                            Druk kuchenny
-                                                          </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDownloadPDF('invoice')}>
-                                                            Faktura pro forma
-                                                          </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                            </DropdownMenu>
-          <DropdownMenu>
+                  nMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
