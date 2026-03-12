@@ -303,6 +303,26 @@ export default function CateringOrderDetailPage() {
   const removeDiscountMutation = useUpdateCateringOrder(id);
   const deleteDepositMutation = useDeleteCateringDeposit(id);
 
+    const handleDownloadPDF = async () => {
+    try {
+      const response = await fetch(`/api/catering/orders/${id}/pdf/order`);
+      if (!response.ok) throw new Error('Failed to generate PDF');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `zamowienie-catering-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Nie udało się pobrać PDF');
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirm('Czy na pewno usunąć to zamówienie?')) return;
     await deleteMutation.mutateAsync(id);
@@ -396,7 +416,7 @@ export default function CateringOrderDetailPage() {
             <div className="flex items-center gap-2">
                             <Button size="sm" variant="ghost"
                 className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
-                onClick={() => window.print()}
+                onClick={handleDownloadPDF}
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" /> Pobierz PDF
               </Button>
