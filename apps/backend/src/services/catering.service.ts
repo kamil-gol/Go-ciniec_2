@@ -62,8 +62,8 @@ export interface CreateCateringSectionDto {
   description?: string;
   /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
   minSelect?: number;
-  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
-  maxSelect?: number;
+  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... null = bez limitu */
+  maxSelect?: number | null;
   isRequired?: boolean;
   displayOrder?: number;
 }
@@ -73,8 +73,8 @@ export interface UpdateCateringSectionDto {
   description?: string | null;
   /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
   minSelect?: number;
-  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
-  maxSelect?: number;
+  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... null = wyczyść limit */
+  maxSelect?: number | null;
   isRequired?: boolean;
   displayOrder?: number;
 }
@@ -255,8 +255,15 @@ export async function createCateringSection(packageId: string, data: CreateCater
   });
   if (existing) throw new AppError('Sekcja dla tej kategorii już istnieje w pakiecie', 409);
 
+  const { maxSelect, ...rest } = data;
+
   return prisma.cateringPackageSection.create({
-    data: { ...data, packageId },
+    data: {
+      ...rest,
+      packageId,
+      // null lub undefined = brak limitu (pole nullable w bazie)
+      ...(maxSelect !== undefined && { maxSelect: maxSelect ?? null }),
+    },
     include: { category: true, options: { include: { dish: true } } },
   });
 }
@@ -265,9 +272,16 @@ export async function updateCateringSection(sectionId: string, data: UpdateCater
   const section = await prisma.cateringPackageSection.findUnique({ where: { id: sectionId } });
   if (!section) throw new AppError('Sekcja cateringu nie istnieje', 404);
 
+  const { maxSelect, ...rest } = data;
+
   return prisma.cateringPackageSection.update({
     where: { id: sectionId },
-    data,
+    data: {
+      ...rest,
+      // Jeśli maxSelect został przekazany (nawet jako null) — zapisz go
+      // null w bazie = brak limitu
+      ...(maxSelect !== undefined && { maxSelect: maxSelect ?? null }),
+    },
     include: { category: true, options: { include: { dish: true } } },
   });
 }

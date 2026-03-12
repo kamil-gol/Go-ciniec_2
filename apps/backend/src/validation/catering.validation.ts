@@ -14,6 +14,9 @@ const displayOrder = z.number().int().min(0).max(32767).default(0);
 
 const CateringPriceType = z.enum(['PER_PERSON', 'FLAT', 'TIERED']);
 
+// Wartości ćwiartkowe dla minSelect/maxSelect (0.25 krok, max 2)
+const quarterSelect = z.number().multipleOf(0.25).min(0.25).max(2);
+
 // ═══════════════════════════════════════════════════════════════
 // TEMPLATES
 // ═══════════════════════════════════════════════════════════════
@@ -84,20 +87,22 @@ export const createCateringSectionSchema = z.object({
   categoryId: z.string().uuid(),
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).optional(),
-  minSelect: z.number().int().min(0).max(32767).default(1),
-  maxSelect: z.number().int().min(1).max(32767).default(1),
+  // null lub brak = bez limitu
+  minSelect: quarterSelect.default(1),
+  maxSelect: quarterSelect.nullable().optional(),
   isRequired: z.boolean().default(true),
   displayOrder,
 }).refine(
-  (d) => d.minSelect <= d.maxSelect,
+  (d) => d.maxSelect == null || d.minSelect <= d.maxSelect,
   { message: 'minSelect nie może być większe niż maxSelect', path: ['minSelect'] },
 );
 
 export const updateCateringSectionSchema = z.object({
   name: z.string().min(1).max(255).nullable().optional(),
   description: z.string().max(2000).nullable().optional(),
-  minSelect: z.number().int().min(0).max(32767).optional(),
-  maxSelect: z.number().int().min(1).max(32767).optional(),
+  minSelect: quarterSelect.optional(),
+  // null = wyczyść limit (bez limitu)
+  maxSelect: quarterSelect.nullable().optional(),
   isRequired: z.boolean().optional(),
   displayOrder: z.number().int().min(0).max(32767).optional(),
 });
