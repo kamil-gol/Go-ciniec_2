@@ -16,12 +16,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CateringPackageSection } from '@/types/catering.types';
 
+// Dozwolone wartości: 0, 0.25, 0.5, 0.75, 1, 1.25, ...
+const isQuarterMultiple = (val: number) => Number.isInteger(val * 4);
+
 const schema = z.object({
   categoryId: z.string().min(1, 'Kategoria jest wymagana'),
   name: z.string().max(100).optional(),
   description: z.string().max(300).optional(),
-  minSelect: z.coerce.number().int().min(0),
-  maxSelect: z.coerce.number().int().min(0).optional().or(z.literal('')),
+  minSelect: z.coerce
+    .number()
+    .min(0, 'Wartość minimalna to 0')
+    .refine(isQuarterMultiple, { message: 'Dozwolone wartości: 0, 0.25, 0.5, 0.75, 1, 1.25…' }),
+  maxSelect: z.union([
+    z.literal(''),
+    z.coerce
+      .number()
+      .min(0, 'Wartość minimalna to 0')
+      .refine(isQuarterMultiple, { message: 'Dozwolone wartości: 0, 0.25, 0.5, 0.75, 1, 1.25…' }),
+  ]),
   isRequired: z.boolean(),
   displayOrder: z.coerce.number().int().min(0),
 });
@@ -49,7 +61,6 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
     },
   });
 
-  // categories musi byc w deps - Select nie moze dopasowac wartosci zanim opcje sie zaladuja
   useEffect(() => {
     if (section) {
       form.reset({
@@ -173,7 +184,15 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Min. wybór</FormLabel>
-                <FormControl><Input type="number" min="0" {...field} /></FormControl>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    placeholder="np. 0.5"
+                    {...field}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -185,7 +204,14 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
               <FormItem>
                 <FormLabel>Maks. wybór</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" placeholder="–" {...field} value={field.value ?? ''} />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    placeholder="–"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -203,6 +229,10 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             )}
           />
         </div>
+
+        <p className="text-xs text-muted-foreground -mt-2">
+          Dozwolone wartości: 0, 0.25, 0.5, 0.75, 1, 1.25…
+        </p>
 
         <FormField
           control={form.control}
