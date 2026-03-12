@@ -306,7 +306,7 @@ export default function CateringOrderDetailPage() {
 
   const handleDownloadPDF = async () => {
     try {
-      const response = await apiClient.get(`/api/catering/orders/${id}/pdf/order`, {
+      const response = await apiClient.get(`/catering/orders/${id}/pdf/order`, {
         responseType: 'blob',
       });
       
