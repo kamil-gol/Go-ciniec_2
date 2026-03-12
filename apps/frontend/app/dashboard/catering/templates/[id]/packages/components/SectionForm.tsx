@@ -16,12 +16,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CateringPackageSection } from '@/types/catering.types';
 
+// Dozwolone wartości ćwiartkowe
+const QUARTER_VALUES = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 8, 10];
+const QUARTER_OPTIONS = QUARTER_VALUES.map((v) => ({
+  value: String(v),
+  label: v === 0 ? '0 (bez limitu)' : String(v).replace('.', ','),
+}));
+
 const schema = z.object({
   categoryId: z.string().min(1, 'Kategoria jest wymagana'),
   name: z.string().max(100).optional(),
   description: z.string().max(300).optional(),
-  minSelect: z.coerce.number().int().min(0),
-  maxSelect: z.coerce.number().int().min(0).optional().or(z.literal('')),
+  minSelect: z.coerce.number().min(0).multipleOf(0.25),
+  maxSelect: z.coerce.number().min(0).multipleOf(0.25).optional().or(z.literal(0)),
   isRequired: z.boolean(),
   displayOrder: z.coerce.number().int().min(0),
 });
@@ -45,19 +52,18 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
     resolver: zodResolver(schema),
     defaultValues: {
       categoryId: '', name: '', description: '',
-      minSelect: 1, maxSelect: '', isRequired: true, displayOrder: 0,
+      minSelect: 1, maxSelect: 1, isRequired: true, displayOrder: 0,
     },
   });
 
-  // categories musi byc w deps - Select nie moze dopasowac wartosci zanim opcje sie zaladuja
   useEffect(() => {
     if (section) {
       form.reset({
         categoryId: section.categoryId,
         name: section.name ?? '',
         description: section.description ?? '',
-        minSelect: section.minSelect,
-        maxSelect: section.maxSelect ?? '',
+        minSelect: Number(section.minSelect),
+        maxSelect: Number(section.maxSelect) ?? 1,
         isRequired: section.isRequired,
         displayOrder: section.displayOrder,
       });
@@ -73,7 +79,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             name: values.name || null,
             description: values.description || null,
             minSelect: values.minSelect,
-            maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+            maxSelect: values.maxSelect !== 0 ? values.maxSelect : undefined,
             isRequired: values.isRequired,
             displayOrder: values.displayOrder,
           },
@@ -87,7 +93,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           name: values.name || undefined,
           description: values.description || undefined,
           minSelect: values.minSelect,
-          maxSelect: values.maxSelect !== '' ? Number(values.maxSelect) : undefined,
+          maxSelect: values.maxSelect !== 0 ? values.maxSelect : undefined,
           isRequired: values.isRequired,
           displayOrder: values.displayOrder,
         },
@@ -166,6 +172,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           )}
         />
 
+        {/* Min/Max — Selecty z wartościami ćwiartkowymi */}
         <div className="grid grid-cols-3 gap-3">
           <FormField
             control={form.control}
@@ -173,7 +180,21 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Min. wybór</FormLabel>
-                <FormControl><Input type="number" min="0" {...field} /></FormControl>
+                <Select
+                  onValueChange={(v) => field.onChange(Number(v))}
+                  value={String(field.value)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {QUARTER_OPTIONS.filter(o => o.value !== '0').map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -184,9 +205,22 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Maks. wybór</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" placeholder="–" {...field} value={field.value ?? ''} />
-                </FormControl>
+                <Select
+                  onValueChange={(v) => field.onChange(Number(v))}
+                  value={String(field.value ?? 0)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {QUARTER_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">0 = bez limitu</p>
                 <FormMessage />
               </FormItem>
             )}

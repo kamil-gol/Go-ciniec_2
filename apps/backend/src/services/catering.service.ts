@@ -60,7 +60,9 @@ export interface CreateCateringSectionDto {
   categoryId: string;
   name?: string;
   description?: string;
+  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
   minSelect?: number;
+  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
   maxSelect?: number;
   isRequired?: boolean;
   displayOrder?: number;
@@ -69,7 +71,9 @@ export interface CreateCateringSectionDto {
 export interface UpdateCateringSectionDto {
   name?: string | null;
   description?: string | null;
+  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
   minSelect?: number;
+  /** Wartości ćwiartkowe: 0.25, 0.5, 0.75, 1.0, 1.25... */
   maxSelect?: number;
   isRequired?: boolean;
   displayOrder?: number;
