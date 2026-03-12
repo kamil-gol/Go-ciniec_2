@@ -52,15 +52,30 @@ const SECTION_COLORS = [
 /** Formatuje zakres wyboru: "1–2", "1+" (bez limitu), "1" */
 function formatSelectRange(min: unknown, max: unknown): string {
   const minVal = Number(min);
-  // null, undefined lub 0 → brak limitu górnego
   const maxVal = max != null && Number(max) > 0 ? Number(max) : null;
-
   if (maxVal === null) return `${minVal}+`;
   if (minVal === maxVal) return String(minVal);
   return `${minVal}\u2013${maxVal}`;
 }
 
-// ─── Sortable row ──────────────────────────────────────────────────────────────────────────────
+/**
+ * Buduje klucz do porównania stanu sekcji z serwera.
+ * Uwzględnia: ID, kolejność, limity wyboru ORAZ opcje (dania) —
+ * dzięki temu każda zmiana opcji triggeruje re-sync localSections.
+ */
+function buildServerKey(sections: CateringPackageSection[]): string {
+  return JSON.stringify(
+    sections.map((s) => ({
+      id: s.id,
+      min: s.minSelect,
+      max: s.maxSelect,
+      order: s.displayOrder,
+      options: (s.options ?? []).map((o) => o.id).sort().join(','),
+    })),
+  );
+}
+
+// ─── Sortable row ──────────────────────────────────────────────────────────────────────
 interface SortableRowProps {
   section: CateringPackageSection;
   idx: number;
@@ -118,7 +133,6 @@ function SortableSectionRow({
           className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
           onClick={() => onToggle(section.id)}
         >
-          {/* Drag handle */}
           <button
             {...attributes}
             {...listeners}
@@ -129,12 +143,10 @@ function SortableSectionRow({
             <GripVertical className="h-4 w-4" />
           </button>
 
-          {/* Color + number badge */}
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${colorGradient} text-white text-xs font-bold shadow-sm`}>
             {idx + 1}
           </div>
 
-          {/* Title block */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold leading-none">
@@ -169,7 +181,6 @@ function SortableSectionRow({
             </div>
           </div>
 
-          {/* Actions + chevron */}
           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="ghost"
@@ -189,13 +200,10 @@ function SortableSectionRow({
             </Button>
           </div>
           <div className="text-muted-foreground shrink-0">
-            {isExpanded
-              ? <ChevronDown className="h-4 w-4" />
-              : <ChevronRight className="h-4 w-4" />}
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </div>
         </div>
 
-        {/* Expanded content */}
         <AnimatePresence>
           {isExpanded && (
             <motion.div
@@ -216,7 +224,7 @@ function SortableSectionRow({
   );
 }
 
-// ─── Drag overlay card ────────────────────────────────────────────────────────────────────────────
+// ─── Drag overlay ──────────────────────────────────────────────────────────────────────
 function SectionDragOverlay({ section, idx }: { section: CateringPackageSection; idx: number }) {
   const colorGradient = SECTION_COLORS[idx % SECTION_COLORS.length];
   return (
@@ -232,7 +240,7 @@ function SectionDragOverlay({ section, idx }: { section: CateringPackageSection;
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────────────────────
+// ─── Main component ──────────────────────────────────────────────────────────────────────
 interface Props { pkg: CateringPackage; templateId: string; }
 
 export function SectionManager({ pkg, templateId }: Props) {
@@ -245,14 +253,16 @@ export function SectionManager({ pkg, templateId }: Props) {
   const deleteSection = useDeleteCateringSection(templateId);
   const reorderSections = useReorderCateringSections(templateId);
 
+  const sortedFromServer = [...(pkg.sections ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
+
   const [localSections, setLocalSections] = useState<CateringPackageSection[]>(
-    () => [...(pkg.sections ?? [])].sort((a, b) => a.displayOrder - b.displayOrder),
+    () => sortedFromServer,
   );
 
-  // Sync when pkg changes from server (w tym po edycji — nowe maxSelect z backendu)
-  const sortedFromServer = [...(pkg.sections ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
-  const serverKey = JSON.stringify(sortedFromServer.map((s) => ({ id: s.id, min: s.minSelect, max: s.maxSelect, order: s.displayOrder })));
-  // biome-ignore lint: intentional sync
+  // Re-sync lokalny stan za każdym razem gdy serwer zwraca nowe dane
+  // (zmiana sekcji, edycja limitów, dodanie/usunięcie opcji/dan)
+  const serverKey = buildServerKey(sortedFromServer);
+  // biome-ignore lint: intentional derived-state sync
   const [prevServerKey, setPrevServerKey] = useState(serverKey);
   if (serverKey !== prevServerKey) {
     setLocalSections(sortedFromServer);
