@@ -16,8 +16,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CateringPackageSection } from '@/types/catering.types';
 
-// Dozwolone wartości ćwiartkowe: 0.25 – 2.0
-const QUARTER_VALUES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+// Dozwolone wartości ćwiartkowe: 0.25 – 3.0
+const QUARTER_VALUES = [
+  0.25, 0.5, 0.75,
+  1, 1.25, 1.5, 1.75,
+  2, 2.25, 2.5, 2.75,
+  3,
+];
 const QUARTER_OPTIONS = QUARTER_VALUES.map((v) => ({
   value: String(v),
   label: String(v).replace('.', ','),
@@ -29,8 +34,8 @@ const schema = z.object({
   categoryId: z.string().min(1, 'Kategoria jest wymagana'),
   name: z.string().max(100).optional(),
   description: z.string().max(300).optional(),
-  minSelect: z.coerce.number().min(0.25).multipleOf(0.25),
-  maxSelect: z.coerce.number().min(0).multipleOf(0.25),
+  minSelect: z.coerce.number().min(0.25).max(3).multipleOf(0.25),
+  maxSelect: z.coerce.number().min(0).max(3).multipleOf(0.25),
   isRequired: z.boolean(),
   displayOrder: z.coerce.number().int().min(0),
 });
@@ -178,7 +183,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
           )}
         />
 
-        {/* Min/Max — Selecty z wartościami ćwiartkowymi 0.25–2 */}
+        {/* Min/Max — Selecty z wartościami ćwiartkowymi 0,25–3,00 */}
         <div className="grid grid-cols-3 gap-3">
           <FormField
             control={form.control}
