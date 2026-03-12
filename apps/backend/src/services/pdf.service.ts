@@ -264,6 +264,19 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   CONFIRMED: { label: 'POTWIERDZONA', color: COLORS.success },
   COMPLETED: { label: 'ZAKOŃCZONA', color: COLORS.textMuted },
   CANCELLED: { label: 'ANULOWANA', color: COLORS.danger },
+  // Catering-specific statuses
+  DRAFT: { label: 'SZKIC', color: COLORS.textMuted },
+  INQUIRY: { label: 'ZAPYTANIE', color: COLORS.info },
+  QUOTED: { label: 'WYCENIONE', color: COLORS.warning },
+  IN_PREPARATION: { label: 'W PRZYGOTOWANIU', color: COLORS.info },
+  READY: { label: 'GOTOWE', color: COLORS.success },
+  DELIVERED: { label: 'DOSTARCZONE', color: COLORS.success },
+};
+
+const DELIVERY_TYPE_LABELS: Record<string, string> = {
+  PICKUP: 'Odbiór osobisty',
+  DELIVERY: 'Dostawa',
+  ON_SITE: 'Na miejscu',
 };
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -2123,9 +2136,9 @@ export class PDFService {
     // Event info
     doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
     doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
-    doc.text(`Typ dostawy: ${data.deliveryType}`, left, doc.y);
+    doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
     if (data.deliveryAddress) doc.text(`Adres: ${data.deliveryAddress}`, left, doc.y);
-    doc.text(`Liczba osób: ${data.guests}`, left, doc.y);
+    doc.text(`Liczba osób: ${(data as any).guestsCount ?? data.guests ?? '—'}`, left, doc.y);
     doc.moveDown(0.4);
     this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
@@ -2134,19 +2147,19 @@ export class PDFService {
     doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
     doc.moveDown(0.3);
     const itemRows = data.items.map(item => [
-      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
       `${item.quantity}`,
       this.formatCurrency(item.unitPrice),
       this.formatCurrency(item.totalPrice),
     ]);
     const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
-    this.drawCompactTable(doc, ['Produkt', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+    this.drawCompactTable(doc, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
     doc.moveDown(0.4);
     // Total
     doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
     doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
     if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
-    doc.text(`RAZEM: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
     if (data.notes) {
       doc.moveDown(0.4);
       doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
@@ -2173,9 +2186,9 @@ export class PDFService {
     doc.moveDown(0.5);
     doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
     doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
-    doc.text(`Typ dostawy: ${data.deliveryType}`, left, doc.y);
+    doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
     if (data.deliveryAddress) doc.text(`Adres dostawy: ${data.deliveryAddress}`, left, doc.y);
-    doc.text(`Liczba gości: ${data.guests}`, left, doc.y);
+    doc.text(`Liczba gości: ${(data as any).guestsCount ?? data.guests ?? '—'}`, left, doc.y);
     doc.moveDown(0.5);
     this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
@@ -2183,11 +2196,11 @@ export class PDFService {
     doc.text('DO PRZYGOTOWANIA', left, doc.y);
     doc.moveDown(0.3);
     const itemRows = data.items.map(item => [
-      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
       `${item.quantity}`,
     ]);
     const colWidths = [Math.round(pageWidth * 0.75), Math.round(pageWidth * 0.25)];
-    this.drawCompactTable(doc, ['Produkt', 'Ilość'], itemRows, colWidths, left);
+    this.drawCompactTable(doc, ['Danie', 'Ilość'], itemRows, colWidths, left);
     if (data.notes) {
       doc.moveDown(0.5);
       doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
@@ -2232,10 +2245,11 @@ export class PDFService {
     if (data.client.address) clientLines.push(data.client.address);
     this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, clientLines);
 
+    const deliveryLabel = DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType;
     const eventLines = [
       this.formatDate(data.eventDate),
-      `Typ dostawy: ${data.deliveryType}`,
-      `Liczba osób: ${data.guests}`,
+      `Typ dostawy: ${deliveryLabel}`,
+      `Liczba osób: ${data.guestsCount ?? data.guests ?? '—'}`,
     ];
     if (data.deliveryAddress) eventLines.push(`Adres: ${data.deliveryAddress}`);
     this.drawInfoBox(doc, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth, eventLines);
@@ -2252,13 +2266,13 @@ export class PDFService {
     doc.moveDown(0.3);
 
     const itemRows = data.items.map(item => [
-      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
       `${item.quantity}`,
       this.formatCurrency(item.unitPrice),
       this.formatCurrency(item.totalPrice),
     ]);
     const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
-    this.drawCompactTable(doc, ['Produkt', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+    this.drawCompactTable(doc, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
 
     doc.moveDown(0.4);
 
@@ -2267,7 +2281,7 @@ export class PDFService {
     doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
     if (data.discountAmount && data.discountAmount > 0)
       doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
-    doc.text(`RAZEM: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
 
     // Notes
     if (data.notes) {
@@ -2308,14 +2322,14 @@ export class PDFService {
     doc.moveDown(0.4);
     doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
     doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
-    doc.text(`Typ dostawy: ${data.deliveryType}`, left, doc.y);
+    doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
     this.drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
     doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
     doc.text('POZYCJE', left, doc.y);
     doc.moveDown(0.3);
     const itemRows = data.items.map(item => [
-      item.productName + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+      (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
       `${item.quantity}`,
       this.formatCurrency(item.unitPrice),
       this.formatCurrency(item.totalPrice),
@@ -2336,11 +2350,13 @@ export class PDFService {
 // ═══════════════ CATERING PDF TYPES ═══════════════
 
 export interface CateringOrderItemForPDF {
-  productName: string;
+  dishNameSnapshot?: string;
+  productName?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
   extraDescription?: string;
+  note?: string;
 }
 
 export interface CateringQuotePDFData {
@@ -2412,10 +2428,11 @@ export interface CateringOrderPDFData {
     companyName?: string;
     address?: string;
   };
-  eventDate: Date;
+  eventDate: Date | string;
   deliveryType: string;
   deliveryAddress?: string;
-  guests: number;
+  guestsCount?: number;
+  guests?: number;
   items: CateringOrderItemForPDF[];
   subtotal: number;
   discountAmount?: number;
