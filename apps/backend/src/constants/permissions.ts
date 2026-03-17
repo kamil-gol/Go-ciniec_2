@@ -12,6 +12,7 @@
 // ================================================================
 
 export const MODULE_LABELS: Record<string, string> = {
+  system: 'System',
   dashboard: 'Dashboard',
   reservations: 'Rezerwacje',
   clients: 'Klienci',
@@ -29,6 +30,7 @@ export const MODULE_LABELS: Record<string, string> = {
 };
 
 export const ACTION_LABELS: Record<string, string> = {
+  wildcard: 'Pełny dostęp',
   read: 'Przeglądanie',
   create: 'Tworzenie',
   update: 'Edycja',
@@ -62,6 +64,9 @@ export const ACTION_LABELS: Record<string, string> = {
 export type PermissionTuple = [string, string, string, string, string];
 
 export const PERMISSION_DEFINITIONS: PermissionTuple[] = [
+  // ╣╗╗ System (wildcard) ╣╗╗
+  ['*', 'system', 'wildcard', 'Pełny dostęp', 'Wildcard — pełny dostęp do wszystkich funkcji systemu'],
+
   // ╣╗╗ Dashboard ╣╗╗
   ['dashboard:read', 'dashboard', 'read', 'Dashboard — pogląd', 'Dostęp do strony głównej i statystyk'],
 

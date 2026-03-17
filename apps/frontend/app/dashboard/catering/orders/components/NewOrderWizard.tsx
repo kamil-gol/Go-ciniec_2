@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useCreateCateringOrder } from '@/hooks/use-catering-orders';
 import { useCateringTemplates } from '@/hooks/use-catering';
 import { useClients } from '@/hooks/use-clients';
@@ -303,27 +304,38 @@ export function NewOrderWizard({ onSuccess }: Props) {
     const validExtras = state.extras.filter(extra => extra.name.trim() !== '');
     const deliveryAddress = buildAddress(state.deliveryStreet, state.deliveryNumber, state.deliveryCity) || null;
 
-    const order = await createOrder.mutateAsync({
-      clientId: state.clientId,
-      templateId: state.templateId || null,
-      packageId: state.packageId || null,
-      deliveryType: state.deliveryType,
-      eventName: state.eventName || null,
-      eventDate: state.eventDate || null,
-      guestsCount: parseInt(state.guestsCount, 10) || 0,
-      deliveryAddress,
-      deliveryDate: state.eventDate || null,
-      deliveryTime: state.deliveryTime || null,
-      deliveryNotes: state.deliveryNotes || null,
-      contactName: state.contactName || null,
-      contactPhone: state.contactPhone || null,
-      contactEmail: state.contactEmail || null,
-      notes: state.notes || null,
-      specialRequirements: state.specialRequirements || null,
-      items: validItems.length > 0 ? validItems : undefined,
-      extras: validExtras.length > 0 ? validExtras : undefined,
-    });
-    onSuccess(order.id);
+    try {
+      const order = await createOrder.mutateAsync({
+        clientId: state.clientId,
+        templateId: state.templateId || null,
+        packageId: state.packageId || null,
+        deliveryType: state.deliveryType,
+        eventName: state.eventName || null,
+        eventDate: state.eventDate || null,
+        guestsCount: parseInt(state.guestsCount, 10) || 0,
+        deliveryAddress,
+        deliveryDate: state.eventDate || null,
+        deliveryTime: state.deliveryTime || null,
+        deliveryNotes: state.deliveryNotes || null,
+        contactName: state.contactName || null,
+        contactPhone: state.contactPhone || null,
+        contactEmail: state.contactEmail || null,
+        notes: state.notes || null,
+        specialRequirements: state.specialRequirements || null,
+        items: validItems.length > 0 ? validItems : undefined,
+        extras: validExtras.length > 0 ? validExtras : undefined,
+      });
+      onSuccess(order.id);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 403) {
+        toast.error('Brak uprawnień do tworzenia zamówień cateringowych');
+      } else if (status === 401) {
+        toast.error('Sesja wygasła — zaloguj się ponownie');
+      } else {
+        toast.error('Nie udało się utworzyć zamówienia. Spróbuj ponownie.');
+      }
+    }
   };
 
   // ═══ STEP RENDERERS ═══

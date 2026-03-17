@@ -64,6 +64,7 @@ const adminUser = {
     name: 'Administrator',
     slug: 'admin',
     permissions: [
+      { permission: { slug: '*' } },
       { permission: { slug: 'reservations:read' } },
       { permission: { slug: 'reservations:create' } },
       { permission: { slug: 'reservations:update' } },
@@ -197,6 +198,16 @@ describe('Permissions Middleware', () => {
       mockPrismaClient.user.findUnique.mockResolvedValue(legacyAdminUser);
       const req = mockRequest({ user: { id: 'legacy-admin', email: 'admin@test.pl' } });
       const middleware = requirePermission('anything:here');
+
+      await middleware(req as any, mockResponse() as any, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+    });
+
+    it('should bypass all checks for RBAC admin with wildcard * in assigned role', async () => {
+      mockPrismaClient.user.findUnique.mockResolvedValue(adminUser);
+      const req = mockRequest({ user: { id: 'admin-1', email: 'admin@test.pl' } });
+      const middleware = requirePermission('catering:manage_orders');
 
       await middleware(req as any, mockResponse() as any, mockNext);
 
