@@ -122,11 +122,11 @@ export async function seedMenuTemplatesAndPackages() {
     new Decimal(100),
     new Decimal(50),
     [
-      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 1 },
-      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2 },
+      { categorySlug: 'SOUP', minSelect: new Decimal(1), maxSelect: new Decimal(1.5), displayOrder: 1, extraItemPrice: new Decimal(15), maxExtra: 3 },
+      { categorySlug: 'MAIN_COURSE', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 2, extraItemPrice: new Decimal(25) },
       { categorySlug: 'SIDE_DISH', minSelect: new Decimal(2), maxSelect: new Decimal(3), displayOrder: 3 },
       { categorySlug: 'SALAD', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 4 },
-      { categorySlug: 'DESSERT', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 5 },
+      { categorySlug: 'DESSERT', minSelect: new Decimal(1), maxSelect: new Decimal(2), displayOrder: 5, extraItemPrice: new Decimal(12) },
     ],
     categoryMap
   );
@@ -276,6 +276,8 @@ async function createPackageWithCategories(
     minSelect: Decimal;
     maxSelect: Decimal;
     displayOrder: number;
+    extraItemPrice?: Decimal;
+    maxExtra?: number;
   }[],
   categoryMap: Map<string, string>
 ) {
@@ -308,6 +310,8 @@ async function createPackageWithCategories(
         displayOrder: cat.displayOrder,
         isRequired: true,
         isEnabled: true,
+        ...(cat.extraItemPrice !== undefined && { extraItemPrice: cat.extraItemPrice }),
+        ...(cat.maxExtra !== undefined && { maxExtra: cat.maxExtra }),
       },
     });
   }

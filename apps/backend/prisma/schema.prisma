@@ -345,6 +345,7 @@ model Reservation {
   deposits        Deposit[]
   menuSnapshot    ReservationMenuSnapshot?
   extras          ReservationExtra[]
+  categoryExtras  ReservationCategoryExtra[]
 
   @@index([date])
   @@index([startDateTime])
@@ -637,16 +638,40 @@ model PackageCategorySettings {
   
   displayOrder  Int           @default(0) @db.SmallInt
   customLabel   String?       @db.VarChar(255)
-  
+
+  extraItemPrice Decimal?     @db.Decimal(10, 2)
+  maxExtra       Int?         @db.SmallInt
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  
+
   package       MenuPackage   @relation(fields: [packageId], references: [id], onDelete: Cascade)
   category      DishCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  
+  reservationExtras ReservationCategoryExtra[]
+
   @@unique([packageId, categoryId])
   @@index([packageId])
   @@index([categoryId])
+}
+
+model ReservationCategoryExtra {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId     String                  @db.Uuid
+  packageCategoryId String                  @db.Uuid
+
+  quantity          Int                     @db.SmallInt
+  pricePerItem      Decimal                 @db.Decimal(10, 2)
+  totalPrice        Decimal                 @db.Decimal(10, 2)
+
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  reservation       Reservation             @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  packageCategory   PackageCategorySettings  @relation(fields: [packageCategoryId], references: [id])
+
+  @@unique([reservationId, packageCategoryId])
+  @@index([reservationId])
+  @@index([packageCategoryId])
 }
 
 model ReservationMenuSnapshot {
