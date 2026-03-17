@@ -277,8 +277,11 @@ export function NewOrderWizard({ onSuccess }: Props) {
   const isStep4Valid = useMemo(() => {
     const hasTime = !!state.deliveryTime;
     if (state.deliveryType === 'PICKUP') return hasTime;
-    return hasTime && !!state.deliveryCity.trim();
-  }, [state.deliveryType, state.deliveryTime, state.deliveryCity]);
+    return hasTime
+      && !!state.deliveryCity.trim()
+      && !!state.deliveryStreet.trim()
+      && !!state.deliveryNumber.trim();
+  }, [state.deliveryType, state.deliveryTime, state.deliveryCity, state.deliveryStreet, state.deliveryNumber]);
 
   const goToNextStep = useCallback(() => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -450,6 +453,8 @@ export function NewOrderWizard({ onSuccess }: Props) {
           <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data realizacji</Label>
           <Input
             type="date"
+            min={new Date().toISOString().split('T')[0]}
+            max="2099-12-31"
             value={state.eventDate}
             onChange={e => set({ eventDate: e.target.value })}
             className="h-11"
@@ -655,6 +660,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                       <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
                       <Input
                         type="number" min={1} value={item.quantity}
+                        onFocus={e => e.target.select()}
                         onChange={e => { const items = [...state.items]; items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ items }); }}
                         className="w-16 h-8 text-center text-sm"
                       />
@@ -664,8 +670,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
                       <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
                       <Input
                         type="number" min={0} step="0.01" value={item.unitPrice}
+                        onFocus={e => e.target.select()}
                         onChange={e => { const items = [...state.items]; items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ items }); }}
-                        className="flex-1 h-8 text-sm"
+                        className={`flex-1 h-8 text-sm ${item.unitPrice === 0 && item.dishId ? 'border-amber-400 dark:border-amber-600' : ''}`}
                       />
                     </div>
                     {item.quantity > 0 && item.unitPrice > 0 && (
@@ -758,6 +765,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                       <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
                       <Input
                         type="number" min={1} value={extra.quantity}
+                        onFocus={e => e.target.select()}
                         onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 }; set({ extras }); }}
                         className="w-16 h-8 text-center text-sm"
                       />
@@ -767,8 +775,9 @@ export function NewOrderWizard({ onSuccess }: Props) {
                       <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
                       <Input
                         type="number" min={0} step="0.01" value={extra.unitPrice}
+                        onFocus={e => e.target.select()}
                         onChange={e => { const extras = [...state.extras]; extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 }; set({ extras }); }}
-                        className="flex-1 h-8 text-sm"
+                        className={`flex-1 h-8 text-sm ${extra.unitPrice === 0 && extra.name.trim() ? 'border-amber-400 dark:border-amber-600' : ''}`}
                       />
                     </div>
                     {extra.quantity > 0 && extra.unitPrice > 0 && (
@@ -803,21 +812,25 @@ export function NewOrderWizard({ onSuccess }: Props) {
       </Label>
       <div className="grid grid-cols-[1fr_6rem] gap-2">
         <div className="space-y-1">
-          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal">Ulica</Label>
+          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal flex items-center gap-1">
+            Ulica <span className="text-red-500">*</span>
+          </Label>
           <Input
             placeholder="np. ul. Kwiatowa"
             value={state.deliveryStreet}
             onChange={e => set({ deliveryStreet: e.target.value })}
-            className="h-10"
+            className={`h-10 ${!state.deliveryStreet.trim() ? 'border-red-300 dark:border-red-700' : ''}`}
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal">Numer</Label>
+          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal flex items-center gap-1">
+            Numer <span className="text-red-500">*</span>
+          </Label>
           <Input
             placeholder="12A"
             value={state.deliveryNumber}
             onChange={e => set({ deliveryNumber: e.target.value })}
-            className="h-10"
+            className={`h-10 ${!state.deliveryNumber.trim() ? 'border-red-300 dark:border-red-700' : ''}`}
           />
         </div>
       </div>
