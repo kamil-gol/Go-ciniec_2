@@ -22,10 +22,21 @@ describe('permissions constants', () => {
       });
     });
 
-    it('slug should match module:action pattern', () => {
+    it('slug should match module:action pattern (except wildcard *)', () => {
       PERMISSION_DEFINITIONS.forEach(([slug, module, action]) => {
-        expect(slug).toBe(`${module}:${action}`);
+        if (slug === '*') {
+          expect(module).toBe('system');
+          expect(action).toBe('wildcard');
+        } else {
+          expect(slug).toBe(`${module}:${action}`);
+        }
       });
+    });
+
+    it('should include wildcard * permission for admin bypass', () => {
+      const wildcardPerm = PERMISSION_DEFINITIONS.find(([slug]) => slug === '*');
+      expect(wildcardPerm).toBeDefined();
+      expect(wildcardPerm![1]).toBe('system');
     });
 
     it('should have no duplicate slugs', () => {
@@ -52,6 +63,14 @@ describe('permissions constants', () => {
 
     it('admin should have ALL permissions', () => {
       expect(ROLE_DEFINITIONS.admin.permissions).toBe('ALL');
+    });
+
+    it('admin with ALL should resolve to include wildcard * for permission bypass', () => {
+      const allSlugs = PERMISSION_DEFINITIONS.map(([slug]) => slug);
+      const adminPerms = ROLE_DEFINITIONS.admin.permissions === 'ALL'
+        ? allSlugs
+        : ROLE_DEFINITIONS.admin.permissions as string[];
+      expect(adminPerms).toContain('*');
     });
 
     it('admin should be system role', () => {
