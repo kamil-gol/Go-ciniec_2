@@ -2,7 +2,27 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Plus, Trash2, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft,
+  Loader2,
+  Plus,
+  Trash2,
+  Save,
+  BookOpen,
+  CalendarDays,
+  Truck,
+  Utensils,
+  Star,
+  Percent,
+  User,
+  FileText,
+  Calculator,
+  Clock,
+  MapPin,
+  Users,
+  CalendarCheck,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useCateringOrder, useUpdateCateringOrder } from '@/hooks/use-catering-orders';
 import { useCateringTemplates } from '@/hooks/use-catering';
@@ -12,7 +32,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
   Select,
@@ -90,6 +109,48 @@ interface FormState {
   quoteExpiresAt: string;
   items: (CreateOrderItemInput & { _key: number })[];
   extras: (CreateOrderExtraInput & { _key: number })[];
+}
+
+// ─── Reusable Section wrapper ─────────────────────────────────
+
+function SectionBlock({
+  icon: Icon,
+  title,
+  subtitle,
+  colorFrom,
+  colorTo,
+  borderColor,
+  children,
+  action,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle?: string;
+  colorFrom: string;
+  colorTo: string;
+  borderColor: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className={`rounded-2xl border ${borderColor} overflow-hidden shadow-sm bg-white dark:bg-neutral-900`}>
+      <div className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r ${colorFrom} ${colorTo} border-b ${borderColor}`}>
+        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${colorFrom.replace('from-', 'from-').replace('-50', '-500')} ${colorTo.replace('to-', 'to-').replace('-50', '-500')} flex items-center justify-center shadow-sm shrink-0`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+          {subtitle && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{subtitle}</p>
+          )}
+        </div>
+        {action}
+      </div>
+      <div className="p-5">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // ─── Strona ───────────────────────────────────────────────────
@@ -248,6 +309,12 @@ export default function EditOrderPage() {
     | { id: string; name: string; basePrice: number }[]
     | undefined;
 
+  const clientName = order
+    ? order.client.clientType === 'COMPANY' && order.client.companyName
+      ? order.client.companyName
+      : `${order.client.firstName} ${order.client.lastName}`
+    : '';
+
   if (isLoading || !form) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -257,44 +324,73 @@ export default function EditOrderPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(`/dashboard/catering/orders/${id}`)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Edytuj zamówienie</h1>
-            <p className="text-muted-foreground text-sm font-mono">{order?.orderNumber}</p>
+    <div className="space-y-6">
+
+      {/* ═══ GRADIENT HERO HEADER ═══ */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-6 py-6 text-white shadow-lg">
+        {/* Decorative circles */}
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -left-6 -bottom-8 h-28 w-28 rounded-full bg-white/5" />
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/catering/orders/${id}`)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 hover:bg-white/25 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">Edytuj zamówienie</h1>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="font-mono text-sm text-white/80">{order?.orderNumber}</span>
+                <span className="text-white/40">|</span>
+                <span className="text-sm text-white/80">{clientName}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => router.push(`/dashboard/catering/orders/${id}`)}
+              className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
+            >
+              Anuluj
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              className="bg-white text-orange-700 hover:bg-white/90 font-semibold h-9 px-5 shadow-sm"
+            >
+              {updateMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Zapisz zmiany
+            </Button>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Zapisz zmiany
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Lewa/środkowa kolumna — formularz ────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-1">
+        {/* ═══ LEWA/ŚRODKOWA KOLUMNA — FORMULARZ ═══ */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Szablon / Pakiet */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Szablon i pakiet</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* ── Szablon / Pakiet ── */}
+          <SectionBlock
+            icon={BookOpen}
+            title="Szablon i pakiet"
+            subtitle="Opcjonalnie wybierz gotowy szablon cateringu"
+            colorFrom="from-blue-50"
+            colorTo="to-cyan-50"
+            borderColor="border-blue-200 dark:border-blue-800"
+          >
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Szablon</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Szablon</Label>
                 <Select
                   value={form.templateId || 'NONE'}
                   onValueChange={v =>
@@ -317,7 +413,7 @@ export default function EditOrderPage() {
 
               {templatePackages && templatePackages.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Pakiet</Label>
+                  <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Pakiet</Label>
                   <PackageCards
                     packages={templatePackages}
                     selectedId={form.packageId}
@@ -325,24 +421,31 @@ export default function EditOrderPage() {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </SectionBlock>
 
-          {/* Wydarzenie */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Wydarzenie</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* ── Wydarzenie ── */}
+          <SectionBlock
+            icon={CalendarDays}
+            title="Wydarzenie"
+            subtitle="Szczegóły dotyczące okazji i terminu realizacji"
+            colorFrom="from-orange-50"
+            colorTo="to-amber-50"
+            borderColor="border-orange-200 dark:border-orange-800"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 space-y-1.5">
-                <Label>Nazwa wydarzenia</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Nazwa wydarzenia</Label>
                 <Input
                   value={form.eventName}
                   onChange={e => set({ eventName: e.target.value })}
+                  placeholder="np. Wesele Kowalskich"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Data</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <CalendarDays className="w-3 h-3" /> Data
+                </Label>
                 <Input
                   type="date"
                   value={form.eventDate}
@@ -350,7 +453,9 @@ export default function EditOrderPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Godzina</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" /> Godzina
+                </Label>
                 <Input
                   type="time"
                   value={form.eventTime}
@@ -358,14 +463,19 @@ export default function EditOrderPage() {
                 />
               </div>
               <div className="sm:col-span-2 space-y-1.5">
-                <Label>Miejsce</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3" /> Miejsce
+                </Label>
                 <Input
                   value={form.eventLocation}
                   onChange={e => set({ eventLocation: e.target.value })}
+                  placeholder="np. Sala bankietowa Belvedere"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Liczba gości</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3 h-3" /> Liczba gości
+                </Label>
                 <Input
                   type="number"
                   min={0}
@@ -375,24 +485,30 @@ export default function EditOrderPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Oferta ważna do</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <CalendarCheck className="w-3 h-3" /> Oferta ważna do
+                </Label>
                 <Input
                   type="date"
                   value={form.quoteExpiresAt}
                   onChange={e => set({ quoteExpiresAt: e.target.value })}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionBlock>
 
-          {/* Dostawa */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Dostawa</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* ── Dostawa ── */}
+          <SectionBlock
+            icon={Truck}
+            title="Logistyka dostawy"
+            subtitle="Sposób i adres dostarczenia zamówienia"
+            colorFrom="from-rose-50"
+            colorTo="to-pink-50"
+            borderColor="border-rose-200 dark:border-rose-800"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 space-y-1.5">
-                <Label>Typ dostawy</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Typ dostawy</Label>
                 <Select
                   value={form.deliveryType}
                   onValueChange={v => set({ deliveryType: v as CateringDeliveryType })}
@@ -417,15 +533,20 @@ export default function EditOrderPage() {
               {form.deliveryType !== 'PICKUP' && (
                 <>
                   <div className="sm:col-span-2 space-y-1.5">
-                    <Label>Adres dostawy</Label>
+                    <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin className="w-3 h-3" /> Adres dostawy
+                    </Label>
                     <Textarea
                       value={form.deliveryAddress}
                       onChange={e => set({ deliveryAddress: e.target.value })}
                       rows={2}
+                      placeholder="ul. Kwiatowa 15, 30-001 Kraków"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Data dostawy</Label>
+                    <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <CalendarDays className="w-3 h-3" /> Data dostawy
+                    </Label>
                     <Input
                       type="date"
                       value={form.deliveryDate}
@@ -433,7 +554,9 @@ export default function EditOrderPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Godzina dostawy</Label>
+                    <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" /> Godzina dostawy
+                    </Label>
                     <Input
                       type="time"
                       value={form.deliveryTime}
@@ -443,174 +566,276 @@ export default function EditOrderPage() {
                 </>
               )}
               <div className="sm:col-span-2 space-y-1.5">
-                <Label>Uwagi do logistyki</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Uwagi do logistyki</Label>
                 <Textarea
                   value={form.deliveryNotes}
                   onChange={e => set({ deliveryNotes: e.target.value })}
                   rows={2}
+                  placeholder="Dodatkowe informacje dot. dostawy..."
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionBlock>
 
-          {/* Dania */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Dania</CardTitle>
-                <Button size="sm" variant="outline" onClick={addItem}>
-                  <Plus className="mr-1 h-3 w-3" /> Dodaj danie
-                </Button>
+          {/* ═══ DANIA — PREMIUM ═══ */}
+          <div className="rounded-2xl border border-green-200 dark:border-green-800 overflow-hidden shadow-sm bg-white dark:bg-neutral-900">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-b border-green-200 dark:border-green-800">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-sm shrink-0">
+                <Utensils className="w-4 h-4 text-white" />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Dania</h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {form.items.length > 0
+                    ? `${form.items.length} ${form.items.length === 1 ? 'pozycja' : 'pozycje'} · ${fmt(totals?.subtotal ?? 0)}`
+                    : 'Dodaj pozycje menu do zamówienia'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addItem}
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl transition-colors shadow-sm shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" /> Dodaj danie
+              </button>
+            </div>
+
+            {/* Items list */}
+            <div className="p-4 space-y-3">
               {form.items.length === 0 && (
-                <p className="text-sm text-muted-foreground">Brak dań</p>
-              )}
-              {form.items.map((item, i) => (
-                <div key={item._key} className="flex gap-2 items-start">
-                  <div className="flex-1 min-w-0">
-                    <Combobox
-                      options={dishOptions}
-                      value={item.dishId}
-                      onChange={dishId => {
-                        const dish = dishesArray.find((d: any) => d.id === dishId) as any;
-                        const items = [...form.items];
-                        items[i] = { ...items[i], dishId, unitPrice: dish?.price ?? items[i].unitPrice };
-                        set({ items });
-                      }}
-                      placeholder="Wybierz danie..."
-                      emptyMessage="Nie znaleziono dań"
-                    />
-                  </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder="Ilość"
-                    value={item.quantity}
-                    onChange={e => {
-                      const items = [...form.items];
-                      items[i] = {
-                        ...items[i],
-                        quantity: parseInt(e.target.value, 10) || 1,
-                      };
-                      set({ items });
-                    }}
-                    onFocus={e => e.target.select()}
-                    className="w-20"
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="Cena"
-                    value={item.unitPrice}
-                    onChange={e => {
-                      const items = [...form.items];
-                      items[i] = {
-                        ...items[i],
-                        unitPrice: parseFloat(e.target.value) || 0,
-                      };
-                      set({ items });
-                    }}
-                    onFocus={e => e.target.select()}
-                    className="w-28"
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() =>
-                      set({ items: form.items.filter((_, j) => j !== i) })
-                    }
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                <div className="text-center py-8">
+                  <Utensils className="h-8 w-8 text-green-300 mx-auto mb-2" />
+                  <p className="text-sm text-neutral-400">Brak dań — kliknij &quot;Dodaj danie&quot; aby rozpocząć</p>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              )}
+              <AnimatePresence mode="popLayout">
+                {form.items.map((item, i) => (
+                  <motion.div
+                    key={item._key}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:border-green-300 dark:hover:border-green-700 hover:shadow-sm transition-all"
+                  >
+                    {/* Position badge */}
+                    <div className="absolute -top-2.5 -left-2.5 w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-white text-xs font-bold flex items-center justify-center shadow-sm z-10">
+                      {i + 1}
+                    </div>
 
-          {/* Usługi dodatkowe */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Usługi dodatkowe</CardTitle>
-                <Button size="sm" variant="outline" onClick={addExtra}>
-                  <Plus className="mr-1 h-3 w-3" /> Dodaj
-                </Button>
+                    {/* Row 1: Combobox + delete */}
+                    <div className="flex gap-2 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <Combobox
+                          options={dishOptions}
+                          value={item.dishId}
+                          onChange={dishId => {
+                            const dish = dishesArray.find((d: any) => d.id === dishId) as any;
+                            const items = [...form.items];
+                            items[i] = { ...items[i], dishId, unitPrice: dish?.price ?? items[i].unitPrice };
+                            set({ items });
+                          }}
+                          placeholder="Wybierz danie..."
+                          searchPlaceholder="Szukaj po nazwie..."
+                          emptyMessage="Nie znaleziono dania"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => set({ items: form.items.filter((_, j) => j !== i) })}
+                        className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 transition-colors shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Row 2: Quantity + Price + Total */}
+                    <div className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl px-3 py-2.5 border border-neutral-100 dark:border-neutral-700/50">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={item.quantity}
+                          onChange={e => {
+                            const items = [...form.items];
+                            items[i] = { ...items[i], quantity: parseInt(e.target.value, 10) || 1 };
+                            set({ items });
+                          }}
+                          onFocus={e => e.target.select()}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                      </div>
+                      <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
+                      <div className="flex items-center gap-2 flex-1">
+                        <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={e => {
+                            const items = [...form.items];
+                            items[i] = { ...items[i], unitPrice: parseFloat(e.target.value) || 0 };
+                            set({ items });
+                          }}
+                          onFocus={e => e.target.select()}
+                          className="flex-1 h-8 text-sm"
+                        />
+                      </div>
+                      {item.quantity > 0 && item.unitPrice > 0 && (
+                        <>
+                          <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
+                          <div className="text-right shrink-0">
+                            <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Razem</p>
+                            <p className="text-sm font-bold text-green-700 dark:text-green-300">
+                              {fmt(item.quantity * item.unitPrice)}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ═══ USŁUGI DODATKOWE — PREMIUM AMBER ═══ */}
+          <div className="rounded-2xl border border-amber-200 dark:border-amber-800 overflow-hidden shadow-sm bg-white dark:bg-neutral-900">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-b border-amber-200 dark:border-amber-800">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center shadow-sm shrink-0">
+                <Star className="w-4 h-4 text-white" />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {form.extras.length === 0 && (
-                <p className="text-sm text-muted-foreground">Brak usług dodatkowych</p>
-              )}
-              {form.extras.map((extra, i) => (
-                <div key={extra._key} className="flex gap-2 items-start">
-                  <Input
-                    placeholder="Nazwa usługi"
-                    value={extra.name}
-                    onChange={e => {
-                      const extras = [...form.extras];
-                      extras[i] = { ...extras[i], name: e.target.value };
-                      set({ extras });
-                    }}
-                    className="flex-1 min-w-0"
-                  />
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder="Ilość"
-                    value={extra.quantity}
-                    onChange={e => {
-                      const extras = [...form.extras];
-                      extras[i] = {
-                        ...extras[i],
-                        quantity: parseInt(e.target.value, 10) || 1,
-                      };
-                      set({ extras });
-                    }}
-                    onFocus={e => e.target.select()}
-                    className="w-20"
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="Cena"
-                    value={extra.unitPrice}
-                    onChange={e => {
-                      const extras = [...form.extras];
-                      extras[i] = {
-                        ...extras[i],
-                        unitPrice: parseFloat(e.target.value) || 0,
-                      };
-                      set({ extras });
-                    }}
-                    onFocus={e => e.target.select()}
-                    className="w-28"
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() =>
-                      set({ extras: form.extras.filter((_, j) => j !== i) })
-                    }
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Usługi dodatkowe</h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {form.extras.length > 0
+                    ? `${form.extras.length} ${form.extras.length === 1 ? 'usługa' : 'usługi'} · ${fmt(totals?.extrasTotalPrice ?? 0)}`
+                    : 'Dodaj usługi dodatkowe do zamówienia'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addExtra}
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl transition-colors shadow-sm shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" /> Dodaj usługę
+              </button>
+            </div>
 
-          {/* Rabat */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Rabat</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Extras list */}
+            <div className="p-4 space-y-3">
+              {form.extras.length === 0 && (
+                <div className="text-center py-8">
+                  <Star className="h-8 w-8 text-amber-300 mx-auto mb-2" />
+                  <p className="text-sm text-neutral-400">Brak usług dodatkowych — kliknij &quot;Dodaj usługę&quot;</p>
+                </div>
+              )}
+              <AnimatePresence mode="popLayout">
+                {form.extras.map((extra, i) => (
+                  <motion.div
+                    key={extra._key}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-sm transition-all"
+                  >
+                    {/* Position badge */}
+                    <div className="absolute -top-2.5 -left-2.5 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 text-white text-xs font-bold flex items-center justify-center shadow-sm z-10">
+                      {i + 1}
+                    </div>
+
+                    {/* Row 1: Name + delete */}
+                    <div className="flex gap-2 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <Input
+                          placeholder="Nazwa usługi (np. Kelner, Dekoracje)"
+                          value={extra.name}
+                          onChange={e => {
+                            const extras = [...form.extras];
+                            extras[i] = { ...extras[i], name: e.target.value };
+                            set({ extras });
+                          }}
+                          className="h-10"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => set({ extras: form.extras.filter((_, j) => j !== i) })}
+                        className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 transition-colors shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Row 2: Quantity + Price + Total */}
+                    <div className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl px-3 py-2.5 border border-neutral-100 dark:border-neutral-700/50">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={extra.quantity}
+                          onChange={e => {
+                            const extras = [...form.extras];
+                            extras[i] = { ...extras[i], quantity: parseInt(e.target.value, 10) || 1 };
+                            set({ extras });
+                          }}
+                          onFocus={e => e.target.select()}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                      </div>
+                      <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
+                      <div className="flex items-center gap-2 flex-1">
+                        <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={extra.unitPrice}
+                          onChange={e => {
+                            const extras = [...form.extras];
+                            extras[i] = { ...extras[i], unitPrice: parseFloat(e.target.value) || 0 };
+                            set({ extras });
+                          }}
+                          onFocus={e => e.target.select()}
+                          className="flex-1 h-8 text-sm"
+                        />
+                      </div>
+                      {extra.quantity > 0 && extra.unitPrice > 0 && (
+                        <>
+                          <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
+                          <div className="text-right shrink-0">
+                            <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Razem</p>
+                            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                              {fmt(extra.quantity * extra.unitPrice)}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ── Rabat ── */}
+          <SectionBlock
+            icon={Percent}
+            title="Rabat"
+            subtitle={totals && totals.discountAmount > 0 ? `Aktywny rabat: −${fmt(totals.discountAmount)}` : 'Opcjonalny rabat na zamówienie'}
+            colorFrom="from-violet-50"
+            colorTo="to-purple-50"
+            borderColor="border-violet-200 dark:border-violet-800"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label>Typ rabatu</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Typ rabatu</Label>
                 <Select
                   value={form.discountType || 'NONE'}
                   onValueChange={v =>
@@ -633,7 +858,7 @@ export default function EditOrderPage() {
               </div>
               {form.discountType && (
                 <div className="space-y-1.5">
-                  <Label>
+                  <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
                     {form.discountType === 'PERCENTAGE'
                       ? 'Wartość (%)'
                       : 'Kwota (zł)'}
@@ -649,182 +874,190 @@ export default function EditOrderPage() {
                 </div>
               )}
               <div className="sm:col-span-3 space-y-1.5">
-                <Label>Powód rabatu</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Powód rabatu</Label>
                 <Input
                   value={form.discountReason}
                   onChange={e => set({ discountReason: e.target.value })}
+                  placeholder="np. Stały klient, promocja świąteczna"
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionBlock>
 
-          {/* Kontakt */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Kontakt do zamówienia</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* ── Kontakt ── */}
+          <SectionBlock
+            icon={User}
+            title="Kontakt do zamówienia"
+            subtitle="Dane kontaktowe osoby odpowiedzialnej"
+            colorFrom="from-indigo-50"
+            colorTo="to-blue-50"
+            borderColor="border-indigo-200 dark:border-indigo-800"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 space-y-1.5">
-                <Label>Imię i nazwisko</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Imię i nazwisko</Label>
                 <Input
                   value={form.contactName}
                   onChange={e => set({ contactName: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Telefon</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Telefon</Label>
                 <Input
                   value={form.contactPhone}
                   onChange={e => set({ contactPhone: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>E-mail</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">E-mail</Label>
                 <Input
                   type="email"
                   value={form.contactEmail}
                   onChange={e => set({ contactEmail: e.target.value })}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionBlock>
 
-          {/* Uwagi */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Uwagi</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* ── Uwagi ── */}
+          <SectionBlock
+            icon={FileText}
+            title="Uwagi"
+            subtitle="Dodatkowe informacje i specjalne wymagania"
+            colorFrom="from-neutral-50"
+            colorTo="to-slate-50"
+            borderColor="border-neutral-200 dark:border-neutral-700"
+          >
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Uwagi (widoczne dla klienta)</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Uwagi (widoczne dla klienta)</Label>
                 <Textarea
                   rows={3}
                   value={form.notes}
                   onChange={e => set({ notes: e.target.value })}
+                  placeholder="Informacje widoczne na ofercie/zamówieniu klienta..."
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Uwagi wewnętrzne</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Uwagi wewnętrzne</Label>
                 <Textarea
                   rows={3}
                   value={form.internalNotes}
                   onChange={e => set({ internalNotes: e.target.value })}
+                  placeholder="Notatki widoczne tylko dla zespołu..."
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Specjalne wymagania</Label>
+                <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Specjalne wymagania</Label>
                 <Textarea
                   rows={2}
                   value={form.specialRequirements}
                   onChange={e => set({ specialRequirements: e.target.value })}
+                  placeholder="Alergie, diety, wymagania organizacyjne..."
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionBlock>
         </div>
 
-        {/* ── Prawa kolumna — Live kalkulator (sticky) ──────── */}
+        {/* ═══ PRAWA KOLUMNA — STICKY SIDEBAR ═══ */}
         <div>
           <div className="sticky top-6 space-y-4">
-            {/* Kalkulator */}
-            <Card className="border-primary/20 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  Kalkulator ceny
-                  <span className="ml-auto text-xs font-normal text-muted-foreground">Live</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+
+            {/* Live kalkulator */}
+            <div className="rounded-2xl border border-orange-200 dark:border-orange-800 overflow-hidden shadow-sm">
+              <div className="px-5 py-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-200 dark:border-orange-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-sm">
+                    <Calculator className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm">Kalkulator ceny</h3>
+                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Live
+                  </span>
+                </div>
+              </div>
+              <div className="p-5 space-y-3 text-sm bg-white dark:bg-neutral-900">
                 {totals && (
                   <>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-500 dark:text-neutral-400">
                         Dania ({form.items.length} poz.)
                       </span>
-                      <span className="font-mono">{fmt(totals.subtotal)}</span>
+                      <span className="font-mono font-medium">{fmt(totals.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Usługi dodatkowe ({form.extras.length} poz.)
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-500 dark:text-neutral-400">
+                        Usługi ({form.extras.length} poz.)
                       </span>
-                      <span className="font-mono">{fmt(totals.extrasTotalPrice)}</span>
+                      <span className="font-mono font-medium">{fmt(totals.extrasTotalPrice)}</span>
                     </div>
                     {totals.discountAmount > 0 && (
-                      <div className="flex justify-between text-green-600">
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
                         <span>
                           Rabat
-                          {form.discountType === 'PERCENTAGE' &&
-                          form.discountValue
+                          {form.discountType === 'PERCENTAGE' && form.discountValue
                             ? ` (${form.discountValue}%)`
                             : ''}
                         </span>
-                        <span className="font-mono">
+                        <span className="font-mono font-medium">
                           −{fmt(totals.discountAmount)}
                         </span>
                       </div>
                     )}
-                    <Separator />
-                    <div className="flex justify-between font-bold text-base">
+                    <Separator className="my-2" />
+                    <div className="flex justify-between items-center font-bold text-lg">
                       <span>Razem</span>
-                      <span className="font-mono text-primary">
+                      <span className="font-mono text-orange-600 dark:text-orange-400">
                         {fmt(totals.totalPrice)}
                       </span>
                     </div>
                   </>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Kontekst zamówienia */}
             {order && (
-              <Card>
-                <CardContent className="pt-4 space-y-3 text-sm">
+              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm bg-white dark:bg-neutral-900">
+                <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-700">
+                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm">Informacje</h3>
+                </div>
+                <div className="p-5 space-y-3 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">Klient</p>
-                    <p className="font-medium">
-                      {order.client.clientType === 'COMPANY' &&
-                      order.client.companyName
-                        ? order.client.companyName
-                        : `${order.client.firstName} ${order.client.lastName}`}
-                    </p>
+                    <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Klient</p>
+                    <p className="font-medium text-neutral-900 dark:text-neutral-100">{clientName}</p>
                   </div>
+                  <Separator />
                   <div>
-                    <p className="text-xs text-muted-foreground">Numer zamówienia</p>
-                    <p className="font-mono">{order.orderNumber}</p>
+                    <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Numer zamówienia</p>
+                    <p className="font-mono text-neutral-900 dark:text-neutral-100">{order.orderNumber}</p>
                   </div>
+                  <Separator />
                   <div>
-                    <p className="text-xs text-muted-foreground">Cena w bazie danych</p>
-                    <p className="font-mono text-muted-foreground">
-                      {fmt(Number(order.totalPrice))}
-                    </p>
+                    <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Aktualna cena w bazie</p>
+                    <p className="font-mono text-neutral-500">{fmt(Number(order.totalPrice))}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
+
+            {/* Sticky save button */}
+            <Button
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              size="lg"
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-md"
+            >
+              {updateMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Zapisz zmiany
+            </Button>
           </div>
         </div>
-      </div>
-
-      {/* ── Dolny przycisk zapisu ─────────────────────────────── */}
-      <div className="flex justify-end gap-3 pb-6">
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/dashboard/catering/orders/${id}`)}
-        >
-          Anuluj
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={updateMutation.isPending}
-          size="lg"
-        >
-          {updateMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Zapisz zmiany
-        </Button>
       </div>
     </div>
   );
