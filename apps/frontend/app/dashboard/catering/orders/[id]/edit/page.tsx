@@ -324,7 +324,7 @@ export default function EditOrderPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
 
       {/* ═══ GRADIENT HERO HEADER ═══ */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-6 py-6 text-white shadow-lg">
@@ -375,7 +375,7 @@ export default function EditOrderPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ═══ LEWA/ŚRODKOWA KOLUMNA — FORMULARZ ═══ */}
         <div className="lg:col-span-2 space-y-6">
 
