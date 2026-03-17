@@ -39,6 +39,7 @@ import {
 } from '../utils/reservation.utils';
 import { calculateVenueSurcharge } from '../utils/venue-surcharge';
 import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
+import { reservationCategoryExtraService } from './reservationCategoryExtra.service';
 import reservationMenuService from './reservation-menu.service';
 import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE, VENUE_SURCHARGE } from '../i18n/pl';
 
@@ -336,6 +337,11 @@ export class ReservationService {
       });
     }
 
+    // #216: Create category extras (additional paid items beyond package limits)
+    if (data.categoryExtras && data.categoryExtras.length > 0) {
+      await reservationCategoryExtraService.upsertExtras(reservation.id, data.categoryExtras);
+    }
+
     const depositData =
       data.deposit || (data.depositAmount && data.depositDueDate ? { amount: data.depositAmount, dueDate: data.depositDueDate } : null);
     if (depositData) {
@@ -604,6 +610,13 @@ export class ReservationService {
             serviceItem: { select: { id: true, name: true, basePrice: true, priceType: true } },
           },
         },
+        categoryExtras: {
+          include: {
+            packageCategory: {
+              include: { category: { select: { id: true, name: true, icon: true } } },
+            },
+          },
+        },
       },
       orderBy: [{ startDateTime: 'asc' }, { date: 'asc' }, { startTime: 'asc' }],
       take: pageSize,
@@ -614,10 +627,16 @@ export class ReservationService {
     return reservations.map((r: any) => {
       const extras = r.extras || [];
       const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
+      const categoryExtras = r.categoryExtras || [];
+      const categoryExtrasTotal = categoryExtras.reduce(
+        (sum: number, e: any) => sum + Number(e.totalPrice), 0
+      );
       return {
         ...r,
         extrasTotalPrice,
         extrasCount: extras.length,
+        categoryExtras,
+        categoryExtrasTotal,
       };
     }) as any[];
   }
@@ -633,6 +652,14 @@ export class ReservationService {
           include: { serviceItem: { include: { category: true } } },
           orderBy: { createdAt: 'asc' },
         },
+        categoryExtras: {
+          include: {
+            packageCategory: {
+              include: { category: { select: { id: true, name: true, icon: true, slug: true } } },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -642,10 +669,18 @@ export class ReservationService {
     const extras = (reservation as any).extras || [];
     const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
 
+    // #216: Compute category extras total
+    const categoryExtras = (reservation as any).categoryExtras || [];
+    const categoryExtrasTotal = categoryExtras.reduce(
+      (sum: number, e: any) => sum + Number(e.totalPrice), 0
+    );
+
     return {
       ...reservation,
       extrasTotalPrice,
       extrasCount: extras.length,
+      categoryExtras,
+      categoryExtrasTotal,
     } as any;
   }
 
@@ -906,7 +941,16 @@ ${changesSummary}`);
       });
     }
 
-    // Ensure totalPrice reflects all components (menu + extras + surcharge + extraHours - discount)
+    // #216: Update category extras if provided
+    if (data.categoryExtras !== undefined) {
+      if (data.categoryExtras.length > 0) {
+        await reservationCategoryExtraService.upsertExtras(id, data.categoryExtras);
+      } else {
+        await reservationCategoryExtraService.deleteByReservation(id);
+      }
+    }
+
+    // Ensure totalPrice reflects all components (menu + extras + categoryExtras + surcharge + extraHours - discount)
     await recalculateReservationTotalPrice(id);
 
     return reservation as any;

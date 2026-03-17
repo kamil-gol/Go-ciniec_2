@@ -23,6 +23,8 @@ export interface CreateCategorySettingInput {
   portionTarget?: PortionTarget;
   displayOrder?: number;
   customLabel?: string | null;
+  extraItemPrice?: number | null;
+  maxExtra?: number | null;
 }
 
 export interface UpdateCategorySettingInput {
@@ -33,6 +35,8 @@ export interface UpdateCategorySettingInput {
   portionTarget?: PortionTarget;
   displayOrder?: number;
   customLabel?: string | null;
+  extraItemPrice?: number | null;
+  maxExtra?: number | null;
 }
 
 export interface BulkUpdateCategorySettingsInput {
@@ -45,6 +49,8 @@ export interface BulkUpdateCategorySettingsInput {
     portionTarget?: PortionTarget;
     displayOrder?: number;
     customLabel?: string | null;
+    extraItemPrice?: number | null;
+    maxExtra?: number | null;
   }>;
 }
 
@@ -86,7 +92,9 @@ class PackageCategoryService {
         maxSelect: data.maxSelect ?? 1, isRequired: data.isRequired ?? true,
         isEnabled: data.isEnabled ?? true, portionTarget: data.portionTarget ?? 'ALL',
         displayOrder: data.displayOrder ?? 0,
-        customLabel: data.customLabel ?? null
+        customLabel: data.customLabel ?? null,
+        extraItemPrice: data.extraItemPrice ?? null,
+        maxExtra: data.maxExtra ?? null
       }
     });
   }
@@ -120,7 +128,8 @@ class PackageCategoryService {
             minSelect: settingData.minSelect, maxSelect: settingData.maxSelect,
             isRequired: settingData.isRequired, isEnabled: settingData.isEnabled,
             portionTarget: settingData.portionTarget,
-            displayOrder: settingData.displayOrder, customLabel: settingData.customLabel
+            displayOrder: settingData.displayOrder, customLabel: settingData.customLabel,
+            extraItemPrice: settingData.extraItemPrice, maxExtra: settingData.maxExtra
           }
         });
         results.push(updated);

@@ -151,7 +151,9 @@ export const categorySettingSchema = z.object({
   isEnabled: z.boolean().optional().default(true),
   portionTarget: z.enum(['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY']).optional().default('ALL'),
   displayOrder: z.number().int().min(0).optional().default(0),
-  customLabel: z.string().max(100).optional().nullable()
+  customLabel: z.string().max(100).optional().nullable(),
+  extraItemPrice: z.number().min(0, 'Cena extra nie może być ujemna').nullable().optional(),
+  maxExtra: z.number().int().min(1, 'Limit extra musi być >= 1').nullable().optional(),
 }).refine(
   (data) => data.minSelect <= data.maxSelect,
   {

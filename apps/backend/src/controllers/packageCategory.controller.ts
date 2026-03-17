@@ -74,6 +74,8 @@ class PackageCategoryController {
         portionTarget: setting.portionTarget,
         customLabel: setting.customLabel || setting.category.name,
         displayOrder: setting.displayOrder,
+        extraItemPrice: setting.extraItemPrice ? toNumber(setting.extraItemPrice) : null,
+        maxExtra: setting.maxExtra,
         
         dishes: setting.category.dishes.map((dish) => ({
           id: dish.id,
@@ -138,7 +140,7 @@ class PackageCategoryController {
    */
   async create(req: Request, res: Response) {
     try {
-      const { packageId, categoryId, minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel } = req.body;
+      const { packageId, categoryId, minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel, extraItemPrice, maxExtra } = req.body;
 
       // Validate required fields
       if (!packageId || !categoryId) {
@@ -199,6 +201,8 @@ class PackageCategoryController {
           portionTarget: portionTarget || 'ALL',
           displayOrder: displayOrder || 0,
           customLabel: customLabel || null,
+          extraItemPrice: extraItemPrice !== undefined ? extraItemPrice : null,
+          maxExtra: maxExtra !== undefined ? maxExtra : null,
         },
         include: {
           category: true,

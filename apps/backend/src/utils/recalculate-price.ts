@@ -2,7 +2,7 @@
  * Recalculate Reservation Total Price
  * Single source of truth for reservation price computation.
  *
- * Formula: totalPrice = menuPrice + extrasTotal + venueSurcharge + extraHoursCost - discountAmount
+ * Formula: totalPrice = menuPrice + extrasTotal + categoryExtrasTotal + venueSurcharge + extraHoursCost - discountAmount
  *
  * Call after any change to: menu, extras, surcharge, time, or discount.
  */
@@ -16,6 +16,7 @@ export const DEFAULT_EXTRA_HOUR_RATE = 500;
 export interface ReservationPriceBreakdown {
   menuPrice: number;
   extrasTotal: number;
+  categoryExtrasTotal: number;
   surcharge: number;
   extraHoursCost: number;
   basePrice: number;
@@ -66,6 +67,7 @@ export async function computeReservationBasePrice(
           },
         },
       },
+      categoryExtras: true,
     },
   });
 
@@ -92,6 +94,12 @@ export async function computeReservationBasePrice(
     0
   );
 
+  // 2b. Category extras total — per-item, NOT per-person (#216)
+  const categoryExtrasTotal = ((reservation as any).categoryExtras || []).reduce(
+    (sum: number, e: any) => sum + Number(e.totalPrice),
+    0
+  );
+
   // 3. Venue surcharge
   const surcharge = Number((reservation as any).venueSurcharge) || 0;
 
@@ -112,7 +120,7 @@ export async function computeReservationBasePrice(
 
   // 5. Base price before discount (includes extra hours)
   const basePrice =
-    Math.round((menuPrice + extrasTotal + surcharge + extraHoursCost) * 100) / 100;
+    Math.round((menuPrice + extrasTotal + categoryExtrasTotal + surcharge + extraHoursCost) * 100) / 100;
 
   // 6. Discount
   const hasDiscount = !!(
@@ -137,6 +145,7 @@ export async function computeReservationBasePrice(
   return {
     menuPrice,
     extrasTotal,
+    categoryExtrasTotal,
     surcharge,
     extraHoursCost,
     basePrice,

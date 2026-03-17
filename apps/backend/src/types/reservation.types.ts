@@ -61,6 +61,11 @@ export interface CreateReservationDTO {
     unitPrice: number;
     totalPrice: number;
   }>;
+  // #216: Category extras (additional paid items beyond package limits)
+  categoryExtras?: Array<{
+    packageCategoryId: string;
+    quantity: number;
+  }>;
 }
 
 export interface UpdateReservationDTO {
@@ -92,6 +97,11 @@ export interface UpdateReservationDTO {
   discountType?: string;
   discountValue?: number;
   discountReason?: string;
+  // #216: Category extras (additional paid items beyond package limits)
+  categoryExtras?: Array<{
+    packageCategoryId: string;
+    quantity: number;
+  }>;
 }
 
 export interface UpdateStatusDTO {
