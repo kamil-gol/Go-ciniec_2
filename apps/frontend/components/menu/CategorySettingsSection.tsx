@@ -310,13 +310,14 @@ export default function CategorySettingsSection({
                           type="checkbox"
                           checked={setting.extraItemPrice != null}
                           onChange={(e) => {
-                            if (e.target.checked) {
-                              handleChange(category.id, 'extraItemPrice', 0);
-                              handleChange(category.id, 'maxExtra', 5);
-                            } else {
-                              handleChange(category.id, 'extraItemPrice', null);
-                              handleChange(category.id, 'maxExtra', null);
-                            }
+                            const updates = e.target.checked
+                              ? { extraItemPrice: 0, maxExtra: 5 }
+                              : { extraItemPrice: null, maxExtra: null };
+                            const newSettings = localSettings.map((s) =>
+                              s.categoryId === category.id ? { ...s, ...updates } : s
+                            );
+                            setLocalSettings(newSettings);
+                            onChange(newSettings);
                           }}
                           className="w-5 h-5 rounded border-2 border-neutral-300 dark:border-neutral-600 text-orange-600 focus:ring-2 focus:ring-orange-500 cursor-pointer"
                         />
