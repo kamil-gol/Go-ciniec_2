@@ -8,6 +8,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
+import { logChange } from '../utils/audit-logger';
 
 class ReservationCategoryExtraService {
 
@@ -19,7 +20,8 @@ class ReservationCategoryExtraService {
    */
   async upsertExtras(
     reservationId: string,
-    extras: Array<{ packageCategoryId: string; quantity: number }>
+    extras: Array<{ packageCategoryId: string; quantity: number }>,
+    userId?: string
   ) {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
@@ -82,6 +84,26 @@ class ReservationCategoryExtraService {
       },
     });
 
+    // Audit log
+    if (userId) {
+      const summary = results.map(r => `${r.packageCategoryId}: ${r.quantity}×${Number(r.pricePerItem)}zł`).join(', ');
+      await logChange({
+        userId,
+        action: 'CATEGORY_EXTRAS_UPDATED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Zaktualizowano extra pozycje kategorii: ${summary}`,
+          extras: results.map(r => ({
+            packageCategoryId: r.packageCategoryId,
+            quantity: r.quantity,
+            pricePerItem: Number(r.pricePerItem),
+            totalPrice: Number(r.totalPrice),
+          })),
+        },
+      });
+    }
+
     return results;
   }
 
@@ -105,10 +127,25 @@ class ReservationCategoryExtraService {
   /**
    * Delete all category extras for a reservation (e.g. on package change).
    */
-  async deleteByReservation(reservationId: string) {
-    return prisma.reservationCategoryExtra.deleteMany({
+  async deleteByReservation(reservationId: string, userId?: string) {
+    const result = await prisma.reservationCategoryExtra.deleteMany({
       where: { reservationId },
     });
+
+    if (userId && result.count > 0) {
+      await logChange({
+        userId,
+        action: 'CATEGORY_EXTRAS_REMOVED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Usunięto ${result.count} extra pozycji kategorii (zmiana pakietu)`,
+          removedCount: result.count,
+        },
+      });
+    }
+
+    return result;
   }
 
   /**

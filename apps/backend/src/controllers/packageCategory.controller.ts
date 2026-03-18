@@ -230,7 +230,7 @@ class PackageCategoryController {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel } = req.body;
+      const { minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel, extraItemPrice, maxExtra } = req.body;
 
       // Validate min <= max
       if (minSelect !== undefined && maxSelect !== undefined && minSelect > maxSelect) {
@@ -262,6 +262,8 @@ class PackageCategoryController {
           ...(portionTarget !== undefined && { portionTarget }),
           ...(displayOrder !== undefined && { displayOrder }),
           ...(customLabel !== undefined && { customLabel }),
+          ...(extraItemPrice !== undefined && { extraItemPrice }),
+          ...(maxExtra !== undefined && { maxExtra }),
         },
         include: {
           category: true,
@@ -380,6 +382,8 @@ class PackageCategoryController {
                   portionTarget: setting.portionTarget || 'ALL',
                   displayOrder: setting.displayOrder || 0,
                   customLabel: setting.customLabel || null,
+                  extraItemPrice: setting.extraItemPrice !== undefined ? setting.extraItemPrice : null,
+                  maxExtra: setting.maxExtra !== undefined ? setting.maxExtra : null,
                 },
                 include: {
                   category: true,

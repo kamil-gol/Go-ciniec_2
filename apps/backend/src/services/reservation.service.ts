@@ -339,7 +339,7 @@ export class ReservationService {
 
     // #216: Create category extras (additional paid items beyond package limits)
     if (data.categoryExtras && data.categoryExtras.length > 0) {
-      await reservationCategoryExtraService.upsertExtras(reservation.id, data.categoryExtras);
+      await reservationCategoryExtraService.upsertExtras(reservation.id, data.categoryExtras, userId);
     }
 
     const depositData =
@@ -944,9 +944,9 @@ ${changesSummary}`);
     // #216: Update category extras if provided
     if (data.categoryExtras !== undefined) {
       if (data.categoryExtras.length > 0) {
-        await reservationCategoryExtraService.upsertExtras(id, data.categoryExtras);
+        await reservationCategoryExtraService.upsertExtras(id, data.categoryExtras, userId);
       } else {
-        await reservationCategoryExtraService.deleteByReservation(id);
+        await reservationCategoryExtraService.deleteByReservation(id, userId);
       }
     }
 

@@ -176,6 +176,16 @@ export interface ReservationResponse {
   notes?: string;
   internalNotes?: string | null;  // Etap 5: Notatka wewnętrzna
   attachments?: string[];
+  // #216: Category extras
+  categoryExtras?: Array<{
+    id: string;
+    packageCategoryId: string;
+    quantity: number;
+    pricePerItem: number;
+    totalPrice: number;
+    packageCategory: { category: { id: string; name: string; icon?: string } };
+  }>;
+  categoryExtrasTotal?: number;
   createdBy: string;
   createdByUser?: {
     id: string;
