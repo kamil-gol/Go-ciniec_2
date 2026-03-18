@@ -216,10 +216,11 @@ export default function CategorySettingsSection({
                             handleChange(
                               category.id,
                               'minSelect',
-                              parseInt(e.target.value) || 0
+                              parseFloat(e.target.value) || 0
                             )
                           }
                           min="0"
+                          step="0.5"
                           className={`w-full px-4 py-2.5 border-2 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                             hasError ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600'
                           }`}
@@ -236,10 +237,11 @@ export default function CategorySettingsSection({
                             handleChange(
                               category.id,
                               'maxSelect',
-                              parseInt(e.target.value) || 0
+                              parseFloat(e.target.value) || 0
                             )
                           }
                           min="0"
+                          step="0.5"
                           className={`w-full px-4 py-2.5 border-2 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                             hasError ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600'
                           }`}
@@ -323,7 +325,7 @@ export default function CategorySettingsSection({
                         />
                         <ShoppingCart className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                          Dodatkowe pozycje płatne
+                          Dodatkowo płatne pozycje
                         </span>
                       </label>
 
