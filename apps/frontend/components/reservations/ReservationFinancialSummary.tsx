@@ -59,6 +59,16 @@ interface ReservationFinancialSummaryProps {
   venueSurcharge?: number | null
   /** Label explaining the surcharge (e.g. "Dopłata za cały obiekt (< 30 os.)") */
   venueSurchargeLabel?: string | null
+  /** #216: Category extras from reservation */
+  categoryExtras?: Array<{
+    id: string
+    packageCategoryId: string
+    quantity: number
+    pricePerItem: number
+    totalPrice: number
+    packageCategory: { category: { id: string; name: string; icon?: string } }
+  }>
+  categoryExtrasTotal?: number
   /** When true, hides all mutating controls (deposits, discount editing) */
   readOnly?: boolean
   /**
@@ -174,6 +184,8 @@ export function ReservationFinancialSummary({
   discountAmount,
   discountReason,
   priceBeforeDiscount,
+  categoryExtras,
+  categoryExtrasTotal: categoryExtrasTotalProp,
   venueSurcharge,
   venueSurchargeLabel,
   readOnly = false,
@@ -189,6 +201,12 @@ export function ReservationFinancialSummary({
   const extras = extrasData?.data || []
   const activeExtras = extras.filter((e: any) => e.status !== 'CANCELLED')
   const extrasTotalPrice = extrasData?.totalExtrasPrice || 0
+
+  // #216: Category extras
+  const activeCategoryExtras = categoryExtras || []
+  const effectiveCategoryExtrasTotal = categoryExtrasTotalProp || activeCategoryExtras.reduce(
+    (sum, e) => sum + Number(e.totalPrice), 0
+  )
 
   // Venue surcharge
   const effectiveVenueSurcharge = Number(venueSurcharge) || 0
@@ -229,7 +247,7 @@ export function ReservationFinancialSummary({
       ? Number(priceBeforeDiscount)
       : totalPrice
   const extraHoursCost = extraHoursInfo?.extraCost || 0
-  const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice + effectiveVenueSurcharge
+  const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice + effectiveCategoryExtrasTotal + effectiveVenueSurcharge
 
   const finalTotalPrice = hasActiveDiscount
     ? Math.max(0, effectiveTotalPrice - activeDiscountAmount)
@@ -524,6 +542,33 @@ export function ReservationFinancialSummary({
                   </div>
                 )}
 
+                {/* #216: Category Extras */}
+                {activeCategoryExtras.length > 0 && (
+                  <div className="bg-white dark:bg-black/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShoppingCart className="h-4 w-4 text-orange-600" />
+                      <p className="text-sm font-semibold text-muted-foreground">Dodatkowe pozycje kategorii</p>
+                    </div>
+                    <div className="space-y-2">
+                      {activeCategoryExtras.map((extra) => (
+                        <div key={extra.id} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground flex items-center gap-1.5">
+                            <span>{extra.packageCategory?.category?.icon || '🍽️'}</span>
+                            {extra.packageCategory?.category?.name || 'Kategoria'}
+                            {' '}({extra.quantity} × {formatPLN(Number(extra.pricePerItem))} zł)
+                          </span>
+                          <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
+                        </div>
+                      ))}
+                      <Separator className="my-2" />
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Suma dodatkowych pozycji</span>
+                        <span>{formatPLN(effectiveCategoryExtrasTotal)} zł</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Venue Surcharge */}
                 {hasVenueSurcharge && (
                   <div className="bg-white dark:bg-black/20 rounded-xl p-4">
@@ -626,6 +671,12 @@ export function ReservationFinancialSummary({
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
                   <span>w tym usługi dodatkowe ({activeExtras.length})</span>
                   <span>+{formatPLN(extrasTotalPrice)} zł</span>
+                </div>
+              )}
+              {effectiveCategoryExtrasTotal > 0 && (
+                <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+                  <span>w tym dodatkowe pozycje kategorii ({activeCategoryExtras.length})</span>
+                  <span>+{formatPLN(effectiveCategoryExtrasTotal)} zł</span>
                 </div>
               )}
               {extraHoursInfo && extraHoursInfo.extraCost > 0 && (

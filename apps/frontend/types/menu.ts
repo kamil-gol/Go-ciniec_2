@@ -90,6 +90,8 @@ export interface CategorySetting {
   portionTarget: PortionTarget; // #166
   displayOrder: number;
   customLabel?: string;
+  extraItemPrice?: number | null; // #216: cena za dodatkową pozycję
+  maxExtra?: number | null; // #216: max ilość dodatkowych
   createdAt?: string;
   updatedAt?: string;
   category?: DishCategory;
@@ -140,6 +142,8 @@ export interface CategorySettingInput {
   portionTarget?: PortionTarget; // #166 — default: 'ALL'
   displayOrder: number;
   customLabel?: string;
+  extraItemPrice?: number | null; // #216: cena za dodatkową pozycję
+  maxExtra?: number | null; // #216: max ilość dodatkowych
 }
 
 export interface BulkUpdateCategorySettingsInput {

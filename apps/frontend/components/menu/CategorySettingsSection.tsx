@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { DishCategory, CategorySettingInput, PortionTarget } from '@/types/menu';
 import { PORTION_TARGET_LABELS, PORTION_TARGET_ICONS } from '@/types/menu';
-import { AlertCircle, Users, User, Baby } from 'lucide-react';
+import { AlertCircle, Users, User, Baby, ShoppingCart } from 'lucide-react';
 
 interface CategorySettingsSectionProps {
   categories: DishCategory[];
@@ -63,6 +63,8 @@ export default function CategorySettingsSection({
           isEnabled: true,
           portionTarget: 'ALL', // #166: default
           displayOrder: getGlobalCategoryOrder(categoryId), // Use global category order
+          extraItemPrice: null, // #216: domyślnie brak extras
+          maxExtra: null,
         });
       } else {
         newSettings = newSettings.map((s) =>
@@ -299,6 +301,73 @@ export default function CategorySettingsSection({
                         placeholder={category.name}
                         className="w-full px-4 py-2.5 border-2 border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       />
+                    </div>
+
+                    {/* #216: Dodatkowe pozycje płatne */}
+                    <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                      <label className="flex items-center gap-2 cursor-pointer mb-3">
+                        <input
+                          type="checkbox"
+                          checked={setting.extraItemPrice != null}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              handleChange(category.id, 'extraItemPrice', 0);
+                              handleChange(category.id, 'maxExtra', 5);
+                            } else {
+                              handleChange(category.id, 'extraItemPrice', null);
+                              handleChange(category.id, 'maxExtra', null);
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-2 border-neutral-300 dark:border-neutral-600 text-orange-600 focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                        />
+                        <ShoppingCart className="w-4 h-4 text-orange-500" />
+                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                          Dodatkowe pozycje płatne
+                        </span>
+                      </label>
+
+                      {setting.extraItemPrice != null && (
+                        <div className="grid grid-cols-2 gap-4 ml-7">
+                          <div>
+                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                              Cena za szt. (PLN)
+                            </label>
+                            <input
+                              type="number"
+                              value={setting.extraItemPrice ?? 0}
+                              onChange={(e) =>
+                                handleChange(
+                                  category.id,
+                                  'extraItemPrice',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              min="0"
+                              step="0.01"
+                              className="w-full px-4 py-2.5 border-2 border-orange-200 dark:border-orange-700 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                              Max dodatkowych
+                            </label>
+                            <input
+                              type="number"
+                              value={setting.maxExtra ?? ''}
+                              onChange={(e) =>
+                                handleChange(
+                                  category.id,
+                                  'maxExtra',
+                                  e.target.value ? parseInt(e.target.value) : null
+                                )
+                              }
+                              min="1"
+                              placeholder="Bez limitu"
+                              className="w-full px-4 py-2.5 border-2 border-orange-200 dark:border-orange-700 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder:text-neutral-400"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -463,6 +463,8 @@ export default function ReservationDetailsPage() {
                 discountAmount={reservation.discountAmount}
                 discountReason={reservation.discountReason}
                 priceBeforeDiscount={reservation.priceBeforeDiscount}
+                categoryExtras={reservation.categoryExtras}
+                categoryExtrasTotal={reservation.categoryExtrasTotal != null ? Number(reservation.categoryExtrasTotal) : undefined}
                 venueSurcharge={reservation.venueSurcharge != null ? Number(reservation.venueSurcharge) : null}
                 venueSurchargeLabel={reservation.venueSurchargeLabel}
                 readOnly={isReadOnly}
