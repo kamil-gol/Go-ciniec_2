@@ -171,6 +171,9 @@ export default function PackageForm({
       portionTarget: cs.portionTarget || 'ALL', // #166 fix: include portionTarget in save payload
       displayOrder: Number(cs.displayOrder) || 0,
       customLabel: cs.customLabel || null,
+      // #216: Category extras fields
+      extraItemPrice: cs.extraItemPrice != null ? Number(cs.extraItemPrice) : null,
+      maxExtra: cs.maxExtra != null ? Number(cs.maxExtra) : null,
     }));
 
     try {
