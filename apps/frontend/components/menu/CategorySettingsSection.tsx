@@ -337,17 +337,26 @@ export default function CategorySettingsSection({
                             </label>
                             <input
                               type="number"
-                              value={setting.extraItemPrice ?? 0}
+                              value={setting.extraItemPrice ?? ''}
                               onChange={(e) =>
                                 handleChange(
                                   category.id,
                                   'extraItemPrice',
-                                  parseFloat(e.target.value) || 0
+                                  e.target.value === '' ? 0 : parseFloat(e.target.value)
                                 )
                               }
+                              onFocus={(e) => {
+                                if (e.target.value === '0') e.target.value = '';
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value === '') {
+                                  handleChange(category.id, 'extraItemPrice', 0);
+                                }
+                              }}
                               min="0"
                               step="0.01"
-                              className="w-full px-4 py-2.5 border-2 border-orange-200 dark:border-orange-700 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                              placeholder="0"
+                              className="w-full px-4 py-2.5 border-2 border-orange-200 dark:border-orange-700 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder:text-neutral-400"
                             />
                           </div>
                           <div>
