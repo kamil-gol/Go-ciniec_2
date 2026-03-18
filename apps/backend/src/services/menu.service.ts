@@ -241,7 +241,10 @@ export class MenuService {
       where: { id },
       include: {
         menuTemplate: true,
-        categorySettings: true
+        categorySettings: {
+          include: { category: { select: { id: true, name: true, icon: true, slug: true } } },
+          orderBy: { displayOrder: 'asc' },
+        }
       }
     });
     if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
