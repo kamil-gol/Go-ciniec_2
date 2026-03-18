@@ -738,6 +738,9 @@ export class ReservationService {
     }
 
     if (data.menuPackageId !== undefined) {
+      // #216: When menu package changes, delete old category extras (they belong to old package's categories)
+      await reservationCategoryExtraService.deleteByReservation(id, userId);
+
       if (data.menuPackageId === null) {
         await this.updateReservationMenu(id, { menuPackageId: null }, userId);
       } else {

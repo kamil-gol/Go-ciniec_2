@@ -546,7 +546,7 @@ export function ReservationFinancialSummary({
                 {activeCategoryExtras.length > 0 && (
                   <div className="bg-white dark:bg-black/20 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <ShoppingCart className="h-4 w-4 text-orange-600" />
+                      <ShoppingCart className="h-4 w-4 text-emerald-600" />
                       <p className="text-sm font-semibold text-muted-foreground">Dodatkowe pozycje kategorii</p>
                     </div>
                     <div className="space-y-2">
