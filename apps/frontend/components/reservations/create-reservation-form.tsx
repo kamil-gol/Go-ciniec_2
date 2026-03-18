@@ -33,13 +33,15 @@ import {
   Calendar, Clock, Users, DollarSign, FileText, UserPlus,
   AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed,
   Sparkles, Building2, User, ClipboardCheck, AlertTriangle,
-  BookOpen, Package, Tag, ChevronRight,
+  BookOpen, Package, Tag, ChevronRight, ShoppingCart,
 } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { CreateReservationDiscountSection } from '@/components/reservations/CreateReservationDiscountSection'
 import { CreateReservationExtrasSection } from '@/components/service-extras/CreateReservationExtrasSection'
 import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
+import CategoryExtrasSelector from '@/components/reservations/CategoryExtrasSelector'
+import type { CategoryExtraSelection } from '@/components/reservations/CategoryExtrasSelector'
 import { useQueryClient } from '@tanstack/react-query'
 
 // ═══ STEP CONFIGURATION ═══
@@ -175,6 +177,7 @@ export function CreateReservationForm({
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
   const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([])
+  const [selectedCategoryExtras, setSelectedCategoryExtras] = useState<CategoryExtraSelection[]>([])
 
   const { data: halls } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
@@ -342,7 +345,12 @@ export function CreateReservationForm({
   }, [selectedHall, totalGuests])
   const venueSurchargeAmount = venueSurcharge.amount
 
-  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal + venueSurchargeAmount
+  // #216: Category extras total (per-item, NOT per-person)
+  const categoryExtrasTotal = useMemo(() => {
+    return selectedCategoryExtras.reduce((sum, e) => sum + e.quantity * e.pricePerItem, 0)
+  }, [selectedCategoryExtras])
+
+  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal + categoryExtrasTotal + venueSurchargeAmount
 
   const discountAmount = useMemo(() => {
     if (!discountEnabled || discountValue <= 0 || totalWithExtras <= 0) return 0
@@ -397,6 +405,7 @@ export function CreateReservationForm({
         if (!isValid) {
           setValue('menuTemplateId', '')
           setValue('menuPackageId', '')
+          setSelectedCategoryExtras([]) // #216: reset category extras
         }
       }
     }
@@ -408,6 +417,7 @@ export function CreateReservationForm({
       const isValid = templatePackagesArray.some((pkg) => pkg.id === menuPackageId)
       if (!isValid) {
         setValue('menuPackageId', '')
+        setSelectedCategoryExtras([]) // #216: reset category extras
       }
     }
   }, [menuTemplateId, menuPackageId, templatePackagesArray, setValue])
@@ -557,6 +567,16 @@ export function CreateReservationForm({
       })
     }
 
+    // #216: Category extras (per-item, NOT per-person)
+    if (selectedCategoryExtras.length > 0) {
+      input.categoryExtras = selectedCategoryExtras
+        .filter((e) => e.quantity > 0)
+        .map((e) => ({
+          packageCategoryId: e.packageCategoryId,
+          quantity: e.quantity,
+        }))
+    }
+
     try {
       if (onSubmitProp) {
         await onSubmitProp(input)
@@ -663,6 +683,15 @@ export function CreateReservationForm({
                 Usługi dodatkowe ({selectedExtras.length})
               </span>
               <span className="font-medium">+{formatCurrency(extrasTotal)}</span>
+            </div>
+          )}
+          {categoryExtrasTotal > 0 && (
+            <div className="flex justify-between text-sm text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 -mx-4 px-4 py-2">
+              <span className="flex items-center gap-1">
+                <ShoppingCart className="w-3.5 h-3.5" />
+                Dodatkowo platne pozycje ({selectedCategoryExtras.filter(e => e.quantity > 0).length})
+              </span>
+              <span className="font-medium">+{formatCurrency(categoryExtrasTotal)}</span>
             </div>
           )}
           {venueSurchargeAmount > 0 && (
@@ -1191,6 +1220,15 @@ export function CreateReservationForm({
         </motion.div>
       )}
 
+      {/* #216: Category Extras Selector — shown when package has extras-eligible categories */}
+      {useMenuPackage && selectedPackage && (selectedPackage as any).categorySettings && (
+        <CategoryExtrasSelector
+          categorySettings={(selectedPackage as any).categorySettings}
+          selectedExtras={selectedCategoryExtras}
+          onExtrasChange={setSelectedCategoryExtras}
+        />
+      )}
+
       <PriceSummary />
 
       <CreateReservationDiscountSection
@@ -1199,7 +1237,7 @@ export function CreateReservationForm({
         totalPrice={totalWithExtras}
       />
 
-      {/* Service Extras — Sprint 8 */}         <CreateReservationExtrasSection           selectedExtras={selectedExtras}           onExtrasChange={setSelectedExtras}           totalGuests={totalGuests}         />
+      {/* Service Extras — Sprint 8 */}
       <CreateReservationExtrasSection
         selectedExtras={selectedExtras}
         onExtrasChange={setSelectedExtras}

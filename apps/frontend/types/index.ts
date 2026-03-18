@@ -229,7 +229,11 @@ export interface Reservation {
   reservationExtras?: import('./service-extra.types').ReservationExtra[] // Extras assigned to this reservation
   extrasCount?: number              // Number of extras (from _count)
   extrasTotalPrice?: number         // Sum of all extras prices
-  
+
+  // Category Extras Integration (#216)
+  categoryExtras?: ReservationCategoryExtra[]
+  categoryExtrasTotal?: number      // Sum of all category extras prices (runtime calculated)
+
   // Status related
   status: ReservationStatus
   confirmationDeadline?: string // New field - for PENDING status, max 1 day before event
@@ -247,6 +251,25 @@ export interface Reservation {
   updatedAt: string
   deposits?: Deposit[]
   history?: ReservationHistory[]
+}
+
+// Category Extras (#216)
+export interface ReservationCategoryExtra {
+  id: string
+  packageCategoryId: string
+  quantity: number
+  pricePerItem: number
+  totalPrice: number
+  packageCategory: {
+    category: {
+      id: string
+      name: string
+      icon?: string
+      slug?: string
+    }
+  }
+  createdAt?: string
+  updatedAt?: string
 }
 
 // Deposit types
@@ -450,9 +473,12 @@ export interface CreateReservationInput {
   // Menu Integration 🆕 NEW!
   menuPackageId?: string // Optional - if provided, prices come from package
   selectedOptions?: MenuOptionSelection[] // Optional - additional menu options
-  
+
+  // #216: Category Extras
+  categoryExtras?: Array<{ packageCategoryId: string; quantity: number }>
+
   confirmationDeadline?: string // For PENDING status
-  
+
   notes?: string
   deposit?: {
     amount: number

@@ -18,6 +18,7 @@ import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
+import CategoryExtrasList from '@/components/reservations/CategoryExtrasList'
 import { ReservationExtrasPanel } from '@/components/service-extras/ReservationExtrasPanel'
 import {
   StatusChanger,
@@ -390,6 +391,17 @@ export default function ReservationDetailsPage() {
                   children={reservation.children || 0}
                   toddlers={reservation.toddlers || 0}
                   readOnly={isReadOnly}
+                />
+              )}
+
+              {/* #216: Category Extras */}
+              {reservation.categoryExtras && reservation.categoryExtras.length > 0 && (
+                <CategoryExtrasList
+                  reservationId={reservation.id}
+                  categoryExtras={reservation.categoryExtras as any}
+                  categoryExtrasTotal={reservation.categoryExtrasTotal}
+                  readOnly={isReadOnly}
+                  onUpdated={handleRefetch}
                 />
               )}
 

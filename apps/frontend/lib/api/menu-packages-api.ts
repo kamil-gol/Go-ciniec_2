@@ -116,6 +116,8 @@ export interface CategorySettingInput {
   isEnabled: boolean;
   displayOrder: number;
   customLabel?: string | null;
+  extraItemPrice?: number | null;
+  maxExtra?: number | null;
 }
 
 export interface ApiResponse<T> {

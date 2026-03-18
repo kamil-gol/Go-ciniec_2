@@ -195,7 +195,10 @@ export class MenuService {
     return prisma.menuPackage.findMany({
       include: {
         menuTemplate: { select: { id: true, name: true, eventType: { select: { id: true, name: true } } } },
-        categorySettings: true
+        categorySettings: {
+          include: { category: { select: { id: true, name: true, icon: true, slug: true } } },
+          orderBy: { displayOrder: 'asc' },
+        }
       },
       orderBy: [{ menuTemplateId: 'asc' }, { displayOrder: 'asc' }]
     });
@@ -205,7 +208,10 @@ export class MenuService {
     return prisma.menuPackage.findMany({
       where: { menuTemplateId: templateId },
       include: {
-        categorySettings: true
+        categorySettings: {
+          include: { category: { select: { id: true, name: true, icon: true, slug: true } } },
+          orderBy: { displayOrder: 'asc' },
+        }
       },
       orderBy: { displayOrder: 'asc' }
     });
@@ -221,7 +227,10 @@ export class MenuService {
       where: { menuTemplateId: { in: templates.map(t => t.id) } },
       include: {
         menuTemplate: { select: { id: true, name: true, eventType: { select: { id: true, name: true } } } },
-        categorySettings: true
+        categorySettings: {
+          include: { category: { select: { id: true, name: true, icon: true, slug: true } } },
+          orderBy: { displayOrder: 'asc' },
+        }
       },
       orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }]
     });
