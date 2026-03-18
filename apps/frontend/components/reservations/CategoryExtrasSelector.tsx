@@ -101,7 +101,7 @@ export default function CategoryExtrasSelector({
         </div>
         <div>
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-            Dodatkowo platne pozycje
+            Dodatkowo płatne pozycje
           </h3>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Pozycje ponad limit pakietu — wyceniane per sztuka
@@ -178,7 +178,7 @@ export default function CategoryExtrasSelector({
       {totalExtrasPrice > 0 && (
         <div className="flex justify-between items-center pt-2 border-t border-orange-200 dark:border-orange-800">
           <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Suma dodatkowo platnych pozycji:
+            Suma dodatkowo płatnych pozycji:
           </span>
           <span className="text-base font-bold text-orange-600 dark:text-orange-400">
             +{formatCurrency(totalExtrasPrice)}

@@ -44,7 +44,7 @@ export default function CategoryExtrasList({
               <ShoppingCart className="w-4 h-4 text-orange-600 dark:text-orange-400" />
             </div>
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
-              Dodatkowo platne pozycje
+              Dodatkowo płatne pozycje
             </h3>
           </div>
           {!readOnly && (
@@ -68,7 +68,7 @@ export default function CategoryExtrasList({
                   Kategoria
                 </th>
                 <th className="text-center py-2 px-4 font-medium text-neutral-500 dark:text-neutral-400">
-                  Ilosc
+                  Ilość
                 </th>
                 <th className="text-right py-2 px-4 font-medium text-neutral-500 dark:text-neutral-400">
                   Cena/szt.

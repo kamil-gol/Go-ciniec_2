@@ -82,13 +82,13 @@ export default function CategoryExtrasEditModal({
 
       toast({
         title: 'Zapisano',
-        description: 'Dodatkowe pozycje zostaly zaktualizowane.',
+        description: 'Dodatkowe pozycje zostały zaktualizowane.',
       });
       onSaved();
     } catch (error: any) {
       toast({
-        title: 'Blad',
-        description: error?.message || 'Nie udalo sie zapisac zmian.',
+        title: 'Błąd',
+        description: error?.message || 'Nie udało się zapisać zmian.',
         variant: 'destructive',
       });
     } finally {
@@ -102,7 +102,7 @@ export default function CategoryExtrasEditModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-orange-600" />
-            Edytuj dodatkowo platne pozycje
+            Edytuj dodatkowo płatne pozycje
           </DialogTitle>
         </DialogHeader>
 

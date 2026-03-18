@@ -689,7 +689,7 @@ export function CreateReservationForm({
             <div className="flex justify-between text-sm text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 -mx-4 px-4 py-2">
               <span className="flex items-center gap-1">
                 <ShoppingCart className="w-3.5 h-3.5" />
-                Dodatkowo platne pozycje ({selectedCategoryExtras.filter(e => e.quantity > 0).length})
+                Dodatkowo płatne pozycje ({selectedCategoryExtras.filter(e => e.quantity > 0).length})
               </span>
               <span className="font-medium">+{formatCurrency(categoryExtrasTotal)}</span>
             </div>
