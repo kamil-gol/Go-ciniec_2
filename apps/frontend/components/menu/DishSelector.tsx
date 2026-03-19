@@ -263,30 +263,28 @@ export function DishSelector({
 
   // #216: Toggle extras for a category
   const toggleExtras = (categoryId: string) => {
-    setExtrasEnabled(prev => {
-      const newState = { ...prev, [categoryId]: !prev[categoryId] }
+    const isCurrentlyOn = extrasEnabled[categoryId] || false
 
-      // If turning OFF extras and selections exceed base maxSelect, trim selections
-      if (!newState[categoryId]) {
-        const category = getCategorySettings(categoryId)
-        if (category) {
-          const baseMax = Number(category.maxSelect)
-          const total = getCategoryTotal(categoryId)
-          if (total > baseMax) {
-            // Show warning toast
-            toast({
-              title: 'Uwaga',
-              description: `Masz ${total} wybranych pozycji, ale limit bez extras to ${baseMax}. Zmniejsz liczbę wybranych pozycji.`,
-              variant: 'destructive',
-            })
-            // Don't toggle off — force user to reduce selections first
-            return prev
-          }
+    // If turning OFF extras, check if selections exceed base maxSelect
+    if (isCurrentlyOn) {
+      const category = getCategorySettings(categoryId)
+      if (category) {
+        const baseMax = Number(category.maxSelect)
+        const total = getCategoryTotal(categoryId)
+        if (total > baseMax) {
+          // Show warning toast — OUTSIDE of setState to avoid "Cannot update while rendering"
+          toast({
+            title: 'Uwaga',
+            description: `Masz ${total} wybranych pozycji, ale limit bez extras to ${baseMax}. Zmniejsz liczbę wybranych pozycji, aby wyłączyć dodatkowe.`,
+            variant: 'destructive',
+          })
+          // Don't toggle off — force user to reduce selections first
+          return
         }
       }
+    }
 
-      return newState
-    })
+    setExtrasEnabled(prev => ({ ...prev, [categoryId]: !prev[categoryId] }))
   }
 
   // #216: Calculate extra quantity for a category (portions beyond base maxSelect)
