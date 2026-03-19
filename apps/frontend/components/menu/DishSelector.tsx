@@ -111,6 +111,8 @@ export function DishSelector({
   const [isInitialized, setIsInitialized] = useState(false)
   // #216: Track which categories have extras toggle enabled
   const [extrasEnabled, setExtrasEnabled] = useState<Record<string, boolean>>(initialExtrasEnabled || {})
+  // #216: Track inline warnings for extras toggle (must be before early returns)
+  const [extrasWarning, setExtrasWarning] = useState<Record<string, string>>({})
 
   // #216: Total extras cost across all categories
   // MUST be before any early returns to satisfy Rules of Hooks
@@ -242,11 +244,19 @@ export function DishSelector({
       })
     }
 
+    // Clear errors and extras warnings when selections change
     if (errors[categoryId]) {
       setErrors(prev => {
         const newErrors = { ...prev }
         delete newErrors[categoryId]
         return newErrors
+      })
+    }
+    if (extrasWarning[categoryId]) {
+      setExtrasWarning(prev => {
+        const next = { ...prev }
+        delete next[categoryId]
+        return next
       })
     }
   }
@@ -259,6 +269,14 @@ export function DishSelector({
         [dishId]: quantity
       }
     }))
+    // Clear extras warning when quantity changes
+    if (extrasWarning[categoryId]) {
+      setExtrasWarning(prev => {
+        const next = { ...prev }
+        delete next[categoryId]
+        return next
+      })
+    }
   }
 
   // #216: Toggle extras for a category
@@ -272,18 +290,24 @@ export function DishSelector({
         const baseMax = Number(category.maxSelect)
         const total = getCategoryTotal(categoryId)
         if (total > baseMax) {
-          // Show warning toast — OUTSIDE of setState to avoid "Cannot update while rendering"
-          toast({
-            title: 'Uwaga',
-            description: `Masz ${total} wybranych pozycji, ale limit bez extras to ${baseMax}. Zmniejsz liczbę wybranych pozycji, aby wyłączyć dodatkowe.`,
-            variant: 'destructive',
-          })
+          const excess = total - baseMax
+          // Show inline warning — more visible than toast
+          setExtrasWarning(prev => ({
+            ...prev,
+            [categoryId]: `Masz ${total} wybranych porcji — odznacz ${excess === Math.floor(excess) ? excess : excess.toFixed(1)} porcji (do limitu ${baseMax}), aby wyłączyć dodatkowe.`
+          }))
           // Don't toggle off — force user to reduce selections first
           return
         }
       }
     }
 
+    // Clear any warning for this category
+    setExtrasWarning(prev => {
+      const next = { ...prev }
+      delete next[categoryId]
+      return next
+    })
     setExtrasEnabled(prev => ({ ...prev, [categoryId]: !prev[categoryId] }))
   }
 
@@ -481,9 +505,19 @@ export function DishSelector({
                           Extra: {extraQty} × {formatCurrency(Number(category.extraItemPrice))} × {guestCount} os. = {formatCurrency(extraCost)}
                         </div>
                       )}
-                      {isExtrasOn && extraQty === 0 && (
+                      {isExtrasOn && extraQty === 0 && !extrasWarning[category.categoryId] && (
                         <div className="mt-1.5 ml-6 text-xs text-neutral-500 dark:text-neutral-400">
                           Limit zwiększony do {effectiveMax}. Wybierz ponad {baseMax} pozycji, aby naliczyć dodatkowe.
+                        </div>
+                      )}
+                      {extrasWarning[category.categoryId] && (
+                        <div className="mt-2 ml-6 p-2 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
+                          <div className="flex items-start gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-xs font-medium text-red-700 dark:text-red-300">
+                              {extrasWarning[category.categoryId]}
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
