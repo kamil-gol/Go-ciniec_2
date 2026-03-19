@@ -682,7 +682,7 @@ export function ReservationFinancialSummary({
               )}
               {effectiveCategoryExtrasTotal > 0 && (
                 <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
-                  <span>w tym dodatkowe pozycje kategorii ({activeCategoryExtras.length})</span>
+                  <span>w tym dodatkowo płatne porcje ({activeCategoryExtras.length})</span>
                   <span>+{formatPLN(effectiveCategoryExtrasTotal)} zł</span>
                 </div>
               )}

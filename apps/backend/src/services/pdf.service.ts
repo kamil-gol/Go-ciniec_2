@@ -1517,10 +1517,13 @@ export class PDFService {
 
         doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
         doc.text(depositLabel, labelX, y);
-        doc.text(`-${this.formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
-        // Only show badge for unpaid deposits
-        if (!dep.paid) {
+        if (dep.paid) {
+          // Paid: full-width amount aligned with RAZEM/DO ZAPŁATY
+          doc.text(`-${this.formatCurrency(Number(dep.amount))}`, valueX, y, { width: valueWidth, align: 'right' });
+        } else {
+          // Unpaid: narrower amount to leave room for badge
+          doc.text(`-${this.formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
           const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
           doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(COLORS.warning);
           doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
