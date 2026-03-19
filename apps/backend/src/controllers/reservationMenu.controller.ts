@@ -5,12 +5,15 @@
  * instead of only updating guest counts.
  * SYNC: selectMenu/updateMenu now sync pricePerAdult/Child/Toddler + totalPrice
  * back to the Reservation model for consistency across the system.
- * UPDATED: deleteMenu no longer references hall pricing (removed from Hall model)
+ * #216: selectMenu/updateMenu now save categoryExtras via upsertExtras
+ * #216: deleteMenu now removes categoryExtras
  */
 
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { menuSnapshotService } from '../services/menuSnapshot.service';
+import { reservationCategoryExtraService } from '../services/reservationCategoryExtra.service';
+import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import { AppError } from '../utils/AppError';
 import {
   selectMenuSchema,
@@ -19,11 +22,10 @@ import { z } from 'zod';
 
 export class ReservationMenuController {
   /**
-   * Sync reservation pricing fields from menu snapshot priceBreakdown.
-   * Updates pricePerAdult, pricePerChild, pricePerToddler and totalPrice
-   * so that all parts of the system (lists, API, reports) show correct values.
+   * Sync reservation pricing fields from menu snapshot priceBreakdown,
+   * then run full recalculation (includes extras, surcharge, discount, etc.).
    */
-  private async syncReservationPricing(
+  private async syncReservationPricingAndRecalculate(
     reservationId: string,
     priceBreakdown: {
       packageCost: {
@@ -34,19 +36,61 @@ export class ReservationMenuController {
       totalMenuPrice: number;
     }
   ) {
+    // First sync per-person prices from package
     await prisma.reservation.update({
       where: { id: reservationId },
       data: {
         pricePerAdult: priceBreakdown.packageCost.adults.priceEach,
         pricePerChild: priceBreakdown.packageCost.children.priceEach,
         pricePerToddler: priceBreakdown.packageCost.toddlers.priceEach,
-        totalPrice: priceBreakdown.totalMenuPrice,
       },
     });
+    // Then run full recalculation (includes categoryExtras, extras, surcharge, discount, extra hours)
+    await recalculateReservationTotalPrice(reservationId);
+  }
+
+  /**
+   * #216: Save category extras from DishSelector result.
+   * Maps frontend format (packageCategorySettingsId) to backend format (packageCategoryId).
+   */
+  private async saveCategoryExtras(
+    reservationId: string,
+    categoryExtras: Array<{
+      packageCategorySettingsId: string;
+      extraQuantity: number;
+      portionTarget: string;
+      [key: string]: any;
+    }>,
+    guestCounts: { adults: number; children: number; toddlers: number },
+    userId?: string
+  ) {
+    // First delete existing extras for this reservation
+    await reservationCategoryExtraService.deleteByReservation(reservationId, userId);
+
+    // Then upsert new ones (if any)
+    if (categoryExtras.length > 0) {
+      const extrasForService = categoryExtras
+        .filter(e => e.extraQuantity > 0)
+        .map(e => ({
+          packageCategoryId: e.packageCategorySettingsId,
+          quantity: e.extraQuantity,
+          portionTarget: e.portionTarget || 'ALL',
+        }));
+
+      if (extrasForService.length > 0) {
+        await reservationCategoryExtraService.upsertExtras(
+          reservationId,
+          extrasForService,
+          userId,
+          guestCounts
+        );
+      }
+    }
   }
 
   async selectMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
+    const userId = (req as any).user?.id;
 
     // Zod validation
     const data = selectMenuSchema.parse(req.body);
@@ -78,8 +122,18 @@ export class ReservationMenuController {
       toddlersCount: reservation.toddlers ?? 0
     });
 
-    // Sync pricing back to reservation
-    await this.syncReservationPricing(reservationId, result.priceBreakdown);
+    // #216: Save category extras from DishSelector
+    if (data.categoryExtras && data.categoryExtras.length > 0) {
+      await this.saveCategoryExtras(
+        reservationId,
+        data.categoryExtras,
+        { adults: reservation.adults, children: reservation.children ?? 0, toddlers: reservation.toddlers ?? 0 },
+        userId
+      );
+    }
+
+    // Sync pricing + full recalculation (includes categoryExtras in total)
+    await this.syncReservationPricingAndRecalculate(reservationId, result.priceBreakdown);
 
     res.status(201).json({
       success: true,
@@ -104,9 +158,11 @@ export class ReservationMenuController {
    * FIXED: Now replaces the entire snapshot (package, options, dishes)
    * instead of only updating guest counts.
    * Guest counts are always read from reservation (single source of truth).
+   * #216: Also replaces category extras and recalculates total price.
    */
   async updateMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
+    const userId = (req as any).user?.id;
 
     // Use same schema as selectMenu - full menu data
     const data = selectMenuSchema.parse(req.body);
@@ -134,8 +190,16 @@ export class ReservationMenuController {
       toddlersCount: reservation.toddlers ?? 0
     });
 
-    // Sync pricing back to reservation
-    await this.syncReservationPricing(reservationId, result.priceBreakdown);
+    // #216: Replace category extras — delete old + save new from DishSelector
+    await this.saveCategoryExtras(
+      reservationId,
+      data.categoryExtras || [],
+      { adults: reservation.adults, children: reservation.children ?? 0, toddlers: reservation.toddlers ?? 0 },
+      userId
+    );
+
+    // Sync pricing + full recalculation (includes categoryExtras in total)
+    await this.syncReservationPricingAndRecalculate(reservationId, result.priceBreakdown);
 
     res.status(200).json({
       success: true,
@@ -146,11 +210,12 @@ export class ReservationMenuController {
 
   /**
    * Delete menu selection for reservation.
-   * Keeps existing per-person prices from the reservation,
-   * then recalculates totalPrice without menu options.
+   * #216: Also deletes associated category extras.
+   * Then recalculates total price without menu or extras.
    */
   async deleteMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
+    const userId = (req as any).user?.id;
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
@@ -167,28 +232,14 @@ export class ReservationMenuController {
 
     if (!reservation) throw AppError.notFound('Reservation');
 
+    // Delete menu snapshot
     await menuSnapshotService.deleteSnapshot(reservationId);
 
-    // Keep existing per-person prices from the reservation
-    // (prices that were set before menu was selected, or manually entered)
-    const basePricePerAdult = reservation.pricePerAdult.toNumber();
-    const basePricePerChild = reservation.pricePerChild.toNumber();
-    const basePricePerToddler = reservation.pricePerToddler.toNumber();
+    // #216: Delete all category extras for this reservation
+    await reservationCategoryExtraService.deleteByReservation(reservationId, userId);
 
-    const newTotal =
-      reservation.adults * basePricePerAdult +
-      (reservation.children ?? 0) * basePricePerChild +
-      (reservation.toddlers ?? 0) * basePricePerToddler;
-
-    await prisma.reservation.update({
-      where: { id: reservationId },
-      data: {
-        pricePerAdult: basePricePerAdult,
-        pricePerChild: basePricePerChild,
-        pricePerToddler: basePricePerToddler,
-        totalPrice: newTotal,
-      },
-    });
+    // Recalculate total price (now without menu and without extras)
+    await recalculateReservationTotalPrice(reservationId);
 
     res.status(200).json({
       success: true,

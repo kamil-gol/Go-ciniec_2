@@ -260,6 +260,16 @@ export const selectMenuSchema = z.object({
     })
   ).optional().default([]),
   dishSelections: z.array(categoryDishSelectionSchema).optional().default([]),
+  // #216: Category extras from DishSelector (per-person pricing)
+  categoryExtras: z.array(
+    z.object({
+      categoryId: z.string().optional(),
+      packageCategorySettingsId: z.string(),
+      extraQuantity: z.number().min(0),
+      pricePerItem: z.number().min(0),
+      portionTarget: z.string().default('ALL'),
+    })
+  ).optional().default([]),
   // These are sent by frontend but ignored by backend (guest counts come from reservation)
   templateId: z.string().optional(),
   adults: z.number().optional(),

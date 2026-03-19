@@ -391,6 +391,7 @@ export default function ReservationDetailsPage() {
                   children={reservation.children || 0}
                   toddlers={reservation.toddlers || 0}
                   categoryExtras={reservation.categoryExtras as any}
+                  onMenuUpdated={handleRefetch}
                   readOnly={isReadOnly}
                 />
               )}
