@@ -62,6 +62,10 @@ export async function getPackageCategories(req: Request, res: Response) {
       isRequired: setting.isRequired,
       customLabel: setting.customLabel,
       displayOrder: setting.displayOrder,
+      portionTarget: setting.portionTarget,
+      // #216: Category extras fields
+      extraItemPrice: setting.extraItemPrice != null ? toNumber(setting.extraItemPrice) : null,
+      maxExtra: setting.maxExtra != null ? toNumber(setting.maxExtra) : null,
       
       dishes: setting.category.dishes.map((dish) => ({
         id: dish.id,

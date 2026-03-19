@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingCart, Pencil } from 'lucide-react';
+import { ShoppingCart, Pencil, User, Baby, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
@@ -16,9 +16,26 @@ interface CategoryExtrasListProps {
   onUpdated?: () => void;
 }
 
+/** Short label for portionTarget */
+function PortionBadge({ target }: { target?: string }) {
+  if (!target || target === 'ALL') {
+    return <span className="text-[10px] text-neutral-400">wszyscy</span>;
+  }
+  const isAdults = target === 'ADULTS_ONLY';
+  const Icon = isAdults ? User : Baby;
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[10px] font-medium ${
+      isAdults ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'
+    }`}>
+      <Icon className="w-2.5 h-2.5" />
+      {isAdults ? 'dorośli' : 'dzieci'}
+    </span>
+  );
+}
+
 /**
  * #216: Displays category extras on the reservation detail page.
- * Shows a table of extra items per category with quantity, unit price, and total.
+ * Per-person pricing: quantity × pricePerItem × guestCount.
  */
 export default function CategoryExtrasList({
   reservationId,
@@ -67,47 +84,60 @@ export default function CategoryExtrasList({
                 <th className="text-left py-2 pr-4 font-medium text-neutral-500 dark:text-neutral-400">
                   Kategoria
                 </th>
-                <th className="text-center py-2 px-4 font-medium text-neutral-500 dark:text-neutral-400">
+                <th className="text-center py-2 px-2 font-medium text-neutral-500 dark:text-neutral-400">
                   Ilość
                 </th>
-                <th className="text-right py-2 px-4 font-medium text-neutral-500 dark:text-neutral-400">
-                  Cena/szt.
+                <th className="text-right py-2 px-2 font-medium text-neutral-500 dark:text-neutral-400">
+                  Cena/os.
                 </th>
-                <th className="text-right py-2 pl-4 font-medium text-neutral-500 dark:text-neutral-400">
+                <th className="text-center py-2 px-2 font-medium text-neutral-500 dark:text-neutral-400">
+                  Osoby
+                </th>
+                <th className="text-right py-2 pl-2 font-medium text-neutral-500 dark:text-neutral-400">
                   Suma
                 </th>
               </tr>
             </thead>
             <tbody>
-              {categoryExtras.map((extra) => (
-                <tr
-                  key={extra.id}
-                  className="border-b border-neutral-100 dark:border-neutral-800 last:border-0"
-                >
-                  <td className="py-2.5 pr-4 text-neutral-900 dark:text-neutral-100">
-                    {extra.packageCategory?.category?.name || 'Kategoria'}
-                  </td>
-                  <td className="py-2.5 px-4 text-center text-neutral-700 dark:text-neutral-300">
-                    {extra.quantity}
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-neutral-700 dark:text-neutral-300">
-                    {formatCurrency(Number(extra.pricePerItem))}
-                  </td>
-                  <td className="py-2.5 pl-4 text-right font-medium text-neutral-900 dark:text-neutral-100">
-                    {formatCurrency(Number(extra.totalPrice))}
-                  </td>
-                </tr>
-              ))}
+              {categoryExtras.map((extra) => {
+                const qty = Number(extra.quantity);
+                const guestCount = extra.guestCount ?? 1;
+                return (
+                  <tr
+                    key={extra.id}
+                    className="border-b border-neutral-100 dark:border-neutral-800 last:border-0"
+                  >
+                    <td className="py-2.5 pr-4">
+                      <div className="text-neutral-900 dark:text-neutral-100">
+                        {extra.packageCategory?.category?.name || 'Kategoria'}
+                      </div>
+                      <PortionBadge target={extra.portionTarget} />
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-neutral-700 dark:text-neutral-300">
+                      {qty === Math.floor(qty) ? qty : qty.toFixed(1)}
+                    </td>
+                    <td className="py-2.5 px-2 text-right text-neutral-700 dark:text-neutral-300">
+                      {formatCurrency(Number(extra.pricePerItem))}
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-neutral-700 dark:text-neutral-300">
+                      {guestCount}
+                    </td>
+                    <td className="py-2.5 pl-2 text-right font-medium text-neutral-900 dark:text-neutral-100">
+                      {formatCurrency(Number(extra.totalPrice))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-orange-200 dark:border-orange-800">
                 <td
-                  colSpan={3}
+                  colSpan={4}
                   className="py-2.5 pr-4 text-right font-semibold text-neutral-900 dark:text-neutral-100"
                 >
                   Razem:
                 </td>
-                <td className="py-2.5 pl-4 text-right font-bold text-orange-600 dark:text-orange-400">
+                <td className="py-2.5 pl-2 text-right font-bold text-orange-600 dark:text-orange-400">
                   {formatCurrency(total)}
                 </td>
               </tr>

@@ -1,19 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
-import { 
-  ChevronLeft, ChevronRight, AlertCircle, Check, 
+import {
+  ChevronLeft, ChevronRight, AlertCircle, Check,
   Info, UtensilsCrossed, CheckCircle2, Lock,
-  Users, User, Baby, Ban
+  Users, User, Baby, Ban, ShoppingCart
 } from 'lucide-react'
 import { usePackageCategories } from '@/hooks/use-menu'
 import type { PortionTarget } from '@/types/menu'
 import { PORTION_TARGET_LABELS, PORTION_TARGET_ICONS } from '@/types/menu'
+import { formatCurrency } from '@/lib/utils'
 
 interface DishSelection {
   dishId: string
@@ -25,23 +26,39 @@ interface CategorySelection {
   dishes: DishSelection[]
 }
 
+// #216: Category extras data returned alongside dish selections
+export interface CategoryExtraResult {
+  categoryId: string
+  packageCategorySettingsId: string
+  extraQuantity: number      // portions beyond base maxSelect
+  pricePerItem: number       // from PackageCategorySettings.extraItemPrice
+  portionTarget: string      // ALL | ADULTS_ONLY | CHILDREN_ONLY
+}
+
+export interface DishSelectorResult {
+  selections: CategorySelection[]
+  categoryExtras: CategoryExtraResult[]
+}
+
 interface DishSelectorProps {
   packageId: string
   adults: number
   children: number
+  toddlers?: number
   initialSelections?: CategorySelection[]
-  onComplete: (selections: CategorySelection[]) => void
+  initialExtrasEnabled?: Record<string, boolean>
+  onComplete: (result: DishSelectorResult) => void
   onBack: () => void
 }
 
 /** #166: Portion target badge for category header */
 function PortionTargetBadge({ target }: { target?: PortionTarget | string }) {
   if (!target || target === 'ALL') return null;
-  
+
   const isAdults = target === 'ADULTS_ONLY';
   const Icon = isAdults ? User : Baby;
   const label = PORTION_TARGET_LABELS[target as PortionTarget] || target;
-  
+
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
       isAdults
@@ -67,24 +84,38 @@ function getInactiveReason(portionTarget: string | undefined): string {
   return '';
 }
 
-export function DishSelector({ 
-  packageId, 
+/** #216: Calculate guest count based on portionTarget */
+function getGuestCountForTarget(portionTarget: string | undefined, adults: number, children: number, toddlers: number): number {
+  switch (portionTarget) {
+    case 'ADULTS_ONLY': return adults;
+    case 'CHILDREN_ONLY': return children;
+    case 'ALL':
+    default: return adults + children + toddlers;
+  }
+}
+
+export function DishSelector({
+  packageId,
   adults,
   children,
+  toddlers = 0,
   initialSelections,
-  onComplete, 
-  onBack 
+  initialExtrasEnabled,
+  onComplete,
+  onBack
 }: DishSelectorProps) {
   const { toast } = useToast()
   const { data: categoryData, isLoading } = usePackageCategories(packageId)
   const [selections, setSelections] = useState<Record<string, Record<string, number>>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isInitialized, setIsInitialized] = useState(false)
+  // #216: Track which categories have extras toggle enabled
+  const [extrasEnabled, setExtrasEnabled] = useState<Record<string, boolean>>(initialExtrasEnabled || {})
 
   useEffect(() => {
     if (categoryData?.categories && !isInitialized) {
       const initialSelectionsData: Record<string, Record<string, number>> = {}
-      
+
       categoryData.categories.forEach((cat: any) => {
         initialSelectionsData[cat.categoryId] = {}
       })
@@ -98,7 +129,7 @@ export function DishSelector({
           initialSelectionsData[catSelection.categoryId] = dishes
         })
       }
-      
+
       setSelections(initialSelectionsData)
       setIsInitialized(true)
     }
@@ -125,6 +156,15 @@ export function DishSelector({
 
   const categories = categoryData.categories
 
+  // #216: Get effective maxSelect for a category (base + maxExtra if extras enabled)
+  const getEffectiveMaxSelect = (category: any): number => {
+    const base = Number(category.maxSelect)
+    if (extrasEnabled[category.categoryId] && category.extraItemPrice != null && category.maxExtra != null) {
+      return base + Number(category.maxExtra)
+    }
+    return base
+  }
+
   const getCategoryTotal = (categoryId: string): number => {
     const categorySelections = selections[categoryId] || {}
     return Object.values(categorySelections).reduce((sum, qty) => sum + qty, 0)
@@ -137,7 +177,7 @@ export function DishSelector({
   const getCategoryRemaining = (categoryId: string): number => {
     const settings = getCategorySettings(categoryId)
     if (!settings) return 0
-    return settings.maxSelect - getCategoryTotal(categoryId)
+    return getEffectiveMaxSelect(settings) - getCategoryTotal(categoryId)
   }
 
   const getAvailableQuantityOptions = (categoryId: string, dishId: string): number[] => {
@@ -149,22 +189,23 @@ export function DishSelector({
 
   const toggleDish = (categoryId: string, dishId: string) => {
     const isCurrentlySelected = !!selections[categoryId]?.[dishId]
-    
+
     if (!isCurrentlySelected) {
       const categorySettings = getCategorySettings(categoryId)
       const remaining = getCategoryRemaining(categoryId)
-      
+      const effectiveMax = getEffectiveMaxSelect(categorySettings)
+
       if (remaining <= 0) {
         toast({
           title: 'Limit osiągnięty',
-          description: `Możesz wybrać maksymalnie ${categorySettings.maxSelect} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inną pozycję aby dodać nową.`,
+          description: `Możesz wybrać maksymalnie ${effectiveMax} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inną pozycję aby dodać nową.`,
           variant: 'destructive',
         })
         return
       }
 
-      const defaultQuantity = remaining < 1 
-        ? Math.round(remaining * 2) / 2 
+      const defaultQuantity = remaining < 1
+        ? Math.round(remaining * 2) / 2
         : 1
 
       setSelections(prev => ({
@@ -183,7 +224,7 @@ export function DishSelector({
         return newSelections
       })
     }
-    
+
     if (errors[categoryId]) {
       setErrors(prev => {
         const newErrors = { ...prev }
@@ -203,6 +244,58 @@ export function DishSelector({
     }))
   }
 
+  // #216: Toggle extras for a category
+  const toggleExtras = (categoryId: string) => {
+    setExtrasEnabled(prev => {
+      const newState = { ...prev, [categoryId]: !prev[categoryId] }
+
+      // If turning OFF extras and selections exceed base maxSelect, trim selections
+      if (!newState[categoryId]) {
+        const category = getCategorySettings(categoryId)
+        if (category) {
+          const baseMax = Number(category.maxSelect)
+          const total = getCategoryTotal(categoryId)
+          if (total > baseMax) {
+            // Show warning toast
+            toast({
+              title: 'Uwaga',
+              description: `Masz ${total} wybranych pozycji, ale limit bez extras to ${baseMax}. Zmniejsz liczbę wybranych pozycji.`,
+              variant: 'destructive',
+            })
+            // Don't toggle off — force user to reduce selections first
+            return prev
+          }
+        }
+      }
+
+      return newState
+    })
+  }
+
+  // #216: Calculate extra quantity for a category (portions beyond base maxSelect)
+  const getExtraQuantity = (category: any): number => {
+    if (!extrasEnabled[category.categoryId]) return 0
+    const total = getCategoryTotal(category.categoryId)
+    const baseMax = Number(category.maxSelect)
+    return Math.max(0, total - baseMax)
+  }
+
+  // #216: Calculate extra cost for a single category (per-person)
+  const getExtraCost = (category: any): number => {
+    const extraQty = getExtraQuantity(category)
+    if (extraQty <= 0 || category.extraItemPrice == null) return 0
+    const price = Number(category.extraItemPrice)
+    const guestCount = getGuestCountForTarget(category.portionTarget, adults, children, toddlers)
+    return Math.round(extraQty * price * guestCount * 100) / 100
+  }
+
+  // #216: Total extras cost across all categories
+  const totalExtrasCost = useMemo(() => {
+    if (!categories) return 0
+    return categories.reduce((sum: number, cat: any) => sum + getExtraCost(cat), 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, selections, extrasEnabled, adults, children, toddlers])
+
   const validateSelections = (): { isValid: boolean; errorMap: Record<string, string> } => {
     const newErrors: Record<string, string> = {}
     let isValid = true
@@ -212,15 +305,16 @@ export function DishSelector({
       if (isCategoryInactive(category.portionTarget, adults, children)) return;
 
       const total = getCategoryTotal(category.categoryId)
+      const effectiveMax = getEffectiveMaxSelect(category)
       const label = category.customLabel || category.categoryName
-      
+
       if (category.minSelect > 0 && total < category.minSelect) {
         newErrors[category.categoryId] = `\u201E${label}\u201D: wybierz minimum ${category.minSelect} pozycji (masz ${total})`
         isValid = false
       }
-      
-      if (total > category.maxSelect) {
-        newErrors[category.categoryId] = `\u201E${label}\u201D: maksymalnie ${category.maxSelect} pozycji (masz ${total})`
+
+      if (total > effectiveMax) {
+        newErrors[category.categoryId] = `\u201E${label}\u201D: maksymalnie ${effectiveMax} pozycji (masz ${total})`
         isValid = false
       }
     })
@@ -231,7 +325,7 @@ export function DishSelector({
 
   const handleComplete = () => {
     const { isValid, errorMap } = validateSelections()
-    
+
     if (!isValid) {
       const errorMessages = Object.values(errorMap)
       toast({
@@ -243,7 +337,7 @@ export function DishSelector({
     }
 
     // Exclude inactive categories from result
-    const result: CategorySelection[] = categories
+    const selectionsResult: CategorySelection[] = categories
       .filter((category: any) => !isCategoryInactive(category.portionTarget, adults, children))
       .map((category: any) => ({
         categoryId: category.categoryId,
@@ -253,7 +347,22 @@ export function DishSelector({
         }))
       })).filter((cat: CategorySelection) => cat.dishes.length > 0)
 
-    onComplete(result)
+    // #216: Build category extras from selections exceeding base maxSelect
+    const categoryExtras: CategoryExtraResult[] = categories
+      .filter((category: any) => {
+        if (isCategoryInactive(category.portionTarget, adults, children)) return false
+        if (!extrasEnabled[category.categoryId]) return false
+        return getExtraQuantity(category) > 0
+      })
+      .map((category: any) => ({
+        categoryId: category.categoryId,
+        packageCategorySettingsId: category.id, // PackageCategorySettings.id
+        extraQuantity: getExtraQuantity(category),
+        pricePerItem: Number(category.extraItemPrice),
+        portionTarget: category.portionTarget || 'ALL',
+      }))
+
+    onComplete({ selections: selectionsResult, categoryExtras })
   }
 
   return (
@@ -270,13 +379,22 @@ export function DishSelector({
       <div className="space-y-3">
         {categories.map((category: any) => {
           const total = getCategoryTotal(category.categoryId)
+          const effectiveMax = getEffectiveMaxSelect(category)
           const remaining = getCategoryRemaining(category.categoryId)
           const isOptional = category.minSelect === 0
-          const isValid = total >= category.minSelect && total <= category.maxSelect
+          const isValid = total >= category.minSelect && total <= effectiveMax
           const hasError = errors[category.categoryId]
-          const isAtMaxLimit = total >= category.maxSelect
+          const isAtMaxLimit = total >= effectiveMax
           const portionTarget = category.portionTarget as PortionTarget | undefined
           const inactive = isCategoryInactive(portionTarget, adults, children)
+
+          // #216: Extras info
+          const hasExtrasSupport = category.extraItemPrice != null && category.maxExtra != null && Number(category.maxExtra) > 0
+          const isExtrasOn = extrasEnabled[category.categoryId] || false
+          const extraQty = getExtraQuantity(category)
+          const extraCost = getExtraCost(category)
+          const baseMax = Number(category.maxSelect)
+          const guestCount = getGuestCountForTarget(category.portionTarget, adults, children, toddlers)
 
           return (
             <Card key={category.categoryId} className={`border shadow-sm ${
@@ -315,22 +433,54 @@ export function DishSelector({
                             Pozostało: {remaining}
                           </span>
                         )}
-                        <Badge 
+                        <Badge
                           variant={isValid ? "default" : "secondary"}
                           className={`text-sm px-2.5 py-1 ${
-                            isValid 
+                            isValid
                               ? isOptional && total === 0
                                 ? 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
-                                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
                               : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                           }`}
                         >
-                          {total} / {isOptional ? `0-${category.maxSelect}` : `${category.minSelect}-${category.maxSelect}`}
+                          {total} / {isOptional ? `0-${effectiveMax}` : `${category.minSelect}-${effectiveMax}`}
                         </Badge>
                       </div>
                     )}
                   </div>
-                  
+
+                  {/* #216: Extras toggle — only for categories that support extras */}
+                  {!inactive && hasExtrasSupport && (
+                    <div className={`mt-2 p-2.5 rounded-lg border transition-colors ${
+                      isExtrasOn
+                        ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
+                        : 'bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700'
+                    }`}>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isExtrasOn}
+                          onChange={() => toggleExtras(category.categoryId)}
+                          className="w-4 h-4 rounded border-orange-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <ShoppingCart className={`w-3.5 h-3.5 ${isExtrasOn ? 'text-orange-600' : 'text-neutral-400'}`} />
+                        <span className={`text-xs font-semibold ${isExtrasOn ? 'text-orange-800 dark:text-orange-200' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                          Dodatkowa płatna pozycja (+{Number(category.maxExtra)} porcji, {formatCurrency(Number(category.extraItemPrice))}/os.)
+                        </span>
+                      </label>
+                      {isExtrasOn && extraQty > 0 && (
+                        <div className="mt-1.5 ml-6 text-xs text-orange-700 dark:text-orange-300 font-medium">
+                          Extra: {extraQty} × {formatCurrency(Number(category.extraItemPrice))} × {guestCount} os. = {formatCurrency(extraCost)}
+                        </div>
+                      )}
+                      {isExtrasOn && extraQty === 0 && (
+                        <div className="mt-1.5 ml-6 text-xs text-neutral-500 dark:text-neutral-400">
+                          Limit zwiększony do {effectiveMax}. Wybierz ponad {baseMax} pozycji, aby naliczyć dodatkowe.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* #166: Inactive category banner */}
                   {inactive && (
                     <Alert className="mt-2 py-2 bg-neutral-100 border-neutral-300 dark:bg-neutral-900 dark:border-neutral-700">
@@ -343,21 +493,31 @@ export function DishSelector({
 
                   {/* Progress Bar — only for active categories */}
                   {!inactive && (
-                    <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                      <div 
+                    <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mt-2">
+                      {/* #216: Show base limit marker when extras are enabled */}
+                      {isExtrasOn && effectiveMax > baseMax && (
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-orange-400 dark:bg-orange-500 z-10"
+                          style={{ left: `${(baseMax / effectiveMax) * 100}%` }}
+                          title={`Bazowy limit: ${baseMax}`}
+                        />
+                      )}
+                      <div
                         className={`h-full transition-all duration-300 ${
                           !isOptional && total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                          total > category.maxSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                          total > effectiveMax ? 'bg-gradient-to-r from-red-500 to-rose-500' :
                           total === 0 ? '' :
-                          'bg-gradient-to-r from-green-500 to-emerald-500'
+                          extraQty > 0
+                            ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-orange-500'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-500'
                         }`}
-                        style={{ 
-                          width: `${Math.min((total / category.maxSelect) * 100, 100)}%` 
+                        style={{
+                          width: `${Math.min((total / effectiveMax) * 100, 100)}%`
                         }}
                       />
                     </div>
                   )}
-                  
+
                   {!inactive && isAtMaxLimit && (
                     <Alert className="mt-2 py-2 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                       <Info className="h-3.5 w-3.5 text-blue-600" />
@@ -366,7 +526,7 @@ export function DishSelector({
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   {hasError && (
                     <Alert variant="destructive" className="mt-2 py-2">
                       <AlertCircle className="h-3.5 w-3.5" />
@@ -390,8 +550,8 @@ export function DishSelector({
                           className={`group relative p-3 border rounded-lg transition-all duration-200 ${
                             isDisabled
                               ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
-                              : isSelected 
-                                ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-md scale-[1.01] cursor-pointer' 
+                              : isSelected
+                                ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-md scale-[1.01] cursor-pointer'
                                 : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-sm cursor-pointer'
                           }`}
                           onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
@@ -425,8 +585,8 @@ export function DishSelector({
                               <h4 className={`font-semibold text-sm ${
                                 isDisabled
                                   ? 'text-neutral-400 dark:text-neutral-600'
-                                  : isSelected 
-                                    ? 'text-blue-900 dark:text-blue-100' 
+                                  : isSelected
+                                    ? 'text-blue-900 dark:text-blue-100'
                                     : 'text-neutral-900 dark:text-neutral-100'
                               }`}>
                                 {dish.name}
@@ -438,13 +598,13 @@ export function DishSelector({
                                   {dish.description}
                                 </p>
                               )}
-                              
+
                               {dish.allergens && dish.allergens.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1.5">
                                   {dish.allergens.map((allergen: string) => (
-                                    <Badge 
-                                      key={allergen} 
-                                      variant="outline" 
+                                    <Badge
+                                      key={allergen}
+                                      variant="outline"
                                       className="text-[10px] px-1.5 py-0 border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
                                     >
                                       {allergen}
@@ -461,8 +621,8 @@ export function DishSelector({
                                   <select
                                     value={quantity}
                                     onChange={(e) => updateQuantity(
-                                      category.categoryId, 
-                                      dish.id, 
+                                      category.categoryId,
+                                      dish.id,
                                       parseFloat(e.target.value)
                                     )}
                                     className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
@@ -487,6 +647,21 @@ export function DishSelector({
           )
         })}
       </div>
+
+      {/* #216: Total extras cost summary */}
+      {totalExtrasCost > 0 && (
+        <div className="flex justify-between items-center p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-4 h-4 text-orange-600" />
+            <span className="text-sm font-semibold text-orange-800 dark:text-orange-200">
+              Dodatkowo płatne pozycje:
+            </span>
+          </div>
+          <span className="text-base font-bold text-orange-600 dark:text-orange-400">
+            +{formatCurrency(totalExtrasCost)}
+          </span>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between pt-4 border-t">

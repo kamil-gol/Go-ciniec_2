@@ -253,13 +253,15 @@ export interface Reservation {
   history?: ReservationHistory[]
 }
 
-// Category Extras (#216)
+// Category Extras (#216) — per-person pricing model
 export interface ReservationCategoryExtra {
   id: string
   packageCategoryId: string
-  quantity: number
-  pricePerItem: number
-  totalPrice: number
+  quantity: number           // Decimal (0.5, 1, 1.5...) — extra portions beyond base maxSelect
+  pricePerItem: number       // Snapshot of extraItemPrice per person per extra portion
+  guestCount: number         // Snapshot of relevant guest count based on portionTarget
+  portionTarget: string      // ALL | ADULTS_ONLY | CHILDREN_ONLY
+  totalPrice: number         // quantity × pricePerItem × guestCount
   packageCategory: {
     category: {
       id: string
@@ -474,8 +476,8 @@ export interface CreateReservationInput {
   menuPackageId?: string // Optional - if provided, prices come from package
   selectedOptions?: MenuOptionSelection[] // Optional - additional menu options
 
-  // #216: Category Extras
-  categoryExtras?: Array<{ packageCategoryId: string; quantity: number }>
+  // #216: Category Extras (per-person pricing)
+  categoryExtras?: Array<{ packageCategoryId: string; quantity: number; portionTarget?: string }>
 
   confirmationDeadline?: string // For PENDING status
 

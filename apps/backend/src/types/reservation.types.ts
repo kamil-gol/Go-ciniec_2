@@ -61,10 +61,11 @@ export interface CreateReservationDTO {
     unitPrice: number;
     totalPrice: number;
   }>;
-  // #216: Category extras (additional paid items beyond package limits)
+  // #216: Category extras (per-person pricing)
   categoryExtras?: Array<{
     packageCategoryId: string;
     quantity: number;
+    portionTarget?: string;
   }>;
 }
 
@@ -97,10 +98,11 @@ export interface UpdateReservationDTO {
   discountType?: string;
   discountValue?: number;
   discountReason?: string;
-  // #216: Category extras (additional paid items beyond package limits)
+  // #216: Category extras (per-person pricing)
   categoryExtras?: Array<{
     packageCategoryId: string;
     quantity: number;
+    portionTarget?: string;
   }>;
 }
 
@@ -176,12 +178,14 @@ export interface ReservationResponse {
   notes?: string;
   internalNotes?: string | null;  // Etap 5: Notatka wewnętrzna
   attachments?: string[];
-  // #216: Category extras
+  // #216: Category extras (per-person pricing)
   categoryExtras?: Array<{
     id: string;
     packageCategoryId: string;
     quantity: number;
     pricePerItem: number;
+    guestCount: number;
+    portionTarget: string;
     totalPrice: number;
     packageCategory: { category: { id: string; name: string; icon?: string } };
   }>;

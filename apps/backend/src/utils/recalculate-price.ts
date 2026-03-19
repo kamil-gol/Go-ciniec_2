@@ -94,7 +94,7 @@ export async function computeReservationBasePrice(
     0
   );
 
-  // 2b. Category extras total — per-item, NOT per-person (#216)
+  // 2b. Category extras total — per-person: qty × pricePerItem × guestCount (#216)
   const categoryExtrasTotal = ((reservation as any).categoryExtras || []).reduce(
     (sum: number, e: any) => sum + Number(e.totalPrice),
     0

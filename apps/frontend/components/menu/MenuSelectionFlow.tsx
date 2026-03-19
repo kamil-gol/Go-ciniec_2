@@ -27,6 +27,7 @@ import {
   PackageCardSkeleton,
 } from '@/components/menu';
 import { DishSelector } from '@/components/menu/DishSelector';
+import type { DishSelectorResult, CategoryExtraResult } from '@/components/menu/DishSelector';
 import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -76,6 +77,8 @@ export function MenuSelectionFlow({
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
   const [selectedPackage, setSelectedPackage] = useState<MenuPackage>();
   const [dishSelections, setDishSelections] = useState<CategorySelection[]>(initialSelection?.dishSelections || []);
+  // #216: Track category extras from DishSelector
+  const [categoryExtras, setCategoryExtras] = useState<CategoryExtraResult[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const totalGuests = adults + children + toddlers;
@@ -187,6 +190,7 @@ export function MenuSelectionFlow({
       setSelectedTemplate(template);
       setSelectedPackage(undefined);
       setDishSelections([]);
+      setCategoryExtras([]);
       toast({ title: 'Menu zmienione', description: 'Wybierz ponownie pakiet i dania.' });
     } else {
       setSelectedTemplate(template);
@@ -198,18 +202,21 @@ export function MenuSelectionFlow({
     if (selectedPackage?.id !== pkg.id) {
       setSelectedPackage(pkg);
       setDishSelections([]);
+      setCategoryExtras([]);
     } else {
       setSelectedPackage(pkg);
     }
     setCurrentStep('dishes');
   };
 
-  const handleDishesComplete = (selections: CategorySelection[]) => {
-    setDishSelections(selections);
-    handleComplete(selections);
+  // #216: DishSelector now returns DishSelectorResult with selections + categoryExtras
+  const handleDishesComplete = (result: DishSelectorResult) => {
+    setDishSelections(result.selections);
+    setCategoryExtras(result.categoryExtras);
+    handleComplete(result.selections, result.categoryExtras);
   };
 
-  const handleComplete = (selections?: CategorySelection[]) => {
+  const handleComplete = (selections?: CategorySelection[], extras?: CategoryExtraResult[]) => {
     if (!selectedTemplate || !selectedPackage) {
       toast({ title: 'Błąd', description: 'Nie wybrano menu lub pakietu.', variant: 'destructive' });
       return;
@@ -219,6 +226,7 @@ export function MenuSelectionFlow({
       templateId: selectedTemplate.id,
       packageId: selectedPackage.id,
       dishSelections: selections || dishSelections,
+      categoryExtras: extras || categoryExtras,
       adults,
       children,
       toddlers,
@@ -386,6 +394,7 @@ export function MenuSelectionFlow({
                 packageId={selectedPackage.id}
                 adults={adults}
                 children={children}
+                toddlers={toddlers}
                 initialSelections={dishSelections}
                 onComplete={handleDishesComplete}
                 onBack={() => setCurrentStep('package')}

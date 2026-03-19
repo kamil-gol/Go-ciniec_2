@@ -3,12 +3,30 @@
  *
  * Manages additional paid items beyond package category limits (#216).
  * Each extra has a snapshot price (pricePerItem) from PackageCategorySettings.extraItemPrice.
- * Price model: per-item (quantity × pricePerItem), NOT per-person.
+ * Price model: per-person (quantity × pricePerItem × guestCount based on portionTarget).
  */
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { logChange } from '../utils/audit-logger';
+
+/** Compute relevant guest count based on portionTarget */
+function getGuestCount(
+  portionTarget: string,
+  adults: number,
+  children: number,
+  toddlers: number
+): number {
+  switch (portionTarget) {
+    case 'ADULTS_ONLY':
+      return adults;
+    case 'CHILDREN_ONLY':
+      return children;
+    case 'ALL':
+    default:
+      return adults + children + toddlers;
+  }
+}
 
 class ReservationCategoryExtraService {
 
@@ -16,17 +34,24 @@ class ReservationCategoryExtraService {
    * Upsert category extras for a reservation.
    * - Snapshots pricePerItem from PackageCategorySettings.extraItemPrice
    * - Validates: category supports extras, quantity within maxExtra limit
+   * - Calculates totalPrice = quantity × pricePerItem × guestCount (per-person model)
    * - Removes extras for categories not in input (quantity=0)
    */
   async upsertExtras(
     reservationId: string,
-    extras: Array<{ packageCategoryId: string; quantity: number }>,
-    userId?: string
+    extras: Array<{ packageCategoryId: string; quantity: number; portionTarget?: string }>,
+    userId?: string,
+    guestCounts?: { adults: number; children: number; toddlers: number }
   ) {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
     });
     if (!reservation) throw new Error('Nie znaleziono rezerwacji');
+
+    // Use provided guest counts or fall back to reservation values
+    const adults = guestCounts?.adults ?? reservation.adults;
+    const children = guestCounts?.children ?? reservation.children;
+    const toddlers = guestCounts?.toddlers ?? reservation.toddlers;
 
     const categoryIds = extras.map(e => e.packageCategoryId);
     const categories = await prisma.packageCategorySettings.findMany({
@@ -45,12 +70,14 @@ class ReservationCategoryExtraService {
         throw new Error('Ta kategoria nie wspiera dodatkowych pozycji');
       }
       if (extra.quantity <= 0) continue;
-      if (category.maxExtra !== null && extra.quantity > category.maxExtra) {
-        throw new Error(`Przekroczono limit dodatkowych pozycji (max: ${category.maxExtra})`);
+      if (category.maxExtra !== null && extra.quantity > Number(category.maxExtra)) {
+        throw new Error(`Przekroczono limit dodatkowych pozycji (max: ${Number(category.maxExtra)})`);
       }
 
       const pricePerItem = Number(category.extraItemPrice);
-      const totalPrice = Math.round(extra.quantity * pricePerItem * 100) / 100;
+      const portionTarget = extra.portionTarget || category.portionTarget || 'ALL';
+      const guestCount = getGuestCount(portionTarget, adults, children, toddlers);
+      const totalPrice = Math.round(extra.quantity * pricePerItem * guestCount * 100) / 100;
 
       const result = await prisma.reservationCategoryExtra.upsert({
         where: {
@@ -60,15 +87,19 @@ class ReservationCategoryExtraService {
           },
         },
         update: {
-          quantity: extra.quantity,
+          quantity: new Decimal(extra.quantity),
           pricePerItem: new Decimal(pricePerItem),
+          guestCount,
+          portionTarget,
           totalPrice: new Decimal(totalPrice),
         },
         create: {
           reservationId,
           packageCategoryId: extra.packageCategoryId,
-          quantity: extra.quantity,
+          quantity: new Decimal(extra.quantity),
           pricePerItem: new Decimal(pricePerItem),
+          guestCount,
+          portionTarget,
           totalPrice: new Decimal(totalPrice),
         },
       });
@@ -86,7 +117,9 @@ class ReservationCategoryExtraService {
 
     // Audit log
     if (userId) {
-      const summary = results.map(r => `${r.packageCategoryId}: ${r.quantity}×${Number(r.pricePerItem)}zł`).join(', ');
+      const summary = results.map(r =>
+        `${r.packageCategoryId}: ${Number(r.quantity)}×${Number(r.pricePerItem)}zl×${r.guestCount}os.`
+      ).join(', ');
       await logChange({
         userId,
         action: 'CATEGORY_EXTRAS_UPDATED',
@@ -96,8 +129,10 @@ class ReservationCategoryExtraService {
           description: `Zaktualizowano extra pozycje kategorii: ${summary}`,
           extras: results.map(r => ({
             packageCategoryId: r.packageCategoryId,
-            quantity: r.quantity,
+            quantity: Number(r.quantity),
             pricePerItem: Number(r.pricePerItem),
+            guestCount: r.guestCount,
+            portionTarget: r.portionTarget,
             totalPrice: Number(r.totalPrice),
           })),
         },
@@ -105,6 +140,51 @@ class ReservationCategoryExtraService {
     }
 
     return results;
+  }
+
+  /**
+   * Recalculate category extras totals when guest counts change.
+   * Updates guestCount and totalPrice for each extra based on its portionTarget.
+   */
+  async recalculateForGuestChange(
+    reservationId: string,
+    adults: number,
+    children: number,
+    toddlers: number,
+    userId?: string
+  ) {
+    const extras = await prisma.reservationCategoryExtra.findMany({
+      where: { reservationId },
+    });
+
+    if (extras.length === 0) return;
+
+    for (const extra of extras) {
+      const newGuestCount = getGuestCount(extra.portionTarget, adults, children, toddlers);
+      const newTotalPrice = Math.round(Number(extra.quantity) * Number(extra.pricePerItem) * newGuestCount * 100) / 100;
+
+      if (newGuestCount !== extra.guestCount) {
+        await prisma.reservationCategoryExtra.update({
+          where: { id: extra.id },
+          data: {
+            guestCount: newGuestCount,
+            totalPrice: new Decimal(newTotalPrice),
+          },
+        });
+      }
+    }
+
+    if (userId) {
+      await logChange({
+        userId,
+        action: 'CATEGORY_EXTRAS_UPDATED',
+        entityType: 'RESERVATION',
+        entityId: reservationId,
+        details: {
+          description: `Przeliczono extra pozycje kategorii po zmianie liczby gosci (${adults} doroslych, ${children} dzieci, ${toddlers} maluchow)`,
+        },
+      });
+    }
   }
 
   /**
@@ -139,7 +219,7 @@ class ReservationCategoryExtraService {
         entityType: 'RESERVATION',
         entityId: reservationId,
         details: {
-          description: `Usunięto ${result.count} extra pozycji kategorii (zmiana pakietu)`,
+          description: `Usunieto ${result.count} extra pozycji kategorii (zmiana pakietu)`,
           removedCount: result.count,
         },
       });

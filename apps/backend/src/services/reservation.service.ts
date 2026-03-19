@@ -339,7 +339,12 @@ export class ReservationService {
 
     // #216: Create category extras (additional paid items beyond package limits)
     if (data.categoryExtras && data.categoryExtras.length > 0) {
-      await reservationCategoryExtraService.upsertExtras(reservation.id, data.categoryExtras, userId);
+      await reservationCategoryExtraService.upsertExtras(
+        reservation.id,
+        data.categoryExtras,
+        userId,
+        { adults, children, toddlers }
+      );
     }
 
     const depositData =
@@ -833,6 +838,11 @@ export class ReservationService {
       if (recalcResult) {
         console.log(`[Reservation] Auto-recalculated menu snapshot for ${id}: menuPrice=${recalcResult.totalMenuPrice}`);
       }
+    }
+
+    // #216: Recalculate category extras when guest counts change (per-person pricing)
+    if (guestsChanged) {
+      await reservationCategoryExtraService.recalculateForGuestChange(id, newAdults, newChildren, newToddlers, userId);
     } else if (!isUsingMenuPackage) {
       // Update per-person prices if provided
       if (data.pricePerAdult !== undefined) updateData.pricePerAdult = data.pricePerAdult;
@@ -947,7 +957,12 @@ ${changesSummary}`);
     // #216: Update category extras if provided
     if (data.categoryExtras !== undefined) {
       if (data.categoryExtras.length > 0) {
-        await reservationCategoryExtraService.upsertExtras(id, data.categoryExtras, userId);
+        const updatedRes = await prisma.reservation.findUnique({ where: { id }, select: { adults: true, children: true, toddlers: true } });
+        await reservationCategoryExtraService.upsertExtras(id, data.categoryExtras, userId, {
+          adults: updatedRes?.adults ?? 0,
+          children: updatedRes?.children ?? 0,
+          toddlers: updatedRes?.toddlers ?? 0,
+        });
       } else {
         await reservationCategoryExtraService.deleteByReservation(id, userId);
       }

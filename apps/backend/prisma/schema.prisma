@@ -640,7 +640,7 @@ model PackageCategorySettings {
   customLabel   String?       @db.VarChar(255)
 
   extraItemPrice Decimal?     @db.Decimal(10, 2)
-  maxExtra       Int?         @db.SmallInt
+  maxExtra       Decimal?     @db.Decimal(4, 1)
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -659,9 +659,11 @@ model ReservationCategoryExtra {
   reservationId     String                  @db.Uuid
   packageCategoryId String                  @db.Uuid
 
-  quantity          Int                     @db.SmallInt
+  quantity          Decimal                 @db.Decimal(4, 1)
   pricePerItem      Decimal                 @db.Decimal(10, 2)
   totalPrice        Decimal                 @db.Decimal(10, 2)
+  guestCount        Int                     @default(1)
+  portionTarget     String                  @default("ALL") @db.VarChar(20)
 
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt

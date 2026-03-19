@@ -59,12 +59,14 @@ interface ReservationFinancialSummaryProps {
   venueSurcharge?: number | null
   /** Label explaining the surcharge (e.g. "Dopłata za cały obiekt (< 30 os.)") */
   venueSurchargeLabel?: string | null
-  /** #216: Category extras from reservation */
+  /** #216: Category extras from reservation (per-person pricing) */
   categoryExtras?: Array<{
     id: string
     packageCategoryId: string
     quantity: number
     pricePerItem: number
+    guestCount?: number
+    portionTarget?: string
     totalPrice: number
     packageCategory: { category: { id: string; name: string; icon?: string } }
   }>
@@ -550,16 +552,21 @@ export function ReservationFinancialSummary({
                       <p className="text-sm font-semibold text-muted-foreground">Dodatkowe pozycje kategorii</p>
                     </div>
                     <div className="space-y-2">
-                      {activeCategoryExtras.map((extra) => (
-                        <div key={extra.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground flex items-center gap-1.5">
-                            <span>{extra.packageCategory?.category?.icon || '🍽️'}</span>
-                            {extra.packageCategory?.category?.name || 'Kategoria'}
-                            {' '}({extra.quantity} × {formatPLN(Number(extra.pricePerItem))} zł)
-                          </span>
-                          <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
-                        </div>
-                      ))}
+                      {activeCategoryExtras.map((extra) => {
+                        const qty = Number(extra.quantity);
+                        const guestCount = extra.guestCount ?? 1;
+                        const qtyLabel = qty === Math.floor(qty) ? qty : qty.toFixed(1);
+                        return (
+                          <div key={extra.id} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground flex items-center gap-1.5">
+                              <span>{extra.packageCategory?.category?.icon || '🍽️'}</span>
+                              {extra.packageCategory?.category?.name || 'Kategoria'}
+                              {' '}({qtyLabel} × {formatPLN(Number(extra.pricePerItem))} zł × {guestCount} os.)
+                            </span>
+                            <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
+                          </div>
+                        );
+                      })}
                       <Separator className="my-2" />
                       <div className="flex justify-between text-sm font-semibold">
                         <span>Suma dodatkowych pozycji</span>

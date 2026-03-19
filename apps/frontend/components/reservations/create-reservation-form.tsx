@@ -345,10 +345,15 @@ export function CreateReservationForm({
   }, [selectedHall, totalGuests])
   const venueSurchargeAmount = venueSurcharge.amount
 
-  // #216: Category extras total (per-item, NOT per-person)
+  // #216: Category extras total (per-person: qty × price × guestCount based on portionTarget)
   const categoryExtrasTotal = useMemo(() => {
-    return selectedCategoryExtras.reduce((sum, e) => sum + e.quantity * e.pricePerItem, 0)
-  }, [selectedCategoryExtras])
+    return selectedCategoryExtras.reduce((sum, e) => {
+      const guestCount = e.portionTarget === 'ADULTS_ONLY' ? adults
+        : e.portionTarget === 'CHILDREN_ONLY' ? children
+        : (adults + children + toddlers)
+      return sum + e.quantity * e.pricePerItem * guestCount
+    }, 0)
+  }, [selectedCategoryExtras, adults, children, toddlers])
 
   const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal + categoryExtrasTotal + venueSurchargeAmount
 
@@ -567,13 +572,14 @@ export function CreateReservationForm({
       })
     }
 
-    // #216: Category extras (per-item, NOT per-person)
+    // #216: Category extras (per-person pricing)
     if (selectedCategoryExtras.length > 0) {
       input.categoryExtras = selectedCategoryExtras
         .filter((e) => e.quantity > 0)
         .map((e) => ({
           packageCategoryId: e.packageCategoryId,
           quantity: e.quantity,
+          portionTarget: e.portionTarget || 'ALL',
         }))
     }
 
@@ -1226,6 +1232,9 @@ export function CreateReservationForm({
           categorySettings={(selectedPackage as any).categorySettings}
           selectedExtras={selectedCategoryExtras}
           onExtrasChange={setSelectedCategoryExtras}
+          adults={adults}
+          children={children}
+          toddlers={toddlers}
         />
       )}
 

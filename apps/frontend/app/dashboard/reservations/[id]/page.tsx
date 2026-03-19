@@ -19,7 +19,6 @@ import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
 import CategoryExtrasList from '@/components/reservations/CategoryExtrasList'
-import CategoryExtrasAddButton from '@/components/reservations/CategoryExtrasAddButton'
 import { ReservationExtrasPanel } from '@/components/service-extras/ReservationExtrasPanel'
 import {
   StatusChanger,
@@ -395,8 +394,8 @@ export default function ReservationDetailsPage() {
                 />
               )}
 
-              {/* #216: Category Extras */}
-              {reservation.categoryExtras && reservation.categoryExtras.length > 0 ? (
+              {/* #216: Category Extras (per-person pricing) */}
+              {reservation.categoryExtras && reservation.categoryExtras.length > 0 && (
                 <CategoryExtrasList
                   reservationId={reservation.id}
                   categoryExtras={reservation.categoryExtras as any}
@@ -404,14 +403,7 @@ export default function ReservationDetailsPage() {
                   readOnly={isReadOnly}
                   onUpdated={handleRefetch}
                 />
-              ) : reservation.menuSnapshot && (reservation.menuSnapshot as any).packageId ? (
-                <CategoryExtrasAddButton
-                  reservationId={reservation.id}
-                  menuPackageId={(reservation.menuSnapshot as any).packageId}
-                  readOnly={isReadOnly}
-                  onAdded={handleRefetch}
-                />
-              ) : null}
+              )}
 
               {/* Service Extras */}
               <ReservationExtrasPanel
