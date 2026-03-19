@@ -333,7 +333,7 @@ export function ReservationFinancialSummary({
     if (readOnly) return
     const suggested = Math.round(finalTotalPrice * 0.3)
     setCreateAmount(suggested > 0 ? suggested.toString() : '')
-    setCreateDueDate(suggestDueDate(14))
+    setCreateDueDate(suggestDueDate(0))
     setCreateTitle('')
     setShowCreateModal(true)
   }
@@ -342,6 +342,12 @@ export function ReservationFinancialSummary({
     if (readOnly) return
     if (!createAmount || Number(createAmount) <= 0) { toast.error('Podaj prawidłową kwotę'); return }
     if (!createDueDate) { toast.error('Podaj termin płatności'); return }
+    if (startDateTime) {
+      const eventDate = new Date(startDateTime)
+      eventDate.setHours(0, 0, 0, 0)
+      const dueDate = new Date(createDueDate + 'T00:00:00')
+      if (dueDate >= eventDate) { toast.error('Termin płatności musi być przed dniem wydarzenia'); return }
+    }
     try {
       setCreating(true)
       await depositsApi.create(reservationId, {
@@ -940,7 +946,8 @@ export function ReservationFinancialSummary({
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Termin płatności *</Label>
-                <Input type="date" value={createDueDate} onChange={(e) => setCreateDueDate(e.target.value)} className="h-10" />
+                <Input type="date" value={createDueDate} onChange={(e) => setCreateDueDate(e.target.value)} className="h-10"
+                  max={startDateTime ? (() => { const d = new Date(startDateTime); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })() : undefined} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Tytuł (opcjonalnie)</Label>
