@@ -71,6 +71,8 @@ export default function PackageForm({
         portionTarget: cs.portionTarget || 'ALL', // #166 fix: map portionTarget from saved data
         displayOrder: Number(cs.displayOrder) || 0,
         customLabel: cs.customLabel || undefined,
+        extraItemPrice: cs.extraItemPrice != null ? Number(cs.extraItemPrice) : null,
+        maxExtra: cs.maxExtra != null ? Number(cs.maxExtra) : null,
       }));
       setCategorySettings(settings);
     }
