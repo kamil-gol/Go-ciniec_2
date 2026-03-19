@@ -23,6 +23,16 @@ interface ReservationMenuSectionProps {
   adults: number
   children: number
   toddlers: number
+  categoryExtras?: Array<{
+    id: string
+    packageCategoryId: string
+    quantity: number
+    pricePerItem: number
+    guestCount: number
+    portionTarget: string
+    totalPrice: number
+    packageCategory?: { category: { id: string; name: string } }
+  }>
   onMenuUpdated?: () => void
   readOnly?: boolean
 }
@@ -34,6 +44,7 @@ export function ReservationMenuSection({
   adults,
   children,
   toddlers,
+  categoryExtras,
   onMenuUpdated,
   readOnly = false
 }: ReservationMenuSectionProps) {
@@ -309,6 +320,7 @@ export function ReservationMenuSection({
               children={children}
               toddlers={toddlers}
               initialSelection={buildInitialSelection()}
+              initialCategoryExtras={categoryExtras}
               onComplete={handleMenuSelected}
             />
           </DialogContent>

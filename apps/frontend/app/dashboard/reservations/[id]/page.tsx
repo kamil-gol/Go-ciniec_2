@@ -390,6 +390,7 @@ export default function ReservationDetailsPage() {
                   adults={reservation.adults || 0}
                   children={reservation.children || 0}
                   toddlers={reservation.toddlers || 0}
+                  categoryExtras={reservation.categoryExtras as any}
                   readOnly={isReadOnly}
                 />
               )}

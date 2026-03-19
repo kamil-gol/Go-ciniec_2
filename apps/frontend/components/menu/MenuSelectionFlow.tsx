@@ -10,7 +10,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   MenuTemplate, 
   MenuPackage, 
@@ -55,21 +55,30 @@ interface MenuSelectionFlowProps {
     packageId?: string;
     dishSelections?: CategorySelection[];
   };
+  /** #216: Existing category extras from reservation — used to pre-enable extras toggles in DishSelector */
+  initialCategoryExtras?: Array<{
+    packageCategoryId: string;
+    quantity: number;
+    portionTarget: string;
+    packageCategory?: { category: { id: string; name: string } };
+    [key: string]: any;
+  }>;
   onComplete?: (selection: any) => void;
   className?: string;
 }
 
 type Step = 'template' | 'package' | 'dishes';
 
-export function MenuSelectionFlow({ 
+export function MenuSelectionFlow({
   eventTypeId,
   eventDate,
   adults,
   children,
   toddlers,
   initialSelection,
+  initialCategoryExtras,
   onComplete,
-  className 
+  className
 }: MenuSelectionFlowProps) {
   const { toast } = useToast()
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +89,20 @@ export function MenuSelectionFlow({
   // #216: Track category extras from DishSelector
   const [categoryExtras, setCategoryExtras] = useState<CategoryExtraResult[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // #216: Compute initialExtrasEnabled from existing reservation categoryExtras
+  // Maps categoryId → true for categories that have extras, so DishSelector starts with toggles ON
+  const initialExtrasEnabled = useMemo(() => {
+    if (!initialCategoryExtras || initialCategoryExtras.length === 0) return undefined;
+    const map: Record<string, boolean> = {};
+    initialCategoryExtras.forEach(extra => {
+      const categoryId = extra.packageCategory?.category?.id;
+      if (categoryId && Number(extra.quantity) > 0) {
+        map[categoryId] = true;
+      }
+    });
+    return Object.keys(map).length > 0 ? map : undefined;
+  }, [initialCategoryExtras]);
 
   const totalGuests = adults + children + toddlers;
 
@@ -396,6 +419,7 @@ export function MenuSelectionFlow({
                 children={children}
                 toddlers={toddlers}
                 initialSelections={dishSelections}
+                initialExtrasEnabled={initialExtrasEnabled}
                 onComplete={handleDishesComplete}
                 onBack={() => setCurrentStep('package')}
               />
