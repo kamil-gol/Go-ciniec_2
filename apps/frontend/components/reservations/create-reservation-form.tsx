@@ -578,8 +578,13 @@ export function CreateReservationForm({
 
   const handleFinalSubmit = useCallback(async () => {
     const isValid = await validateCurrentStep()
-    if (!isValid) return
-    handleSubmit(onFormSubmit)()
+    if (!isValid) {
+      console.error('[handleFinalSubmit] validateCurrentStep failed')
+      return
+    }
+    handleSubmit(onFormSubmit, (validationErrors) => {
+      console.error('[handleFinalSubmit] Form validation errors:', validationErrors)
+    })()
   }, [validateCurrentStep, handleSubmit])
 
   // ═══ OPTIONS ═══
