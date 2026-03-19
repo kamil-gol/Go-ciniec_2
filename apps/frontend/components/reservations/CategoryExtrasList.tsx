@@ -61,7 +61,7 @@ export default function CategoryExtrasList({
               <ShoppingCart className="w-4 h-4 text-orange-600 dark:text-orange-400" />
             </div>
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
-              Dodatkowo płatne pozycje
+              Dodatkowo płatne porcje
             </h3>
           </div>
           {!readOnly && (

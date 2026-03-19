@@ -260,7 +260,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
   const handleOpenCreate = () => {
     const suggested = Math.round(totalPrice * 0.3)
     setCreateAmount(suggested > 0 ? suggested.toString() : '')
-    setCreateDueDate(suggestDueDate(14))
+    setCreateDueDate(suggestDueDate(0))
     setCreateTitle('')
     setShowCreateModal(true)
   }

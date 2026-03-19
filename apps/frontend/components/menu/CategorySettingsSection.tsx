@@ -325,7 +325,7 @@ export default function CategorySettingsSection({
                         />
                         <ShoppingCart className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                          Dodatkowo płatne pozycje
+                          Dodatkowo płatne porcje
                         </span>
                       </label>
 

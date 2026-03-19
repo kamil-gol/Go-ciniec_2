@@ -696,7 +696,7 @@ export function DishSelector({
           <div className="flex items-center gap-2">
             <ShoppingCart className="w-4 h-4 text-orange-600" />
             <span className="text-sm font-semibold text-orange-800 dark:text-orange-200">
-              Dodatkowo płatne pozycje:
+              Dodatkowo płatne porcje:
             </span>
           </div>
           <span className="text-base font-bold text-orange-600 dark:text-orange-400">

@@ -1311,7 +1311,7 @@ export class PDFService {
     this.safePageBreak(doc, 60);
 
     doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
-    doc.text('POZYCJE DODATKOWE', left, doc.y);
+    doc.text('DODATKOWO PŁATNE PORCJE', left, doc.y);
     doc.moveDown(0.3);
 
     // Table header
@@ -1354,7 +1354,7 @@ export class PDFService {
        .moveTo(col1, doc.y).lineTo(rightEdge, doc.y).stroke();
     doc.moveDown(0.2);
     doc.font(this.getBoldFont()).fontSize(8);
-    doc.text('Razem pozycje dodatkowe:', col1, doc.y);
+    doc.text('Razem dodatkowo płatne porcje:', col1, doc.y);
     doc.text(this.formatCurrency(totalCategoryExtras), rightEdge - 80, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
     doc.moveDown(0.3);
   }
@@ -1447,7 +1447,7 @@ export class PDFService {
       y += 13;
     }
     if (categoryExtrasTotalCalc > 0) {
-      doc.text('Pozycje dodatkowe (kategorie)', labelX, y);
+      doc.text('Dodatkowo płatne porcje', labelX, y);
       doc.text(this.formatCurrency(categoryExtrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
@@ -1519,12 +1519,13 @@ export class PDFService {
         doc.text(depositLabel, labelX, y);
         doc.text(`-${this.formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
 
-        const statusColor = dep.paid ? COLORS.success : COLORS.warning;
-        const statusText = dep.paid ? 'OK' : 'OCZEK.';
-        const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
-        doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(statusColor);
-        doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
-        doc.text(statusText, depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
+        // Only show badge for unpaid deposits
+        if (!dep.paid) {
+          const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
+          doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(COLORS.warning);
+          doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
+          doc.text('OCZEK.', depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
+        }
 
         y += 14;
       }
