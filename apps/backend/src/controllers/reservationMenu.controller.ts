@@ -238,6 +238,19 @@ export class ReservationMenuController {
     // #216: Delete all category extras for this reservation
     await reservationCategoryExtraService.deleteByReservation(reservationId, userId);
 
+    // Reset per-person prices to 0 — they were set from the menu package,
+    // so after menu deletion they must be cleared to avoid stale pricing
+    // in recalculateReservationTotalPrice (which falls back to per-person
+    // prices when no menuSnapshot exists).
+    await prisma.reservation.update({
+      where: { id: reservationId },
+      data: {
+        pricePerAdult: 0,
+        pricePerChild: 0,
+        pricePerToddler: 0,
+      },
+    });
+
     // Recalculate total price (now without menu and without extras)
     await recalculateReservationTotalPrice(reservationId);
 
