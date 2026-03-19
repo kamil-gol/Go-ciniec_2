@@ -33,15 +33,14 @@ import {
   Calendar, Clock, Users, DollarSign, FileText, UserPlus,
   AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed,
   Sparkles, Building2, User, ClipboardCheck, AlertTriangle,
-  BookOpen, Package, Tag, ChevronRight, ShoppingCart,
+  BookOpen, Package, Tag, ChevronRight,
 } from 'lucide-react'
 import { CreateReservationInput } from '@/types'
 import { CreateClientModal } from '@/components/clients/create-client-modal'
 import { CreateReservationDiscountSection } from '@/components/reservations/CreateReservationDiscountSection'
 import { CreateReservationExtrasSection } from '@/components/service-extras/CreateReservationExtrasSection'
 import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
-import CategoryExtrasSelector from '@/components/reservations/CategoryExtrasSelector'
-import type { CategoryExtraSelection } from '@/components/reservations/CategoryExtrasSelector'
+// #216: CategoryExtrasSelector removed — extras now handled exclusively via DishSelector
 import { useQueryClient } from '@tanstack/react-query'
 
 // ═══ STEP CONFIGURATION ═══
@@ -177,7 +176,7 @@ export function CreateReservationForm({
   const [childPriceManuallySet, setChildPriceManuallySet] = useState(false)
   const [toddlerPriceManuallySet, setToddlerPriceManuallySet] = useState(false)
   const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([])
-  const [selectedCategoryExtras, setSelectedCategoryExtras] = useState<CategoryExtraSelection[]>([])
+  // #216: categoryExtras removed from create form — handled via DishSelector in edit flow
 
   const { data: halls } = useHalls()
   const { data: clientsData, isLoading: clientsLoading } = useClients()
@@ -345,17 +344,7 @@ export function CreateReservationForm({
   }, [selectedHall, totalGuests])
   const venueSurchargeAmount = venueSurcharge.amount
 
-  // #216: Category extras total (per-person: qty × price × guestCount based on portionTarget)
-  const categoryExtrasTotal = useMemo(() => {
-    return selectedCategoryExtras.reduce((sum, e) => {
-      const guestCount = e.portionTarget === 'ADULTS_ONLY' ? adults
-        : e.portionTarget === 'CHILDREN_ONLY' ? children
-        : (adults + children + toddlers)
-      return sum + e.quantity * e.pricePerItem * guestCount
-    }, 0)
-  }, [selectedCategoryExtras, adults, children, toddlers])
-
-  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal + categoryExtrasTotal + venueSurchargeAmount
+  const totalWithExtras = calculatedPrice + extraHoursCost + extrasTotal + venueSurchargeAmount
 
   const discountAmount = useMemo(() => {
     if (!discountEnabled || discountValue <= 0 || totalWithExtras <= 0) return 0
@@ -410,7 +399,7 @@ export function CreateReservationForm({
         if (!isValid) {
           setValue('menuTemplateId', '')
           setValue('menuPackageId', '')
-          setSelectedCategoryExtras([]) // #216: reset category extras
+          // #216: categoryExtras reset removed — handled via DishSelector
         }
       }
     }
@@ -422,7 +411,7 @@ export function CreateReservationForm({
       const isValid = templatePackagesArray.some((pkg) => pkg.id === menuPackageId)
       if (!isValid) {
         setValue('menuPackageId', '')
-        setSelectedCategoryExtras([]) // #216: reset category extras
+        // #216: categoryExtras reset removed — handled via DishSelector
       }
     }
   }, [menuTemplateId, menuPackageId, templatePackagesArray, setValue])
@@ -572,16 +561,7 @@ export function CreateReservationForm({
       })
     }
 
-    // #216: Category extras (per-person pricing)
-    if (selectedCategoryExtras.length > 0) {
-      input.categoryExtras = selectedCategoryExtras
-        .filter((e) => e.quantity > 0)
-        .map((e) => ({
-          packageCategoryId: e.packageCategoryId,
-          quantity: e.quantity,
-          portionTarget: e.portionTarget || 'ALL',
-        }))
-    }
+    // #216: Category extras removed from create form — handled via DishSelector in edit flow
 
     try {
       if (onSubmitProp) {
@@ -691,15 +671,7 @@ export function CreateReservationForm({
               <span className="font-medium">+{formatCurrency(extrasTotal)}</span>
             </div>
           )}
-          {categoryExtrasTotal > 0 && (
-            <div className="flex justify-between text-sm text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 -mx-4 px-4 py-2">
-              <span className="flex items-center gap-1">
-                <ShoppingCart className="w-3.5 h-3.5" />
-                Dodatkowo płatne pozycje ({selectedCategoryExtras.filter(e => e.quantity > 0).length})
-              </span>
-              <span className="font-medium">+{formatCurrency(categoryExtrasTotal)}</span>
-            </div>
-          )}
+          {/* #216: Category extras display removed — handled via DishSelector in edit flow */}
           {venueSurchargeAmount > 0 && (
             <div className="flex justify-between text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 -mx-4 px-4 py-2">
               <span className="flex items-center gap-1">
@@ -1226,17 +1198,7 @@ export function CreateReservationForm({
         </motion.div>
       )}
 
-      {/* #216: Category Extras Selector — shown when package has extras-eligible categories */}
-      {useMenuPackage && selectedPackage && (selectedPackage as any).categorySettings && (
-        <CategoryExtrasSelector
-          categorySettings={(selectedPackage as any).categorySettings}
-          selectedExtras={selectedCategoryExtras}
-          onExtrasChange={setSelectedCategoryExtras}
-          adults={adults}
-          children={children}
-          toddlers={toddlers}
-        />
-      )}
+      {/* #216: CategoryExtrasSelector removed — extras handled via DishSelector in edit flow */}
 
       <PriceSummary />
 
