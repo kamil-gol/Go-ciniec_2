@@ -113,7 +113,18 @@ export interface ReservationPDFData {
   menuData?: MenuData;
   menuSnapshot?: MenuSnapshot;
   reservationExtras?: ReservationExtraForPDF[];
+  // #216: Category extras (extra dishes beyond package limit)
+  categoryExtras?: CategoryExtraForPDF[];
   createdAt: Date;
+}
+
+export interface CategoryExtraForPDF {
+  categoryName: string;
+  quantity: number;
+  pricePerItem: number;
+  guestCount: number;
+  portionTarget: string;
+  totalPrice: number;
 }
 
 export interface PaymentConfirmationData {
@@ -1025,6 +1036,14 @@ export class PDFService {
       doc.moveDown(0.4);
     }
 
+    // ── 5b. CATEGORY EXTRAS TABLE (#216) ──
+    if (r.categoryExtras && r.categoryExtras.length > 0) {
+      this.drawCategoryExtras(doc, r.categoryExtras, left, pageWidth);
+      doc.moveDown(0.3);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
     // ── 6. FINANCIAL SUMMARY BOX ──
     this.drawFinancialSummary(doc, r, left, pageWidth);
 
@@ -1276,6 +1295,70 @@ export class PDFService {
     }
   }
 
+  // ── #216: CATEGORY EXTRAS TABLE ──
+  private drawCategoryExtras(
+    doc: PDFKit.PDFDocument,
+    categoryExtras: CategoryExtraForPDF[],
+    left: number,
+    pageWidth: number
+  ): void {
+    const PORTION_LABELS: Record<string, string> = {
+      ALL: 'wszyscy',
+      ADULTS_ONLY: 'dorośli',
+      CHILDREN_ONLY: 'dzieci',
+    };
+
+    this.safePageBreak(doc, 60);
+
+    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
+    doc.text('POZYCJE DODATKOWE', left, doc.y);
+    doc.moveDown(0.3);
+
+    // Table header
+    const col1 = left;        // Kategoria
+    const col2 = left + 180;  // Ilość
+    const col3 = left + 230;  // Cena/szt.
+    const col4 = left + 310;  // Osoby
+    const rightEdge = left + pageWidth;
+
+    doc.fontSize(7).font(this.getBoldFont()).fillColor(COLORS.textMuted);
+    doc.text('Kategoria', col1, doc.y);
+    doc.text('Ilość', col2, doc.y - doc.currentLineHeight(), { width: 50 });
+    doc.text('Cena/szt.', col3, doc.y - doc.currentLineHeight(), { width: 70 });
+    doc.text('Osoby', col4, doc.y - doc.currentLineHeight(), { width: 50 });
+    doc.text('Suma', rightEdge - 80, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
+    doc.moveDown(0.3);
+
+    // Thin separator
+    doc.strokeColor(COLORS.border).lineWidth(0.3)
+       .moveTo(col1, doc.y).lineTo(rightEdge, doc.y).stroke();
+    doc.moveDown(0.2);
+
+    // Rows
+    doc.font(this.getRegularFont()).fontSize(8).fillColor(COLORS.textDark);
+    for (const extra of categoryExtras) {
+      const y = doc.y;
+      const portionLabel = PORTION_LABELS[extra.portionTarget] || extra.portionTarget;
+      doc.text(extra.categoryName, col1, y, { width: 170 });
+      doc.text(String(extra.quantity), col2, y, { width: 50 });
+      doc.text(this.formatCurrency(extra.pricePerItem), col3, y, { width: 70 });
+      doc.text(`${extra.guestCount} (${portionLabel})`, col4, y, { width: 80 });
+      doc.text(this.formatCurrency(extra.totalPrice), rightEdge - 80, y, { width: 80, align: 'right' });
+      doc.moveDown(0.15);
+    }
+
+    // Total row
+    const totalCategoryExtras = categoryExtras.reduce((sum, e) => sum + e.totalPrice, 0);
+    doc.moveDown(0.1);
+    doc.strokeColor(COLORS.border).lineWidth(0.3)
+       .moveTo(col1, doc.y).lineTo(rightEdge, doc.y).stroke();
+    doc.moveDown(0.2);
+    doc.font(this.getBoldFont()).fontSize(8);
+    doc.text('Razem pozycje dodatkowe:', col1, doc.y);
+    doc.text(this.formatCurrency(totalCategoryExtras), rightEdge - 80, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
+    doc.moveDown(0.3);
+  }
+
   // ── FINANCIAL SUMMARY BOX (compact) ──
   private drawFinancialSummary(
     doc: PDFKit.PDFDocument,
@@ -1284,6 +1367,8 @@ export class PDFService {
     pageWidth: number
   ): void {
     const extrasTotalCalc = (r.reservationExtras || [])
+      .reduce((sum, e) => sum + Number(e.totalPrice), 0);
+    const categoryExtrasTotalCalc = (r.categoryExtras || [])
       .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     const venueSurchargeAmount = Number(r.venueSurcharge) || 0;
     const extraHoursCostAmt = Number(r.extraHoursCost) || 0;
@@ -1310,6 +1395,7 @@ export class PDFService {
     if (r.children > 0 && r.pricePerChild > 0) rowCount++;
     if (r.toddlers > 0 && r.pricePerToddler > 0) rowCount++;
     if (extrasTotalCalc > 0) rowCount++;
+    if (categoryExtrasTotalCalc > 0) rowCount++;
     if (venueSurchargeAmount > 0) rowCount++;
     if (extraHoursCostAmt > 0) rowCount++;
     if (hasDiscount) rowCount += 2; // "Suma przed rabatem" + "Rabat" rows
@@ -1358,6 +1444,11 @@ export class PDFService {
     if (extrasTotalCalc > 0) {
       doc.text('Usługi dodatkowe', labelX, y);
       doc.text(this.formatCurrency(extrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
+      y += 13;
+    }
+    if (categoryExtrasTotalCalc > 0) {
+      doc.text('Pozycje dodatkowe (kategorie)', labelX, y);
+      doc.text(this.formatCurrency(categoryExtrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     if (venueSurchargeAmount > 0) {

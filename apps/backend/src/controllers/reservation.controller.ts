@@ -241,9 +241,20 @@ export class ReservationController {
       };
     });
 
+    // #216: Map categoryExtras for PDF rendering
+    const categoryExtrasForPDF = (reservation.categoryExtras || []).map((ce: any) => ({
+      categoryName: ce.packageCategory?.category?.name || 'Kategoria',
+      quantity: Number(ce.quantity),
+      pricePerItem: Number(ce.pricePerItem),
+      guestCount: Number(ce.guestCount) || 1,
+      portionTarget: ce.portionTarget || 'ALL',
+      totalPrice: Number(ce.totalPrice),
+    }));
+
     const pdfData = {
       ...reservation,
       reservationExtras,
+      categoryExtras: categoryExtrasForPDF,
     };
 
     // #deposits-fix (1/5): Strip CANCELLED deposits — they must NEVER appear in customer-facing PDF.
