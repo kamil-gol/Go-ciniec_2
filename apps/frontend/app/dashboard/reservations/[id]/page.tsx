@@ -404,10 +404,10 @@ export default function ReservationDetailsPage() {
                   readOnly={isReadOnly}
                   onUpdated={handleRefetch}
                 />
-              ) : reservation.menuSnapshot && (reservation.menuSnapshot as any).menuData?.packageId ? (
+              ) : reservation.menuSnapshot && (reservation.menuSnapshot as any).packageId ? (
                 <CategoryExtrasAddButton
                   reservationId={reservation.id}
-                  menuPackageId={(reservation.menuSnapshot as any).menuData.packageId}
+                  menuPackageId={(reservation.menuSnapshot as any).packageId}
                   readOnly={isReadOnly}
                   onAdded={handleRefetch}
                 />
