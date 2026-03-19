@@ -88,6 +88,11 @@ export interface ReservationPDFData {
   // #137: Venue surcharge fields
   venueSurcharge?: number | null;
   venueSurchargeLabel?: string | null;
+  // #216: Discount fields
+  discountType?: string | null;
+  discountValue?: number | null;
+  discountAmount?: number | null;
+  priceBeforeDiscount?: number | null;
   status: string;
   notes?: string;
   birthdayAge?: number;
@@ -1282,6 +1287,8 @@ export class PDFService {
       .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     const venueSurchargeAmount = Number(r.venueSurcharge) || 0;
     const extraHoursCostAmt = Number(r.extraHoursCost) || 0;
+    const discountAmount = Number(r.discountAmount) || 0;
+    const hasDiscount = discountAmount > 0 && !!r.discountType;
     // totalPrice from DB already includes extras, surcharge, extraHours, and discount
     // (see recalculate-price.ts formula). Do NOT add extras again.
     const displayTotal = Number(r.totalPrice);
@@ -1305,6 +1312,7 @@ export class PDFService {
     if (extrasTotalCalc > 0) rowCount++;
     if (venueSurchargeAmount > 0) rowCount++;
     if (extraHoursCostAmt > 0) rowCount++;
+    if (hasDiscount) rowCount += 2; // "Suma przed rabatem" + "Rabat" rows
     rowCount++; // RAZEM
     // Each active deposit gets its own row + one final DO ZAPŁATY row
     if (depositsForDisplay.length > 0) rowCount += depositsForDisplay.length + 1;
@@ -1369,6 +1377,23 @@ export class PDFService {
       doc.text(extraLabel, labelX, y);
       doc.text(this.formatCurrency(extraHoursCostAmt), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
+    }
+
+    // #216: Discount row
+    if (hasDiscount) {
+      const priceBeforeDiscount = Number(r.priceBeforeDiscount) || (displayTotal + discountAmount);
+      doc.text('Suma przed rabatem', labelX, y);
+      doc.text(this.formatCurrency(priceBeforeDiscount), valueX, y, { width: valueWidth, align: 'right' });
+      y += 13;
+
+      const discountLabel = r.discountType === 'PERCENTAGE'
+        ? `Rabat (${Number(r.discountValue)}%)`
+        : 'Rabat';
+      doc.fillColor('#c0392b');
+      doc.text(discountLabel, labelX, y);
+      doc.text(`-${this.formatCurrency(discountAmount)}`, valueX, y, { width: valueWidth, align: 'right' });
+      y += 13;
+      doc.fillColor(COLORS.textDark);
     }
 
     y += 2;
