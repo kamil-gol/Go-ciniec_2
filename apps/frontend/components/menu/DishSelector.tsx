@@ -112,6 +112,23 @@ export function DishSelector({
   // #216: Track which categories have extras toggle enabled
   const [extrasEnabled, setExtrasEnabled] = useState<Record<string, boolean>>(initialExtrasEnabled || {})
 
+  // #216: Total extras cost across all categories
+  // MUST be before any early returns to satisfy Rules of Hooks
+  const totalExtrasCost = useMemo(() => {
+    const cats = categoryData?.categories
+    if (!cats) return 0
+    return cats.reduce((sum: number, cat: any) => {
+      if (!extrasEnabled[cat.categoryId]) return sum
+      const total = Object.values(selections[cat.categoryId] || {}).reduce((s: number, q: number) => s + q, 0)
+      const baseMax = Number(cat.maxSelect)
+      const extraQty = Math.max(0, total - baseMax)
+      if (extraQty <= 0 || cat.extraItemPrice == null) return sum
+      const price = Number(cat.extraItemPrice)
+      const guestCount = getGuestCountForTarget(cat.portionTarget, adults, children, toddlers)
+      return sum + Math.round(extraQty * price * guestCount * 100) / 100
+    }, 0)
+  }, [categoryData?.categories, selections, extrasEnabled, adults, children, toddlers])
+
   useEffect(() => {
     if (categoryData?.categories && !isInitialized) {
       const initialSelectionsData: Record<string, Record<string, number>> = {}
@@ -288,13 +305,6 @@ export function DishSelector({
     const guestCount = getGuestCountForTarget(category.portionTarget, adults, children, toddlers)
     return Math.round(extraQty * price * guestCount * 100) / 100
   }
-
-  // #216: Total extras cost across all categories
-  const totalExtrasCost = useMemo(() => {
-    if (!categories) return 0
-    return categories.reduce((sum: number, cat: any) => sum + getExtraCost(cat), 0)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, selections, extrasEnabled, adults, children, toddlers])
 
   const validateSelections = (): { isValid: boolean; errorMap: Record<string, string> } => {
     const newErrors: Record<string, string> = {}
