@@ -26,6 +26,8 @@ import serviceExtraRoutes from '@/routes/serviceExtra.routes';
 import documentTemplateRoutes from '@/routes/document-template.routes';
 import cateringRoutes from '@/routes/catering.routes';
 import cateringOrderRoutes from '@/routes/catering-order.routes';
+import searchRoutes from '@/routes/search.routes';
+import notificationRoutes from '@/routes/notification.routes';
 import queueService from '@/services/queue.service';
 import depositService from '@/services/deposit.service';
 import depositReminderService from '@/services/deposit-reminder.service';
@@ -175,6 +177,16 @@ app.use('/api/dish-categories', dishCategoryRoutes);
  * Service Extras Routes
  */
 app.use('/api/service-extras', serviceExtraRoutes);
+
+/**
+ * Global Search Routes (#128)
+ */
+app.use('/api/search', searchRoutes);
+
+/**
+ * Notification Routes (#128)
+ */
+app.use('/api/notifications', notificationRoutes);
 
 /**
  * 404 Handler

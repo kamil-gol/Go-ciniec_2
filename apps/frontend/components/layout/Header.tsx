@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Bell, Search, Moon, Sun, Menu } from 'lucide-react'
+import { Bell, Search, Moon, Sun, Menu, CheckCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import GlobalSearch from '@/components/search/GlobalSearch'
+import { useNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead } from '@/hooks/use-notifications'
+import type { Notification } from '@/types/notification.types'
 
 interface HeaderProps {
   user?: {
@@ -17,37 +20,92 @@ interface HeaderProps {
   onMenuClick?: () => void
 }
 
+function formatTimeAgo(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+
+  if (diffMin < 1) return 'Teraz'
+  if (diffMin < 60) return `${diffMin} min temu`
+
+  const diffHours = Math.floor(diffMin / 60)
+  if (diffHours < 24) return `${diffHours} godz. temu`
+
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays === 1) return 'Wczoraj'
+  if (diffDays < 7) return `${diffDays} dni temu`
+
+  return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })
+}
+
+function getNotificationLink(notif: Notification): string | null {
+  if (!notif.entityType || !notif.entityId) return null
+  switch (notif.entityType) {
+    case 'RESERVATION':
+      return `/dashboard/reservations/${notif.entityId}`
+    case 'DEPOSIT':
+      return '/dashboard/deposits'
+    case 'QUEUE':
+      return '/dashboard/queue'
+    default:
+      return null
+  }
+}
+
 export default function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [notifications] = useState([
-    { id: 1, title: 'Nowa rezerwacja', message: 'Jan Kowalski - Wesele 15.02', time: '5 min temu', unread: true, link: '/dashboard/reservations' },
-    { id: 2, title: 'Płatność otrzymana', message: 'Zaliczka 5,000 zł', time: '1 godz. temu', unread: true, link: '/dashboard/reservations' },
-    { id: 3, title: 'Przypomnienie', message: 'Wydarzenie jutro o 18:00', time: '2 godz. temu', unread: false, link: '/dashboard/reservations' },
-  ])
 
-  const unreadCount = notifications.filter(n => n.unread).length
+  const { data: unreadCount = 0 } = useUnreadCount()
+  const { data: notificationsData } = useNotifications({ page: 1, pageSize: 10 })
+  const markAsRead = useMarkAsRead()
+  const markAllAsRead = useMarkAllAsRead()
+
+  const notifications = notificationsData?.data || []
+
   const isDark = resolvedTheme === 'dark'
 
   // Prevent hydration mismatch — render theme icon only after client mount
   useEffect(() => setMounted(true), [])
 
+  // ⌘K / Ctrl+K keyboard shortcut for global search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const toggleTheme = () => {
     setTheme(isDark ? 'light' : 'dark')
   }
 
-  const handleNotificationClick = (notif: typeof notifications[0]) => {
-    if (notif.link) {
-      router.push(notif.link)
+  const handleNotificationClick = (notif: Notification) => {
+    if (!notif.read) {
+      markAsRead.mutate(notif.id)
+    }
+    const link = getNotificationLink(notif)
+    if (link) {
+      router.push(link)
       setShowNotifications(false)
     }
   }
 
   const handleViewAll = () => {
-    router.push('/dashboard/reservations')
+    router.push('/dashboard/notifications')
     setShowNotifications(false)
+  }
+
+  const handleMarkAllRead = () => {
+    markAllAsRead.mutate()
   }
 
   return (
@@ -79,6 +137,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-2">
           {/* Search — hidden on small mobile */}
           <button
+            onClick={() => setSearchOpen(true)}
             className="hidden sm:flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 px-4 py-2 text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
             aria-label="Szukaj"
           >
@@ -138,7 +197,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                   animate={{ scale: 1 }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-neutral-900"
                 >
-                  {unreadCount}
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </motion.span>
               )}
             </button>
@@ -162,41 +221,58 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                     <div className="p-4 border-b border-neutral-100 dark:border-neutral-700/50">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Powiadomienia</h3>
-                        {unreadCount > 0 && (
-                          <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/30 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                            {unreadCount} nowe
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {unreadCount > 0 && (
+                            <>
+                              <button
+                                onClick={handleMarkAllRead}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors flex items-center gap-1"
+                                title="Oznacz wszystkie jako przeczytane"
+                              >
+                                <CheckCheck className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/30 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                                {unreadCount} {unreadCount === 1 ? 'nowe' : 'nowych'}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto scrollbar-thin">
-                      {notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          onClick={() => handleNotificationClick(notif)}
-                          className={cn(
-                            'p-4 border-b border-neutral-100/80 dark:border-neutral-700/30 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors duration-150 cursor-pointer',
-                            notif.unread && 'bg-indigo-50/50 dark:bg-indigo-950/10'
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
-                                {notif.title}
-                              </p>
-                              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                {notif.message}
-                              </p>
-                              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                                {notif.time}
-                              </p>
-                            </div>
-                            {notif.unread && (
-                              <span className="h-2 w-2 rounded-full bg-indigo-500 dark:bg-indigo-400 flex-shrink-0 mt-1.5" />
-                            )}
-                          </div>
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                          Brak powiadomień
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => handleNotificationClick(notif)}
+                            className={cn(
+                              'p-4 border-b border-neutral-100/80 dark:border-neutral-700/30 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors duration-150 cursor-pointer',
+                              !notif.read && 'bg-indigo-50/50 dark:bg-indigo-950/10'
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                                  {notif.title}
+                                </p>
+                                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
+                                  {notif.message}
+                                </p>
+                                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                                  {formatTimeAgo(notif.createdAt)}
+                                </p>
+                              </div>
+                              {!notif.read && (
+                                <span className="h-2 w-2 rounded-full bg-indigo-500 dark:bg-indigo-400 flex-shrink-0 mt-1.5" />
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                     <div className="p-3 border-t border-neutral-100 dark:border-neutral-700/50">
                       <button
@@ -213,6 +289,9 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Global Search Dialog (⌘K) */}
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   )
 }
