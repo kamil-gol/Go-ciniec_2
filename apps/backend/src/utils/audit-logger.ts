@@ -36,6 +36,24 @@ export async function logChange(params: LogChangeParams): Promise<void> {
   const { userId, action, entityType, entityId, details, ipAddress, userAgent } = params;
 
   try {
+    // #217: Soft deduplication — skip if identical entry (entityId, action, userId) exists within last 2s
+    const deduplicationWindow = new Date(Date.now() - 2000);
+    const existingEntry = await prisma.activityLog.findFirst({
+      where: {
+        entityId,
+        action,
+        userId: userId ?? undefined,
+        entityType,
+        createdAt: { gte: deduplicationWindow },
+      },
+      select: { id: true },
+    });
+
+    if (existingEntry) {
+      console.log(`[Audit Logger] Deduplicated: ${action} ${entityType} ${entityId} (existing entry within 2s)`);
+      return;
+    }
+
     await prisma.activityLog.create({
       data: {
         userId,

@@ -575,26 +575,7 @@ export class ServiceExtraService {
       },
     });
 
-    // Log on reservation-level (timeline visibility)
-    await logChange({
-      userId,
-      action: 'UPDATE',
-      entityType: 'RESERVATION',
-      entityId: reservationId,
-      details: {
-        description: item.priceType === 'PER_UNIT'
-          ? `Dodano usługę dodatkową: ${item.name} (${quantity} szt. × ${unitPrice} zł = ${totalPrice} zł)`
-          : `Dodano usługę dodatkową: ${item.name} (${totalPrice} zł)`,
-        field: 'extras',
-        data: {
-          itemName: item.name,
-          category: item.category?.name,
-          priceType: item.priceType,
-          quantity,
-          totalPrice: totalPrice.toString(),
-        },
-      },
-    });
+    // #217: duplicate RESERVATION-level logChange removed — RESERVATION_EXTRA entry above is sufficient
 
     return extra as any;
   }
@@ -628,18 +609,7 @@ export class ServiceExtraService {
       },
     });
 
-    // Log on reservation-level (timeline visibility)
-    await logChange({
-      userId,
-      action: 'UPDATE',
-      entityType: 'RESERVATION',
-      entityId: reservationId,
-      details: {
-        description: `Zaktualizowano zbiorczo usługi dodatkowe (${data.extras.length} pozycji)`,
-        field: 'extras',
-        data: { count: data.extras.length },
-      },
-    });
+    // #217: duplicate RESERVATION-level logChange removed — BULK_ASSIGN entry above is sufficient
 
     return this.getReservationExtras(reservationId);
   }
@@ -717,18 +687,7 @@ export class ServiceExtraService {
         },
       });
 
-      // Log on reservation-level (timeline visibility)
-      await logChange({
-        userId,
-        action: 'UPDATE',
-        entityType: 'RESERVATION',
-        entityId: reservationId,
-        details: {
-          description: `Zmieniono usługę dodatkową: ${existing.serviceItem.name}`,
-          field: 'extras',
-          changes,
-        },
-      });
+      // #217: duplicate RESERVATION-level logChange removed — RESERVATION_EXTRA entry above is sufficient
     }
 
     return extra as any;
@@ -765,21 +724,7 @@ export class ServiceExtraService {
       },
     });
 
-    // Log on reservation-level (timeline visibility)
-    await logChange({
-      userId,
-      action: 'UPDATE',
-      entityType: 'RESERVATION',
-      entityId: reservationId,
-      details: {
-        description: `Usunięto usługę dodatkową: ${existing.serviceItem.name} (${existing.totalPrice} zł)`,
-        field: 'extras',
-        data: {
-          removedItem: existing.serviceItem.name,
-          removedPrice: existing.totalPrice.toString(),
-        },
-      },
-    });
+    // #217: duplicate RESERVATION-level logChange removed — RESERVATION_EXTRA DELETE entry above is sufficient
   }
 
   // ═══════════════════════════════════════════════════════════════

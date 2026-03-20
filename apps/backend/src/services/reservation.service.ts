@@ -19,7 +19,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
-import { logChange, diffObjects } from '../utils/audit-logger';
+// #217: logChange/diffObjects imports removed — all audit logging moved to createHistoryEntry
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -381,28 +381,7 @@ export class ReservationService {
           }${surchargeAmount > 0 ? ` | Dopłata obiekt: +${surchargeAmount} PLN` : ''}`
     );
 
-    // Audit log
-    await logChange({
-      userId,
-      action: 'CREATE',
-      entityType: 'RESERVATION',
-      entityId: reservation.id,
-      details: {
-        description: `Utworzono rezerwację: ${client.firstName} ${client.lastName} | ${hall.name} | ${eventType.name}`,
-        data: {
-          hallId: data.hallId,
-          clientId: data.clientId,
-          eventTypeId: data.eventTypeId,
-          guests,
-          totalPrice: finalTotalPrice,
-          extrasTotal: extrasTotal > 0 ? extrasTotal : undefined,
-          extrasCount: data.serviceExtras?.length || 0,
-          venueSurcharge: surchargeAmount > 0 ? surchargeAmount : undefined,
-          startDateTime: data.startDateTime,
-          endDateTime: data.endDateTime,
-        },
-      },
-    });
+    // #217: logChange removed — createHistoryEntry already covers reservation creation
 
     // Recalculate totalPrice with all components (including extra hours for long events)
     await recalculateReservationTotalPrice(reservation.id);
@@ -452,18 +431,7 @@ export class ReservationService {
 
       await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usunięte z rezerwacji');
 
-      // Audit log — MENU_REMOVED
-      await logChange({
-        userId,
-        action: 'MENU_REMOVED',
-        entityType: 'RESERVATION',
-        entityId: reservationId,
-        details: {
-          description: `Menu usunięte z rezerwacji: ${oldPackageName} (-${oldTotalPrice} PLN) | ${clientName}`,
-          removedPackage: oldPackageName,
-          removedPrice: oldTotalPrice,
-        },
-      });
+      // #217: logChange removed — createHistoryEntry already covers MENU_REMOVED
 
       // Recalculate totalPrice after menu removal
       await recalculateReservationTotalPrice(reservationId);
@@ -543,24 +511,7 @@ export class ReservationService {
         `Menu zaktualizowane na: ${menuPackage.name}`
       );
 
-      // Audit log — MENU_UPDATED
-      await logChange({
-        userId,
-        action: 'MENU_UPDATED',
-        entityType: 'RESERVATION',
-        entityId: reservationId,
-        details: {
-          description: `Menu ${oldPackageName ? 'zmienione' : 'dodane'}: ${menuPackage.name} (${totalMenuPrice} PLN) | ${clientName}`,
-          oldPackage: oldPackageName,
-          newPackage: menuPackage.name,
-          oldPrice: oldTotalPrice,
-          newPrice: totalMenuPrice,
-          packagePrice,
-          optionsPrice,
-          optionsCount: selectedOptions.length,
-          guests: { adults, children, toddlers },
-        },
-      });
+      // #217: logChange removed — createHistoryEntry already covers MENU_UPDATED
 
       return { message: MENU.MENU_UPDATED, totalPrice: newTotalPrice };
     }
@@ -718,16 +669,7 @@ export class ReservationService {
         newValue || '(brak)',
         'Zaktualizowano notatkę wewnętrzną'
       );
-      await logChange({
-        userId,
-        action: 'UPDATE',
-        entityType: 'RESERVATION',
-        entityId: id,
-        details: {
-          description: `Zaktualizowano notatkę wewnętrzną`,
-          changes: { internalNotes: { old: oldValue, new: newValue } },
-        },
-      });
+      // #217: logChange removed — createHistoryEntry already covers this operation
       return await this.getReservationById(id);
     }
 
@@ -936,23 +878,7 @@ Zmiany:
 ${changesSummary}`);
     }
 
-    // Audit log
-    const changes = diffObjects(existingReservation, reservation);
-    if (Object.keys(changes).length > 0) {
-      await logChange({
-        userId,
-        action: 'UPDATE',
-        entityType: 'RESERVATION',
-        entityId: id,
-        details: {
-          description: `Zaktualizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${
-            (existingReservation.client as any)?.lastName ?? ''
-          }`,
-          changes,
-          reason: data.reason,
-        },
-      });
-    }
+    // #217: logChange removed — createHistoryEntry already covers this update with detailed change summary
 
     // #216: Update category extras if provided
     if (data.categoryExtras !== undefined) {
@@ -1036,20 +962,7 @@ ${changesSummary}`);
         return updatedReservation;
       });
 
-      await logChange({
-        userId,
-        action: 'STATUS_CHANGE',
-        entityType: 'RESERVATION',
-        entityId: id,
-        details: {
-          description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${
-            (existingReservation.client as any)?.lastName ?? ''
-          } | ${existingReservation.hall?.name ?? 'Brak sali'}`,
-          oldStatus: existingReservation.status,
-          newStatus: 'CANCELLED → ARCHIVED',
-          reason: data.reason,
-        },
-      });
+      // #217: logChange removed — reservationHistory entries inside transaction already cover this
 
       return reservation as any;
     }
@@ -1062,18 +975,7 @@ ${changesSummary}`);
 
     await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Zmiana statusu');
 
-    await logChange({
-      userId,
-      action: 'STATUS_CHANGE',
-      entityType: 'RESERVATION',
-      entityId: id,
-      details: {
-        description: `Zmiana statusu rezerwacji: ${existingReservation.status} → ${data.status}`,
-        oldStatus: existingReservation.status,
-        newStatus: data.status,
-        reason: data.reason,
-      },
-    });
+    // #217: logChange removed — createHistoryEntry already covers STATUS_CHANGED
 
     return reservation as any;
   }
@@ -1128,18 +1030,7 @@ ${changesSummary}`);
       });
     });
 
-    await logChange({
-      userId,
-      action: 'CANCEL',
-      entityType: 'RESERVATION',
-      entityId: id,
-      details: {
-        description: `Anulowano i zarchiwizowano rezerwację: ${(existingReservation.client as any)?.firstName ?? ''} ${
-          (existingReservation.client as any)?.lastName ?? ''
-        } | ${existingReservation.hall?.name ?? 'Brak sali'}`,
-        reason,
-      },
-    });
+    // #217: logChange removed — reservationHistory entries inside transaction already cover CANCEL + AUTO_ARCHIVED
   }
 
   async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {
@@ -1166,18 +1057,7 @@ ${changesSummary}`);
       reason || 'Rezerwacja zarchiwizowana'
     );
 
-    await logChange({
-      userId,
-      action: 'ARCHIVE',
-      entityType: 'RESERVATION',
-      entityId: id,
-      details: {
-        description: `Zarchiwizowano rezerwację: ${(reservation.client as any)?.firstName ?? ''} ${
-          (reservation.client as any)?.lastName ?? ''
-        } | ${reservation.hall?.name ?? 'Brak sali'}`,
-        reason,
-      },
-    });
+    // #217: logChange removed — createHistoryEntry already covers ARCHIVE
   }
 
   async unarchiveReservation(id: string, userId: string, reason?: string): Promise<void> {
@@ -1204,18 +1084,7 @@ ${changesSummary}`);
       reason || 'Rezerwacja przywrócona z archiwum'
     );
 
-    await logChange({
-      userId,
-      action: 'UNARCHIVE',
-      entityType: 'RESERVATION',
-      entityId: id,
-      details: {
-        description: `Przywrócono rezerwację z archiwum: ${(reservation.client as any)?.firstName ?? ''} ${
-          (reservation.client as any)?.lastName ?? ''
-        } | ${reservation.hall?.name ?? 'Brak sali'}`,
-        reason,
-      },
-    });
+    // #217: logChange removed — createHistoryEntry already covers UNARCHIVE
   }
 
   private async cascadeCancelDeposits(tx: any, reservationId: string, userId: string, reason?: string): Promise<number> {
@@ -1248,26 +1117,7 @@ ${changesSummary}`);
       });
     }
 
-    /* istanbul ignore next */
-    setTimeout(async () => {
-      try {
-        await logChange({
-          userId,
-          action: 'DEPOSIT_CANCELLED',
-          entityType: 'RESERVATION',
-          entityId: reservationId,
-          details: {
-            description: `Auto-anulowano ${pendingDeposits.length} zaliczek (${totalCancelledAmount.toFixed(2)} PLN) przy anulowaniu rezerwacji`,
-            cancelledCount: pendingDeposits.length,
-            totalCancelledAmount,
-            depositIds: pendingDeposits.map((d: any) => d.id),
-            reason,
-          },
-        });
-      } catch (e) {
-        console.error('[Audit] Failed to log DEPOSIT_CANCELLED:', e);
-      }
-    }, 0);
+    // #217: setTimeout(0) logChange removed — reservationHistory entries in loop already cover each deposit cancellation
 
     return pendingDeposits.length;
   }

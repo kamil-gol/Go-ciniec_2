@@ -518,18 +518,7 @@ export async function updateOrder(
   const userId = input.changedById ?? existing.createdById;
 
   if (input.status !== undefined && input.status !== oldStatus) {
-    await logChange({
-      userId,
-      action: 'STATUS_CHANGE',
-      entityType: 'CATERING_ORDER',
-      entityId: id,
-      details: {
-        description: `Zmiana statusu zamówienia ${existing.orderNumber}: ${oldStatus} → ${input.status}`,
-        fieldName: 'status',
-        oldValue: oldStatus,
-        newValue: input.status,
-      },
-    });
+    // #217: logChange removed — cateringOrderHistory entry (nested create above) already covers STATUS_CHANGE
   } else {
     await logChange({
       userId,
@@ -664,16 +653,7 @@ export async function createDeposit(
       },
     });
 
-    await logChange({
-      userId: changedById,
-      action: 'DEPOSIT_CREATED',
-      entityType: 'CATERING_ORDER',
-      entityId: orderId,
-      details: {
-        description: `Dodano zaliczkę: ${input.title ?? 'Zaliczka'} — ${input.amount} PLN`,
-        data: { depositId: deposit.id, amount: input.amount, dueDate: input.dueDate },
-      },
-    });
+    // #217: logChange removed — cateringOrderHistory entry already covers DEPOSIT_CREATED
   }
 
   return deposit;
@@ -767,16 +747,7 @@ export async function deleteDeposit(
       },
     });
 
-    await logChange({
-      userId: changedById,
-      action: 'DEPOSIT_DELETED',
-      entityType: 'CATERING_ORDER',
-      entityId: orderId,
-      details: {
-        description: `Usunięto zaliczkę: ${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN${wasPaid ? ' (była opłacona)' : ''}`,
-        data: { depositId, wasPaid },
-      },
-    });
+    // #217: logChange removed — cateringOrderHistory entry already covers DEPOSIT_DELETED
   }
 }
 
@@ -813,16 +784,7 @@ export async function markDepositPaid(
       },
     });
 
-    await logChange({
-      userId: changedById,
-      action: 'DEPOSIT_PAID',
-      entityType: 'CATERING_ORDER',
-      entityId: orderId,
-      details: {
-        description: `Opłacono zaliczkę: ${deposit.title ?? 'Zaliczka'} — ${deposit.amount} PLN`,
-        data: { depositId, amount: Number(deposit.amount), paymentMethod },
-      },
-    });
+    // #217: logChange removed — cateringOrderHistory entry already covers DEPOSIT_PAID
   }
 
   return result;
