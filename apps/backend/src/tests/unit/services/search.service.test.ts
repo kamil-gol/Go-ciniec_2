@@ -119,5 +119,63 @@ describe('SearchService', () => {
         expect.objectContaining({ take: 5 })
       );
     });
+
+    it('should order reservations ascending (nearest first)', async () => {
+      db.reservation.findMany.mockResolvedValue([]);
+      db.client.findMany.mockResolvedValue([]);
+      db.hall.findMany.mockResolvedValue([]);
+
+      await service.globalSearch('test');
+
+      expect(db.reservation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ startDateTime: 'asc' }, { date: 'asc' }],
+        })
+      );
+    });
+
+    it('should add date conditions for date-like queries (dd.mm)', async () => {
+      db.reservation.findMany.mockResolvedValue([]);
+      db.client.findMany.mockResolvedValue([]);
+      db.hall.findMany.mockResolvedValue([]);
+
+      await service.globalSearch('15.05');
+
+      const call = db.reservation.findMany.mock.calls[0][0];
+      const orConditions = call.where.OR;
+      // Should have 5 text conditions + 2 date conditions
+      expect(orConditions.length).toBe(7);
+      // Last two should be date conditions
+      expect(orConditions[5]).toHaveProperty('startDateTime');
+      expect(orConditions[6]).toHaveProperty('date');
+    });
+
+    it('should add date conditions for Polish month names', async () => {
+      db.reservation.findMany.mockResolvedValue([]);
+      db.client.findMany.mockResolvedValue([]);
+      db.hall.findMany.mockResolvedValue([]);
+
+      await service.globalSearch('maj');
+
+      const call = db.reservation.findMany.mock.calls[0][0];
+      const orConditions = call.where.OR;
+      // Should have 5 text conditions + 2 date conditions
+      expect(orConditions.length).toBe(7);
+      const dateCondition = orConditions[5].startDateTime;
+      expect(dateCondition.gte.getMonth()).toBe(4); // May = index 4
+    });
+
+    it('should not add date conditions for non-date queries', async () => {
+      db.reservation.findMany.mockResolvedValue([]);
+      db.client.findMany.mockResolvedValue([]);
+      db.hall.findMany.mockResolvedValue([]);
+
+      await service.globalSearch('Kowalski');
+
+      const call = db.reservation.findMany.mock.calls[0][0];
+      const orConditions = call.where.OR;
+      // Only 5 text conditions, no date conditions
+      expect(orConditions.length).toBe(5);
+    });
   });
 });
