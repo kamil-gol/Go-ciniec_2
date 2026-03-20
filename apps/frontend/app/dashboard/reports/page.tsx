@@ -419,14 +419,14 @@ function MenuPreparationsTab({ query, view }: {
                   </div>
                   {/* Courses & dishes — with portionTarget badge */}
                   <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    {res.courses.map((course, ci) => (
+                    {res.courses.map((course: any, ci: number) => (
                       <div key={ci} className="px-4 py-2">
                         <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1 flex items-center">
                           {course.courseName}
                           <PortionTargetBadge target={(course as any).portionTarget} />
                         </div>
                         <div className="space-y-0.5">
-                          {course.dishes.map((dish, di) => (
+                          {course.dishes.map((dish: any, di: number) => (
                             <div key={di} className="flex items-start gap-2 text-sm">
                               <span className="text-neutral-400 mt-0.5">•</span>
                               <div>
@@ -467,7 +467,7 @@ function MenuPreparationsTab({ query, view }: {
                   {day.totalReservations} rez. &middot; {day.totalGuests} gości
                 </span>
               </div>
-              {day.courses.map((course, ci) => (
+              {day.courses.map((course: any, ci: number) => (
                 <div key={ci} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20">
                     <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide inline-flex items-center">
@@ -496,7 +496,7 @@ function MenuPreparationsTab({ query, view }: {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {course.dishes.map((dish, di) => (
+                        {course.dishes.map((dish: any, di: number) => (
                           <tr key={di} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                             <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{dish.dishName}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{dish.totalPortions}</td>
