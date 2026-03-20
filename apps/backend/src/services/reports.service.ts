@@ -24,6 +24,7 @@ import type {
   RevenueBreakdownItem,
   RevenueByHallItem,
   RevenueByEventTypeItem,
+  RevenueByCategoryExtraItem,
   GroupByPeriod,
   OccupancyReportFilters,
   OccupancyReport,
@@ -198,6 +199,15 @@ class ReportsService {
               }
             }
           },
+          categoryExtras: {
+            include: {
+              packageCategory: {
+                include: {
+                  category: { select: { id: true, name: true } },
+                },
+              },
+            },
+          },
         },
         orderBy: { date: 'asc' },
       }),
@@ -242,6 +252,36 @@ class ReportsService {
       }))
       .sort((a, b) => b.revenue - a.revenue);
 
+    // #216: Category extras (dodatkowo płatne porcje) revenue
+    let totalCategoryExtrasRevenue = 0;
+    const categoryExtraRevenueMap = new Map<string, { name: string; revenue: number; count: number; totalQuantity: number }>();
+
+    for (const r of reservations) {
+      const catExtras = (r as any).categoryExtras || [];
+      if (catExtras.length === 0) continue;
+      for (const ce of catExtras) {
+        const revenue = Number(ce.totalPrice || 0);
+        totalCategoryExtrasRevenue += revenue;
+        const categoryName = ce.packageCategory?.category?.name || 'Nieznana kategoria';
+        const categoryId = ce.packageCategory?.category?.id || 'unknown';
+        const existing = categoryExtraRevenueMap.get(categoryId) || { name: categoryName, revenue: 0, count: 0, totalQuantity: 0 };
+        existing.revenue += revenue;
+        existing.count += 1;
+        existing.totalQuantity += Number(ce.quantity || 0);
+        categoryExtraRevenueMap.set(categoryId, existing);
+      }
+    }
+
+    const byCategoryExtra: RevenueByCategoryExtraItem[] = Array.from(categoryExtraRevenueMap.entries())
+      .map(([_, data]) => ({
+        categoryName: data.name,
+        revenue: Math.round(data.revenue * 100) / 100,
+        count: data.count,
+        totalQuantity: data.totalQuantity,
+        avgRevenue: data.count > 0 ? Math.round((data.revenue / data.count) * 100) / 100 : 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+
     const revenueByDay = this.groupRevenueByDay(reservations);
     const maxRevenueDay = revenueByDay.sort((a, b) => b.revenue - a.revenue)[0];
 
@@ -269,11 +309,13 @@ class ReportsService {
         completedReservations,
         pendingRevenue: Math.round(pendingRevenue * 100) / 100,
         extrasRevenue: Math.round(totalExtrasRevenue * 100) / 100,
+        categoryExtrasRevenue: Math.round(totalCategoryExtrasRevenue * 100) / 100,
       },
       breakdown,
       byHall,
       byEventType,
       byServiceItem,
+      byCategoryExtra,
       filters,
     } as any;
   }

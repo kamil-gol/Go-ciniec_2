@@ -221,11 +221,13 @@ export interface RevenueReportPDFData {
     pendingRevenue: number;
     growthPercent: number;
     extrasRevenue?: number;
+    categoryExtrasRevenue?: number; // #216
   };
   breakdown: Array<{ period: string; revenue: number; count: number; avgRevenue: number }>;
   byHall: Array<{ hallName: string; revenue: number; count: number; avgRevenue: number }>;
   byEventType: Array<{ eventTypeName: string; revenue: number; count: number; avgRevenue: number }>;
   byServiceItem?: Array<{ name: string; revenue: number; count: number; avgRevenue: number }>;
+  byCategoryExtra?: Array<{ categoryName: string; revenue: number; count: number; totalQuantity: number; avgRevenue: number }>; // #216
 }
 
 export interface OccupancyReportPDFData {
@@ -1866,6 +1868,9 @@ export class PDFService {
     if (data.summary.extrasRevenue !== undefined && data.summary.extrasRevenue > 0) {
       summaryLines.push(`Przychody z usług dodatkowych: ${this.formatCurrency(data.summary.extrasRevenue)}`);
     }
+    if (data.summary.categoryExtrasRevenue !== undefined && data.summary.categoryExtrasRevenue > 0) {
+      summaryLines.push(`Przychody z dodatkowo płatnych porcji: ${this.formatCurrency(data.summary.categoryExtrasRevenue)}`);
+    }
 
     this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
     const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
@@ -1982,7 +1987,41 @@ export class PDFService {
       doc.moveDown(0.4);
     }
 
-    // ── 8. FOOTER ──
+    // ── 8. BY CATEGORY EXTRA (dodatkowo płatne porcje) #216 ──
+    if (data.byCategoryExtra && data.byCategoryExtra.length > 0) {
+      this.safePageBreak(doc, 100);
+
+      doc.fontSize(11).font(this.getBoldFont()).fillColor('#D97706');
+      doc.text('DODATKOWO PŁATNE PORCJE — PRZYCHODY', left, doc.y);
+      doc.moveDown(0.3);
+
+      const catExtrasRows = data.byCategoryExtra.slice(0, 20).map(item => [
+        item.categoryName,
+        this.formatCurrency(item.revenue),
+        `${item.totalQuantity}`,
+        this.formatCurrency(item.avgRevenue),
+      ]);
+      const catExtrasCols = [
+        Math.round(pageWidth * 0.30),
+        Math.round(pageWidth * 0.25),
+        Math.round(pageWidth * 0.20),
+        Math.round(pageWidth * 0.25),
+      ];
+      this.drawCompactTable(doc, ['Kategoria', 'Przychód', 'Porcje', 'Śr. przychód'], catExtrasRows, catExtrasCols, left);
+
+      if (data.summary.categoryExtrasRevenue && data.summary.categoryExtrasRevenue > 0) {
+        doc.moveDown(0.2);
+        doc.fontSize(9).font(this.getBoldFont()).fillColor('#D97706');
+        doc.text(`Razem dodatkowo płatne porcje: ${this.formatCurrency(data.summary.categoryExtrasRevenue)}`, left, doc.y);
+        doc.fillColor(COLORS.textDark);
+      }
+
+      doc.moveDown(0.4);
+      this.drawSeparator(doc, left, pageWidth);
+      doc.moveDown(0.4);
+    }
+
+    // ── 9. FOOTER ──
     doc.moveDown(0.5);
     this.drawInlineFooter(doc, left, pageWidth);
   }

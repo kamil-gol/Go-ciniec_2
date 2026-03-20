@@ -94,9 +94,17 @@ class ReportsExportService {
     // Extras revenue in summary
     const extrasRevenue = (report.summary as any).extrasRevenue;
     if (extrasRevenue !== undefined && extrasRevenue > 0) {
-      const extrasRow = sheet.addRow(['Przychody z us\u0142ug dodatkowych (extras)', this.formatCurrency(extrasRevenue)]);
+      const extrasRow = sheet.addRow(['Przychody z usług dodatkowych (extras)', this.formatCurrency(extrasRevenue)]);
       extrasRow.getCell(1).font = { bold: true, color: { argb: 'FF7C3AED' } };
       extrasRow.getCell(2).font = { bold: true, color: { argb: 'FF7C3AED' } };
+    }
+
+    // #216: Category extras revenue in summary
+    const categoryExtrasRevenue = (report.summary as any).categoryExtrasRevenue;
+    if (categoryExtrasRevenue !== undefined && categoryExtrasRevenue > 0) {
+      const catExtrasRow = sheet.addRow(['Przychody z dodatkowo płatnych porcji', this.formatCurrency(categoryExtrasRevenue)]);
+      catExtrasRow.getCell(1).font = { bold: true, color: { argb: 'FFD97706' } };
+      catExtrasRow.getCell(2).font = { bold: true, color: { argb: 'FFD97706' } };
     }
 
     // Breakdown by period
@@ -200,6 +208,36 @@ class ReportsExportService {
       if (extrasRevenue > 0) {
         const totalRow = sheet.addRow(['RAZEM EXTRAS', this.formatCurrency(extrasRevenue), '', '']);
         totalRow.font = { bold: true, color: { argb: 'FF7C3AED' } };
+      }
+    }
+
+    // #216: Revenue by category extras (dodatkowo płatne porcje)
+    const byCategoryExtra = (report as any).byCategoryExtra;
+    if (byCategoryExtra && byCategoryExtra.length > 0) {
+      sheet.addRow([]);
+      const catExtrasHeader = sheet.addRow(['PRZYCHODY Z DODATKOWO PŁATNYCH PORCJI', '']);
+      catExtrasHeader.font = { bold: true, size: 12, color: { argb: 'FFD97706' } };
+      catExtrasHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFBEB' },
+      };
+
+      const catColHeader = sheet.addRow(['Kategoria', 'Przychód', 'Łącznie porcji', 'Śr. przychód']);
+      catColHeader.font = { bold: true };
+
+      byCategoryExtra.forEach((item: any) => {
+        sheet.addRow([
+          item.categoryName,
+          this.formatCurrency(item.revenue),
+          item.totalQuantity,
+          this.formatCurrency(item.avgRevenue),
+        ]);
+      });
+
+      if (categoryExtrasRevenue > 0) {
+        const catTotalRow = sheet.addRow(['RAZEM DODATKOWO PŁATNE PORCJE', this.formatCurrency(categoryExtrasRevenue), '', '']);
+        catTotalRow.font = { bold: true, color: { argb: 'FFD97706' } };
       }
     }
 

@@ -702,7 +702,7 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
   if (query.isError) return <ReportErrorState message={"Błąd ładowania raportu przychodów"} />;
   if (!query.data) return <ReportEmptyState message={"Brak danych do wyświetlenia"} />;
 
-  const { summary, breakdown, byHall, byEventType } = query.data;
+  const { summary, breakdown, byHall, byEventType, byCategoryExtra } = query.data as any;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -729,6 +729,13 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
                               <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">✨ Przychody z usług dodatkowych</p>
                               <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">{formatCurrency(summary.extrasRevenue)}</p>
                               <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Usługi dodatkowe</p>
+                            </div>
+              )}
+                {summary.categoryExtrasRevenue != null && summary.categoryExtrasRevenue > 0 && (
+                <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+                              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">🍽️ Dodatkowo płatne porcje</p>
+                              <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">{formatCurrency(summary.categoryExtrasRevenue)}</p>
+                              <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">Porcje dodatkowe</p>
                             </div>
               )}
       </div>
@@ -819,6 +826,37 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
           </div>
         )}
       </div>
+
+      {/* #216: Dodatkowo płatne porcje breakdown */}
+      {byCategoryExtra && byCategoryExtra.length > 0 && (
+        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+          <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">🍽️ Dodatkowo płatne porcje</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-neutral-50 dark:bg-neutral-800">
+                <tr>
+                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Kategoria</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Przychód"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Porcje</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Śr."}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {byCategoryExtra.map((item: any) => (
+                  <tr key={item.categoryName} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                    <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.categoryName}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-right text-amber-700 dark:text-amber-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400">{item.totalQuantity}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{formatCurrency(item.avgRevenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

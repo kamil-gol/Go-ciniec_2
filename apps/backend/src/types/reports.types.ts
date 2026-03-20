@@ -34,6 +34,17 @@ export interface RevenueReportSummary {
   totalReservations: number;
   completedReservations: number;
   pendingRevenue: number; // CONFIRMED but not COMPLETED
+  extrasRevenue?: number; // service extras revenue
+  categoryExtrasRevenue?: number; // #216: dodatkowo płatne porcje revenue
+}
+
+/** #216: Revenue breakdown per category extra (dodatkowo płatne porcje) */
+export interface RevenueByCategoryExtraItem {
+  categoryName: string;
+  revenue: number;
+  count: number; // number of reservations using this extra
+  totalQuantity: number; // total extra portions
+  avgRevenue: number;
 }
 
 export interface RevenueBreakdownItem {
@@ -64,6 +75,8 @@ export interface RevenueReport {
   breakdown: RevenueBreakdownItem[];
   byHall: RevenueByHallItem[];
   byEventType: RevenueByEventTypeItem[];
+  byServiceItem?: any[]; // service extras breakdown
+  byCategoryExtra?: RevenueByCategoryExtraItem[]; // #216: category extras breakdown
   filters: RevenueReportFilters;
 }
 
