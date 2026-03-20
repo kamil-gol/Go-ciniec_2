@@ -417,22 +417,7 @@ const depositService = {
           },
         });
 
-        const clientName = reservation.client
-          ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}`
-          : 'N/A';
-
-        // Audit log
-        await logChange({
-          userId,
-          action: 'AUTO_CONFIRM',
-          entityType: 'RESERVATION',
-          entityId: reservationId,
-          details: {
-            description: `Rezerwacja automatycznie potwierdzona po op\u0142aceniu wszystkich zaliczek (${clientName})`,
-            depositsCount: activeDeposits.length,
-            totalPaid: activeDeposits.reduce((s: number, d: any) => s + Number(d.amount), 0),
-          },
-        });
+        // #217: logChange removed — reservationHistory entry above already covers AUTO_CONFIRM
 
         logger.info(`[Deposit] Auto-confirmed reservation ${reservationId} \u2014 all ${activeDeposits.length} deposits paid`);
       }
