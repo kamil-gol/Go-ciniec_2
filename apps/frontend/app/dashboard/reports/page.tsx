@@ -372,7 +372,7 @@ function MenuPreparationsTab({ query, view }: {
       {/* DETAILED VIEW */}
       {view === 'detailed' && days && days.length > 0 && (
         <div className="space-y-4">
-          {days.map((day) => (
+          {days.map((day: any) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -382,7 +382,7 @@ function MenuPreparationsTab({ query, view }: {
                   {day.totalReservations} {day.totalReservations === 1 ? 'rezerwacja' : 'rezerwacji'} &middot; {day.totalGuests} gości
                 </span>
               </div>
-              {day.reservations.map((res) => (
+              {day.reservations.map((res: any) => (
                 <div key={res.reservationId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   {/* Reservation header */}
                   <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
@@ -457,7 +457,7 @@ function MenuPreparationsTab({ query, view }: {
       {/* SUMMARY VIEW — with Maluchy column + portionTarget badge */}
       {view === 'summary' && summaryDays && summaryDays.length > 0 && (
         <div className="space-y-4">
-          {summaryDays.map((day) => (
+          {summaryDays.map((day: any) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -504,7 +504,7 @@ function MenuPreparationsTab({ query, view }: {
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.childrenPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.toddlerPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
-                              {dish.reservations.map((r) => `${r.clientName} (${r.guests})`).join(', ')}
+                              {dish.reservations.map((r: any) => `${r.clientName} (${r.guests})`).join(', ')}
                             </td>
                           </tr>
                         ))}
@@ -562,7 +562,7 @@ function PreparationsTab({ query, view }: {
       {/* DETAILED VIEW */}
       {view === 'detailed' && days && days.length > 0 && (
         <div className="space-y-4">
-          {days.map((day) => (
+          {days.map((day: any) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -572,7 +572,7 @@ function PreparationsTab({ query, view }: {
                   {day.totalItems} {day.totalItems === 1 ? 'usługa' : 'usług'}
                 </span>
               </div>
-              {day.categories.map((cat) => (
+              {day.categories.map((cat: any) => (
                 <div key={cat.categoryId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   <div className="px-4 py-2 bg-purple-50 dark:bg-purple-950/20">
                     <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
@@ -630,7 +630,7 @@ function PreparationsTab({ query, view }: {
       {/* SUMMARY VIEW */}
       {view === 'summary' && summaryDays && summaryDays.length > 0 && (
         <div className="space-y-4">
-          {summaryDays.map((day) => (
+          {summaryDays.map((day: any) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -670,7 +670,7 @@ function PreparationsTab({ query, view }: {
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.totalQuantity}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{item.reservationCount}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-column truncate">
-                          {item.reservations.map((r) => {
+                          {item.reservations.map((r: any) => {
                             const time = formatTime(r.startTime);
                             return time
                               ? `${r.clientName} ${time}`
@@ -897,7 +897,7 @@ function OccupancyTab({ query }: { query: ReturnType<typeof useOccupancyReport> 
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {halls.map((hall) => (
+                {halls.map((hall: any) => (
                   <tr key={hall.hallId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                     <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{hall.hallName}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-right">
