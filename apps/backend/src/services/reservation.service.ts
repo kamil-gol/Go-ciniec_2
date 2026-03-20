@@ -42,6 +42,7 @@ import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import { reservationCategoryExtraService } from './reservationCategoryExtra.service';
 import reservationMenuService from './reservation-menu.service';
 import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE, VENUE_SURCHARGE } from '../i18n/pl';
+import notificationService from './notification.service';
 
 function sanitizeString(value: any): string | null {
   if (value === null || value === undefined || value === '') return null;
@@ -385,6 +386,20 @@ export class ReservationService {
 
     // Recalculate totalPrice with all components (including extra hours for long events)
     await recalculateReservationTotalPrice(reservation.id);
+
+    // #128: Notification — new reservation created
+    const clientDisplayName = client.firstName + ' ' + client.lastName;
+    const dateStr = data.startDateTime
+      ? new Date(data.startDateTime).toLocaleDateString('pl-PL')
+      : data.date || '';
+    notificationService.createForAll({
+      type: 'RESERVATION_CREATED',
+      title: 'Nowa rezerwacja',
+      message: `${clientDisplayName} — ${hall.name}, ${eventType.name} (${dateStr})`,
+      entityType: 'RESERVATION',
+      entityId: reservation.id,
+      excludeUserId: userId,
+    });
 
     return reservation as any;
   }
@@ -897,6 +912,20 @@ ${changesSummary}`);
     // Ensure totalPrice reflects all components (menu + extras + categoryExtras + surcharge + extraHours - discount)
     await recalculateReservationTotalPrice(id);
 
+    // #128: Notification — reservation updated
+    const updatedClient = (reservation as any).client;
+    if (updatedClient) {
+      const updClientName = updatedClient.firstName + ' ' + updatedClient.lastName;
+      notificationService.createForAll({
+        type: 'RESERVATION_UPDATED',
+        title: 'Rezerwacja zaktualizowana',
+        message: `${updClientName} — zmieniono dane rezerwacji`,
+        entityType: 'RESERVATION',
+        entityId: id,
+        excludeUserId: userId,
+      });
+    }
+
     return reservation as any;
   }
 
@@ -964,6 +993,19 @@ ${changesSummary}`);
 
       // #217: logChange removed — reservationHistory entries inside transaction already cover this
 
+      // #128: Notification — status changed (cancellation)
+      const cancelClient = existingReservation.client as any;
+      if (cancelClient) {
+        notificationService.createForAll({
+          type: 'STATUS_CHANGED',
+          title: 'Rezerwacja anulowana',
+          message: `${cancelClient.firstName} ${cancelClient.lastName} — rezerwacja została anulowana`,
+          entityType: 'RESERVATION',
+          entityId: id,
+          excludeUserId: userId,
+        });
+      }
+
       return reservation as any;
     }
 
@@ -976,6 +1018,23 @@ ${changesSummary}`);
     await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Zmiana statusu');
 
     // #217: logChange removed — createHistoryEntry already covers STATUS_CHANGED
+
+    // #128: Notification — status changed
+    const statusClient = existingReservation.client as any;
+    const statusLabels: Record<string, string> = {
+      PENDING: 'Oczekująca', RESERVED: 'Zarezerwowana', CONFIRMED: 'Potwierdzona',
+      CANCELLED: 'Anulowana', COMPLETED: 'Zakończona', ARCHIVED: 'Zarchiwizowana',
+    };
+    if (statusClient) {
+      notificationService.createForAll({
+        type: 'STATUS_CHANGED',
+        title: 'Zmiana statusu rezerwacji',
+        message: `${statusClient.firstName} ${statusClient.lastName} — ${statusLabels[existingReservation.status] || existingReservation.status} → ${statusLabels[data.status] || data.status}`,
+        entityType: 'RESERVATION',
+        entityId: id,
+        excludeUserId: userId,
+      });
+    }
 
     return reservation as any;
   }

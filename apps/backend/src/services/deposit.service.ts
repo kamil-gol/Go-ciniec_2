@@ -15,6 +15,7 @@ import emailService from './email.service';
 import logger from '../utils/logger';
 import { logChange } from '../utils/audit-logger';
 import { DEPOSIT } from '../i18n/pl';
+import notificationService from './notification.service';
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD' | 'BANK_TRANSFER';
@@ -636,7 +637,19 @@ const depositService = {
       todayStr
     );
 
-    return { markedOverdueCount: Number(result[0]?.count || 0) };
+    const count = Number(result[0]?.count || 0);
+
+    // #128: Notification — overdue deposits
+    if (count > 0) {
+      notificationService.createForAll({
+        type: 'DEPOSIT_OVERDUE',
+        title: 'Przeterminowane zaliczki',
+        message: `${count} ${count === 1 ? 'zaliczka przekroczyła' : 'zaliczek przekroczyło'} termin płatności`,
+        entityType: 'DEPOSIT',
+      });
+    }
+
+    return { markedOverdueCount: count };
   },
 };
 

@@ -13,6 +13,7 @@ import { prisma } from '../lib/prisma';
 import emailService from './email.service';
 import logger from '@utils/logger';
 import type { DepositReminderData, DepositOverdueData } from './email.service';
+import notificationService from './notification.service';
 
 const REMINDER_DAYS = [7, 3, 1]; // days before due date
 const OVERDUE_DAILY_LIMIT = 3;    // send daily for first N days overdue
@@ -50,6 +51,19 @@ const depositReminderService = {
     } catch (error: any) {
       logger.error(`[Reminder] Error sending overdue notices: ${error.message}`);
       errors++;
+    }
+
+    // #128: Notification — deposit reminders summary
+    if (upcomingSent > 0 || overdueSent > 0) {
+      const parts: string[] = [];
+      if (upcomingSent > 0) parts.push(`${upcomingSent} przypomni${upcomingSent === 1 ? 'enie' : 'eń'} o zbliżającym się terminie`);
+      if (overdueSent > 0) parts.push(`${overdueSent} powiadomieni${overdueSent === 1 ? 'e' : 'a'} o przeterminowaniu`);
+      notificationService.createForAll({
+        type: 'DEPOSIT_REMINDER',
+        title: 'Przypomnienia o zaliczkach',
+        message: `Wysłano: ${parts.join(', ')}`,
+        entityType: 'DEPOSIT',
+      });
     }
 
     return { upcomingSent, overdueSent, errors };

@@ -28,6 +28,7 @@ import {
   ScrollText,
   ShoppingBag,
   BookOpen,
+  Bell,
 } from 'lucide-react'
 
 // ═══ NAV CONFIG ═══
@@ -57,6 +58,7 @@ const navItems: NavItem[] = [
   { name: 'Usługi dodatkowe',    href: '/dashboard/service-extras',    icon: Gift },
   { name: 'Typy Wydarzeń',       href: '/dashboard/event-types',       icon: Theater },
   { name: 'Szablony dokumentów', href: '/dashboard/document-templates', icon: ScrollText },
+  { name: 'Powiadomienia',        href: '/dashboard/notifications',     icon: Bell },
   { name: 'Dziennik Audytu',     href: '/dashboard/audit-log',         icon: FileText },
   { name: 'Raporty',             href: '/dashboard/reports',           icon: BarChart3 },
   { name: 'Ustawienia',          href: '/dashboard/settings',          icon: Settings },

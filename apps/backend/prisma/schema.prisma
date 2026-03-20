@@ -112,6 +112,7 @@ model User {
   documentTemplateChanges DocumentTemplateHistory[]
   createdCateringOrders   CateringOrder[]        @relation("CateringOrderCreatedBy")
   cateringOrderHistories  CateringOrderHistory[] @relation("CateringOrderChangedBy")
+  notifications           Notification[]
 
   @@index([email])
   @@index([roleId])
@@ -1200,4 +1201,25 @@ model CateringDeposit {
   @@index([dueDate])
   @@index([status])
   @@index([paid])
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 🔔 NOTIFICATIONS (#128 — powiadomienia real-time)
+// ═════════════════════════════════════════════════════════════════
+
+model Notification {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @db.Uuid
+  type        String   @db.VarChar(50)   // RESERVATION_CREATED, STATUS_CHANGED, DEPOSIT_OVERDUE, DEPOSIT_REMINDER, QUEUE_PROMOTED, RESERVATION_UPDATED
+  title       String   @db.VarChar(255)
+  message     String   @db.Text
+  read        Boolean  @default(false)
+  entityType  String?  @db.VarChar(50)   // RESERVATION, CLIENT, DEPOSIT, QUEUE
+  entityId    String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@index([userId, createdAt])
 }

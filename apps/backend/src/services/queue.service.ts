@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
 import { RESERVATION, HALL } from '../i18n/pl';
+import notificationService from './notification.service';
 import {
   CreateReservedDTO,
   PromoteReservationDTO,
@@ -605,6 +606,16 @@ export class QueueService {
           totalPrice,
         },
       },
+    });
+
+    // #128: Notification — promoted from queue
+    notificationService.createForAll({
+      type: 'QUEUE_PROMOTED',
+      title: 'Awans z kolejki',
+      message: `${clientName} — awansowano z kolejki do ${hall?.name || 'sali'} (${startDateTime.toLocaleDateString('pl-PL')})`,
+      entityType: 'RESERVATION',
+      entityId: reservationId,
+      excludeUserId: userId,
     });
 
     return updated;
