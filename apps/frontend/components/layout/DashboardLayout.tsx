@@ -1,12 +1,13 @@
 'use client'
 
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { motion } from 'framer-motion'
 import SessionTimeoutModal from '@/app/dashboard/components/SessionTimeoutModal'
+import { apiClient } from '@/lib/api-client'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -18,21 +19,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  useEffect(() => {
+  const fetchUser = useCallback(async () => {
     const token = localStorage.getItem('auth_token')
     if (!token) {
       router.push('/login')
       return
     }
 
-    setUser({
-      firstName: 'Admin',
-      lastName: 'System',
-      role: 'ADMIN',
-      email: 'admin@gosciniecrodzinny.pl',
-    })
+    try {
+      const { data } = await apiClient.get('/auth/me')
+      setUser(data.data.user)
+    } catch {
+      // Token invalid/expired — redirect to login
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('refreshToken')
+      router.push('/login')
+      return
+    }
     setLoading(false)
   }, [router])
+
+  useEffect(() => {
+    fetchUser()
+  }, [fetchUser])
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token')
