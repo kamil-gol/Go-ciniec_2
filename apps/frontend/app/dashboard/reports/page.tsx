@@ -596,7 +596,7 @@ function PreparationsTab({ query, view }: {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {cat.items.map((item) => (
+                        {cat.items.map((item: any) => (
                           <tr key={item.extraId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                             <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.quantity}</td>
@@ -659,7 +659,7 @@ function PreparationsTab({ query, view }: {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    {day.items.map((item) => (
+                    {day.items.map((item: any) => (
                       <tr key={item.serviceItemId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                         <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">
@@ -786,7 +786,7 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {byHall.map((item) => (
+                  {byHall.map((item: any) => (
                     <tr key={item.hallId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                       <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.hallName}</td>
                       <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
@@ -813,7 +813,7 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {byEventType.map((item) => (
+                  {byEventType.map((item: any) => (
                     <tr key={item.eventTypeId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                       <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.eventTypeName}</td>
                       <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
@@ -925,7 +925,7 @@ function OccupancyTab({ query }: { query: ReturnType<typeof useOccupancyReport> 
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Popularne godziny</h3>
             </div>
             <div className="p-4 space-y-2">
-              {peakHours.map((item) => {
+              {peakHours.map((item: any) => {
                 const maxCount = peakHours[0]?.count || 1;
                 const barWidth = (item.count / maxCount) * 100;
                 return (
@@ -949,7 +949,7 @@ function OccupancyTab({ query }: { query: ReturnType<typeof useOccupancyReport> 
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Popularne dni tygodnia</h3>
             </div>
             <div className="p-4 space-y-2">
-              {peakDaysOfWeek.map((item) => {
+              {peakDaysOfWeek.map((item: any) => {
                 const maxCount = peakDaysOfWeek[0]?.count || 1;
                 const barWidth = (item.count / maxCount) * 100;
                 return (
