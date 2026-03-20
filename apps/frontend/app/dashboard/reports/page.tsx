@@ -756,7 +756,7 @@ function RevenueTab({ query }: { query: ReturnType<typeof useRevenueReport> }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {breakdown.map((item) => (
+                {breakdown.map((item: any) => (
                   <tr key={item.period} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                     <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{item.period}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
