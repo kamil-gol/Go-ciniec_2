@@ -23,6 +23,13 @@ jest.mock('../../../services/company-settings.service', () => ({
   },
 }));
 
+// Mock marked (not installed in test container)
+jest.mock('marked', () => ({
+  marked: {
+    parse: jest.fn().mockImplementation((md: string) => `<p>${md}</p>`),
+  },
+}));
+
 // Mock nodemailer
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn().mockReturnValue({

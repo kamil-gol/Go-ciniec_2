@@ -20,6 +20,15 @@ jest.mock('nodemailer', () => ({
   createTransport: (...args: any[]) => mockCreateTransport(...args),
 }));
 
+jest.mock('marked', () => ({
+  marked: { parse: jest.fn().mockResolvedValue('<p>mocked</p>') },
+}));
+
+jest.mock('../../../services/document-template.service', () => ({
+  __esModule: true,
+  default: { preview: jest.fn().mockRejectedValue(new Error('no template')) },
+}));
+
 jest.mock('@utils/logger', () => ({
   __esModule: true,
   default: {
@@ -38,6 +47,13 @@ function loadService(env: Record<string, string> = {}) {
   jest.resetModules();
   jest.mock('nodemailer', () => ({
     createTransport: (...args: any[]) => mockCreateTransport(...args),
+  }));
+  jest.mock('marked', () => ({
+    marked: { parse: jest.fn().mockResolvedValue('<p>mocked</p>') },
+  }));
+  jest.mock('../../../services/document-template.service', () => ({
+    __esModule: true,
+    default: { preview: jest.fn().mockRejectedValue(new Error('no template')) },
   }));
   jest.mock('@utils/logger', () => ({
     __esModule: true,
