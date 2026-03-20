@@ -135,15 +135,20 @@ const fieldLabels: Record<string, string> = {
   adults: 'Dorośli',
   children: 'Dzieci',
   toddlers: 'Małe dzieci',
+  guests: 'Liczba gości',
+  oldGuests: 'Poprzednia liczba gości',
+  newGuests: 'Nowa liczba gości',
   notes: 'Notatki',
   internalNotes: 'Notatki wewnętrzne',
   totalPrice: 'Cena całkowita',
+  oldTotalPrice: 'Poprzednia cena całkowita',
   pricePerPerson: 'Cena za osobę',
   advanceAmount: 'Kwota zaliczki',
   isArchived: 'Zarchiwizowana',
   confirmedAt: 'Data potwierdzenia',
   cancelledAt: 'Data anulowania',
   archivedAt: 'Data archiwizacji',
+  field: 'Pole',
   // Client fields
   firstName: 'Imię',
   lastName: 'Nazwisko',
@@ -156,6 +161,10 @@ const fieldLabels: Record<string, string> = {
   city: 'Miasto',
   postalCode: 'Kod pocztowy',
   country: 'Kraj',
+  companyData: 'Dane firmy',
+  contactData: 'Dane kontaktowe',
+  newContact: 'Nowy kontakt',
+  clientName: 'Nazwa klienta',
   // Menu fields
   name: 'Nazwa',
   description: 'Opis',
@@ -163,6 +172,13 @@ const fieldLabels: Record<string, string> = {
   basePrice: 'Cena bazowa',
   priceType: 'Typ ceny',
   isActive: 'Aktywny',
+  packageName: 'Nazwa pakietu',
+  templateName: 'Nazwa szablonu',
+  packagePrice: 'Cena pakietu',
+  optionsPrice: 'Cena opcji',
+  totalMenuPrice: 'Cena menu łącznie',
+  oldMenuPrice: 'Poprzednia cena menu',
+  isNewSelection: 'Nowy wybór',
   // Relation / nested object fields
   hall: 'Sala',
   client: 'Klient',
@@ -170,6 +186,8 @@ const fieldLabels: Record<string, string> = {
   eventType: 'Typ wydarzenia',
   menuSnapshot: 'Migawka menu',
   category: 'Kategoria',
+  categoryId: 'ID kategorii',
+  categoryName: 'Nazwa kategorii',
   packages: 'Pakiety',
   contacts: 'Osoby kontaktowe',
   items: 'Pozycje',
@@ -197,16 +215,50 @@ const fieldLabels: Record<string, string> = {
   discountAmount: 'Kwota rabatu',
   reason: 'Powód',
   restoredPrice: 'Przywrócona cena',
-  // Service fields
+  discountBreakdown: 'Szczegóły rabatu',
+  priceBreakdown: 'Szczegóły ceny',
+  // Service / extras fields
   slug: 'Identyfikator',
   isExclusive: 'Wyłączny',
+  extras: 'Usługi dodatkowe',
+  removedCount: 'Liczba usuniętych',
+  count: 'Liczba',
+  replaced: 'Zastąpiono',
+  newItem: 'Nowa pozycja',
+  itemName: 'Nazwa pozycji',
+  quantity: 'Ilość',
+  portionTarget: 'Cel porcji',
+  packageCategoryId: 'ID kategorii pakietu',
   // Queue fields
   position: 'Pozycja',
   queuePosition: 'Pozycja w kolejce',
+  oldPosition: 'Poprzednia pozycja',
+  newPosition: 'Nowa pozycja',
+  queueDate: 'Data w kolejce',
+  reservation1: 'Rezerwacja 1',
+  reservation2: 'Rezerwacja 2',
+  updatedCount: 'Liczba zaktualizowanych',
+  positionChanges: 'Zmiany pozycji',
+  cancelledCount: 'Liczba anulowanych',
+  cancelledIds: 'Anulowane rezerwacje',
+  triggeredBy: 'Wywołane przez',
+  fromQueue: 'Z kolejki',
+  toReservation: 'Do rezerwacji',
+  dateCount: 'Liczba dat',
+  dates: 'Daty',
   // Attachment fields
   filename: 'Nazwa pliku',
   fileSize: 'Rozmiar pliku',
   mimeType: 'Typ pliku',
+  sizeBytes: 'Rozmiar (bajty)',
+  originalSizeBytes: 'Oryginalny rozmiar',
+  fileHash: 'Hash pliku',
+  originalName: 'Oryginalna nazwa',
+  attachmentId: 'ID załącznika',
+  existingAttachmentId: 'ID istniejącego załącznika',
+  label: 'Etykieta',
+  compressed: 'Skompresowany',
+  redirected: 'Przekierowany',
   // Event type fields
   eventTypeName: 'Nazwa typu wydarzenia',
   color: 'Kolor',
@@ -218,6 +270,15 @@ const fieldLabels: Record<string, string> = {
   icon: 'Ikona',
   displayOrder: 'Kolejność wyświetlania',
   isPrimary: 'Kontakt główny',
+  priceChanges: 'Zmiany cen',
+  // Catering fields
+  orderNumber: 'Numer zamówienia',
+  deliveryType: 'Typ dostawy',
+  guestsCount: 'Liczba gości',
+  itemsCount: 'Liczba pozycji',
+  extrasCount: 'Liczba dodatków',
+  // Document template fields
+  changeReason: 'Powód zmiany',
   // Common
   reservationId: 'ID rezerwacji',
   clientId: 'ID klienta',
@@ -227,50 +288,12 @@ const fieldLabels: Record<string, string> = {
   menu: 'Menu',
   type: 'Typ',
   value: 'Wartość',
+  data: 'Dane',
+  oldValue: 'Poprzednia wartość',
+  newValue: 'Nowa wartość',
 };
 
 // ─── Value formatting helpers ────────────────────────────────────────────────
-
-const statusLabels: Record<string, string> = {
-  PENDING: 'Oczekująca',
-  CONFIRMED: 'Potwierdzona',
-  CANCELLED: 'Anulowana',
-  COMPLETED: 'Zakończona',
-  DRAFT: 'Wersja robocza',
-  TENTATIVE: 'Wstępna',
-  PAID: 'Opłacona',
-  UNPAID: 'Nieopłacona',
-  PARTIAL: 'Częściowo opłacona',
-  OVERDUE: 'Zaległa',
-  ACTIVE: 'Aktywna',
-  INACTIVE: 'Nieaktywna',
-  ARCHIVED: 'Zarchiwizowana',
-};
-
-const paymentMethodLabels: Record<string, string> = {
-  CASH: 'Gotówka',
-  BANK_TRANSFER: 'Przelew bankowy',
-  BLIK: 'BLIK',
-  CARD: 'Karta',
-  ONLINE: 'Online',
-  OTHER: 'Inne',
-};
-
-const clientTypeLabels: Record<string, string> = {
-  INDIVIDUAL: 'Osoba prywatna',
-  COMPANY: 'Firma',
-};
-
-const discountTypeLabels: Record<string, string> = {
-  PERCENTAGE: 'Procentowy',
-  FIXED: 'Kwotowy',
-};
-
-const priceTypeLabels: Record<string, string> = {
-  FLAT: 'Stała',
-  PER_PERSON: 'Za osobę',
-  PER_HOUR: 'Za godzinę',
-};
 
 /** Extract a meaningful human-readable label from an object */
 function formatObjectSummary(obj: Record<string, any>): string {
@@ -305,12 +328,49 @@ function formatArraySummary(arr: any[]): string {
     if (item.firstName && item.lastName) return `${item.firstName} ${item.lastName}`;
     if (item.firstName) return item.firstName;
     if (item.email) return item.email;
-    return '?';
+    if (item.itemName) return item.itemName;
+    if (item.clientName) return item.clientName;
+    if (item.originalName) return item.originalName;
+    if (item.orderNumber) return `#${item.orderNumber}`;
+    // For extras-like objects with quantity/price
+    if (item.quantity != null && item.pricePerItem != null) {
+      return `${item.quantity} × ${Number(item.pricePerItem).toLocaleString('pl-PL')} zł`;
+    }
+    if (item.quantity != null && item.totalPrice != null) {
+      return `${item.quantity} szt. (${Number(item.totalPrice).toLocaleString('pl-PL')} zł)`;
+    }
+    // Fallback: try to get a meaningful summary
+    return formatObjectSummary(item);
   });
 
   if (names.length <= 3) return names.join(', ');
   return `${names.slice(0, 3).join(', ')} (+${names.length - 3})`;
 }
+
+// All known enum values → Polish translations
+const enumTranslations: Record<string, string> = {
+  // Statuses
+  PENDING: 'Oczekująca', CONFIRMED: 'Potwierdzona', CANCELLED: 'Anulowana',
+  COMPLETED: 'Zakończona', DRAFT: 'Wersja robocza', TENTATIVE: 'Wstępna',
+  PAID: 'Opłacona', UNPAID: 'Nieopłacona', PARTIAL: 'Częściowo opłacona',
+  OVERDUE: 'Zaległa', ACTIVE: 'Aktywna', INACTIVE: 'Nieaktywna',
+  ARCHIVED: 'Zarchiwizowana',
+  // Payment methods
+  CASH: 'Gotówka', BANK_TRANSFER: 'Przelew bankowy', BLIK: 'BLIK',
+  CARD: 'Karta', ONLINE: 'Online', OTHER: 'Inne',
+  // Client types
+  INDIVIDUAL: 'Osoba prywatna', COMPANY: 'Firma',
+  // Discount types
+  PERCENTAGE: 'Procentowy', FIXED: 'Kwotowy',
+  // Price types
+  FLAT: 'Stała', PER_PERSON: 'Za osobę', PER_HOUR: 'Za godzinę',
+  // Delivery types
+  PICKUP: 'Odbiór własny', DELIVERY: 'Dostawa',
+  // Portion targets
+  ALL: 'Wszyscy', ADULTS_ONLY: 'Tylko dorośli', CHILDREN_ONLY: 'Tylko dzieci',
+  // Boolean-like
+  true: 'Tak', false: 'Nie',
+};
 
 function formatValue(value: any, fieldName?: string): string {
   if (value === null || value === undefined) return '—';
@@ -319,23 +379,26 @@ function formatValue(value: any, fieldName?: string): string {
 
   const str = String(value);
 
-  // Status values — translate any field ending in Status or named status
-  if (statusLabels[str] && (fieldName === 'status' || fieldName === 'oldStatus' || fieldName === 'newStatus')) {
-    return statusLabels[str];
+  // Translate known enum values (statuses, payment methods, types, etc.)
+  if (typeof value === 'string' && enumTranslations[str]) {
+    return enumTranslations[str];
   }
-  if (fieldName === 'paymentMethod' && paymentMethodLabels[str]) return paymentMethodLabels[str];
-  if (fieldName === 'clientType' && clientTypeLabels[str]) return clientTypeLabels[str];
-  if (fieldName === 'discountType' && discountTypeLabels[str]) return discountTypeLabels[str];
-  if (fieldName === 'priceType' && priceTypeLabels[str]) return priceTypeLabels[str];
 
   // Currency amounts (numeric fields with money-related names)
-  if (typeof value === 'number' && /amount|price|totalPrice|pricePerPerson|advanceAmount|basePrice|restoredPrice|discountAmount|pricePerAdult|pricePerChild|extraHourRate/.test(fieldName || '')) {
+  if (typeof value === 'number' && /amount|price|Price|Rate/.test(fieldName || '')) {
     return `${value.toLocaleString('pl-PL')} zł`;
   }
 
   // Percentage
   if (typeof value === 'number' && fieldName === 'discountValue') {
     return `${value}%`;
+  }
+
+  // File sizes
+  if (typeof value === 'number' && /size|Bytes/.test(fieldName || '')) {
+    if (value > 1048576) return `${(value / 1048576).toFixed(1)} MB`;
+    if (value > 1024) return `${(value / 1024).toFixed(0)} KB`;
+    return `${value} B`;
   }
 
   // Date strings (ISO format)
@@ -482,8 +545,8 @@ function ToggleCard({ oldValue, newValue, fieldName }: { oldValue: any; newValue
 
 /** Status change card (oldStatus → newStatus) */
 function StatusChangeCard({ oldStatus, newStatus }: { oldStatus?: string; newStatus?: string }) {
-  const oldLabel = oldStatus ? (statusLabels[oldStatus] || oldStatus) : '—';
-  const newLabel = newStatus ? (statusLabels[newStatus] || newStatus) : '—';
+  const oldLabel = oldStatus ? (enumTranslations[oldStatus] || oldStatus) : '—';
+  const newLabel = newStatus ? (enumTranslations[newStatus] || newStatus) : '—';
 
   return (
     <div className="rounded-xl border border-violet-200 dark:border-violet-800/50 overflow-hidden">
@@ -638,14 +701,15 @@ function DetailsVisualization({ details, action }: { details: Record<string, any
     );
   }
 
-  // 2) Reason
-  if (details.reason) {
+  // 2) Reason / changeReason
+  const reasonText = details.reason || details.changeReason;
+  if (reasonText) {
     cards.push(
       <div key="reason" className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-800/30">
         <Tag className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
         <div>
           <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-0.5">Powód</p>
-          <p className="text-sm text-zinc-700 dark:text-zinc-200">{details.reason}</p>
+          <p className="text-sm text-zinc-700 dark:text-zinc-200">{reasonText}</p>
         </div>
       </div>
     );
@@ -712,7 +776,7 @@ function DetailsVisualization({ details, action }: { details: Record<string, any
 
   // 11) Fallback for any remaining unknown keys (excluding already rendered)
   const renderedKeys = new Set([
-    'description', 'reason', 'changes', 'oldValue', 'newValue', 'fieldName',
+    'description', 'reason', 'changeReason', 'changes', 'oldValue', 'newValue', 'fieldName',
     'data', 'deletedData', 'discountType', 'discountValue', 'discountAmount',
     'removedDiscount', 'restoredPrice', 'orderedIds', 'sourceId',
     'oldStatus', 'newStatus',
@@ -723,7 +787,7 @@ function DetailsVisualization({ details, action }: { details: Record<string, any
     cards.push(
       <div key="extra" className="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <div className="px-4 py-2 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-700">
-          <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Dodatkowe informacje</span>
+          <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Szczegółowe dane</span>
         </div>
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {remainingEntries.map(([key, value]) => (
