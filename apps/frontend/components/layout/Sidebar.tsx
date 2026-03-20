@@ -223,7 +223,7 @@ function SidebarUser({
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-              {user?.role?.name || user?.role || 'Użytkownik'}
+              {typeof user?.role === 'object' ? (user?.role as any)?.name : user?.role === 'ADMIN' ? 'Administrator' : user?.role || 'Użytkownik'}
             </p>
           </div>
         )}
