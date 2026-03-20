@@ -9,9 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  Calendar, User, Tag, FileText, Globe, Monitor, Hash, X,
+  Calendar, User, Tag, FileText, Globe, Monitor, Hash,
   ArrowRight, Plus, Trash2, ToggleLeft, Repeat, ChevronDown, ChevronUp,
-  Info, CreditCard, Package, Percent, ListOrdered, Layers,
+  Info, CreditCard, Package, Percent, ListOrdered, Layers, RefreshCw,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { AuditLogEntry } from '@/types/audit-log.types';
@@ -21,53 +21,53 @@ import type { AuditLogEntry } from '@/types/audit-log.types';
 const actionLabels: Record<string, string> = {
   CREATE: 'Utworzenie',
   UPDATE: 'Aktualizacja',
-  DELETE: 'Usuni\u0119cie',
-  SOFT_DELETE: 'Usuni\u0119cie (mi\u0119kkie)',
-  TOGGLE: 'Prze\u0142\u0105czenie',
-  TOGGLE_ACTIVE: 'Prze\u0142\u0105czenie aktywno\u015bci',
-  REORDER: 'Zmiana kolejno\u015bci',
+  DELETE: 'Usunięcie',
+  SOFT_DELETE: 'Usunięcie (miękkie)',
+  TOGGLE: 'Przełączenie',
+  TOGGLE_ACTIVE: 'Przełączenie aktywności',
+  REORDER: 'Zmiana kolejności',
   DUPLICATE: 'Duplikacja',
   STATUS_CHANGE: 'Zmiana statusu',
   CANCEL: 'Anulowanie',
   ARCHIVE: 'Archiwizacja',
-  UNARCHIVE: 'Przywr\u00f3cenie',
-  RESTORE: 'Przywr\u00f3cenie',
+  UNARCHIVE: 'Przywrócenie',
+  RESTORE: 'Przywrócenie',
   AUTO_ARCHIVED: 'Auto-archiwizacja',
   AUTO_CONFIRM: 'Auto-potwierdzenie',
   MENU_UPDATE: 'Aktualizacja menu',
   MENU_UPDATED: 'Aktualizacja menu',
-  MENU_REMOVE: 'Usuni\u0119cie menu',
-  MENU_REMOVED: 'Usuni\u0119cie menu',
-  MENU_SELECTED: 'Wyb\u00f3r menu',
+  MENU_REMOVE: 'Usunięcie menu',
+  MENU_REMOVED: 'Usunięcie menu',
+  MENU_SELECTED: 'Wybór menu',
   MENU_RECALCULATED: 'Przeliczenie menu',
-  MENU_DIRECT_REMOVED: 'Bezpo\u015brednie usuni\u0119cie menu',
-  CATEGORY_EXTRAS_UPDATED: 'Aktualizacja dodatkowo p\u0142atnych porcji',
-  CATEGORY_EXTRAS_REMOVED: 'Usuni\u0119cie dodatkowo p\u0142atnych porcji',
-  PAYMENT_UPDATE: 'Aktualizacja p\u0142atno\u015bci',
-  MARK_PAID: 'Oznaczenie jako op\u0142acone',
-  MARK_UNPAID: 'Oznaczenie jako nieop\u0142acone',
+  MENU_DIRECT_REMOVED: 'Bezpośrednie usunięcie menu',
+  CATEGORY_EXTRAS_UPDATED: 'Aktualizacja dodatkowo płatnych porcji',
+  CATEGORY_EXTRAS_REMOVED: 'Usunięcie dodatkowo płatnych porcji',
+  PAYMENT_UPDATE: 'Aktualizacja płatności',
+  MARK_PAID: 'Oznaczenie jako opłacone',
+  MARK_UNPAID: 'Oznaczenie jako nieopłacone',
   DEPOSIT_CREATED: 'Dodanie zaliczki',
-  DEPOSIT_DELETED: 'Usuni\u0119cie zaliczki',
-  DEPOSIT_PAID: 'Op\u0142acenie zaliczki',
+  DEPOSIT_DELETED: 'Usunięcie zaliczki',
+  DEPOSIT_PAID: 'Opłacenie zaliczki',
   DEPOSIT_CANCELLED: 'Anulowanie zaliczki',
   DISCOUNT_APPLIED: 'Naliczenie rabatu',
-  DISCOUNT_REMOVED: 'Usuni\u0119cie rabatu',
+  DISCOUNT_REMOVED: 'Usunięcie rabatu',
   BULK_ASSIGN: 'Zbiorcze przypisanie',
   QUEUE_ADD: 'Dodanie do kolejki',
   QUEUE_UPDATE: 'Aktualizacja w kolejce',
-  QUEUE_REMOVE: 'Usuni\u0119cie z kolejki',
+  QUEUE_REMOVE: 'Usunięcie z kolejki',
   QUEUE_SWAP: 'Zamiana pozycji',
   QUEUE_MOVE: 'Przeniesienie w kolejce',
-  QUEUE_REORDER: 'Zmiana kolejno\u015bci',
+  QUEUE_REORDER: 'Zmiana kolejności',
   QUEUE_REBUILD: 'Przebudowa kolejki',
   QUEUE_PROMOTE: 'Awans z kolejki',
   QUEUE_AUTO_CANCEL: 'Auto-anulowanie z kolejki',
-  ATTACHMENT_UPLOAD: 'Wgranie za\u0142\u0105cznika',
-  ATTACHMENT_ADD: 'Dodanie za\u0142\u0105cznika',
-  ATTACHMENT_UPDATE: 'Aktualizacja za\u0142\u0105cznika',
-  ATTACHMENT_ARCHIVE: 'Archiwizacja za\u0142\u0105cznika',
-  ATTACHMENT_DELETE: 'Usuni\u0119cie za\u0142\u0105cznika',
-  ATTACHMENT_DEDUP: 'Deduplikacja za\u0142\u0105cznika',
+  ATTACHMENT_UPLOAD: 'Wgranie załącznika',
+  ATTACHMENT_ADD: 'Dodanie załącznika',
+  ATTACHMENT_UPDATE: 'Aktualizacja załącznika',
+  ATTACHMENT_ARCHIVE: 'Archiwizacja załącznika',
+  ATTACHMENT_DELETE: 'Usunięcie załącznika',
+  ATTACHMENT_DEDUP: 'Deduplikacja załącznika',
   LOGIN: 'Logowanie',
   LOGOUT: 'Wylogowanie',
   NOTE_UPDATED: 'Aktualizacja notatki',
@@ -94,30 +94,30 @@ const actionColors: Record<string, string> = {
 
 const entityLabels: Record<string, string> = {
   RESERVATION: 'Rezerwacja',
-  RESERVATION_EXTRA: 'Us\u0142uga dodatkowa',
+  RESERVATION_EXTRA: 'Usługa dodatkowa',
   CLIENT: 'Klient',
   CLIENT_CONTACT: 'Kontakt klienta',
   ROOM: 'Sala',
   HALL: 'Sala',
   MENU: 'Menu',
-  USER: 'U\u017cytkownik',
+  USER: 'Użytkownik',
   DEPOSIT: 'Zaliczka',
   EVENT_TYPE: 'Typ wydarzenia',
-  ATTACHMENT: 'Za\u0142\u0105cznik',
+  ATTACHMENT: 'Załącznik',
   QUEUE: 'Kolejka',
   DISH: 'Danie',
   MENU_TEMPLATE: 'Szablon menu',
   MENU_PACKAGE: 'Pakiet menu',
   PACKAGE: 'Pakiet',
   DOCUMENT_TEMPLATE: 'Szablon dokumentu',
-  CATERING_ORDER: 'Zam\u00f3wienie catering',
-  SERVICE_CATEGORY: 'Kategoria us\u0142ug',
-  SERVICE_ITEM: 'Pozycja us\u0142ugi',
+  CATERING_ORDER: 'Zamówienie catering',
+  SERVICE_CATEGORY: 'Kategoria usług',
+  SERVICE_ITEM: 'Pozycja usługi',
   Role: 'Rola',
   CompanySettings: 'Ustawienia firmy',
-  ServiceExtra: 'Us\u0142uga dodatkowa',
-  ServiceCategory: 'Kategoria us\u0142ug',
-  ServiceItem: 'Pozycja us\u0142ugi',
+  ServiceExtra: 'Usługa dodatkowa',
+  ServiceCategory: 'Kategoria usług',
+  ServiceItem: 'Pozycja usługi',
 };
 
 // ─── Field name translations (technical → Polish) ───────────────────────────
@@ -126,23 +126,26 @@ const fieldLabels: Record<string, string> = {
   // Reservation fields
   status: 'Status',
   eventDate: 'Data wydarzenia',
-  eventEndDate: 'Data zako\u0144czenia',
-  startTime: 'Godzina rozpocz\u0119cia',
-  endTime: 'Godzina zako\u0144czenia',
-  guestCount: 'Liczba go\u015bci',
-  adultCount: 'Doro\u015bli',
+  eventEndDate: 'Data zakończenia',
+  startTime: 'Godzina rozpoczęcia',
+  endTime: 'Godzina zakończenia',
+  guestCount: 'Liczba gości',
+  adultCount: 'Dorośli',
   childCount: 'Dzieci',
+  adults: 'Dorośli',
+  children: 'Dzieci',
+  toddlers: 'Małe dzieci',
   notes: 'Notatki',
-  internalNotes: 'Notatki wewn\u0119trzne',
-  totalPrice: 'Cena ca\u0142kowita',
-  pricePerPerson: 'Cena za osob\u0119',
+  internalNotes: 'Notatki wewnętrzne',
+  totalPrice: 'Cena całkowita',
+  pricePerPerson: 'Cena za osobę',
   advanceAmount: 'Kwota zaliczki',
   isArchived: 'Zarchiwizowana',
   confirmedAt: 'Data potwierdzenia',
   cancelledAt: 'Data anulowania',
   archivedAt: 'Data archiwizacji',
   // Client fields
-  firstName: 'Imi\u0119',
+  firstName: 'Imię',
   lastName: 'Nazwisko',
   email: 'Email',
   phone: 'Telefon',
@@ -160,28 +163,43 @@ const fieldLabels: Record<string, string> = {
   basePrice: 'Cena bazowa',
   priceType: 'Typ ceny',
   isActive: 'Aktywny',
+  // Relation / nested object fields
+  hall: 'Sala',
+  client: 'Klient',
+  createdBy: 'Utworzony przez',
+  eventType: 'Typ wydarzenia',
+  menuSnapshot: 'Migawka menu',
   category: 'Kategoria',
+  packages: 'Pakiety',
+  contacts: 'Osoby kontaktowe',
+  items: 'Pozycje',
+  serviceItem: 'Pozycja usługi',
+  amenities: 'Udogodnienia',
+  images: 'Zdjęcia',
   // Hall / Room fields
-  capacity: 'Pojemno\u015b\u0107',
-  isWholeVenue: 'Ca\u0142y obiekt',
-  allowWithWholeVenue: 'Dost\u0119pna z ca\u0142ym obiektem',
+  capacity: 'Pojemność',
+  isWholeVenue: 'Cały obiekt',
+  allowWithWholeVenue: 'Dostępna z całym obiektem',
   allowMultipleBookings: 'Wielokrotne rezerwacje',
   // Deposit fields
   amount: 'Kwota',
-  dueDate: 'Termin p\u0142atno\u015bci',
-  paidAt: 'Data op\u0142aty',
-  paymentMethod: 'Metoda p\u0142atno\u015bci',
-  amountPaid: 'Kwota zap\u0142acona',
-  wasPaid: 'By\u0142a op\u0142acona',
+  dueDate: 'Termin płatności',
+  paidAt: 'Data opłaty',
+  paymentMethod: 'Metoda płatności',
+  amountPaid: 'Kwota zapłacona',
+  wasPaid: 'Była opłacona',
+  // Status change fields
+  oldStatus: 'Poprzedni status',
+  newStatus: 'Nowy status',
   // Discount fields
   discountType: 'Typ rabatu',
-  discountValue: 'Warto\u015b\u0107 rabatu',
+  discountValue: 'Wartość rabatu',
   discountAmount: 'Kwota rabatu',
-  reason: 'Pow\u00f3d',
-  restoredPrice: 'Przywr\u00f3cona cena',
+  reason: 'Powód',
+  restoredPrice: 'Przywrócona cena',
   // Service fields
   slug: 'Identyfikator',
-  isExclusive: 'Wy\u0142\u0105czny',
+  isExclusive: 'Wyłączny',
   // Queue fields
   position: 'Pozycja',
   queuePosition: 'Pozycja w kolejce',
@@ -192,39 +210,47 @@ const fieldLabels: Record<string, string> = {
   // Event type fields
   eventTypeName: 'Nazwa typu wydarzenia',
   color: 'Kolor',
+  standardHours: 'Standardowe godziny',
+  extraHourRate: 'Stawka za dodatkową godzinę',
+  // Menu package fields
+  pricePerAdult: 'Cena za dorosłego',
+  pricePerChild: 'Cena za dziecko',
+  icon: 'Ikona',
+  displayOrder: 'Kolejność wyświetlania',
+  isPrimary: 'Kontakt główny',
   // Common
   reservationId: 'ID rezerwacji',
   clientId: 'ID klienta',
-  sourceId: 'ID \u017ar\u00f3d\u0142a',
-  orderedIds: 'Kolejno\u015b\u0107 element\u00f3w',
-  contacts: 'Osoby kontaktowe',
+  sourceId: 'ID źródła',
+  orderedIds: 'Kolejność elementów',
   role: 'Stanowisko',
   menu: 'Menu',
   type: 'Typ',
-  value: 'Warto\u015b\u0107',
+  value: 'Wartość',
 };
 
 // ─── Value formatting helpers ────────────────────────────────────────────────
 
 const statusLabels: Record<string, string> = {
-  PENDING: 'Oczekuj\u0105ca',
+  PENDING: 'Oczekująca',
   CONFIRMED: 'Potwierdzona',
   CANCELLED: 'Anulowana',
-  COMPLETED: 'Zako\u0144czona',
+  COMPLETED: 'Zakończona',
   DRAFT: 'Wersja robocza',
-  TENTATIVE: 'Wst\u0119pna',
-  PAID: 'Op\u0142acona',
-  UNPAID: 'Nieop\u0142acona',
-  PARTIAL: 'Cz\u0119\u015bciowo op\u0142acona',
-  OVERDUE: 'Zaleg\u0142a',
+  TENTATIVE: 'Wstępna',
+  PAID: 'Opłacona',
+  UNPAID: 'Nieopłacona',
+  PARTIAL: 'Częściowo opłacona',
+  OVERDUE: 'Zaległa',
   ACTIVE: 'Aktywna',
   INACTIVE: 'Nieaktywna',
   ARCHIVED: 'Zarchiwizowana',
 };
 
 const paymentMethodLabels: Record<string, string> = {
-  CASH: 'Got\u00f3wka',
+  CASH: 'Gotówka',
   BANK_TRANSFER: 'Przelew bankowy',
+  BLIK: 'BLIK',
   CARD: 'Karta',
   ONLINE: 'Online',
   OTHER: 'Inne',
@@ -241,28 +267,70 @@ const discountTypeLabels: Record<string, string> = {
 };
 
 const priceTypeLabels: Record<string, string> = {
-  FLAT: 'Sta\u0142a',
-  PER_PERSON: 'Za osob\u0119',
-  PER_HOUR: 'Za godzin\u0119',
+  FLAT: 'Stała',
+  PER_PERSON: 'Za osobę',
+  PER_HOUR: 'Za godzinę',
 };
 
+/** Extract a meaningful human-readable label from an object */
+function formatObjectSummary(obj: Record<string, any>): string {
+  if (obj.name) return String(obj.name);
+  if (obj.firstName && obj.lastName) return `${obj.firstName} ${obj.lastName}`;
+  if (obj.firstName) return String(obj.firstName);
+  if (obj.email) return String(obj.email);
+  if (obj.title) return String(obj.title);
+
+  // Fallback: show up to 3 most meaningful fields
+  const skipKeys = new Set(['id', 'createdAt', 'updatedAt', '_count']);
+  const entries = Object.entries(obj).filter(([k]) => !skipKeys.has(k));
+  if (entries.length === 0) return 'Brak danych';
+
+  const parts = entries.slice(0, 3).map(([k, v]) => {
+    const label = getFieldLabel(k);
+    if (v === null || v === undefined) return `${label}: —`;
+    if (typeof v === 'boolean') return `${label}: ${v ? 'Tak' : 'Nie'}`;
+    if (typeof v === 'object') return `${label}: ...`;
+    return `${label}: ${String(v)}`;
+  });
+  return parts.join(', ');
+}
+
+/** Extract meaningful labels from an array of objects */
+function formatArraySummary(arr: any[]): string {
+  if (arr.length === 0) return 'Brak';
+  if (typeof arr[0] !== 'object') return arr.join(', ');
+
+  const names = arr.map((item) => {
+    if (item.name) return item.name;
+    if (item.firstName && item.lastName) return `${item.firstName} ${item.lastName}`;
+    if (item.firstName) return item.firstName;
+    if (item.email) return item.email;
+    return '?';
+  });
+
+  if (names.length <= 3) return names.join(', ');
+  return `${names.slice(0, 3).join(', ')} (+${names.length - 3})`;
+}
+
 function formatValue(value: any, fieldName?: string): string {
-  if (value === null || value === undefined) return '\u2014';
+  if (value === null || value === undefined) return '—';
   if (value === true) return 'Tak';
   if (value === false) return 'Nie';
 
   const str = String(value);
 
-  // Status values
-  if (fieldName === 'status' && statusLabels[str]) return statusLabels[str];
+  // Status values — translate any field ending in Status or named status
+  if (statusLabels[str] && (fieldName === 'status' || fieldName === 'oldStatus' || fieldName === 'newStatus')) {
+    return statusLabels[str];
+  }
   if (fieldName === 'paymentMethod' && paymentMethodLabels[str]) return paymentMethodLabels[str];
   if (fieldName === 'clientType' && clientTypeLabels[str]) return clientTypeLabels[str];
   if (fieldName === 'discountType' && discountTypeLabels[str]) return discountTypeLabels[str];
   if (fieldName === 'priceType' && priceTypeLabels[str]) return priceTypeLabels[str];
 
   // Currency amounts (numeric fields with money-related names)
-  if (typeof value === 'number' && /amount|price|totalPrice|pricePerPerson|advanceAmount|basePrice|restoredPrice|discountAmount/.test(fieldName || '')) {
-    return `${value.toLocaleString('pl-PL')} z\u0142`;
+  if (typeof value === 'number' && /amount|price|totalPrice|pricePerPerson|advanceAmount|basePrice|restoredPrice|discountAmount|pricePerAdult|pricePerChild|extraHourRate/.test(fieldName || '')) {
+    return `${value.toLocaleString('pl-PL')} zł`;
   }
 
   // Percentage
@@ -288,17 +356,12 @@ function formatValue(value: any, fieldName?: string): string {
 
   // Arrays
   if (Array.isArray(value)) {
-    if (value.length === 0) return 'Brak';
-    // Array of objects (like contacts) — show count
-    if (typeof value[0] === 'object') return `${value.length} element\u00f3w`;
-    return value.join(', ');
+    return formatArraySummary(value);
   }
 
-  // Objects — short summary
+  // Objects — extract meaningful data
   if (typeof value === 'object') {
-    const keys = Object.keys(value);
-    if (keys.length === 0) return 'Brak danych';
-    return `Obiekt (${keys.length} p\u00f3l)`;
+    return formatObjectSummary(value);
   }
 
   return str;
@@ -313,7 +376,6 @@ function getFieldLabel(key: string): string {
 function isDiffFormat(changes: Record<string, any>): boolean {
   const keys = Object.keys(changes);
   if (keys.length === 0) return false;
-  // Check first few keys
   return keys.slice(0, 3).every(
     (k) => changes[k] && typeof changes[k] === 'object' && !Array.isArray(changes[k]) && ('old' in changes[k] || 'new' in changes[k])
   );
@@ -392,7 +454,7 @@ function DeletedDataCard({ data }: { data: Record<string, any> }) {
     <div className="rounded-xl border border-red-200 dark:border-red-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-800/50 flex items-center gap-2">
         <Trash2 className="h-3.5 w-3.5 text-red-500" />
-        <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider">Usuni\u0119te dane</span>
+        <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider">Usunięte dane</span>
       </div>
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
         {Object.entries(data).map(([key, value]) => (
@@ -409,10 +471,36 @@ function ToggleCard({ oldValue, newValue, fieldName }: { oldValue: any; newValue
     <div className="rounded-xl border border-teal-200 dark:border-teal-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-teal-50 dark:bg-teal-950/30 border-b border-teal-200 dark:border-teal-800/50 flex items-center gap-2">
         <ToggleLeft className="h-3.5 w-3.5 text-teal-500" />
-        <span className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wider">Zmiana warto\u015bci</span>
+        <span className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wider">Zmiana wartości</span>
       </div>
       <div className="p-4">
-        <DiffChangeRow fieldName={fieldName || 'warto\u015b\u0107'} oldVal={oldValue} newVal={newValue} />
+        <DiffChangeRow fieldName={fieldName || 'wartość'} oldVal={oldValue} newVal={newValue} />
+      </div>
+    </div>
+  );
+}
+
+/** Status change card (oldStatus → newStatus) */
+function StatusChangeCard({ oldStatus, newStatus }: { oldStatus?: string; newStatus?: string }) {
+  const oldLabel = oldStatus ? (statusLabels[oldStatus] || oldStatus) : '—';
+  const newLabel = newStatus ? (statusLabels[newStatus] || newStatus) : '—';
+
+  return (
+    <div className="rounded-xl border border-violet-200 dark:border-violet-800/50 overflow-hidden">
+      <div className="px-4 py-2.5 bg-violet-50 dark:bg-violet-950/30 border-b border-violet-200 dark:border-violet-800/50 flex items-center gap-2">
+        <RefreshCw className="h-3.5 w-3.5 text-violet-500" />
+        <span className="text-xs font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Zmiana statusu</span>
+      </div>
+      <div className="p-4">
+        <div className="flex items-center gap-3 justify-center">
+          <span className="inline-block px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-sm font-medium border border-red-100 dark:border-red-900/50">
+            {oldLabel}
+          </span>
+          <ArrowRight className="h-4 w-4 text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
+          <span className="inline-block px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-sm font-medium border border-emerald-100 dark:border-emerald-900/50">
+            {newLabel}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -426,7 +514,7 @@ function DiffChangesCard({ changes }: { changes: Record<string, { old: any; new:
       <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
         <Repeat className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
         <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-          Zmienione pola ({entries.length})
+          {'Zmienione pola (' + entries.length + ')'}
         </span>
       </div>
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -465,7 +553,7 @@ function DiscountCard({ details }: { details: Record<string, any> }) {
       <div className="px-4 py-2.5 bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800/50 flex items-center gap-2">
         <Percent className="h-3.5 w-3.5 text-purple-500" />
         <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
-          {isRemoved ? 'Usuni\u0119ty rabat' : 'Naliczony rabat'}
+          {isRemoved ? 'Usunięty rabat' : 'Naliczony rabat'}
         </span>
       </div>
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -496,7 +584,7 @@ function PaymentCard({ details }: { details: Record<string, any> }) {
     <div className="rounded-xl border border-green-200 dark:border-green-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-green-50 dark:bg-green-950/30 border-b border-green-200 dark:border-green-800/50 flex items-center gap-2">
         <CreditCard className="h-3.5 w-3.5 text-green-500" />
-        <span className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">Dane p\u0142atno\u015bci</span>
+        <span className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">Dane płatności</span>
       </div>
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
         {details.data?.amountPaid && <FlatChangeRow fieldName="amountPaid" value={details.data.amountPaid} />}
@@ -514,7 +602,7 @@ function ReorderCard({ orderedIds }: { orderedIds: string[] }) {
       <div className="px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/30 border-b border-indigo-200 dark:border-indigo-800/50 flex items-center gap-2">
         <ListOrdered className="h-3.5 w-3.5 text-indigo-500" />
         <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">
-          Nowa kolejno\u015b\u0107 ({orderedIds.length} element\u00f3w)
+          {'Nowa kolejność (' + orderedIds.length + ' elementów)'}
         </span>
       </div>
       <div className="p-4">
@@ -556,14 +644,21 @@ function DetailsVisualization({ details, action }: { details: Record<string, any
       <div key="reason" className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-800/30">
         <Tag className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
         <div>
-          <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-0.5">Pow\u00f3d</p>
+          <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-0.5">Powód</p>
           <p className="text-sm text-zinc-700 dark:text-zinc-200">{details.reason}</p>
         </div>
       </div>
     );
   }
 
-  // 3) Changes (diffObjects format: { field: {old, new} })
+  // 3) Status change (oldStatus/newStatus)
+  if (details.oldStatus || details.newStatus) {
+    cards.push(
+      <StatusChangeCard key="status-change" oldStatus={details.oldStatus} newStatus={details.newStatus} />
+    );
+  }
+
+  // 4) Changes (diffObjects format: { field: {old, new} })
   if (details.changes) {
     if (isDiffFormat(details.changes)) {
       cards.push(<DiffChangesCard key="diff-changes" changes={details.changes} />);
@@ -573,14 +668,14 @@ function DetailsVisualization({ details, action }: { details: Record<string, any
     }
   }
 
-  // 4) Toggle (oldValue/newValue at top level)
+  // 5) Toggle (oldValue/newValue at top level)
   if ('oldValue' in details || 'newValue' in details) {
     cards.push(
       <ToggleCard key="toggle" oldValue={details.oldValue} newValue={details.newValue} fieldName={details.fieldName} />
     );
   }
 
-  // 5) Created data
+  // 6) Created data
   if (details.data && (action.includes('CREATE') || action === 'DEPOSIT_CREATED' || action === 'MARK_PAID')) {
     if (action === 'MARK_PAID') {
       cards.push(<PaymentCard key="payment" details={details} />);
@@ -589,37 +684,38 @@ function DetailsVisualization({ details, action }: { details: Record<string, any
     }
   }
 
-  // 6) Deleted data
+  // 7) Deleted data
   if (details.deletedData) {
     cards.push(<DeletedDataCard key="deleted" data={details.deletedData} />);
   }
 
-  // 7) Discount
+  // 8) Discount
   if (details.discountType || details.removedDiscount) {
     cards.push(<DiscountCard key="discount" details={details} />);
   }
 
-  // 8) Reorder
+  // 9) Reorder
   if (details.orderedIds && Array.isArray(details.orderedIds)) {
     cards.push(<ReorderCard key="reorder" orderedIds={details.orderedIds} />);
   }
 
-  // 9) Duplicate source
+  // 10) Duplicate source
   if (details.sourceId) {
     cards.push(
       <div key="source" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-800/30">
         <Package className="h-3.5 w-3.5 text-indigo-500" />
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">\u0179r\u00f3d\u0142o:</span>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{'Źródło:'}</span>
         <span className="text-xs font-mono text-indigo-600 dark:text-indigo-300">{details.sourceId.slice(0, 12)}...</span>
       </div>
     );
   }
 
-  // 10) Fallback for any remaining unknown keys (excluding already rendered)
+  // 11) Fallback for any remaining unknown keys (excluding already rendered)
   const renderedKeys = new Set([
     'description', 'reason', 'changes', 'oldValue', 'newValue', 'fieldName',
     'data', 'deletedData', 'discountType', 'discountValue', 'discountAmount',
     'removedDiscount', 'restoredPrice', 'orderedIds', 'sourceId',
+    'oldStatus', 'newStatus',
   ]);
   const remainingEntries = Object.entries(details).filter(([k]) => !renderedKeys.has(k));
 
@@ -659,19 +755,12 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
       <DialogContent className="max-w-2xl !p-0 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Gradient Header */}
         <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-neutral-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-neutral-800 px-6 py-5 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="absolute top-3.5 right-3.5 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-200"
-            aria-label="Zamknij"
-          >
-            <X className="h-4 w-4" />
-          </button>
           <div className="flex items-center gap-3 pr-8">
             <div className="p-2.5 bg-white/15 rounded-xl backdrop-blur-sm">
               <FileText className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Szczeg\u00f3\u0142y wpisu</h2>
+              <h2 className="text-lg font-semibold text-white">{'Szczegóły wpisu'}</h2>
               <p className="text-sm text-white/60">
                 {format(new Date(log.createdAt), 'd MMMM yyyy, HH:mm:ss', { locale: pl })}
               </p>
@@ -703,7 +792,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
                 <User className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">U\u017cytkownik</p>
+                <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{'Użytkownik'}</p>
                 <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
                   {log.user?.firstName || 'System'} {log.user?.lastName || ''}
                 </p>
@@ -735,20 +824,20 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
                 <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
                   {entityLabels[log.entityType] || log.entityType}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
-                  ID: {log.entityId.slice(0, 8)}...
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono break-all">
+                  {'ID: '}{log.entityId}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Szczeg\u00f3\u0142y zmiany — Premium visualization */}
+          {/* Szczegóły zmiany — Premium visualization */}
           {log.details && (
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
               <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700">
                 <h4 className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-200">
                   <Hash className="h-4 w-4 text-zinc-400" />
-                  Szczeg\u00f3\u0142y zmiany
+                  {'Szczegóły zmiany'}
                 </h4>
               </div>
               <div className="p-4">
@@ -784,7 +873,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
                   </div>
                   <div className="flex items-center gap-2 min-w-0">
                     <Monitor className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
-                    <span className="text-xs text-zinc-500 flex-shrink-0">Przegl\u0105darka:</span>
+                    <span className="text-xs text-zinc-500 flex-shrink-0">{'Przeglądarka:'}</span>
                     <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300 truncate">
                       {log.userAgent ? log.userAgent.split(' ').slice(0, 3).join(' ') : 'Nieznana'}
                     </span>
@@ -793,7 +882,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
                 <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-dashed border-zinc-200 dark:border-zinc-700">
                   <Hash className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
                   <span className="text-xs text-zinc-500">ID wpisu:</span>
-                  <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300 select-all">{log.id}</span>
+                  <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300 select-all break-all">{log.id}</span>
                 </div>
 
                 {/* Raw JSON fallback — for developers */}
