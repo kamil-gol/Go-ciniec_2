@@ -210,6 +210,15 @@ export interface MenuSelectionInput {
   adults?: number;
   children?: number;
   toddlers?: number;
+
+  // #216: Category extras from DishSelector
+  categoryExtras?: Array<{
+    categoryId?: string;
+    packageCategorySettingsId: string;
+    extraQuantity: number;
+    pricePerItem: number;
+    portionTarget?: string;
+  }>;
 }
 
 export interface ReservationMenuSnapshot {
