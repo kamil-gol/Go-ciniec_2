@@ -37,7 +37,7 @@ jest.mock('../../../utils/logger', () => ({
 // Mock marked & document-template.service (transitive via auth → email.service)
 jest.mock('marked', () => ({
   marked: { parse: jest.fn().mockResolvedValue('<p>mocked</p>') },
-}));
+}), { virtual: true });
 jest.mock('../../../services/document-template.service', () => ({
   __esModule: true,
   default: { preview: jest.fn().mockRejectedValue(new Error('no template')) },

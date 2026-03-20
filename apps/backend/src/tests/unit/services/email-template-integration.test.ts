@@ -28,7 +28,7 @@ jest.mock('marked', () => ({
   marked: {
     parse: jest.fn().mockImplementation((md: string) => `<p>${md}</p>`),
   },
-}));
+}), { virtual: true });
 
 // Mock nodemailer
 jest.mock('nodemailer', () => ({

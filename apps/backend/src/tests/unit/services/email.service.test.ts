@@ -22,7 +22,7 @@ jest.mock('nodemailer', () => ({
 
 jest.mock('marked', () => ({
   marked: { parse: jest.fn().mockResolvedValue('<p>mocked</p>') },
-}));
+}), { virtual: true });
 
 jest.mock('../../../services/document-template.service', () => ({
   __esModule: true,
@@ -50,7 +50,7 @@ function loadService(env: Record<string, string> = {}) {
   }));
   jest.mock('marked', () => ({
     marked: { parse: jest.fn().mockResolvedValue('<p>mocked</p>') },
-  }));
+  }), { virtual: true });
   jest.mock('../../../services/document-template.service', () => ({
     __esModule: true,
     default: { preview: jest.fn().mockRejectedValue(new Error('no template')) },
