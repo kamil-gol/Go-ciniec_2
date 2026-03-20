@@ -167,8 +167,14 @@ class ReportsService {
       status,
     } = filters;
 
+    // Query by both date AND startDateTime (some reservations use one or the other)
+    const dateFromDT = new Date(`${dateFrom}T00:00:00`);
+    const dateToDT = new Date(`${dateTo}T23:59:59`);
     const whereClause: any = {
-      date: { gte: dateFrom, lte: dateTo },
+      OR: [
+        { date: { not: null, gte: dateFrom, lte: dateTo } },
+        { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
+      ],
       status: { not: 'CANCELLED' },
     };
 
@@ -187,6 +193,7 @@ class ReportsService {
           id: true,
           date: true,
           startTime: true,
+          startDateTime: true,
           totalPrice: true,
           status: true,
           guests: true,
@@ -336,12 +343,19 @@ class ReportsService {
 
     const prevFromStr = prevFrom.toISOString().split('T')[0];
     const prevToStr = prevTo.toISOString().split('T')[0];
+    const prevFromDT = new Date(`${prevFromStr}T00:00:00`);
+    const prevToDT = new Date(`${prevToStr}T23:59:59`);
 
+    // Build clean where without OR from parent (replace date range)
+    const { OR: _or, ...restWhere } = whereClause;
     const result = await prisma.reservation.aggregate({
       _sum: { totalPrice: true },
       where: {
-        ...whereClause,
-        date: { gte: prevFromStr, lte: prevToStr },
+        ...restWhere,
+        OR: [
+          { date: { not: null, gte: prevFromStr, lte: prevToStr } },
+          { startDateTime: { not: null, gte: prevFromDT, lte: prevToDT } },
+        ],
       },
     });
 
@@ -351,7 +365,7 @@ class ReportsService {
   private groupRevenueByDay(reservations: any[]): RevenueBreakdownItem[] {
     const grouped = new Map<string, { revenue: number; count: number }>();
     reservations.forEach(r => {
-      const period = r.date;
+      const period = getReservationDate(r);
       const existing = grouped.get(period) || { revenue: 0, count: 0 };
       grouped.set(period, {
         revenue: existing.revenue + Number(r.totalPrice || 0),
@@ -373,11 +387,13 @@ class ReportsService {
   ): RevenueBreakdownItem[] {
     const grouped = new Map<string, { revenue: number; count: number }>();
     reservations.forEach(r => {
-      const date = new Date(r.date);
+      const dateStr = getReservationDate(r);
+      if (!dateStr) return;
+      const date = new Date(dateStr);
       let period: string;
       switch (groupBy) {
         case 'day':
-          period = r.date;
+          period = dateStr;
           break;
         case 'week':
           const weekNum = this.getWeekNumber(date);
