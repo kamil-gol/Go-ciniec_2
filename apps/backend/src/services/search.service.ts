@@ -43,7 +43,7 @@ export class SearchService {
           { hall: { name: { contains: query, mode: 'insensitive' } } },
           { eventType: { name: { contains: query, mode: 'insensitive' } } },
         ],
-        isDeleted: false,
+        status: { notIn: ['CANCELLED', 'ARCHIVED'] },
       },
       include: {
         client: {

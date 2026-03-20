@@ -64,7 +64,7 @@ describe('SearchService', () => {
       );
     });
 
-    it('should filter reservations by isDeleted=false', async () => {
+    it('should exclude CANCELLED and ARCHIVED reservations', async () => {
       db.reservation.findMany.mockResolvedValue([]);
       db.client.findMany.mockResolvedValue([]);
       db.hall.findMany.mockResolvedValue([]);
@@ -73,7 +73,9 @@ describe('SearchService', () => {
 
       expect(db.reservation.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ isDeleted: false }),
+          where: expect.objectContaining({
+            status: { notIn: ['CANCELLED', 'ARCHIVED'] },
+          }),
         })
       );
     });
