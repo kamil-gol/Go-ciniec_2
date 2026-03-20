@@ -63,7 +63,7 @@ export class SearchService {
         },
       },
       take: limit,
-      orderBy: { date: 'desc' },
+      orderBy: [{ startDateTime: 'desc' }, { date: 'desc' }],
     });
   }
 

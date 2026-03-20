@@ -110,11 +110,18 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                         ? r.client.companyName
                         : `${r.client.firstName} ${r.client.lastName}`
                       : 'Brak klienta'
-                    const dateStr = new Date(r.date).toLocaleDateString('pl-PL', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })
+                    const dateObj = r.startDateTime
+                      ? new Date(r.startDateTime)
+                      : r.date
+                        ? new Date(r.date + 'T00:00:00')
+                        : null
+                    const dateStr = dateObj
+                      ? dateObj.toLocaleDateString('pl-PL', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : null
                     const status = statusLabels[r.status] || r.status
 
                     return (
@@ -133,9 +140,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                             </span>
                           </div>
                           <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                            {dateStr}
-                            {r.hall && ` • ${r.hall.name}`}
-                            {r.eventType && ` • ${r.eventType.name}`}
+                            {[dateStr, r.hall?.name, r.eventType?.name].filter(Boolean).join(' • ')}
                           </div>
                         </div>
                       </CommandItem>

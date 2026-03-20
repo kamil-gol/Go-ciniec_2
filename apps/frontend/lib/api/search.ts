@@ -3,7 +3,7 @@ import { apiClient } from '../api-client'
 export interface SearchResult {
   reservations: Array<{
     id: string
-    date: string
+    date: string | null
     status: string
     startDateTime: string | null
     endDateTime: string | null
