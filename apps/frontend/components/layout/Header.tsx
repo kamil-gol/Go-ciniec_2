@@ -40,13 +40,16 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 function getNotificationLink(notif: Notification): string | null {
-  if (!notif.entityType || !notif.entityId) return null
-  switch (notif.entityType) {
-    case 'RESERVATION':
-      return `/dashboard/reservations/${notif.entityId}`
-    case 'DEPOSIT':
+  if (!notif.entityType) return null
+  const type = notif.entityType.toLowerCase()
+  switch (type) {
+    case 'reservation':
+      return notif.entityId
+        ? `/dashboard/reservations/${notif.entityId}`
+        : '/dashboard/reservations'
+    case 'deposit':
       return '/dashboard/deposits'
-    case 'QUEUE':
+    case 'queue':
       return '/dashboard/queue'
     default:
       return null
