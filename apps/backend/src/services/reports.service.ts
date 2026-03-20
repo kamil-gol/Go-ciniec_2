@@ -485,8 +485,14 @@ class ReportsService {
   async getOccupancyReport(filters: OccupancyReportFilters): Promise<OccupancyReport> {
     const { dateFrom, dateTo, hallId } = filters;
 
+    // Query by both date AND startDateTime
+    const dateFromDT = new Date(`${dateFrom}T00:00:00`);
+    const dateToDT = new Date(`${dateTo}T23:59:59`);
     const whereClause: any = {
-      date: { gte: dateFrom, lte: dateTo },
+      OR: [
+        { date: { not: null, gte: dateFrom, lte: dateTo } },
+        { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
+      ],
       status: { not: 'CANCELLED' },
     };
 
@@ -498,6 +504,7 @@ class ReportsService {
         id: true,
         date: true,
         startTime: true,
+        startDateTime: true,
         guests: true,
         hall: { select: { id: true, name: true, capacity: true, allowMultipleBookings: true } },
       },
@@ -508,7 +515,7 @@ class ReportsService {
     const to = new Date(dateTo);
     const totalDaysInPeriod = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const uniqueDates = new Set(reservations.map(r => r.date));
+    const uniqueDates = new Set(reservations.map(r => getReservationDate(r)));
     const daysWithReservations = uniqueDates.size;
 
     const avgOccupancy = totalDaysInPeriod > 0
@@ -548,7 +555,9 @@ class ReportsService {
   private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
     const counts = new Map<number, number>();
     reservations.forEach(r => {
-      const date = new Date(r.date);
+      const dateStr = getReservationDate(r);
+      if (!dateStr) return;
+      const date = new Date(dateStr);
       const dayOfWeek = date.getDay();
       counts.set(dayOfWeek, (counts.get(dayOfWeek) || 0) + 1);
     });
@@ -564,8 +573,9 @@ class ReportsService {
   private analyzePeakHours(reservations: any[]): PeakHourItem[] {
     const counts = new Map<number, number>();
     reservations.forEach(r => {
-      if (!r.startTime) return;
-      const hour = parseInt(r.startTime.split(':')[0], 10);
+      const timeStr = r.startTime || extractTimeFromDateTime(r.startDateTime);
+      if (!timeStr) return;
+      const hour = parseInt(timeStr.split(':')[0], 10);
       if (isNaN(hour)) return;
       counts.set(hour, (counts.get(hour) || 0) + 1);
     });
@@ -598,11 +608,12 @@ class ReportsService {
         totalGuests: 0,
         guestsPerDate: new Map<string, number>(),
       };
-      existing.dates.add(r.date);
+      const dateStr = getReservationDate(r);
+      existing.dates.add(dateStr);
       existing.reservations += 1;
       existing.totalGuests += r.guests || 0;
-      const currentDateGuests = existing.guestsPerDate.get(r.date) || 0;
-      existing.guestsPerDate.set(r.date, currentDateGuests + (r.guests || 0));
+      const currentDateGuests = existing.guestsPerDate.get(dateStr) || 0;
+      existing.guestsPerDate.set(dateStr, currentDateGuests + (r.guests || 0));
       hallData.set(r.hall.id, existing);
     });
     return Array.from(hallData.entries())
