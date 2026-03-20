@@ -19,8 +19,10 @@
  */
 
 import nodemailer from 'nodemailer';
+import { marked } from 'marked';
 import logger from '@utils/logger';
 import companySettingsService from './company-settings.service';
+import documentTemplateService from './document-template.service';
 
 // ═══════════════════════════════════════════
 // Types
@@ -122,6 +124,30 @@ async function getCompanyInfo(): Promise<CompanyInfo> {
       name: 'Gościniec',
       footerText: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
     };
+  }
+}
+
+// ═══════════════════════════════════════════
+// Template Rendering
+// ═══════════════════════════════════════════
+
+/**
+ * Try to render email body from DocumentTemplate (DB-editable).
+ * Falls back to hardcoded HTML if template not found.
+ */
+async function renderEmailTemplate(
+  slug: string,
+  variables: Record<string, string>,
+  fallbackHtml: string
+): Promise<string> {
+  try {
+    const result = await documentTemplateService.preview(slug, variables);
+    // Remove unfilled optional variables (e.g. empty sections)
+    const cleaned = result.content.replace(/\{\{\w+\}\}/g, '');
+    return await marked.parse(cleaned);
+  } catch {
+    logger.debug(`[Email] Template "${slug}" not found in DB, using fallback`);
+    return fallbackHtml;
   }
 }
 
@@ -243,110 +269,62 @@ const emailService = {
     const company = await getCompanyInfo();
     const subject = `✅ Potwierdzenie rezerwacji: ${data.eventType} — ${data.reservationDate}`;
 
-    // Build extras section HTML
-    let extrasHtml = '';
+    // Pre-build dynamic sections for template variables
+    const menuSection = data.menuPackageName ? `- **Menu:** ${data.menuPackageName}` : '';
+    const surchargeSection = data.venueSurcharge
+      ? `- **Dopłata za obiekt:** ${data.venueSurcharge} zł (${data.venueSurchargeLabel || 'Dopłata za cały obiekt'})`
+      : '';
+    const depositSection = data.depositAmount && data.depositDueDate
+      ? `- **Zaliczka:** ${data.depositAmount} zł do ${data.depositDueDate}`
+      : '';
+    const notesSection = data.notes ? `\n**Uwagi:** ${data.notes}` : '';
+
+    let extrasSection = '';
     if (data.extras && data.extras.length > 0) {
-      // #139: Added PER_UNIT label
-      const priceTypeLabels: Record<string, string> = {
-        FLAT: 'ryczałt',
-        PER_PERSON: 'za osobę',
-        PER_UNIT: 'za sztukę',
-        FREE: 'gratis',
-      };
-
-      const extrasRows = data.extras.map(e => `
-        <tr>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;">${e.name}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;color:#6b7280;font-size:13px;">${e.categoryName}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;">${formatExtraPriceCell(e)}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;font-size:13px;color:#6b7280;">${priceTypeLabels[e.priceType] || e.priceType}${e.note ? ` · ${e.note}` : ''}</td>
-        </tr>
-      `).join('');
-
-      extrasHtml = `
-        <h3 style="margin:28px 0 12px;color:#7c3aed;font-size:16px;">🎁 Usługi dodatkowe</h3>
-        <table style="width:100%;border-collapse:collapse;margin:0 0 12px;">
-          <thead>
-            <tr style="background:#f5f3ff;">
-              <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Usługa</th>
-              <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Kategoria</th>
-              <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;font-weight:600;color:#7c3aed;">Cena</th>
-              <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Info</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${extrasRows}
-          </tbody>
-        </table>
-        ${data.extrasTotalPrice ? `<p style="text-align:right;font-weight:600;color:#7c3aed;">Razem usługi dodatkowe: ${data.extrasTotalPrice} zł</p>` : ''}
-      `;
+      const extrasList = data.extras.map(e => `  - ${e.name} (${e.categoryName}): ${e.totalPrice} zł`).join('\n');
+      extrasSection = `\n**Usługi dodatkowe:**\n${extrasList}`;
+      if (data.extrasTotalPrice) {
+        extrasSection += `\n  - **Razem extras:** ${data.extrasTotalPrice} zł`;
+      }
     }
 
-    // Build deposit section
-    let depositHtml = '';
-    if (data.depositAmount && data.depositDueDate) {
-      depositHtml = `
-        <tr>
-          <td style="padding:10px 16px;background:#fef3c7;border:1px solid #fde68a;font-weight:600;color:#d97706;">Zaliczka</td>
-          <td style="padding:10px 16px;border:1px solid #fde68a;"><strong>${data.depositAmount} zł</strong> do ${data.depositDueDate}</td>
-        </tr>
-      `;
-    }
+    const vars: Record<string, string> = {
+      clientName: data.clientName,
+      eventType: data.eventType,
+      eventDate: data.reservationDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      hallName: data.hallName,
+      guestCount: String(data.guestCount),
+      adults: String(data.adults),
+      children: String(data.children),
+      toddlers: String(data.toddlers),
+      totalPrice: data.totalPrice,
+      menuSection,
+      extrasSection,
+      surchargeSection,
+      depositSection,
+      notesSection,
+      companyName: company.name,
+      companyPhone: '',
+      companyEmail: '',
+    };
+
+    // Try to get company contact info
+    try {
+      const settings = await companySettingsService.getSettings();
+      vars.companyPhone = settings.phone || '';
+      vars.companyEmail = settings.email || '';
+    } catch { /* fallback to empty */ }
+
+    const fallbackBody = this.buildReservationConfirmationFallback(data, company.name);
+    const body = await renderEmailTemplate('email-reservation-confirmation', vars, fallbackBody);
 
     const html = buildHtmlTemplate({
       title: 'Potwierdzenie rezerwacji',
       preheader: `Rezerwacja ${data.eventType} — ${data.reservationDate} potwierdzona`,
       companyName: company.name,
-      body: `
-        <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
-        <p>Potwierdzamy przyjęcie rezerwacji:</p>
-        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-          <tr>
-            <td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Wydarzenie</td>
-            <td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong>${data.eventType}</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Data</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.reservationDate}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Godziny</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.startTime} — ${data.endTime}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Goście</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.guestCount} (dorośli: ${data.adults}, dzieci: ${data.children}, maluchy: ${data.toddlers})</td>
-          </tr>
-          ${data.menuPackageName ? `
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Menu</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.menuPackageName}</td>
-          </tr>
-          ` : ''}
-          ${data.venueSurcharge ? `
-          <tr>
-            <td style="padding:10px 16px;background:#fff7ed;border:1px solid #fed7aa;font-weight:600;color:#ea580c;">Dopłata za obiekt</td>
-            <td style="padding:10px 16px;border:1px solid #fed7aa;"><strong style="color:#ea580c;">${data.venueSurcharge} zł</strong> <span style="font-size:13px;color:#6b7280;">(${data.venueSurchargeLabel || 'Dopłata za cały obiekt'})</span></td>
-          </tr>
-          ` : ''}
-          <tr>
-            <td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Kwota</td>
-            <td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.totalPrice} zł</strong>${data.extrasTotalPrice ? ` <span style="color:#7c3aed;font-size:13px;">(w tym extras: ${data.extrasTotalPrice} zł)</span>` : ''}${data.venueSurcharge ? ` <span style="color:#ea580c;font-size:13px;">(w tym dopłata: ${data.venueSurcharge} zł)</span>` : ''}</td>
-          </tr>
-          ${depositHtml}
-        </table>
-
-        ${extrasHtml}
-
-        ${data.notes ? `<p style="margin-top:16px;padding:12px 16px;background:#f9fafb;border-left:4px solid #e5e7eb;color:#6b7280;font-size:14px;"><strong>Uwagi:</strong> ${data.notes}</p>` : ''}
-
-        <p>W razie pytań lub zmian prosimy o kontakt.</p>
-        ${pdfBuffer ? '<p>Szczegóły rezerwacji w załączniku PDF.</p>' : ''}
-      `,
+      body,
       footer: company.footerText,
     });
 
@@ -359,6 +337,55 @@ const emailService = {
     return this.send({ to, subject, html, attachments });
   },
 
+  /** Fallback HTML for reservation confirmation (original hardcoded version) */
+  buildReservationConfirmationFallback(data: ReservationConfirmationData, companyName: string): string {
+    const priceTypeLabels: Record<string, string> = { FLAT: 'ryczałt', PER_PERSON: 'za osobę', PER_UNIT: 'za sztukę', FREE: 'gratis' };
+
+    let extrasHtml = '';
+    if (data.extras && data.extras.length > 0) {
+      const extrasRows = data.extras.map(e => `
+        <tr>
+          <td style="padding:8px 12px;border:1px solid #e9ecef;">${e.name}</td>
+          <td style="padding:8px 12px;border:1px solid #e9ecef;color:#6b7280;font-size:13px;">${e.categoryName}</td>
+          <td style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;">${formatExtraPriceCell(e)}</td>
+          <td style="padding:8px 12px;border:1px solid #e9ecef;font-size:13px;color:#6b7280;">${priceTypeLabels[e.priceType] || e.priceType}${e.note ? ` · ${e.note}` : ''}</td>
+        </tr>
+      `).join('');
+      extrasHtml = `<h3 style="margin:28px 0 12px;color:#7c3aed;font-size:16px;">🎁 Usługi dodatkowe</h3>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 12px;"><thead><tr style="background:#f5f3ff;">
+          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Usługa</th>
+          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Kategoria</th>
+          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;font-weight:600;color:#7c3aed;">Cena</th>
+          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Info</th>
+        </tr></thead><tbody>${extrasRows}</tbody></table>
+        ${data.extrasTotalPrice ? `<p style="text-align:right;font-weight:600;color:#7c3aed;">Razem usługi dodatkowe: ${data.extrasTotalPrice} zł</p>` : ''}`;
+    }
+
+    let depositHtml = '';
+    if (data.depositAmount && data.depositDueDate) {
+      depositHtml = `<tr><td style="padding:10px 16px;background:#fef3c7;border:1px solid #fde68a;font-weight:600;color:#d97706;">Zaliczka</td>
+        <td style="padding:10px 16px;border:1px solid #fde68a;"><strong>${data.depositAmount} zł</strong> do ${data.depositDueDate}</td></tr>`;
+    }
+
+    return `
+      <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
+      <p>Potwierdzamy przyjęcie rezerwacji:</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Wydarzenie</td><td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong>${data.eventType}</strong></td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Data</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.reservationDate}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Godziny</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.startTime} — ${data.endTime}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Goście</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.guestCount} (dorośli: ${data.adults}, dzieci: ${data.children}, maluchy: ${data.toddlers})</td></tr>
+        ${data.menuPackageName ? `<tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Menu</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.menuPackageName}</td></tr>` : ''}
+        ${data.venueSurcharge ? `<tr><td style="padding:10px 16px;background:#fff7ed;border:1px solid #fed7aa;font-weight:600;color:#ea580c;">Dopłata za obiekt</td><td style="padding:10px 16px;border:1px solid #fed7aa;"><strong style="color:#ea580c;">${data.venueSurcharge} zł</strong></td></tr>` : ''}
+        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Kwota</td><td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.totalPrice} zł</strong></td></tr>
+        ${depositHtml}
+      </table>
+      ${extrasHtml}
+      ${data.notes ? `<p style="margin-top:16px;padding:12px 16px;background:#f9fafb;border-left:4px solid #e5e7eb;color:#6b7280;font-size:14px;"><strong>Uwagi:</strong> ${data.notes}</p>` : ''}
+      <p>W razie pytań lub zmian prosimy o kontakt.</p>`;
+  },
+
   /**
    * Send deposit upcoming reminder (X days before due)
    */
@@ -366,37 +393,37 @@ const emailService = {
     const company = await getCompanyInfo();
     const subject = `Przypomnienie: zaliczka ${data.depositAmount} zł — termin za ${data.daysLeft} dni`;
 
+    const vars: Record<string, string> = {
+      clientName: data.clientName,
+      depositAmount: data.depositAmount,
+      dueDate: data.dueDate,
+      daysLeft: String(data.daysLeft),
+      reservationDate: data.reservationDate,
+      hallName: data.hallName,
+      eventType: data.eventType,
+      guestCount: String(data.guestCount),
+      companyName: company.name,
+    };
+
+    const fallbackBody = `
+      <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
+      <p>Przypominamy o zbliżającym się terminie płatności zaliczki:</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Kwota</td><td style="padding:10px 16px;border:1px solid #e9ecef;"><strong style="color:#e11d48;font-size:18px;">${data.depositAmount} zł</strong></td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Termin płatności</td><td style="padding:10px 16px;border:1px solid #e9ecef;"><strong>${data.dueDate}</strong> (za ${data.daysLeft} dni)</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Rezerwacja</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.eventType} — ${data.reservationDate}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Liczba gości</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.guestCount}</td></tr>
+      </table>
+      <p>Prosimy o terminowe uregulowanie płatności. W razie pytań prosimy o kontakt.</p>`;
+
+    const body = await renderEmailTemplate('email-deposit-reminder', vars, fallbackBody);
+
     const html = buildHtmlTemplate({
       title: 'Przypomnienie o zaliczce',
       preheader: `Termin płatności za ${data.daysLeft} dni`,
       companyName: company.name,
-      body: `
-        <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
-        <p>Przypominamy o zbliżającym się terminie płatności zaliczki:</p>
-        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Kwota</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;"><strong style="color:#e11d48;font-size:18px;">${data.depositAmount} zł</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Termin płatności</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;"><strong>${data.dueDate}</strong> (za ${data.daysLeft} dni)</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Rezerwacja</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.eventType} — ${data.reservationDate}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Liczba gości</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.guestCount}</td>
-          </tr>
-        </table>
-        <p>Prosimy o terminowe uregulowanie płatności. W razie pytań prosimy o kontakt.</p>
-      `,
+      body,
       footer: company.footerText,
     });
 
@@ -410,34 +437,36 @@ const emailService = {
     const company = await getCompanyInfo();
     const subject = `⚠️ Zaległa zaliczka: ${data.depositAmount} zł — termin minął ${data.daysOverdue} dni temu`;
 
+    const vars: Record<string, string> = {
+      clientName: data.clientName,
+      depositAmount: data.depositAmount,
+      dueDate: data.dueDate,
+      daysOverdue: String(data.daysOverdue),
+      reservationDate: data.reservationDate,
+      hallName: data.hallName,
+      eventType: data.eventType,
+      companyName: company.name,
+    };
+
+    const fallbackBody = `
+      <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
+      <p style="color:#dc2626;">Termin płatności zaliczki już minął. Prosimy o jak najszybsze uregulowanie należności:</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+        <tr><td style="padding:10px 16px;background:#fef2f2;border:1px solid #fecaca;font-weight:600;color:#dc2626;">Kwota</td><td style="padding:10px 16px;border:1px solid #fecaca;"><strong style="color:#dc2626;font-size:18px;">${data.depositAmount} zł</strong></td></tr>
+        <tr><td style="padding:10px 16px;background:#fef2f2;border:1px solid #fecaca;font-weight:600;color:#dc2626;">Termin płatności</td><td style="padding:10px 16px;border:1px solid #fecaca;"><strong>${data.dueDate}</strong> (${data.daysOverdue} dni temu)</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Rezerwacja</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.eventType} — ${data.reservationDate}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td></tr>
+      </table>
+      <p>W przypadku braku wpłaty zastrzegamy sobie prawo do anulowania rezerwacji.</p>
+      <p>Jeśli płatność została już dokonana, prosimy o informację — zaktualizujemy status w systemie.</p>`;
+
+    const body = await renderEmailTemplate('email-deposit-overdue', vars, fallbackBody);
+
     const html = buildHtmlTemplate({
       title: 'Zaległa zaliczka — prosimy o kontakt',
       preheader: `Termin płatności minął ${data.daysOverdue} dni temu`,
       companyName: company.name,
-      body: `
-        <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
-        <p style="color:#dc2626;">Termin płatności zaliczki już minął. Prosimy o jak najszybsze uregulowanie należności:</p>
-        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-          <tr>
-            <td style="padding:10px 16px;background:#fef2f2;border:1px solid #fecaca;font-weight:600;color:#dc2626;">Kwota</td>
-            <td style="padding:10px 16px;border:1px solid #fecaca;"><strong style="color:#dc2626;font-size:18px;">${data.depositAmount} zł</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#fef2f2;border:1px solid #fecaca;font-weight:600;color:#dc2626;">Termin płatności</td>
-            <td style="padding:10px 16px;border:1px solid #fecaca;"><strong>${data.dueDate}</strong> (${data.daysOverdue} dni temu)</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Rezerwacja</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.eventType} — ${data.reservationDate}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td>
-          </tr>
-        </table>
-        <p>W przypadku braku wpłaty zastrzegamy sobie prawo do anulowania rezerwacji.</p>
-        <p>Jeśli płatność została już dokonana, prosimy o informację — zaktualizujemy status w systemie.</p>
-      `,
+      body,
       footer: company.footerText,
     });
 
@@ -466,37 +495,36 @@ const emailService = {
       CARD: 'Karta płatnicza',
     };
 
+    const vars: Record<string, string> = {
+      clientName: data.clientName,
+      depositAmount: data.depositAmount,
+      paidAt: data.paidAt,
+      paymentMethod: methodLabels[data.paymentMethod] || data.paymentMethod,
+      reservationDate: data.reservationDate,
+      hallName: data.hallName,
+      eventType: data.eventType,
+      companyName: company.name,
+    };
+
+    const fallbackBody = `
+      <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
+      <p style="color:#16a34a;">Potwierdzamy otrzymanie wpłaty zaliczki:</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Kwota</td><td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.depositAmount} zł</strong></td></tr>
+        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Data wpłaty</td><td style="padding:10px 16px;border:1px solid #bbf7d0;">${data.paidAt}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Metoda</td><td style="padding:10px 16px;border:1px solid #bbf7d0;">${methodLabels[data.paymentMethod] || data.paymentMethod}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Rezerwacja</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.eventType} — ${data.reservationDate}</td></tr>
+        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td></tr>
+      </table>
+      <p>Dziękujemy za wpłatę! ${pdfBuffer ? 'Potwierdzenie w załączniku PDF.' : ''}</p>`;
+
+    const body = await renderEmailTemplate('email-deposit-paid', vars, fallbackBody);
+
     const html = buildHtmlTemplate({
       title: 'Potwierdzenie wpłaty zaliczki',
       preheader: `Zaliczka ${data.depositAmount} zł została zaksięgowana`,
       companyName: company.name,
-      body: `
-        <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
-        <p style="color:#16a34a;">Potwierdzamy otrzymanie wpłaty zaliczki:</p>
-        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-          <tr>
-            <td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Kwota</td>
-            <td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.depositAmount} zł</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Data wpłaty</td>
-            <td style="padding:10px 16px;border:1px solid #bbf7d0;">${data.paidAt}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Metoda</td>
-            <td style="padding:10px 16px;border:1px solid #bbf7d0;">${methodLabels[data.paymentMethod] || data.paymentMethod}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Rezerwacja</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.eventType} — ${data.reservationDate}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td>
-            <td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td>
-          </tr>
-        </table>
-        <p>Dziękujemy za wpłatę! ${pdfBuffer ? 'Potwierdzenie w załączniku PDF.' : ''}</p>
-      `,
+      body,
       footer: company.footerText,
     });
 
@@ -516,24 +544,34 @@ const emailService = {
     const company = await getCompanyInfo();
     const subject = `🔑 Resetowanie hasła — ${company.name}`;
 
+    const vars: Record<string, string> = {
+      firstName: data.firstName,
+      resetUrl: data.resetUrl,
+      expiresInMinutes: String(data.expiresInMinutes),
+      companyName: company.name,
+    };
+
+    const fallbackBody = `
+      <p>Dzień dobry, <strong>${data.firstName}</strong>,</p>
+      <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta.</p>
+      <p>Kliknij poniższy przycisk, aby ustawić nowe hasło:</p>
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${data.resetUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;font-weight:600;font-size:16px;text-decoration:none;border-radius:10px;box-shadow:0 4px 12px rgba(124,58,237,0.3);">
+          Ustaw nowe hasło
+        </a>
+      </div>
+      <p style="color:#6b7280;font-size:14px;">Link jest ważny przez <strong>${data.expiresInMinutes} minut</strong>. Po tym czasie konieczne będzie wygenerowanie nowego.</p>
+      <p style="color:#6b7280;font-size:14px;">Jeśli nie prosiłeś o zmianę hasła, zignoruj tę wiadomość — Twoje konto pozostanie bezpieczne.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+      <p style="color:#9ca3af;font-size:12px;">Jeśli przycisk nie działa, skopiuj i wklej ten link w przeglądarkę:<br /><a href="${data.resetUrl}" style="color:#7c3aed;word-break:break-all;">${data.resetUrl}</a></p>`;
+
+    const body = await renderEmailTemplate('email-password-reset', vars, fallbackBody);
+
     const html = buildHtmlTemplate({
       title: 'Resetowanie hasła',
       preheader: 'Kliknij link aby ustawić nowe hasło',
       companyName: company.name,
-      body: `
-        <p>Dzień dobry, <strong>${data.firstName}</strong>,</p>
-        <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta.</p>
-        <p>Kliknij poniższy przycisk, aby ustawić nowe hasło:</p>
-        <div style="text-align:center;margin:32px 0;">
-          <a href="${data.resetUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;font-weight:600;font-size:16px;text-decoration:none;border-radius:10px;box-shadow:0 4px 12px rgba(124,58,237,0.3);">
-            Ustaw nowe hasło
-          </a>
-        </div>
-        <p style="color:#6b7280;font-size:14px;">Link jest ważny przez <strong>${data.expiresInMinutes} minut</strong>. Po tym czasie konieczne będzie wygenerowanie nowego.</p>
-        <p style="color:#6b7280;font-size:14px;">Jeśli nie prosiłeś o zmianę hasła, zignoruj tę wiadomość — Twoje konto pozostanie bezpieczne.</p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
-        <p style="color:#9ca3af;font-size:12px;">Jeśli przycisk nie działa, skopiuj i wklej ten link w przeglądarkę:<br /><a href="${data.resetUrl}" style="color:#7c3aed;word-break:break-all;">${data.resetUrl}</a></p>
-      `,
+      body,
       footer: company.footerText,
     });
 

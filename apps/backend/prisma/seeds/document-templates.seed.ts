@@ -182,34 +182,140 @@ Kwota cateringu jest wliczona w całkowitą wartość rezerwacji ({{totalPrice}}
     name: 'Email: Potwierdzenie rezerwacji',
     description: 'Treść emaila wysyłanego do klienta po utworzeniu rezerwacji',
     category: 'EMAIL',
-    content: `Szanowny/a **{{clientName}}**,
+    content: `Dzień dobry, **{{clientName}}**,
 
-Dziękujemy za dokonanie rezerwacji w **{{companyName}}**!
+Potwierdzamy przyjęcie rezerwacji:
 
 ### Szczegóły rezerwacji
-- **Typ wydarzenia:** {{eventType}}
-- **Data:** {{eventDate}}, godz. {{eventTime}}
+- **Wydarzenie:** {{eventType}}
+- **Data:** {{eventDate}}
+- **Godziny:** {{startTime}} — {{endTime}}
 - **Sala:** {{hallName}}
-- **Liczba gości:** {{guestCount}}
-- **Kwota:** {{totalPrice}} zł
+- **Goście:** {{guestCount}} (dorośli: {{adults}}, dzieci: {{children}}, maluchy: {{toddlers}})
+{{menuSection}}
+{{extrasSection}}
+{{surchargeSection}}
+- **Kwota całkowita:** {{totalPrice}} zł
+{{depositSection}}
+{{notesSection}}
 
-### Kolejne kroki
-1. Prosimy o wpłatę zaliczki **{{depositAmount}} zł** do **{{depositDueDate}}**.
-2. Po zaksięgowaniu wpłaty otrzymają Państwo potwierdzenie mailowe.
-3. Ostateczne szczegóły (menu, dekoracje) ustalamy nie później niż 14 dni przed wydarzeniem.
-
-W razie pytań prosimy o kontakt:
+W razie pytań lub zmian prosimy o kontakt:
 📞 {{companyPhone}} | ✉️ {{companyEmail}}
 
 Z poważaniem,
 Zespół {{companyName}}`,
     availableVars: [
-      'clientName', 'companyName', 'eventType', 'eventDate', 'eventTime',
-      'hallName', 'guestCount', 'totalPrice', 'depositAmount',
-      'depositDueDate', 'companyPhone', 'companyEmail',
+      'clientName', 'companyName', 'eventType', 'eventDate', 'startTime', 'endTime',
+      'hallName', 'guestCount', 'adults', 'children', 'toddlers', 'totalPrice',
+      'menuSection', 'extrasSection', 'surchargeSection', 'depositSection', 'notesSection',
+      'companyPhone', 'companyEmail',
     ],
     isRequired: true,
     displayOrder: 7,
+  },
+  {
+    slug: 'email-deposit-reminder',
+    name: 'Email: Przypomnienie o zaliczce',
+    description: 'Przypomnienie o zbliżającym się terminie płatności zaliczki',
+    category: 'EMAIL',
+    content: `Dzień dobry, **{{clientName}}**,
+
+Przypominamy o zbliżającym się terminie płatności zaliczki:
+
+- **Kwota:** {{depositAmount}} zł
+- **Termin płatności:** {{dueDate}} (za {{daysLeft}} dni)
+- **Rezerwacja:** {{eventType}} — {{reservationDate}}
+- **Sala:** {{hallName}}
+- **Liczba gości:** {{guestCount}}
+
+Prosimy o terminowe uregulowanie płatności. W razie pytań prosimy o kontakt.
+
+Z poważaniem,
+Zespół {{companyName}}`,
+    availableVars: [
+      'clientName', 'depositAmount', 'dueDate', 'daysLeft',
+      'reservationDate', 'hallName', 'eventType', 'guestCount', 'companyName',
+    ],
+    isRequired: true,
+    displayOrder: 11,
+  },
+  {
+    slug: 'email-deposit-overdue',
+    name: 'Email: Zaległa zaliczka',
+    description: 'Powiadomienie o przekroczonym terminie płatności zaliczki',
+    category: 'EMAIL',
+    content: `Dzień dobry, **{{clientName}}**,
+
+Termin płatności zaliczki już minął. Prosimy o jak najszybsze uregulowanie należności:
+
+- **Kwota:** {{depositAmount}} zł
+- **Termin płatności:** {{dueDate}} ({{daysOverdue}} dni temu)
+- **Rezerwacja:** {{eventType}} — {{reservationDate}}
+- **Sala:** {{hallName}}
+
+W przypadku braku wpłaty zastrzegamy sobie prawo do anulowania rezerwacji.
+
+Jeśli płatność została już dokonana, prosimy o informację — zaktualizujemy status w systemie.
+
+Z poważaniem,
+Zespół {{companyName}}`,
+    availableVars: [
+      'clientName', 'depositAmount', 'dueDate', 'daysOverdue',
+      'reservationDate', 'hallName', 'eventType', 'companyName',
+    ],
+    isRequired: true,
+    displayOrder: 12,
+  },
+  {
+    slug: 'email-deposit-paid',
+    name: 'Email: Potwierdzenie wpłaty zaliczki',
+    description: 'Potwierdzenie otrzymania wpłaty zaliczki',
+    category: 'EMAIL',
+    content: `Dzień dobry, **{{clientName}}**,
+
+Potwierdzamy otrzymanie wpłaty zaliczki:
+
+- **Kwota:** {{depositAmount}} zł
+- **Data wpłaty:** {{paidAt}}
+- **Metoda:** {{paymentMethod}}
+- **Rezerwacja:** {{eventType}} — {{reservationDate}}
+- **Sala:** {{hallName}}
+
+Dziękujemy za wpłatę!
+
+Z poważaniem,
+Zespół {{companyName}}`,
+    availableVars: [
+      'clientName', 'depositAmount', 'paidAt', 'paymentMethod',
+      'reservationDate', 'hallName', 'eventType', 'companyName',
+    ],
+    isRequired: true,
+    displayOrder: 13,
+  },
+  {
+    slug: 'email-password-reset',
+    name: 'Email: Reset hasła',
+    description: 'Email z linkiem do resetowania hasła',
+    category: 'EMAIL',
+    content: `Dzień dobry, **{{firstName}}**,
+
+Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta.
+
+Kliknij poniższy link, aby ustawić nowe hasło:
+
+[Ustaw nowe hasło]({{resetUrl}})
+
+Link jest ważny przez **{{expiresInMinutes}} minut**. Po tym czasie konieczne będzie wygenerowanie nowego.
+
+Jeśli nie prosiłeś o zmianę hasła, zignoruj tę wiadomość — Twoje konto pozostanie bezpieczne.
+
+Z poważaniem,
+Zespół {{companyName}}`,
+    availableVars: [
+      'firstName', 'resetUrl', 'expiresInMinutes', 'companyName',
+    ],
+    isRequired: true,
+    displayOrder: 14,
   },
   {
     slug: 'email-catering-quote',
