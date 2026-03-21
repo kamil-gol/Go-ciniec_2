@@ -17,7 +17,6 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@prisma/client": ["src/generated/prisma"],
       "@/*": ["src/*"],
       "@controllers/*": ["src/controllers/*"],
       "@services/*": ["src/services/*"],
