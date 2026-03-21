@@ -152,7 +152,7 @@ describe('ReservationStatus (status badges & labels)', () => {
       expect(deleteBtn).toHaveProperty('disabled', false)
     })
 
-    it('should disable archive button for CANCELLED reservations', () => {
+    it('should enable archive button for CANCELLED reservations', () => {
       mockUseReservations.mockReturnValue({
         data: { data: [makeReservation('CANCELLED', 'r-canc')], totalPages: 1 },
         isLoading: false,
@@ -163,7 +163,7 @@ describe('ReservationStatus (status badges & labels)', () => {
       render(<ReservationsList />)
 
       const archiveBtn = screen.getByTitle('Zarchiwizuj')
-      expect(archiveBtn).toHaveProperty('disabled', true)
+      expect(archiveBtn).toHaveProperty('disabled', false)
     })
   })
 

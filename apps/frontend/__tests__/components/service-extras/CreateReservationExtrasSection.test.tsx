@@ -5,42 +5,104 @@ import React from 'react'
 
 // ═══ MOCK DATA ═══
 
+const mockCategories = [
+  {
+    id: 'cat-decoration',
+    name: 'Dekoracja',
+    slug: 'decoration',
+    description: null,
+    icon: null,
+    color: null,
+    displayOrder: 1,
+    isActive: true,
+    isExclusive: false,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'cat-beverage',
+    name: 'Napoje',
+    slug: 'beverage',
+    description: null,
+    icon: null,
+    color: null,
+    displayOrder: 2,
+    isActive: true,
+    isExclusive: false,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'cat-logistics',
+    name: 'Logistyka',
+    slug: 'logistics',
+    description: null,
+    icon: null,
+    color: null,
+    displayOrder: 3,
+    isActive: true,
+    isExclusive: false,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+]
+
 const mockServiceItems = [
   {
     id: 'si-1',
+    categoryId: 'cat-decoration',
     name: 'Dekoracja sali',
     description: 'Pełna dekoracja sali kwiatami',
     basePrice: 1500,
     priceType: 'FLAT' as const,
-    category: 'DECORATION',
+    icon: null,
+    displayOrder: 1,
+    requiresNote: false,
+    noteLabel: null,
     isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
   },
   {
     id: 'si-2',
+    categoryId: 'cat-beverage',
     name: 'Bar koktajlowy',
     description: 'Profesjonalny barman z koktajlami',
     basePrice: 80,
     priceType: 'PER_PERSON' as const,
-    category: 'BEVERAGE',
+    icon: null,
+    displayOrder: 1,
+    requiresNote: false,
+    noteLabel: null,
     isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
   },
   {
     id: 'si-3',
+    categoryId: 'cat-logistics',
     name: 'Parking',
     description: 'Darmowy parking dla gości',
     basePrice: 0,
     priceType: 'FREE' as const,
-    category: 'LOGISTICS',
+    icon: null,
+    displayOrder: 1,
+    requiresNote: false,
+    noteLabel: null,
     isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
   },
 ]
 
 // ═══ MOCKS ═══
 
 const mockUseServiceItems = vi.fn()
+const mockUseServiceCategories = vi.fn()
 
-vi.mock('@/hooks/use-service-items', () => ({
+vi.mock('@/hooks/use-service-extras', () => ({
   useServiceItems: (...args: any[]) => mockUseServiceItems(...args),
+  useServiceCategories: (...args: any[]) => mockUseServiceCategories(...args),
 }))
 
 vi.mock('framer-motion', () => ({
@@ -96,6 +158,10 @@ describe('CreateReservationExtrasSection', () => {
       data: mockServiceItems,
       isLoading: false,
     })
+    mockUseServiceCategories.mockReturnValue({
+      data: mockCategories,
+      isLoading: false,
+    })
   })
 
   describe('Rendering', () => {
@@ -110,6 +176,7 @@ describe('CreateReservationExtrasSection', () => {
     it('should show empty state when no service items are available', () => {
       if (!CreateReservationExtrasSection) return
       mockUseServiceItems.mockReturnValue({ data: [], isLoading: false })
+      mockUseServiceCategories.mockReturnValue({ data: [], isLoading: false })
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
       const emptyMessage = screen.queryByText(/brak dostępnych/i)
@@ -119,6 +186,7 @@ describe('CreateReservationExtrasSection', () => {
     it('should show loading state', () => {
       if (!CreateReservationExtrasSection) return
       mockUseServiceItems.mockReturnValue({ data: undefined, isLoading: true })
+      mockUseServiceCategories.mockReturnValue({ data: undefined, isLoading: true })
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
       const loadingIndicator = screen.queryByText(/ładowanie/i)
@@ -201,7 +269,7 @@ describe('CreateReservationExtrasSection', () => {
       const propsWithExtras = {
         ...defaultProps,
         selectedExtras: [
-          { serviceItem: mockServiceItems[0], quantity: 1 },
+          { serviceItemId: 'si-1', serviceItem: mockServiceItems[0], quantity: 1, note: '' },
         ],
       }
 
@@ -237,7 +305,7 @@ describe('CreateReservationExtrasSection', () => {
       const propsWithExtras = {
         ...defaultProps,
         selectedExtras: [
-          { serviceItem: mockServiceItems[0], quantity: 2 },
+          { serviceItemId: 'si-1', serviceItem: mockServiceItems[0], quantity: 2, note: '' },
         ],
       }
 
@@ -253,7 +321,7 @@ describe('CreateReservationExtrasSection', () => {
       const propsWithExtras = {
         ...defaultProps,
         selectedExtras: [
-          { serviceItem: mockServiceItems[0], quantity: 1 },
+          { serviceItemId: 'si-1', serviceItem: mockServiceItems[0], quantity: 1, note: '' },
         ],
       }
 
@@ -285,8 +353,8 @@ describe('CreateReservationExtrasSection', () => {
       const propsWithExtras = {
         ...defaultProps,
         selectedExtras: [
-          { serviceItem: mockServiceItems[0], quantity: 1 },
-          { serviceItem: mockServiceItems[2], quantity: 1 },
+          { serviceItemId: 'si-1', serviceItem: mockServiceItems[0], quantity: 1, note: '' },
+          { serviceItemId: 'si-3', serviceItem: mockServiceItems[2], quantity: 1, note: '' },
         ],
       }
 
@@ -302,7 +370,7 @@ describe('CreateReservationExtrasSection', () => {
       const propsWithExtras = {
         ...defaultProps,
         selectedExtras: [
-          { serviceItem: mockServiceItems[0], quantity: 1 },
+          { serviceItemId: 'si-1', serviceItem: mockServiceItems[0], quantity: 1, note: '' },
         ],
       }
 

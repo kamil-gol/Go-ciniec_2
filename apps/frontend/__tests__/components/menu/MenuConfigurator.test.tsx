@@ -1,11 +1,10 @@
 /**
  * MenuConfigurator (MenuSelectionFlow) Component Tests
  *
- * Tests the 4-step menu selection wizard:
+ * Tests the 3-step menu selection wizard:
  * Step 1: Template selection
  * Step 2: Package selection
- * Step 3: Dish selection
- * Step 4: Options (extras)
+ * Step 3: Dish selection (completes flow via onComplete)
  *
  * Issue: #98 — Sekcja 3
  */
@@ -79,44 +78,16 @@ const mockPackages = [
   },
 ];
 
-const mockOptions = [
-  {
-    id: 'opt-1',
-    name: 'Bar otwarty',
-    description: 'Nielimitowany alkohol',
-    category: 'Alkohol',
-    priceType: 'PER_PERSON' as const,
-    priceAmount: 100,
-    allowMultiple: false,
-    maxQuantity: 1,
-    isActive: true,
-    displayOrder: 1,
-  },
-  {
-    id: 'opt-2',
-    name: 'Fotobudka',
-    description: 'Fotobudka na wydarzenie',
-    category: 'Rozrywka',
-    priceType: 'FLAT' as const,
-    priceAmount: 1500,
-    allowMultiple: false,
-    maxQuantity: 1,
-    isActive: true,
-    displayOrder: 2,
-  },
-];
-
 // Mock hooks
 const mockUseMenuTemplates = vi.fn();
 const mockUseMenuPackages = vi.fn();
 const mockUseMenuPackage = vi.fn();
-const mockUseMenuOptions = vi.fn();
 
 vi.mock('@/hooks/use-menu', () => ({
   useMenuTemplates: (...args: any[]) => mockUseMenuTemplates(...args),
   useMenuPackages: (...args: any[]) => mockUseMenuPackages(...args),
   useMenuPackage: (...args: any[]) => mockUseMenuPackage(...args),
-  useMenuOptions: (...args: any[]) => mockUseMenuOptions(...args),
+  useMenuOptions: () => ({ data: [], isLoading: false }),
 }));
 
 vi.mock('@/hooks/use-toast', () => ({
@@ -145,24 +116,6 @@ vi.mock('@/components/menu', () => ({
     </div>
   ),
   PackageCardSkeleton: () => <div data-testid="package-card-skeleton" />,
-}));
-
-vi.mock('@/components/menu/OptionsSelector', () => ({
-  OptionsSelector: ({ options, quantities, onQuantityChange }: any) => (
-    <div data-testid="options-selector">
-      {options.map((opt: any) => (
-        <div key={opt.id} data-testid={`option-${opt.id}`}>
-          <span>{opt.name}</span>
-          <button
-            data-testid={`option-add-${opt.id}`}
-            onClick={() => onQuantityChange(opt.id, (quantities[opt.id] || 0) + 1)}
-          >
-            +
-          </button>
-        </div>
-      ))}
-    </div>
-  ),
 }));
 
 vi.mock('@/components/menu/DishSelector', () => ({
@@ -239,7 +192,6 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
     mockUseMenuTemplates.mockReturnValue({ data: mockTemplates, isLoading: false });
     mockUseMenuPackages.mockReturnValue({ data: mockPackages, isLoading: false });
     mockUseMenuPackage.mockReturnValue({ data: undefined, isLoading: false });
-    mockUseMenuOptions.mockReturnValue({ data: mockOptions, isLoading: false });
   });
 
   // ── Rendering ─────────────────────────────────────────────────────────────
@@ -381,13 +333,29 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
       expect(screen.getByTestId('dish-selector')).toBeInTheDocument();
     });
 
-    it('should advance to options step when dishes completed', async () => {
-      const user = await goToDishesStep();
+    it('should call onComplete when dishes completed', async () => {
+      const onComplete = vi.fn();
+      const user = userEvent.setup();
+      const { MenuSelectionFlow } = await import('@/components/menu/MenuSelectionFlow');
+
+      render(
+        <MenuSelectionFlow adults={50} children={10} toddlers={5} onComplete={onComplete} />,
+        { wrapper: createWrapper() }
+      );
+
+      await user.click(screen.getByTestId('menu-card-tmpl-1'));
+      await waitFor(() => expect(document.body.textContent).toMatch(/Pakiet|pakiet/));
+      await user.click(screen.getByTestId('package-card-pkg-1'));
+      await waitFor(() => expect(screen.getByTestId('dish-selector')).toBeInTheDocument());
       await user.click(screen.getByTestId('dish-complete'));
 
       await waitFor(() => {
-        const bodyText = document.body.textContent || '';
-        expect(bodyText).toMatch(/Dodatk|Opcj|dodatkow/i);
+        expect(onComplete).toHaveBeenCalledWith(
+          expect.objectContaining({
+            templateId: 'tmpl-1',
+            packageId: 'pkg-1',
+          })
+        );
       });
     });
 
@@ -398,79 +366,6 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
       await waitFor(() => {
         expect(screen.getByTestId('package-card-pkg-1')).toBeInTheDocument();
       });
-    });
-  });
-
-  // ── Options Step ──────────────────────────────────────────────────────────
-
-  describe('Step 4: Options', () => {
-    async function goToOptionsStep() {
-      const user = userEvent.setup();
-      await renderConfigurator();
-      await user.click(screen.getByTestId('menu-card-tmpl-1'));
-      await waitFor(() => expect(document.body.textContent).toMatch(/Pakiet|pakiet/));
-      await user.click(screen.getByTestId('package-card-pkg-1'));
-      await waitFor(() => expect(screen.getByTestId('dish-selector')).toBeInTheDocument());
-      await user.click(screen.getByTestId('dish-complete'));
-      await waitFor(() => expect(document.body.textContent).toMatch(/Dodatk|Opcj|dodatkow/i));
-      return user;
-    }
-
-    it('should render OptionsSelector with available options', async () => {
-      await goToOptionsStep();
-      expect(screen.getByTestId('options-selector')).toBeInTheDocument();
-      expect(screen.getByTestId('option-opt-1')).toBeInTheDocument();
-      expect(screen.getByTestId('option-opt-2')).toBeInTheDocument();
-    });
-
-    it('should show confirm button', async () => {
-      await goToOptionsStep();
-      const bodyText = document.body.textContent || '';
-      expect(bodyText).toMatch(/zatwierdź|potwierdź|dalej/i);
-    });
-
-    it('should show back button', async () => {
-      await goToOptionsStep();
-      const bodyText = document.body.textContent || '';
-      expect(bodyText).toMatch(/wstecz|powrót|cofnij/i);
-    });
-
-    it('should call onComplete with correct data when confirming', async () => {
-      const onComplete = vi.fn();
-      const user = userEvent.setup();
-      const { MenuSelectionFlow } = await import('@/components/menu/MenuSelectionFlow');
-
-      render(
-        <MenuSelectionFlow adults={50} children={10} toddlers={5} onComplete={onComplete} />,
-        { wrapper: createWrapper() }
-      );
-
-      // Navigate through all steps
-      await user.click(screen.getByTestId('menu-card-tmpl-1'));
-      await waitFor(() => expect(document.body.textContent).toMatch(/Pakiet|pakiet/));
-      await user.click(screen.getByTestId('package-card-pkg-1'));
-      await waitFor(() => expect(screen.getByTestId('dish-selector')).toBeInTheDocument());
-      await user.click(screen.getByTestId('dish-complete'));
-      await waitFor(() => expect(document.body.textContent).toMatch(/Dodatk|Opcj|dodatkow/i));
-
-      // Add an option
-      await user.click(screen.getByTestId('option-add-opt-1'));
-
-      // Find and click confirm button
-      const buttons = screen.getAllByRole('button');
-      const confirmBtn = buttons.find(b => /zatwierdź|potwierdź/i.test(b.textContent || ''));
-      if (confirmBtn) {
-        await user.click(confirmBtn);
-
-        await waitFor(() => {
-          expect(onComplete).toHaveBeenCalledWith(
-            expect.objectContaining({
-              templateId: 'tmpl-1',
-              packageId: 'pkg-1',
-            })
-          );
-        });
-      }
     });
   });
 
