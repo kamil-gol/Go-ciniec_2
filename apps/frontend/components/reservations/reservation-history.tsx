@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { ReservationHistory as HistoryType, ChangeType } from '@/types'
 import { CheckCircle2, Edit, XCircle, AlertCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 function getChangeIcon(changeType: ChangeType) {
   switch (changeType) {

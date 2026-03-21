@@ -5,7 +5,6 @@ import { Users, UserPlus, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { moduleAccents } from '@/lib/design-tokens'
 
 
 interface ClientStatsProps {

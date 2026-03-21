@@ -6,7 +6,7 @@ import {
   ArrowLeft, Trash2, Archive, ArchiveRestore,
   Calendar, User, Mail, Phone,
   Download, XCircle, History,
-  AlertTriangle, Lock,
+  Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

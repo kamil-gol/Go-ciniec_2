@@ -52,7 +52,7 @@ export default function EditHallPage() {
     } finally {
       setLoading(false)
     }
-  }, [params.id, toast])
+  }, [params.id, toast, router])
 
   useEffect(() => {
     loadHall()

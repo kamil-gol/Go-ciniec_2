@@ -488,7 +488,7 @@ export function CreateReservationForm({
     }
   }, [currentStep, completedSteps])
 
-  const onFormSubmit = async (data: ReservationFormData) => {
+  const onFormSubmit = useCallback(async (data: ReservationFormData) => {
     // toLocalISO ensures the ISO string includes the Warsaw UTC+1 offset,
     // preventing the backend (UTC) from shifting the time by +1h on storage.
     const startDateTime = toLocalISO(data.startDate, data.startTime)
@@ -573,7 +573,7 @@ export function CreateReservationForm({
     } catch (error) {
       console.error('Failed to create reservation:', error)
     }
-  }
+  }, [selectedExtras, totalGuests, onSubmitProp, createReservation, router, onSuccess])
 
   const handleFinalSubmit = useCallback(async () => {
     const isValid = await validateCurrentStep()

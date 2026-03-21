@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin,
-  Calendar, Clock, XCircle,
+  Calendar, Clock, CheckCircle2, XCircle,
   Building2, Sparkles, FileText, TrendingUp, DollarSign, History,
   Globe, Hash, Briefcase
 } from 'lucide-react'

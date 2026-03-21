@@ -67,7 +67,6 @@ interface EditableEventCardProps {
 
 export function EditableEventCard({
   reservationId,
-  eventTypeId: _initialEventTypeId,
   eventTypeName: initialEventTypeName,
   startDateTime: initialStart,
   endDateTime: initialEnd,

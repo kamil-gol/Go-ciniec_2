@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight, Home } from 'lucide-react'
-import { moduleAccents } from '@/lib/design-tokens'
 
 const pathLabels: Record<string, string> = {
   dashboard: 'Dashboard',
