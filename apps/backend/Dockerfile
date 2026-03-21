@@ -24,7 +24,7 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./
 RUN npx prisma generate
 EXPOSE 3001
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
 
 # === Stage: build ===
 FROM base AS build
