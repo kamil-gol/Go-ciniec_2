@@ -14,9 +14,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../types';
 import { AppError } from './errorHandler';
 import logger from '../utils/logger';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // In-memory permission cache (per-user, TTL-based)
 interface CachedPermissions {

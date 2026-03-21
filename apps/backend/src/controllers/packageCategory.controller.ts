@@ -8,10 +8,8 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { bulkUpdateCategorySettingsSchema } from '@/validation/menu.validation';
-
-const prisma = new PrismaClient();
 
 function toNumber(decimal: any): number {
   return parseFloat(decimal.toString());

@@ -1,7 +1,6 @@
-import { PrismaClient, CateringPriceType, Prisma } from '@prisma/client';
+import { CateringPriceType, Prisma } from '@prisma/client';
 import { AppError } from '../utils/AppError';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // ═════════════════════════════════════════════════════════════════
 // TYPES

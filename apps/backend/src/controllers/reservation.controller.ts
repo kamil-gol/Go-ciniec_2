@@ -11,7 +11,7 @@ import reservationService from '../services/reservation.service';
 import depositService from '../services/deposit.service';
 import { pdfService } from '../services/pdf.service';
 import { AppError } from '../utils/AppError';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -19,8 +19,6 @@ import {
   ReservationFilters,
   ReservationStatus
 } from '../types/reservation.types';
-
-const prisma = new PrismaClient();
 
 export class ReservationController {
   /**
