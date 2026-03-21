@@ -8,7 +8,7 @@
  *   npx tsx scripts/migrate-menu-option-categories.ts
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma/index.js';
 import { MENU_OPTION_CATEGORIES, MenuOptionCategory } from '../src/constants/menuOptionCategories';
 
 const prisma = new PrismaClient();

@@ -9,7 +9,7 @@
 
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma';
 import { pdfService } from './pdf.service';
 import emailService from './email.service';
 import logger from '../utils/logger';

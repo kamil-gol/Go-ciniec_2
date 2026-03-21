@@ -1,4 +1,4 @@
-import { ReservationStatus } from '@prisma/client'
+import { ReservationStatus } from '../src/generated/prisma/index.js'
 import { prisma } from './lib/prisma.js';
 import bcrypt from 'bcryptjs'
 import { seedDocumentTemplates } from './seeds/document-templates.seed'

@@ -4,7 +4,7 @@ import {
   CateringDeliveryType,
   CateringDiscountType,
   Prisma,
-} from '@prisma/client';
+} from '@/generated/prisma';
 import { logChange } from '../utils/audit-logger';
 
 // ─── Auto-numeracja: CAT-YYYY-XXXXX ────────────────────────────────────────

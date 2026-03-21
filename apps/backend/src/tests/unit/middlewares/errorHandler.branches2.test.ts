@@ -3,7 +3,7 @@
  * Also covers: 'already exists' conflict, 'already booked' conflict, default Prisma code fallthrough
  */
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma';
 
 const mockRes = () => {
   const res: any = {};
