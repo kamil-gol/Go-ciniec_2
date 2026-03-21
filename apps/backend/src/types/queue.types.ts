@@ -3,7 +3,7 @@
  * Types for reservation queue management
  */
 
-import { ReservationStatus } from '@/generated/prisma';
+import { ReservationStatus } from '@/generated/prisma/index';
 
 /**
  * DTO for creating a RESERVED reservation (minimal data)

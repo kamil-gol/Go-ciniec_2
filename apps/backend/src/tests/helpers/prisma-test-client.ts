@@ -11,7 +11,7 @@
  * Flow per test:
  *   beforeEach → cleanDatabase() → seedTestData() → test runs
  */
-import { PrismaClient } from '@/generated/prisma';
+import { PrismaClient } from '@/generated/prisma/index';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const testDbUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5433/rezerwacje_test';

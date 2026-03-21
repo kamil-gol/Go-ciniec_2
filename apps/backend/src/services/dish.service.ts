@@ -4,7 +4,7 @@
  * 🇵🇱 Spolonizowany — komunikaty z i18n/pl.ts
  */
 
-import { Dish, DishCategory } from '@/generated/prisma';
+import { Dish, DishCategory } from '@/generated/prisma/index';
 import { prisma } from '@/lib/prisma';
 import { logChange, diffObjects } from '../utils/audit-logger';
 import { DISH } from '../i18n/pl';

@@ -1,4 +1,4 @@
-import { CateringPriceType, Prisma } from '@/generated/prisma';
+import { CateringPriceType, Prisma } from '@/generated/prisma/index';
 import { AppError } from '../utils/AppError';
 import prisma from '@/lib/prisma';
 

@@ -9,7 +9,7 @@
  * Updated: #166 — Added portionTarget to enriched dish selections in snapshot
  */
 
-import { MenuTemplate, MenuPackage } from '@/generated/prisma';
+import { MenuTemplate, MenuPackage } from '@/generated/prisma/index';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MENU TEMPLATE TYPES

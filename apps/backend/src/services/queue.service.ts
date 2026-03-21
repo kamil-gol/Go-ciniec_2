@@ -8,7 +8,7 @@
  * 🇵🇱 Spolonizowany — komunikaty po polsku
  */
 
-import { ReservationStatus, Prisma } from '@/generated/prisma';
+import { ReservationStatus, Prisma } from '@/generated/prisma/index';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';

@@ -8,7 +8,7 @@
  * Options/extras are now handled via the ServiceExtras system.
  */
 
-import { Prisma } from '@/generated/prisma';
+import { Prisma } from '@/generated/prisma/index';
 import { prisma } from '@/lib/prisma';
 import { logChange, diffObjects } from '../utils/audit-logger';
 import { MENU_CRUD } from '../i18n/pl';

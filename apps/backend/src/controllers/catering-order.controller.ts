@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import cateringOrderService from '@/services/catering-order.service';
-import { CateringOrderStatus, CateringDeliveryType } from '@/generated/prisma';
+import { CateringOrderStatus, CateringDeliveryType } from '@/generated/prisma/index';
 
 function getUserId(req: Request): string {
   return (req as Request & { user: { id: string } }).user.id;

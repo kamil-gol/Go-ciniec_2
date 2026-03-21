@@ -5,7 +5,7 @@
  * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
  */
 
-import { DishCategory } from '@/generated/prisma';
+import { DishCategory } from '@/generated/prisma/index';
 import { prisma } from '@/lib/prisma';
 import { MENU_CRUD } from '../i18n/pl';
 

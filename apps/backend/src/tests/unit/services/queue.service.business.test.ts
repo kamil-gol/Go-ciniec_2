@@ -50,7 +50,7 @@ jest.mock('../../../utils/audit-logger', () => ({
 
 import { QueueService } from '../../../services/queue.service';
 import { prisma } from '../../../lib/prisma';
-import { ReservationStatus } from '@/generated/prisma';
+import { ReservationStatus } from '@/generated/prisma/index';
 import { computeReservationBasePrice, recalculateReservationTotalPrice } from '../../../utils/recalculate-price';
 
 const db = prisma as any;

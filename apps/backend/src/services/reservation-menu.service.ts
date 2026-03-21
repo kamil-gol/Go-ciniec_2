@@ -11,7 +11,7 @@
  * Options are now passed via input data, no DB lookup for MenuOption.
  */
 
-import { Prisma } from '@/generated/prisma';
+import { Prisma } from '@/generated/prisma/index';
 import { prisma } from '@/lib/prisma';
 import { logChange } from '../utils/audit-logger';
 import { RESERVATION, MENU, MENU_SELECTION } from '../i18n/pl';
