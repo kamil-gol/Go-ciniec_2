@@ -122,9 +122,9 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
   const dayNumber = getDayNumber(r)
 
   const adults: number = r.adults ?? 0
-  const children: number = r.children ?? 0
+  const childrenCount: number = r.children ?? 0
   const toddlers: number = r.toddlers ?? 0
-  const totalGuests: number = r.guests ?? adults + children + toddlers
+  const totalGuests: number = r.guests ?? adults + childrenCount + toddlers
 
   const pendingDeposits = (r.deposits ?? []).reduce(
     (sum: number, d: { remainingAmount: string }) => sum + Number(d.remainingAmount),
@@ -192,7 +192,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
               {(r.adults != null && r.children != null && r.toddlers != null) ? (
                 <span>
                   {adults} dor.
-                  {children > 0 && <> • {children} dz.</>}
+                  {childrenCount > 0 && <> • {childrenCount} dz.</>}
                   {toddlers > 0 && <> • {toddlers} mal.</>}
                   <span className="text-neutral-400"> ({totalGuests} os.)</span>
                 </span>

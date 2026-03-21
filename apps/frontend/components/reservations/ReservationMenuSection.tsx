@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   UtensilsCrossed, Plus, Edit, Trash2,
-  Users, Package, Sparkles, ShoppingCart, ChefHat,
+  Package, Sparkles, ShoppingCart, ChefHat,
   User, Baby
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
@@ -21,7 +21,7 @@ interface ReservationMenuSectionProps {
   eventTypeId: string
   eventDate: Date
   adults: number
-  children: number
+  childrenCount: number
   toddlers: number
   categoryExtras?: Array<{
     id: string
@@ -42,7 +42,7 @@ export function ReservationMenuSection({
   eventTypeId,
   eventDate,
   adults,
-  children,
+  childrenCount,
   toddlers,
   categoryExtras,
   onMenuUpdated,
@@ -83,7 +83,7 @@ export function ReservationMenuSection({
       await deleteMenuMutation.mutateAsync(reservationId)
       toast({ title: 'Sukces', description: 'Menu zostało usunięte' })
       onMenuUpdated?.()
-    } catch (error: any) {
+    } catch {
       toast({ title: 'Błąd', description: 'Nie udało się usunąć menu', variant: 'destructive' })
     }
   }
@@ -317,7 +317,7 @@ export function ReservationMenuSection({
               eventTypeId={eventTypeId}
               eventDate={eventDate}
               adults={adults}
-              children={children}
+              childrenCount={childrenCount}
               toddlers={toddlers}
               initialSelection={buildInitialSelection()}
               initialCategoryExtras={categoryExtras}

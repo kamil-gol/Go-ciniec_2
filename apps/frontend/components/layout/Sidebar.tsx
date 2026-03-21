@@ -256,7 +256,7 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
 
   useEffect(() => {
     onMobileClose()
-  }, [pathname])
+  }, [pathname, onMobileClose])
 
   return (
     <>

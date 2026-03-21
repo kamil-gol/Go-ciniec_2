@@ -198,12 +198,12 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
   );
 
   // Open save dialog (with change reason)
-  const handleSaveClick = () => {
+  const handleSaveClick = useCallback(() => {
     // Block save if JSON is invalid
     if (isJson && jsonError) return;
     setChangeReason('');
     setShowSaveDialog(true);
-  };
+  }, [isJson, jsonError]);
 
   // Confirm save with optional reason
   const handleConfirmSave = async () => {
@@ -296,7 +296,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, hasChanges, applyToolbarAction]);
+  }, [open, hasChanges, applyToolbarAction, handleSaveClick]);
 
   // Insert variable at cursor position
   const insertVariable = useCallback(

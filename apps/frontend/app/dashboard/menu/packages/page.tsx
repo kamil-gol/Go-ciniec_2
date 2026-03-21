@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/lib/api/menu-packages-api';
 import type { MenuPackage } from '@/lib/api/menu-packages-api';
-import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, DollarSign, Sparkles } from 'lucide-react';
+import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
@@ -20,11 +20,7 @@ export default function PackagesListPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadPackages();
-  }, [templateId]);
-
-  async function loadPackages() {
+  const loadPackages = useCallback(async () => {
     try {
       setLoading(true);
       const data = templateId
@@ -36,7 +32,11 @@ export default function PackagesListPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [templateId]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Czy na pewno chcesz usunąć pakiet "${name}"?`)) return;

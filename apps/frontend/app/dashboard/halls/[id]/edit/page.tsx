@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Sparkles, Users, Building2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { getHallById, updateHall, type Hall } from '@/lib/api/halls'
+import { getHallById, updateHall } from '@/lib/api/halls'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
@@ -29,11 +29,7 @@ export default function EditHallPage() {
   })
   const [newAmenity, setNewAmenity] = useState('')
 
-  useEffect(() => {
-    loadHall()
-  }, [params.id])
-
-  const loadHall = async () => {
+  const loadHall = useCallback(async () => {
     try {
       setLoading(true)
       const hall = await getHallById(params.id as string)
@@ -56,7 +52,11 @@ export default function EditHallPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, toast])
+
+  useEffect(() => {
+    loadHall()
+  }, [loadHall])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

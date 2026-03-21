@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Users, Plus, Search, UserPlus, Building2, User, TrendingUp, Eye, EyeOff } from 'lucide-react'
+import { Users, Search, UserPlus, Building2, User, TrendingUp, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,6 @@ import { ClientsList } from '@/components/clients/clients-list'
 import { CreateClientForm } from '@/components/clients/create-client-form'
 import { clientsApi, clientsKeys } from '@/lib/api/clients'
 import { useQuery } from '@tanstack/react-query'
-import type { ClientType } from '@/types'
 
 const accent = moduleAccents.clients
 

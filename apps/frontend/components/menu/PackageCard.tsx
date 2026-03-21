@@ -6,7 +6,6 @@
 
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { MenuPackage } from '@/types/menu.types';
 import { Check, Users, DollarSign, CheckCircle2, Baby, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';

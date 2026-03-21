@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { MenuPackage, CreatePackageInput, UpdatePackageInput, DishCategory } from '@/types/menu';
+import type { MenuPackage, CreatePackageInput, DishCategory } from '@/types/menu';
 import { createPackage, updatePackage, getDishCategories, updatePackageCategories } from '@/lib/api/menu-packages-api';
 import CategorySettingsSection from './CategorySettingsSection';
 import type { CategorySettingInput } from '@/types/menu';

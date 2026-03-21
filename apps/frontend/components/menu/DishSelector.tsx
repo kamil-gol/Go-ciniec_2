@@ -8,12 +8,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import {
   ChevronLeft, ChevronRight, AlertCircle, Check,
-  Info, UtensilsCrossed, CheckCircle2, Lock,
-  Users, User, Baby, Ban, ShoppingCart
+  Info, CheckCircle2, Lock,
+  User, Baby, Ban, ShoppingCart
 } from 'lucide-react'
 import { usePackageCategories } from '@/hooks/use-menu'
 import type { PortionTarget } from '@/types/menu'
-import { PORTION_TARGET_LABELS, PORTION_TARGET_ICONS } from '@/types/menu'
+import { PORTION_TARGET_LABELS } from '@/types/menu'
 import { formatCurrency } from '@/lib/utils'
 
 interface DishSelection {
@@ -43,7 +43,7 @@ export interface DishSelectorResult {
 interface DishSelectorProps {
   packageId: string
   adults: number
-  children: number
+  childrenCount: number
   toddlers?: number
   initialSelections?: CategorySelection[]
   initialExtrasEnabled?: Record<string, boolean>
@@ -72,9 +72,9 @@ function PortionTargetBadge({ target }: { target?: PortionTarget | string }) {
 }
 
 /** #166: Check if category is inactive due to 0 relevant guests */
-function isCategoryInactive(portionTarget: string | undefined, adults: number, children: number): boolean {
+function isCategoryInactive(portionTarget: string | undefined, adults: number, childrenCount: number): boolean {
   if (portionTarget === 'ADULTS_ONLY' && adults === 0) return true;
-  if (portionTarget === 'CHILDREN_ONLY' && children === 0) return true;
+  if (portionTarget === 'CHILDREN_ONLY' && childrenCount === 0) return true;
   return false;
 }
 
@@ -85,19 +85,19 @@ function getInactiveReason(portionTarget: string | undefined): string {
 }
 
 /** #216: Calculate guest count based on portionTarget */
-function getGuestCountForTarget(portionTarget: string | undefined, adults: number, children: number, toddlers: number): number {
+function getGuestCountForTarget(portionTarget: string | undefined, adults: number, childrenCount: number, toddlers: number): number {
   switch (portionTarget) {
     case 'ADULTS_ONLY': return adults;
-    case 'CHILDREN_ONLY': return children;
+    case 'CHILDREN_ONLY': return childrenCount;
     case 'ALL':
-    default: return adults + children + toddlers;
+    default: return adults + childrenCount + toddlers;
   }
 }
 
 export function DishSelector({
   packageId,
   adults,
-  children,
+  childrenCount,
   toddlers = 0,
   initialSelections,
   initialExtrasEnabled,
@@ -126,10 +126,10 @@ export function DishSelector({
       const extraQty = Math.max(0, total - baseMax)
       if (extraQty <= 0 || cat.extraItemPrice == null) return sum
       const price = Number(cat.extraItemPrice)
-      const guestCount = getGuestCountForTarget(cat.portionTarget, adults, children, toddlers)
+      const guestCount = getGuestCountForTarget(cat.portionTarget, adults, childrenCount, toddlers)
       return sum + Math.round(extraQty * price * guestCount * 100) / 100
     }, 0)
-  }, [categoryData?.categories, selections, extrasEnabled, adults, children, toddlers])
+  }, [categoryData?.categories, selections, extrasEnabled, adults, childrenCount, toddlers])
 
   useEffect(() => {
     if (categoryData?.categories && !isInitialized) {
@@ -324,7 +324,7 @@ export function DishSelector({
     const extraQty = getExtraQuantity(category)
     if (extraQty <= 0 || category.extraItemPrice == null) return 0
     const price = Number(category.extraItemPrice)
-    const guestCount = getGuestCountForTarget(category.portionTarget, adults, children, toddlers)
+    const guestCount = getGuestCountForTarget(category.portionTarget, adults, childrenCount, toddlers)
     return Math.round(extraQty * price * guestCount * 100) / 100
   }
 
@@ -334,7 +334,7 @@ export function DishSelector({
 
     categories.forEach((category: any) => {
       // Skip validation for inactive categories
-      if (isCategoryInactive(category.portionTarget, adults, children)) return;
+      if (isCategoryInactive(category.portionTarget, adults, childrenCount)) return;
 
       const total = getCategoryTotal(category.categoryId)
       const effectiveMax = getEffectiveMaxSelect(category)
@@ -370,7 +370,7 @@ export function DishSelector({
 
     // Exclude inactive categories from result
     const selectionsResult: CategorySelection[] = categories
-      .filter((category: any) => !isCategoryInactive(category.portionTarget, adults, children))
+      .filter((category: any) => !isCategoryInactive(category.portionTarget, adults, childrenCount))
       .map((category: any) => ({
         categoryId: category.categoryId,
         dishes: Object.entries(selections[category.categoryId] || {}).map(([dishId, quantity]) => ({
@@ -382,7 +382,7 @@ export function DishSelector({
     // #216: Build category extras from selections exceeding base maxSelect
     const categoryExtras: CategoryExtraResult[] = categories
       .filter((category: any) => {
-        if (isCategoryInactive(category.portionTarget, adults, children)) return false
+        if (isCategoryInactive(category.portionTarget, adults, childrenCount)) return false
         if (!extrasEnabled[category.categoryId]) return false
         return getExtraQuantity(category) > 0
       })
@@ -418,7 +418,7 @@ export function DishSelector({
           const hasError = errors[category.categoryId]
           const isAtMaxLimit = total >= effectiveMax
           const portionTarget = category.portionTarget as PortionTarget | undefined
-          const inactive = isCategoryInactive(portionTarget, adults, children)
+          const inactive = isCategoryInactive(portionTarget, adults, childrenCount)
 
           // #216: Extras info
           const hasExtrasSupport = category.extraItemPrice != null && category.maxExtra != null && Number(category.maxExtra) > 0
@@ -426,7 +426,7 @@ export function DishSelector({
           const extraQty = getExtraQuantity(category)
           const extraCost = getExtraCost(category)
           const baseMax = Number(category.maxSelect)
-          const guestCount = getGuestCountForTarget(category.portionTarget, adults, children, toddlers)
+          const guestCount = getGuestCountForTarget(category.portionTarget, adults, childrenCount, toddlers)
 
           return (
             <Card key={category.categoryId} className={`border shadow-sm ${

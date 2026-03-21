@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -123,7 +122,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-base">
               Czy na pewno chcesz usunąć danie{' '}
-              <span className="font-semibold text-foreground">"{deletingDish?.name}"</span>?
+              <span className="font-semibold text-foreground">&quot;{deletingDish?.name}&quot;</span>?
               <br />
               <span className="text-red-600 dark:text-red-400 font-medium">Tej operacji nie można cofnąć.</span>
             </AlertDialogDescription>

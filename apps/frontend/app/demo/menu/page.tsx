@@ -9,12 +9,11 @@
 'use client';
 
 import { useState } from 'react';
-import { 
+import {
   MenuCard,
   PackageCard,
   PriceBreakdown,
   MenuSelectionFlow,
-  MenuSummary
 } from '@/components/menu';
 import { 
   useMenuTemplates, 
@@ -161,7 +160,7 @@ export default function MenuDemoPage() {
           <div className="mx-auto max-w-6xl">
             <MenuSelectionFlow
               adults={50}
-              children={10}
+              childrenCount={10}
               toddlers={5}
               onComplete={(selection) => {
                 console.log('Selection completed:', selection);

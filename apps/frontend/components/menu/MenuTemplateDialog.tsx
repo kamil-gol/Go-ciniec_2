@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   Dialog,
@@ -127,7 +127,7 @@ export function MenuTemplateDialog({
         await createMutation.mutateAsync(input)
       }
       onOpenChange(false)
-    } catch (error) {
+    } catch {
       // Error handled by mutation
     }
   }

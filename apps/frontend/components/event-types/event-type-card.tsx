@@ -46,7 +46,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
         description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
       })
       onUpdate()
-    } catch (error: any) {
+    } catch {
       toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
     } finally {
       setToggling(false)

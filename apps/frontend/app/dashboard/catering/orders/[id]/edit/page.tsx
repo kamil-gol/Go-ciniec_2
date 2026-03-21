@@ -237,7 +237,7 @@ export default function EditOrderPage() {
       form.discountType || null,
       parseFloat(form.discountValue) || null,
     );
-  }, [form?.items, form?.extras, form?.discountType, form?.discountValue]);
+  }, [form]);
 
   const addItem = () => {
     const k = keyCounter;

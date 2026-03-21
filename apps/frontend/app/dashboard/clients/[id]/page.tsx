@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { 
+import {
   ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin,
-  Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
+  Calendar, Clock, XCircle,
   Building2, Sparkles, FileText, TrendingUp, DollarSign, History,
-  Globe, Hash, Briefcase, Star, Users
+  Globe, Hash, Briefcase
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getClientById, deleteClient, type Client } from '@/lib/api/clients'
+import { getClientById, deleteClient } from '@/lib/api/clients'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -47,11 +47,7 @@ export default function ClientDetailsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
 
-  useEffect(() => {
-    loadClient()
-  }, [params.id])
-
-  const loadClient = async () => {
+  const loadClient = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getClientById(params.id as string)
@@ -67,7 +63,11 @@ export default function ClientDetailsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, toast, router])
+
+  useEffect(() => {
+    loadClient()
+  }, [loadClient])
 
   const handleDelete = async () => {
     if (!client) return

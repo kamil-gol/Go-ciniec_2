@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, Clock, MapPin, Plus, UsersRound, UserCheck } from 'lucide-react'
+import { ArrowLeft, Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, UsersRound, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,11 +18,7 @@ export default function HallDetailsPage() {
   const [hall, setHall] = useState<Hall | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadHall()
-  }, [params.id])
-
-  const loadHall = async () => {
+  const loadHall = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getHallById(params.id as string)
@@ -38,7 +34,11 @@ export default function HallDetailsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, toast, router])
+
+  useEffect(() => {
+    loadHall()
+  }, [loadHall])
 
   const handleCreateReservation = () => {
     router.push(`/dashboard/reservations?create=true&hallId=${params.id}`)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, CalendarDays, List } from 'lucide-react'
@@ -18,7 +18,7 @@ export default function ReservationsListPage() {
   const searchParams = useSearchParams()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [reservations, setReservations] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const accent = moduleAccents.reservations
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -29,10 +29,6 @@ export default function ReservationsListPage() {
       setShowCreateForm(true)
     }
   }, [searchParams])
-
-  useEffect(() => {
-    loadReservations()
-  }, [])
 
   // Auto-scroll to form when opened
   useEffect(() => {
@@ -45,7 +41,7 @@ export default function ReservationsListPage() {
     }
   }, [showCreateForm])
 
-  const loadReservations = async () => {
+  const loadReservations = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getReservations()
@@ -60,7 +56,11 @@ export default function ReservationsListPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadReservations()
+  }, [loadReservations])
 
   const stats = {
     total: reservations.length,

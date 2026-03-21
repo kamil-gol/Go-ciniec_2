@@ -143,10 +143,6 @@ export function EditableHallCard({
     return { type: 'blocked' as const }
   }, [hallChanged, capacityData, selectedAllowMultiple, totalGuests])
 
-  const canSave = !hallChanged || !capacityData ||
-    availabilityStatus?.type === 'available' ||
-    availabilityStatus?.type === 'available-with-others'
-
   useEffect(() => {
     setSelectedHallId(initialHallId)
   }, [initialHallId])

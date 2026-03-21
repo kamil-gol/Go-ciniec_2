@@ -138,7 +138,7 @@ interface Props {
   onReset: () => void;
 }
 
-export function AuditLogFilters({ filters, onFiltersChange, onReset }: Props) {
+export function AuditLogFilters({ filters, onFiltersChange }: Props) {
   const { data: actions = [] } = useActions();
   const { data: entityTypes = [] } = useEntityTypes();
   const [startDate, setStartDate] = useState<Date | undefined>(

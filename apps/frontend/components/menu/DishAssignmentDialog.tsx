@@ -5,12 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Search, Loader2, ChefHat, X, CheckCircle2, Sparkles } from 'lucide-react'
 import { useDishes } from '@/hooks/use-dishes-courses'
 import { useAssignDishes, useRemoveDish } from '@/hooks/use-dishes-courses'
 import { toast } from '@/lib/toast'
-import type { MenuCourse, Dish } from '@/types/menu.types'
+import type { MenuCourse } from '@/types/menu.types'
 import { cn } from '@/lib/utils'
 
 interface DishAssignmentDialogProps {
@@ -67,8 +66,8 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const handleAssign = async () => {
     if (!course || selectedDishes.size === 0) return
 
-    const loadingToast = toast.loading(`Przypisuję ${selectedDishes.size} dań...`)
-    
+    toast.loading(`Przypisuję ${selectedDishes.size} dań...`)
+
     try {
       await assignMutation.mutateAsync({
         courseId: course.id,
@@ -90,8 +89,8 @@ export function DishAssignmentDialog({ open, onOpenChange, course }: DishAssignm
   const handleRemove = async (dishId: string, dishName: string) => {
     if (!course) return
 
-    const loadingToast = toast.loading('Usuwam danie...')
-    
+    toast.loading('Usuwam danie...')
+
     try {
       await removeMutation.mutateAsync({
         courseId: course.id,

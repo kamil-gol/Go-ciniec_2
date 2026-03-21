@@ -33,7 +33,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { depositsApi } from '@/lib/api/deposits'
-import type { Deposit, DepositStatus, PaymentMethod, CreateDepositInput } from '@/lib/api/deposits'
+import type { Deposit, DepositStatus, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -238,7 +238,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       setLoading(true)
       const data = await depositsApi.getByReservation(reservationId)
       setDeposits(data)
-    } catch (error) {
+    } catch {
       console.error('Error loading deposits:', error)
     } finally {
       setLoading(false)
@@ -284,7 +284,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       toast.success('Zaliczka utworzona')
       setShowCreateModal(false)
       loadDeposits()
-    } catch (error) {
+    } catch {
       console.error('Error creating deposit:', error)
       toast.error('Nie udało się utworzyć zaliczki')
     } finally {
@@ -307,7 +307,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       toast.success('Zaliczka oznaczona jako opłacona')
       setShowPayModal(false)
       loadDeposits()
-    } catch (error) {
+    } catch {
       console.error('Error marking deposit as paid:', error)
       toast.error('Nie udało się oznaczyć jako opłaconej')
     } finally {
@@ -321,7 +321,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       await depositsApi.markAsUnpaid(deposit.id)
       toast.success('Cofnięto płatność')
       loadDeposits()
-    } catch (error) {
+    } catch {
       toast.error('Nie udało się cofnąć płatności')
     } finally {
       setActionLoading(null)
@@ -333,7 +333,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       setPdfLoading(deposit.id)
       await depositsApi.downloadPdf(deposit.id)
       toast.success('PDF pobrany')
-    } catch (error) {
+    } catch {
       toast.error('Nie udało się pobrać PDF')
     } finally {
       setPdfLoading(null)
@@ -345,7 +345,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       setActionLoading(deposit.id)
       await depositsApi.sendEmail(deposit.id)
       toast.success('Email wysłany')
-    } catch (error) {
+    } catch {
       toast.error('Nie udało się wysłać emaila')
     } finally {
       setActionLoading(null)
@@ -358,7 +358,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       await depositsApi.cancel(deposit.id)
       toast.success('Zaliczka anulowana')
       loadDeposits()
-    } catch (error) {
+    } catch {
       toast.error('Nie udało się anulować zaliczki')
     } finally {
       setActionLoading(null)
@@ -373,7 +373,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       toast.success('Zaliczka została usunięta')
       setDeleteTarget(null)
       loadDeposits()
-    } catch (error) {
+    } catch {
       toast.error('Nie udało się usunąć zaliczki')
     } finally {
       setDeleteLoading(false)

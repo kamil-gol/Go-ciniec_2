@@ -2,10 +2,9 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Activity, Archive, Layers, Users, Search, Filter, X, Download, Sparkles } from 'lucide-react';
+import { FileText, Activity, Archive, Layers, Users, Filter, X, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { AuditLogFilters } from '@/components/audit-log/AuditLogFilters';
 import { AuditLogTable } from '@/components/audit-log/AuditLogTable';
 import { useAuditLogs, useAuditLogStatistics } from '@/hooks/use-audit-log';

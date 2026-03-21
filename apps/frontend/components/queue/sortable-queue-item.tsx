@@ -23,8 +23,6 @@ interface SortableQueueItemProps {
 
 export function SortableQueueItem({
   item,
-  isFirst,
-  isLast,
   onPromote,
   onEdit,
   disabled = false,

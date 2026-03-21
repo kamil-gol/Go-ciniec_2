@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  Users, User, Mail, Phone, Star, Plus, Pencil, Trash2, X, Save, Briefcase, MoreHorizontal,
+  Users, Mail, Phone, Star, Plus, Pencil, Trash2, X, Save, Briefcase, MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -161,7 +161,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
           : `${contact.firstName} ${contact.lastName} ustawiony jako główna osoba kontaktowa`,
       })
       onUpdate()
-    } catch (error: any) {
+    } catch {
       toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu kontaktu', variant: 'destructive' })
     }
   }

@@ -7,7 +7,6 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { Sparkles, Calendar, Clock, AlertCircle, Lock } from 'lucide-react'
 import { EditableCard } from './EditableCard'
-import { useEventTypes } from '@/hooks/use-event-types'
 import { useUpdateReservation } from '@/lib/api/reservations'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -68,7 +67,7 @@ interface EditableEventCardProps {
 
 export function EditableEventCard({
   reservationId,
-  eventTypeId: initialEventTypeId,
+  eventTypeId: _initialEventTypeId,
   eventTypeName: initialEventTypeName,
   startDateTime: initialStart,
   endDateTime: initialEnd,

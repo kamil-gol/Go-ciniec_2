@@ -15,7 +15,6 @@ import type {
   MenuSelectionInput,
   ReservationMenuResponse,
   ApiResponse,
-  ApiError,
 } from '@/types/menu.types';
 
 // ════════════════════════════════════════════════════════════════════════════════

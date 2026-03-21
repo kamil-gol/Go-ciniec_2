@@ -22,7 +22,6 @@ export function EditableNotesCard({
   reservationId,
   notes: initialNotes,
   confirmationDeadline: initialDeadline,
-  startDateTime,
   disabled,
   onUpdated,
 }: EditableNotesCardProps) {

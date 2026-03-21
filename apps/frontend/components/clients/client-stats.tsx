@@ -7,7 +7,6 @@ import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
 
-const accent = moduleAccents.clients
 
 interface ClientStatsProps {
   clients: (Client & { _count?: { reservations: number } })[]

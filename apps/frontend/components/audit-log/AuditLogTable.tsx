@@ -280,9 +280,7 @@ function LogActionBadge({ action, size = 'normal' }: { action: string; size?: 'n
 
 export function AuditLogTable({
   data,
-  isLoading,
   page,
-  pageSize,
   totalPages,
   total,
   onPageChange,

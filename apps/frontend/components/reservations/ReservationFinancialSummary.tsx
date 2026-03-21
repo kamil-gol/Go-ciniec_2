@@ -5,7 +5,7 @@ import {
   DollarSign, Plus, FileDown, CheckCircle2, Clock, AlertTriangle,
   XCircle, ArrowDownUp, Banknote, Smartphone, CreditCard, Loader2,
   ExternalLink, CalendarDays, Undo2, Mail, TrendingUp, Receipt,
-  Package, ShoppingCart, Users, Sparkles, ChevronDown, ChevronUp,
+  Package, ShoppingCart, Users, ChevronDown, ChevronUp,
   Timer, Gift, Building2, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,7 @@ const DEFAULT_EXTRA_HOUR_RATE = 500
 interface ReservationFinancialSummaryProps {
   reservationId: string
   adults: number
-  children: number
+  childrenCount: number
   toddlers: number
   pricePerAdult: number
   pricePerChild: number
@@ -170,7 +170,7 @@ function suggestDueDate(daysFromNow: number = 14): string {
 export function ReservationFinancialSummary({
   reservationId,
   adults,
-  children,
+  childrenCount,
   toddlers,
   pricePerAdult,
   pricePerChild,
@@ -472,10 +472,10 @@ export function ReservationFinancialSummary({
                         <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
                       </div>
                     )}
-                    {children > 0 && (
+                    {childrenCount > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dzieci ({children} × {formatPLN(effectivePricePerChild)} zł)</span>
-                        <span className="font-semibold">{formatPLN(children * effectivePricePerChild)} zł</span>
+                        <span className="text-muted-foreground">Dzieci ({childrenCount} × {formatPLN(effectivePricePerChild)} zł)</span>
+                        <span className="font-semibold">{formatPLN(childrenCount * effectivePricePerChild)} zł</span>
                       </div>
                     )}
                     {toddlers > 0 && effectivePricePerToddler > 0 && (
@@ -493,7 +493,7 @@ export function ReservationFinancialSummary({
                     <Separator className="my-2" />
                     <div className="flex justify-between text-sm font-semibold">
                       <span>Suma podstawowa</span>
-                      <span>{formatPLN(hasMenu && priceBreakdown ? priceBreakdown.packageCost.subtotal : (adults * effectivePricePerAdult + children * effectivePricePerChild + toddlers * effectivePricePerToddler))} zł</span>
+                      <span>{formatPLN(hasMenu && priceBreakdown ? priceBreakdown.packageCost.subtotal : (adults * effectivePricePerAdult + childrenCount * effectivePricePerChild + toddlers * effectivePricePerToddler))} zł</span>
                     </div>
                   </div>
                 </div>

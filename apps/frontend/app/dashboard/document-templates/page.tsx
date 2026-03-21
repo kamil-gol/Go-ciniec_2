@@ -62,7 +62,6 @@ import {
   TEMPLATE_CATEGORY_ORDER,
   type DocumentTemplate,
   type TemplateCategory,
-  type CreateTemplateInput,
 } from '@/types/document-template.types';
 
 // ── Category config ──────────────────────────────────

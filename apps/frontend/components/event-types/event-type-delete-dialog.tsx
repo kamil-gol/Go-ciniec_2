@@ -76,7 +76,7 @@ export function EventTypeDeleteDialog({ open, onOpenChange, eventType, onSuccess
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />
-            Usunąć typ "{eventType.name}"?
+            Usunąć typ &quot;{eventType.name}&quot;?
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3">

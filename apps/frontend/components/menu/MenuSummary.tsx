@@ -38,7 +38,7 @@ interface MenuSummaryProps {
   selectedOptions: (MenuOption & { quantity: number })[];
   guestCounts: {
     adults: number;
-    children: number;
+    childrenCount: number;
     toddlers: number;
   };
   dishSelections?: CategorySelection[];
@@ -69,7 +69,7 @@ export function MenuSummary({
     }).format(numPrice);
   };
 
-  const totalGuests = guestCounts.adults + guestCounts.children + guestCounts.toddlers;
+  const totalGuests = guestCounts.adults + guestCounts.childrenCount + guestCounts.toddlers;
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -205,7 +205,7 @@ export function MenuSummary({
               <div className="flex justify-between">
                 <span className="text-neutral-600 dark:text-neutral-400">Dzieci</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
-                  {guestCounts.children} osób
+                  {guestCounts.childrenCount} osób
                 </span>
               </div>
               <div className="flex justify-between">

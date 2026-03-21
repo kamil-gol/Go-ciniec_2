@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -28,7 +27,6 @@ interface HallCardProps {
 }
 
 export function HallCard({ hall, onUpdate }: HallCardProps) {
-  const router = useRouter()
   const { toast } = useToast()
   const [deleting, setDeleting] = useState(false)
   const [togglingMultiple, setTogglingMultiple] = useState(false)

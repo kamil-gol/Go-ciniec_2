@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { LoadingState } from '@/components/shared'
 
 export function CompanyTab() {
-  const [settings, setSettings] = useState<CompanySettings | null>(null)
+  const [, setSettings] = useState<CompanySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<UpdateCompanyInput>({})

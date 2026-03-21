@@ -251,7 +251,7 @@ export default function MenuTemplatesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Czy na pewno chcesz usunąć?</AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon "{templateToDelete?.name}" zostanie trwale usunięty. Wszystkie powiązane pakiety również zostaną usunięte.
+              Szablon &quot;{templateToDelete?.name}&quot; zostanie trwale usunięty. Wszystkie powiązane pakiety również zostaną usunięte.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

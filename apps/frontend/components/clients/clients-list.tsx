@@ -32,7 +32,7 @@ interface ClientsListProps {
   onUpdate?: () => void
 }
 
-export function ClientsList({ clients, searchQuery, rodoMap = {}, onUpdate }: ClientsListProps) {
+export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListProps) {
   const filteredClients = clients.filter(client => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()

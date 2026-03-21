@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -119,25 +119,6 @@ export function StatusChanger({
     setSelectedStatus(value as StatusKey)
   }, [])
 
-  const handleStartChange = useCallback(() => {
-    if (disabled) return
-    if (!selectedStatus || selectedStatus === currentStatus) return
-
-    if (reason.trim().length < 10) {
-      setReasonError('Powód musi mieć co najmniej 10 znaków')
-      return
-    }
-
-    setReasonError('')
-
-    const transitionKey = `${currentStatus}->${selectedStatus}` as `${StatusKey}->${StatusKey}`
-    if (DANGEROUS_TRANSITIONS.includes(transitionKey)) {
-      setShowConfirmDialog(true)
-    } else {
-      executeStatusChange()
-    }
-  }, [selectedStatus, currentStatus, reason, disabled])
-
   const executeStatusChange = useCallback(async () => {
     if (disabled) return
     if (!selectedStatus || selectedStatus === currentStatus) return
@@ -162,6 +143,25 @@ export function StatusChanger({
       toast.error(msg)
     }
   }, [selectedStatus, currentStatus, statusKey, reason, reservationId, updateStatusMutation, onStatusChanged, disabled])
+
+  const handleStartChange = useCallback(() => {
+    if (disabled) return
+    if (!selectedStatus || selectedStatus === currentStatus) return
+
+    if (reason.trim().length < 10) {
+      setReasonError('Powód musi mieć co najmniej 10 znaków')
+      return
+    }
+
+    setReasonError('')
+
+    const transitionKey = `${currentStatus}->${selectedStatus}` as `${StatusKey}->${StatusKey}`
+    if (DANGEROUS_TRANSITIONS.includes(transitionKey)) {
+      setShowConfirmDialog(true)
+    } else {
+      executeStatusChange()
+    }
+  }, [selectedStatus, currentStatus, reason, disabled, executeStatusChange])
 
   const handleCancel = useCallback(() => {
     setEditing(false)

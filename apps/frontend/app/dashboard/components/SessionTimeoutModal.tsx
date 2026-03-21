@@ -50,6 +50,7 @@ export default function SessionTimeoutModal() {
       // Refresh failed — force logout
       handleLogout();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleLogout]);
 
   // ═══ Idle timer ═══

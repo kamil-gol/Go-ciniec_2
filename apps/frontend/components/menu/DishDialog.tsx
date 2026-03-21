@@ -55,7 +55,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
         })
       }
     }
-  }, [dish, open]) // Removed categories from deps to prevent infinite loop
+  }, [dish, open, categories])
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.categoryId) {
@@ -131,7 +131,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
             </Select>
             {categories.length === 0 && (
               <p className="text-xs text-amber-600">
-                ⚠️ Brak kategorii. Dodaj kategorię w sekcji "Kategorie Dań".
+                ⚠️ Brak kategorii. Dodaj kategorię w sekcji &quot;Kategorie Dań&quot;.
               </p>
             )}
           </div>

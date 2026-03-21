@@ -63,6 +63,7 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
+  const listboxId = React.useId()
 
   const selectedOption = React.useMemo(
     () => options.find((opt) => opt.value === value),
@@ -121,6 +122,7 @@ export function Combobox({
             type="button"
             role="combobox"
             aria-expanded={open}
+            aria-controls={listboxId}
             aria-label={label || placeholder}
             disabled={disabled}
             className={cn(
@@ -177,7 +179,7 @@ export function Combobox({
               value={searchQuery}
               onValueChange={setSearchQuery}
             />
-            <CommandList>
+            <CommandList id={listboxId} role="listbox">
               <CommandEmpty>
                 <div className="py-4 text-center">
                   <Search className="w-8 h-8 text-neutral-300 mx-auto mb-2" />

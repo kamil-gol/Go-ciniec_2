@@ -28,7 +28,7 @@ import {
 } from '@/components/menu';
 import { DishSelector } from '@/components/menu/DishSelector';
 import type { DishSelectorResult, CategoryExtraResult } from '@/components/menu/DishSelector';
-import { Check, ChevronRight, Users, ArrowLeft, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide-react';
+import { Check, Users, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,7 @@ interface MenuSelectionFlowProps {
   eventTypeId?: string;
   eventDate?: Date;
   adults: number;
-  children: number;
+  childrenCount: number;
   toddlers: number;
   initialSelection?: {
     templateId?: string;
@@ -71,9 +71,8 @@ type Step = 'template' | 'package' | 'dishes';
 
 export function MenuSelectionFlow({
   eventTypeId,
-  eventDate,
   adults,
-  children,
+  childrenCount,
   toddlers,
   initialSelection,
   initialCategoryExtras,
@@ -104,7 +103,7 @@ export function MenuSelectionFlow({
     return Object.keys(map).length > 0 ? map : undefined;
   }, [initialCategoryExtras]);
 
-  const totalGuests = adults + children + toddlers;
+  const totalGuests = adults + childrenCount + toddlers;
 
   useEffect(() => {
     const dialogContent = containerRef.current?.closest('[role="dialog"]') || containerRef.current?.closest('.overflow-y-auto');
@@ -251,7 +250,7 @@ export function MenuSelectionFlow({
       dishSelections: selections || dishSelections,
       categoryExtras: extras || categoryExtras,
       adults,
-      children,
+      childrenCount,
       toddlers,
     });
   };
@@ -280,7 +279,7 @@ export function MenuSelectionFlow({
           </span>
           <span className="text-purple-300">{"\u2022"}</span>
           <span className="text-sm font-medium">
-            <span className="font-bold">{children}</span>{' dzieci'}
+            <span className="font-bold">{childrenCount}</span>{' dzieci'}
           </span>
           <span className="text-purple-300">{"\u2022"}</span>
           <span className="text-sm font-medium">
@@ -416,7 +415,7 @@ export function MenuSelectionFlow({
               <DishSelector
                 packageId={selectedPackage.id}
                 adults={adults}
-                children={children}
+                childrenCount={childrenCount}
                 toddlers={toddlers}
                 initialSelections={dishSelections}
                 initialExtrasEnabled={initialExtrasEnabled}

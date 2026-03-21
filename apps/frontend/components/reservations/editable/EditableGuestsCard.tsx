@@ -12,7 +12,7 @@ import { calculateVenueSurchargePreview, formatSurchargePLN } from '@/lib/venue-
 interface EditableGuestsCardProps {
   reservationId: string
   adults: number
-  children: number
+  childrenCount: number
   toddlers: number
   hallCapacity: number
   isWholeVenue?: boolean
@@ -23,7 +23,7 @@ interface EditableGuestsCardProps {
 export function EditableGuestsCard({
   reservationId,
   adults: initialAdults,
-  children: initialChildren,
+  childrenCount: initialChildren,
   toddlers: initialToddlers,
   hallCapacity,
   isWholeVenue = false,

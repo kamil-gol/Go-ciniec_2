@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, TrendingUp, Users, Building2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,11 +20,7 @@ export default function HallsPage() {
   const [showInactive, setShowInactive] = useState(false)
   const accent = moduleAccents.halls
 
-  useEffect(() => {
-    loadHalls()
-  }, [showInactive])
-
-  const loadHalls = async () => {
+  const loadHalls = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getHalls({
@@ -41,7 +37,11 @@ export default function HallsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showInactive, toast])
+
+  useEffect(() => {
+    loadHalls()
+  }, [loadHalls])
 
   const filteredHalls = halls.filter(hall =>
     hall.name.toLowerCase().includes(search.toLowerCase())

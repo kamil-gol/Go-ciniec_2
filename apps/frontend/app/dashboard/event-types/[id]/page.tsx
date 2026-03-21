@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Power, Palette, Timer } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -28,17 +28,12 @@ export default function EventTypeDetailPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
-  useEffect(() => {
-    loadEventType()
-  }, [params.id])
-
-  const loadEventType = async () => {
+  const loadEventType = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getEventTypeById(params.id as string)
       setEventType(data)
-    } catch (error: any) {
-      console.error('Error loading event type:', error)
+    } catch {
       toast({
         title: 'Błąd',
         description: 'Nie udało się załadować typu wydarzenia',
@@ -48,7 +43,11 @@ export default function EventTypeDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, toast, router])
+
+  useEffect(() => {
+    loadEventType()
+  }, [loadEventType])
 
   const handleToggleActive = async (checked: boolean) => {
     if (!eventType) return
@@ -60,7 +59,7 @@ export default function EventTypeDetailPage() {
         description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
       })
       loadEventType()
-    } catch (error: any) {
+    } catch {
       toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
     } finally {
       setToggling(false)

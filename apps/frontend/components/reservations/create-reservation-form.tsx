@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
@@ -30,7 +29,7 @@ import { usePackagesByTemplate } from '@/hooks/use-menu-packages'
 import { useCheckAvailability } from '@/hooks/use-check-availability'
 import { formatCurrency } from '@/lib/utils'
 import {
-  Calendar, Clock, Users, DollarSign, FileText, UserPlus,
+  Clock, Users, DollarSign, FileText, UserPlus,
   AlertCircle, Baby, CheckCircle, Smile, UtensilsCrossed,
   Sparkles, Building2, User, ClipboardCheck, AlertTriangle,
   BookOpen, Package, Tag, ChevronRight,
@@ -585,7 +584,7 @@ export function CreateReservationForm({
     handleSubmit(onFormSubmit, (validationErrors) => {
       console.error('[handleFinalSubmit] Form validation errors:', validationErrors)
     })()
-  }, [validateCurrentStep, handleSubmit])
+  }, [validateCurrentStep, handleSubmit, onFormSubmit])
 
   // ═══ OPTIONS ═══
 

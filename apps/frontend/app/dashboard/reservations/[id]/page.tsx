@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
-  ArrowLeft, Trash2, Clock, Archive, ArchiveRestore,
-  Calendar, Users, User, Mail, Phone,
-  Download, CheckCircle2, XCircle, History,
+  ArrowLeft, Trash2, Archive, ArchiveRestore,
+  Calendar, User, Mail, Phone,
+  Download, XCircle, History,
   AlertTriangle, Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,6 @@ type TabType = 'details' | 'history'
 
 export default function ReservationDetailsPage() {
   const params = useParams()
-  const router = useRouter()
   const { toast } = useToast()
   const [downloading, setDownloading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
@@ -388,7 +387,7 @@ export default function ReservationDetailsPage() {
                   eventTypeId={reservation.eventType.id}
                   eventDate={eventDate}
                   adults={reservation.adults || 0}
-                  children={reservation.children || 0}
+                  childrenCount={reservation.children || 0}
                   toddlers={reservation.toddlers || 0}
                   categoryExtras={reservation.categoryExtras as any}
                   onMenuUpdated={handleRefetch}
@@ -447,7 +446,7 @@ export default function ReservationDetailsPage() {
               <EditableGuestsCard
                 reservationId={reservation.id}
                 adults={reservation.adults || 0}
-                children={reservation.children || 0}
+                childrenCount={reservation.children || 0}
                 toddlers={reservation.toddlers || 0}
                 hallCapacity={reservation.hall?.capacity || 0}
                 isWholeVenue={reservation.hall?.isWholeVenue || false}
@@ -461,7 +460,7 @@ export default function ReservationDetailsPage() {
               <ReservationFinancialSummary
                 reservationId={reservation.id}
                 adults={reservation.adults || 0}
-                children={reservation.children || 0}
+                childrenCount={reservation.children || 0}
                 toddlers={reservation.toddlers || 0}
                 pricePerAdult={Number(reservation.pricePerAdult) || 0}
                 pricePerChild={Number(reservation.pricePerChild) || 0}

@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
-import { formatDate, formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
+import { formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ReservationStatus } from '@/types'
 import {
   Eye, Trash2, Archive, ArchiveRestore, FileText, ChevronLeft, ChevronRight,
@@ -70,15 +70,15 @@ function getFormattedTimeRange(reservation: any): string {
 
 function getGuestBreakdown(reservation: any): {
   adults: number;
-  children: number;
+  childrenCount: number;
   toddlers: number;
   total: number
 } {
   const adults = reservation.adults || 0
-  const children = reservation.children || 0
+  const childrenCount = reservation.children || 0
   const toddlers = reservation.toddlers || 0
-  const total = reservation.guests || (adults + children + toddlers)
-  return { adults, children, toddlers, total }
+  const total = reservation.guests || (adults + childrenCount + toddlers)
+  return { adults, childrenCount, toddlers, total }
 }
 
 // Deposit Badge Helper
@@ -205,8 +205,8 @@ export function ReservationsList() {
     }).catch(console.error)
   }, [])
 
-  const allReservations = data?.data || []
-  const reservations = allReservations.filter((r: any) => r.status !== 'RESERVED')
+  const allReservations = useMemo(() => data?.data || [], [data])
+  const reservations = useMemo(() => allReservations.filter((r: any) => r.status !== 'RESERVED'), [allReservations])
 
   useEffect(() => {
     if (reservations.length === 0) return
@@ -226,7 +226,7 @@ export function ReservationsList() {
         .then(setRodoMap)
         .catch(console.error)
     }
-  }, [data])
+  }, [data, reservations])
 
   const statusOptions = [
     { value: 'ALL', label: 'Wszystkie statusy' },
@@ -516,16 +516,16 @@ export function ReservationsList() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="font-medium text-neutral-900 dark:text-neutral-100">{guestInfo.total}</div>
-                                {(guestInfo.adults > 0 || guestInfo.children > 0 || guestInfo.toddlers > 0) && (
+                                {(guestInfo.adults > 0 || guestInfo.childrenCount > 0 || guestInfo.toddlers > 0) && (
                                   <div className="flex gap-2 text-xs">
                                     {guestInfo.adults > 0 && (
                                       <div className="flex items-center gap-0.5 text-neutral-500 dark:text-neutral-400" title="Dorośli">
                                         <Users className="w-3 h-3" />{guestInfo.adults}
                                       </div>
                                     )}
-                                    {guestInfo.children > 0 && (
+                                    {guestInfo.childrenCount > 0 && (
                                       <div className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400" title="Dzieci 4-12">
-                                        <Smile className="w-3 h-3" />{guestInfo.children}
+                                        <Smile className="w-3 h-3" />{guestInfo.childrenCount}
                                       </div>
                                     )}
                                     {guestInfo.toddlers > 0 && (

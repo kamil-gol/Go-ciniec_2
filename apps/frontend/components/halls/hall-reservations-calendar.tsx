@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, User, DollarSign, Plus, ChevronRight, AlertCircle, UsersRound, UserCheck } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,14 +29,10 @@ export function HallReservationsCalendar({
 }: HallReservationsCalendarProps) {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [selectedDate] = useState<Date>(new Date())
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week')
 
-  useEffect(() => {
-    loadReservations()
-  }, [hallId, selectedDate, viewMode])
-
-  const loadReservations = async () => {
+  const loadReservations = useCallback(async () => {
     setLoading(true)
     try {
       let dateFrom: string
@@ -67,7 +63,11 @@ export function HallReservationsCalendar({
     } finally {
       setLoading(false)
     }
-  }
+  }, [hallId, selectedDate, viewMode])
+
+  useEffect(() => {
+    loadReservations()
+  }, [loadReservations])
 
   // Group reservations by date
   const reservationsByDate = reservations.reduce((acc, res) => {

@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { formatDate } from '@/lib/utils'
 import { ReservationHistory as HistoryType, ChangeType } from '@/types'
 import { CheckCircle2, Edit, XCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'

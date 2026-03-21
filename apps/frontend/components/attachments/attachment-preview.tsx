@@ -133,6 +133,7 @@ export default function AttachmentPreview({ attachment, open, onClose }: Attachm
           ) : !blobUrl ? (
             <p className="text-neutral-400 text-sm">Nie udało się załadować podglądu</p>
           ) : isImage ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- blob URL preview, not optimizable by next/image */
             <img
               src={blobUrl}
               alt={attachment.originalName}

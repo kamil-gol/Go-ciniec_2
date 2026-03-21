@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AlertTriangle, Trash2, Calendar, CheckCircle2, XCircle, Archive, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,16 +34,7 @@ export function DeleteClientModal({
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (open && clientId) {
-      loadSummary()
-    } else {
-      setSummary(null)
-      setError(null)
-    }
-  }, [open, clientId])
-
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       setLoadingSummary(true)
       setError(null)
@@ -55,7 +46,16 @@ export function DeleteClientModal({
     } finally {
       setLoadingSummary(false)
     }
-  }
+  }, [clientId])
+
+  useEffect(() => {
+    if (open && clientId) {
+      loadSummary()
+    } else {
+      setSummary(null)
+      setError(null)
+    }
+  }, [open, clientId, loadSummary])
 
   const hasActiveReservations = summary ? summary.active > 0 : false
   const canDelete = summary !== null && !hasActiveReservations && !error

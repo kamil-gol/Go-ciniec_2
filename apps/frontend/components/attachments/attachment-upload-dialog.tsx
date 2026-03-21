@@ -6,12 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Upload, X, FileText, Image, Loader2 } from 'lucide-react'
+import { Upload, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react'
 import {
   attachmentsApi,
   EntityType,
   AttachmentCategory,
-  getCategoryLabel,
   getCategoriesForEntity,
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -154,7 +153,7 @@ export default function AttachmentUploadDialog({
           ) : (
             <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
               {isImage ? (
-                <Image className="w-8 h-8 text-green-600" />
+                <ImageIcon className="w-8 h-8 text-green-600" />
               ) : (
                 <FileText className="w-8 h-8 text-green-600" />
               )}

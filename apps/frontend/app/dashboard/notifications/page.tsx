@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck, Calendar, CreditCard, Users, ArrowUpFromLine } from 'lucide-react'
+import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/use-notifications'

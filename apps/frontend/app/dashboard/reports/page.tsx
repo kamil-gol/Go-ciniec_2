@@ -156,20 +156,20 @@ export default function ReportsPage() {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
 
-  const revenueFilters: RevenueReportFilters = {
+  const revenueFilters: RevenueReportFilters = useMemo(() => ({
     dateFrom, dateTo, groupBy,
     ...(hallId && { hallId }),
     ...(eventTypeId && { eventTypeId }),
-  };
-  const occupancyFilters: OccupancyReportFilters = {
+  }), [dateFrom, dateTo, groupBy, hallId, eventTypeId]);
+  const occupancyFilters: OccupancyReportFilters = useMemo(() => ({
     dateFrom, dateTo, ...(hallId && { hallId }),
-  };
-  const preparationsFilters: PreparationsReportFilters = {
+  }), [dateFrom, dateTo, hallId]);
+  const preparationsFilters: PreparationsReportFilters = useMemo(() => ({
     dateFrom, dateTo, view: prepView,
-  };
-  const menuPreparationsFilters: MenuPreparationsReportFilters = {
+  }), [dateFrom, dateTo, prepView]);
+  const menuPreparationsFilters: MenuPreparationsReportFilters = useMemo(() => ({
     dateFrom, dateTo, view: menuPrepView,
-  };
+  }), [dateFrom, dateTo, menuPrepView]);
 
   const revenueQuery = useRevenueReport(revenueFilters, activeTab === 'revenue');
   const occupancyQuery = useOccupancyReport(occupancyFilters, activeTab === 'occupancy');

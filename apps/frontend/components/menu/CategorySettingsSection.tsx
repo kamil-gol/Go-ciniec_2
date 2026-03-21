@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { DishCategory, CategorySettingInput, PortionTarget } from '@/types/menu';
-import { PORTION_TARGET_LABELS, PORTION_TARGET_ICONS } from '@/types/menu';
+import { PORTION_TARGET_LABELS } from '@/types/menu';
 import { AlertCircle, Users, User, Baby, ShoppingCart } from 'lucide-react';
 
 interface CategorySettingsSectionProps {

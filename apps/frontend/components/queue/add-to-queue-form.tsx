@@ -85,7 +85,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
     },
   })
 
-  const safeClients = clients ?? []
+  const safeClients = useMemo(() => clients ?? [], [clients])
 
   // Filter clients based on search (show results if 3+ chars)
   const filteredClients = useMemo(() => {
@@ -100,8 +100,6 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
         client.phone.includes(searchLower)
     )
   }, [safeClients, clientSearchValue])
-
-  const selectedClient = safeClients.find((c) => c.id === form.watch('clientId'))
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -162,7 +160,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
           <FormField
             control={form.control}
             name="clientId"
-            render={({ field }) => (
+            render={() => (
               <FormItem>
                 <FormLabel>Klient</FormLabel>
                 <div className="flex gap-2">

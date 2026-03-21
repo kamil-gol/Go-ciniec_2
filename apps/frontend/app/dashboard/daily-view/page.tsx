@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CalendarDays, ChevronLeft, ChevronRight, CalendarCheck } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import DailyReservationsSection from './components/DailyReservationsSection'

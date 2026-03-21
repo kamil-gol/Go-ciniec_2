@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarDays, Building2, ExternalLink, Clock, Users, DollarSign, Banknote, Smartphone, CreditCard, ArrowDownUp } from 'lucide-react'
+import { CalendarDays, Building2, ExternalLink, Clock, Banknote, Smartphone, CreditCard, ArrowDownUp } from 'lucide-react'
 import {
   Table,
   TableBody,

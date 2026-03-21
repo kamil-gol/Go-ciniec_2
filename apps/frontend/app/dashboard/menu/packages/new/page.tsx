@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PackageForm from '@/components/menu/PackageForm';
 import { getMenuTemplates, type MenuTemplate } from '@/lib/api/menu-templates-api';
@@ -19,11 +19,7 @@ export default function NewPackagePage() {
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate | null>(null);
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  async function loadTemplates() {
+  const loadTemplates = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getMenuTemplates({ isActive: true });
@@ -41,7 +37,11 @@ export default function NewPackagePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [templateId]);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   // If template is selected, show the form
   if (selectedTemplate) {
