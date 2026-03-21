@@ -10,7 +10,7 @@
  *   import prisma from '@/lib/prisma';
  */
 
-import { PrismaClient } from '@/generated/prisma/index';
+import { PrismaClient } from '@/prisma-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import logger from '@utils/logger';
 

@@ -10,7 +10,7 @@
  * selectedOptions are now stored purely from input data (no DB lookup).
  */
 
-import { Prisma } from '@/generated/prisma/index';
+import { Prisma } from '@/prisma-client';
 import { prisma } from '@/lib/prisma';
 import {
   MenuSnapshotData,

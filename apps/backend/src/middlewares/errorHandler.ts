@@ -8,7 +8,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from './asyncHandler';
-import { Prisma } from '@/generated/prisma/index';
+import { Prisma } from '@/prisma-client';
 import { z } from 'zod';
 import { ERRORS } from '../i18n/pl';
 
