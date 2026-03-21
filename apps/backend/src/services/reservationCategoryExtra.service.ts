@@ -7,7 +7,6 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { Decimal } from '@prisma/client/runtime/library';
 import { logChange } from '../utils/audit-logger';
 
 /** Compute relevant guest count based on portionTarget */
@@ -87,20 +86,20 @@ class ReservationCategoryExtraService {
           },
         },
         update: {
-          quantity: new Decimal(extra.quantity),
-          pricePerItem: new Decimal(pricePerItem),
+          quantity: extra.quantity,
+          pricePerItem: pricePerItem,
           guestCount,
           portionTarget,
-          totalPrice: new Decimal(totalPrice),
+          totalPrice,
         },
         create: {
           reservationId,
           packageCategoryId: extra.packageCategoryId,
-          quantity: new Decimal(extra.quantity),
-          pricePerItem: new Decimal(pricePerItem),
+          quantity: extra.quantity,
+          pricePerItem: pricePerItem,
           guestCount,
           portionTarget,
-          totalPrice: new Decimal(totalPrice),
+          totalPrice,
         },
       });
       results.push(result);
@@ -168,7 +167,7 @@ class ReservationCategoryExtraService {
           where: { id: extra.id },
           data: {
             guestCount: newGuestCount,
-            totalPrice: new Decimal(newTotalPrice),
+            totalPrice: newTotalPrice,
           },
         });
       }

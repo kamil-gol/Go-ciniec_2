@@ -7,7 +7,6 @@
  * Call after any change to: menu, extras, surcharge, time, or discount.
  */
 import { prisma } from '@/lib/prisma';
-import { Decimal } from '@prisma/client/runtime/library';
 import { calculateTotalPrice } from './reservation.utils';
 
 export const STANDARD_HOURS = 6;
@@ -166,8 +165,8 @@ export async function recalculateReservationTotalPrice(
 
   const updateData: any = {
     totalPrice: breakdown.totalPrice,
-    extrasTotalPrice: new Decimal(breakdown.extrasTotal),
-    extraHoursCost: new Decimal(breakdown.extraHoursCost),
+    extrasTotalPrice: breakdown.extrasTotal,
+    extraHoursCost: breakdown.extraHoursCost,
   };
 
   if (breakdown.hasDiscount) {

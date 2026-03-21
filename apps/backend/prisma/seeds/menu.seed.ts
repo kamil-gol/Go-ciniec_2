@@ -8,10 +8,9 @@
  */
 
 import { prisma } from '../lib/prisma.js';
-import { Decimal } from '@prisma/client/runtime/library';
 
-// Helper to convert number to Prisma Decimal
-const dec = (num: number) => new Decimal(num);
+// Helper for Decimal fields — Prisma accepts plain numbers
+const dec = (num: number) => num;
 
 export async function seedMenuSystem() {
   console.log('🍽️  Starting menu system seed...');

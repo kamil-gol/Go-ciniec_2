@@ -11,7 +11,6 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { Decimal } from '@prisma/client/runtime/library';
 import { logChange, diffObjects } from '../utils/audit-logger';
 import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import {

@@ -17,7 +17,6 @@
  */
 
 import { prisma } from '../lib/prisma';
-import { Decimal } from '@prisma/client/runtime/library';
 import { calculateTotalPrice } from './reservation.utils';
 import logger from './logger';
 
@@ -96,10 +95,10 @@ export async function recalculateReservationTotal(
   await prisma.reservation.update({
     where: { id: reservationId },
     data: {
-      totalPrice: new Decimal(totalPrice),
-      extrasTotalPrice: new Decimal(extrasTotal),
+      totalPrice,
+      extrasTotalPrice: extrasTotal,
       priceBeforeDiscount: discountAmount > 0
-        ? new Decimal(priceBeforeDiscount)
+        ? priceBeforeDiscount
         : null,
     },
   });
