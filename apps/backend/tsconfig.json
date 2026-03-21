@@ -30,6 +30,6 @@
       "@routes/*": ["src/routes/*"]
     }
   },
-  "include": ["src/**/*", "prisma.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }
