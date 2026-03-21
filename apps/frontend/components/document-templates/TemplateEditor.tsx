@@ -197,6 +197,35 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
     [template?.content]
   );
 
+  // Detect template format
+  const templateFormat = template?.format || (
+    template?.category === 'EMAIL_LAYOUT' ? 'HTML' :
+    template?.category === 'PDF_LAYOUT_CONFIG' ? 'JSON' : 'MARKDOWN'
+  );
+  const isMarkdown = templateFormat === 'MARKDOWN';
+  const isHtml = templateFormat === 'HTML';
+  const isJson = templateFormat === 'JSON';
+
+  // JSON validation for PDF config templates
+  const jsonError = useMemo(() => {
+    if (!isJson) return null;
+    try {
+      JSON.parse(content);
+      return null;
+    } catch (e: any) {
+      return e.message as string;
+    }
+  }, [content, isJson]);
+
+  // Local preview (client-side variable substitution for instant feedback)
+  const localPreview = useMemo(() => {
+    let result = content;
+    for (const [key, value] of Object.entries(SAMPLE_VARS)) {
+      result = result.split(`{{${key}}}`).join(value);
+    }
+    return result;
+  }, [content]);
+
   // Open save dialog (with change reason)
   const handleSaveClick = useCallback(() => {
     // Block save if JSON is invalid
@@ -339,35 +368,6 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
       onClose();
     }
   };
-
-  // Detect template format
-  const templateFormat = template?.format || (
-    template?.category === 'EMAIL_LAYOUT' ? 'HTML' :
-    template?.category === 'PDF_LAYOUT_CONFIG' ? 'JSON' : 'MARKDOWN'
-  );
-  const isMarkdown = templateFormat === 'MARKDOWN';
-  const isHtml = templateFormat === 'HTML';
-  const isJson = templateFormat === 'JSON';
-
-  // Local preview (client-side variable substitution for instant feedback)
-  const localPreview = useMemo(() => {
-    let result = content;
-    for (const [key, value] of Object.entries(SAMPLE_VARS)) {
-      result = result.split(`{{${key}}}`).join(value);
-    }
-    return result;
-  }, [content]);
-
-  // JSON validation for PDF config templates
-  const jsonError = useMemo(() => {
-    if (!isJson) return null;
-    try {
-      JSON.parse(content);
-      return null;
-    } catch (e: any) {
-      return e.message as string;
-    }
-  }, [content, isJson]);
 
   // ── Render ───────────────────────────────────────
 
