@@ -16,6 +16,7 @@ module.exports = {
       ],
       setupFiles: ['<rootDir>/src/tests/setup.ts'],
       moduleNameMapper: {
+        '^@/prisma-client$': '<rootDir>/src/tests/mocks/prisma-client-jest',
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@utils/(.*)$': '<rootDir>/src/utils/$1',
         '^@lib/(.*)$': '<rootDir>/src/lib/$1',
@@ -48,6 +49,7 @@ module.exports = {
         '<rootDir>/src/tests/helpers/integration-setup.ts',
       ],
       moduleNameMapper: {
+        '^@/prisma-client$': '<rootDir>/src/tests/mocks/prisma-client-jest',
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@utils/(.*)$': '<rootDir>/src/utils/$1',
         '^@lib/(.*)$': '<rootDir>/src/lib/$1',
