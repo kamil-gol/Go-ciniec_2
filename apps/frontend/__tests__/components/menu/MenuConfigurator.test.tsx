@@ -174,7 +174,7 @@ async function renderConfigurator(props = {}) {
 
   const defaultProps = {
     adults: 50,
-    children: 10,
+    childrenCount: 10,
     toddlers: 5,
     onComplete: vi.fn(),
   };
@@ -339,7 +339,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
       const { MenuSelectionFlow } = await import('@/components/menu/MenuSelectionFlow');
 
       render(
-        <MenuSelectionFlow adults={50} children={10} toddlers={5} onComplete={onComplete} />,
+        <MenuSelectionFlow adults={50} childrenCount={10} toddlers={5} onComplete={onComplete} />,
         { wrapper: createWrapper() }
       );
 
