@@ -862,6 +862,7 @@ model DocumentTemplate {
   name          String   @db.VarChar(255)
   description   String?  @db.Text
   category      String   @db.VarChar(50)
+  format        String   @default("MARKDOWN") @db.VarChar(20)
   content       String   @db.Text
   availableVars String[] @db.Text
   version       Int      @default(1) @db.SmallInt

@@ -24,6 +24,7 @@ interface TemplateDefinition {
   name: string;
   description: string;
   category: string;
+  format?: string;
   content: string;
   availableVars: string[];
   isRequired: boolean;
@@ -350,6 +351,125 @@ Zespół {{companyName}}`,
     displayOrder: 8,
   },
 
+  // ═══ EMAIL_LAYOUT ═════════════════════════════════════════
+  {
+    slug: 'email-layout-default',
+    name: 'Szablon HTML email (layout)',
+    description: 'Wrapper HTML dla wszystkich wiadomości email — nagłówek, treść, stopka',
+    category: 'EMAIL_LAYOUT',
+    format: 'HTML',
+    content: `<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}}</title>
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+  <style>
+    body { margin:0; padding:0; background:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+    .wrapper { max-width:600px; margin:0 auto; background:#ffffff; border-radius:12px; overflow:hidden; margin-top:32px; margin-bottom:32px; box-shadow:0 4px 6px rgba(0,0,0,0.07); }
+    .header { background:linear-gradient(135deg,#e11d48,#f43f5e); padding:32px 40px; }
+    .header h1 { color:#fff; margin:0; font-size:22px; font-weight:700; }
+    .content { padding:32px 40px; color:#374151; font-size:15px; line-height:1.7; }
+    .footer { padding:24px 40px; background:#f9fafb; border-top:1px solid #e5e7eb; text-align:center; color:#9ca3af; font-size:12px; }
+  </style>
+</head>
+<body>
+  <span style="display:none;max-height:0;overflow:hidden;">{{preheader}}</span>
+  <div class="wrapper">
+    <div class="header">
+      <h1>🏛️ {{companyName}}</h1>
+    </div>
+    <div class="content">
+      {{content}}
+    </div>
+    <div class="footer">
+      <p>{{footer}}</p>
+    </div>
+  </div>
+</body>
+</html>`,
+    availableVars: ['title', 'preheader', 'companyName', 'content', 'footer'],
+    isRequired: true,
+    displayOrder: 1,
+  },
+
+  // ═══ PDF_LAYOUT_CONFIG ══════════════════════════════════════
+  {
+    slug: 'pdf-layout-reservation',
+    name: 'Konfiguracja PDF rezerwacji',
+    description: 'Układ sekcji, kolejność i kolory w PDF rezerwacji',
+    category: 'PDF_LAYOUT_CONFIG',
+    format: 'JSON',
+    content: JSON.stringify({
+      colors: {
+        primary: '#1a2332',
+        primaryLight: '#2c3e50',
+        accent: '#c8a45a',
+        success: '#27ae60',
+        warning: '#f39c12',
+        danger: '#e74c3c',
+        info: '#3498db',
+        textDark: '#1a2332',
+        textMuted: '#7f8c8d',
+        textLight: '#bdc3c7',
+        border: '#dce1e8',
+        bgLight: '#f4f6f9',
+      },
+      sections: [
+        { id: 'header', enabled: true, order: 1 },
+        { id: 'title_meta', enabled: true, order: 2 },
+        { id: 'client_event', enabled: true, order: 3 },
+        { id: 'menu', enabled: true, order: 4 },
+        { id: 'extras', enabled: true, order: 5 },
+        { id: 'category_extras', enabled: true, order: 6 },
+        { id: 'financial_summary', enabled: true, order: 7 },
+        { id: 'notes', enabled: true, order: 8 },
+        { id: 'important_info', enabled: true, order: 9 },
+        { id: 'footer', enabled: true, order: 10 },
+      ],
+    }, null, 2),
+    availableVars: [],
+    isRequired: true,
+    displayOrder: 1,
+  },
+  {
+    slug: 'pdf-layout-catering',
+    name: 'Konfiguracja PDF cateringu',
+    description: 'Układ sekcji, kolejność i kolory w PDF cateringu',
+    category: 'PDF_LAYOUT_CONFIG',
+    format: 'JSON',
+    content: JSON.stringify({
+      colors: {
+        primary: '#1a2332',
+        primaryLight: '#2c3e50',
+        accent: '#c8a45a',
+        success: '#27ae60',
+        warning: '#f39c12',
+        danger: '#e74c3c',
+        info: '#3498db',
+        textDark: '#1a2332',
+        textMuted: '#7f8c8d',
+        textLight: '#bdc3c7',
+        border: '#dce1e8',
+        bgLight: '#f4f6f9',
+      },
+      sections: [
+        { id: 'header', enabled: true, order: 1 },
+        { id: 'title_meta', enabled: true, order: 2 },
+        { id: 'client_info', enabled: true, order: 3 },
+        { id: 'event_info', enabled: true, order: 4 },
+        { id: 'items_table', enabled: true, order: 5 },
+        { id: 'totals', enabled: true, order: 6 },
+        { id: 'notes', enabled: true, order: 7 },
+        { id: 'footer', enabled: true, order: 8 },
+      ],
+    }, null, 2),
+    availableVars: [],
+    isRequired: true,
+    displayOrder: 2,
+  },
+
   // ═══ POLICY ════════════════════════════════════════════════
   {
     slug: 'policy-cancellation',
@@ -417,6 +537,7 @@ export async function seedDocumentTemplates(): Promise<number> {
         name: template.name,
         description: template.description,
         category: template.category,
+        format: template.format || 'MARKDOWN',
         content: template.content,
         availableVars: template.availableVars,
         isRequired: template.isRequired,
@@ -427,6 +548,7 @@ export async function seedDocumentTemplates(): Promise<number> {
         name: template.name,
         description: template.description,
         category: template.category,
+        format: template.format || 'MARKDOWN',
         content: template.content,
         availableVars: template.availableVars,
         isRequired: template.isRequired,

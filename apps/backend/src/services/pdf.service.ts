@@ -2,6 +2,7 @@ import PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 import * as fs from 'fs';
 import companySettingsService from './company-settings.service';
+import documentTemplateService from './document-template.service';
 
 // ═══════════════ INTERFACES ═══════════════
 
@@ -257,8 +258,20 @@ const ALLERGEN_LABELS: Record<string, string> = {
   peanuts: 'Orzeszki ziemne',
 };
 
-/** Premium color palette */
-const COLORS = {
+/** PDF layout config interfaces */
+interface PdfSectionConfig {
+  id: string;
+  enabled: boolean;
+  order: number;
+}
+
+interface PdfLayoutConfig {
+  colors?: Record<string, string>;
+  sections: PdfSectionConfig[];
+}
+
+/** Premium color palette (mutable — overridden per-render from DB config) */
+let COLORS = {
   primary: '#1a2332',       // Dark navy — headers, banners
   primaryLight: '#2c3e50',  // Lighter navy — section headers
   accent: '#c8a45a',        // Gold accent — premium feel
@@ -275,6 +288,19 @@ const COLORS = {
   allergen: '#e67e22',      // Allergen labels
   purple: '#8e44ad',        // Optional extras
 };
+
+/** Snapshot of default colors for reset after each render */
+const DEFAULT_COLORS = { ...COLORS };
+
+/** Load PDF layout config from DB, returns null if not found */
+async function loadPdfConfig(slug: string): Promise<PdfLayoutConfig | null> {
+  try {
+    const template = await documentTemplateService.getBySlug(slug);
+    return JSON.parse(template.content) as PdfLayoutConfig;
+  } catch {
+    return null;
+  }
+}
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   RESERVED: { label: 'REZERWACJA', color: COLORS.info },
@@ -855,8 +881,7 @@ export class PDFService {
       });
       /* istanbul ignore next */
       doc.on('error', (error) => reject(error));
-      this.buildReservationPDF(doc, reservation);
-      doc.end();
+      this.buildReservationPDF(doc, reservation).then(() => doc.end()).catch(reject);
     });
   }
 
@@ -985,96 +1010,118 @@ export class PDFService {
   // ██  PREMIUM RESERVATION PDF — #157 Redesign
   // ═══════════════════════════════════════════════════════════════
 
-  private buildReservationPDF(doc: PDFKit.PDFDocument, r: ReservationPDFData): void {
-    const left = 40;
-    const pageWidth = doc.page.width - 80;
-
-    // ── 1. PREMIUM HEADER BANNER ──
-    /* istanbul ignore next */
-    const statusInfo = STATUS_MAP[r.status] || { label: r.status, color: COLORS.textMuted };
-    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
-
-    // ── 2. TITLE + META ──
-    doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
-    doc.text('POTWIERDZENIE REZERWACJI', left, doc.y, { align: 'center', width: pageWidth });
-
-    doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    doc.text(`Nr: ${r.id}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
-      align: 'center', width: pageWidth,
-    });
-
-    doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.5);
-
-    // ── 3. TWO-COLUMN: CLIENT | EVENT ──
-    this.drawClientAndEventColumns(doc, r, left, pageWidth);
-
-    doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.4);
-
-    // ── 4. MENU TABLE ──
-    const menuSnapshot = r.menuSnapshot;
-    if (menuSnapshot && menuSnapshot.menuData) {
-      this.drawMenuTable(doc, menuSnapshot, left, pageWidth);
-      doc.moveDown(0.3);
-      this.drawSeparator(doc, left, pageWidth);
-      doc.moveDown(0.4);
-    } else if (r.menuData?.dishSelections && r.menuData.dishSelections.length > 0) {
-      this.drawMenuTableLegacy(doc, r.menuData, left, pageWidth);
-      doc.moveDown(0.3);
-      this.drawSeparator(doc, left, pageWidth);
-      doc.moveDown(0.4);
+  private async buildReservationPDF(doc: PDFKit.PDFDocument, r: ReservationPDFData): Promise<void> {
+    // Load layout config from DB (colors, section order/visibility)
+    const config = await loadPdfConfig('pdf-layout-reservation');
+    if (config?.colors) {
+      COLORS = { ...DEFAULT_COLORS, ...config.colors };
     }
 
-    // ── 5. EXTRAS (inline chips) ──
-    if (r.reservationExtras && r.reservationExtras.length > 0) {
-      this.drawExtrasInline(doc, r.reservationExtras, left, pageWidth);
-      doc.moveDown(0.3);
-      this.drawSeparator(doc, left, pageWidth);
-      doc.moveDown(0.4);
+    try {
+      const left = 40;
+      const pageWidth = doc.page.width - 80;
+
+      // Build section renderers
+      const sectionRenderers: Record<string, () => void> = {
+        header: () => {
+          /* istanbul ignore next */
+          const statusInfo = STATUS_MAP[r.status] || { label: r.status, color: COLORS.textMuted };
+          this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+        },
+        title_meta: () => {
+          doc.y = 80;
+          doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+          doc.text('POTWIERDZENIE REZERWACJI', left, doc.y, { align: 'center', width: pageWidth });
+          doc.moveDown(0.2);
+          doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+          doc.text(`Nr: ${r.id}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+            align: 'center', width: pageWidth,
+          });
+          doc.moveDown(0.6);
+          this.drawSeparator(doc, left, pageWidth);
+          doc.moveDown(0.5);
+        },
+        client_event: () => {
+          this.drawClientAndEventColumns(doc, r, left, pageWidth);
+          doc.moveDown(0.4);
+          this.drawSeparator(doc, left, pageWidth);
+          doc.moveDown(0.4);
+        },
+        menu: () => {
+          const menuSnapshot = r.menuSnapshot;
+          if (menuSnapshot && menuSnapshot.menuData) {
+            this.drawMenuTable(doc, menuSnapshot, left, pageWidth);
+            doc.moveDown(0.3);
+            this.drawSeparator(doc, left, pageWidth);
+            doc.moveDown(0.4);
+          } else if (r.menuData?.dishSelections && r.menuData.dishSelections.length > 0) {
+            this.drawMenuTableLegacy(doc, r.menuData, left, pageWidth);
+            doc.moveDown(0.3);
+            this.drawSeparator(doc, left, pageWidth);
+            doc.moveDown(0.4);
+          }
+        },
+        extras: () => {
+          if (r.reservationExtras && r.reservationExtras.length > 0) {
+            this.drawExtrasInline(doc, r.reservationExtras, left, pageWidth);
+            doc.moveDown(0.3);
+            this.drawSeparator(doc, left, pageWidth);
+            doc.moveDown(0.4);
+          }
+        },
+        category_extras: () => {
+          if (r.categoryExtras && r.categoryExtras.length > 0) {
+            this.drawCategoryExtras(doc, r.categoryExtras, left, pageWidth);
+            doc.moveDown(0.3);
+            this.drawSeparator(doc, left, pageWidth);
+            doc.moveDown(0.4);
+          }
+        },
+        financial_summary: () => {
+          this.drawFinancialSummary(doc, r, left, pageWidth);
+        },
+        notes: () => {
+          if (r.notes) {
+            doc.moveDown(0.4);
+            const noteIndent = 10;
+            doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+            doc.text('Uwagi:', left, doc.y);
+            doc.moveDown(0.15);
+            const noteLines = r.notes.split('\n').filter(line => line.trim() !== '');
+            doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+            noteLines.forEach((line) => {
+              doc.text(line.trim(), left + noteIndent, doc.y, { width: pageWidth - noteIndent });
+            });
+          }
+        },
+        important_info: () => {
+          const eventDate = r.startDateTime
+            ? new Date(r.startDateTime)
+            : r.date
+              ? new Date(r.date)
+              : undefined;
+          this.drawImportantInfoSection(doc, left, pageWidth, eventDate);
+        },
+        footer: () => {
+          doc.moveDown(1);
+          this.drawInlineFooter(doc, left, pageWidth);
+        },
+      };
+
+      // Get section order from config or use default
+      const sections = config?.sections
+        ? [...config.sections].sort((a, b) => a.order - b.order)
+        : Object.keys(sectionRenderers).map((id, i) => ({ id, enabled: true, order: i + 1 }));
+
+      for (const section of sections) {
+        if (section.enabled && sectionRenderers[section.id]) {
+          sectionRenderers[section.id]();
+        }
+      }
+    } finally {
+      // Restore default colors
+      COLORS = { ...DEFAULT_COLORS };
     }
-
-    // ── 5b. CATEGORY EXTRAS TABLE (#216) ──
-    if (r.categoryExtras && r.categoryExtras.length > 0) {
-      this.drawCategoryExtras(doc, r.categoryExtras, left, pageWidth);
-      doc.moveDown(0.3);
-      this.drawSeparator(doc, left, pageWidth);
-      doc.moveDown(0.4);
-    }
-
-    // ── 6. FINANCIAL SUMMARY BOX ──
-    this.drawFinancialSummary(doc, r, left, pageWidth);
-
-    // ── 7. NOTES ──
-    if (r.notes) {
-      doc.moveDown(0.4);
-      const noteIndent = 10;
-      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
-      doc.text('Uwagi:', left, doc.y);
-      doc.moveDown(0.15);
-      // Split notes into individual lines and render each with uniform indent
-      const noteLines = r.notes.split('\n').filter(line => line.trim() !== '');
-      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
-      noteLines.forEach((line) => {
-        doc.text(line.trim(), left + noteIndent, doc.y, { width: pageWidth - noteIndent });
-      });
-    }
-
-    // ── 8. IMPORTANT INFO SECTION ──
-    const eventDate = r.startDateTime
-      ? new Date(r.startDateTime)
-      : r.date
-        ? new Date(r.date)
-        : undefined;
-    this.drawImportantInfoSection(doc, left, pageWidth, eventDate);
-
-    // ── 9. FOOTER ──
-    doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
   }
 
   // ── TWO-COLUMN: CLIENT | EVENT ──
@@ -2226,8 +2273,7 @@ export class PDFService {
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', (error) => reject(error));
-      this.buildCateringQuotePDF(doc, data);
-      doc.end();
+      this.buildCateringQuotePDF(doc, data).then(() => doc.end()).catch(reject);
     });
   }
 
@@ -2269,65 +2315,99 @@ export class PDFService {
 
     // ═══════════════ CATERING PDF BUILDERS ═══════════════
 
-  private buildCateringQuotePDF(doc: PDFKit.PDFDocument, data: CateringQuotePDFData): void {
-    const left = 40;
-    const pageWidth = doc.page.width - 80;
-    const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
-    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
-    doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
-    doc.text('WYCENA CATERING', left, doc.y, { align: 'center', width: pageWidth });
-    doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    doc.text(`Nr: ${data.orderNumber} | Data wygenerowania: ${this.formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
-    doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.5);
-    // Client box
-    const clientLines = [data.client.firstName + ' ' + data.client.lastName, data.client.phone];
-    if (data.client.companyName) clientLines.push(data.client.companyName);
-    if (data.client.email) clientLines.push(data.client.email);
-    if (data.client.address) clientLines.push(data.client.address);
-    this.drawInfoBox(doc, 'KLIENT', left, doc.y, pageWidth, clientLines);
-    const boxHeight = this.calculateInfoBoxHeight(clientLines.length);
-    doc.y += boxHeight + 5;
-    doc.moveDown(0.4);
-    // Event info
-    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
-    doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
-    if (data.deliveryAddress) doc.text(`Adres: ${data.deliveryAddress}`, left, doc.y);
-    doc.text(`Liczba osób: ${(data as any).guestsCount ?? data.guests ?? '—'}`, left, doc.y);
-    doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.4);
-    // Items table
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
-    doc.moveDown(0.3);
-    const itemRows = data.items.map(item => [
-      (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
-      `${item.quantity}`,
-      this.formatCurrency(item.unitPrice),
-      this.formatCurrency(item.totalPrice),
-    ]);
-    const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
-    this.drawCompactTable(doc, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
-    doc.moveDown(0.4);
-    // Total
-    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
-    if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
-    doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
-    if (data.notes) {
-      doc.moveDown(0.4);
-      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
-      doc.text('Uwagi:', left, doc.y);
-      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
-      doc.text(data.notes, left, doc.y);
+  private async buildCateringQuotePDF(doc: PDFKit.PDFDocument, data: CateringQuotePDFData): Promise<void> {
+    const config = await loadPdfConfig('pdf-layout-catering');
+    if (config?.colors) {
+      COLORS = { ...DEFAULT_COLORS, ...config.colors };
     }
-    doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
+
+    try {
+      const left = 40;
+      const pageWidth = doc.page.width - 80;
+
+      const sectionRenderers: Record<string, () => void> = {
+        header: () => {
+          const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
+          this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+        },
+        title_meta: () => {
+          doc.y = 80;
+          doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+          doc.text('WYCENA CATERING', left, doc.y, { align: 'center', width: pageWidth });
+          doc.moveDown(0.2);
+          doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+          doc.text(`Nr: ${data.orderNumber} | Data wygenerowania: ${this.formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
+          doc.moveDown(0.6);
+          this.drawSeparator(doc, left, pageWidth);
+          doc.moveDown(0.5);
+        },
+        client_info: () => {
+          const clientLines = [data.client.firstName + ' ' + data.client.lastName, data.client.phone];
+          if (data.client.companyName) clientLines.push(data.client.companyName);
+          if (data.client.email) clientLines.push(data.client.email);
+          if (data.client.address) clientLines.push(data.client.address);
+          this.drawInfoBox(doc, 'KLIENT', left, doc.y, pageWidth, clientLines);
+          const boxHeight = this.calculateInfoBoxHeight(clientLines.length);
+          doc.y += boxHeight + 5;
+          doc.moveDown(0.4);
+        },
+        event_info: () => {
+          doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
+          doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+          doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
+          if (data.deliveryAddress) doc.text(`Adres: ${data.deliveryAddress}`, left, doc.y);
+          doc.text(`Liczba osób: ${(data as any).guestsCount ?? data.guests ?? '—'}`, left, doc.y);
+          doc.moveDown(0.4);
+          this.drawSeparator(doc, left, pageWidth);
+          doc.moveDown(0.4);
+        },
+        items_table: () => {
+          doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+          doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
+          doc.moveDown(0.3);
+          const itemRows = data.items.map(item => [
+            (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
+            `${item.quantity}`,
+            this.formatCurrency(item.unitPrice),
+            this.formatCurrency(item.totalPrice),
+          ]);
+          const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
+          this.drawCompactTable(doc, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+          doc.moveDown(0.4);
+        },
+        totals: () => {
+          doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
+          doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+          if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+          doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+        },
+        notes: () => {
+          if (data.notes) {
+            doc.moveDown(0.4);
+            doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+            doc.text('Uwagi:', left, doc.y);
+            doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+            doc.text(data.notes, left, doc.y);
+          }
+        },
+        footer: () => {
+          doc.moveDown(1);
+          this.drawInlineFooter(doc, left, pageWidth);
+        },
+      };
+
+      const sections = config?.sections
+        ? [...config.sections].sort((a, b) => a.order - b.order)
+        : Object.keys(sectionRenderers).map((id, i) => ({ id, enabled: true, order: i + 1 }));
+
+      for (const section of sections) {
+        if (section.enabled && sectionRenderers[section.id]) {
+          sectionRenderers[section.id]();
+        }
+      }
+    } finally {
+      COLORS = { ...DEFAULT_COLORS };
+    }
   }
 
   private buildCateringKitchenPDF(doc: PDFKit.PDFDocument, data: CateringKitchenPrintData): void {

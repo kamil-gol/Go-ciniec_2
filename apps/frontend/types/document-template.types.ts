@@ -6,12 +6,16 @@ export type TemplateCategory =
   | 'RESERVATION_PDF'
   | 'CATERING_PDF'
   | 'EMAIL'
+  | 'EMAIL_LAYOUT'
+  | 'PDF_LAYOUT_CONFIG'
   | 'POLICY';
 
 export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategory, string> = {
   RESERVATION_PDF: 'Rezerwacje — PDF',
   CATERING_PDF: 'Catering — PDF',
   EMAIL: 'E-mail',
+  EMAIL_LAYOUT: 'Layout e-mail',
+  PDF_LAYOUT_CONFIG: 'Konfiguracja PDF',
   POLICY: 'Regulaminy',
 };
 
@@ -19,6 +23,8 @@ export const TEMPLATE_CATEGORY_ORDER: TemplateCategory[] = [
   'RESERVATION_PDF',
   'CATERING_PDF',
   'EMAIL',
+  'EMAIL_LAYOUT',
+  'PDF_LAYOUT_CONFIG',
   'POLICY',
 ];
 
@@ -31,6 +37,7 @@ export interface DocumentTemplate {
   description: string | null;
   content: string;
   category: TemplateCategory;
+  format?: string;
   availableVars: string[];
   isRequired: boolean;
   isActive: boolean;

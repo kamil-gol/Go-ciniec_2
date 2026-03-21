@@ -320,7 +320,7 @@ const emailService = {
     const fallbackBody = this.buildReservationConfirmationFallback(data, company.name);
     const body = await renderEmailTemplate('email-reservation-confirmation', vars, fallbackBody);
 
-    const html = buildHtmlTemplate({
+    const html = await buildHtmlFromLayout({
       title: 'Potwierdzenie rezerwacji',
       preheader: `Rezerwacja ${data.eventType} — ${data.reservationDate} potwierdzona`,
       companyName: company.name,
@@ -419,7 +419,7 @@ const emailService = {
 
     const body = await renderEmailTemplate('email-deposit-reminder', vars, fallbackBody);
 
-    const html = buildHtmlTemplate({
+    const html = await buildHtmlFromLayout({
       title: 'Przypomnienie o zaliczce',
       preheader: `Termin płatności za ${data.daysLeft} dni`,
       companyName: company.name,
@@ -462,7 +462,7 @@ const emailService = {
 
     const body = await renderEmailTemplate('email-deposit-overdue', vars, fallbackBody);
 
-    const html = buildHtmlTemplate({
+    const html = await buildHtmlFromLayout({
       title: 'Zaległa zaliczka — prosimy o kontakt',
       preheader: `Termin płatności minął ${data.daysOverdue} dni temu`,
       companyName: company.name,
@@ -520,7 +520,7 @@ const emailService = {
 
     const body = await renderEmailTemplate('email-deposit-paid', vars, fallbackBody);
 
-    const html = buildHtmlTemplate({
+    const html = await buildHtmlFromLayout({
       title: 'Potwierdzenie wpłaty zaliczki',
       preheader: `Zaliczka ${data.depositAmount} zł została zaksięgowana`,
       companyName: company.name,
@@ -567,7 +567,7 @@ const emailService = {
 
     const body = await renderEmailTemplate('email-password-reset', vars, fallbackBody);
 
-    const html = buildHtmlTemplate({
+    const html = await buildHtmlFromLayout({
       title: 'Resetowanie hasła',
       preheader: 'Kliknij link aby ustawić nowe hasło',
       companyName: company.name,
@@ -600,7 +600,33 @@ const emailService = {
 };
 
 // ═══════════════════════════════════════════
-// HTML Template Builder
+// HTML Layout from DB (with fallback)
+// ═══════════════════════════════════════════
+
+async function buildHtmlFromLayout(opts: {
+  title: string;
+  preheader: string;
+  body: string;
+  footer: string;
+  companyName?: string;
+}): Promise<string> {
+  try {
+    const layout = await documentTemplateService.getBySlug('email-layout-default');
+    let html = layout.content;
+    html = html.replace(/\{\{content\}\}/g, opts.body);
+    html = html.replace(/\{\{title\}\}/g, opts.title);
+    html = html.replace(/\{\{preheader\}\}/g, opts.preheader);
+    html = html.replace(/\{\{companyName\}\}/g, opts.companyName || 'Gościniec');
+    html = html.replace(/\{\{footer\}\}/g, opts.footer);
+    return html;
+  } catch {
+    logger.debug('[Email] Layout template not found in DB, using fallback');
+    return buildHtmlTemplate(opts);
+  }
+}
+
+// ═══════════════════════════════════════════
+// HTML Template Builder (hardcoded fallback)
 // ═══════════════════════════════════════════
 
 function buildHtmlTemplate(opts: {

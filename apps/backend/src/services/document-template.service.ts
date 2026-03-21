@@ -23,6 +23,7 @@ interface CreateTemplateDTO {
   name: string;
   description?: string;
   category: string;
+  format?: string;
   content: string;
   availableVars?: string[];
   isActive?: boolean;
@@ -52,7 +53,8 @@ interface PaginatedHistory {
   totalPages: number;
 }
 
-const VALID_CATEGORIES = ['RESERVATION_PDF', 'CATERING_PDF', 'EMAIL', 'POLICY', 'GENERAL'];
+const VALID_CATEGORIES = ['RESERVATION_PDF', 'CATERING_PDF', 'EMAIL', 'EMAIL_LAYOUT', 'PDF_LAYOUT_CONFIG', 'POLICY', 'GENERAL'];
+const VALID_FORMATS = ['MARKDOWN', 'HTML', 'JSON'];
 
 // ── Service ──────────────────────────────────────────────
 
@@ -122,12 +124,20 @@ export class DocumentTemplateService {
     });
     const nextOrder = (maxOrder._max.displayOrder || 0) + 1;
 
+    // Validate format if provided
+    if (data.format && !VALID_FORMATS.includes(data.format)) {
+      throw AppError.badRequest(
+        `Nieprawidłowy format. Dozwolone: ${VALID_FORMATS.join(', ')}`
+      );
+    }
+
     const template = await prisma.documentTemplate.create({
       data: {
         slug: data.slug,
         name: data.name,
         description: data.description || null,
         category: data.category,
+        format: data.format || 'MARKDOWN',
         content: data.content,
         availableVars: data.availableVars || [],
         version: 1,

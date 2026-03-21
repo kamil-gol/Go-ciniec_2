@@ -199,6 +199,8 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
 
   // Open save dialog (with change reason)
   const handleSaveClick = () => {
+    // Block save if JSON is invalid
+    if (isJson && jsonError) return;
     setChangeReason('');
     setShowSaveDialog(true);
   };
@@ -338,6 +340,15 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
     }
   };
 
+  // Detect template format
+  const templateFormat = template?.format || (
+    template?.category === 'EMAIL_LAYOUT' ? 'HTML' :
+    template?.category === 'PDF_LAYOUT_CONFIG' ? 'JSON' : 'MARKDOWN'
+  );
+  const isMarkdown = templateFormat === 'MARKDOWN';
+  const isHtml = templateFormat === 'HTML';
+  const isJson = templateFormat === 'JSON';
+
   // Local preview (client-side variable substitution for instant feedback)
   const localPreview = useMemo(() => {
     let result = content;
@@ -346,6 +357,17 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
     }
     return result;
   }, [content]);
+
+  // JSON validation for PDF config templates
+  const jsonError = useMemo(() => {
+    if (!isJson) return null;
+    try {
+      JSON.parse(content);
+      return null;
+    } catch (e: any) {
+      return e.message as string;
+    }
+  }, [content, isJson]);
 
   // ── Render ───────────────────────────────────────
 
@@ -405,7 +427,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                   <div className="flex items-center gap-2 mt-3">
                     <Button
                       onClick={handleSaveClick}
-                      disabled={!hasChanges || updateMutation.isPending}
+                      disabled={!hasChanges || updateMutation.isPending || (isJson && !!jsonError)}
                       size="sm"
                       className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-sm"
                     >
@@ -529,42 +551,51 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                         editorMode === 'split' && 'border-r'
                       )}
                     >
-                      {/* ── Markdown Toolbar ── */}
+                      {/* ── Toolbar (Markdown only) / Format label ── */}
                       <div className="flex-shrink-0 px-4 py-1.5 border-b bg-muted/20 flex items-center gap-0.5">
                         {editorMode === 'split' && (
                           <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mr-2">
                             <Code className="h-3 w-3" />
-                            Edycja treści
+                            {isHtml ? 'Edycja HTML' : isJson ? 'Edycja JSON' : 'Edycja treści'}
                           </p>
                         )}
-                        <Separator orientation="vertical" className="h-4 mx-1" />
-                        <TooltipProvider delayDuration={300}>
-                          {MD_TOOLBAR.map((item, idx) => (
-                            <Tooltip key={idx}>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => applyToolbarAction(item)}
-                                  className={cn(
-                                    'p-1.5 rounded-md text-muted-foreground transition-colors',
-                                    'hover:bg-neutral-200/60 hover:text-foreground',
-                                    'dark:hover:bg-neutral-700/60 dark:hover:text-foreground'
-                                  )}
-                                >
-                                  <item.icon className="h-3.5 w-3.5" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="text-xs">
-                                {item.label}
-                                {item.shortcut && (
-                                  <kbd className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-muted font-mono">
-                                    {item.shortcut}
-                                  </kbd>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                        </TooltipProvider>
+                        {isMarkdown && (
+                          <>
+                            <Separator orientation="vertical" className="h-4 mx-1" />
+                            <TooltipProvider delayDuration={300}>
+                              {MD_TOOLBAR.map((item, idx) => (
+                                <Tooltip key={idx}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => applyToolbarAction(item)}
+                                      className={cn(
+                                        'p-1.5 rounded-md text-muted-foreground transition-colors',
+                                        'hover:bg-neutral-200/60 hover:text-foreground',
+                                        'dark:hover:bg-neutral-700/60 dark:hover:text-foreground'
+                                      )}
+                                    >
+                                      <item.icon className="h-3.5 w-3.5" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="text-xs">
+                                    {item.label}
+                                    {item.shortcut && (
+                                      <kbd className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-muted font-mono">
+                                        {item.shortcut}
+                                      </kbd>
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              ))}
+                            </TooltipProvider>
+                          </>
+                        )}
+                        {!isMarkdown && (
+                          <span className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                            {templateFormat}
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1 overflow-hidden min-h-0">
                         <textarea
@@ -585,18 +616,100 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
                       <div className="flex-shrink-0 px-4 py-2 border-b bg-muted/20">
                         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                           <Eye className="h-3 w-3" />
-                          Podgląd z przykładowymi danymi
+                          {isHtml ? 'Podgląd HTML' : isJson ? 'Podgląd konfiguracji' : 'Podgląd z przykładowymi danymi'}
                         </p>
                       </div>
                       <div className="flex-1 overflow-y-auto min-h-0">
                         <div className="p-4 sm:p-6">
-                          <div className="rounded-xl border bg-white dark:bg-neutral-950 p-6 shadow-sm">
-                            <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed text-foreground">
-                              {localPreview}
-                            </pre>
-                          </div>
-                          {/* Unfilled variables warning */}
-                          {content.match(/\{\{\w+\}\}/g)?.some(
+                          {/* HTML preview (rendered) */}
+                          {isHtml && (
+                            <div className="rounded-xl border bg-white dark:bg-neutral-950 shadow-sm overflow-hidden">
+                              <iframe
+                                srcDoc={localPreview}
+                                className="w-full border-0"
+                                style={{ minHeight: '500px' }}
+                                title="Podgląd layoutu email"
+                                sandbox=""
+                              />
+                            </div>
+                          )}
+                          {/* JSON preview (formatted + validation) */}
+                          {isJson && (
+                            <>
+                              {jsonError && (
+                                <div className="mb-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-xs font-medium text-red-800 dark:text-red-200">
+                                      Nieprawidłowy JSON
+                                    </p>
+                                    <code className="text-[10px] font-mono text-red-700 dark:text-red-300">
+                                      {jsonError}
+                                    </code>
+                                  </div>
+                                </div>
+                              )}
+                              {!jsonError && (() => {
+                                try {
+                                  const parsed = JSON.parse(content);
+                                  return (
+                                    <div className="rounded-xl border bg-white dark:bg-neutral-950 p-6 shadow-sm space-y-4">
+                                      {/* Colors preview */}
+                                      {parsed.colors && (
+                                        <div>
+                                          <h4 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Kolory</h4>
+                                          <div className="flex flex-wrap gap-2">
+                                            {Object.entries(parsed.colors).map(([name, color]) => (
+                                              <div key={name} className="flex items-center gap-1.5 text-xs">
+                                                <div
+                                                  className="w-4 h-4 rounded border"
+                                                  style={{ backgroundColor: color as string }}
+                                                />
+                                                <span className="font-mono text-muted-foreground">{name}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {/* Sections preview */}
+                                      {parsed.sections && (
+                                        <div>
+                                          <h4 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Sekcje</h4>
+                                          <div className="space-y-1">
+                                            {[...parsed.sections].sort((a: any, b: any) => a.order - b.order).map((section: any) => (
+                                              <div
+                                                key={section.id}
+                                                className={cn(
+                                                  'flex items-center gap-2 px-3 py-1.5 rounded text-xs',
+                                                  section.enabled
+                                                    ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                                    : 'bg-neutral-100 text-neutral-400 line-through dark:bg-neutral-900 dark:text-neutral-600'
+                                                )}
+                                              >
+                                                <span className="font-mono text-[10px] text-muted-foreground w-4">{section.order}.</span>
+                                                <span className="font-medium">{section.id}</span>
+                                                <span className="ml-auto text-[10px]">{section.enabled ? '✓' : '✗'}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                } catch { return null; }
+                              })()}
+                            </>
+                          )}
+                          {/* Markdown preview (default) */}
+                          {isMarkdown && (
+                            <div className="rounded-xl border bg-white dark:bg-neutral-950 p-6 shadow-sm">
+                              <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed text-foreground">
+                                {localPreview}
+                              </pre>
+                            </div>
+                          )}
+                          {/* Unfilled variables warning (markdown/HTML only) */}
+                          {!isJson && content.match(/\{\{\w+\}\}/g)?.some(
                             (match) => {
                               const varName = match.slice(2, -2);
                               return !SAMPLE_VARS[varName];

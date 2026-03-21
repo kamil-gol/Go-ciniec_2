@@ -18,6 +18,8 @@ import {
   BookOpen,
   Plus,
   Trash2,
+  LayoutTemplate,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   useDocumentTemplates,
@@ -92,6 +94,20 @@ const CATEGORY_CONFIG: Record<TemplateCategory, {
     gradient: 'from-violet-500 to-purple-500',
     badgeBg: 'bg-violet-100 dark:bg-violet-900/30',
     badgeText: 'text-violet-700 dark:text-violet-300',
+  },
+  EMAIL_LAYOUT: {
+    icon: LayoutTemplate,
+    emoji: '🎨',
+    gradient: 'from-rose-500 to-pink-500',
+    badgeBg: 'bg-rose-100 dark:bg-rose-900/30',
+    badgeText: 'text-rose-700 dark:text-rose-300',
+  },
+  PDF_LAYOUT_CONFIG: {
+    icon: SlidersHorizontal,
+    emoji: '⚙️',
+    gradient: 'from-slate-500 to-gray-500',
+    badgeBg: 'bg-slate-100 dark:bg-slate-900/30',
+    badgeText: 'text-slate-700 dark:text-slate-300',
   },
   POLICY: {
     icon: BookOpen,

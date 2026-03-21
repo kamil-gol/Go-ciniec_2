@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "DocumentTemplate" ADD COLUMN "format" VARCHAR(20) NOT NULL DEFAULT 'MARKDOWN';
