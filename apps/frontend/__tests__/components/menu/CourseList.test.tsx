@@ -340,14 +340,16 @@ describe('CourseList (DishSelector)', () => {
 
         await waitFor(() => {
           expect(onComplete).toHaveBeenCalledWith(
-            expect.arrayContaining([
-              expect.objectContaining({
-                categoryId: 'cat-soup',
-                dishes: expect.arrayContaining([
-                  expect.objectContaining({ dishId: 'dish-1' }),
-                ]),
-              }),
-            ])
+            expect.objectContaining({
+              selections: expect.arrayContaining([
+                expect.objectContaining({
+                  categoryId: 'cat-soup',
+                  dishes: expect.arrayContaining([
+                    expect.objectContaining({ dishId: 'dish-1' }),
+                  ]),
+                }),
+              ]),
+            })
           );
         });
       }

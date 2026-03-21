@@ -133,6 +133,18 @@ function renderWithProviders(ui: React.ReactElement) {
   )
 }
 
+/** Click the section toggle to expand the extras panel */
+function expandSection() {
+  const toggle = screen.getByText(/usługi dodatkowe/i).closest('button')
+  if (toggle) fireEvent.click(toggle)
+}
+
+/** Click a category header to expand its items */
+function expandCategory(categoryName: string) {
+  const catHeader = screen.getByText(categoryName).closest('button')
+  if (catHeader) fireEvent.click(catHeader)
+}
+
 // ═══ DYNAMIC IMPORT ═══
 
 let CreateReservationExtrasSection: any
@@ -179,6 +191,7 @@ describe('CreateReservationExtrasSection', () => {
       mockUseServiceCategories.mockReturnValue({ data: [], isLoading: false })
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
+      expandSection()
       const emptyMessage = screen.queryByText(/brak dostępnych/i)
       expect(emptyMessage).toBeTruthy()
     })
@@ -189,16 +202,33 @@ describe('CreateReservationExtrasSection', () => {
       mockUseServiceCategories.mockReturnValue({ data: undefined, isLoading: true })
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
+      expandSection()
       const loadingIndicator = screen.queryByText(/ładowanie/i)
       expect(loadingIndicator).toBeTruthy()
     })
 
-    it('should render available service items with names', () => {
+    it('should render category names when expanded', () => {
       if (!CreateReservationExtrasSection) return
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
+      expandSection()
+      expect(screen.queryByText('Dekoracja')).toBeTruthy()
+      expect(screen.queryByText('Napoje')).toBeTruthy()
+      expect(screen.queryByText('Logistyka')).toBeTruthy()
+    })
+
+    it('should render service items when category is expanded', () => {
+      if (!CreateReservationExtrasSection) return
+      renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
+
+      expandSection()
+      expandCategory('Dekoracja')
       expect(screen.queryByText('Dekoracja sali')).toBeTruthy()
+
+      expandCategory('Napoje')
       expect(screen.queryByText('Bar koktajlowy')).toBeTruthy()
+
+      expandCategory('Logistyka')
       expect(screen.queryByText('Parking')).toBeTruthy()
     })
 
@@ -206,6 +236,8 @@ describe('CreateReservationExtrasSection', () => {
       if (!CreateReservationExtrasSection) return
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
+      expandSection()
+      expandCategory('Dekoracja')
       const flatPriceEl = screen.queryByText(/1[\s.,]?500/)
       expect(flatPriceEl).toBeTruthy()
     })
@@ -214,6 +246,8 @@ describe('CreateReservationExtrasSection', () => {
       if (!CreateReservationExtrasSection) return
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
+      expandSection()
+      expandCategory('Logistyka')
       const freeLabel = screen.queryByText(/gratis|darmow|0.*PLN|bezpłatn/i)
       expect(freeLabel).toBeTruthy()
     })
@@ -222,6 +256,8 @@ describe('CreateReservationExtrasSection', () => {
       if (!CreateReservationExtrasSection) return
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
+      expandSection()
+      expandCategory('Napoje')
       const perPersonLabel = screen.queryByText(/os/i)
       expect(perPersonLabel).toBeTruthy()
     })
@@ -311,6 +347,8 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
+      expandSection()
+      expandCategory('Dekoracja')
       const qtyDisplay = screen.queryByText('2') || screen.queryByDisplayValue('2')
       expect(qtyDisplay).toBeTruthy()
     })
@@ -360,6 +398,9 @@ describe('CreateReservationExtrasSection', () => {
 
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
+      expandSection()
+      expandCategory('Dekoracja')
+      expandCategory('Logistyka')
       expect(screen.queryByText('Dekoracja sali')).toBeTruthy()
       expect(screen.queryByText('Parking')).toBeTruthy()
     })
