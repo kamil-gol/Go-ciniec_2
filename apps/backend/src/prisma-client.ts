@@ -2,14 +2,11 @@
  * Barrel re-export for Prisma 7 generated client.
  *
  * Prisma 7's `prisma-client` generator outputs TypeScript to
- * src/generated/prisma/.  Because that directory is created at
- * container start (npx prisma generate) and may not exist when
- * tsx first scans the file tree, importing from there via a
- * tsconfig path alias can fail at runtime.
+ * src/generated/prisma/ as separate files (no index.ts).
+ * This barrel re-exports everything so other modules can:
  *
- * This file lives in a tracked, always-present location so every
- * other module can simply:
- *
- *     import { PrismaClient, Prisma } from '@/prisma-client';
+ *     import { PrismaClient, Prisma, ReservationStatus } from '@/prisma-client';
  */
-export * from './generated/prisma/index';
+export * from './generated/prisma/client';
+export * from './generated/prisma/enums';
+export * from './generated/prisma/models';

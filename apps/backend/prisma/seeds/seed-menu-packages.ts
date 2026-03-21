@@ -4,7 +4,7 @@
  * Creates 30+ diverse menu packages for templates
  */
 
-import { Prisma } from '../../src/generated/prisma/index.js';
+import { Prisma } from '../../src/generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
 
 interface PackageData {
