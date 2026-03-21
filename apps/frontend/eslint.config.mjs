@@ -19,6 +19,7 @@ const eslintConfig = [
       'react/no-children-prop': 'warn',
       'react/no-unescaped-entities': 'warn',
       'react-hooks/exhaustive-deps': 'warn',
+      '@next/next/no-html-link-for-pages': 'warn',
     },
   },
   {
