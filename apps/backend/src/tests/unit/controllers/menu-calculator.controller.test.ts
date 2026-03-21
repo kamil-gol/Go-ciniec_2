@@ -8,7 +8,7 @@ import { Request, Response } from 'express';
 const mockFindUnique = jest.fn();
 const mockFindMany = jest.fn();
 
-jest.mock('@prisma/client', () => {
+jest.mock('@/prisma-client', () => {
   return {
     PrismaClient: jest.fn().mockImplementation(() => ({
       menuPackage: { findUnique: mockFindUnique, findMany: mockFindMany },

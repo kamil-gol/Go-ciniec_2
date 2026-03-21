@@ -6,7 +6,7 @@
 
 const mockFindMany = jest.fn().mockResolvedValue([]);
 
-jest.mock('@prisma/client', () => ({
+jest.mock('@/prisma-client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     reservation: { findMany: mockFindMany },
   })),

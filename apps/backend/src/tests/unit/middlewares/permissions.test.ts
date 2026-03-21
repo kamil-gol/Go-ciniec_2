@@ -11,7 +11,7 @@ jest.mock('../../../utils/logger', () => ({
 
 // Mock PrismaClient
 const mockFindUnique = jest.fn();
-jest.mock('@prisma/client', () => {
+jest.mock('@/prisma-client', () => {
   return {
     PrismaClient: jest.fn().mockImplementation(() => ({
       user: { findUnique: mockFindUnique },

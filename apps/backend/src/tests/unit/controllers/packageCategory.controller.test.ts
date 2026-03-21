@@ -11,7 +11,7 @@ const mockPrisma: any = {
   $transaction: jest.fn(),
 };
 
-jest.mock('@prisma/client', () => ({
+jest.mock('@/prisma-client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => mockPrisma),
 }));
 
