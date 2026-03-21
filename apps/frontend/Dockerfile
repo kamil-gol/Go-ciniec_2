@@ -14,13 +14,13 @@ COPY package.json package-lock.json* ./
 
 # === Stage: dev ===
 FROM base AS dev
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 # === Stage: build ===
 FROM base AS build
-RUN NODE_ENV=development npm install --legacy-peer-deps
+RUN NODE_ENV=development npm ci --legacy-peer-deps
 COPY . .
 
 # Build args for Next.js public env vars (baked at build time)
