@@ -17,7 +17,7 @@
  *   4. Raportuje wynik
  */
 
-import { prisma } from '../../prisma/lib/prisma.js';
+import { prisma } from '@/lib/prisma';
 import { MinioStorageService } from '../services/storage/minio.storage';
 import { storageConfig } from '../config/storage.config';
 import fs from 'fs';
