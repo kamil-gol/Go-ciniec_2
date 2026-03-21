@@ -248,8 +248,8 @@ describe('CreateReservationExtrasSection', () => {
 
       expandSection()
       expandCategory('Logistyka')
-      const freeLabel = screen.queryByText(/gratis|darmow|0.*PLN|bezpłatn/i)
-      expect(freeLabel).toBeTruthy()
+      const freeLabels = screen.queryAllByText(/gratis/i)
+      expect(freeLabels.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should display per-person indicator for PER_PERSON items', () => {
