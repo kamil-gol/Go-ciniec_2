@@ -1090,6 +1090,54 @@ ${changesSummary}`);
     });
 
     // #217: logChange removed — reservationHistory entries inside transaction already cover CANCEL + AUTO_ARCHIVED
+
+    // #128: Notification — reservation cancelled
+    const cancelClient = existingReservation.client as any;
+    if (cancelClient) {
+      notificationService.createForAll({
+        type: 'STATUS_CHANGED',
+        title: 'Rezerwacja anulowana',
+        message: `${cancelClient.firstName} ${cancelClient.lastName} — rezerwacja została anulowana`,
+        entityType: 'RESERVATION',
+        entityId: id,
+        excludeUserId: userId,
+      });
+    }
+
+    // #129: Check queue for matching date — notify staff if someone is waiting
+    if (existingReservation.startDateTime) {
+      const eventDate = new Date(existingReservation.startDateTime);
+      const dateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+      const nextDay = new Date(dateOnly);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      const queueEntries = await prisma.reservation.findMany({
+        where: {
+          status: ReservationStatus.RESERVED,
+          reservationQueueDate: { gte: dateOnly, lt: nextDay },
+        },
+        include: { client: true },
+        orderBy: { reservationQueuePosition: 'asc' },
+      });
+
+      if (queueEntries.length > 0) {
+        const dateStr = dateOnly.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const names = queueEntries
+          .slice(0, 3)
+          .map((q: any, i: number) => `${q.client?.firstName} ${q.client?.lastName} (poz. ${i + 1})`)
+          .join(', ');
+        const extra = queueEntries.length > 3 ? ` i ${queueEntries.length - 3} więcej` : '';
+
+        notificationService.createForAll({
+          type: 'QUEUE_MATCH',
+          title: 'Zwolnił się termin — ktoś czeka w kolejce',
+          message: `Anulowano rezerwację na ${dateStr} — w kolejce: ${names}${extra}`,
+          entityType: 'QUEUE',
+          entityId: undefined,
+          excludeUserId: userId,
+        });
+      }
+    }
   }
 
   async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {

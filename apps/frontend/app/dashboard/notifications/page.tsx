@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine } from 'lucide-react'
+import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/use-notifications'
@@ -15,6 +15,7 @@ const typeIcons: Record<string, typeof Bell> = {
   DEPOSIT_OVERDUE: CreditCard,
   DEPOSIT_REMINDER: CreditCard,
   QUEUE_PROMOTED: ArrowUpFromLine,
+  QUEUE_MATCH: Users,
 }
 
 const typeColors: Record<string, string> = {
@@ -24,6 +25,7 @@ const typeColors: Record<string, string> = {
   DEPOSIT_OVERDUE: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
   DEPOSIT_REMINDER: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
   QUEUE_PROMOTED: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+  QUEUE_MATCH: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
 }
 
 function getNotificationLink(notif: Notification): string | null {
