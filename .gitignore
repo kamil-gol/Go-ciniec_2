@@ -68,6 +68,9 @@ temp/
 *.backup
 *.bak
 
+# Prisma generated client
+apps/backend/src/generated/
+
 # Generated artifacts — never commit
 *.pdf
 *.xlsx

@@ -22,15 +22,13 @@
  * ⚠️  SEED_ADMIN_PASSWORD is REQUIRED. Script will exit if not set.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './lib/prisma.js';
 import * as bcrypt from 'bcryptjs';
 import { seedRBAC } from './seeds/rbac.seed';
 import { seedDishCategories } from './seeds/dish-categories.seed';
 import { seedComprehensiveDishes } from './seeds/menu-comprehensive.seed';
 import { seedMenuTemplatesAndPackages } from './seeds/menu-templates.seed';
 import { seedDocumentTemplates } from './seeds/document-templates.seed';
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('\ud83d\udd12 PRODUCTION SEED — Safe mode');

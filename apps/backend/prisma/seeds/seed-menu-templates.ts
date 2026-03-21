@@ -4,9 +4,7 @@
  * Creates 30 diverse menu templates for different event types
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 interface MenuTemplateData {
   eventTypeName: string;

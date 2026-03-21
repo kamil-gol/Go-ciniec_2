@@ -19,10 +19,8 @@
  *   - At least one special character (!@#$%^&*)
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './lib/prisma.js';
 import * as bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 interface PasswordValidation {
   valid: boolean;

@@ -9,10 +9,8 @@
  * 5. Cleans up old enum columns
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './lib/prisma.js';
 import { seedDishCategories } from './seeds/dish-categories.seed';
-
-const prisma = new PrismaClient();
 
 const ENUM_TO_SLUG_MAP: Record<string, string> = {
   'SOUP': 'SOUP',

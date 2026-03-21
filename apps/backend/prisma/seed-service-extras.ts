@@ -8,9 +8,7 @@
  * Updated: #139 — added PER_UNIT examples (Wyposażenie category)
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from './lib/prisma.js';
 
 interface SeedCategory {
   slug: string;

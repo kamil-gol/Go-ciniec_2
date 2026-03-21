@@ -7,10 +7,8 @@
  * 3. Komunia (First Communion) - 2 packages, 8 options
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { Decimal } from '@prisma/client/runtime/library';
-
-const prisma = new PrismaClient();
 
 // Helper to convert number to Prisma Decimal
 const dec = (num: number) => new Decimal(num);

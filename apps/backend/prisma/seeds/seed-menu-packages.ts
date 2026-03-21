@@ -4,9 +4,8 @@
  * Creates 30+ diverse menu packages for templates
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 
 interface PackageData {
   templateNamePattern: string;

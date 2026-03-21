@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import * as bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 export async function seedE2ETestData() {
   // ⚠️ SECURITY: Block in production to prevent test accounts with known passwords

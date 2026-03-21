@@ -1,8 +1,7 @@
-import { PrismaClient, ReservationStatus } from '@prisma/client'
+import { ReservationStatus } from '@prisma/client'
+import { prisma } from './lib/prisma.js';
 import bcrypt from 'bcryptjs'
 import { seedDocumentTemplates } from './seeds/document-templates.seed'
-
-const prisma = new PrismaClient()
 
 // ============================================
 // KONFIGURACJA - Sale i Typy Wydarzeń

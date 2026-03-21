@@ -3,9 +3,7 @@
  * Fills database with 100+ diverse menu options
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 const MENU_OPTIONS_DATA = [
   // DRINKS (25 options)

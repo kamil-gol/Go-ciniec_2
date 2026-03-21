@@ -25,9 +25,7 @@
  *   make fix-timezone
  */
 
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../../prisma/lib/prisma.js';
 
 // Timestamp of first frontend fix commit (create-reservation-form toLocalISO)
 const CUTOFF_UTC = new Date('2026-03-06T20:29:43Z')

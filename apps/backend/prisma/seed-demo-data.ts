@@ -1,6 +1,5 @@
-import { PrismaClient, ReservationStatus } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { ReservationStatus } from '@prisma/client'
+import { prisma } from './lib/prisma.js';
 
 // Standardized data
 const HALLS = [

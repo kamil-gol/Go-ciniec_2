@@ -14,12 +14,10 @@
  * Or called from seed.ts via seedRBAC().
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 
 // Use relative path since this runs via ts-node from prisma/ directory
 const { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } = require('../../src/constants/permissions');
-
-const prisma = new PrismaClient();
 
 export async function seedRBAC() {
   console.log('\ud83d\udd10 Starting RBAC seed...');

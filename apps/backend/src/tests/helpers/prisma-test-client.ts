@@ -12,15 +12,12 @@
  *   beforeEach → cleanDatabase() → seedTestData() → test runs
  */
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prismaTest = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || 'postgresql://test:test@localhost:5433/rezerwacje_test',
-    },
-  },
-  log: process.env.DEBUG_PRISMA ? ['query', 'error'] : ['error'],
-});
+const testDbUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5433/rezerwacje_test';
+const adapter = new PrismaPg({ connectionString: testDbUrl });
+
+const prismaTest = new PrismaClient({ adapter });
 
 /**
  * Clean ALL tables in the test database.

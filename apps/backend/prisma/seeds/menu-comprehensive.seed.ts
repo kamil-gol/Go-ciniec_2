@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 // COMPREHENSIVE MENU SEED DATA
 // 100+ dishes across all categories

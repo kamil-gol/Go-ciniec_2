@@ -4,9 +4,7 @@
  * Creates basic event types for the system
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 interface EventTypeData {
   name: string;

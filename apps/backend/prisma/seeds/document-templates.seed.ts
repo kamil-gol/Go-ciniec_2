@@ -15,9 +15,7 @@
  * Or imported from seed-production.ts / seed-fresh.ts
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 interface TemplateDefinition {
   slug: string;

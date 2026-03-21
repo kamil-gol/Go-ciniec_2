@@ -7,9 +7,7 @@
  * - Komunia (Communion): 2 packages + 8 options
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 async function seedMenuSystem() {
   console.log('\n🍽️ Seeding Menu System...');

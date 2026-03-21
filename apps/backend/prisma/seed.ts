@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './lib/prisma.js';
 import { seedDishCategories } from './seeds/dish-categories.seed';
 import { seedComprehensiveDishes } from './seeds/menu-comprehensive.seed';
 import { seedMenuTemplatesAndPackages } from './seeds/menu-templates.seed';
 import { seedE2ETestData } from './seeds/e2e-test-data.seed';
 import { seedRBAC } from './seeds/rbac.seed';
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('\ud83c\udf31 Starting database seeding...');

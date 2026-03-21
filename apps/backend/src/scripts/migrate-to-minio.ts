@@ -17,13 +17,11 @@
  *   4. Raportuje wynik
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../prisma/lib/prisma.js';
 import { MinioStorageService } from '../services/storage/minio.storage';
 import { storageConfig } from '../config/storage.config';
 import fs from 'fs';
 import path from 'path';
-
-const prisma = new PrismaClient();
 const UPLOAD_BASE = path.join(process.cwd(), 'uploads');
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '50', 10);
