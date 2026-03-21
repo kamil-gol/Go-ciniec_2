@@ -238,8 +238,8 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       setLoading(true)
       const data = await depositsApi.getByReservation(reservationId)
       setDeposits(data)
-    } catch {
-      console.error('Error loading deposits:', error)
+    } catch (err) {
+      console.error('Error loading deposits:', err)
     } finally {
       setLoading(false)
     }
@@ -284,8 +284,8 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       toast.success('Zaliczka utworzona')
       setShowCreateModal(false)
       loadDeposits()
-    } catch {
-      console.error('Error creating deposit:', error)
+    } catch (err) {
+      console.error('Error creating deposit:', err)
       toast.error('Nie udało się utworzyć zaliczki')
     } finally {
       setCreating(false)
@@ -307,8 +307,8 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       toast.success('Zaliczka oznaczona jako opłacona')
       setShowPayModal(false)
       loadDeposits()
-    } catch {
-      console.error('Error marking deposit as paid:', error)
+    } catch (err) {
+      console.error('Error marking deposit as paid:', err)
       toast.error('Nie udało się oznaczyć jako opłaconej')
     } finally {
       setPaying(false)
