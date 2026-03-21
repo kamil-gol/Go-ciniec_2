@@ -21,6 +21,7 @@ jest.mock('../../../lib/prisma', () => ({
     menuPackage: { findUnique: jest.fn() },
     user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'user@test.pl' }) },
     reservationHistory: { create: jest.fn().mockResolvedValue({}) },
+    reservationCategoryExtra: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn(), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
   },
 }));
 
@@ -48,6 +49,11 @@ jest.mock('../../../services/email.service', () => ({
     sendReservationConfirmation: jest.fn(),
     sendReservationCancellation: jest.fn(),
   },
+}));
+
+jest.mock('../../../services/notification.service', () => ({
+  __esModule: true,
+  default: { createForAll: jest.fn().mockResolvedValue(0) },
 }));
 
 jest.mock('../../../services/reservation-menu.service', () => ({
@@ -153,9 +159,8 @@ describe('ReservationService', () => {
       }, 'user-1')).rejects.toThrow();
     });
 
-    it('should call logChange on update', async () => {
-      // diffObjects jest mockowany globalnie - zwraca niepuste zmiany
-      // wiec logChange BEDZIE wywolane
+    it('should NOT call logChange on update (#217: removed in favor of createHistoryEntry)', async () => {
+      // #217: logChange was removed from updateReservation — createHistoryEntry covers it
       const { logChange } = await import('../../../utils/audit-logger');
       mockPrisma.reservation.update.mockResolvedValue({
         ...BASE_RESERVATION,
@@ -165,7 +170,7 @@ describe('ReservationService', () => {
         notes: 'Audit test notatka rezerwacji',
         reason: 'Test wywolania audit log zmiany',
       }, 'user-1');
-      expect(logChange).toHaveBeenCalled();
+      expect(logChange).not.toHaveBeenCalled();
     });
   });
 

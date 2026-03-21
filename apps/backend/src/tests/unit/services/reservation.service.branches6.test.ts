@@ -18,6 +18,7 @@ jest.mock('../../../lib/prisma', () => ({
     menuPackage: { findUnique: jest.fn() },
     user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'user@test.pl' }) },
     reservationHistory: { create: jest.fn().mockResolvedValue({}) },
+    reservationCategoryExtra: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn(), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
   },
 }));
 
@@ -51,6 +52,11 @@ jest.mock('../../../services/reservation-menu.service', () => ({
   default: {
     recalculateForGuestChange: jest.fn(),
   },
+}));
+
+jest.mock('../../../services/notification.service', () => ({
+  __esModule: true,
+  default: { createForAll: jest.fn().mockResolvedValue(0) },
 }));
 
 import { prisma } from '../../../lib/prisma';

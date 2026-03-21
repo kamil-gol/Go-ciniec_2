@@ -8,6 +8,12 @@ jest.mock('../../../lib/prisma', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    reservationCategoryExtra: {
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn(),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -23,6 +29,15 @@ jest.mock('../../../services/menuSnapshot.service', () => ({
 
 jest.mock('../../../validation/menu.validation', () => ({
   selectMenuSchema: { parse: jest.fn((d: any) => d) },
+}));
+
+jest.mock('../../../utils/recalculate-price', () => ({
+  recalculateReservationTotalPrice: jest.fn().mockResolvedValue(0),
+}));
+
+jest.mock('../../../utils/audit-logger', () => ({
+  logChange: jest.fn().mockResolvedValue(undefined),
+  diffObjects: jest.fn().mockReturnValue({}),
 }));
 
 import { ReservationMenuController } from '../../../controllers/reservationMenu.controller';
@@ -155,40 +170,38 @@ describe('ReservationMenuController', () => {
     it('should return 200 and recalculate total', async () => {
       db.findUnique.mockResolvedValue({
         id: 'r-1', adults: 50, children: 10, toddlers: 5,
-        pricePerAdult: { toNumber: () => 200 },
-        pricePerChild: { toNumber: () => 100 },
-        pricePerToddler: { toNumber: () => 0 },
       });
       snapSvc.deleteSnapshot.mockResolvedValue(undefined);
       db.update.mockResolvedValue({});
+      const { recalculateReservationTotalPrice } = require('../../../utils/recalculate-price');
       const response = res();
       await controller.deleteMenu(req({ params: { id: 'r-1' } }), response);
       expect(response.status).toHaveBeenCalledWith(200);
+      // Prices reset to 0 after menu deletion
       expect(db.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ totalPrice: 11000 }),
+          data: expect.objectContaining({ pricePerAdult: 0, pricePerChild: 0, pricePerToddler: 0 }),
         })
       );
+      expect(recalculateReservationTotalPrice).toHaveBeenCalledWith('r-1');
     });
 
     it('should default children/toddlers to 0 when null and recalculate', async () => {
       db.findUnique.mockResolvedValue({
         id: 'r-4', adults: 40, children: null, toddlers: null,
-        pricePerAdult: { toNumber: () => 150 },
-        pricePerChild: { toNumber: () => 80 },
-        pricePerToddler: { toNumber: () => 0 },
       });
       snapSvc.deleteSnapshot.mockResolvedValue(undefined);
       db.update.mockResolvedValue({});
+      const { recalculateReservationTotalPrice } = require('../../../utils/recalculate-price');
       const response = res();
       await controller.deleteMenu(req({ params: { id: 'r-4' } }), response);
       expect(response.status).toHaveBeenCalledWith(200);
-      // total = 40*150 + 0*80 + 0*0 = 6000
       expect(db.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ totalPrice: 6000 }),
+          data: expect.objectContaining({ pricePerAdult: 0, pricePerChild: 0, pricePerToddler: 0 }),
         })
       );
+      expect(recalculateReservationTotalPrice).toHaveBeenCalledWith('r-4');
     });
   });
 });

@@ -4,6 +4,7 @@ import { prisma } from '../../../lib/prisma';
 jest.mock('../../../lib/prisma', () => ({
   prisma: {
     activityLog: {
+      findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
     },
   },

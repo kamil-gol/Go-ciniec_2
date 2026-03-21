@@ -25,6 +25,7 @@ jest.mock('../../../lib/prisma', () => {
     activityLog: { create: jest.fn() },
     serviceItem: { findMany: jest.fn() },
     reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
+    reservationCategoryExtra: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn(), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     $transaction: jest.fn((fn: any) => (typeof fn === 'function' ? fn(mockPrisma) : Promise.all(fn))),
   };
   return { prisma: mockPrisma };
@@ -53,6 +54,11 @@ jest.mock('../../../utils/reservation.utils', () => ({
   validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
   detectReservationChanges: jest.fn().mockReturnValue([]),
   formatChangesSummary: jest.fn().mockReturnValue(''),
+}));
+
+jest.mock('../../../services/notification.service', () => ({
+  __esModule: true,
+  default: { createForAll: jest.fn().mockResolvedValue(0) },
 }));
 
 jest.mock('../../../services/reservation-menu.service', () => ({
