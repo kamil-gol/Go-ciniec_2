@@ -73,7 +73,7 @@ export function TimePicker({
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
-        <label className="text-sm font-medium text-neutral-700">{label}</label>
+        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</label>
       )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -82,7 +82,7 @@ export function TimePicker({
             disabled={disabled}
             className={cn(
               'w-full justify-start text-left font-normal h-11',
-              'border-secondary-300 bg-white hover:border-primary-400 hover:bg-primary-50/50',
+              'border-secondary-300 bg-white dark:bg-neutral-900 dark:border-neutral-700 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-neutral-800',
               'focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
               'transition-all duration-200',
               !value && 'text-neutral-400',
@@ -94,9 +94,9 @@ export function TimePicker({
             {value || placeholder}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-0 bg-white" align="start">
+        <PopoverContent className="w-[220px] p-0 bg-white dark:bg-neutral-900 dark:border-neutral-700" align="start">
           <div className="px-3 pt-3 pb-1">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
+            <p className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
               Wybierz godzinę
             </p>
           </div>
@@ -118,13 +118,13 @@ export function TimePicker({
                     onClick={() => handleSelect(time)}
                     className={cn(
                       'py-1.5 text-[13px] rounded-md transition-all duration-100',
-                      'hover:bg-primary-100 hover:text-primary-700',
+                      'hover:bg-primary-100 hover:text-primary-700 dark:hover:bg-primary-900/40 dark:hover:text-primary-300',
                       'focus:outline-none focus:ring-1 focus:ring-primary-400',
                       isSelected
                         ? 'bg-primary-600 text-white font-semibold hover:bg-primary-700 hover:text-white'
                         : isDimmed
-                          ? 'text-neutral-400'
-                          : 'text-neutral-700'
+                          ? 'text-neutral-400 dark:text-neutral-600'
+                          : 'text-neutral-700 dark:text-neutral-300'
                     )}
                   >
                     {time}

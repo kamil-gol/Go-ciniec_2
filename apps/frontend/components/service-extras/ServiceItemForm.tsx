@@ -20,11 +20,11 @@ import {
   useServiceCategories,
 } from '@/hooks/use-service-extras';
 import type {
-import { toast } from 'sonner'
   ServiceItem,
   ServicePriceType,
   CreateServiceItemInput,
 } from '@/types/service-extra.types';
+import { toast } from 'sonner'
 
 interface ServiceItemFormProps {
   item?: ServiceItem | null;

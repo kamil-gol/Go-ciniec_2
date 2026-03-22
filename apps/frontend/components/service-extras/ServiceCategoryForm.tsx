@@ -9,10 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useCreateCategory, useUpdateCategory } from '@/hooks/use-service-extras';
 import type {
-import { toast } from 'sonner'
   ServiceCategory,
   CreateServiceCategoryInput,
 } from '@/types/service-extra.types';
+import { toast } from 'sonner'
 
 interface ServiceCategoryFormProps {
   category?: ServiceCategory | null;
