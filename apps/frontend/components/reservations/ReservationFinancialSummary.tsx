@@ -532,13 +532,15 @@ export function ReservationFinancialSummary({
                     </div>
                     <div className="space-y-2">
                       {activeExtras.map((extra: any) => (
-                        <div key={extra.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground flex items-center gap-1.5">
-                            <span>{extra.serviceItem?.icon || '📦'}</span>
-                            {extra.serviceItem?.name || 'Pozycja'}
-                            {extra.quantity > 1 && ` (×${extra.quantity})`}
+                        <div key={extra.id} className="flex justify-between text-sm gap-2">
+                          <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
+                            <span className="shrink-0">{extra.serviceItem?.icon || '📦'}</span>
+                            <span className="truncate">
+                              {extra.serviceItem?.name || 'Pozycja'}
+                              {extra.quantity > 1 && ` (×${extra.quantity})`}
+                            </span>
                           </span>
-                          <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
+                          <span className="font-semibold shrink-0 text-right tabular-nums">{formatPLN(Number(extra.totalPrice))} zł</span>
                         </div>
                       ))}
                       <Separator className="my-2" />
@@ -563,13 +565,15 @@ export function ReservationFinancialSummary({
                         const guestCount = extra.guestCount ?? 1;
                         const qtyLabel = qty === Math.floor(qty) ? qty : qty.toFixed(1);
                         return (
-                          <div key={extra.id} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground flex items-center gap-1.5">
-                              <span>{extra.packageCategory?.category?.icon || '🍽️'}</span>
-                              {extra.packageCategory?.category?.name || 'Kategoria'}
-                              {' '}({qtyLabel} × {formatPLN(Number(extra.pricePerItem))} zł × {guestCount} os.)
+                          <div key={extra.id} className="flex justify-between text-sm gap-2">
+                            <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
+                              <span className="shrink-0">{extra.packageCategory?.category?.icon || '🍽️'}</span>
+                              <span className="truncate">
+                                {extra.packageCategory?.category?.name || 'Kategoria'}
+                                {' '}({qtyLabel} × {formatPLN(Number(extra.pricePerItem))} zł × {guestCount} os.)
+                              </span>
                             </span>
-                            <span className="font-semibold">{formatPLN(Number(extra.totalPrice))} zł</span>
+                            <span className="font-semibold shrink-0 text-right tabular-nums">{formatPLN(Number(extra.totalPrice))} zł</span>
                           </div>
                         );
                       })}
