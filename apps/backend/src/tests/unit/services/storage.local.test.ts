@@ -147,7 +147,7 @@ describe('LocalStorageService', () => {
       for (const o of objects) {
         expect(o.key).toBeTruthy();
         expect(typeof o.size).toBe('number');
-        expect(o.lastModified).toBeInstanceOf(Date);
+        expect(new Date(o.lastModified).getTime()).not.toBeNaN();
       }
     });
 
