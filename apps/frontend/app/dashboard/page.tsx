@@ -342,14 +342,14 @@ export default function DashboardPage() {
                       {event.hall && ` • ${event.hall.name}`}
                       {event.guests > 0 && ` • ${event.guests} os.`}
                     </p>
-                    {pendingDepositTotal > 0 && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                        💰 Zaliczka do zapłaty: {formatCurrency(pendingDepositTotal)}
+                    {Number(event.totalPrice) > 0 && (
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                        💰 Wartość: {formatCurrency(Number(event.totalPrice))}
                       </p>
                     )}
-                    {event.deposits.length === 0 && Number(event.totalPrice) > 0 && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
-                        💰 Wartość: {formatCurrency(Number(event.totalPrice))}
+                    {pendingDepositTotal > 0 && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                        ⚠️ Zaliczka do zapłaty: {formatCurrency(pendingDepositTotal)}
                       </p>
                     )}
                   </div>

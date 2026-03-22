@@ -38,13 +38,12 @@ type NavChild = { name: string; href: string; icon: React.ElementType; accentKey
 type NavItem  = { name: string; href: string; icon: React.ElementType; accentKey: string; children?: NavChild[] }
 
 const navItems: NavItem[] = [
+  // 📊 Przegląd
   { name: 'Dashboard',           href: '/dashboard',                    icon: LayoutDashboard, accentKey: 'dashboard' },
   { name: 'Widok Dzienny',       href: '/dashboard/daily-view',         icon: CalendarDays,    accentKey: 'dailyView' },
+  // 📋 Operacje
   { name: 'Rezerwacje',          href: '/dashboard/reservations',       icon: Calendar,        accentKey: 'reservations' },
-  { name: 'Archiwum',            href: '/dashboard/archive',            icon: Archive,         accentKey: 'archive' },
-  { name: 'Klienci',             href: '/dashboard/clients',            icon: Users,           accentKey: 'clients' },
-  { name: 'Sale',                href: '/dashboard/halls',              icon: Building2,       accentKey: 'halls' },
-  { name: 'Menu',                href: '/dashboard/menu',               icon: UtensilsCrossed, accentKey: 'menu' },
+  { name: 'Kolejka',             href: '/dashboard/queue',              icon: Clock,           accentKey: 'queue' },
   {
     name: 'Catering',
     href: '/dashboard/catering',
@@ -55,14 +54,24 @@ const navItems: NavItem[] = [
       { name: 'Szablony',   href: '/dashboard/catering/templates', icon: BookOpen,    accentKey: 'catering' },
     ],
   },
-  { name: 'Kolejka',             href: '/dashboard/queue',              icon: Clock,           accentKey: 'queue' },
-  { name: 'Zaliczki',            href: '/dashboard/deposits',           icon: DollarSign,      accentKey: 'deposits' },
+  { name: 'Klienci',             href: '/dashboard/clients',            icon: Users,           accentKey: 'clients' },
+  // 🍽️ Usługi
+  { name: 'Menu',                href: '/dashboard/menu',               icon: UtensilsCrossed, accentKey: 'menu' },
   { name: 'Usługi dodatkowe',    href: '/dashboard/service-extras',     icon: Gift,            accentKey: 'serviceExtras' },
+  // 💰 Finanse
+  { name: 'Zaliczki',            href: '/dashboard/deposits',           icon: DollarSign,      accentKey: 'deposits' },
+  // 🏛️ Zasoby
+  { name: 'Sale',                href: '/dashboard/halls',              icon: Building2,       accentKey: 'halls' },
   { name: 'Typy Wydarzeń',       href: '/dashboard/event-types',        icon: Theater,         accentKey: 'eventTypes' },
+  // 📄 Dokumenty
   { name: 'Szablony dokumentów', href: '/dashboard/document-templates', icon: ScrollText,      accentKey: 'documentTemplates' },
+  // 📦 Historia
+  { name: 'Archiwum',            href: '/dashboard/archive',            icon: Archive,         accentKey: 'archive' },
+  // 🔔 Monitoring
   { name: 'Powiadomienia',       href: '/dashboard/notifications',      icon: Bell,            accentKey: 'notifications' },
-  { name: 'Dziennik Audytu',     href: '/dashboard/audit-log',          icon: FileText,        accentKey: 'auditLog' },
   { name: 'Raporty',             href: '/dashboard/reports',            icon: BarChart3,       accentKey: 'reports' },
+  { name: 'Dziennik Audytu',     href: '/dashboard/audit-log',          icon: FileText,        accentKey: 'auditLog' },
+  // ⚙️ System
   { name: 'Ustawienia',          href: '/dashboard/settings',           icon: Settings,        accentKey: 'settings' },
 ]
 
