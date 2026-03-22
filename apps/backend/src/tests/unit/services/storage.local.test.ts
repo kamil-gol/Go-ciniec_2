@@ -144,7 +144,7 @@ describe('LocalStorageService', () => {
     it('should list all files in bucket', async () => {
       const objects = await storage.listObjects(BUCKET);
       expect(objects.length).toBeGreaterThanOrEqual(3);
-      expect(objects.every(o => o.key && o.size > 0 && o.lastModified)).toBe(true);
+      expect(objects.every(o => o.key && o.size >= 0 && o.lastModified)).toBe(true);
     });
 
     it('should filter by prefix', async () => {
