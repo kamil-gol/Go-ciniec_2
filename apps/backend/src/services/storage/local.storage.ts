@@ -86,14 +86,10 @@ export class LocalStorageService implements IStorageService {
     return this.getAllFiles(dir)
       .map(f => {
         const key = path.relative(dir, f).split(path.sep).join('/');
-        return { key, ...fs.statSync(f) };
+        const stat = fs.statSync(f);
+        return { key, size: stat.size, lastModified: stat.mtime };
       })
-      .filter(f => !prefix || f.key.startsWith(prefix))
-      .map(f => ({
-        key: f.key,
-        size: f.size,
-        lastModified: f.mtime,
-      }));
+      .filter(f => !prefix || f.key.startsWith(prefix));
   }
 
   async ensureBucket(bucket: string): Promise<void> {
