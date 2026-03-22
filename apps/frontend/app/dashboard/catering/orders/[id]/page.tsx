@@ -65,6 +65,8 @@ import { AddDepositDialog } from '../components/AddDepositDialog';
 import { MarkDepositPaidDialog } from '../components/MarkDepositPaidDialog';
 import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 import type { CateringDeposit } from '@/types/catering-order.types';
+import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 
 // ═══ HELPERS ═══
 
@@ -299,6 +301,7 @@ export default function CateringOrderDetailPage() {
     'id' | 'amount' | 'title'
   > | null>(null);
 
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: order, isLoading } = useCateringOrder(id);
   const deleteMutation = useDeleteCateringOrder();
   const removeDiscountMutation = useUpdateCateringOrder(id);
@@ -321,17 +324,17 @@ export default function CateringOrderDetailPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Nie udało się pobrać PDF');
+      toast.error('Nie udało się pobrać PDF');
     }
   };
   const handleDelete = async () => {
-    if (!confirm('Czy na pewno usunąć to zamówienie?')) return;
+    if (!await confirm({ title: 'Usuwanie zamówienia', description: 'Czy na pewno usunąć to zamówienie?', variant: 'destructive', confirmLabel: 'Usuń' })) return;
     await deleteMutation.mutateAsync(id);
     router.push('/dashboard/catering/orders');
   };
 
   const handleRemoveDiscount = async () => {
-    if (!confirm('Czy na pewno usunąć rabat?')) return;
+    if (!await confirm({ title: 'Usuwanie rabatu', description: 'Czy na pewno usunąć rabat?', variant: 'destructive', confirmLabel: 'Usuń rabat' })) return;
     await removeDiscountMutation.mutateAsync({
       discountType: null,
       discountValue: null,
@@ -343,7 +346,7 @@ export default function CateringOrderDetailPage() {
     const msg = isPaid
       ? 'Ta zaliczka jest opłacona. Usunięcie jej obniży sumę wpłat. Czy na pewno chcesz kontynuować?'
       : 'Czy na pewno usunąć tę zaliczkę?';
-    if (!confirm(msg)) return;
+    if (!await confirm({ title: 'Usuwanie zaliczki', description: msg, variant: 'destructive', confirmLabel: 'Usuń zaliczkę' })) return;
     await deleteDepositMutation.mutateAsync(depositId);
   };
 
@@ -974,6 +977,7 @@ export default function CateringOrderDetailPage() {
         open={editDepositOpen}
         onClose={() => { setEditDepositOpen(false); setEditDeposit(null); }}
       />
+      {ConfirmDialog}
     </div>
   );
 }

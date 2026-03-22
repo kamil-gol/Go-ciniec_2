@@ -16,6 +16,7 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
 
@@ -28,6 +29,7 @@ interface HallCardProps {
 
 export function HallCard({ hall, onUpdate }: HallCardProps) {
   const { toast } = useToast()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const [deleting, setDeleting] = useState(false)
   const [togglingMultiple, setTogglingMultiple] = useState(false)
 
@@ -41,7 +43,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
       return
     }
 
-    if (!confirm(`Czy na pewno chcesz usunąć salę "${hall.name}"?`)) return
+    if (!await confirm({ title: 'Usuwanie sali', description: `Czy na pewno chcesz usunąć salę "${hall.name}"?`, variant: 'destructive', confirmLabel: 'Usuń' })) return
 
     try {
       setDeleting(true)
@@ -283,6 +285,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
           </Link>
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   )
 }

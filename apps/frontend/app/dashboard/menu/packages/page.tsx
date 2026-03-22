@@ -5,16 +5,19 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/lib/api/menu-packages-api';
 import type { MenuPackage } from '@/lib/api/menu-packages-api';
+import { toast } from 'sonner';
 import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
 import { moduleAccents } from '@/lib/design-tokens';
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 
 export default function PackagesListPage() {
   const searchParams = useSearchParams();
   const templateId = searchParams.get('templateId');
   const accent = moduleAccents.menu;
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   const [packages, setPackages] = useState<MenuPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,14 +42,15 @@ export default function PackagesListPage() {
   }, [loadPackages]);
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Czy na pewno chcesz usunąć pakiet "${name}"?`)) return;
+    const confirmed = await confirm({ title: 'Usuń pakiet', description: `Czy na pewno chcesz usunąć pakiet "${name}"?`, variant: 'destructive', confirmLabel: 'Usuń' });
+    if (!confirmed) return;
     try {
       setDeletingId(id);
       await deletePackage(id);
       await loadPackages();
     } catch (error: any) {
       console.error('Failed to delete package:', error);
-      alert(`Błąd: ${error.message}`);
+      toast.error(error.message || 'Nie udało się usunąć pakietu');
     } finally {
       setDeletingId(null);
     }
@@ -62,6 +66,7 @@ export default function PackagesListPage() {
 
   return (
     <PageLayout>
+      {ConfirmDialog}
       <PageHero
         accent={accent}
         title="Pakiety Menu"

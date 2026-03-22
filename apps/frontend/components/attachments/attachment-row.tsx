@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 
 interface AttachmentRowProps {
   attachment: Attachment
@@ -34,6 +35,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 export default function AttachmentRow({ attachment, onDeleted, onArchived, onPreview }: AttachmentRowProps) {
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const Icon = MIME_ICONS[attachment.mimeType] || FileText
   const isImage = attachment.mimeType.startsWith('image/')
   const canPreview = isImage || attachment.mimeType === 'application/pdf'
@@ -69,7 +71,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
   }
 
   const handleDelete = async () => {
-    if (!confirm(`Usunąć plik "${attachment.originalName}"?`)) return
+    if (!await confirm({ title: 'Usuwanie pliku', description: `Usunąć plik "${attachment.originalName}"?`, variant: 'destructive', confirmLabel: 'Usuń' })) return
     try {
       await attachmentsApi.delete(attachment.id)
       toast.success('Plik usunięty')
@@ -80,7 +82,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
   }
 
   return (
-    <div className={cn(
+    <><div className={cn(
       'group flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-sm',
       attachment.isArchived
         ? 'bg-neutral-50 dark:bg-neutral-800/40 border-neutral-200/50 dark:border-neutral-700/30 opacity-60'
@@ -157,5 +159,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
         </button>
       </div>
     </div>
+    {ConfirmDialog}
+    </>
   )
 }

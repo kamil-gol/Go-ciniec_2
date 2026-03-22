@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, DollarSign, Plus, X } from 'lucide-react'
+import { toast } from 'sonner'
 import type { MenuPackage } from '@/types/menu.types'
 
 interface EditPackageDialogProps {
@@ -86,9 +87,9 @@ export function EditPackageDialog({ open, onOpenChange, pkg }: EditPackageDialog
       })
       
       onOpenChange(false)
-      alert('✅ Pakiet został zaktualizowany!')
+      toast.success('Pakiet został zaktualizowany!')
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować pakietu'}`)
+      toast.error(error.error || 'Nie udało się zaktualizować pakietu')
     }
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Book, ArrowLeft, Plus, Loader2, Edit, Trash2, ChefHat, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import { useMenuTemplates, useMenuPackages } from '@/hooks/use-menu'
 import type { MenuCourse } from '@/types/menu.types'
 import { PageLayout, PageHero, EmptyState, LoadingState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 
 export default function CoursesPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
@@ -21,6 +23,7 @@ export default function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<MenuCourse | null>(null)
   const [editingCourse, setEditingCourse] = useState<MenuCourse | null>(null)
   const accent = moduleAccents.menu
+  const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const { data: templates = [], isLoading: loadingTemplates } = useMenuTemplates()
   const { data: packages = [], isLoading: loadingPackages } = useMenuPackages(selectedTemplateId)
@@ -32,12 +35,13 @@ export default function CoursesPage() {
 
   const handleDeleteCourse = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm(`Czy na pewno chcesz usunąć kurs:\n"${name}"?\n\nTa operacja jest nieodwracalna!`)) return
+    const confirmed = await confirm({ title: 'Usuń kurs', description: `Czy na pewno chcesz usunąć kurs "${name}"? Ta operacja jest nieodwracalna!`, variant: 'destructive', confirmLabel: 'Usuń' })
+    if (!confirmed) return
     try {
       await deleteCourseMutation.mutateAsync({ id, packageId: selectedPackageId! })
-      alert(`\u2705 Usunięto kurs: ${name}`)
+      toast.success(`Usunięto kurs: ${name}`)
     } catch (error: any) {
-      alert(`\u274c Błąd podczas usuwania:\n${error.error || 'Nieznany błąd'}`)
+      toast.error(error.error || 'Nieznany błąd')
     }
   }
 
@@ -54,6 +58,7 @@ export default function CoursesPage() {
 
   return (
     <>
+      {ConfirmDialog}
       <CourseBuilderDialog
         open={courseDialogOpen}
         onOpenChange={setCourseDialogOpen}

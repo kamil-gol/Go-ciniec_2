@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { useCreateMenuCourse, useUpdateMenuCourse } from '@/hooks/use-dishes-courses'
 import type { MenuCourse } from '@/types/menu.types'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface CourseBuilderDialogProps {
   open: boolean
@@ -52,7 +53,7 @@ export function CourseBuilderDialog({ open, onOpenChange, packageId, course }: C
 
   const handleSubmit = async () => {
     if (!packageId && !course) {
-      alert('❌ Brak wybranego pakietu!')
+      toast.error('Brak wybranego pakietu!')
       return
     }
 
@@ -67,17 +68,17 @@ export function CourseBuilderDialog({ open, onOpenChange, packageId, course }: C
 
       if (course) {
         await updateMutation.mutateAsync({ id: course.id, data: payload })
-        alert('✅ Zaktualizowano kurs!')
+        toast.success('Zaktualizowano kurs!')
       } else {
         await createMutation.mutateAsync({
           packageId: packageId!,
           ...payload,
         })
-        alert('✅ Utworzono kurs!')
+        toast.success('Utworzono kurs!')
       }
       onOpenChange(false)
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nieznany błąd'}`)
+      toast.error(error.error || 'Nieznany błąd')
     }
   }
 

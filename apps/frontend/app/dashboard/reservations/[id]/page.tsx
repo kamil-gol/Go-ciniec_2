@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useToast } from '@/hooks/use-toast'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -36,6 +37,7 @@ type TabType = 'details' | 'history'
 export default function ReservationDetailsPage() {
   const params = useParams()
   const { toast } = useToast()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const [downloading, setDownloading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
 
@@ -79,7 +81,7 @@ export default function ReservationDetailsPage() {
   const handleArchive = async () => {
     if (!reservation) return
 
-    if (!confirm('Czy na pewno chcesz zarchiwizować tę rezerwację?')) return
+    if (!await confirm({ title: 'Archiwizacja rezerwacji', description: 'Czy na pewno chcesz zarchiwizować tę rezerwację?', variant: 'archive', confirmLabel: 'Zarchiwizuj' })) return
 
     try {
       await archiveMutation.mutateAsync({
@@ -551,6 +553,7 @@ export default function ReservationDetailsPage() {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   )
 }

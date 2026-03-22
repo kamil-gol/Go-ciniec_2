@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, UtensilsCrossed } from 'lucide-react'
+import { toast } from 'sonner'
 import type { MenuTemplate } from '@/types/menu.types'
 
 interface EditTemplateDialogProps {
@@ -75,9 +76,9 @@ export function EditTemplateDialog({ open, onOpenChange, template }: EditTemplat
       })
       
       onOpenChange(false)
-      alert('✅ Szablon menu został zaktualizowany!')
+      toast.success('Szablon menu został zaktualizowany!')
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nie udało się zaktualizować szablonu'}`)
+      toast.error(error.error || 'Nie udało się zaktualizować szablonu')
     }
   }
 

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, UtensilsCrossed } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface CreateTemplateDialogProps {
   open: boolean
@@ -65,9 +66,9 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
         isActive: true,
       })
       onOpenChange(false)
-      alert('✅ Szablon menu został utworzony!')
+      toast.success('Szablon menu został utworzony!')
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nie udało się utworzyć szablonu'}`)
+      toast.error(error.error || 'Nie udało się utworzyć szablonu')
     }
   }
 

@@ -12,6 +12,7 @@ import {
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
 import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteReservationMenu } from '@/hooks/use-menu'
 import { useToast } from '@/hooks/use-toast'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { PortionTarget } from '@/types/menu'
 import { PORTION_TARGET_LABELS } from '@/types/menu'
@@ -49,6 +50,7 @@ export function ReservationMenuSection({
   readOnly = false
 }: ReservationMenuSectionProps) {
   const { toast } = useToast()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const [showSelectionDialog, setShowSelectionDialog] = useState(false)
   
   const { data: menuData, isLoading } = useReservationMenu(reservationId)
@@ -78,7 +80,7 @@ export function ReservationMenuSection({
 
   const handleDeleteMenu = async () => {
     if (readOnly) return
-    if (!confirm('Czy na pewno chcesz usunąć wybrane menu?')) return
+    if (!await confirm({ title: 'Usuwanie menu', description: 'Czy na pewno chcesz usunąć wybrane menu?', variant: 'destructive', confirmLabel: 'Usuń menu' })) return
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
       toast({ title: 'Sukces', description: 'Menu zostało usunięte' })
@@ -326,6 +328,7 @@ export function ReservationMenuSection({
           </DialogContent>
         </Dialog>
       )}
+      {ConfirmDialog}
     </>
   )
 }

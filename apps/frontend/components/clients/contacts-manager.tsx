@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import {
   addClientContact,
   updateClientContact,
@@ -51,6 +52,7 @@ const EMPTY_FORM: ContactFormData = {
 
 export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate }: ContactsManagerProps) {
   const { toast } = useToast()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ContactFormData>(EMPTY_FORM)
@@ -133,7 +135,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
   }
 
   const handleDelete = async (contactId: string, contactName: string) => {
-    if (!confirm(`Czy na pewno chcesz usunąć osobę kontaktową ${contactName}?`)) return
+    if (!await confirm({ title: 'Usuwanie kontaktu', description: `Czy na pewno chcesz usunąć osobę kontaktową ${contactName}?`, variant: 'destructive', confirmLabel: 'Usuń' })) return
 
     try {
       setDeletingId(contactId)
@@ -345,6 +347,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useApplyDiscount, useRemoveDiscount } from '@/hooks/use-discount'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { formatCurrency } from '@/lib/utils'
 
 interface DiscountSectionProps {
@@ -36,6 +37,7 @@ export function DiscountSection({ reservation, readOnly }: DiscountSectionProps)
   const [discountValue, setDiscountValue] = useState('')
   const [discountReason, setDiscountReason] = useState('')
 
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const applyDiscount = useApplyDiscount()
   const removeDiscount = useRemoveDiscount()
 
@@ -65,7 +67,7 @@ export function DiscountSection({ reservation, readOnly }: DiscountSectionProps)
   }
 
   const handleRemove = async () => {
-    if (!confirm('Czy na pewno chcesz usunąć rabat?')) return
+    if (!await confirm({ title: 'Usuwanie rabatu', description: 'Czy na pewno chcesz usunąć rabat?', variant: 'destructive', confirmLabel: 'Usuń rabat' })) return
     try {
       await removeDiscount.mutateAsync(reservation.id)
     } catch (error) {
@@ -92,14 +94,17 @@ export function DiscountSection({ reservation, readOnly }: DiscountSectionProps)
   if (!hasDiscount && !isEditing) {
     if (readOnly) return null
     return (
-      <button
-        type="button"
-        onClick={() => setIsEditing(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 font-medium text-sm hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-400 transition-colors"
-      >
-        <Tag className="h-4 w-4" />
-        Dodaj rabat
-      </button>
+      <>
+        <button
+          type="button"
+          onClick={() => setIsEditing(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 font-medium text-sm hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-400 transition-colors"
+        >
+          <Tag className="h-4 w-4" />
+          Dodaj rabat
+        </button>
+        {ConfirmDialog}
+      </>
     )
   }
 
@@ -191,6 +196,7 @@ export function DiscountSection({ reservation, readOnly }: DiscountSectionProps)
             </>
           )}
         </Button>
+        {ConfirmDialog}
       </div>
     )
   }
@@ -254,6 +260,7 @@ export function DiscountSection({ reservation, readOnly }: DiscountSectionProps)
           </span>
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   )
 }

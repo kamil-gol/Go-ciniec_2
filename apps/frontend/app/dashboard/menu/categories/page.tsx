@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Edit, Trash2, Loader2, Tags, Info } from 'lucide-react'
 import { useDishCategories, useCreateDishCategory, useUpdateDishCategory, useDeleteDishCategory } from '@/hooks/use-dish-categories'
 import { toast } from 'sonner'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import type { DishCategory } from '@/types'
 import { PageLayout, PageHero, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -18,6 +19,7 @@ export default function DishCategoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DishCategory | null>(null)
   const accent = moduleAccents.menu
+  const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const { data: categories = [], isLoading } = useDishCategories()
   const createMutation = useCreateDishCategory()
@@ -93,7 +95,8 @@ export default function DishCategoriesPage() {
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Czy na pewno chcesz usunąć kategorię "${name}"?`)) return
+    const confirmed = await confirm({ title: 'Usuń kategorię', description: `Czy na pewno chcesz usunąć kategorię "${name}"?`, variant: 'destructive', confirmLabel: 'Usuń' })
+    if (!confirmed) return
     try {
       await deleteMutation.mutateAsync(id)
     } catch (error: any) {
@@ -114,6 +117,7 @@ export default function DishCategoriesPage() {
 
   return (
     <PageLayout>
+      {ConfirmDialog}
       <PageHero
         accent={accent}
         title="Kategorie Dań"

@@ -3,6 +3,8 @@
 import { Client } from '@/types'
 import { User, Mail, Phone, MapPin, Calendar, Trash2, Edit, ChevronRight, StickyNote } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -18,6 +20,7 @@ interface ClientCardProps {
 }
 
 export default function ClientCard({ client, onDelete, canDelete = false }: ClientCardProps) {
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const reservationsCount = client._count?.reservations || 0
   const hasReservations = reservationsCount > 0
 
@@ -27,16 +30,16 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
     return new Date(client.createdAt) >= thirtyDaysAgo
   }
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
     if (hasReservations) {
-      alert('Nie można usunąć klienta, który ma rezerwacje!')
+      toast.error('Nie można usunąć klienta, który ma rezerwacje!')
       return
     }
 
-    if (confirm(`Czy na pewno chcesz usunąć klienta: ${client.firstName} ${client.lastName}?`)) {
+    if (await confirm({ title: 'Usuwanie klienta', description: `Czy na pewno chcesz usunąć klienta: ${client.firstName} ${client.lastName}?`, variant: 'destructive', confirmLabel: 'Usuń' })) {
       onDelete?.(client.id)
     }
   }
@@ -168,6 +171,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
           </Link>
         </div>
       </div>
+      {ConfirmDialog}
     </motion.div>
   )
 }

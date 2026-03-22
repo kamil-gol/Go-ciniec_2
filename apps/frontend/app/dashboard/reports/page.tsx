@@ -26,6 +26,7 @@ import type {
 } from '@/types/reports.types';
 import { PageLayout, PageHero } from '@/components/shared';
 import { moduleAccents } from '@/lib/design-tokens';
+import { toast } from 'sonner';
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('pl-PL', {
@@ -183,7 +184,7 @@ export default function ReportsPage() {
       else if (activeTab === 'occupancy') await exportOccupancyExcel(occupancyFilters);
       else if (activeTab === 'preparations') await exportPreparationsExcel(preparationsFilters);
       else await exportMenuPreparationsExcel(menuPreparationsFilters);
-    } catch { alert('Błąd eksportu Excel. Spróbuj ponownie.'); }
+    } catch { toast.error('Błąd eksportu Excel. Spróbuj ponownie.'); }
     finally { setExportingExcel(false); }
   }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters, menuPreparationsFilters]);
 
@@ -194,7 +195,7 @@ export default function ReportsPage() {
       else if (activeTab === 'occupancy') await exportOccupancyPDF(occupancyFilters);
       else if (activeTab === 'preparations') await exportPreparationsPDF(preparationsFilters);
       else await exportMenuPreparationsPDF(menuPreparationsFilters);
-    } catch { alert('Błąd eksportu PDF. Spróbuj ponownie.'); }
+    } catch { toast.error('Błąd eksportu PDF. Spróbuj ponownie.'); }
     finally { setExportingPDF(false); }
   }, [activeTab, revenueFilters, occupancyFilters, preparationsFilters, menuPreparationsFilters]);
 

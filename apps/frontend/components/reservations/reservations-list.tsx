@@ -16,6 +16,7 @@ import {
   Loader2, Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { apiClient } from '@/lib/api-client'
 import { format, parseISO, isSameDay } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -184,6 +185,7 @@ export function ReservationsList() {
   const [rodoMap, setRodoMap] = useState<Record<string, boolean>>({})
   const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
 
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const archiveMutation = useArchiveReservation()
   const unarchiveMutation = useUnarchiveReservation()
 
@@ -316,7 +318,7 @@ export function ReservationsList() {
       return
     }
     
-    const confirmed = window.confirm('Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.')
+    const confirmed = await confirm({ title: 'Anulowanie rezerwacji', description: 'Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.', variant: 'destructive', confirmLabel: 'Anuluj rezerwację' })
     if (!confirmed) return
 
     try {
@@ -665,6 +667,7 @@ export function ReservationsList() {
           </div>
         </div>
       )}
+      {ConfirmDialog}
     </div>
   )
 }

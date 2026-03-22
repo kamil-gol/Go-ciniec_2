@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, DollarSign, Plus, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface CreatePackageDialogProps {
   open: boolean
@@ -83,9 +84,9 @@ export function CreatePackageDialog({
         includedItems: [''],
       })
       onOpenChange(false)
-      alert('✅ Pakiet został dodany!')
+      toast.success('Pakiet został dodany!')
     } catch (error: any) {
-      alert(`❌ Błąd: ${error.error || 'Nie udało się dodać pakietu'}`)
+      toast.error(error.error || 'Nie udało się dodać pakietu')
     }
   }
 
