@@ -66,68 +66,26 @@ const navItems: NavItem[] = [
   { name: 'Ustawienia',          href: '/dashboard/settings',           icon: Settings,        accentKey: 'settings' },
 ]
 
-// ═══ ICON COLORS MAP ═══
-// Maps accentKey to Tailwind color classes for icons
-const iconColors: Record<string, { base: string; active: string; bg: string }> = {
-  dashboard:         { base: 'text-indigo-500 dark:text-indigo-400',  active: 'text-indigo-600 dark:text-indigo-300',  bg: 'bg-indigo-500/10 dark:bg-indigo-400/10' },
-  dailyView:         { base: 'text-slate-500 dark:text-slate-400',    active: 'text-violet-600 dark:text-violet-300',  bg: 'bg-violet-500/10 dark:bg-violet-400/10' },
-  reservations:      { base: 'text-blue-500 dark:text-blue-400',      active: 'text-blue-600 dark:text-blue-300',      bg: 'bg-blue-500/10 dark:bg-blue-400/10' },
-  archive:           { base: 'text-neutral-500 dark:text-neutral-400', active: 'text-neutral-700 dark:text-neutral-200', bg: 'bg-neutral-500/10 dark:bg-neutral-400/10' },
-  clients:           { base: 'text-violet-500 dark:text-violet-400',  active: 'text-violet-600 dark:text-violet-300',  bg: 'bg-violet-500/10 dark:bg-violet-400/10' },
-  halls:             { base: 'text-sky-500 dark:text-sky-400',        active: 'text-sky-600 dark:text-sky-300',        bg: 'bg-sky-500/10 dark:bg-sky-400/10' },
-  menu:              { base: 'text-emerald-500 dark:text-emerald-400', active: 'text-emerald-600 dark:text-emerald-300', bg: 'bg-emerald-500/10 dark:bg-emerald-400/10' },
-  catering:          { base: 'text-orange-500 dark:text-orange-400',  active: 'text-orange-600 dark:text-orange-300',  bg: 'bg-orange-500/10 dark:bg-orange-400/10' },
-  queue:             { base: 'text-amber-500 dark:text-amber-400',    active: 'text-amber-600 dark:text-amber-300',    bg: 'bg-amber-500/10 dark:bg-amber-400/10' },
-  deposits:          { base: 'text-rose-500 dark:text-rose-400',      active: 'text-rose-600 dark:text-rose-300',      bg: 'bg-rose-500/10 dark:bg-rose-400/10' },
-  serviceExtras:     { base: 'text-purple-500 dark:text-purple-400',  active: 'text-purple-600 dark:text-purple-300',  bg: 'bg-purple-500/10 dark:bg-purple-400/10' },
-  eventTypes:        { base: 'text-fuchsia-500 dark:text-fuchsia-400', active: 'text-fuchsia-600 dark:text-fuchsia-300', bg: 'bg-fuchsia-500/10 dark:bg-fuchsia-400/10' },
-  documentTemplates: { base: 'text-cyan-500 dark:text-cyan-400',      active: 'text-cyan-600 dark:text-cyan-300',      bg: 'bg-cyan-500/10 dark:bg-cyan-400/10' },
-  notifications:     { base: 'text-yellow-500 dark:text-yellow-400',  active: 'text-yellow-600 dark:text-yellow-300',  bg: 'bg-yellow-500/10 dark:bg-yellow-400/10' },
-  auditLog:          { base: 'text-zinc-500 dark:text-zinc-400',      active: 'text-zinc-600 dark:text-zinc-300',      bg: 'bg-zinc-500/10 dark:bg-zinc-400/10' },
-  reports:           { base: 'text-teal-500 dark:text-teal-400',      active: 'text-teal-600 dark:text-teal-300',      bg: 'bg-teal-500/10 dark:bg-teal-400/10' },
-  settings:          { base: 'text-neutral-500 dark:text-neutral-400', active: 'text-neutral-700 dark:text-neutral-200', bg: 'bg-neutral-500/10 dark:bg-neutral-400/10' },
-}
-
-// Active item border colors (left accent bar)
-const activeBorder: Record<string, string> = {
-  dashboard:         'border-l-indigo-500',
-  dailyView:         'border-l-violet-500',
-  reservations:      'border-l-blue-500',
-  archive:           'border-l-neutral-500',
-  clients:           'border-l-violet-500',
-  halls:             'border-l-sky-500',
-  menu:              'border-l-emerald-500',
-  catering:          'border-l-orange-500',
-  queue:             'border-l-amber-500',
-  deposits:          'border-l-rose-500',
-  serviceExtras:     'border-l-purple-500',
-  eventTypes:        'border-l-fuchsia-500',
-  documentTemplates: 'border-l-cyan-500',
-  notifications:     'border-l-yellow-500',
-  auditLog:          'border-l-zinc-500',
-  reports:           'border-l-teal-500',
-  settings:          'border-l-neutral-500',
-}
-
-// Active text colors
-const activeText: Record<string, string> = {
-  dashboard:         'text-indigo-700 dark:text-indigo-300',
-  dailyView:         'text-violet-700 dark:text-violet-300',
-  reservations:      'text-blue-700 dark:text-blue-300',
-  archive:           'text-neutral-700 dark:text-neutral-200',
-  clients:           'text-violet-700 dark:text-violet-300',
-  halls:             'text-sky-700 dark:text-sky-300',
-  menu:              'text-emerald-700 dark:text-emerald-300',
-  catering:          'text-orange-700 dark:text-orange-300',
-  queue:             'text-amber-700 dark:text-amber-300',
-  deposits:          'text-rose-700 dark:text-rose-300',
-  serviceExtras:     'text-purple-700 dark:text-purple-300',
-  eventTypes:        'text-fuchsia-700 dark:text-fuchsia-300',
-  documentTemplates: 'text-cyan-700 dark:text-cyan-300',
-  notifications:     'text-yellow-700 dark:text-yellow-300',
-  auditLog:          'text-zinc-700 dark:text-zinc-300',
-  reports:           'text-teal-700 dark:text-teal-300',
-  settings:          'text-neutral-700 dark:text-neutral-200',
+// ═══ ICON STYLE MAP ═══
+// Each module gets a visible colored icon pill — always visible, stronger when active
+const iconStyle: Record<string, { icon: string; iconActive: string; pill: string; pillActive: string; text: string; activeBg: string; border: string }> = {
+  dashboard:         { icon: 'text-indigo-600 dark:text-indigo-400',  iconActive: 'text-white',                        pill: 'bg-indigo-100 dark:bg-indigo-900/40',  pillActive: 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/30', text: 'text-indigo-700 dark:text-indigo-300',  activeBg: 'bg-indigo-50 dark:bg-indigo-950/30',  border: 'border-l-indigo-500' },
+  dailyView:         { icon: 'text-violet-600 dark:text-violet-400',  iconActive: 'text-white',                        pill: 'bg-violet-100 dark:bg-violet-900/40',  pillActive: 'bg-gradient-to-br from-slate-600 to-violet-600 shadow-md shadow-violet-500/30',  text: 'text-violet-700 dark:text-violet-300',  activeBg: 'bg-violet-50 dark:bg-violet-950/30',  border: 'border-l-violet-500' },
+  reservations:      { icon: 'text-blue-600 dark:text-blue-400',      iconActive: 'text-white',                        pill: 'bg-blue-100 dark:bg-blue-900/40',      pillActive: 'bg-gradient-to-br from-blue-500 to-cyan-600 shadow-md shadow-blue-500/30',       text: 'text-blue-700 dark:text-blue-300',      activeBg: 'bg-blue-50 dark:bg-blue-950/30',      border: 'border-l-blue-500' },
+  archive:           { icon: 'text-neutral-600 dark:text-neutral-400', iconActive: 'text-white',                       pill: 'bg-neutral-200 dark:bg-neutral-700/50', pillActive: 'bg-gradient-to-br from-neutral-500 to-neutral-600 shadow-md shadow-neutral-500/30', text: 'text-neutral-700 dark:text-neutral-200', activeBg: 'bg-neutral-100 dark:bg-neutral-800/50', border: 'border-l-neutral-500' },
+  clients:           { icon: 'text-violet-600 dark:text-violet-400',  iconActive: 'text-white',                        pill: 'bg-violet-100 dark:bg-violet-900/40',  pillActive: 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-500/30', text: 'text-violet-700 dark:text-violet-300',  activeBg: 'bg-violet-50 dark:bg-violet-950/30',  border: 'border-l-violet-500' },
+  halls:             { icon: 'text-sky-600 dark:text-sky-400',        iconActive: 'text-white',                        pill: 'bg-sky-100 dark:bg-sky-900/40',        pillActive: 'bg-gradient-to-br from-sky-500 to-blue-600 shadow-md shadow-sky-500/30',         text: 'text-sky-700 dark:text-sky-300',        activeBg: 'bg-sky-50 dark:bg-sky-950/30',        border: 'border-l-sky-500' },
+  menu:              { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white',                       pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
+  catering:          { icon: 'text-orange-600 dark:text-orange-400',  iconActive: 'text-white',                        pill: 'bg-orange-100 dark:bg-orange-900/40',  pillActive: 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-md shadow-orange-500/30', text: 'text-orange-700 dark:text-orange-300',  activeBg: 'bg-orange-50 dark:bg-orange-950/30',  border: 'border-l-orange-500' },
+  queue:             { icon: 'text-amber-600 dark:text-amber-400',    iconActive: 'text-white',                        pill: 'bg-amber-100 dark:bg-amber-900/40',    pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30',   text: 'text-amber-700 dark:text-amber-300',    activeBg: 'bg-amber-50 dark:bg-amber-950/30',    border: 'border-l-amber-500' },
+  deposits:          { icon: 'text-rose-600 dark:text-rose-400',      iconActive: 'text-white',                        pill: 'bg-rose-100 dark:bg-rose-900/40',      pillActive: 'bg-gradient-to-br from-rose-500 to-pink-600 shadow-md shadow-rose-500/30',       text: 'text-rose-700 dark:text-rose-300',      activeBg: 'bg-rose-50 dark:bg-rose-950/30',      border: 'border-l-rose-500' },
+  serviceExtras:     { icon: 'text-purple-600 dark:text-purple-400',  iconActive: 'text-white',                        pill: 'bg-purple-100 dark:bg-purple-900/40',  pillActive: 'bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-md shadow-purple-500/30', text: 'text-purple-700 dark:text-purple-300',  activeBg: 'bg-purple-50 dark:bg-purple-950/30',  border: 'border-l-purple-500' },
+  eventTypes:        { icon: 'text-fuchsia-600 dark:text-fuchsia-400', iconActive: 'text-white',                       pill: 'bg-fuchsia-100 dark:bg-fuchsia-900/40', pillActive: 'bg-gradient-to-br from-fuchsia-500 to-pink-600 shadow-md shadow-fuchsia-500/30', text: 'text-fuchsia-700 dark:text-fuchsia-300', activeBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30', border: 'border-l-fuchsia-500' },
+  documentTemplates: { icon: 'text-cyan-600 dark:text-cyan-400',      iconActive: 'text-white',                        pill: 'bg-cyan-100 dark:bg-cyan-900/40',      pillActive: 'bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md shadow-cyan-500/30',       text: 'text-cyan-700 dark:text-cyan-300',      activeBg: 'bg-cyan-50 dark:bg-cyan-950/30',      border: 'border-l-cyan-500' },
+  notifications:     { icon: 'text-yellow-600 dark:text-yellow-400',  iconActive: 'text-white',                        pill: 'bg-yellow-100 dark:bg-yellow-900/40',  pillActive: 'bg-gradient-to-br from-yellow-500 to-amber-600 shadow-md shadow-yellow-500/30',  text: 'text-yellow-700 dark:text-yellow-300',  activeBg: 'bg-yellow-50 dark:bg-yellow-950/30',  border: 'border-l-yellow-500' },
+  auditLog:          { icon: 'text-zinc-600 dark:text-zinc-400',      iconActive: 'text-white',                        pill: 'bg-zinc-200 dark:bg-zinc-700/50',      pillActive: 'bg-gradient-to-br from-zinc-600 to-neutral-700 shadow-md shadow-zinc-500/30',    text: 'text-zinc-700 dark:text-zinc-300',      activeBg: 'bg-zinc-100 dark:bg-zinc-800/50',     border: 'border-l-zinc-500' },
+  reports:           { icon: 'text-teal-600 dark:text-teal-400',      iconActive: 'text-white',                        pill: 'bg-teal-100 dark:bg-teal-900/40',      pillActive: 'bg-gradient-to-br from-teal-500 to-cyan-600 shadow-md shadow-teal-500/30',       text: 'text-teal-700 dark:text-teal-300',      activeBg: 'bg-teal-50 dark:bg-teal-950/30',      border: 'border-l-teal-500' },
+  settings:          { icon: 'text-neutral-600 dark:text-neutral-400', iconActive: 'text-white',                       pill: 'bg-neutral-200 dark:bg-neutral-700/50', pillActive: 'bg-gradient-to-br from-neutral-500 to-neutral-600 shadow-md shadow-neutral-500/30', text: 'text-neutral-700 dark:text-neutral-200', activeBg: 'bg-neutral-100 dark:bg-neutral-800/50', border: 'border-l-neutral-500' },
 }
 
 // ═══ SIDEBAR NAV ═══
@@ -164,11 +122,9 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
 
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4">
-      <ul className="space-y-0.5">
+      <ul className="space-y-1">
         {navItems.map((item) => {
-          const colors = iconColors[item.accentKey] || iconColors.settings
-          const borderColor = activeBorder[item.accentKey] || 'border-l-neutral-500'
-          const textColor = activeText[item.accentKey] || 'text-neutral-700 dark:text-neutral-200'
+          const s = iconStyle[item.accentKey] || iconStyle.settings
 
           const isGroupActive = item.children
             ? item.children.some(child => pathname.startsWith(child.href))
@@ -186,17 +142,17 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                   type="button"
                   onClick={() => toggleGroup(item.href)}
                   className={cn(
-                    'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                    'w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
                     isGroupActive
-                      ? `${colors.bg} ${textColor} border-l-[3px] ${borderColor} pl-[9px]`
+                      ? `${s.activeBg} ${s.text} border-l-[3px] ${s.border} pl-[9px]`
                       : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-100'
                   )}
                 >
                   <div className={cn(
-                    'flex items-center justify-center h-8 w-8 rounded-lg flex-shrink-0 transition-colors',
-                    isGroupActive ? colors.bg : 'group-hover:bg-neutral-100 dark:group-hover:bg-neutral-800'
+                    'flex items-center justify-center h-8 w-8 rounded-lg flex-shrink-0 transition-all duration-200',
+                    isGroupActive ? s.pillActive : s.pill
                   )}>
-                    <item.icon className={cn('h-[18px] w-[18px]', isGroupActive ? colors.active : colors.base)} />
+                    <item.icon className={cn('h-[18px] w-[18px]', isGroupActive ? s.iconActive : s.icon)} />
                   </div>
                   <span className="flex-1 text-left">{item.name}</span>
                   <ChevronDown className={cn('h-4 w-4 flex-shrink-0 transition-transform duration-200 text-neutral-400', isOpen && 'rotate-180')} />
@@ -205,7 +161,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                 {isOpen && (
                   <ul className="mt-1 ml-5 pl-4 border-l-2 border-neutral-200/70 dark:border-neutral-700/50 space-y-0.5">
                     {item.children.map(child => {
-                      const childColors = iconColors[child.accentKey] || iconColors.settings
+                      const cs = iconStyle[child.accentKey] || iconStyle.settings
                       const childActive = pathname.startsWith(child.href)
                       return (
                         <li key={child.href}>
@@ -215,11 +171,16 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                             className={cn(
                               'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                               childActive
-                                ? `${textColor} ${colors.bg}`
+                                ? `${s.text} ${s.activeBg}`
                                 : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60 hover:text-neutral-800 dark:hover:text-neutral-100'
                             )}
                           >
-                            <child.icon className={cn('h-4 w-4 flex-shrink-0', childActive ? childColors.active : childColors.base)} />
+                            <div className={cn(
+                              'flex items-center justify-center h-6 w-6 rounded-md flex-shrink-0',
+                              childActive ? cs.pillActive : cs.pill
+                            )}>
+                              <child.icon className={cn('h-3.5 w-3.5', childActive ? cs.iconActive : cs.icon)} />
+                            </div>
                             <span>{child.name}</span>
                           </Link>
                         </li>
@@ -240,13 +201,18 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                   onClick={onNavigate}
                   title={item.name}
                   className={cn(
-                    'flex items-center justify-center rounded-xl p-2.5 text-sm font-medium transition-all duration-200',
+                    'flex items-center justify-center rounded-xl p-2 transition-all duration-200',
                     isGroupActive
-                      ? `${colors.bg} border-l-[3px] ${borderColor}`
-                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60'
+                      ? `${s.activeBg} border-l-[3px] ${s.border}`
+                      : 'hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60'
                   )}
                 >
-                  <item.icon className={cn('h-5 w-5 flex-shrink-0', isGroupActive ? colors.active : colors.base)} />
+                  <div className={cn(
+                    'flex items-center justify-center h-9 w-9 rounded-lg transition-all duration-200',
+                    isGroupActive ? s.pillActive : s.pill
+                  )}>
+                    <item.icon className={cn('h-5 w-5', isGroupActive ? s.iconActive : s.icon)} />
+                  </div>
                 </Link>
               </li>
             )
@@ -260,21 +226,21 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                 onClick={onNavigate}
                 title={collapsed ? item.name : undefined}
                 className={cn(
-                  'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
                   collapsed && 'justify-center px-2',
                   isGroupActive
-                    ? `${colors.bg} ${textColor} border-l-[3px] ${borderColor} pl-[9px]`
+                    ? `${s.activeBg} ${s.text} border-l-[3px] ${s.border} pl-[9px]`
                     : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-100'
                 )}
               >
                 <div className={cn(
-                  'flex items-center justify-center h-8 w-8 rounded-lg flex-shrink-0 transition-colors',
-                  isGroupActive ? colors.bg : '',
-                  collapsed && 'h-auto w-auto'
+                  'flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-200',
+                  collapsed ? 'h-9 w-9' : 'h-8 w-8',
+                  isGroupActive ? s.pillActive : s.pill
                 )}>
                   <item.icon className={cn(
                     collapsed ? 'h-5 w-5' : 'h-[18px] w-[18px]',
-                    isGroupActive ? colors.active : colors.base
+                    isGroupActive ? s.iconActive : s.icon
                   )} />
                 </div>
                 {!collapsed && <span>{item.name}</span>}
